@@ -1,0 +1,8 @@
+{
+  "abstain": false,
+  "misconceptionText": "The student interprets the value of a digit as its face value rather than its positional value, reporting the name of the digit itself regardless of where it appears in the number.",
+  "teachingImplication": "Contrast face value with place value using physical or visual base-ten blocks to highlight how position scales a digit's worth.",
+  "checkNext": "Ask the student for the value of a non-zero digit in the thousands place of a four-digit number.",
+  "confidence": "high",
+  "evidenceTier": "structured"
+}

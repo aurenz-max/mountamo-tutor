@@ -97,6 +97,11 @@ export function resolveGenerationContext(
       typeof config.remediationFocus === 'string' && config.remediationFocus.trim()
         ? config.remediationFocus.trim()
         : undefined,
+    learningObservations: Array.isArray(config.learningObservations)
+      ? (config.learningObservations as unknown[]).filter((o): o is { id: string; summary: string; evidence?: string } =>
+        !!o && typeof (o as { id?: unknown }).id === 'string' && typeof (o as { summary?: unknown }).summary === 'string'
+        && ['string', 'undefined'].includes(typeof (o as { evidence?: unknown }).evidence))
+      : undefined,
     raw: config,
   };
 }

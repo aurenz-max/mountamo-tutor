@@ -5,12 +5,13 @@ from tests.test_misconception_generation_context import _run
 from app.services.submission_service import SubmissionService
 
 
-def test_place_value_scope_resolution():
+def test_place_value_legacy_tags_never_resolve():
     async def run():
         store = _TracingStore()
         await store.add_or_update_misconception(990040, "place-value-chart", "skill",
             "The student gives a bare digit for its worth.", "synthetic-failure",
-            subskill_id="SUB-1", skill_id="SKILL-1")
+            subskill_id="SUB-1", skill_id="SKILL-1",
+            scope_context=dict(subject="MATHEMATICS", grade="4", skill_id="SKILL-1", subskill_id="SUB-1", curriculum_version="v@t"))
         assert "place-value-chart::SKILL-1" in await store.get_active_misconceptions(990040)
         service = SubmissionService(None, None, firestore_service=store)
         async def fanout(**_kwargs):
@@ -25,8 +26,8 @@ def test_place_value_scope_resolution():
         before = len(store.events)
         await service.handle_submission(_submission(90, "place-value-chart", "SKILL-1", primitive_type="place-value-chart"),
             {"firebase_uid": "synthetic", "student_id": 990040, "email": "synthetic@example.test"})
-        assert store.events[before:] == ["fanout", "resolve"]
-        assert not await store.get_active_misconceptions(990040)
+        assert "fanout" in store.events[before:]
+        assert "place-value-chart::SKILL-1" in await store.get_active_misconceptions(990040)
     asyncio.run(run())
 
 
@@ -36,8 +37,10 @@ def test_place_value_generation_identity(monkeypatch):
         "last_detected_at": "2026-09-12T12:00:00+00:00", "source_attempt_id": "synthetic-failure",
         "primitive_type": "place-value-chart", "scope": "skill", "skill_id": "SKILL-1",
         "subskill_id": "SUB-1", "misconception_key": "place-value-chart::SKILL-1",
+        "scope_context": {"subject": "MATHEMATICS", "grade": "4", "skill_id": "SKILL-1", "subskill_id": "SUB-1", "curriculum_version": "v@t"},
     }})
     record = result["activeMisconceptions"][0]
     assert record["misconceptionKey"] == "place-value-chart::SKILL-1"
     assert record["skillId"] == "SKILL-1"
     assert record["subskillId"] == "SUB-1"
+    assert record["text"] == ""

@@ -44,6 +44,9 @@ export interface BaseTenBlocksChallenge {
 }
 
 export interface BaseTenBlocksData {
+  learningAdaptation?: { move: 'contrast_block_count_and_worth';
+    status: 'targeted' | 'already-targeted' | 'insufficient-capacity'; comparisonCount: number;
+    source?: 'saved-observation' };
   title: string;
   description: string;
   numberValue: number;

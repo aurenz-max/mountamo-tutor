@@ -1,0 +1,17 @@
+{
+  "synthetic": true,
+  "status": "PASS",
+  "tests": [
+    "Firebase user authenticated; collision-checked disposable student reserved",
+    "Learner token without service signature rejected with HTTP 403",
+    "Authenticated capture stored an active hypothesis at canonical Grade 4 scope",
+    "Tester status endpoint returns own current revision without private diagnosis fields",
+    "Authenticated Firebase client denied direct private hypothesis read",
+    "Authenticated Firebase client denied direct private hypothesis write",
+    "Next fetched private focus, generated two compiled targets and issued a student/revision-bound receipt"
+  ],
+  "boundary": "Real authenticated API and Next generation; synthetic diagnosis. No microphone or canonical learning submission.",
+  "objective_text": "Identify the specific place and numeric value of digits in numbers up to one million. Focus: Mastery of place names and values from ones to millions. Examples: 345,678, 1,000,000, 502,913, 89,456, 712,304, 6,789, 432,198, 999,999. Constraints: Numbers must be within the 0 to 1,000,000 range.",
+  "receipt_draw": 1,
+  "cleanup": "verified absent"
+}

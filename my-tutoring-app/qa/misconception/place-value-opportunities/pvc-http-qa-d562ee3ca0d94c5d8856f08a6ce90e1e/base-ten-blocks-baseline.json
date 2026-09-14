@@ -1,0 +1,49 @@
+{
+  "type": "base-ten-blocks",
+  "instanceId": "pvc-http-qa-d562ee3ca0d94c5d8856f08a6ce90e1e-base-ten-blocks",
+  "data": {
+    "title": "Four-Digit Place Value Explorers",
+    "description": "Learn how to read four-digit numbers using thousands, hundreds, tens, and ones blocks.",
+    "numberValue": 8749,
+    "challenges": [
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 7609,
+        "hint": "Remember to check the hundreds, tens, and ones places carefully, especially where there might be a zero.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 3406,
+        "hint": "Count the thousands blocks first, then the hundreds, tens, and ones.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 5400,
+        "hint": "Look at the columns. If a place has no blocks, its digit is zero.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 7202,
+        "hint": "Take it one place value column at a time from thousands down to ones.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      }
+    ],
+    "gradeBand": "4-5",
+    "interactionMode": "decompose",
+    "decimalMode": false,
+    "maxPlace": "thousands",
+    "supplyTray": true,
+    "supportTier": "medium"
+  }
+}

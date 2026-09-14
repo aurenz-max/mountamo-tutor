@@ -1,0 +1,100 @@
+[
+  {
+    "primitive": "place-value-chart",
+    "draw": 2,
+    "contrast": [
+      {
+        "number": 7046,
+        "place": 1,
+        "count": 4,
+        "worth": 40
+      },
+      {
+        "number": 7420,
+        "place": 2,
+        "count": 4,
+        "worth": 400
+      }
+    ],
+    "adaptation": {
+      "source": "saved-observation",
+      "comparisonCount": 2,
+      "status": "certified-generated-contrast",
+      "move": "contrast_digit_worth"
+    }
+  },
+  {
+    "primitive": "place-value-chart",
+    "draw": 3,
+    "contrast": [
+      {
+        "number": 6159,
+        "place": 1,
+        "count": 5,
+        "worth": 50
+      },
+      {
+        "number": 2599,
+        "place": 2,
+        "count": 5,
+        "worth": 500
+      }
+    ],
+    "adaptation": {
+      "source": "saved-observation",
+      "comparisonCount": 2,
+      "status": "certified-generated-contrast",
+      "move": "contrast_digit_worth"
+    }
+  },
+  {
+    "primitive": "base-ten-blocks",
+    "draw": 1,
+    "contrast": [
+      {
+        "number": 3707,
+        "place": 2,
+        "count": 7,
+        "worth": 700
+      },
+      {
+        "number": 7050,
+        "place": 3,
+        "count": 7,
+        "worth": 7000
+      }
+    ],
+    "adaptation": {
+      "move": "contrast_block_count_and_worth",
+      "status": "already-targeted",
+      "comparisonCount": 2,
+      "source": "saved-observation",
+      "sourcePrimitive": "place-value-chart"
+    }
+  },
+  {
+    "primitive": "base-ten-blocks",
+    "draw": 2,
+    "contrast": [
+      {
+        "number": 3808,
+        "place": 3,
+        "count": 3,
+        "worth": 3000
+      },
+      {
+        "number": 4309,
+        "place": 2,
+        "count": 3,
+        "worth": 300
+      }
+    ],
+    "adaptation": {
+      "move": "contrast_block_count_and_worth",
+      "status": "already-targeted",
+      "comparisonCount": 2,
+      "source": "saved-observation",
+      "sourcePrimitive": "place-value-chart"
+    }
+  }
+]

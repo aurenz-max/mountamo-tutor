@@ -1,0 +1,63 @@
+{
+  "type": "base-ten-blocks",
+  "instanceId": "pvc-http-qa-cee522b2b2fd48148022f628a1452f91-origin-base-ten-blocks0",
+  "data": {
+    "title": "Four-Digit Place Value Explorer",
+    "description": "Learn to read and understand place values in four-digit whole numbers using base-ten blocks.",
+    "numberValue": 1755,
+    "challenges": [
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 2607,
+        "hint": "Count the thousands, hundreds, tens, and ones carefully from left to right.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 8204,
+        "hint": "Check each column to make sure you didn't miss any groups of blocks.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 5097,
+        "hint": "Remember to look closely at the empty column where a place value might have zero blocks.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 5031,
+        "hint": "Count the thousands first, then check the tens and ones.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 2907,
+        "hint": "Look at the ones column carefully before naming the final total.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      }
+    ],
+    "gradeBand": "4-5",
+    "interactionMode": "decompose",
+    "decimalMode": false,
+    "maxPlace": "thousands",
+    "supplyTray": true,
+    "supportTier": "medium",
+    "learningAdaptation": {
+      "move": "contrast_block_count_and_worth",
+      "status": "targeted",
+      "comparisonCount": 2,
+      "source": "saved-observation"
+    }
+  }
+}

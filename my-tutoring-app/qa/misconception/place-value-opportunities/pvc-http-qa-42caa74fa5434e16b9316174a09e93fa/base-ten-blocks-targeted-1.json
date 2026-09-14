@@ -1,0 +1,56 @@
+{
+  "type": "base-ten-blocks",
+  "instanceId": "pvc-http-qa-42caa74fa5434e16b9316174a09e93fa-base-ten-blocks1",
+  "data": {
+    "title": "Thousands and Zero Heroes",
+    "description": "Learn to read four-digit numbers with zero placeholders using base-ten blocks.",
+    "numberValue": 9405,
+    "challenges": [
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 3808,
+        "hint": "Count the thousands, hundreds, tens, and ones carefully.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 3403,
+        "hint": "Remember to check the tens place! If there are no tens, what goes in that spot?",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 9405,
+        "hint": "Count the large cube thousands first, then the flats, and check the tens and ones.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 4309,
+        "hint": "Look closely at how many hundreds and tens are on the mat.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      }
+    ],
+    "gradeBand": "4-5",
+    "interactionMode": "decompose",
+    "decimalMode": false,
+    "maxPlace": "thousands",
+    "supplyTray": true,
+    "supportTier": "medium",
+    "learningAdaptation": {
+      "move": "contrast_block_count_and_worth",
+      "status": "already-targeted",
+      "comparisonCount": 2,
+      "source": "saved-observation",
+      "sourcePrimitive": "place-value-chart"
+    }
+  }
+}

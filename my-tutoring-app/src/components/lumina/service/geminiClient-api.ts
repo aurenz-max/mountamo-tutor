@@ -30,12 +30,20 @@ export interface ManifestProgressCallback {
 
 const API_BASE = '/api/lumina';
 
+async function generationHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  try {
+    const { auth } = await import('@/lib/firebase');
+    const token = await auth.currentUser?.getIdToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  } catch { /* anonymous/offline generation can continue */ }
+  return headers;
+}
+
 async function callAPI(action: string, params: any) {
   const response = await fetch(API_BASE, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: await generationHeaders(),
     body: JSON.stringify({ action, params }),
   });
 
@@ -215,7 +223,7 @@ export const buildCompleteExhibitFromManifestStreaming = async (
 ): Promise<ExhibitData> => {
   const response = await fetch('/api/lumina/build-stream', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await generationHeaders(),
     body: JSON.stringify({ manifest, curatorBrief }),
   });
 

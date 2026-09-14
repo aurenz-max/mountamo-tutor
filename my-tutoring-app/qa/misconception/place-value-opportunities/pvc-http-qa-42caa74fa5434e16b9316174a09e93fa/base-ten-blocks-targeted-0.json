@@ -1,0 +1,56 @@
+{
+  "type": "base-ten-blocks",
+  "instanceId": "pvc-http-qa-42caa74fa5434e16b9316174a09e93fa-base-ten-blocks0",
+  "data": {
+    "title": "Exploring Four-Digit Place Value",
+    "description": "Learn how to read and understand place value in four-digit whole numbers using thousands, hundreds, tens, and ones.",
+    "numberValue": 5613,
+    "challenges": [
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 9506,
+        "hint": "Check each column carefully, especially the tens place where there might be zero blocks.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 3707,
+        "hint": "Count the thousands, hundreds, tens, and ones separately.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 7050,
+        "hint": "Pay close attention to the empty columns when reading the total value.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 2508,
+        "hint": "Combine the values of all the blocks on the mat to find the total.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      }
+    ],
+    "gradeBand": "4-5",
+    "interactionMode": "decompose",
+    "decimalMode": false,
+    "maxPlace": "thousands",
+    "supplyTray": true,
+    "supportTier": "medium",
+    "learningAdaptation": {
+      "move": "contrast_block_count_and_worth",
+      "status": "already-targeted",
+      "comparisonCount": 2,
+      "source": "saved-observation",
+      "sourcePrimitive": "place-value-chart"
+    }
+  }
+}

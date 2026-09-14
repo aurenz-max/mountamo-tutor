@@ -1,0 +1,103 @@
+{
+  "type": "number-line",
+  "instanceId": "nl-obs-qa-dbddafe9b9004531a0920984e736c843",
+  "data": {
+    "title": "Hop and Subtract Adventure",
+    "description": "Learn how to use the number line to subtract within 20 by jumping backwards.",
+    "range": {
+      "min": 0,
+      "max": 20
+    },
+    "gradeBand": "K-2",
+    "numberType": "integer",
+    "interactionMode": "jump",
+    "challenges": [
+      {
+        "id": "show_jump-0",
+        "type": "show_jump",
+        "instruction": "Put your finger on the number 5. Ready, set, hop backward 4 spaces to see where you land!",
+        "targetValues": [
+          1
+        ],
+        "hint": "Count your hops carefully as you jump backward one by one, and check where you stop.",
+        "startValue": 5,
+        "operations": [
+          {
+            "type": "subtract",
+            "startValue": 5,
+            "changeValue": 4,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      },
+      {
+        "id": "show_jump-1",
+        "type": "show_jump",
+        "instruction": "Place your finger on 9. Count forward 3 hops to the right to see where you land!",
+        "targetValues": [
+          12
+        ],
+        "hint": "Start at 9 and count three steps forward one by one: hop one, hop two, hop three!",
+        "startValue": 9,
+        "operations": [
+          {
+            "type": "add",
+            "startValue": 9,
+            "changeValue": 3,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      },
+      {
+        "id": "show_jump-2",
+        "type": "show_jump",
+        "instruction": "Put your finger on 2. Now hop forward 2 spaces to see where you land!",
+        "targetValues": [
+          4
+        ],
+        "hint": "Start at 2 and take 2 little hops to the right, counting each hop as you go!",
+        "startValue": 2,
+        "operations": [
+          {
+            "type": "add",
+            "startValue": 2,
+            "changeValue": 2,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      },
+      {
+        "id": "show_jump-3",
+        "type": "show_jump",
+        "instruction": "Find the number 5 on the number line. Make 1 hop to the left to subtract 1, and place your marker where you land!",
+        "targetValues": [
+          4
+        ],
+        "hint": "Start at 5 and take 1 hop backward to the left. Which number do you land on?",
+        "startValue": 5,
+        "operations": [
+          {
+            "type": "subtract",
+            "startValue": 5,
+            "changeValue": 1,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      }
+    ],
+    "highlights": [],
+    "operations": [
+      {
+        "type": "subtract",
+        "startValue": 5,
+        "changeValue": 4,
+        "showJumpArc": false
+      }
+    ],
+    "supportTier": "medium"
+  }
+}

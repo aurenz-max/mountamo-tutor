@@ -1,0 +1,8 @@
+{
+  "abstain": false,
+  "misconceptionText": "The student identifies the bottom number of a fraction as the numerator, selecting the denominator when asked for the numerator and shading that many parts.",
+  "teachingImplication": "Clarify the distinct vocabulary and spatial positions of fraction terms using visual labels before asking the learner to identify parts or shade models.",
+  "checkNext": "Present a fraction identification task asking the student to name the numerator and denominator of a unit fraction, followed by shading a partially filled model.",
+  "confidence": "high",
+  "evidenceTier": "structured"
+}

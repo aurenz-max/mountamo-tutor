@@ -1,0 +1,42 @@
+{
+  "synthetic": true,
+  "sourceDiagnosisRun": "qa/misconception/place-value-chart/2026-09-12T18-53-12-730Z/run.json",
+  "tests": [
+    {
+      "name": "baseline",
+      "eligible": 0,
+      "hash": "aee9680b567eb9109d7290d04466125d008906db77fd16a8516cb62e929d2b11",
+      "pass": true,
+      "outcome": "NO-OP",
+      "receipt": false
+    },
+    {
+      "name": "saturated",
+      "eligible": 0,
+      "hash": "3bea41e6da064c6ca6f898a13a93e06c75a9f2a16c7a4291364aefbbcf872b78",
+      "pass": true,
+      "outcome": "NO-OP",
+      "receipt": false
+    },
+    {
+      "name": "targeted-1",
+      "eligible": 2,
+      "hash": "9c496086262971ea38981a4c17429f189cca038704b6038e477f8badc7be80c1",
+      "pass": true,
+      "outcome": "TARGETED",
+      "receipt": false
+    },
+    {
+      "name": "targeted-2",
+      "eligible": 2,
+      "hash": "64ab0afb3e1371831bb330e920a40f8b7f1e16514c16dff007c1dfd8cc67c533",
+      "pass": true,
+      "outcome": "TARGETED",
+      "receipt": false
+    }
+  ],
+  "status": "GENERATION PASS / ISSUANCE BLOCKED",
+  "blockers": [
+    "This probe performs generation only, not authenticated issuance, a mounted learner run or a store transition."
+  ]
+}

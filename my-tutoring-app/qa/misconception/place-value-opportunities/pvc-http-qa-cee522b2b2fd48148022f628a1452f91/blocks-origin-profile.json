@@ -1,0 +1,49 @@
+{
+  "id": "base-ten-blocks::NBT004-01",
+  "kind": "pattern",
+  "status": "suspected",
+  "summary": "The student interprets questions asking what a group of blocks is worth altogether as asking for the count of those blocks rather than their total value.",
+  "problem": "What are those hundred-flats worth altogether? Mat value 2640; asked block size: hundred-flats.",
+  "evalMode": "read_blocks",
+  "primitiveType": "base-ten-blocks",
+  "subject": "MATHEMATICS",
+  "grade": "4",
+  "subskillId": "NBT004-01-b",
+  "updatedAt": "2026-09-13T12:34:43.949432+00:00",
+  "teachingImplication": "Contrast the quantity of blocks with their cumulative value by having the student multiply the count of blocks by the value of a single block.",
+  "checkNext": "Present a set of tens-rods or hundred-flats and ask for their total worth to see if the student continues to report only the number of blocks present.",
+  "evidence": [
+    {
+      "attemptId": "pvc-http-qa-cee522b2b2fd48148022f628a1452f91-blocks",
+      "task": "What are those thousand-blocks worth altogether? Mat value 4305; asked block size: thousand-blocks.",
+      "response": "four",
+      "support": "Correction observation; 0 prior corrections on this item. Other assistance is not established.",
+      "phase": "read-worth",
+      "itemId": "base-ten-1-worth"
+    },
+    {
+      "attemptId": "pvc-http-qa-cee522b2b2fd48148022f628a1452f91-blocks",
+      "task": "What are those thousand-blocks worth altogether? Mat value 4305; asked block size: thousand-blocks.",
+      "response": "four",
+      "support": "Correction observation; 1 prior corrections on this item. Other assistance is not established.",
+      "phase": "read-worth",
+      "itemId": "base-ten-1-worth"
+    },
+    {
+      "attemptId": "pvc-http-qa-cee522b2b2fd48148022f628a1452f91-blocks",
+      "task": "What are those thousand-blocks worth altogether? Mat value 4305; asked block size: thousand-blocks.",
+      "response": "four",
+      "support": "Correction observation; 2 prior corrections on this item. Other assistance is not established.",
+      "phase": "read-worth",
+      "itemId": "base-ten-1-worth"
+    },
+    {
+      "attemptId": "pvc-http-qa-cee522b2b2fd48148022f628a1452f91-blocks",
+      "task": "What are those hundred-flats worth altogether? Mat value 2640; asked block size: hundred-flats.",
+      "response": "six",
+      "support": "Correction observation; 0 prior corrections on this item. Other assistance is not established.",
+      "phase": "read-worth",
+      "itemId": "base-ten-2-worth"
+    }
+  ]
+}

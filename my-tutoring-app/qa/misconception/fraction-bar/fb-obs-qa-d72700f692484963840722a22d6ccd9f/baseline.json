@@ -1,0 +1,68 @@
+{
+  "type": "fraction-bar",
+  "instanceId": "fb-obs-qa-d72700f692484963840722a22d6ccd9f",
+  "data": {
+    "title": "Building Fractions on a Bar",
+    "description": "Learn how to build fractions by identifying the parts of a whole and shading the bar to match each fraction model. Practice choosing the right number of pieces to represent each value.",
+    "challenges": [
+      {
+        "id": "fraction-bar-1",
+        "numerator": 2,
+        "denominator": 3,
+        "numeratorChoices": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "denominatorChoices": [
+          2,
+          4,
+          5,
+          3
+        ]
+      },
+      {
+        "id": "fraction-bar-2",
+        "numerator": 3,
+        "denominator": 4,
+        "numeratorChoices": [
+          4,
+          5,
+          2,
+          3
+        ],
+        "denominatorChoices": [
+          6,
+          4,
+          5,
+          3
+        ]
+      },
+      {
+        "id": "fraction-bar-3",
+        "numerator": 3,
+        "denominator": 6,
+        "numeratorChoices": [
+          3,
+          4,
+          2,
+          6
+        ],
+        "denominatorChoices": [
+          3,
+          5,
+          7,
+          6
+        ]
+      }
+    ],
+    "challengeType": "build",
+    "showDecimal": false,
+    "showPartitionNumerals": true,
+    "showShadedReadout": true,
+    "showPromptGloss": true,
+    "supportTier": "medium",
+    "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+  }
+}

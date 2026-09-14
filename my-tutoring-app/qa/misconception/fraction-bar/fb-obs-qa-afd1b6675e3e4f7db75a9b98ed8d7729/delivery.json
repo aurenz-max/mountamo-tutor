@@ -1,0 +1,32 @@
+{
+  "objective": {
+    "available": true,
+    "observations": [
+      {
+        "id": "observation-8dfed007351dd17e",
+        "summary": "The student identifies the bottom number of a fraction as the numerator, choosing it during identification tasks and using it as the count of parts to shade.",
+        "evidence": "{\"problem\":\"Fraction bar (build): for each of 3 fractions the student chooses the numerator from four numbers, then the denominator from four numbers, then shades that many equal parts on a bar. A question repeats until answered correctly.\",\"evalMode\":\"build\",\"phases\":[{\"phase\":\"numerator\",\"challenge\":\"Fraction 3/4: which number is the numerator? Choices: 3, 4, 2, 5.\",\"expected\":\"3\",\"observed\":\"4\",\"support\":\"Attempt 1 on this question; 0 hint(s) viewed on this fraction before responding; support tier medium; feedback followed every earlier response in the session.\"},{\"phase\":\"numerator\",\"challenge\":\"Fraction 4/5: which number is the numerator? Choices: 4, 5, 3, 6.\",\"expected\":\"4\",\"observed\":\"5\",\"support\":\"Attempt 1 on this question; 0 hint(s) viewed on this fraction before responding; support tier medium; feedback followed every earlier response in the session.\"},{\"phase\":\"build\",\"challenge\":\"Fraction 2/6: shade parts of a bar divided into 6 equal parts.\",\"expected\":\"shaded 2 of 6 parts\",\"observed\":\"shaded 6 of 6 parts\",\"support\":\"Attempt 1 on this question; 0 hint(s) viewed on this fraction before responding; support tier medium; feedback followed every earlier response in the session.\"}]}"
+      }
+    ]
+  },
+  "sibling": {
+    "available": true,
+    "observations": [
+      {
+        "id": "observation-8dfed007351dd17e",
+        "summary": "The student identifies the bottom number of a fraction as the numerator, choosing it during identification tasks and using it as the count of parts to shade.",
+        "evidence": "{\"problem\":\"Fraction bar (build): for each of 3 fractions the student chooses the numerator from four numbers, then the denominator from four numbers, then shades that many equal parts on a bar. A question repeats until answered correctly.\",\"evalMode\":\"build\",\"phases\":[{\"phase\":\"numerator\",\"challenge\":\"Fraction 3/4: which number is the numerator? Choices: 3, 4, 2, 5.\",\"expected\":\"3\",\"observed\":\"4\",\"support\":\"Attempt 1 on this question; 0 hint(s) viewed on this fraction before responding; support tier medium; feedback followed every earlier response in the session.\"},{\"phase\":\"numerator\",\"challenge\":\"Fraction 4/5: which number is the numerator? Choices: 4, 5, 3, 6.\",\"expected\":\"4\",\"observed\":\"5\",\"support\":\"Attempt 1 on this question; 0 hint(s) viewed on this fraction before responding; support tier medium; feedback followed every earlier response in the session.\"},{\"phase\":\"build\",\"challenge\":\"Fraction 2/6: shade parts of a bar divided into 6 equal parts.\",\"expected\":\"shaded 2 of 6 parts\",\"observed\":\"shaded 6 of 6 parts\",\"support\":\"Attempt 1 on this question; 0 hint(s) viewed on this fraction before responding; support tier medium; feedback followed every earlier response in the session.\"}]}"
+      }
+    ]
+  },
+  "compare": {
+    "available": true,
+    "observations": [
+      {
+        "id": "observation-0cf401496f15ed82",
+        "summary": "Believes the fraction with the larger denominator is the larger fraction.",
+        "evidence": "{\"problem\":\"Fraction bar (build): for each of 3 fractions the student chooses the numerator from four numbers, then the denominator from four numbers, then shades that many equal parts on a bar. A question repeats until answered correctly.\",\"evalMode\":\"compare\",\"phases\":[{\"phase\":\"numerator\",\"challenge\":\"Fraction 3/4: which number is the numerator? Choices: 3, 4, 2, 5.\",\"expected\":\"3\",\"observed\":\"4\",\"support\":\"Attempt 1 on this question; 0 hint(s) viewed on this fraction before responding; support tier medium; feedback followed every earlier response in the session.\"},{\"phase\":\"numerator\",\"challenge\":\"Fraction 4/5: which number is the numerator? Choices: 4, 5, 3, 6.\",\"expected\":\"4\",\"observed\":\"5\",\"support\":\"Attempt 1 on this question; 0 hint(s) viewed on this fraction before responding; support tier medium; feedback followed every earlier response in the session.\"},{\"phase\":\"build\",\"challenge\":\"Fraction 2/6: shade parts of a bar divided into 6 equal parts.\",\"expected\":\"shaded 2 of 6 parts\",\"observed\":\"shaded 6 of 6 parts\",\"support\":\"Attempt 1 on this question; 0 hint(s) viewed on this fraction before responding; support tier medium; feedback followed every earlier response in the session.\"}]}"
+      }
+    ]
+  }
+}

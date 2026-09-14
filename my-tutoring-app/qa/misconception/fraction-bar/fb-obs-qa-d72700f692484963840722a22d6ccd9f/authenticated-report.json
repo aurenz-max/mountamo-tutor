@@ -1,0 +1,44 @@
+{
+  "synthetic": true,
+  "status": "PASS",
+  "tests": [
+    "Firebase user authenticated; disposable student reserved",
+    "Learner token without service signature rejected (403)",
+    "Real distiller diagnosed a successful retry-until-correct session (score 87, firstResponseScore 0); two skill-scoped hypotheses stored with published scope stamped",
+    "Signed delivery returns only same-skill hypotheses (sibling subskill included, other skill excluded, unpublished grade refused); opaque IDs",
+    "Unauthenticated baseline unadapted; client-supplied learningObservations ignored",
+    "Saved hypothesis drives two authenticated build draws with compiled consecutive role contrasts; identify ineligible; no private text in content",
+    "Delivery and generation wrote nothing; hypothesis unchanged; no receipt or resolution"
+  ],
+  "draws": [
+    {
+      "draw": 0,
+      "adaptation": {
+        "move": "contrast_shared_digit_roles",
+        "comparisonCount": 2,
+        "status": "already-targeted",
+        "source": "saved-observation"
+      },
+      "fractions": [
+        "2/3",
+        "3/4",
+        "3/5"
+      ]
+    },
+    {
+      "draw": 1,
+      "adaptation": {
+        "move": "contrast_shared_digit_roles",
+        "comparisonCount": 2,
+        "status": "targeted",
+        "source": "saved-observation"
+      },
+      "fractions": [
+        "4/6",
+        "2/4",
+        "2/5"
+      ]
+    }
+  ],
+  "cleanup": "verified absent"
+}

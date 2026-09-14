@@ -1846,6 +1846,44 @@ export interface EvalModeDefinition {
   affordances?: EvalModeAffordances;
 }
 
+/**
+ * A primitive's declared consumption of server-delivered learning
+ * observations (`ComponentDefinition.learningObservations`). The generation
+ * service dispatches on this declaration alone and names no primitive.
+ */
+export interface LearningObservationConsumer {
+  /**
+   * Pure gate on the manifest config — mode, tier, reviewed objectives —
+   * before any observation is read. Client-safe; never interprets a
+   * diagnosis.
+   */
+  eligible(config: Record<string, unknown>): boolean;
+  /**
+   * Certified immediate retest of the primitive's OWN saved hypothesis. When
+   * declared, delivery is that hypothesis alone (read through the
+   * primitive-keyed opportunity context) and the compiled item plan is bound
+   * to its revision in a signed receipt. Whether a retest consumer also takes
+   * shared-scope observations from other sources is a pending ruling
+   * (qa/di/BACKLOG.md item 18: blocks-origin observations to the chart).
+   */
+  retest?: LearningObservationRetest;
+}
+
+/** Pure compiler for a certified retest; runs only on server-generated data. */
+export interface LearningObservationRetest {
+  capabilityId: string;
+  capabilityVersion: number;
+  policyVersion: string;
+  compilerVersion: string;
+  /**
+   * The receipt's item plan for generated data, or null when the content does
+   * not host the contrast for `focus` (mode, tier, named anchors, compiler
+   * drops). `contentIdentity` is the stable projection the receipt hashes.
+   */
+  certify(data: unknown, request: { focus: string; grade: string; topic?: string; intent?: string; objectiveText?: string }):
+    { items: unknown[]; contentIdentity: string; mode: string; tier?: string } | null;
+}
+
 export interface ComponentDefinition {
   id: ComponentId;
   description: string;
@@ -1869,6 +1907,25 @@ export interface ComponentDefinition {
    * Absence means the primitive is not enabled for misconception capture.
    */
   misconceptionScope?: 'primitive' | 'skill';
+  /**
+   * Server-delivered learning observations. With 'server', a captured
+   * hypothesis is stored against its canonical published scope (or not at
+   * all), its prose never reaches the client manifest, a score or client tag
+   * never resolves it, and generators read it through the signed observation
+   * context. Requires misconceptionScope 'skill'. Absent = legacy client
+   * delivery (remediationFocus on the manifest, resolved by a matching tag at
+   * score >= 80). The backend keeps no primitive table; capture relays this.
+   */
+  observationDelivery?: 'server';
+  /**
+   * Consumer side of server delivery. When `eligible(config)` holds for a
+   * lesson task, the saved observations at that task's published objective
+   * scope — subject, grade, skill, subskill, all from the manifest config —
+   * reach this primitive's generator as `ctx.learningObservations`. Requires
+   * `observationDelivery: 'server'`; a client-supplied focus or observation
+   * list never reaches the generator.
+   */
+  learningObservations?: LearningObservationConsumer;
   /**
    * What the block demands of the child and offers the curator — audience,
    * CPA representation, reading load, answer modality, ladder role, minutes,

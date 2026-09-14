@@ -1,0 +1,120 @@
+{
+  "type": "place-value-chart",
+  "instanceId": "pvc-http-qa-04bdabaecd8f40738e69fbf10ef3c95a-1",
+  "data": {
+    "title": "Four-Digit Place Value Mastery",
+    "description": "Join your live tutor to explore four-digit numbers across three interactive phases. You will name places, state digit values out loud, and write numbers as you hear them.",
+    "challenges": [
+      {
+        "id": "pvc-1",
+        "targetNumber": 3249,
+        "highlightedDigitPlace": 1,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Ones",
+          "Hundreds",
+          "Tens",
+          "Thousands"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 4,
+            "wordForm": "Four"
+          },
+          {
+            "value": 400,
+            "wordForm": "Four Hundred"
+          },
+          {
+            "value": 0.4,
+            "wordForm": "Four Tenths"
+          },
+          {
+            "value": 40,
+            "wordForm": "Forty"
+          }
+        ]
+      },
+      {
+        "id": "pvc-2",
+        "targetNumber": 2356,
+        "highlightedDigitPlace": 2,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Tens",
+          "Thousands",
+          "Ones",
+          "Hundreds"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 30,
+            "wordForm": "Thirty"
+          },
+          {
+            "value": 300,
+            "wordForm": "Three Hundred"
+          },
+          {
+            "value": 3000,
+            "wordForm": "Three Thousand"
+          },
+          {
+            "value": 3,
+            "wordForm": "Three"
+          }
+        ]
+      },
+      {
+        "id": "pvc-3",
+        "targetNumber": 9450,
+        "highlightedDigitPlace": 2,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Tens",
+          "Hundreds",
+          "Thousands",
+          "Ones"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 400,
+            "wordForm": "Four Hundred"
+          },
+          {
+            "value": 40,
+            "wordForm": "Forty"
+          },
+          {
+            "value": 4000,
+            "wordForm": "Four Thousand"
+          },
+          {
+            "value": 4,
+            "wordForm": "Four"
+          }
+        ]
+      }
+    ],
+    "challengeType": "compare",
+    "showExpandedForm": true,
+    "showMultipliers": false,
+    "supportTier": "medium",
+    "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+    "learningAdaptation": {
+      "move": "contrast_digit_worth",
+      "comparisonCount": 2,
+      "status": "targeted",
+      "source": "saved-observation"
+    },
+    "misconceptionOpportunity": {
+      "id": "ea23ad13-2eb5-4ca2-ad19-8742f56d404f",
+      "lessonId": "73b9f576-2f50-4002-96a9-e04a6b517af2",
+      "grade": "4",
+      "curriculumVersion": "98202434-e96c-42ed-8c8e-6fd801b451ef@2026-06-09T03:49:30.592858"
+    }
+  }
+}

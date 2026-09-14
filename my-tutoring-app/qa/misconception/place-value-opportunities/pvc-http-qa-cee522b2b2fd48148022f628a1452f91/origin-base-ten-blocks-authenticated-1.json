@@ -1,0 +1,55 @@
+{
+  "type": "base-ten-blocks",
+  "instanceId": "pvc-http-qa-cee522b2b2fd48148022f628a1452f91-origin-base-ten-blocks1",
+  "data": {
+    "title": "Four-Digit Place Value Explorers",
+    "description": "Practice reading blocks and identifying place values in four-digit numbers, including numbers with interior zeros.",
+    "numberValue": 9517,
+    "challenges": [
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 8707,
+        "hint": "Count the thousands, hundreds, tens, and ones carefully from left to right.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 5803,
+        "hint": "Remember to check each column value, starting with the thousands block.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 5309,
+        "hint": "Look closely at the ones column. Are there any ones blocks present?",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 4703,
+        "hint": "Count the hundreds flats and tens rods to find the correct total value.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      }
+    ],
+    "gradeBand": "4-5",
+    "interactionMode": "decompose",
+    "decimalMode": false,
+    "maxPlace": "thousands",
+    "supplyTray": true,
+    "supportTier": "medium",
+    "learningAdaptation": {
+      "move": "contrast_block_count_and_worth",
+      "status": "targeted",
+      "comparisonCount": 2,
+      "source": "saved-observation"
+    }
+  }
+}

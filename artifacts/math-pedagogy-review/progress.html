@@ -1,0 +1,148 @@
+<style>
+  main, section, .panel, .stat, .table-wrap { min-width: 0; }
+  .table-wrap { max-width: 100%; }
+  #progress select { max-width: 100%; }
+  @media(max-width:550px) {
+    .stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    #progress select { width: 100%; }
+    #progress .stat { padding: 16px; overflow-wrap: anywhere; }
+  }
+</style>
+<section id="progress">
+<div class="kicker">September 12 follow-up / relative to this original review</div>
+<h2>Evidence is visible. Saved observations now change generated content.</h2>
+<p>The work belongs to the first roadmap item, <strong>capture → consume → confirm</strong>. It extends the existing lesson, primitive and submission framework. It does not yet deliver the five-stage instructional sequence across the library.</p>
+<div class="callout" id="shared-applicability"><strong>New: shared LLM applicability, verified Place Value first.</strong>
+<p>Saved observation + current task + supported teaching moves &rarr; shared LLM planner &rarr; validated move or abstention &rarr; constrained content selection.</p>
+<p>Generation no longer recognizes diagnosis phrases with regex. Each primitive describes its task and executable teaching options. Fourteen real-model cases pass: a saved diagnosis and two paraphrases target both; unrelated and uncertain observations abstain; place-name confusion targets only the chart. The older regex remains solely in the separate retest certification policy.</p>
+<p><a href="../learning-applicability/report.json">Inspect applicability cases</a> &middot; <a href="../../my-tutoring-app/qa/misconception/shared-learning-applicability-2026-09-12.md">Implementation and verification report</a></p>
+<p>The applicability mechanism is shared. Live observation retrieval and executable moves remain limited to the two reviewed math activities; strengths/support consumption and learner transfer remain open.</p></div>
+<div class="stats">
+  <div class="stat"><strong id="current-library">—</strong><span>entries in this refreshed source inventory</span></div>
+  <div class="stat"><strong id="current-capture">—</strong><span>capture opt-ins; not proof of a complete loop</span></div>
+  <div class="stat"><strong>1</strong><span>primitive with the new opportunity contract: place-value-chart</span></div>
+  <div class="stat"><strong>0</strong><span>complete authenticated learner journeys demonstrated by this work</span></div>
+</div>
+<div class="table-wrap" style="margin-top:24px"><table>
+<thead><tr><th>Original five stages</th><th>What this work added</th><th>What is still missing</th></tr></thead>
+<tbody>
+<tr><td>1 · Elicit</td><td>Shared correction evidence includes problem, phase, response and assistance. My Progress and the tester display saved observations. A real 67% submission exposed a discarded-evidence bug; its automated regression now passes.</td><td>The historical attempt lacked its structured packet. The complete live error → saved observation → next activity journey still needs acceptance.</td></tr>
+<tr><td>2 · Discriminate</td><td>Same nonzero digit in tens and hundreds; qualifying items checked after compilation. Authenticated capture → Next generation → signed receipt now passes using the full composer objective.</td><td>Mount the signed activity in a normal lesson and collect real responses.</td></tr>
+<tr><td>3 · Teach</td><td>Saved place-name/value confusion selects paired questions across two positions. Two real authenticated generation draws demonstrate the change using existing scripts.</td><td>Teaching effectiveness is unverified. This adaptation has no resolution certification; an explicit representation bridge remains future work.</td></tr>
+<tr><td>4 · Fade</td><td>Corrections, repeats and conflicting evidence can disqualify retest credit.</td><td>Detecting assistance is not adapting or fading it. Support selection based on observed benefit is not implemented here.</td></tr>
+<tr><td>5 · Transfer</td><td>Immediate retest of the same wrong rule in a second place, inside the same primitive.</td><td>Another representation, delayed recheck and cross-primitive conceptual transfer remain proposed.</td></tr>
+</tbody></table></div>
+<div class="callout warning"><strong>What “resolved” now means:</strong> for this pilot, the current hypothesis passed a bounded immediate retest. It does not mean durable mastery, transfer to another primitive, or completion of the original review's vision.</div>
+
+<h3 id="harness-demo">Latest demonstration: the automated harness</h3>
+<div class="callout"><strong>PASS: real LLM → authenticated storage → targeted generation.</strong> The harness uses fictional correction evidence and a disposable learner. It distills and stores an observation, generates an unadapted baseline and two adapted activities, then verifies cleanup. No repeated microphone lesson is needed to test this API path.</div>
+<div class="table-wrap"><table><thead><tr><th>Harness draw</th><th>Actual generated contrast</th><th>Observed result</th></tr></thead><tbody id="adaptation-draws"></tbody></table></div>
+<p><a id="latest-harness-report">Inspect the latest harness report</a> · <a href="../../my-tutoring-app/qa/HANDOFF-learning-observations-2026-09-12.md">Start the next session from this handoff</a></p>
+<pre style="white-space:pre-wrap;overflow-wrap:anywhere"># From backend, with local frontend/backend running:
+python scripts/probe_place_value_authenticated.py --observations-only --generation-context</pre>
+<div class="grid two"><article class="panel"><h3>What is now visible in the app?</h3><p>My Progress and the Misconception Loop tester show saved hypotheses, phase evidence, teaching implications and proposed generation/evaluation context. Fictional samples are opt-in. The tester reports skipped, distilling, abstained, saving, stored or failed capture, and the next activity's targeting status.</p></article><article class="panel"><h3>Why the 67% activity had no observation</h3><p>The review saved successfully. The runner treated 67% as passing and discarded correction evidence, although one unsolved phase made the chart report failure. The fix retains evidence independently of the average and includes problem/evidence in the normal review payload. The old discarded packet is not reconstructed from scores.</p></article></div>
+<h3>Earlier milestone: certified digit-worth retest</h3>
+<div class="callout"><strong>Authenticated API milestone now passes.</strong> Local signing is configured; deployed Firestore rules and direct-client read/write denials are verified. A real Firebase identity captured a synthetic diagnosis; the production Next route retrieved its private focus and issued a revision-bound receipt. The full published objective was used, including curriculum examples. <a href="../../my-tutoring-app/qa/misconception/place-value-opportunities/pvc-http-qa-2b1fa50ecef746f6813e784ce95bd780/authenticated-report.json">Inspect the authenticated run</a>. Account, mapping and student records were removed and absence verified. This still does not establish a mounted microphone submission.</div>
+<p>Saved production generation: <strong>Grade 4 · place-value-chart · compare · medium</strong>. The compatible published objective is <code>NBT004-01-b</code>. Grade 3's three-digit objective remains ineligible. These are the actual compiled items; the two worth questions share digit 2.</p>
+<div class="table-wrap"><table><thead><tr><th>Order</th><th>Existing primitive task</th><th>Content</th><th>Retest role</th></tr></thead><tbody id="compiled-items"></tbody></table></div>
+<p class="source">This is a developer review, so expected responses are visible. The dictation number is not printed for the student. The app now has an inspectable learning-observations panel; this older table demonstrates the separate digit-worth certification policy.</p>
+
+<div class="panel">
+<span class="tag">Decision demonstration · synthetic observations · no learner writes</span>
+<h3>What changes when evidence changes?</h3>
+<label for="opportunity-case">Select the evidence delivered to the backend</label>
+<select id="opportunity-case">
+<option value="unsigned">Generation without authentication</option>
+<option value="correct">Certified pair + correct first responses</option>
+<option value="wrong">Bare-digit answer despite a high session score</option>
+<option value="assisted">Correct only after correction</option>
+<option value="saturated">No qualifying pair survives compilation</option>
+<option value="stale">A newer diagnosis replaces the tested one</option>
+</select>
+<div class="case-grid" style="margin-top:18px" aria-live="polite">
+<div><h4>Older score/tag rule</h4><h3>Resolved</h3><p>With a matching tag and a session score of at least 80, the old branch could resolve without checking these item-level distinctions.</p></div>
+<div><h4>Current place-value contract</h4><h3 id="opportunity-status"></h3><p id="opportunity-reason"></p></div>
+</div>
+<p id="opportunity-proof" class="source"></p>
+</div>
+<div class="grid two" style="margin-top:20px">
+<article class="panel"><h3>Evidence obtained</h3><ul id="store-checks"></ul><p><strong>Boundary:</strong> real generation and real Firestore transactions, with a synthetic diagnosis and response events. Disposable records were removed and absence verified. This was not an authenticated microphone lesson.</p><p><a id="generation-evidence">Generation report</a> · <a id="store-evidence">Real-store report</a> · <a href="../../my-tutoring-app/qa/misconception/place-value-opportunities-2026-09-12.md">Implementation and remaining gates</a></p></article>
+<article class="panel"><h3>Existing framework, bounded adapter</h3><p><strong>Reused:</strong> lesson composer and launcher, generator registry, chart, tutor runner, capture pipeline, canonical submission and progress fan-out.</p><p><strong>Pilot-specific:</strong> digit-worth selection, compiler certification, approved Grade 4 scope, and backend verification policy. The runner event option is shared, but only place-value-chart opts in.</p><p><strong>Not universal:</strong> other primitives retain the older resolution branch. A capture opt-in or a remediation marker below does not certify this new contract.</p></article>
+</div>
+
+<h3>Shared observations: progress toward the wider review</h3>
+<h4>One misconception, two representations</h4>
+<div class="callout"><strong>PASS: one saved digit-worth hypothesis targets both Place Value and Base-Ten Blocks.</strong> The existing chart contrasts a digit's value across positions; blocks contrast block count with total worth across sizes. Both use the reviewed Grade 4 objective at medium support. Place-name confusion alone does not activate the bridge. The source stays one active record; blocks receive no resolution receipt. <a id="two-primitive-report">Inspect the authenticated demonstration</a>.</div>
+<div class="table-wrap"><table><thead><tr><th>Primitive / draw</th><th>Generated contrast</th><th>Evidence</th></tr></thead><tbody id="two-primitive-draws"></tbody></table></div>
+<p class="source">Real LLM, authenticated storage and real generation; fictional error evidence. Two draws per primitive, ordinary baselines without targeting, disposable cleanup verified. A fixed-input generator regression proves causal number selection. This demonstrates cross-primitive delivery and content targeting, not learning transfer or teaching effectiveness.</p>
+<div class="callout"><strong>PASS: real LLM → authenticated strength/support storage → profile.</strong> Both observation kinds persist, retries preserve the first inference, the existing diagnosis stays active and unchanged, and direct client access is denied. The disposable learner was removed and absence verified. Evidence is fictional; this is API verification, not a microphone or teaching-effectiveness claim. <a id="general-observations-report">Inspect the authenticated report</a>.</div>
+<ul id="general-observation-examples"></ul>
+<p>Successful-response evidence now uses a shared runner contract, LLM distiller, post-submission capture and authenticated profile store. My Progress can display tentative strengths and support observations beside existing hypotheses, with the responses and partial assistance history behind each. Scores alone are insufficient. New observations retain client activity references; canonical attempt joins remain unverified.</p>
+<div class="table-wrap"><table><thead><tr><th>Capability</th><th>Shared implementation</th><th>Verified coverage / remaining work</th></tr></thead><tbody>
+<tr><td>Elicit and retain evidence</td><td>Actual successful and corrected responses, item/phase, source and recorded support reach normal student work.</td><td>Place Value and Base-Ten Blocks read mode now supply the same ledger. Mounted shared-runner tests pass. Missing transcripts are omitted; independence and a complete first-response history are not established.</td></tr>
+<tr><td>Distill and inspect</td><td>Strength/support distiller checks corroborating successes, citations and abstention. Saved observations show evidence and next-check guidance.</td><td>Both producers reuse the same capture/store/profile contract. Only the bounded digit-worth bridge consumes a Place Value hypothesis in another primitive.</td></tr>
+<tr><td>Persist across activities</td><td>One immutable response observation per client attempt and primitive; duplicate saves preserve the first inference. Profile shows the latest 50 plus existing diagnosis records.</td><td>These records do not overwrite diagnoses or update mastery. Canonical attempt identity, reconciliation and longitudinal inference remain open.</td></tr>
+<tr><td>Teach, fade and transfer</td><td>Existing place-name/value targeting remains live. New strengths/support appear in the inspectable context preview.</td><td>General context delivery, observed support benefit, deliberate fading and second-representation transfer are still unimplemented by this slice.</td></tr>
+</tbody></table></div>
+<p><strong>Across the board:</strong> this advances shared infrastructure, not verified coverage of all 69 entries. The library below remains a map of proposed teaching and transfer opportunities. Capture declarations and shared code are not evidence that every mode teaches or transfers correctly.</p>
+<h3>Next session: prove reuse and a teaching decision</h3>
+<p><strong>Priority:</strong> the second evidence producer and generation consumer are now verified. Demonstrate the learner using both representations, then design one deliberate support-fading or explanation step and check its effect. Preserve current-rubric grading, scope, support tiers and honest abstention. General evaluator context and strengths/support-driven generation remain open; do not turn this one-way bridge into a library-wide matching rule.</p>
+<p><strong>Still pending:</strong> general Gemini evaluation-context delivery, submission retry identity/canonical evidence references, and live teaching/transfer acceptance. The place-name adaptation does not inherit the older digit-worth resolution policy.</p>
+<p><a href="http://localhost:3000/lumina">Open local Lumina</a> > Developer Tools > <strong>Misconception Loop</strong>. The dedicated tester pins the authenticated Grade 4 / compare / medium chart and shows saved diagnosis, receipt presence and submission status. Use a designated test account for intentional mistakes: completed activities update learning records. This isolates the mounted loop; planner selection is a separate acceptance check. Saved probe receipts were deleted during cleanup and cannot be reused.</p>
+<div class="grid">
+<article class="panel priority"><b>Next · demonstrate the joined loop</b><h3>A normal lesson that responds to the error</h3><p>Make the bare-digit mistake in the existing chart. Launch the next lesson through the normal composer. Answer its actual contrast pair through the microphone. Show the evidence-linked stored result and preserved learning progress.</p><p><strong>Ready locally:</strong> signing, deployed rules verification and authenticated generation. <strong>Still owed:</strong> mounted microphone capture, canonical submission acceptance and submission retry handling. Synthetic answers are not sent to live shared item calibration.</p></article>
+<article class="panel priority"><b>Then · teach and fade deliberately</b><h3>Make the relationship explicit</h3><p>Use a curriculum-compatible place-value activity to expose why the same digit has different worth, then remove an answer-bearing support and test a new item. Preserve the current scripts until the teaching change is separately designed and reviewed.</p><p><strong>Exit:</strong> visible teaching behavior and a first unassisted response after support is removed.</p></article>
+<article class="panel priority"><b>Then · one representation bridge</b><h3>Place value ↔ base-ten blocks</h3><p>Review one shared objective and one error distinction before connecting the two existing primitives. The original regrouping / unit-conservation family is a later, broader target than this digit-worth pilot.</p><p><strong>Exit:</strong> success on a new task in the destination representation; delayed transfer is a separate check.</p></article>
+</div>
+<p><a href="#library">Explore the refreshed full library</a> · <a href="#roadmap">Return to the original wider build sequence</a> · <a href="original-review-2026-09-12.html">Open the preserved original review</a></p>
+</section>
+<script>
+(() => {
+  const pilot=__PILOT__;
+  const byId=id=>document.getElementById(id);
+  const cell=(row,text)=>{const td=document.createElement('td');td.textContent=text;row.appendChild(td);};
+  byId('general-observations-report').href='../../'+pilot.responseObservations.dir+'authenticated-report.json';
+  pilot.responseObservations.evidence.observations.forEach(observation=>{
+    const li=document.createElement('li');li.textContent=`Saved ${observation.kind} (tentative): ${observation.summary}`;
+    byId('general-observation-examples').appendChild(li);
+  });
+  byId('two-primitive-report').href='../../'+pilot.bridge.dir+'authenticated-report.json';
+  pilot.bridge.draws.forEach(draw=>{
+    const tr=document.createElement('tr');cell(tr,`${draw.primitive} / ${draw.draw}`);
+    cell(tr,draw.contrast.map(c=>`${c.count} at 10^${c.place} in ${c.number.toLocaleString('en-US')} → worth ${c.worth.toLocaleString('en-US')}`).join(' ↔ '));
+    cell(tr,`${draw.adaptation.status}; same saved source; no learner resolution claim`);
+    byId('two-primitive-draws').appendChild(tr);
+  });
+  pilot.demo.draws.forEach((draw,index)=>{
+    const data=draw.data, a=data.challenges[0], b=data.challenges[2];
+    const place=p=>['ones','tens','hundreds','thousands'][p]||String(p);
+    const describe=c=>`${Math.floor(c.targetNumber/10**c.highlightedDigitPlace)%10} in the ${place(c.highlightedDigitPlace)} place of ${c.targetNumber.toLocaleString('en-US')}`;
+    const tr=document.createElement('tr');cell(tr,`Adapted draw ${index+1}`);
+    cell(tr,describe(a)+' ↔ '+describe(b));
+    cell(tr,`${data.learningAdaptation.status}; ${data.learningAdaptation.comparisonCount} comparisons; saved observation; no resolution credit`);
+    byId('adaptation-draws').appendChild(tr);
+  });
+  byId('latest-harness-report').href='../../'+pilot.demo.dir+'authenticated-report.json';
+  pilot.generated.candidateItems.forEach((item,index)=>{
+    const tr=document.createElement('tr');
+    cell(tr,index+1);
+    cell(tr,({find_place:'Name the highlighted place',say_value:'Say the highlighted digit’s worth',build_number:'Write the dictated number'})[item.kind]);
+    cell(tr,item.target_number.toLocaleString('en-US')+(item.kind==='build_number'?' · spoken only':' → '+item.answer_text));
+    cell(tr,item.eligible?'Qualifying contrast':'Ordinary lesson item');
+    byId('compiled-items').appendChild(tr);
+  });
+  pilot.store.tests.forEach(test=>{const li=document.createElement('li');li.textContent=test;byId('store-checks').appendChild(li);});
+  byId('generation-evidence').href='../../'+pilot.runDir+'report.json';
+  byId('store-evidence').href='../../'+pilot.runDir+'real-store-report.json';
+  const scenarios={
+    unsigned:['Active','No authenticated receipt. Correct answers alone do not qualify.','Saved generation run: no receipt issued. Ordinary generation remains usable.'],
+    correct:['Resolved','“Twenty” and “two hundred” on first voiced responses, with matching timing, transcripts and a current receipt.','Real Firestore positive test used synthetic observations. Competing consumers produced exactly one successful transition.'],
+    wrong:['Active','A bare-digit response contradicts the expected worth. A high overall score cannot override it.','Wrong-response veto verified against real Firestore.'],
+    assisted:['Active','Repeating the correct answer after a correction does not count as independent retest evidence.','Deterministic evidence-policy tests; this does not itself implement support fading.'],
+    saturated:['Active','The compiler delivered no qualifying pair, so generation cannot certify one.','Real generated saturation examples are preserved in the QA reports.'],
+    stale:['Active','This activity tests an earlier hypothesis revision. It cannot clear a newer diagnosis.','Stale-revision rejection verified against real Firestore.']
+  };
+  const render=()=>{const s=scenarios[byId('opportunity-case').value];byId('opportunity-status').textContent=s[0];byId('opportunity-reason').textContent=s[1];byId('opportunity-proof').textContent=s[2];};
+  byId('opportunity-case').addEventListener('change',render);render();
+})();
+</script>

@@ -20,6 +20,20 @@ import {
   buildModeConstraintSection,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { planLearningAdaptation } from "../generation/planLearningAdaptation";
+import {
+  eligibleFractionCompareTeaching,
+  fractionCompareTeaching,
+  legalDenominators,
+  selectSameNumeratorContrast,
+} from "./fractionCirclesRemediation";
+
+/** The displayed fractions are authoritative; compare prose is rebuilt from them. */
+function compareInstruction(challenge: FractionCirclesChallenge): string {
+  const shown = `${challenge.numerator}/${challenge.denominator}`;
+  const other = `${challenge.compareFraction!.numerator}/${challenge.compareFraction!.denominator}`;
+  return `Compare ${shown} and ${other}. Which fraction is larger, or are they equal?`;
+}
 // ---------------------------------------------------------------------------
 // Fraction "dice roll" — code owns the randomness, Gemini owns the pedagogy.
 //
@@ -477,6 +491,17 @@ Return the complete fraction circles configuration.
 
   console.log(`[FractionCircles] modes: ${evalConstraint?.modes.map(m => m.evalMode).join('+') ?? 'mixed'}`);
 
+  // Saved observations reach only the shared applicability planner, never the
+  // content prompt. No observations or an ineligible task → no planner call.
+  // planLearningAdaptation never rejects, so it can run alongside the content draw.
+  const pinnedType = evalConstraint?.allowedTypes.length === 1 ? evalConstraint.allowedTypes[0] : undefined;
+  const observations = ctx.learningObservations?.length ? ctx.learningObservations
+    : ctx.remediationFocus ? [{ id: 'active-observation', summary: ctx.remediationFocus }] : [];
+  const adaptationTask = { grade: ctx.grade, topic, intent: config.intent, objectiveText: ctx.objective.text,
+    mode: pinnedType, tier: supportTier ?? undefined };
+  const plannedMove = observations.length && eligibleFractionCompareTeaching(adaptationTask)
+    ? planLearningAdaptation(fractionCompareTeaching, adaptationTask, observations) : Promise.resolve(null);
+
   let data: any = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     const result = await ai.models.generateContent({
@@ -640,10 +665,7 @@ Return the complete fraction circles configuration.
     const shown = `${challenge.numerator}/${challenge.denominator}`;
     if (challenge.type === 'identify') challenge.instruction = 'What fraction of the circle is shaded?';
     if (challenge.type === 'build') challenge.instruction = `Shade the circle to show ${shown}.`;
-    if (challenge.type === 'compare' && challenge.compareFraction) {
-      const other = `${challenge.compareFraction.numerator}/${challenge.compareFraction.denominator}`;
-      challenge.instruction = `Compare ${shown} and ${other}. Which fraction is larger, or are they equal?`;
-    }
+    if (challenge.type === 'compare' && challenge.compareFraction) challenge.instruction = compareInstruction(challenge);
     if (challenge.type === 'equivalent') challenge.instruction = `Build a fraction equivalent to ${shown} using ${challenge.equivalentDenominator} equal slices.`;
     challenge.narration = challenge.instruction;
     challenge.hint = challenge.type === 'identify'
@@ -792,9 +814,18 @@ Return the complete fraction circles configuration.
       // showFractionLabels is a compare-only lever; leave others undefined (renders unaffected).
       ch.showFractionLabels = ch.type === 'compare' ? sc.showFractionLabels : undefined;
     }
-    const pinnedType = evalConstraint?.allowedTypes.length === 1
-      ? evalConstraint.allowedTypes[0] : undefined;
     console.log(`[FractionCircles] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`);
+  }
+
+  // Validation, clamping and tier flags are settled; the selector only rewrites
+  // pair values, and the component's checker reads those values directly.
+  const remediationMove = await plannedMove;
+  if (remediationMove && data.gradeBand === '3-5') {
+    const selected = selectSameNumeratorContrast(data.challenges, remediationMove, legalDenominators(adaptationTask));
+    data.challenges = selected.challenges.map((c) => c.type === 'compare' && c.compareFraction
+      ? { ...c, instruction: compareInstruction(c), narration: compareInstruction(c) } : c);
+    data.learningAdaptation = { move: remediationMove, status: selected.status === 'no-focus' ? 'insufficient-capacity' : selected.status,
+      comparisonCount: selected.count };
   }
 
   // Final summary log

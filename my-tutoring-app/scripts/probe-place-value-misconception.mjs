@@ -93,10 +93,10 @@ try {
 }
 const python = process.env.PVC_PYTHON || 'C:/Users/xbox3/miniforge-pypy3/envs/py311env/python.exe';
 try {
-  const output = execFileSync(python, ['-m', 'pytest', 'tests/test_misconception_round_trip.py', 'tests/test_misconception_generation_context.py', 'tests/test_place_value_misconception.py', '-q', '--disable-warnings', '-p', 'no:cacheprovider'], { cwd: '../backend', encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  const output = execFileSync(python, ['-m', 'pytest', 'tests/test_misconception_round_trip.py', 'tests/test_misconception_generation_context.py', 'tests/test_place_value_misconception.py', 'tests/test_misconception_opportunities.py', '-q', '--disable-warnings', '-p', 'no:cacheprovider'], { cwd: '../backend', encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   await writeFile(`${dir}/R-pytest.txt`, output);
   report.gates.R = 'PASS';
-  report.stateTransitions = 'In-memory: seeded diagnosis → matching generation identity → weak / wrong primitive / wrong skill stay active → matched score 90 resolves after fan-out → active read empty. This is not browser capture or durable mastery.';
+  report.stateTransitions = 'Modeled persistence: missing receipts, stale revisions and invalid item observations stay active even at score 100. A certified compiled plan with qualifying first responses resolves the current revision after fan-out. Production issuance remains gated on reviewed scope and service configuration; this is not browser capture or real-store resolution.';
 } catch (error) { report.gates.R = 'FAIL'; await writeFile(`${dir}/R-pytest.txt`, String(error.stdout || '') + String(error.stderr || '')); }
 if (process.argv.includes('--store')) {
   try {
@@ -128,6 +128,6 @@ report.gates.S1 = 'BLOCKED';
 report.blockers.push('Browser capture, generation-context lesson, matched browser submission and real-store resolution remain unverified. In-memory R is separate evidence.');
 report.status = Object.values(report.gates).includes('FAIL') ? 'FAIL' : 'BLOCKED';
 await save('run.json', report);
-await writeFile(`${dir}/report.md`, `# Place-value pilot ${runId}\n\nSynthetic real-engine probe. Overall: ${report.status}.\n\n${Object.entries(report.gates).map(([g,v]) => `- ${g}: ${v}`).join('\n')}\n\n${report.blockers.join('\n\n')}\n\nD diagnoses, payloads, compiler items and SHA-256 hashes are in run.json and adjacent artifacts. A matched score at least 80 resolves under the current product rule; it is not proof of durable mastery.\n`);
+await writeFile(`${dir}/report.md`, `# Place-value pilot ${runId}\n\nSynthetic real-engine probe. Overall: ${report.status}.\n\n${Object.entries(report.gates).map(([g,v]) => `- ${g}: ${v}`).join('\n')}\n\n${report.blockers.join('\n\n')}\n\nD diagnoses, payloads, compiler items and SHA-256 hashes are in run.json and adjacent artifacts. Place-value resolution now requires certified opportunities and qualifying item evidence; a score/tag alone never resolves. See ADR-misconception-opportunities-2026-09-12.md.\n`);
 console.log(`${dir}/run.json`);
 process.exitCode = report.status === 'FAIL' ? 1 : 0;

@@ -1,3 +1,12 @@
+/**
+ * Placements are already snapped to the number type's grid, so the nearest grid
+ * point to any reachable answer is the answer itself. A neighbouring grid point
+ * (one tick short or past) is a different answer, not grading tolerance.
+ */
+export function isSnappedPlacementExact(placed: number, expected: number, snapPrecision: number): boolean {
+  return Math.abs(placed - expected) < snapPrecision / 2;
+}
+
 export function isFindBetweenAnswerCorrect(
   point: number,
   bounds: number[],

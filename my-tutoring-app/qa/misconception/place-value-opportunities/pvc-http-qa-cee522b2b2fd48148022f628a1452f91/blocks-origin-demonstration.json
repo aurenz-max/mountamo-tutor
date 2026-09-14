@@ -1,0 +1,40 @@
+[
+  {
+    "primitive": "base-ten-blocks",
+    "draw": 1,
+    "adaptation": {
+      "move": "contrast_block_count_and_worth",
+      "status": "targeted",
+      "comparisonCount": 2,
+      "source": "saved-observation"
+    },
+    "numbers": [
+      2607,
+      8204,
+      5097,
+      5031,
+      2907
+    ]
+  },
+  {
+    "primitive": "base-ten-blocks",
+    "draw": 2,
+    "adaptation": {
+      "move": "contrast_block_count_and_worth",
+      "status": "targeted",
+      "comparisonCount": 2,
+      "source": "saved-observation"
+    },
+    "numbers": [
+      8707,
+      5803,
+      5309,
+      4703
+    ]
+  },
+  {
+    "primitive": "place-value-chart",
+    "draw": 1,
+    "adaptation": null
+  }
+]

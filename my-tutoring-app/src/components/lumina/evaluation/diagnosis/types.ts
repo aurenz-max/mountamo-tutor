@@ -26,6 +26,8 @@
  *  - Tier C (absent):     neither → the engine abstains. No diagnosis, no write.
  */
 export interface DiagnosisEvidence {
+  /** Exact correction observations supplied by the shared runner, not LLM reconstruction. */
+  phases?: Array<{ itemId: string; phase: string; challenge: string; expected: string; observed: string; support: string }>;
   /** What the challenge asked, in one or two sentences. */
   challengeSummary: string;
   /** The pedagogically correct outcome, described. Never shown to the student. */
@@ -43,6 +45,14 @@ export interface DiagnosisEvidence {
    * consistent mental model apart from a one-off slip.
    */
   priorAttempts?: Array<{ challenge: string; observed: string }>;
+  /**
+   * Opt-in for activities whose submitted `success`/`score` count later tries
+   * (retry until correct, or a judged loop that moves on after corrections).
+   * Percent (0-100) of items whose FIRST response was correct. The shared
+   * failure gate applies its < 60 threshold to this measured value as well; it
+   * never replaces or changes the submitted score.
+   */
+  firstResponseScore?: number;
 }
 
 /** Which evidence tier a packet qualifies for (or Tier C = not diagnosable). */
@@ -69,12 +79,29 @@ export function classifyEvidenceTier(evidence: DiagnosisEvidence | null | undefi
   return 'none';
 }
 
+/**
+ * The shared failure gate (PRD S2). The client capture and the server distiller
+ * both call this so they cannot drift. A first-response score counts only when
+ * the activity reports one.
+ */
+export function isDiagnosableFailure(
+  outcome: { success?: boolean; score?: number },
+  evidence?: DiagnosisEvidence | null,
+): boolean {
+  const first = evidence?.firstResponseScore;
+  return outcome.success === false
+    || (typeof outcome.score === 'number' && outcome.score < 60)
+    || (typeof first === 'number' && Number.isFinite(first) && first < 60);
+}
+
 // =============================================================================
 // S2 — Distiller output contract
 // =============================================================================
 
 /** A usable, generative diagnosis: one sentence in student-model form. */
 export interface MisconceptionDiagnosis {
+  teachingImplication?: string;
+  checkNext?: string;
   abstain: false;
   /**
    * One sentence, student-model form ("The student reads X as Y, so she …").

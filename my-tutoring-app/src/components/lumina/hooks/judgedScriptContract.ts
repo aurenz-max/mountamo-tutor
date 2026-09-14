@@ -503,6 +503,9 @@ export interface JudgedScriptItem {
  *  runner attaches the judge's own finished correction line (`verdict-text`)
  *  as `judgeFeedback` when it arrives. */
 export interface JudgedDiagnosisObservation {
+  itemId?: string;
+  phase?: string;
+  support?: string;
   challenge: string;
   expected: string;
   observed: string;
@@ -586,6 +589,12 @@ export interface JudgedScriptPack<Item extends JudgedScriptItem> {
     item: Item,
     context: { lastHeard: string | null },
   ) => Omit<JudgedDiagnosisObservation, 'judgeFeedback'> | null;
+  /** Opt-in factual response capture on both verdicts, before reveal/reset.
+   * Voice text belongs to the judged attempt, never the previous item. */
+  responseObservation?: (
+    item: Item,
+    context: { lastHeard: string | null },
+  ) => { challenge: string; expected: string; observed: string } | null;
 }
 
 /**

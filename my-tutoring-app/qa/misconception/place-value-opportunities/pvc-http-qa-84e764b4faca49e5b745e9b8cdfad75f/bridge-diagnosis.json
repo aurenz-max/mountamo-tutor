@@ -1,0 +1,8 @@
+{
+  "abstain": false,
+  "misconceptionText": "The student interprets the value of a digit as its face value, so they report the digit itself regardless of its place in the number.",
+  "teachingImplication": "Contrast face value with place-based magnitude using visual representations such as base-ten blocks or expanded form.",
+  "checkNext": "Present a multi-digit number with a highlighted digit in the thousands place and ask for that digit's value.",
+  "confidence": "high",
+  "evidenceTier": "structured"
+}

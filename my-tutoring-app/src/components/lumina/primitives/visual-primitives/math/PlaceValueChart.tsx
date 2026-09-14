@@ -48,6 +48,7 @@
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { placeValueVoiceObservation } from './placeValueEvidence';
+import { placeValueContentIdentity } from '../../../service/math/placeValueOpportunityContract';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -119,6 +120,8 @@ export interface PlaceValueChartData {
   showMultipliers?: boolean;
   supportTier?: 'easy' | 'medium' | 'hard';
   gradeLevel?: string;
+  misconceptionOpportunity?: { id: string; lessonId: string; grade: string; curriculumVersion: string };
+  learningAdaptation?: { move: 'contrast_digit_worth' | 'contrast_place_name_and_value'; status: 'targeted' | 'already-targeted' | 'insufficient-capacity'; comparisonCount: number; source?: 'saved-observation' };
 
   // Evaluation integration (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -238,6 +241,18 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
       }
       return placeValueVoiceObservation(item, lastHeard);
     },
+    responseObservation: (item, { lastHeard }) => {
+      if (item.answerKind === 'gesture') return {
+        challenge: `write ${item.targetNumber} from dictation`,
+        expected: String(item.targetNumber),
+        observed: item.chartPlaces.map(p => writtenRef.current[p] ?? '·').join(''),
+      };
+      if (!lastHeard) return null;
+      const task = placeValueVoiceObservation(item, lastHeard);
+      // The diagnosis helper annotates apparent contradictions assuming a
+      // correction. General response capture must preserve the actual text.
+      return task ? { ...task, observed: lastHeard } : null;
+    },
   }), [items]);
 
   // ── Per-item reset — every item owns its starting state ───────────────────
@@ -247,7 +262,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
   }, []);
 
   // ── Metrics ───────────────────────────────────────────────────────────────
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const handleFinished = useCallback(async (summary: JudgedRunSummary) => {
     const metrics: PlaceValueChartMetrics = {
       type: 'place-value-chart',
       challengeType,
@@ -260,17 +275,37 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
       averageAttemptsPerChallenge:
         Math.round((summary.attemptsCount / Math.max(1, items.length)) * 10) / 10,
     };
+    let opportunityEvidence;
+    if (data.misconceptionOpportunity && summary.opportunityEvents) {
+      try {
+        const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(placeValueContentIdentity(data)));
+        opportunityEvidence = {
+          opportunity_set_id: data.misconceptionOpportunity.id,
+          lesson_id: data.misconceptionOpportunity.lessonId,
+          grade: data.misconceptionOpportunity.grade,
+          curriculum_version: data.misconceptionOpportunity.curriculumVersion,
+          content_hash: Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join(''),
+          completed: summary.outcomes.length === items.length,
+          events: summary.opportunityEvents,
+        };
+      } catch { /* normal evaluation still submits without remediation credit */ }
+    }
     evaluation.submitResult(
       summary.solvedCount === items.length,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes },
+      { challengeResults: summary.outcomes,
+        problem: { challengeType, supportTier: data.supportTier, challenges: data.challenges },
+        diagnosisEvidence: summary.diagnosisEvidence,
+        learningResponses: summary.learningResponses,
+        ...(opportunityEvidence ? { misconception_opportunity: opportunityEvidence } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items, challengeType, evaluation]);
+  }, [items, challengeType, evaluation, data]);
 
   const runner = useJudgedScriptRunner<PlaceValueItem>({
+    recordOpportunityEvents: !!data.misconceptionOpportunity,
     pack,
     instanceId: resolvedInstanceId,
     gradeLevel: gradeLevel || 'Grade 3',

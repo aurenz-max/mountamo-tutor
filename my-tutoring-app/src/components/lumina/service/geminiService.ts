@@ -14,6 +14,7 @@ import { ai } from "./geminiClient";
 
 // Content Registry (Phase 1 Refactor)
 import { getGenerator } from "./registry/contentRegistry";
+import { getComponentById } from "./manifest/catalog";
 import { assembleExhibitFromContent, type GeneratedContent } from "./exhibitAssembly";
 // Import all generators for side-effect registration
 import "./registry/generators";
@@ -166,6 +167,14 @@ export const generateComponentContent = async (
   if (generator) {
     if (process.env.NODE_ENV === 'development') {
       console.log(`  📦 [Registry] Using registered generator for '${item.componentId}'`);
+    }
+    // Catalog-declared observation consumers. The catalog says which primitives
+    // take server-delivered learning observations and when; this service names none.
+    const consumer = getComponentById(item.componentId)?.learningObservations;
+    if (consumer) {
+      const { generateWithLearningObservations } = await import('./generation/learningObservationServer');
+      return generateWithLearningObservations({ ...item, topic }, consumer,
+        async config => await generator({ ...item, config }, topic, gradeLevelContext, normalizedGrade) as any);
     }
     return await generator(item, topic, gradeLevelContext, normalizedGrade);
   }

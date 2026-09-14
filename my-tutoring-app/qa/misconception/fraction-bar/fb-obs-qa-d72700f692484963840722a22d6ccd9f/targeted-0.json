@@ -1,0 +1,74 @@
+{
+  "type": "fraction-bar",
+  "instanceId": "fb-obs-qa-d72700f692484963840722a22d6ccd9f-0",
+  "data": {
+    "learningAdaptation": {
+      "move": "contrast_shared_digit_roles",
+      "comparisonCount": 2,
+      "status": "already-targeted",
+      "source": "saved-observation"
+    },
+    "title": "Building Fractions on a Bar",
+    "description": "Learn how to build fractions by identifying the parts and shading each piece of the bar. Count your parts carefully to see how the numerator and denominator work together!",
+    "challenges": [
+      {
+        "id": "fraction-bar-1",
+        "numerator": 2,
+        "denominator": 3,
+        "numeratorChoices": [
+          3,
+          1,
+          4,
+          2
+        ],
+        "denominatorChoices": [
+          2,
+          4,
+          5,
+          3
+        ]
+      },
+      {
+        "id": "fraction-bar-2",
+        "numerator": 3,
+        "denominator": 4,
+        "numeratorChoices": [
+          4,
+          3,
+          5,
+          2
+        ],
+        "denominatorChoices": [
+          4,
+          6,
+          3,
+          5
+        ]
+      },
+      {
+        "id": "fraction-bar-3",
+        "numerator": 3,
+        "denominator": 5,
+        "numeratorChoices": [
+          5,
+          3,
+          4,
+          2
+        ],
+        "denominatorChoices": [
+          3,
+          5,
+          6,
+          4
+        ]
+      }
+    ],
+    "challengeType": "build",
+    "showDecimal": false,
+    "showPartitionNumerals": true,
+    "showShadedReadout": true,
+    "showPromptGloss": true,
+    "supportTier": "medium",
+    "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+  }
+}

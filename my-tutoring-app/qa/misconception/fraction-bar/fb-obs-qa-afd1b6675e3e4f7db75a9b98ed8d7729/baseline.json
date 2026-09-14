@@ -1,0 +1,68 @@
+{
+  "type": "fraction-bar",
+  "instanceId": "fb-obs-qa-afd1b6675e3e4f7db75a9b98ed8d7729",
+  "data": {
+    "title": "Building Fractions on a Bar",
+    "description": "Explore how fractions are made by identifying the parts of a whole and shading the bar to match each fraction.",
+    "challenges": [
+      {
+        "id": "fraction-bar-1",
+        "numerator": 2,
+        "denominator": 4,
+        "numeratorChoices": [
+          3,
+          2,
+          4,
+          1
+        ],
+        "denominatorChoices": [
+          2,
+          4,
+          5,
+          3
+        ]
+      },
+      {
+        "id": "fraction-bar-2",
+        "numerator": 3,
+        "denominator": 4,
+        "numeratorChoices": [
+          3,
+          5,
+          4,
+          2
+        ],
+        "denominatorChoices": [
+          6,
+          5,
+          3,
+          4
+        ]
+      },
+      {
+        "id": "fraction-bar-3",
+        "numerator": 4,
+        "denominator": 5,
+        "numeratorChoices": [
+          3,
+          4,
+          6,
+          5
+        ],
+        "denominatorChoices": [
+          4,
+          7,
+          6,
+          5
+        ]
+      }
+    ],
+    "challengeType": "build",
+    "showDecimal": false,
+    "showPartitionNumerals": true,
+    "showShadedReadout": true,
+    "showPromptGloss": true,
+    "supportTier": "medium",
+    "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "abstain": false,
+  "misconceptionText": "The student identifies the bottom number of a fraction as the numerator, so they select the bottom number and shade that quantity of parts.",
+  "teachingImplication": "Clarify positional vocabulary by explicitly linking the top number to the count of shaded parts before asking the student to build fractions.",
+  "checkNext": "Present a new fraction identification item asking the student to select the numerator from a set of options.",
+  "confidence": "high",
+  "evidenceTier": "structured"
+}

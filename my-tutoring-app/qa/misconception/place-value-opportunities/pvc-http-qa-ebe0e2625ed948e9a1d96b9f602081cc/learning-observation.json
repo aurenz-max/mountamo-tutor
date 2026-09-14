@@ -1,0 +1,30 @@
+{
+  "id": "place-value-chart::NBT004-01",
+  "kind": "pattern",
+  "status": "suspected",
+  "summary": "The student interprets a prompt asking to name the place of a digit as asking for the numeric value of that digit in the number, so they state the place value instead of the positional column name.",
+  "subject": "MATHEMATICS",
+  "grade": "4",
+  "subskillId": "NBT004-01-b",
+  "updatedAt": "2026-09-12T23:56:04.562094+00:00",
+  "teachingImplication": "Explicitly distinguish between positional category labels and the numeric quantities represented by digits in those positions.",
+  "checkNext": "Present an unassisted item asking for the place of a designated digit in a four-digit number with options or prompts requiring column terminology.",
+  "evidence": [
+    {
+      "attemptId": "pvc-http-qa-ebe0e2625ed948e9a1d96b9f602081cc",
+      "task": "Name the place of the second 2 in 2258",
+      "response": "two hundred",
+      "support": "Correction observation; other assistance unknown",
+      "phase": "name-place",
+      "itemId": "sample-1"
+    },
+    {
+      "attemptId": "pvc-http-qa-ebe0e2625ed948e9a1d96b9f602081cc",
+      "task": "Name the place of 9 in 3397",
+      "response": "ninety",
+      "support": "Correction observation; other assistance unknown",
+      "phase": "name-place",
+      "itemId": "sample-2"
+    }
+  ]
+}

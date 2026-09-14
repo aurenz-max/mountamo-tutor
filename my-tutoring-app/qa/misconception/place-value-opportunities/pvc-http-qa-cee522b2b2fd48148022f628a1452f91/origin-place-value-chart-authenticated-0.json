@@ -1,0 +1,108 @@
+{
+  "type": "place-value-chart",
+  "instanceId": "pvc-http-qa-cee522b2b2fd48148022f628a1452f91-origin-place-value-chart0",
+  "data": {
+    "title": "Four-Digit Place Value Mastery",
+    "description": "Explore four-digit numbers with your tutor across three active phases! You will name digit places, speak their numeric values out loud, and write numbers directly into the chart.",
+    "challenges": [
+      {
+        "id": "pvc-1",
+        "targetNumber": 3650,
+        "highlightedDigitPlace": 2,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Tens",
+          "Thousands",
+          "Ones",
+          "Hundreds"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 60,
+            "wordForm": "Sixty"
+          },
+          {
+            "value": 6000,
+            "wordForm": "Six Thousand"
+          },
+          {
+            "value": 600,
+            "wordForm": "Six Hundred"
+          },
+          {
+            "value": 6,
+            "wordForm": "Six"
+          }
+        ]
+      },
+      {
+        "id": "pvc-2",
+        "targetNumber": 7067,
+        "highlightedDigitPlace": 1,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Ones",
+          "Hundreds",
+          "Tens",
+          "Thousands"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 6,
+            "wordForm": "Six"
+          },
+          {
+            "value": 600,
+            "wordForm": "Six Hundred"
+          },
+          {
+            "value": 60,
+            "wordForm": "Sixty"
+          },
+          {
+            "value": 0.6000000000000001,
+            "wordForm": "Six Tenths"
+          }
+        ]
+      },
+      {
+        "id": "pvc-3",
+        "targetNumber": 7922,
+        "highlightedDigitPlace": 2,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Tens",
+          "Thousands",
+          "Hundreds",
+          "Ones"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 90,
+            "wordForm": "Ninety"
+          },
+          {
+            "value": 900,
+            "wordForm": "Nine Hundred"
+          },
+          {
+            "value": 9000,
+            "wordForm": "Nine Thousand"
+          },
+          {
+            "value": 9,
+            "wordForm": "Nine"
+          }
+        ]
+      }
+    ],
+    "challengeType": "compare",
+    "showExpandedForm": true,
+    "showMultipliers": false,
+    "supportTier": "medium",
+    "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+  }
+}

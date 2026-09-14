@@ -1,0 +1,8 @@
+{
+  "synthetic": true,
+  "status": "FAIL",
+  "tests": [
+    "Firebase user authenticated; disposable student reserved"
+  ],
+  "cleanup": "verified absent"
+}

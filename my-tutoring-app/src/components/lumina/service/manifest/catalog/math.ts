@@ -1,6 +1,12 @@
 import { FRACTION_TOUCH_EVAL_MODES } from '../../../primitives/visual-primitives/math/fractionTouchModes';
 import { BASE_TEN_DI_EVAL_MODES } from '../../../primitives/visual-primitives/math/baseTenModes';
 import { NUMBER_SEQUENCER_EVAL_MODES } from '../../../primitives/visual-primitives/math/numberSequencerModes';
+import { barModelDeliveryEligible } from '../../math/barModelRemediation';
+import { baseTenDeliveryEligible } from '../../math/baseTenRemediation';
+import { fractionBarDeliveryEligible } from '../../math/fractionBarRemediation';
+import { fractionCompareDeliveryEligible } from '../../math/fractionCirclesRemediation';
+import { numberLineDeliveryEligible } from '../../math/numberLineRemediation';
+import { placeValueDeliveryEligible, placeValueRetest } from '../../math/placeValueOpportunityContract';
 /**
  * Math Catalog - Component definitions for mathematics primitives
  *
@@ -14,6 +20,10 @@ import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
 export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'bar-model',
+    // Only picture_graph emits selection evidence; other modes supply none, so capture skips them.
+    misconceptionScope: 'skill',
+    observationDelivery: 'server',
+    learningObservations: { eligible: barModelDeliveryEligible },
     description: 'K-5 categorical-data graph. K one-to-one data (K.MD.B.3): record a pile of objects onto a sticker chart one sticker per object, read a graph where one picture stands for one thing, match a group of objects to the row that shows that many, say which row has the most or the fewest, explain what a graph shows aloud, and compare two related surveys. K-1 also has a two-bar which-is-taller comparison. Grades 2-5: scaled bar graphs with step-2/5/10 axes (3.MD.B.3) and picture graphs where 1 icon = N items (2.MD.D.10). Single home for all bar/picture-graph instruction, from tally-and-sticker recording to scaled construction; not for histograms or numeric distributions.',
     constraints: 'Multi-instance: a session walks the student through 3-6 challenges in a pinned mode or an intent-resolved blend, each with its own graph. The manifest MUST NOT supply specific bar values, scales, or datasets — the generator builds every challenge from the eval mode + topic. K one-to-one modes (build_one_to_one, read_one_to_one, match_to_bar, most_least) show one picture per object with no axis to read, print no numbers on the graph, and keep every count within 1-10; each row carries its own emoji so a pre-reader can tell the rows apart. build_graph requires expectedDataset and expectedScaleStep — student picks the scale themselves.',
     affordances: { representation: 'pictorial', answers: ['tap', 'spoken'], role: 'apply', minutes: 5 },
@@ -171,6 +181,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-line',
+    misconceptionScope: 'skill',
+    observationDelivery: 'server',
+    learningObservations: { eligible: numberLineDeliveryEligible },
     description: 'Interactive number line with drag-to-plot, animated jump arcs, ordering, and auto-zoom. Supports integers, fractions, decimals, and mixed numbers. K uses small fully labeled ranges; explicit Grade-1 objectives can use readable local windows within 0-120; grades 3-5 add negatives, fractions, and operations. Perfect for teaching number placement, addition/subtraction as movement, fraction comparison, and ordering. ESSENTIAL for K-5 math.',
     constraints: 'Requires numeric range. Jump mode requires operations array. Challenges drive interactivity.',
     affordances: { representation: 'symbolic', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 5 },
@@ -256,6 +269,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'base-ten-blocks',
+    // Only read_blocks emits correction evidence; the other modes supply none,
+    // so capture skips them without a model call.
+    misconceptionScope: 'skill',
+    observationDelivery: 'server',
+    learningObservations: { eligible: baseTenDeliveryEligible },
     description: 'Interactive base-ten manipulative with place value columns, supply tray, and regrouping. TWO MODES ARE LIVE TUTOR-JUDGED AND SPOKEN. read_blocks: the child reads one size of block at a time OUT LOUD — how many are there, and what are they worth altogether ("forty") — and never says the composed numeral; the tutor puts the whole number together. regroup: the child PREDICTS the result of a trade out loud while the mat is still untraded, then makes the trade with their hands. build_number and the operate modes remain hands-and-keypad: students drag blocks to build numbers and perform addition/subtraction with regrouping, with decimal mode (tenths/hundredths) and thousands. ESSENTIAL for K-5 place value.',
     constraints: 'Requires a number to work with. Challenges array drives interactivity. Grade band determines complexity. read_blocks and regroup require a microphone and a targetNumber of at least 10 with a non-zero digit above the ones place — code picks which place is read or traded, and drops any number that cannot carry one. Those two modes must be generated as HOMOGENEOUS sessions: a payload mixing them with build_number or the operate modes falls back to the click surface for all of them.',
     audioInputByMode: { read_blocks: JUDGED_AUDIO_INPUT, regroup: JUDGED_AUDIO_INPUT },
@@ -341,6 +359,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'fraction-circles',
+    misconceptionScope: 'skill',
+    observationDelivery: 'server',
+    learningObservations: { eligible: fractionCompareDeliveryEligible },
     description: 'DI touch_fraction: hear a fraction and touch its matching shaded circle (halves, thirds, fourths). Multi-phase fraction learning with circle diagrams. Challenges include identifying fractions from shaded circles, building target fractions by clicking slices, comparing two fractions visually, and discovering equivalent fractions. ESSENTIAL for elementary fraction concepts.',
     constraints: 'Generates 4-6 challenges mixing identify, build, compare, and equivalent types. Denominators 2-12.',
     affordances: { representation: ['concrete', 'pictorial'], answers: ['type', 'tap', 'build'], role: 'apply', minutes: 5 },
@@ -418,6 +439,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'fraction-bar',
+    misconceptionScope: 'skill',
+    observationDelivery: 'server',
+    learningObservations: { eligible: fractionBarDeliveryEligible },
     description: 'Multi-challenge interactive fraction bar. Each session walks the student through 3-6 distinct fractions in the same eval mode. Every fraction runs through three within-challenge phases: (1) identify the numerator via multiple choice, (2) identify the denominator via multiple choice, (3) build the fraction by shading parts on a bar. Progressive scaffolding from vocabulary to hands-on construction. ESSENTIAL for elementary fraction introduction.',
     constraints: 'Session-level configuration. The generator picks fractions locally per eval mode, so do NOT supply specific numerators, denominators, or MC choices from the manifest — they are generated per challenge. Supports challengeTypes: identify (2-3, unit fractions), build (3-4, non-unit proper fractions), compare (4-5, larger denominators), add_subtract (5-6, operation context).',
     affordances: { representation: 'pictorial', answers: ['tap', 'build'], role: 'apply', minutes: 5 },
@@ -485,6 +509,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'place-value-chart',
     misconceptionScope: 'skill',
+    observationDelivery: 'server',
+    learningObservations: { eligible: placeValueDeliveryEligible, retest: placeValueRetest },
     description: 'Live tutor-judged place value (DI modality) over 2- to 5-digit whole numbers. The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. Each session alternates two kinds of number: for a PRINTED number with one glowing digit the child SAYS THE NAME OF ITS PLACE (ones through ten thousands) and then SAYS WHAT IT IS WORTH ("forty", "three hundred" — the spoken place-value vocabulary this primitive has always been about); for a number that is NEVER printed the tutor SAYS it and the child WRITES it into the labeled chart, one digit per column — dictation, where hearing "four hundred six" and writing 4-0-6 rather than 46 is the whole skill. ESSENTIAL for elementary place value instruction, grades 1-5.',
     constraints: 'Requires a microphone: two of the three answer kinds are spoken and judged by the Live tutor, and there is no Check button, no Next button, and no multiple-choice row anywhere. Session-level configuration: the generator selects target numbers locally from the number pool service per the selected eval mode, so do NOT supply specific numbers, place ranges, or answer choices from the manifest. Whole numbers only, 11 to 99,999 — every spoken value word stays inside the place-value vocabulary (digit and decade words plus hundred/thousand), and a highlighted digit is never zero because "zero" is not an accepted spoken answer. A number that was printed for analysis is never dictated, and a dictated number is never printed — each would answer the other. Supports challengeTypes: identify (1-2), build (2-3), compare (3-4), expanded_form (5+).',
     affordances: { representation: 'symbolic', answers: ['spoken', 'type'], role: 'apply', minutes: 5 },

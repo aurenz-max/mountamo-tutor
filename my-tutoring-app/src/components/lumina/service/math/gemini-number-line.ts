@@ -12,6 +12,13 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { createSubRangePool } from './numberPoolService';
+import { planLearningAdaptation } from '../generation/planLearningAdaptation';
+import {
+  eligibleNumberLineTeaching,
+  numberLineTeaching,
+  selectStartContrast,
+  type NumberLineRemediationMove,
+} from './numberLineRemediation';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -823,6 +830,8 @@ interface NumberLineSubConfig {
   exactMissingNumber?: boolean;
   difficulty?: string;
   canonicalGradeBand?: 'K-2' | '3-5';
+  /** Validated planner move; show_jump single-step challenges execute it. */
+  remediationMove?: NumberLineRemediationMove | null;
 }
 
 function resolvedPoolNumbers(
@@ -877,6 +886,31 @@ function selectShowJumpTuples(
     if (tuples.length >= count) break;
   }
   return tuples;
+}
+
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
+  'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'];
+
+/**
+ * True when jump text names a position the hops pass through or land on (NL-3).
+ * A counted sequence ("15, then 14" for 16 - 2) gets past the prompt's
+ * no-landing rule, so the check is on the text. Only the first start and the
+ * hop sizes may be named; "one by one" / "one at a time" are not positions.
+ */
+export function jumpTextNamesPosition(text: string, ops: readonly NumberLineOperation[]): boolean {
+  if (!ops.length) return false;
+  const allowed = new Set([ops[0].startValue, ...ops.map(op => op.changeValue)]);
+  const positions = new Set<number>();
+  for (const op of ops) {
+    const step = op.type === 'add' ? 1 : -1;
+    for (let v = op.startValue + step, n = 0; n < op.changeValue; v += step, n++) positions.add(v);
+  }
+  const cleaned = text.toLowerCase().replace(/\bone\s+(?:by\s+one|(?:\w+\s+)?at\s+a\s+time)\b/g, ' ');
+  const named = [
+    ...(cleaned.match(/\d+/g) ?? []).map(Number),
+    ...NUMBER_WORDS.flatMap((word, value) => (new RegExp(`\\b${word}\\b`).test(cleaned) ? [value] : [])),
+  ];
+  return named.some(n => positions.has(n) && !allowed.has(n));
 }
 
 function selectOrderValueSets(
@@ -944,6 +978,7 @@ type SubResult = {
   challenges: NumberLineChallenge[];
   highlights: { label: string; value: number }[];
   operations: NumberLineOperation[];
+  learningAdaptation?: NonNullable<NumberLineData['learningAdaptation']>;
 };
 
 function emptySubResult(interactionMode: SubResult['interactionMode']): SubResult {
@@ -1101,8 +1136,8 @@ async function generateShowJumpChallenges(
     ? buildTierPromptSection('show_jump', tier, 'scaffolding + jump-step depth')
     : '';
 
-  const tuples = selectShowJumpTuples(range, gradeBand, resolveCount('show_jump'));
-  if (tuples.length === 0) return emptySubResult('jump');
+  const baselineTuples = selectShowJumpTuples(range, gradeBand, resolveCount('show_jump'));
+  if (baselineTuples.length === 0) return emptySubResult('jump');
 
   // STRUCTURAL lever: at the hard tier each challenge is TWO chained jumps — the
   // student lands, then jumps again from there. We build the second op from the
@@ -1110,6 +1145,13 @@ async function generateShowJumpChallenges(
   // the single-op clamp in selectShowJumpTuples). The magnitude stays in scope.
   const wantSteps = scaffold?.jumpSteps ?? 1;
   const jumpChoices = gradeBand === 'K-2' ? [1, 2, 3, 4, 5] : [2, 3, 5, 7, 10];
+
+  // Learning adaptation runs on the numeric tuples BEFORE any text is written,
+  // so each instruction is authored for the start it actually shows.
+  const adaptation = config?.remediationMove && wantSteps === 1
+    ? selectStartContrast(baselineTuples, config.remediationMove, range, jumpChoices)
+    : null;
+  const tuples = adaptation ? [...adaptation.tuples] : baselineTuples;
 
   /** Pick a second op from `from` that lands in range and is non-trivial. */
   function secondOp(from: number): { opType: 'add' | 'subtract'; change: number; landing: number } | null {
@@ -1179,11 +1221,13 @@ Return ONLY:
     const challengeOps = ops[i];
     const last = challengeOps[challengeOps.length - 1];
     const finalLanding = last.type === 'add' ? last.startValue + last.changeValue : last.startValue - last.changeValue;
-    const instruction = text?.instruction
+    // Text that names a position the hops reach falls back to the code template (NL-3).
+    const instruction = (text?.instruction && !jumpTextNamesPosition(text.instruction, challengeOps) ? text.instruction : null)
       ?? (challengeOps.length === 2
         ? `Start at ${t.startValue}. Make the first jump, then jump again. Where do you land?`
         : `Start at ${t.startValue} and jump ${t.opType === 'add' ? 'forward' : 'back'} ${t.change}. Where do you land?`);
-    const hint = text?.hint ?? `Count the hops one jump at a time, starting from ${t.startValue}.`;
+    const hint = (text?.hint && !jumpTextNamesPosition(text.hint, challengeOps) ? text.hint : null)
+      ?? `Count the hops one jump at a time, starting from ${t.startValue}.`;
     return {
       id: `show_jump-${i}`,
       type: 'show_jump',
@@ -1210,6 +1254,9 @@ Return ONLY:
     challenges,
     highlights: [],
     operations: globalOps,
+    ...(adaptation && config?.remediationMove && adaptation.status !== 'no-focus'
+      ? { learningAdaptation: { move: config.remediationMove, status: adaptation.status, comparisonCount: adaptation.count } }
+      : {}),
   };
 }
 
@@ -1502,6 +1549,16 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
   // When it is absent, infer the range from the lesson's OWN topic + intent so the
   // code-side pickers stop falling back to a blanket 0–20. Grade stays the ceiling;
   // a resolution failure leaves it undefined and the grade-band defaults stand.
+  // One applicability decision before content generation. No observations or an
+  // ineligible task makes no model call; failures abstain inside the planner.
+  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
+    mode: config?.targetEvalMode, tier: supportTier ?? undefined };
+  const observations = ctx.learningObservations?.length ? ctx.learningObservations
+    : ctx.remediationFocus ? [{ id: 'active-observation', summary: ctx.remediationFocus }] : [];
+  const remediationMovePromise = eligibleNumberLineTeaching(adaptationTask) && observations.length
+    ? planLearningAdaptation(numberLineTeaching, adaptationTask, observations)
+    : Promise.resolve(null);
+
   let resolvedRange = config?.numberRange;
   let resolvedScope: ResolvedNumberLineScope | null = null;
   if (!resolvedRange) {
@@ -1532,6 +1589,7 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
       && resolvedScope?.requiresExactMissingNumber === true,
     difficulty: config?.difficulty,
     canonicalGradeBand: canonicalBand ?? undefined,
+    remediationMove: await remediationMovePromise,
   };
 
   // Dispatch per-mode sub-generators in parallel.
@@ -1565,6 +1623,9 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
     challenges: allChallenges,
     highlights: primary.highlights,
     operations: primary.operations,
+    ...(subResults.find(r => r.learningAdaptation)?.learningAdaptation
+      ? { learningAdaptation: subResults.find(r => r.learningAdaptation)!.learningAdaptation }
+      : {}),
   };
 
   // ---------------------------------------------------------------------------

@@ -1,0 +1,96 @@
+{
+  "type": "fraction-circles",
+  "instanceId": "fc-http-qa-14b2d50a46b34e98b95476f9b7117089-baseline",
+  "data": {
+    "title": "Comparing Fraction Circles",
+    "challenges": [
+      {
+        "id": "fc1",
+        "type": "compare",
+        "instruction": "Compare 1/4 and 2/3. Which fraction is larger, or are they equal?",
+        "denominator": 4,
+        "numerator": 1,
+        "hint": "Compare the shaded amounts in the two equal-sized circles.",
+        "narration": "Compare 1/4 and 2/3. Which fraction is larger, or are they equal?",
+        "compareFraction": {
+          "numerator": 2,
+          "denominator": 3
+        },
+        "supportTier": "medium",
+        "showTotalPieces": true,
+        "showWorkingCount": true,
+        "showFractionLabels": false
+      },
+      {
+        "id": "fc2",
+        "type": "compare",
+        "instruction": "Compare 1/3 and 10/12. Which fraction is larger, or are they equal?",
+        "denominator": 3,
+        "numerator": 1,
+        "hint": "Compare the shaded amounts in the two equal-sized circles.",
+        "narration": "Compare 1/3 and 10/12. Which fraction is larger, or are they equal?",
+        "compareFraction": {
+          "numerator": 10,
+          "denominator": 12
+        },
+        "supportTier": "medium",
+        "showTotalPieces": true,
+        "showWorkingCount": true,
+        "showFractionLabels": false
+      },
+      {
+        "id": "fc3",
+        "type": "compare",
+        "instruction": "Compare 1/2 and 4/10. Which fraction is larger, or are they equal?",
+        "denominator": 2,
+        "numerator": 1,
+        "hint": "Compare the shaded amounts in the two equal-sized circles.",
+        "narration": "Compare 1/2 and 4/10. Which fraction is larger, or are they equal?",
+        "compareFraction": {
+          "numerator": 4,
+          "denominator": 10
+        },
+        "supportTier": "medium",
+        "showTotalPieces": true,
+        "showWorkingCount": true,
+        "showFractionLabels": false
+      },
+      {
+        "id": "fc4",
+        "type": "compare",
+        "instruction": "Compare 4/5 and 2/6. Which fraction is larger, or are they equal?",
+        "denominator": 5,
+        "numerator": 4,
+        "hint": "Compare the shaded amounts in the two equal-sized circles.",
+        "narration": "Compare 4/5 and 2/6. Which fraction is larger, or are they equal?",
+        "compareFraction": {
+          "numerator": 2,
+          "denominator": 6
+        },
+        "supportTier": "medium",
+        "showTotalPieces": true,
+        "showWorkingCount": true,
+        "showFractionLabels": false
+      },
+      {
+        "id": "fc5",
+        "type": "compare",
+        "instruction": "Compare 7/12 and 4/8. Which fraction is larger, or are they equal?",
+        "denominator": 12,
+        "numerator": 7,
+        "hint": "Compare the shaded amounts in the two equal-sized circles.",
+        "narration": "Compare 7/12 and 4/8. Which fraction is larger, or are they equal?",
+        "compareFraction": {
+          "numerator": 4,
+          "denominator": 8
+        },
+        "supportTier": "medium",
+        "showTotalPieces": true,
+        "showWorkingCount": true,
+        "showFractionLabels": false
+      }
+    ],
+    "description": "Practice comparing different fractions visually using interactive fraction circles without relying on numeric labels.",
+    "gradeBand": "3-5"
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "type": "number-line",
+  "instanceId": "nl-obs-qa-dbddafe9b9004531a0920984e736c843-0",
+  "data": {
+    "title": "Hop Back on the Number Line",
+    "description": "Learn how to use the number line to subtract by jumping backwards.",
+    "range": {
+      "min": 0,
+      "max": 20
+    },
+    "gradeBand": "K-2",
+    "numberType": "integer",
+    "interactionMode": "jump",
+    "challenges": [
+      {
+        "id": "show_jump-0",
+        "type": "show_jump",
+        "instruction": "Put your finger on the number 2. Now hop back 2 spaces to the left to see where you land!",
+        "targetValues": [
+          0
+        ],
+        "hint": "Count your hops carefully as you jump backwards one by one.",
+        "startValue": 2,
+        "operations": [
+          {
+            "type": "subtract",
+            "startValue": 2,
+            "changeValue": 2,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      },
+      {
+        "id": "show_jump-1",
+        "type": "show_jump",
+        "instruction": "Find your starting spot at 9 on the number line. Now, hop backward 4 spaces to see where you land!",
+        "targetValues": [
+          5
+        ],
+        "hint": "Put your finger on 9 and count backward 4 hops one by one to find your new spot.",
+        "startValue": 9,
+        "operations": [
+          {
+            "type": "subtract",
+            "startValue": 9,
+            "changeValue": 4,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      },
+      {
+        "id": "show_jump-2",
+        "type": "show_jump",
+        "instruction": "Find the number 13 on the number line. Make a big jump forward by 2 to see where you land!",
+        "targetValues": [
+          15
+        ],
+        "hint": "Start at 13 and count forward 2 hops on the number line: one, two!",
+        "startValue": 13,
+        "operations": [
+          {
+            "type": "add",
+            "startValue": 13,
+            "changeValue": 2,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      },
+      {
+        "id": "show_jump-3",
+        "type": "show_jump",
+        "instruction": "Put your finger on 11 and hop backwards 2 spaces to see where you land!",
+        "targetValues": [
+          9
+        ],
+        "hint": "Try counting backwards one hop at a time: start at 11, then hop left twice.",
+        "startValue": 11,
+        "operations": [
+          {
+            "type": "subtract",
+            "startValue": 11,
+            "changeValue": 2,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      }
+    ],
+    "highlights": [],
+    "operations": [
+      {
+        "type": "subtract",
+        "startValue": 2,
+        "changeValue": 2,
+        "showJumpArc": false
+      }
+    ],
+    "learningAdaptation": {
+      "move": "contrast_start_positions",
+      "status": "already-targeted",
+      "comparisonCount": 2,
+      "source": "saved-observation"
+    },
+    "supportTier": "medium"
+  }
+}

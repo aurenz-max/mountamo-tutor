@@ -1,0 +1,11 @@
+{
+  "synthetic": true,
+  "status": "FAIL",
+  "tests": [
+    "Firebase user authenticated; disposable student reserved",
+    "Learner token without service signature rejected with HTTP 403",
+    "Authenticated capture stored one active skill-scoped observation with canonical Grade 3 scope"
+  ],
+  "boundary": "Real auth/store/delivery/generation; fictional evidence and saved real distiller text. No microphone or canonical learning submission.",
+  "cleanup": "verified absent"
+}

@@ -1,0 +1,108 @@
+{
+  "type": "place-value-chart",
+  "instanceId": "pvc-http-qa-49fe8b86578d48c193a45255fc47c4f1-1",
+  "data": {
+    "title": "Four-Digit Place Value Explorer",
+    "description": "Welcome! You will explore several numbers with your tutor by naming places, speaking their values out loud, and writing numbers directly into the chart.",
+    "challenges": [
+      {
+        "id": "pvc-1",
+        "targetNumber": 6149,
+        "highlightedDigitPlace": 2,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Hundreds",
+          "Tens",
+          "Thousands",
+          "Ones"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 100,
+            "wordForm": "One Hundred"
+          },
+          {
+            "value": 10,
+            "wordForm": "Ten"
+          },
+          {
+            "value": 1000,
+            "wordForm": "One Thousand"
+          },
+          {
+            "value": 1,
+            "wordForm": "One"
+          }
+        ]
+      },
+      {
+        "id": "pvc-2",
+        "targetNumber": 8074,
+        "highlightedDigitPlace": 1,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Ones",
+          "Tens",
+          "Hundreds",
+          "Thousands"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 7,
+            "wordForm": "Seven"
+          },
+          {
+            "value": 700,
+            "wordForm": "Seven Hundred"
+          },
+          {
+            "value": 70,
+            "wordForm": "Seventy"
+          },
+          {
+            "value": 0.7000000000000001,
+            "wordForm": "Seven Tenths"
+          }
+        ]
+      },
+      {
+        "id": "pvc-3",
+        "targetNumber": 9474,
+        "highlightedDigitPlace": 2,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Tens",
+          "Hundreds",
+          "Thousands",
+          "Ones"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 40,
+            "wordForm": "Forty"
+          },
+          {
+            "value": 4000,
+            "wordForm": "Four Thousand"
+          },
+          {
+            "value": 400,
+            "wordForm": "Four Hundred"
+          },
+          {
+            "value": 4,
+            "wordForm": "Four"
+          }
+        ]
+      }
+    ],
+    "challengeType": "compare",
+    "showExpandedForm": true,
+    "showMultipliers": false,
+    "supportTier": "medium",
+    "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+  }
+}

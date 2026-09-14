@@ -1,0 +1,159 @@
+{
+  "output": {
+    "type": "place-value-chart",
+    "instanceId": "opportunity-targeted-2",
+    "data": {
+      "title": "Four-Digit Place Value Explorer",
+      "description": "Welcome! You will explore different numbers across three interactive phases by naming places, saying values out loud, and writing the numbers you hear with your tutor.",
+      "challenges": [
+        {
+          "id": "pvc-1",
+          "targetNumber": 4815,
+          "highlightedDigitPlace": 1,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Ones",
+            "Tens",
+            "Hundreds",
+            "Thousands"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 10,
+              "wordForm": "Ten"
+            },
+            {
+              "value": 1,
+              "wordForm": "One"
+            },
+            {
+              "value": 100,
+              "wordForm": "One Hundred"
+            },
+            {
+              "value": 0.1,
+              "wordForm": "One Tenth"
+            }
+          ]
+        },
+        {
+          "id": "pvc-2",
+          "targetNumber": 9715,
+          "highlightedDigitPlace": 1,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Ones",
+            "Tens",
+            "Hundreds",
+            "Thousands"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 1,
+              "wordForm": "One"
+            },
+            {
+              "value": 10,
+              "wordForm": "Ten"
+            },
+            {
+              "value": 100,
+              "wordForm": "One Hundred"
+            },
+            {
+              "value": 0.1,
+              "wordForm": "One Tenth"
+            }
+          ]
+        },
+        {
+          "id": "pvc-3",
+          "targetNumber": 7149,
+          "highlightedDigitPlace": 2,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Tens",
+            "Hundreds",
+            "Thousands",
+            "Ones"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 100,
+              "wordForm": "One Hundred"
+            },
+            {
+              "value": 10,
+              "wordForm": "Ten"
+            },
+            {
+              "value": 1000,
+              "wordForm": "One Thousand"
+            },
+            {
+              "value": 1,
+              "wordForm": "One"
+            }
+          ]
+        }
+      ],
+      "challengeType": "compare",
+      "showExpandedForm": true,
+      "showMultipliers": false,
+      "supportTier": "medium",
+      "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+    }
+  },
+  "candidateItems": [
+    {
+      "id": "pvc-1::place",
+      "kind": "find_place",
+      "target_number": 4815,
+      "place": 1,
+      "digit": 1,
+      "answer_text": "tens",
+      "eligible": false
+    },
+    {
+      "id": "pvc-1::value",
+      "kind": "say_value",
+      "target_number": 4815,
+      "place": 1,
+      "digit": 1,
+      "answer_text": "ten",
+      "eligible": true
+    },
+    {
+      "id": "pvc-2::build",
+      "kind": "build_number",
+      "target_number": 9715,
+      "place": 0,
+      "digit": 0,
+      "answer_text": "",
+      "eligible": false
+    },
+    {
+      "id": "pvc-3::place",
+      "kind": "find_place",
+      "target_number": 7149,
+      "place": 2,
+      "digit": 1,
+      "answer_text": "hundreds",
+      "eligible": false
+    },
+    {
+      "id": "pvc-3::value",
+      "kind": "say_value",
+      "target_number": 7149,
+      "place": 2,
+      "digit": 1,
+      "answer_text": "one hundred",
+      "eligible": true
+    }
+  ],
+  "contentHash": "64ab0afb3e1371831bb330e920a40f8b7f1e16514c16dff007c1dfd8cc67c533",
+  "pass": true
+}

@@ -1,3 +1,5 @@
+> 2026-09-12 applicability amendment: user direction supersedes diagnosis-regex generation applicability for Place Value and Base Ten. Both now use the shared LLM planner with declarative task/move capabilities. Code validates supported moves and citations and enforces task constraints. Legacy regex remains only in the separate retest receipt policy. Capture, storage and resolution semantics remain unchanged. See `qa/misconception/shared-learning-applicability-2026-09-12.md`.
+
 # PRD: The Misconception Loop
 
 **Point-of-primitive diagnosis → targeted regeneration → verified resolution**
@@ -5,6 +7,30 @@
 Status: AMENDED 2026-07-12 rev 2 — declared-scope identity approved; the shipped
 subskill-only Phase 1–3 implementation requires alignment (§3 ruling 5, §5)
 Date: 2026-07-05
+
+> **2026-09-12 bounded exposure amendment (user requested):** One saved
+> Place Value digit-worth hypothesis may target Base-Ten Blocks `read_blocks`
+> at medium support on the exact reviewed Grade 4 `NBT004-01-b` publication.
+> This is a one-way representation bridge, not a general cross-primitive join.
+> The source record stays owned by Place Value; it is not copied, and block
+> performance cannot resolve it. Place-name confusion, other modes, grades,
+> objectives and changed curriculum revisions remain outside this bridge.
+> Existing same-primitive identity/resolution rules below still apply elsewhere.
+
+> **2026-09-13 primitive-agnostic backend (user ruling):** production backend code
+> names no primitive. The catalog declares `observationDelivery: 'server'` beside
+> `misconceptionScope: 'skill'`; capture relays `subject` + `delivery`; the backend
+> resolves a canonical published scope and stamps `scope_context` or refuses the
+> write. Every later rule is a record property of that stamp: stable
+> `hypothesis_id`/`revision`, prose blanked from generation-context, no score/tag
+> resolution, signed delivery at the same subject+grade+skill. Retest receipts
+> (`backend/app/services/misconception_receipts.py`) bind a signed plan
+> (`primitive_type`, per-item `accepted_answers`, opaque provenance versions) to the
+> hypothesis's own published scope; the reviewed-objective allowlist, capability
+> table and place-value arithmetic left the backend (the TS compiler certifies
+> items and answers; lesson eligibility is its call). Status route is generic:
+> `GET /misconception-status?primitive_type=&skill_id=`. Test files and scripts
+> may still name a primitive.
 
 > **2026-07-12 identity amendment (rev 2 — declared scope):** A misconception is
 > an interaction-specific failure model owned by the primitive that observed it;

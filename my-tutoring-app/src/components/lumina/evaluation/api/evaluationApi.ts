@@ -232,6 +232,8 @@ function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
     student_answer: `${result.primitiveType} — ${result.score}%`,
     canvas_used: false,
     primitive_response: {
+      instance_id: result.instanceId,
+      exhibit_id: result.exhibitId,
       pre_evaluated: true,
       success: result.success,
       score: result.score,

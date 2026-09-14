@@ -1,0 +1,57 @@
+{
+  "type": "base-ten-blocks",
+  "instanceId": "pvc-http-qa-cee522b2b2fd48148022f628a1452f91-origin-base-ten-blocks",
+  "data": {
+    "title": "Four-Digit Place Value Explorer",
+    "description": "Learn to read and understand thousands, hundreds, tens, and ones in four-digit numbers.",
+    "numberValue": 1938,
+    "challenges": [
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 1709,
+        "hint": "Count each column from thousands down to ones.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 4404,
+        "hint": "Be careful with the empty tens column when reading the blocks.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 7082,
+        "hint": "Check the hundreds column before reading the tens and ones.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 3703,
+        "hint": "Look closely at the ones column to see how many units are there.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 7801,
+        "hint": "Notice which columns have blocks and which ones are empty.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      }
+    ],
+    "gradeBand": "4-5",
+    "interactionMode": "decompose",
+    "decimalMode": false,
+    "maxPlace": "thousands",
+    "supplyTray": true,
+    "supportTier": "medium"
+  }
+}

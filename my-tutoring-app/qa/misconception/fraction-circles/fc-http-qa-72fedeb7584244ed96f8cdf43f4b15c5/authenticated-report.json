@@ -1,0 +1,20 @@
+{
+  "synthetic": true,
+  "status": "FAIL",
+  "tests": [
+    "Firebase user authenticated; disposable student reserved",
+    "Learner token with a forged service signature rejected by the signature check (HTTP 403)",
+    "Authenticated capture stored one active skill-scoped observation with canonical Grade 3 scope",
+    "Signed backend read returns the one saved observation at its skill and nothing for another skill",
+    "Unauthenticated baseline generation received no observation and no adaptation",
+    "Authenticated generation at unreviewed like-denominator objective was not adapted",
+    "Authenticated generation at reviewed objective in a different skill was not adapted"
+  ],
+  "boundary": "Real auth/store/delivery/generation; fictional evidence and saved real distiller text. No microphone or canonical learning submission.",
+  "signed_context": {
+    "available": true,
+    "count": 1,
+    "reason": null
+  },
+  "cleanup": "verified absent"
+}

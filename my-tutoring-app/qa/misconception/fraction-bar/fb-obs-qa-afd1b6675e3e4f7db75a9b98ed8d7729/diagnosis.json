@@ -1,0 +1,8 @@
+{
+  "abstain": false,
+  "misconceptionText": "The student identifies the bottom number of a fraction as the numerator, choosing it during identification tasks and using it as the count of parts to shade.",
+  "teachingImplication": "Clarify fraction terminology by connecting the spatial position of the top number to the quantity of parts being counted or shaded.",
+  "checkNext": "Present an unprompted task asking to identify the numerator of a unit or non-unit fraction and shade the corresponding number of parts.",
+  "confidence": "high",
+  "evidenceTier": "structured"
+}

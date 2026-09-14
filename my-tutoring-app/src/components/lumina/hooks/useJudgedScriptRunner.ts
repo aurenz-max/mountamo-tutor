@@ -57,6 +57,7 @@ import {
 } from './judgedScriptContract';
 import { SoundManager } from '../utils/SoundManager';
 import type { DiagnosisEvidence } from '../evaluation/diagnosis/types';
+import type { LearningResponseEvidence } from '../evaluation/learningResponseEvidence';
 
 /** Corrections the tutor may run on one item before the lesson moves on. */
 const DEFAULT_MAX_CORRECTIONS = 2;
@@ -99,6 +100,19 @@ const scoreForCorrections = (corrections: number): number =>
 
 export type JudgedRunStage = 'idle' | 'asking' | 'judging' | 'affirmed' | 'done';
 
+export interface JudgedOpportunityEvent {
+  seq: number;
+  item_id: string;
+  kind: 'presented' | 'response' | 'transcript' | 'affirmed' | 'corrected' | 'repeat' | 'resync' | 'unavailable' | 'completed';
+  text?: string;
+  source?: string;
+  solved?: boolean;
+  corrections?: number;
+  turn_opened_at?: number;
+  turn_closed_at?: number;
+  during_tutor_audio?: boolean;
+}
+
 export interface JudgedRunOutcome {
   id: string;
   solved: boolean;
@@ -108,6 +122,8 @@ export interface JudgedRunOutcome {
 }
 
 export interface JudgedRunSummary {
+  learningResponses?: LearningResponseEvidence[];
+  opportunityEvents?: JudgedOpportunityEvent[];
   outcomes: JudgedRunOutcome[];
   solvedCount: number;
   firstTryCount: number;
@@ -118,11 +134,13 @@ export interface JudgedRunSummary {
   passed: boolean;
   hearTaps: number;
   observations: JudgedDiagnosisObservation[];
-  /** Assembled Tier-A evidence when the run failed and evidence exists. */
+  /** Correction evidence; the evaluation capture layer decides whether to diagnose. */
   diagnosisEvidence?: DiagnosisEvidence;
 }
 
 export interface JudgedScriptRunnerOptions<Item extends JudgedScriptItem> {
+  /** Opt-in observations only; certification and transitions remain server-owned. */
+  recordOpportunityEvents?: boolean;
   pack: JudgedScriptPack<Item>;
   instanceId: string;
   gradeLevel: string;
@@ -378,7 +396,13 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   idxRef.current = currentIndex;
   const correctionsRef = useRef(new Map<string, number>());
   const outcomesRef = useRef<JudgedRunOutcome[]>([]);
+  const opportunityEventsRef = useRef<JudgedOpportunityEvent[]>([]);
+  const recordOpportunity = useCallback((itemId: string, kind: JudgedOpportunityEvent['kind'], fields: Partial<JudgedOpportunityEvent> = {}) => {
+    if (!optionsRef.current.recordOpportunityEvents) return;
+    opportunityEventsRef.current.push({ ...fields, seq: opportunityEventsRef.current.length, item_id: itemId, kind });
+  }, []);
   const observationsRef = useRef<JudgedDiagnosisObservation[]>([]);
+  const learningResponsesRef = useRef<LearningResponseEvidence[]>([]);
   const challengeStartRef = useRef<number | null>(null);
   const finishedRef = useRef(false);
   const weConnectedRef = useRef(false);
@@ -484,6 +508,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   // ── Ledger ────────────────────────────────────────────────────────────────
   const closeItem = useCallback((item: Item, solved: boolean) => {
     const corrections = correctionsRef.current.get(item.id) ?? 0;
+    recordOpportunity(item.id, 'completed', { solved, corrections });
     outcomesRef.current.push({
       id: item.id,
       solved,
@@ -518,12 +543,19 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     const latest = observations[observations.length - 1];
     const judgeBacked = [...observations].reverse().find((o) => o.judgeFeedback);
     const source = judgeBacked || latest;
-    const diagnosisEvidence: DiagnosisEvidence | undefined = !passed && source
+    // A passing average can contain unsolved phases. Preserve observations;
+    // the primitive's submission verdict and shared capture policy own gating.
+    const diagnosisEvidence: DiagnosisEvidence | undefined = source
       ? {
           challengeSummary: source.challenge,
           expected: source.expected,
           observed: source.observed,
           judgeFeedback: judgeBacked?.judgeFeedback,
+          phases: observations.slice(-12).map(o => ({
+            itemId: o.itemId ?? 'unknown', phase: o.phase ?? 'unspecified',
+            challenge: o.challenge, expected: o.expected, observed: o.observed,
+            support: o.support ?? 'Assistance history unknown',
+          })),
           priorAttempts: observations
             .filter((o) => o !== source)
             .slice(-4)
@@ -532,6 +564,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
       : undefined;
 
     const runSummary: JudgedRunSummary = {
+      ...(optionsRef.current.recordOpportunityEvents ? { opportunityEvents: [...opportunityEventsRef.current] } : {}),
       outcomes: [...outcomes],
       solvedCount,
       firstTryCount: outcomes.filter((o) => o.solved && o.corrections === 0).length,
@@ -541,6 +574,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
       hearTaps: hearTapsRef.current,
       observations: [...observations],
       diagnosisEvidence,
+      learningResponses: [...learningResponsesRef.current],
     };
     setSummary(runSummary);
     setRunning(false);
@@ -567,14 +601,17 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     // The previous item's board must never commit into this one's turn.
     clearStillness();
     armStimulus(next);
+    recordOpportunity(next.id, 'presented');
     optionsRef.current.onItemOpened?.(next, nextIndex);
     return true;
   }, [armStimulus, clearStillness, itemOf]);
 
-  const applyVerdict = useCallback((judgment: 'affirmed' | 'corrected') => {
+  const applyVerdict = useCallback((judgment: 'affirmed' | 'corrected', turnOpenedAt?: number) => {
     const item = currentItem();
     const loop = loopRef.current;
     if (!item || !loop) return;
+
+    recordOpportunity(item.id, judgment, { turn_opened_at: turnOpenedAt });
 
     if (judgment === 'corrected') {
       const used = (correctionsRef.current.get(item.id) ?? 0) + 1;
@@ -636,29 +673,54 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     const item = currentItem();
     switch (emission.kind) {
       case 'attempt-open':
+        if (item) recordOpportunity(item.id, 'response', { source: emission.attempt.source,
+          turn_opened_at: emission.attempt.turn?.openedAt, turn_closed_at: emission.attempt.turn?.closedAt,
+          during_tutor_audio: emission.attempt.turn?.duringTutorAudio });
         lastHeardRef.current = null;
         // Gesture attempts keep their 'judging' status — only a voice turn
         // means the child is being listened to.
         if (emission.attempt.source === 'voice') setStatusLine(lines.listening);
         break;
       case 'attempt-transcript':
+        if (item) recordOpportunity(item.id, 'transcript', { text: emission.text, turn_opened_at: emission.attempt.turn?.openedAt });
         lastHeardRef.current = emission.text;
         break;
       case 'verdict': {
-        if (emission.judgment === 'off-script') break;
+        if (emission.judgment === 'off-script') {
+          if (item) recordOpportunity(item.id, 'unavailable');
+          break;
+        }
         if (emission.judgment === 'no-verdict') {
+          if (item) recordOpportunity(item.id, 'unavailable');
           // On a BUILD item this is routinely the child talking while they
           // work — never re-prompt over a board being filled (cvc rule a).
           if (item && item.answerKind !== 'gesture') setStatusLine(lines.noVerdict(item));
           break;
         }
+        if (item && packRef.current.responseObservation) {
+          const attempt = emission.attempt;
+          // No transcript means no voice evidence. A verdict alone is insufficient.
+          const observed = attempt.source === 'gesture' || attempt.transcript?.trim()
+            ? packRef.current.responseObservation(item, { lastHeard: attempt.transcript }) : null;
+          if (observed?.observed.trim()) {
+            const priorCorrections = correctionsRef.current.get(item.id) ?? 0;
+            learningResponsesRef.current.push({ ...observed, itemId: item.id,
+              phase: item.action ?? item.responseClass, verdict: emission.judgment,
+              source: attempt.source, priorCorrections, hearTapsSoFar: hearTapsRef.current,
+              support: `${priorCorrections} prior corrections on this item; ${hearTapsRef.current} stimulus replays so far in this run. Other assistance and independence are not established.`,
+            });
+          }
+        }
         if (emission.judgment === 'corrected' && item) {
           const observation = packRef.current.diagnosisObservation?.(item, {
             lastHeard: lastHeardRef.current,
           });
-          if (observation) observationsRef.current.push({ ...observation });
+          if (observation) observationsRef.current.push({ ...observation,
+            itemId: item.id, phase: item.action ?? item.responseClass,
+            support: `Correction observation; ${correctionsRef.current.get(item.id) ?? 0} prior corrections on this item. Other assistance is not established.`,
+          });
         }
-        applyVerdict(emission.judgment);
+        applyVerdict(emission.judgment, emission.attempt.turn?.openedAt);
         break;
       }
       case 'verdict-text': {
@@ -678,6 +740,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
         break;
       case 'session-resumed':
       case 'resync': {
+        if (item) recordOpportunity(item.id, 'resync');
         // The session survived but the item in flight did not: re-ask it
         // verbatim — except a resync mid-build, where the board is still on
         // screen and re-asking would talk over a child working.
@@ -838,6 +901,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     if (!item || !pronounce) return;
     SoundManager.tap();
     hearTapsRef.current += 1;
+    recordOpportunity(item.id, 'repeat');
     setStimulusTapped(true);
     ctx.sendText(pronounce(item), { silent: true, scripted: true });
     if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
@@ -853,7 +917,10 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     if (!first || !activeLoop) return;
     correctionsRef.current.clear();
     outcomesRef.current = [];
+    opportunityEventsRef.current = [];
+    recordOpportunity(first.id, 'presented');
     observationsRef.current = [];
+    learningResponsesRef.current = [];
     lastHeardRef.current = null;
     hearTapsRef.current = 0;
     finishedRef.current = false;

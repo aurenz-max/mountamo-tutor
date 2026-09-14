@@ -6,6 +6,9 @@ from typing import Optional
 from pathlib import Path
 
 class Settings(BaseSettings):
+    # Declared so local dotenv validation accepts the generation credential.
+    # Never include this value in settings repr/log output.
+    LUMINA_GENERATION_SIGNING_KEY: str = Field(default="", repr=False)
     PROJECT_NAME: str = "AI Tutor"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"

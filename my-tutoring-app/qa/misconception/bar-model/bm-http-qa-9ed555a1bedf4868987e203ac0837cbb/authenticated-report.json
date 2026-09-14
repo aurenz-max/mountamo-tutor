@@ -1,0 +1,14 @@
+{
+  "synthetic": true,
+  "status": "FAIL",
+  "tests": [
+    "Disposable Firebase user and student reserved",
+    "Real distiller produced a hypothesis from first-choice evidence on a success=true, score=90 activity",
+    "Authenticated capture stored an active skill-scoped hypothesis with a resolved published scope",
+    "Learner token without the generation-server signature rejected (403)",
+    "Unauthenticated generation of the same task is unadapted",
+    "Authenticated hard-tier generation is unadapted (task gate)"
+  ],
+  "boundary": "Fictional evidence through the real distiller, authenticated store, signed delivery and Next generation. No microphone, browser, canonical submission or resolution.",
+  "cleanup": "verified absent"
+}

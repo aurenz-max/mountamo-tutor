@@ -1,5 +1,7 @@
 # Place-value misconception pilot
 
+**Policy superseded 2026-09-12:** place value now requires backend-certified compiled opportunities and qualifying first-response evidence. Score/tag-only resolution is disabled, including for legacy diagnoses. Since 2026-09-13 the backend keeps no allowlist or place-value code: receipts bind to the hypothesis's own stamped published scope and the TS compiler certifies items and accepted answers (see the ADR amendment). Deployment and authenticated runtime checks remain open. See [current report](../place-value-opportunities-2026-09-12.md) and [ADR](../../ADR-misconception-opportunities-2026-09-12.md). Older run bundles describe historical semantics.
+
 Run from `my-tutoring-app` with frontend on localhost:3000 and backend on 127.0.0.1:8000:
 
 ```powershell
@@ -23,8 +25,8 @@ Open `artifacts/math-pedagogy-review/index.html` and import a run's `run.json` i
 
 ## Open production gates
 
-Published Grade 3 `NBT003-02-a` addresses three-digit digit worth. Compare mode selects four-digit numbers. A reviewed matching curriculum objective or an explicitly authorized mode/scope revision is needed before an honest production lesson demonstration. No curriculum was changed by this pilot.
+Published Grade 3 `NBT003-02-a` addresses three-digit digit worth and remains incompatible with four-digit compare. The follow-up reviewed existing Grade 4 `NBT004-01-b`, which admits the four-digit band. No curriculum was changed. Use the current opportunity report for outstanding runtime gates.
 
 Browser inventory returned no browsers in this session. Once a browser is available, use a disposable student and the resolved objective to drive repeated bare-digit failures to the actual cap, inspect emitted evidence and stored composite identity, generate the following lesson through generation context, and inspect the matched submission and subsequent active-context read. Existing microphone acceptance remains under HUMAN-CHECKS #113 / #63.
 
-The existing product rule resolves after a matched tagged score ≥80; this is not durable mastery or delayed transfer. In-memory R, real-store S4, and text-driven Live each prove only their named boundary.
+The original pilot used matched tagged score ≥80; the current policy requires certified item evidence. In-memory R, real-store S4, and text-driven Live each prove only their named boundary, not durable mastery or delayed transfer.

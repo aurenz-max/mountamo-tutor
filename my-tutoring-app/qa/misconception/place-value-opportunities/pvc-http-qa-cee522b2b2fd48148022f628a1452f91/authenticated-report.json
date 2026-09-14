@@ -1,0 +1,13 @@
+{
+  "synthetic": true,
+  "status": "PASS",
+  "tests": [
+    "Firebase user authenticated; collision-checked disposable student reserved",
+    "Learner token without service signature rejected with HTTP 403",
+    "Real distiller on read_blocks correction evidence -> authenticated capture; primitive scope and unpublished subskill refused; canonical published scope stamped; no receipt identity",
+    "Owner profile shows the blocks-origin observation with its phase evidence; direct client read/write denied",
+    "Saved blocks-origin observation drives two authenticated blocks draws through shared delivery; unauthenticated baselines unadapted; chart consumer unadapted with no receipt; source stays active and unresolved"
+  ],
+  "boundary": "Fictional read_blocks responses through the real distiller, authenticated store/profile, shared delivery and generation. No microphone, canonical submission, calibration, or learner transfer/resolution claim.",
+  "cleanup": "verified absent"
+}

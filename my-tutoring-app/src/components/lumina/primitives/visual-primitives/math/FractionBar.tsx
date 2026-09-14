@@ -12,6 +12,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { fractionBarDiagnosisEvidence, type FractionBarResponse } from './fractionBarEvidence';
 
 /**
  * Fraction Bar — multi-challenge interactive fraction model.
@@ -41,6 +42,10 @@ export interface FractionBarChallenge {
 }
 
 export interface FractionBarData {
+  /** Safe adaptation metadata only; `source` is stamped by the generation server. */
+  learningAdaptation?: { move: 'contrast_shared_digit_roles';
+    status: 'targeted' | 'already-targeted' | 'insufficient-capacity'; comparisonCount: number;
+    source?: 'saved-observation' };
   title: string;
   description: string;
   /** 1-6 challenges. Walked sequentially by the component. */
@@ -193,6 +198,8 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
 
   const recordedRef = useRef(false);
   const sessionCompleteFiredRef = useRef(false);
+  // Every checked response, for factual misconception evidence at submit.
+  const responsesRef = useRef<FractionBarResponse[]>([]);
 
   // ── Reset every per-challenge slot when the active challenge changes ──
   // PRD §6c: missing any slot leaks state from challenge N into challenge N+1.
@@ -369,12 +376,14 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
             const r = results.find((rr) => rr.challengeId === c.id);
             return Number(r?.score ?? 0);
           }),
+          responses: responsesRef.current.map(({ challengeId, phase, expected, selected, attempt }) =>
+            ({ challengeId, phase, expected, selected, attempt })),
         },
-      });
+      }, undefined, fractionBarDiagnosisEvidence(challenges.map((c) => c.id), responsesRef.current, sessionChallengeType, supportTier));
     }
   }, [
     isComplete, results, challenges, sessionChallengeType,
-    submitEvaluation, hasSubmittedEvaluation,
+    submitEvaluation, hasSubmittedEvaluation, supportTier,
   ]);
 
   // ── Phase 1: Check numerator ─────────────────────────────────
@@ -388,6 +397,9 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     }
     const nextAttempts = numeratorAttempts + 1;
     setNumeratorAttempts(nextAttempts);
+    if (currentChallenge) responsesRef.current.push({ challengeId: currentChallenge.id, numerator, denominator,
+      phase: 'numerator', expected: numerator, selected: selectedNumerator, attempt: nextAttempts,
+      hintsBefore: challengeHintCount, choices: numeratorChoices });
 
     if (selectedNumerator === numerator) {
       SoundManager.playCorrect();
@@ -425,7 +437,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
         { silent: true },
       );
     }
-  }, [selectedNumerator, challengeDone, numerator, denominator, numeratorAttempts, supportTier, sessionChallengeType, sendText]);
+  }, [selectedNumerator, challengeDone, numerator, denominator, numeratorAttempts, supportTier, sessionChallengeType, sendText, currentChallenge, challengeHintCount, numeratorChoices]);
 
   // ── Phase 2: Check denominator ───────────────────────────────
   const handleCheckDenominator = useCallback(() => {
@@ -438,6 +450,9 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     }
     const nextAttempts = denominatorAttempts + 1;
     setDenominatorAttempts(nextAttempts);
+    if (currentChallenge) responsesRef.current.push({ challengeId: currentChallenge.id, numerator, denominator,
+      phase: 'denominator', expected: denominator, selected: selectedDenominator, attempt: nextAttempts,
+      hintsBefore: challengeHintCount, choices: denominatorChoices });
 
     if (selectedDenominator === denominator) {
       SoundManager.playCorrect();
@@ -475,7 +490,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
         { silent: true },
       );
     }
-  }, [selectedDenominator, challengeDone, numerator, denominator, denominatorAttempts, supportTier, sessionChallengeType, sendText]);
+  }, [selectedDenominator, challengeDone, numerator, denominator, denominatorAttempts, supportTier, sessionChallengeType, sendText, currentChallenge, challengeHintCount, denominatorChoices]);
 
   // ── Phase 3: Toggle partition ────────────────────────────────
   const togglePartition = useCallback(
@@ -497,6 +512,8 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     if (challengeDone || !currentChallenge) return;
     const nextBuildAttempts = buildAttempts + 1;
     setBuildAttempts(nextBuildAttempts);
+    responsesRef.current.push({ challengeId: currentChallenge.id, numerator, denominator, phase: 'build',
+      expected: numerator, selected: shadedCount, attempt: nextBuildAttempts, hintsBefore: challengeHintCount });
 
     const isCorrect = shadedCount === numerator;
     const selectedFraction = `${shadedCount}/${denominator}`;
@@ -562,6 +579,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     sessionChallengeType,
     sendText,
     completeCurrentChallenge,
+    challengeHintCount,
   ]);
 
   // ── Hints ────────────────────────────────────────────────────

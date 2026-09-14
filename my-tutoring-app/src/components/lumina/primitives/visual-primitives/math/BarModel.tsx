@@ -25,6 +25,7 @@ import {
   type BarModelMetrics,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
+import { buildPictureGraphEvidence } from './barModelEvidence';
 
 // ---------------------------------------------------------------------------
 // Public types (mirrored by the generator)
@@ -625,6 +626,8 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
 
   const recordedRef = useRef(false);
   const sessionCompleteFiredRef = useRef(false);
+  /** Every option tapped per challenge, wrong ones included — the factual response history. */
+  const selectionsRef = useRef<Record<string, number[]>>({});
 
   // Reset per-challenge state when the active challenge changes.
   useEffect(() => {
@@ -750,6 +753,8 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
 
     if (!hasSubmittedEvaluation) {
       const goalMet = correctCount === challenges.length;
+      const selections = challenges.map((c) => ({ challengeId: c.id, selectedOptions: selectionsRef.current[c.id] ?? [] }));
+      const diagnosisEvidence = buildPictureGraphEvidence(challenges, selections);
       submitEvaluation(goalMet, overallAccuracy, metrics, {
         studentWork: {
           challengeCount: challenges.length,
@@ -760,8 +765,10 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
             const r = results.find((rr) => rr.challengeId === c.id);
             return r?.attempts ?? 0;
           }),
+          selections,
+          ...(diagnosisEvidence ? { diagnosisEvidence } : {}),
         },
-      });
+      }, undefined, diagnosisEvidence);
     }
   }, [
     isComplete, results, phaseResults, challenges,
@@ -864,7 +871,9 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     if (!currentChallenge || feedback === 'correct' || isComplete) return;
     setSelectedOption(opt);
     const correct = opt === currentChallenge.expectedValue;
-    submitResult(correct, { selectedOption: opt });
+    const tapped = [...(selectionsRef.current[currentChallenge.id] ?? []), opt];
+    selectionsRef.current[currentChallenge.id] = tapped;
+    submitResult(correct, { selectedOption: opt, selectedOptions: tapped });
   };
 
   const handleBuildSubmit = () => {

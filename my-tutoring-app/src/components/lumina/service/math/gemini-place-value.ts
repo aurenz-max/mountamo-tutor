@@ -33,7 +33,9 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { createNumberPool } from './numberPoolService';
-import { placeValueRemediationMoveFor, selectPlaceValueContrast } from './placeValueRemediation';
+import { selectPlaceValueContrast } from './placeValueRemediation';
+import { planLearningAdaptation } from '../generation/planLearningAdaptation';
+import { eligiblePlaceValueTeaching, placeValueTeaching } from './placeValueTeachingCapabilities';
 import {
   isAskablePlace,
   isInBandTarget,
@@ -826,6 +828,12 @@ GUIDELINES:
 Return ONLY the wrapper metadata in the response schema.
 `;
 
+  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
+    mode: pinnedType, tier: supportTier ?? undefined };
+  const observations = ctx.learningObservations?.length ? ctx.learningObservations
+    : ctx.remediationFocus ? [{ id: 'active-observation', summary: ctx.remediationFocus }] : [];
+  const plannedMove = eligiblePlaceValueTeaching(adaptationTask) && observations.length
+    ? await planLearningAdaptation(placeValueTeaching, adaptationTask, observations) : null;
   const result = await ai.models.generateContent({
     model: "gemini-flash-latest",
     contents: prompt,
@@ -862,10 +870,8 @@ Return ONLY the wrapper metadata in the response schema.
 
   // Exact objective grade takes precedence over broad lesson framing. Explicit
   // numeric anchors are left untouched; this pilot does not reinterpret them.
-  const anchored = /\b\d{2,}\b/.test([ctx.topic, ctx.intent, ctx.objective.text].filter(Boolean).join(' '));
-  const incompatibleScope = /\b(?:two|three|[23])[ -]digit|decimal|fraction/i.test([ctx.topic, ctx.intent, ctx.objective.text].filter(Boolean).join(' '));
-  const move = ctx.grade === '3' && !anchored && !incompatibleScope
-    ? placeValueRemediationMoveFor(challengeType, supportTier ?? undefined, ctx.remediationFocus) : null;
+  const move = challengeType === pinnedType ? plannedMove : null;
+  let learningAdaptation: PlaceValueChartData['learningAdaptation'];
   if (move) {
     const selected = selectPlaceValueContrast(built, move, config?.numberRange);
     built = selected.challenges.map((ch, index) => {
@@ -877,6 +883,10 @@ Return ONLY the wrapper metadata in the response schema.
       };
     });
     console.info('[PlaceValue remediation]', { move, count: selected.count, reason: selected.reason });
+    learningAdaptation = {
+      move, comparisonCount: selected.count,
+      status: selected.count < 2 ? 'insufficient-capacity' : selected.reason === 'already-targeted' ? 'already-targeted' : 'targeted',
+    };
   }
 
   // ── Judged-loop content gates, generator-side (KEEP-OR-DROP, never repair;
@@ -943,5 +953,6 @@ Return ONLY the wrapper metadata in the response schema.
     showMultipliers,
     supportTier: resolvedSupportTier,
     gradeLevel: wrapper.gradeLevel || gradeLevel,
+    ...(learningAdaptation ? { learningAdaptation } : {}),
   };
 };

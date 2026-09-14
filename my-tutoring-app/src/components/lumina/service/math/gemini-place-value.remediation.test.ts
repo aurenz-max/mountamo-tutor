@@ -5,18 +5,37 @@ import { ai } from '../geminiClient';
 import { generatePlaceValueChart } from './gemini-place-value';
 import { compiledWorthContrast } from './placeValueRemediation';
 import { placeValueChartOracle } from '../qa/oracles/place-value-chart';
+import { certifyPlaceValueItems } from './placeValueOpportunityContract';
 const focus = 'The student gives the bare digit for its worth regardless of position.';
 const ctx: GenerationContext = { componentId: 'place-value-chart', instanceId: 'test', topic: 'Place value in four-digit whole numbers', grade: '3', gradeLevel: 'Grade 3', gradeContext: 'Grade 3', objective: {}, scope: { topic: 'Place value' }, raw: { targetEvalMode: 'compare', difficulty: 'medium' } };
 async function generate(remediationFocus?: string, overrides: Partial<GenerationContext> = {}) {
   let seed = 42;
   const random = vi.spyOn(Math, 'random').mockImplementation(() => { seed = (1664525 * seed + 1013904223) >>> 0; return seed / 4294967296; });
-  vi.mocked(ai.models.generateContent).mockResolvedValue({ text: JSON.stringify({ title: 'Place value', description: 'Say and write.', challengeType: 'compare' }) } as never);
+  vi.mocked(ai.models.generateContent).mockImplementation(async args => ({ text: JSON.stringify(
+    String(args.contents).startsWith('Select ONE')
+      ? { move: remediationFocus === focus ? 'contrast_digit_worth' : remediationFocus?.startsWith('The student interprets') ? 'contrast_place_name_and_value' : 'abstain', observationIds: ['active-observation'] }
+      : { title: 'Place value', description: 'Say and write.', challengeType: 'compare' }) } as never));
   const data = await generatePlaceValueChart({ ...ctx, ...overrides, remediationFocus });
   const draws = random.mock.calls.length;
   random.mockRestore();
   return { data, draws };
 }
 afterEach(() => vi.restoreAllMocks());
+it('uses saved place-name confusion to change content while keeping certification separate', async () => {
+  const namingFocus = "The student interprets a prompt to name a digit's place as asking for its value rather than its positional name.";
+  const baseline = await generate(undefined, { grade: '4' });
+  const targeted = await generate(namingFocus, { grade: '4' });
+  expect(targeted.data.learningAdaptation).toMatchObject({ move: 'contrast_place_name_and_value', comparisonCount: 2 });
+  expect(targeted.data.challenges).not.toEqual(baseline.data.challenges);
+  expect(targeted.data.challenges).toHaveLength(baseline.data.challenges.length);
+  expect(targeted.data.challengeType).toBe(baseline.data.challengeType);
+  expect(targeted.data.supportTier).toBe(baseline.data.supportTier);
+  expect(targeted.data.learningAdaptation?.status).toBe('targeted');
+  expect(certifyPlaceValueItems(targeted.data, namingFocus)).toBeNull();
+  expect(JSON.stringify(targeted.data)).not.toContain(namingFocus);
+  expect(JSON.stringify(vi.mocked(ai.models.generateContent).mock.calls.filter(([a]) => !String(a.contents).startsWith('Select ONE')))).not.toContain(namingFocus);
+  expect(baseline.data.learningAdaptation).toBeUndefined();
+});
 it('freezes data and random draw parity for blank, unrelated, wrong grade and named anchors', async () => {
   const baseline = await generate();
   for (const text of ['', ' ', 'The student shifts the place value.']) expect(await generate(text)).toEqual(baseline);
@@ -28,8 +47,21 @@ it('targets through the real generator and never sends private focus to wrapper 
   const { data } = await generate(focus);
   expect(compiledWorthContrast(data.challenges!).count).toBe(2);
   expect(JSON.stringify(data)).not.toMatch(/remediation|bare digit/);
-  expect(JSON.stringify(vi.mocked(ai.models.generateContent).mock.calls)).not.toContain(focus);
+  expect(JSON.stringify(vi.mocked(ai.models.generateContent).mock.calls.filter(([a]) => !String(a.contents).startsWith('Select ONE')))).not.toContain(focus);
   const result = placeValueChartOracle.verify(data as unknown as Record<string, unknown>, { componentId: 'place-value-chart', evalMode: 'compare', topic: ctx.topic, gradeLevel: 'Grade 3' });
   expect(result.checkedChallenges).toBe(3);
   expect(result.violations.filter(v => v.check === 'answer-key-desync')).toEqual([]);
+});
+
+it('supports the reviewed Grade 4 objective without changing mode, band or item allocation', async () => {
+  const objective = { text: 'Identify digit place and numeric value in four-digit whole numbers' };
+  const baseline = await generate(undefined, { grade: '4', objective });
+  const targeted = await generate(focus, { grade: '4', objective });
+  expect(compiledWorthContrast(targeted.data.challenges!).count).toBe(2);
+  expect(targeted.data.challengeType).toBe('compare');
+  expect(targeted.data.challenges!.every(c => c.targetNumber >= 1111 && c.targetNumber <= 9999)).toBe(true);
+  expect(compiledWorthContrast(targeted.data.challenges!).items.map(i => [i.id, i.kind]))
+    .toEqual(compiledWorthContrast(baseline.data.challenges!).items.map(i => [i.id, i.kind]));
+  expect(await generate(focus, { grade: '4', objective: { text: 'Identify worth in three-digit numbers' } }))
+    .toEqual(await generate(undefined, { grade: '4', objective: { text: 'Identify worth in three-digit numbers' } }));
 });

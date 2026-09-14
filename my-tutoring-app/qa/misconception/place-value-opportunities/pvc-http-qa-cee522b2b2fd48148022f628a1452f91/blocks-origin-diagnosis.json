@@ -1,0 +1,64 @@
+{
+  "evidence": {
+    "challengeSummary": "What are those hundred-flats worth altogether? Mat value 2640; asked block size: hundred-flats.",
+    "expected": "six hundred",
+    "observed": "six",
+    "judgeFeedback": "My turn: one hundred-flat is worth one hundred, so six of them are worth six hundred.",
+    "phases": [
+      {
+        "challenge": "What are those thousand-blocks worth altogether? Mat value 4305; asked block size: thousand-blocks.",
+        "expected": "four thousand",
+        "observed": "four",
+        "itemId": "base-ten-1-worth",
+        "phase": "read-worth",
+        "support": "Correction observation; 0 prior corrections on this item. Other assistance is not established."
+      },
+      {
+        "challenge": "What are those thousand-blocks worth altogether? Mat value 4305; asked block size: thousand-blocks.",
+        "expected": "four thousand",
+        "observed": "four",
+        "itemId": "base-ten-1-worth",
+        "phase": "read-worth",
+        "support": "Correction observation; 1 prior corrections on this item. Other assistance is not established."
+      },
+      {
+        "challenge": "What are those thousand-blocks worth altogether? Mat value 4305; asked block size: thousand-blocks.",
+        "expected": "four thousand",
+        "observed": "four",
+        "itemId": "base-ten-1-worth",
+        "phase": "read-worth",
+        "support": "Correction observation; 2 prior corrections on this item. Other assistance is not established."
+      },
+      {
+        "challenge": "What are those hundred-flats worth altogether? Mat value 2640; asked block size: hundred-flats.",
+        "expected": "six hundred",
+        "observed": "six",
+        "itemId": "base-ten-2-worth",
+        "phase": "read-worth",
+        "support": "Correction observation; 0 prior corrections on this item. Other assistance is not established."
+      }
+    ],
+    "priorAttempts": [
+      {
+        "challenge": "What are those thousand-blocks worth altogether? Mat value 4305; asked block size: thousand-blocks.",
+        "observed": "four"
+      },
+      {
+        "challenge": "What are those thousand-blocks worth altogether? Mat value 4305; asked block size: thousand-blocks.",
+        "observed": "four"
+      },
+      {
+        "challenge": "What are those thousand-blocks worth altogether? Mat value 4305; asked block size: thousand-blocks.",
+        "observed": "four"
+      }
+    ]
+  },
+  "diagnosis": {
+    "abstain": false,
+    "misconceptionText": "The student interprets questions asking what a group of blocks is worth altogether as asking for the count of those blocks rather than their total value.",
+    "teachingImplication": "Contrast the quantity of blocks with their cumulative value by having the student multiply the count of blocks by the value of a single block.",
+    "checkNext": "Present a set of tens-rods or hundred-flats and ask for their total worth to see if the student continues to report only the number of blocks present.",
+    "confidence": "high",
+    "evidenceTier": "judge"
+  }
+}

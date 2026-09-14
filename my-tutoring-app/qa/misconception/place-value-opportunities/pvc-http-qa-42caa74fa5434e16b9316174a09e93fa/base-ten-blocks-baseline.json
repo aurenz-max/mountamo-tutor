@@ -1,0 +1,49 @@
+{
+  "type": "base-ten-blocks",
+  "instanceId": "pvc-http-qa-42caa74fa5434e16b9316174a09e93fa-base-ten-blocks",
+  "data": {
+    "title": "Four-Digit Place Value Explorer",
+    "description": "Practice reading four-digit numbers with base-ten blocks, paying close attention to place values and interior zeros.",
+    "numberValue": 6888,
+    "challenges": [
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 5306,
+        "hint": "Count each type of block carefully, remembering to look at the tens place.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 7606,
+        "hint": "Check the tens place carefully to see how many tens blocks are there.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 7104,
+        "hint": "Count the thousands, hundreds, tens, and ones to find the total.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 6096,
+        "hint": "Look closely at the hundreds column to see if there are any flat blocks.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      }
+    ],
+    "gradeBand": "4-5",
+    "interactionMode": "decompose",
+    "decimalMode": false,
+    "maxPlace": "thousands",
+    "supplyTray": true,
+    "supportTier": "medium"
+  }
+}

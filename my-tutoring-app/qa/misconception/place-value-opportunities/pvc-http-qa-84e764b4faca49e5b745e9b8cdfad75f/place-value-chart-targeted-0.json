@@ -1,0 +1,114 @@
+{
+  "type": "place-value-chart",
+  "instanceId": "pvc-http-qa-84e764b4faca49e5b745e9b8cdfad75f-place-value-chart0",
+  "data": {
+    "title": "Say It, Write It: Four-Digit Place Value",
+    "description": "Welcome! You will explore several four-digit numbers with your tutor as you identify places, say digit values out loud, and write numbers in the chart.",
+    "challenges": [
+      {
+        "id": "pvc-1",
+        "targetNumber": 4596,
+        "highlightedDigitPlace": 1,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Ones",
+          "Tens",
+          "Hundreds",
+          "Thousands"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 90,
+            "wordForm": "Ninety"
+          },
+          {
+            "value": 9,
+            "wordForm": "Nine"
+          },
+          {
+            "value": 900,
+            "wordForm": "Nine Hundred"
+          },
+          {
+            "value": 0.9,
+            "wordForm": "Nine Tenths"
+          }
+        ]
+      },
+      {
+        "id": "pvc-2",
+        "targetNumber": 5033,
+        "highlightedDigitPlace": 1,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Ones",
+          "Tens",
+          "Hundreds",
+          "Thousands"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 3,
+            "wordForm": "Three"
+          },
+          {
+            "value": 300,
+            "wordForm": "Three Hundred"
+          },
+          {
+            "value": 30,
+            "wordForm": "Thirty"
+          },
+          {
+            "value": 0.30000000000000004,
+            "wordForm": "Three Tenths"
+          }
+        ]
+      },
+      {
+        "id": "pvc-3",
+        "targetNumber": 3959,
+        "highlightedDigitPlace": 2,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Hundreds",
+          "Tens",
+          "Thousands",
+          "Ones"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 90,
+            "wordForm": "Ninety"
+          },
+          {
+            "value": 9000,
+            "wordForm": "Nine Thousand"
+          },
+          {
+            "value": 900,
+            "wordForm": "Nine Hundred"
+          },
+          {
+            "value": 9,
+            "wordForm": "Nine"
+          }
+        ]
+      }
+    ],
+    "challengeType": "compare",
+    "showExpandedForm": true,
+    "showMultipliers": false,
+    "supportTier": "medium",
+    "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+    "misconceptionOpportunity": {
+      "id": "3f893797-b799-4942-a8a6-c9d43b00c2d1",
+      "lessonId": "f811f6cf-7ddc-4e2e-aa14-b3f7056f8768",
+      "grade": "4",
+      "curriculumVersion": "98202434-e96c-42ed-8c8e-6fd801b451ef@2026-06-09T03:49:30.592858"
+    }
+  }
+}

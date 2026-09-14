@@ -100,6 +100,12 @@ export interface GenerationContext {
    * field must never change difficulty, eval mode, scope, or item counts.
    */
   remediationFocus?: string;
+  /**
+   * Saved observations delivered by the authenticated generation server for this
+   * objective's scope. Private: for the shared applicability planner only, never
+   * for wrapper prompts or serialized content.
+   */
+  learningObservations?: readonly { id: string; summary: string; evidence?: string }[];
 
   // ── Escape hatch: still-bespoke per-primitive config ───────
   /**

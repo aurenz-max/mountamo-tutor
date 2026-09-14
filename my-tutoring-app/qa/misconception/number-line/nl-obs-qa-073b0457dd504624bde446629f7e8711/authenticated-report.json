@@ -1,0 +1,66 @@
+{
+  "synthetic": true,
+  "status": "PASS",
+  "tests": [
+    "Firebase user authenticated; disposable student reserved",
+    "Signed request accepted (empty profile: nothing available); learner token without service signature rejected (403)",
+    "Real distiller diagnosed a solved session from first responses (score 100, firstResponseScore 0); count-on and count-back hypotheses stored with published scope stamped",
+    "Signed delivery returns only the same-skill hypothesis (count-on and count-back kept apart; grade 2 refused); opaque IDs",
+    "Unauthenticated baseline unadapted; client-supplied learningObservations ignored",
+    "Saved hypothesis drives two authenticated jump draws with compiled zero-anchored contrasts; hard tier ineligible; no private text in content",
+    "Delivery and generation wrote nothing; hypothesis unchanged; no receipt or resolution"
+  ],
+  "draws": [
+    {
+      "draw": 0,
+      "adaptation": {
+        "move": "contrast_start_positions",
+        "status": "targeted",
+        "comparisonCount": 2,
+        "source": "saved-observation"
+      },
+      "range": {
+        "min": 0,
+        "max": 20
+      },
+      "jumps": [
+        "0+1=1",
+        "16+1=17",
+        "19-1=18",
+        "14-1=13"
+      ],
+      "instructions": [
+        "Put your finger on 0, then make 1 big hop to the right!",
+        "Find the number 16 on your number line and hop forward 1 space to see where you land!",
+        "Put your finger on 19. Now, hop back 1 space to the left!",
+        "Put your finger on 14. Now hop back 1 space to the left to see where you land!"
+      ]
+    },
+    {
+      "draw": 1,
+      "adaptation": {
+        "move": "contrast_start_positions",
+        "status": "targeted",
+        "comparisonCount": 2,
+        "source": "saved-observation"
+      },
+      "range": {
+        "min": 0,
+        "max": 20
+      },
+      "jumps": [
+        "4-4=0",
+        "15-4=11",
+        "20-5=15",
+        "14-4=10"
+      ],
+      "instructions": [
+        "Let's take a big leap! Put your finger on the number 4, and hop back 4 spaces to the left.",
+        "Let's count backward! Start at 15 on the number line and hop left 4 spaces. Where do you land?",
+        "Find the number 20 on your number line, and hop backward 5 spaces to see where you land!",
+        "Put your finger on 14 and hop backward 4 spaces to see where you land!"
+      ]
+    }
+  ],
+  "cleanup": "verified absent"
+}

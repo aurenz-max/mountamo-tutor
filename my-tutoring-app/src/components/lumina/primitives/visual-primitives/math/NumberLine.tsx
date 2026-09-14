@@ -25,7 +25,8 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { isFindBetweenAnswerCorrect } from './numberLineGrading';
+import { isFindBetweenAnswerCorrect, isSnappedPlacementExact } from './numberLineGrading';
+import { buildJumpDiagnosisEvidence, jumpFirstResponseScore, jumpResponseFor, type JumpResponse } from './numberLineEvidence';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -83,6 +84,14 @@ export interface NumberLineData {
    * (e.g. at 'hard' the tutor must not name a strategy the instruction withheld).
    */
   supportTier?: 'easy' | 'medium' | 'hard';
+
+  /** Safe generation metadata: which teaching move shaped the jumps and whether it landed. Never rendered. */
+  learningAdaptation?: {
+    move: 'contrast_start_positions';
+    status: 'targeted' | 'already-targeted' | 'insufficient-capacity';
+    comparisonCount: number;
+    source?: 'saved-observation';
+  };
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -290,6 +299,8 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
 
   // Jump mode
   const [jumpEndPoints, setJumpEndPoints] = useState<number[]>([]);
+  // Every Check on a jump, including tries later corrected. Evidence only; grading is unchanged.
+  const jumpResponsesRef = useRef<JumpResponse[]>([]);
 
   // Challenge tracking (shared hooks)
   const {
@@ -606,10 +617,13 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
               ? op.startValue + op.changeValue
               : op.startValue - op.changeValue;
             const error = Math.abs(jumpEndPoints[i] - expected);
-            if (error > tolerance + 0.001) allCorrect = false;
+            // A landing one hop short or past is wrong, not within tolerance.
+            if (!isSnappedPlacementExact(jumpEndPoints[i], expected, tolerance)) allCorrect = false;
             totalError += error;
           }
           correct = allCorrect;
+          jumpResponsesRef.current.push(jumpResponseFor(currentChallenge.id, currentAttempts + 1,
+            activeOperations, jumpEndPoints, tolerance));
           const avgError = totalError / activeOperations.length;
           accuracy = correct ? Math.max(0, 100 - (avgError / Math.max(rangeMax - rangeMin, 1)) * 100) : 0;
         }
@@ -721,11 +735,17 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
           gradeBand,
         };
 
+        const jumpResponses = jumpResponsesRef.current;
+        const diagnosisEvidence = buildJumpDiagnosisEvidence(jumpResponses, { min: rangeMin, max: rangeMax });
         submitEvaluation(
           totalCorrect === challenges.length,
           score,
           metrics,
-          { challengeResults }
+          { challengeResults, jumpResponses },
+          undefined,
+          // Challenges advance only when correct, so the submitted score cannot
+          // show a wrong first try; the first-response score lets the shared gate see it.
+          diagnosisEvidence ? { ...diagnosisEvidence, firstResponseScore: jumpFirstResponseScore(jumpResponses) } : undefined,
         );
       }
       return;

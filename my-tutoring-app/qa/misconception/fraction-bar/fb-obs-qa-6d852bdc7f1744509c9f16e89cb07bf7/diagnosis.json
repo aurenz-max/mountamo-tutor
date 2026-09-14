@@ -1,0 +1,8 @@
+{
+  "abstain": false,
+  "misconceptionText": "The student identifies the bottom number of a fraction as the numerator, using it both to select the numerator and to decide how many parts to shade.",
+  "teachingImplication": "Clarify the distinct positional definitions and roles of the top and bottom numbers in a fraction before having the student shade models.",
+  "checkNext": "Present an unprompted task asking the student to identify the numerator and denominator of a new fraction with distinct digits.",
+  "confidence": "high",
+  "evidenceTier": "structured"
+}

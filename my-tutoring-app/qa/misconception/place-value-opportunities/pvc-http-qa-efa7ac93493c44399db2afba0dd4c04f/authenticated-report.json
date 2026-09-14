@@ -1,0 +1,9 @@
+{
+  "synthetic": true,
+  "status": "FAIL",
+  "tests": [
+    "Firebase user authenticated; collision-checked disposable student reserved"
+  ],
+  "boundary": "Real authenticated API and Next generation; synthetic diagnosis. No microphone or canonical learning submission.",
+  "cleanup": "verified absent"
+}

@@ -43,6 +43,9 @@ import {
   blockNoun,
   blockNounPlural,
   occupiedPlaces,
+  readCount,
+  readWorthWord,
+  wordFor,
   tradeDown,
   tradeSolved,
   type BtColumns,
@@ -69,6 +72,12 @@ const PLACE_STYLE: readonly { fill: string; edge: string; w: number; h: number }
   { fill: 'bg-sky-400/80', edge: 'border-sky-200/70', w: 64, h: 64 },
   { fill: 'bg-amber-400/80', edge: 'border-amber-200/70', w: 64, h: 92 },
 ];
+
+/** The factual ask and answer word for one read_blocks step. Never shown to the child. */
+const readBlocksTask = (item: BaseTenItem) => ({
+  challenge: `${item.actionContract.instruction} Mat value ${item.problem.target}; asked block size: ${blockNounPlural(item.problem.place)}.`,
+  expected: item.step === 'worth' ? readWorthWord(item.problem) : wordFor(readCount(item.problem)),
+});
 
 export default function BaseTenBlocksDi({ data, className }: { data: BaseTenBlocksData; className?: string }) {
   const mode = (data.challenges?.[0]?.type ?? 'read_blocks') as BtMode;
@@ -117,11 +126,14 @@ export default function BaseTenBlocksDi({ data, className }: { data: BaseTenBloc
       affirmedLast: 'You finished the block mat.',
       done: 'Nice work with the blocks!',
     },
-    diagnosisObservation: (item, { lastHeard }) => (item.answerKind === 'gesture' ? null : {
-      challenge: item.actionContract.instruction,
-      expected: item.step === 'worth' ? 'the place value of those blocks' : 'a number',
-      observed: lastHeard ?? 'No intelligible answer.',
-    }),
+    // read_blocks is this primitive's observation source (catalog
+    // misconceptionScope 'skill'): corrections carry the same factual task and
+    // answer words as the response ledger. regroup supplies no correction
+    // evidence, so capture skips it without a model call.
+    diagnosisObservation: (item, { lastHeard }) => (mode === 'read_blocks'
+      ? { ...readBlocksTask(item), observed: lastHeard ?? 'No intelligible answer.' } : null),
+    responseObservation: (item, { lastHeard }) => (mode === 'read_blocks' && lastHeard
+      ? { ...readBlocksTask(item), observed: lastHeard } : null),
   }), [items]);
 
   const finish = (summary: JudgedRunSummary) => {
@@ -154,22 +166,22 @@ export default function BaseTenBlocksDi({ data, className }: { data: BaseTenBloc
       totalChallenges: results.length,
       attemptsCount: attempts,
     };
-    const source = [...summary.observations].reverse().find((observation) => observation.judgeFeedback)
-      ?? summary.observations[summary.observations.length - 1];
+    // Correction evidence is kept whatever the average. A step corrected once
+    // still scores 67, so a bare count on every worth step passes the average;
+    // the first-try share is what the shared failure gate can see.
+    const diagnosisEvidence = mode === 'read_blocks' && summary.diagnosisEvidence
+      ? { ...summary.diagnosisEvidence,
+        firstResponseScore: Math.round((100 * summary.firstTryCount) / Math.max(1, summary.outcomes.length)) }
+      : undefined;
     evaluation.submitResult(
       accuracy >= 60,
       accuracy,
       metrics,
-      { interactionVersion: 'base-ten-di-v1', scoringBasis: 'spoken-place-value-and-traded-mat', results },
+      { interactionVersion: 'base-ten-di-v1', scoringBasis: 'spoken-place-value-and-traded-mat', results,
+        ...(mode === 'read_blocks' ? { learningResponses: summary.learningResponses, diagnosisEvidence,
+          problem: { challenges: data.challenges, supportTier: data.supportTier } } : {}) },
       undefined,
-      accuracy < 60 && source
-        ? {
-          challengeSummary: source.challenge,
-          expected: source.expected,
-          observed: source.observed,
-          judgeFeedback: source.judgeFeedback,
-        }
-        : undefined,
+      diagnosisEvidence,
     );
   };
 

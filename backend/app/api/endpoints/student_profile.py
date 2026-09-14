@@ -26,7 +26,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 
 from ...core.middleware import get_user_context
@@ -37,10 +37,89 @@ from ...dependencies import (
 )
 from ...services.calibration_engine import CalibrationEngine, p_correct
 from ...config.discrimination_priors import DEFAULT_DISCRIMINATION_PRIOR
+from ...core.generation_auth import require_generation_server
+from ...services.learning_observations import (
+    LearningObservationIn, ObservationPhaseIn, ResponseObservationIn, hypothesis_key, is_server_delivered,
+    project_misconception_observation, project_response_observation, resolve_scope,
+    scoped_misconception_observations)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Signed generation-server routes require BOTH the learner identity and the
+# generation service signature. Private focus and compiled answer metadata are
+# never public APIs. The backend keeps no primitive table: which primitives
+# take part is declared by the frontend catalog and relayed on capture, and
+# every rule after that is a property of the stored record.
+
+
+class ObservationContextIn(BaseModel):
+    model_config = {"extra": "forbid"}
+    scope: Dict[str, str]
+
+
+class RetestContextIn(ObservationContextIn):
+    primitive_type: str = Field(..., min_length=1, max_length=120, pattern=r"^[a-z0-9-]+$")
+
+
+@router.get("/misconception-status")
+async def misconception_status(primitive_type: str = Query(..., min_length=1, max_length=120, pattern=r"^[a-z0-9-]+$"),
+                               skill_id: str = Query(..., min_length=1, max_length=200),
+                               user_context: dict = Depends(get_user_context)):
+    """Own-student status of one skill-scoped hypothesis for the dev tester; never diagnosis or answer metadata."""
+    store = get_firestore_service()
+    snapshot = store._misconceptions_subcollection(user_context["student_id"]).document(hypothesis_key(primitive_type, skill_id)).get()
+    record = snapshot.to_dict() if snapshot.exists else {}
+    stamped = record.get("scope_context")
+    # Compatible = the stamped scope is still the live publication, so a retest can bind to it.
+    compatible = bool(stamped and await resolve_scope(store, stamped) == stamped)
+    return {"status": record.get("status", "not-recorded"),
+            "revision": record.get("revision"),
+            "lastDetectedAt": record.get("last_detected_at"),
+            "resolvedAt": record.get("resolved_at"),
+            "resolvedAttemptId": record.get("resolved_attempt_id"),
+            "scopeCompatible": compatible}
+
+
+@router.post("/misconception-opportunity-context", dependencies=[Depends(require_generation_server)])
+async def misconception_opportunity_context(request: RetestContextIn, user_context: dict = Depends(get_user_context)):
+    """Private focus read for a certified retest: the source hypothesis at this exact published scope."""
+    store = get_firestore_service()
+    scope = await resolve_scope(store, request.scope)
+    if not scope:
+        return {"available": False, "reason": "unresolved-published-scope"}
+    records = await store.get_active_misconceptions(user_context["student_id"])
+    record = records.get(hypothesis_key(request.primitive_type, scope["skill_id"]), {})
+    if not record.get("hypothesis_id") or not record.get("revision"):
+        return {"available": False, "reason": "legacy-or-missing-hypothesis"}
+    if record.get('scope_context') != scope:
+        return {'available': False, 'reason': 'hypothesis-scope-mismatch'}
+    return {"available": True, "scope": scope, "hypothesis_id": record["hypothesis_id"],
+            "revision": record["revision"], "focus": record["misconception_text"]}
+
+
+@router.post("/learning-observation-context", dependencies=[Depends(require_generation_server)])
+async def learning_observation_context(request: ObservationContextIn, user_context: dict = Depends(get_user_context)):
+    """Owner's saved hypotheses for one published objective scope, any source
+    primitive. Exposure only: no receipt, revision, or resolution authority."""
+    store = get_firestore_service()
+    scope = await resolve_scope(store, request.scope)
+    if not scope:
+        return {"available": False, "reason": "unresolved-published-scope"}
+    records = await store.get_active_misconceptions(user_context["student_id"])
+    observations = await scoped_misconception_observations(store, records, scope)
+    return {"available": bool(observations), "observations": observations}
+
+
+@router.post("/misconception-opportunities", dependencies=[Depends(require_generation_server)])
+async def issue_misconception_opportunities(request: Dict[str, Any], user_context: dict = Depends(get_user_context)):
+    store = get_firestore_service()
+    scope = await resolve_scope(store, request.get("scope", {}))
+    if scope != request.get("scope"):
+        return {"opportunity_set_id": None}
+    receipt = await store.issue_misconception_opportunity(user_context["student_id"], request)
+    return {"opportunity_set_id": receipt}
 
 # Canonical curriculum subject IDs (matches CURRICULUM_SUBJECT_IDS on the frontend)
 _CANONICAL_SUBJECTS = {"MATHEMATICS", "LANGUAGE_ARTS", "SCIENCE", "SOCIAL_STUDIES"}
@@ -470,7 +549,9 @@ async def get_generation_context(
 
         misconceptions_out = [
             {
-                "text": item.get("misconception_text"),
+                # Server-delivered hypotheses have a private signed read. The
+                # frontend gets status/scope only, never private stored prose.
+                "text": "" if is_server_delivered(item) else item.get("misconception_text"),
                 "detectedAt": item.get("last_detected_at"),
                 "sourceAttemptId": item.get("source_attempt_id"),
                 "primitiveType": item.get("primitive_type"),
@@ -536,7 +617,46 @@ async def get_generation_context(
 # only; diagnosis happens at the point of primitive.
 
 
+@router.get("/learning-observations")
+async def learning_observations(user_context: dict = Depends(get_user_context)):
+    """Owner-only projection for the frontend profile. No hypothesis or receipt IDs."""
+    store = get_firestore_service()
+    observations = []
+    legacy_count = 0
+    for snapshot in store._misconceptions_subcollection(user_context["student_id"]).limit(100).stream():
+        record = snapshot.to_dict()
+        if not record.get("learning_observation"):
+            legacy_count += 1
+            continue  # Legacy diagnoses have no inspectable problem/phase packet.
+        observations.append(project_misconception_observation(snapshot.id, record))
+    for record_id, record in await store.get_response_observations(user_context['student_id']):
+        observations.append(project_response_observation(record_id, record))
+    observations.sort(key=lambda row: row.get('updatedAt') or '', reverse=True)
+    return {"observations": observations, "legacyCount": legacy_count}
+
+
+@router.post('/learning-observations')
+async def record_learning_observation(request: ResponseObservationIn,
+                                      user_context: dict = Depends(get_user_context)):
+    """Authenticated owner storage; no learner ID, status or grade result accepted."""
+    store = get_firestore_service()
+    if store is None or user_context.get('student_id') is None:
+        return {'stored': False, 'reason': 'unavailable'}
+    try:
+        record_id = await store.save_response_observation(int(user_context['student_id']), request.model_dump())
+        return {'stored': True, 'observationId': 'response:' + record_id}
+    except Exception:
+        logger.exception('Learning observation storage failed')
+        return {'stored': False, 'reason': 'internal_error'}
+
+
 class MisconceptionIn(BaseModel):
+    model_config = {"extra": "forbid"}
+    grade: Optional[str] = None
+    subject: Optional[str] = Field(default=None, max_length=120)
+    # Relayed catalog declaration (observationDelivery). 'server' commits the
+    # hypothesis to a canonical published scope or refuses the write.
+    delivery: Optional[Literal["server"]] = None
     primitive_type: str = Field(..., min_length=1, max_length=120, pattern=r"^[a-z0-9-]+$")
     scope: Literal["primitive", "skill"]
     subskill_id: Optional[str] = None
@@ -545,6 +665,7 @@ class MisconceptionIn(BaseModel):
     confidence: Optional[str] = None      # 'high' | 'medium' (distiller echo)
     evidence_tier: Optional[str] = None   # 'judge' | 'structured' (distiller echo)
     source_attempt_id: str
+    learning_observation: Optional[LearningObservationIn] = None
 
 
 @router.post("/misconceptions")
@@ -561,12 +682,22 @@ async def record_misconception(
         return {"stored": False, "reason": "unavailable"}
 
     try:
+        # Server-delivered hypotheses are stored against their canonical published
+        # scope or not at all; client-supplied ids are cross-checks, never truth.
+        scope_context = None
+        if request.delivery == "server":
+            if request.scope != "skill":
+                return {"stored": False, "reason": "skill-scope-required"}
+            scope_context = await resolve_scope(firestore, {"subject": _normalize_subject(request.subject),
+                "grade": request.grade, "skill_id": request.skill_id, "subskill_id": request.subskill_id})
+            if not scope_context:
+                return {"stored": False, "reason": "unresolved-canonical-scope"}
         stored = await firestore.add_or_update_misconception(
             student_id=int(student_id),
             primitive_type=request.primitive_type,
             scope=request.scope,
             skill_id=(
-                request.skill_id or _derive_skill_id(request.subskill_id)
+                (scope_context["skill_id"] if scope_context else request.skill_id or _derive_skill_id(request.subskill_id))
                 if request.scope == "skill" and request.subskill_id
                 else None
             ),
@@ -576,6 +707,8 @@ async def record_misconception(
             confidence=request.confidence,
             evidence_tier=request.evidence_tier,
             firebase_uid=user_context.get("firebase_uid"),
+            **({"scope_context": scope_context} if scope_context else {}),
+            **({"learning_observation": request.learning_observation.model_dump()} if request.learning_observation else {}),
         )
         return {
             "stored": True,

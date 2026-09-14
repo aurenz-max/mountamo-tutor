@@ -1,0 +1,8 @@
+{
+  "abstain": false,
+  "misconceptionText": "The student reads requests for the value of a digit as asking for the numeral's face value, so they report only the isolated digit name regardless of its column position.",
+  "teachingImplication": "Contrast the face value of a digit with its positional value using visual base-ten blocks to highlight how place changes total quantity.",
+  "checkNext": "Present a multi-digit number and ask for the value of the non-unit leading digit.",
+  "confidence": "high",
+  "evidenceTier": "structured"
+}

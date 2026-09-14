@@ -20,12 +20,16 @@ import type {
 } from '../types';
 import { submitEvaluationToBackend } from '../api/evaluationApi';
 import { captureMisconception } from '../diagnosis/captureMisconception';
+import { captureLearningObservation } from '../diagnosis/captureLearningObservation';
+import type { CaptureStatus } from '../diagnosis/captureMisconception';
 
 // =============================================================================
 // Context Types
 // =============================================================================
 
 export interface EvaluationContextType {
+  captureStatuses?: Record<string, CaptureStatus>;
+  learningCaptureStatuses?: Record<string, CaptureStatus>;
   // Session info
   sessionId: string;
   exhibitId?: string;
@@ -148,6 +152,8 @@ export function EvaluationProvider({
   onCompetencyUpdate,
   localOnly = false,
 }: EvaluationProviderProps) {
+  const [captureStatuses, setCaptureStatuses] = useState<Record<string, CaptureStatus>>({});
+  const [learningCaptureStatuses, setLearningCaptureStatuses] = useState<Record<string, CaptureStatus>>({});
   // Generate session ID if not provided
   const [sessionId] = useState(() => {
     if (providedSessionId) return providedSessionId;
@@ -328,6 +334,11 @@ export function EvaluationProvider({
         sessionId,
         subskillId: result.subskillId || skill?.subskillId,
         gradeLevel,
+        onStatus: status => setCaptureStatuses(previous => ({ ...previous, [result.instanceId]: status })),
+      });
+      void captureLearningObservation(result, {
+        studentId, subskillId: result.subskillId || skill?.subskillId, gradeLevel,
+        onStatus: status => setLearningCaptureStatuses(previous => ({ ...previous, [result.instanceId]: status })),
       });
     } catch (error) {
       console.error('[EvaluationContext] Submission failed:', error);
@@ -524,12 +535,14 @@ export function EvaluationProvider({
     demonstratedSkills,
     demonstratedSkillLog,
     sessionEngagement,
+    captureStatuses,
+    learningCaptureStatuses,
   }), [
     sessionId, exhibitId, studentId, topic, gradeLevel,
     curriculumSubject, curriculumSkillId, curriculumSubskillId,
     submitEvaluation, pendingSubmissions, submittedResults, failedSubmissions,
     isOnline, isSyncing, getSessionSummary, flushToBackend, retryFailed,
-    competencyUpdates, demonstratedSkills, demonstratedSkillLog, sessionEngagement,
+    competencyUpdates, demonstratedSkills, demonstratedSkillLog, sessionEngagement, captureStatuses, learningCaptureStatuses,
   ]);
 
   return (

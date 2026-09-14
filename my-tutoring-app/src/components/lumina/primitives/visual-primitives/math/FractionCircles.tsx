@@ -25,6 +25,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { buildFractionCompareEvidence, type FractionCompareResponse } from './fractionCompareEvidence';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -58,6 +59,9 @@ export interface FractionCirclesData {
   description?: string;
   challenges: FractionCirclesChallenge[];
   gradeBand?: 'K-2' | '3-5';
+  /** Safe generation metadata only; never rendered, never observation text. */
+  learningAdaptation?: { move: 'contrast_same_numerator_denominators';
+    status: 'targeted' | 'already-targeted' | 'insufficient-capacity'; comparisonCount: number; source?: 'saved-observation' };
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -257,6 +261,9 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
   // -------------------------------------------------------------------------
   // Refs
   // -------------------------------------------------------------------------
+  // Every compare response in order; compare advances only after a correct one,
+  // so first responses are the only evidence of an unassisted comparison.
+  const compareResponsesRef = useRef<FractionCompareResponse[]>([]);
   const stableInstanceIdRef = useRef(instanceId || `fraction-circles-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
@@ -415,6 +422,13 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
     const areEqual = Math.abs(leftVal - rightVal) < 0.001;
     const correctChoice: 'left' | 'right' | 'equal' = areEqual ? 'equal' : leftVal > rightVal ? 'left' : 'right';
     const correct = compareChoice === correctChoice;
+    compareResponsesRef.current.push({
+      itemId: currentChallenge.id,
+      left: { numerator: currentChallenge.numerator, denominator: currentChallenge.denominator },
+      right: { ...currentChallenge.compareFraction },
+      chosen: compareChoice, correct: correctChoice, attempt: currentAttempts + 1,
+      labelsShown: currentChallenge.showFractionLabels !== false, hintShown: currentAttempts >= 2,
+    });
 
     const leftStr = `${currentChallenge.numerator}/${currentChallenge.denominator}`;
     const rightStr = `${currentChallenge.compareFraction.numerator}/${currentChallenge.compareFraction.denominator}`;
@@ -535,11 +549,14 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
           attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
         };
 
+        const compareResponses = compareResponsesRef.current;
         submitEvaluation(
           correctCount === challenges.length,
           overallPct,
           metrics,
-          { challengeResults },
+          { challengeResults, ...(compareResponses.length ? { compareResponses } : {}) },
+          undefined,
+          buildFractionCompareEvidence(compareResponses),
         );
       }
       return;

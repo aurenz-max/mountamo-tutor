@@ -654,7 +654,28 @@ class SubmissionService:
         # answer from resolving an unrelated diagnosis. Firestore owns the live
         # misconception store; the legacy Cosmos path remains standard-only.
         remediation_successful = False
-        if remediation_primitive_type and frontend_score >= 80:
+        work = primitive_response.get("student_work")
+        evidence = work.get("misconception_opportunity") if isinstance(work, dict) else None
+        evidence = evidence if isinstance(evidence, dict) else {}
+        if evidence.get("opportunity_set_id"):
+            # A certified retest receipt carried in the student's work is the only
+            # way a scope-stamped hypothesis resolves (the store refuses the
+            # score/tag path for those). Evidence failure must not replay the
+            # fan-out above.
+            if self.firestore_service:
+                try:
+                    remediation_successful = await self.firestore_service.resolve_misconception_opportunity(
+                        student_id, evidence["opportunity_set_id"], attempt_id, evidence,
+                        {"student_id": student_id, "primitive_type": primitive_type,
+                         "instance_id": primitive_response.get("instance_id"),
+                         "lesson_id": evidence.get("lesson_id"),
+                         "scope": {"subject": self._normalize_subject_id(subject), "skill_id": skill_id,
+                                   "subskill_id": subskill_id, "grade": evidence.get("grade"),
+                                   "curriculum_version": evidence.get("curriculum_version")}},
+                    )
+                except Exception:
+                    logger.warning(f"[MISCONCEPTION_LOOP] Retest evidence unavailable after fan-out for {primitive_type}")
+        elif remediation_primitive_type and frontend_score >= 80:
             if remediation_primitive_type != primitive_type:
                 logger.warning(
                     f"[MISCONCEPTION_LOOP] Ignoring mismatched remediation tag "

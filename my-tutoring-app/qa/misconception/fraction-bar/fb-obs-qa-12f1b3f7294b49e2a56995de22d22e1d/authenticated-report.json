@@ -1,0 +1,9 @@
+{
+  "synthetic": true,
+  "status": "FAIL",
+  "tests": [
+    "Firebase user authenticated; disposable student reserved",
+    "Learner token without service signature rejected (403)"
+  ],
+  "cleanup": "verified absent"
+}

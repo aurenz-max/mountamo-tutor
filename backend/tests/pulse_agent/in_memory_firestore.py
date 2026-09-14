@@ -376,6 +376,8 @@ class InMemoryFirestoreService:
         confidence: Optional[str] = None,
         evidence_tier: Optional[str] = None,
         firebase_uid: Optional[str] = None,
+        scope_context: Optional[Dict[str, Any]] = None,
+        learning_observation: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """In-memory mirror of the Firestore one-slot misconception store."""
         self._write_count += 1
@@ -399,6 +401,8 @@ class InMemoryFirestoreService:
             "status": "active",
             "resolved_at": None,
             "firebase_uid": firebase_uid,
+            **({"scope_context": scope_context} if scope_context else {}),
+            **({"learning_observation": learning_observation} if learning_observation else {}),
         }
         self._misconceptions[student_id][key] = doc
         return copy.deepcopy(doc)
@@ -411,6 +415,8 @@ class InMemoryFirestoreService:
         doc = self._misconceptions.get(student_id, {}).get(key)
         if not doc or doc.get("status") != "active":
             return False
+        if doc.get("scope_context"):
+            return False  # server-delivered: only a certified retest receipt resolves
         doc["status"] = "resolved"
         doc["resolved_at"] = (
             self.virtual_now or datetime.now(timezone.utc)

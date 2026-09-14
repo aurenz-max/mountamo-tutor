@@ -1,0 +1,381 @@
+{
+  "$comment": "Per-primitive misconception-loop build plans for the first six MATH_CATALOG entries, in catalog order. Stations follow the /add-misconception-loop consumer contract. Every line is grounded in the working tree on 2026-09-12; 'planned' means nothing is implemented for that concept. Rendered by build-review.cjs into index.html (#plans and each library card).",
+  "stations": [
+    [
+      "classification",
+      "Classification"
+    ],
+    [
+      "target",
+      "Target task"
+    ],
+    [
+      "observed",
+      "Observation the planner would receive"
+    ],
+    [
+      "capability",
+      "Teaching capability (typed moves)"
+    ],
+    [
+      "eligibility",
+      "Code-owned eligibility gate"
+    ],
+    [
+      "evidence",
+      "Evidence producer"
+    ],
+    [
+      "delivery",
+      "Observation delivery"
+    ],
+    [
+      "execution",
+      "Executing the validated move"
+    ],
+    [
+      "preservation",
+      "What must stay intact"
+    ],
+    [
+      "verification",
+      "Verification before claiming the connection"
+    ],
+    [
+      "probe",
+      "Real-probe status"
+    ],
+    [
+      "residual",
+      "Residual work and decisions"
+    ],
+    [
+      "files",
+      "Files"
+    ]
+  ],
+  "plans": [
+    {
+      "id": "bar-model",
+      "status": "implemented",
+      "mode": "picture_graph",
+      "classification": "Capture repair plus consumer connection, implemented 2026-09-13. bar-model now produces picture_graph selection evidence, is a server-delivered source, and consumes in-scope observations through the shared planner. It has no resolution authority.",
+      "target": "picture_graph · Grade 3 MEAS003-04-a (scaled picture graphs; the published Grade 2 curriculum has no picture-graph subskill, so the earlier Grade 2 / 2.MD.D.10 target was wrong) · medium support tier. The icon value is tier-owned (easy = 2, medium and hard = 5) and is held.",
+      "observed": "Reports the number of icons in a row as the row's total when the key says each icon stands for 5.",
+      "capability": {
+        "task": "Read a picture graph whose key says one icon stands for a fixed number of items (5 at medium). The named row is highlighted; the learner picks its total from four numbers, one of which is always the row's icon count.",
+        "moves": [
+          {
+            "id": "contrast_icon_count_and_row_value",
+            "description": "Pair two picture graphs with the same key: one highlighted row has 5 icons (total 25), another has 1 icon (total 5). The icon count of the first is the correct total of the second, so the pair separates how many icons are shown from how many items they stand for.",
+            "holds": "Icon value, four rows and labels, row order, challenge count and order, support flags, the mode.",
+            "changes": "The targeted row's icon count in at most two challenges (fewest changes preferred). Answers, choices and axis maximum are recomputed; a prompt or hint citing a stale number falls back to the code template.",
+            "cannotTeach": "Axis reading on scaled bar graphs, comparing rows, how-many-more questions."
+          }
+        ]
+      },
+      "eligibility": "eligibleBarModelTeaching: mode === picture_graph (single-mode session), tier === medium, grade 2 or 3, and topic/intent name no number. The delivery wrapper reads observations only for targetEvalMode picture_graph at medium.",
+      "evidence": {
+        "now": "Every picture_graph choice set includes the bare icon count (answer key unchanged). BarModel records every tapped option per challenge (studentWork.selections) and, when a first choice was wrong, submits a structured DiagnosisEvidence packet: prompt, key value, icon count, choices, selections in order, highlight state, and firstResponseScore (the activity advances only after a correct choice, so the canonical score hides first-choice errors). Catalog declares misconceptionScope: 'skill'.",
+        "add": "Other option modes (read_scale, scaled_bar_graph, graph_word_problem, read_one_to_one) record selections but emit no evidence."
+      },
+      "delivery": "Shared generateWithLearningObservations + signed /learning-observation-context: active skill-scoped hypotheses from server-delivered sources whose stored published scope shares subject, grade and skill. bar-model is in SERVER_DELIVERED_SOURCES, so its captures require a resolvable published scope and are never resolved by a score or client tag. Source attribution is stamped server-side only.",
+      "execution": "generateBarModel plans once (planLearningAdaptation) before the sub-generator fan-out, then selectIconCountContrast runs on the finished challenges after support tiers are applied. Reports targeted, already-targeted or insufficient-capacity with comparisonCount.",
+      "preservation": [
+        "Challenge count and order; four rows with unchanged labels; every value a nonzero multiple of 5 at most 40.",
+        "Support tier, highlight and value-readout flags; tier-owned icon value.",
+        "Answer key, choices and axis maximum recomputed in code; the bare icon count is a choice on every item.",
+        "Private observation text reaches only the planner call: not the sub-generator prompts, title, description or serialized data."
+      ],
+      "verification": [
+        "Unit: options, selector (targeted / fewest-changes / already-targeted / insufficient-capacity), task gate, real generateBarModel with mocked model — causal against the same baseline; removing the selector call fails the test. Abstention, no observations and ineligible tasks leave output identical.",
+        "Mounted BarModel: wrong-then-right choices submit selections and a structured packet with firstResponseScore; all-first-correct submits none.",
+        "Backend: same-skill delivery and exclusions, no score/tag resolution, capture requires a resolvable published scope (3 tests)."
+      ],
+      "probe": "PASS. Real planner + generator, 14 draws with expected outcomes fixed first (qa/misconception/bar-model/2026-09-13T12-24-58-436Z): distilled text and two paraphrases targeted; unrelated, nearby axis-step (3 draws), contradictory (2) and place-value digit-worth (3) abstained; no leaks, every compiled contrast re-checked independently. Authenticated run bm-http-qa-bcb994bd63aa434882975f25c71126ed: real distiller on success=true/score=90/firstResponseScore=25 evidence, stored at MEAS003-04-a, signed delivery, two draws with source saved-observation, baseline and hard tier unadapted, no receipt, cleanup verified.",
+      "residual": [
+        "Pedagogy (eval-fix): picture graphs render a numbered axis under the icon rows, so a row's total can be read off the tick under its last icon without using the key. This weakens both the mode and the contrast.",
+        "Variety (add-number-pool-service or eval-fix): unadapted picture_graph draws converge; several baseline sessions had all four targets equal to 20, and one authenticated draw asked about Bananas four times.",
+        "Content (eval-fix): the key emoji can differ from the targeted row's category (an apple key on a Bananas row).",
+        "Spoken modes carry runner observations (BarModel.tsx) that are not forwarded as learningResponses.",
+        "Browser acceptance of the new choice row and live capture from a real session are unverified."
+      ],
+      "files": [
+        "my-tutoring-app/src/components/lumina/service/math/barModelRemediation.ts",
+        "my-tutoring-app/src/components/lumina/service/math/gemini-bar-model.ts",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/BarModel.tsx",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/barModelEvidence.ts",
+        "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts"
+      ]
+    },
+    {
+      "id": "number-line",
+      "status": "implemented",
+      "mode": "jump",
+      "classification": "Capture repair plus consumer connection, implemented. Capture needed three repairs: jump grading accepted a landing one hop short or past (integer tolerance equalled the snap step); sessions advance only when correct, so every submission scored 100 and the shared failure gate never fired (fixed by the shared opt-in firstResponseScore); and LLM hints counted the hops out loud, 2 naming the landing (NL-3, fixed in code).",
+      "target": "jump (show_jump) · Grade 1 OPS001-03-a (count on within 20) or OPS001-04-a (count back within 20) · medium support tier.",
+      "observed": "Counts the starting number as the first hop, so each landing is one space short in the direction of travel.",
+      "capability": {
+        "task": "Show one addition or subtraction as movement on a whole-number line: start at the marked number, hop the stated number of spaces right to add or left to subtract with no drawn arc, and place the landing point.",
+        "moves": [
+          {
+            "id": "contrast_start_positions",
+            "description": "Pair two jump challenges with the same hop count and direction: one anchored at zero (adding from 0, or subtracting down to 0), where the landing or the start equals the hop count, and one from a nonzero start. Counting the start tick as a hop puts both landings one space short; at zero that landing visibly disagrees with the hop count.",
+            "holds": "Count 4, hop size and direction within the pair, every other challenge, the K-2 jump-size table, range, uniqueness, tier scaffolds.",
+            "changes": "At most one challenge: it becomes the zero-anchored twin of its neighbour, before any text is written.",
+            "cannotTeach": "Hop direction (a direction observation abstains), plotting accuracy, ordering, or fractions. Not executable when the lesson range excludes zero."
+          }
+        ]
+      },
+      "eligibility": "Delivery: numberLineObservationScope pins Grade 1 OPS001-03-a / OPS001-04-a, jump, medium. Generator: eligibleNumberLineTeaching = grade 1 or 2, jump, medium, and no named equation or start in topic or intent (a range such as 'within 20' is allowed). identify, plot, order, between and the hard tier's chained jumps are never eligible.",
+      "evidence": {
+        "now": "Every jump Check is kept in student_work.jumpResponses (start, operation, expected and placed landings, try number, arc shown). DiagnosisEvidence attaches when any try was wrong and carries firstResponseScore. Jump grading requires the exact snapped landing. misconceptionScope: skill; number-line is in SERVER_DELIVERED_SOURCES.",
+        "add": "None for this move. The opt-in firstResponseScore gate (types.ts isDiagnosableFailure) is shared with fraction-bar, bar-model and fraction-circles."
+      },
+      "delivery": "generateWithLearningObservations (shared): signed owner request to /learning-observation-context; same published subject, grade and skill only, so count-on and count-back observations stay apart. Source stamped server-side; no receipt, no resolution.",
+      "execution": "One planLearningAdaptation call before content generation; selectStartContrast runs on the numeric jump tuples, so each instruction is written for the start it shows. No zero in range reports insufficient-capacity and keeps the baseline.",
+      "preservation": [
+        "R1 range and R2 band: the zero-anchored challenge uses the resolved range and the [1..5] table.",
+        "R4: every show_jump recomputes (start ± size = landing); oracle answer-key-desync stays clean.",
+        "R5, R6 untouched: order and between code paths unchanged.",
+        "Support tier: arc, anchors and tick labels as the tier set them; hard-tier chained jumps are ineligible.",
+        "Challenge count 4 and uniqueness of (start, direction, size)."
+      ],
+      "verification": [
+        "numberLineRemediation.test.ts, gemini-number-line.remediation.test.ts (seeded causal change; fails with the selector removed), gemini-number-line.jump-text.test.ts, numberLineObservationServer.test.ts (real registry path), numberLineEvidence.test.ts, NumberLine.jump-evidence.test.tsx (mounted: a one-hop-short tap is graded wrong and submitted as evidence), backend test_number_line_observation_scope.py.",
+        "Real distiller: consistent one-short packet diagnosed on a score-100 session; scattered errors abstained; direction errors diagnosed as direction; a single slip stopped at the gate.",
+        "Real planner with delivered evidence 6/6; real registry generation 8/8 cases, 15/15 repeats, 18/18 after the hint fix (positives, paraphrases, unrelated, plotting accuracy, direction, contradictory; one-past abstained 3/3 as exploratory).",
+        "Authenticated store, signed delivery and generation with cleanup verified."
+      ],
+      "probe": "PASS. artifacts/learning-applicability/number-line/ (report.json, report-repeat.json, after-nl3/report-repeat.json); authenticated run nl-obs-qa-dbddafe9b9004531a0920984e736c843 (one draw targeted, one already contained the pair).",
+      "residual": [
+        "plot_point still accepts a point one tick off (NL-2, /eval-fix).",
+        "The zero-anchored addition (0 + n) does not practise counting on from the larger addend, which OPS001-03-a names.",
+        "The plot-mode variant (reads a sparse label as a tick count) would be a second move; not built.",
+        "/misconception-test number-line not run; teaching effectiveness and learner transfer unverified (HUMAN-CHECKS #159)."
+      ],
+      "files": [
+        "my-tutoring-app/src/components/lumina/service/math/numberLineRemediation.ts",
+        "my-tutoring-app/src/components/lumina/service/math/gemini-number-line.ts",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/NumberLine.tsx",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/numberLineEvidence.ts",
+        "my-tutoring-app/src/components/lumina/docs/contracts/number-line.md",
+        "my-tutoring-app/qa/misconception/number-line-jump-2026-09-13.md"
+      ]
+    },
+    {
+      "id": "base-ten-blocks",
+      "status": "implemented",
+      "mode": "read_blocks",
+      "classification": "Evidence source and consumer, implemented. read_blocks corrections now originate a skill-scoped observation, and saved observations from any server-delivered source at the same published skill drive the next Grade 4 read_blocks activity. No resolution path.",
+      "target": "read_blocks · Grade 4 NBT004-01-b · medium support tier.",
+      "observed": "Says the bare block count where the total worth is asked (four for four thousand), from its own saved observation or a saved place-value one.",
+      "capability": {
+        "task": "Read a block mat representing a written whole number: each column's block count represents its written digit, and the size of each block represents that column's unit. Say the count of blocks in a column and then their total numeric worth. Does not ask for symbolic place names.",
+        "moves": [
+          {
+            "id": "contrast_block_count_and_worth",
+            "description": "Pair equal counts of blocks of different sizes, asking count and total worth. Holds the represented digit constant while changing its positional unit, making the changing quantity concrete.",
+            "holds": "Block count, mode, tier, script, zero pattern of each mat, item ids.",
+            "changes": "At most two target numbers within 1000–9999.",
+            "cannotTeach": "Naming a position; regrouping and unit conservation."
+          }
+        ]
+      },
+      "eligibility": "eligibleBaseTenTeaching: grade 4, mode read_blocks, tier medium, and placeValueTaskAllowsContrast (no explicit numbers, digit counts, decimals, or fractions in the intent).",
+      "evidence": {
+        "now": "Catalog misconceptionScope: skill. BaseTenBlocksDi read_blocks corrections carry the real ask, mat value, block size, answer word and tutor correction line, plus firstResponseScore; evidence reaches student_work whatever the average, and regroup supplies none. The shared gate diagnoses a failed submission or first responses below 60%, so a bare count on every worth step corrected once (67%, first-response 50%) diagnoses.",
+        "add": "Nothing for this concept. A single missed step across three mats (first-response 83%) saves nothing by design."
+      },
+      "delivery": "Shared generateWithLearningObservations (/learning-observation-context): signed, owner-scoped, observations from SERVER_DELIVERED_SOURCES whose stamped subject, grade and skill match. Eligible: Grade 4, read_blocks, medium; no longer pinned to one subskill. Opaque IDs; source stamped server-side; no receipt.",
+      "execution": "selectBlockWorthContrast: changes at most two targetNumbers, preserves zero patterns and compiled item ids, and always reports targeted, already-targeted or insufficient-capacity. gradeBand now follows the code-owned range (model labelled Grade 4 draws 2-3).",
+      "preservation": [
+        "Homogeneous read_blocks session; the DI script and cues unchanged.",
+        "Zero patterns, magnitude range, item ids, and the code-owned grade band.",
+        "The wrapper LLM never receives the observation; the prose never reaches the client manifest.",
+        "No score or client tag resolves a blocks-origin hypothesis."
+      ],
+      "verification": [
+        "BaseTenBlocksDi.capture.test.tsx (mounted runner to capture), baseTenObservationServer.test.ts (registry path), baseTenRemediation.test.ts, backend test_base_ten_observation_source.py.",
+        "Real distiller 5/5 plus 4/4 first-response cases, and real planner/generator 12/12 on blocks-origin text (artifacts/blocks-origin-observation); run 1 failures kept and traced to grade-band drift.",
+        "Authenticated blocks-origin run with capture refusals, stamped scope, profile display, two targeted draws and verified cleanup."
+      ],
+      "probe": "PASS. Blocks-origin: distiller 5/5, planner 12/12; authenticated run pvc-http-qa-cee522b2b2fd48148022f628a1452f91 with two targeted draws and verified cleanup. Earlier place-value-origin bridge runs pvc-http-qa-d562ee3ca0d94c5d8856f08a6ce90e1e and pvc-http-qa-42caa74fa5434e16b9316174a09e93fa.",
+      "residual": [
+        "Chart generation does not receive blocks-origin observations; exposure direction needs a user ruling.",
+        "regroup (unit conservation) has no evidence producer or capability.",
+        "Ordinary read_blocks draws often already contain the contrast (5 of 8 positive draws) and repeat mats (variety, BACKLOG item 18).",
+        "Microphone path from a spoken wrong worth to an adapted next activity is unverified (HUMAN-CHECKS)."
+      ],
+      "files": [
+        "my-tutoring-app/src/components/lumina/service/math/baseTenRemediation.ts",
+        "my-tutoring-app/src/components/lumina/service/math/placeValueTeachingCapabilities.ts",
+        "my-tutoring-app/src/components/lumina/service/generation/learningObservationServer.ts",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/BaseTenBlocksDi.tsx",
+        "backend/app/services/misconception_opportunities.py"
+      ]
+    },
+    {
+      "id": "fraction-circles",
+      "status": "implemented",
+      "mode": "compare",
+      "classification": "Capture repair plus consumer connection. compare advances only after a correct answer, so it always submitted success with score 100 and capture could never fire; it now opts into the shared first-response score. touch_fraction keeps its own runner evidence and is never eligible for this move.",
+      "target": "compare · Grade 3 (NF001-02-e, NF001-06-b, NF001-06-c) and Grade 4 (NF002-02-b, NF002-02-e) · medium support tier (numeric labels hidden).",
+      "observed": "Saved real distiller output from fictional evidence: \"The student judges fraction size by the total number of slices the circle is divided into rather than the shaded area, so they choose whichever circle has more partitions.\"",
+      "capability": {
+        "task": "Look at two equal-sized circles, each cut into equal slices with some shaded, and tap which fraction is larger or say they are equal. The instruction names both fractions; labels under the circles are hidden at medium.",
+        "moves": [
+          {
+            "id": "contrast_same_numerator_denominators",
+            "description": "Make two comparisons pairs with the same numerator and different denominators (1/4 vs 1/8, 2/3 vs 2/6). The circle cut into more slices has smaller slices, so the same number of them covers less: the larger denominator is the smaller amount.",
+            "holds": "The numerator within each pair, the size of the whole, the item count, ids, tier flags and every untouched pair.",
+            "changes": "One fraction in at most two pairs, rewritten to share the kept fraction's numerator.",
+            "cannotTeach": "Unequal parts (every circle is cut equally by construction), like-denominator comparison, naming, shading or building a fraction."
+          }
+        ]
+      },
+      "eligibility": "Delivery: targetEvalMode compare, difficulty medium, and one of five reviewed subskills whose comparison structure admits same-numerator pairs; like-denominator, benchmark and common-denominator objectives are excluded. Generator: Grade 3 or 4, pinned compare, medium tier, no explicit fraction such as 3/4 in the topic, intent or objective statement (published \"Examples:\" lists excepted). A fraction family named in the topic or intent narrows the denominators.",
+      "evidence": {
+        "now": "Every compare response is recorded in student_work.compareResponses (pair, choice, correct side, response number, labels shown). A session with a wrong response attaches structured DiagnosisEvidence: each pair's first response as phases, earlier wrong responses, and firstResponseScore. The packet states choices only and never names a misconception. misconceptionScope is 'skill'.",
+        "add": "identify, build and equivalent responses are not recorded; mixed touch/legacy sessions do not forward evidence to the aggregate submission."
+      },
+      "delivery": "Shared signed /learning-observation-context (fraction-circles is a SERVER_DELIVERED_SOURCES producer) through generateWithLearningObservations. The wrapper strips client-supplied observations and owns the saved-observation source stamp.",
+      "execution": "The planner runs alongside the content draw. After validation and tier flags, selectSameNumeratorContrast rewrites one fraction in at most two pairs that share neither numerator nor denominator and are not equal, using the grade's legal denominators (Grade 3: 2, 3, 4, 6, 8). Compare instructions are rebuilt from the final values. Deterministic and all-or-nothing; reports targeted, already-targeted or insufficient-capacity.",
+      "preservation": [
+        "Count 5–6, single-mode compare session, ids and order.",
+        "Pairs that already share a numerator or denominator, or are equal, are never rewritten.",
+        "supportTier and showFractionLabels as the tier set them; instruction and narration match the displayed values.",
+        "The content prompt and serialized output never contain observation text; no receipt or resolution."
+      ],
+      "verification": [
+        "fractionCirclesRemediation.test.ts (5): causal selector change against a fixed baseline, structure preservation, capacity, code gates, real generator with private text kept out of content calls, delivery gate and source stamp.",
+        "FractionCircles.capture.test.tsx (2): mounted wrong-then-right session submits score 100 with firstResponseScore 33 and factual phases; an all-correct session attaches nothing.",
+        "Real planner: nine cases × 3 draws, 27/27 as expected (distilled text and two paraphrases select; unshaded counting, building, adding denominators, like-denominator error, unequal parts and unreliable evidence abstain).",
+        "Real registry generations: baseline, distilled and paraphrase adapt only where expected, with compiled same-numerator counts matching metadata.",
+        "Authenticated: forged signature rejected, signed read scoped to the skill, unauthenticated and boundary objectives unadapted, two delivered draws, hypothesis unchanged, cleanup verified.",
+        "Full frontend suite 6,077 passed / 10 skipped; Lumina typecheck 0."
+      ],
+      "probe": "PASS. Real distiller, planner 27/27, registry generations, and authenticated run fc-http-qa-3d3f963ccc994f1fab6be6e14b4ebddf with two delivered draws and verified cleanup. Two earlier authenticated runs came back unadapted: one while the backend had no signing key, one unexplained (a local replica of the same path passed; backend reloads from concurrent sessions are the likely cause).",
+      "residual": [
+        "Grade 3 draws still use denominators 5, 10 and 12 and wholes (2/2, 4/4) in untouched pairs: the generator's 3-5 pool is wider than the Grade 3 standard. Queued for /topic-fidelity.",
+        "The shared gate needs first-response accuracy below 60%, so two misses in five pairs is not captured.",
+        "Declaring misconceptionScope also lets failed touch_fraction sessions reach the distiller; that capture path was not probed.",
+        "Browser capture (tap → saved observation → next lesson) and teaching effectiveness are unverified; see HUMAN-CHECKS.",
+        "A same-denominator contrast (2/6 vs 5/6) is the discriminating second move; add it after learner evidence on this one."
+      ],
+      "files": [
+        "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
+        "my-tutoring-app/src/components/lumina/service/math/gemini-fraction-circles.ts",
+        "my-tutoring-app/src/components/lumina/service/math/fractionCirclesRemediation.ts",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/FractionCircles.tsx",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/fractionCompareEvidence.ts"
+      ]
+    },
+    {
+      "id": "fraction-bar",
+      "status": "implemented",
+      "mode": "build",
+      "classification": "Capture repair plus consumer connection, implemented. Retargeted from identify to build: identify draws only unit fractions (numerator always 1), so no number can be the numerator of one fraction and the denominator of another there.",
+      "target": "build · Grade 3 NF001-03 (NF001-03-b \"Build a fraction a/b by shading\") · any support tier (build choices keep both numbers of each fraction at every tier).",
+      "observed": "Swaps numerator and denominator roles: picks the bottom number when asked for the top, or shades the denominator's count of parts.",
+      "capability": {
+        "task": "For each proper fraction (numerator at least 2, denominator 3–6): choose the numerator from four numbers, choose the denominator from four numbers, then shade the numerator's count of the bar's equal parts. Each question offers the fraction's other number.",
+        "moves": [
+          {
+            "id": "contrast_shared_digit_roles",
+            "description": "Two consecutive fractions in which the same number is the denominator of one and the numerator of the other (3/4, then 4/5), with both numbers of each fraction among the choices.",
+            "holds": "Item count, mode, tier, denominator window 3–6, uniqueness, the tier's choice builder, answers.",
+            "changes": "Order first; if no pair exists, one fraction is replaced.",
+            "cannotTeach": "Comparing, ordering, equivalence or operations with fractions."
+          }
+        ]
+      },
+      "eligibility": "eligibleFractionBarTeaching: mode === build. identify is excluded by content (unit fractions); compare and add_subtract are not offered.",
+      "evidence": {
+        "now": "FractionBar records every checked response (phase, expected, selected, attempt, hints) into studentWork.responses and submits DiagnosisEvidence with firstResponseScore (fractions with all three questions right first try). misconceptionScope: skill.",
+        "add": "None for this move. The shared first-response gate (claude-web-tutor-03) lets retry-until-correct sessions reach the distiller without changing the submitted score."
+      },
+      "delivery": "generateWithLearningObservations (shared, source-agnostic): signed owner request to /learning-observation-context, which returns active hypotheses from SERVER_DELIVERED_SOURCES producers whose write-time published scope shares subject, grade and skill. Opaque IDs; source stamped server-side; no receipt, no resolution.",
+      "execution": "selectSharedDigitRoleContrast inside the generator after buildChallenges; the planner runs in parallel with the number-free wrapper call and never shares its prompt.",
+      "preservation": [
+        "Count 3, single-mode build session, tier fields unchanged.",
+        "Fractions stay in 2 ≤ n < d ≤ 6 and unique; choices rebuilt by the tier's buildChoices.",
+        "Title and description never see the observation."
+      ],
+      "verification": [
+        "fractionBarRemediation.test.ts, gemini-fraction-bar.adaptation.test.ts (seeded causal change + oracle), learningObservationServer.test.ts, FractionBar.capture.test.tsx, backend test_learning_observation_context.py.",
+        "Real distiller + planner + generator: 19/19 draws (positives and paraphrases select the move; unrelated, nearby comparison, contradictory and place-value observations abstain; identify ineligible).",
+        "Authenticated store → signed delivery → generation run with cleanup verified."
+      ],
+      "probe": "PASS. artifacts/learning-applicability/fraction-bar/report.json (19/19); authenticated run fb-obs-qa-afd1b6675e3e4f7db75a9b98ed8d7729 (both draws already-targeted, source saved-observation).",
+      "residual": [
+        "Build baselines already contain a consecutive role-swap pair in most draws (6 of 10 adapted draws were already-targeted), so the move usually guarantees rather than adds the contrast. A stronger dosage needs its own decision.",
+        "identify cannot host a role contrast: its denominator question never offers 1 (floor 2), so a denominator-phase swap is unobservable there.",
+        "Teaching effectiveness and learner transfer are unverified (human check)."
+      ],
+      "files": [
+        "my-tutoring-app/src/components/lumina/service/math/fractionBarRemediation.ts",
+        "my-tutoring-app/src/components/lumina/service/math/gemini-fraction-bar.ts",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/fractionBarEvidence.ts",
+        "my-tutoring-app/src/components/lumina/service/generation/learningObservationServer.ts",
+        "my-tutoring-app/qa/misconception/fraction-bar-2026-09-13.md"
+      ]
+    },
+    {
+      "id": "place-value-chart",
+      "status": "implemented",
+      "mode": "compare",
+      "classification": "Full pilot: evidence source, consumer, authenticated delivery, and one certified resolution policy.",
+      "target": "compare · Grade 3–4, receipts only at the reviewed Grade 4 NBT004-01-b · medium support tier.",
+      "observed": "Says the bare digit where its worth is asked; or says the digit or its value where its place name is asked.",
+      "capability": {
+        "task": "Name a highlighted digit's position, say its numeric worth, and write dictated whole numbers.",
+        "moves": [
+          {
+            "id": "contrast_digit_worth",
+            "description": "Pair the same nonzero digit in different positions, asking its worth in each. Makes the contribution of position observable while holding digit identity constant.",
+            "holds": "Digit identity, count, mode, tier, script.",
+            "changes": "Two target numbers within 1111–9999.",
+            "cannotTeach": "Regrouping; decimals."
+          },
+          {
+            "id": "contrast_place_name_and_value",
+            "description": "Pair place-name and numeric-worth questions for the same highlighted digit across positions. Separates the label of a position from the quantity it represents.",
+            "holds": "Digit identity, count, mode, tier, script.",
+            "changes": "Two target numbers.",
+            "cannotTeach": "Nothing beyond the chart's vocabulary; this move earns no resolution receipt."
+          }
+        ]
+      },
+      "eligibility": "eligiblePlaceValueTeaching: mode compare, tier medium, and placeValueTaskAllowsContrast (grade 3 or 4, no explicit numbers, digit counts, decimals, or fractions in the intent).",
+      "evidence": {
+        "now": "useJudgedScriptRunner supplies diagnosisEvidence and learningResponses; the catalog declares misconceptionScope: 'skill'; correction evidence is retained independently of the aggregate score.",
+        "add": "Nothing for this concept."
+      },
+      "delivery": "generateWithPlaceValueOpportunity: signed, authenticated backend context for compare/medium at the objective's scope. A receipt is issued only for contrast_digit_worth under the legacy immediate-retest policy.",
+      "execution": "selectPlaceValueContrast within 1111–9999, compiled by the production script; certifyPlaceValueItems binds the receipt to the compiled items.",
+      "preservation": [
+        "Count, mode, tier, magnitude range, scripts, and answer recomputation.",
+        "Named lesson anchors outrank adaptation."
+      ],
+      "verification": [
+        "placeValueRemediation.test.ts, gemini-place-value.remediation.test.ts, placeValueOpportunityServer.test.ts, PlaceValueChart.capture.test.tsx, backend scope and roundtrip suites.",
+        "Seven real planner and generator cases; saved outputs replayed through the production compiler."
+      ],
+      "probe": "PASS. Fourteen real cases across both capabilities; authenticated runs pvc-http-qa-42caa74fa5434e16b9316174a09e93fa and pvc-http-qa-d562ee3ca0d94c5d8856f08a6ce90e1e with cleanup verified.",
+      "residual": [
+        "Grade 3 NBT003-02-a remains ineligible for receipts.",
+        "contrast_place_name_and_value has no resolution path by design.",
+        "Submission retry identity and canonical attempt references (executor student-data-loop).",
+        "Mounted microphone acceptance, HUMAN-CHECKS #113 and #63 (user).",
+        "Profile-wide observation retrieval."
+      ],
+      "files": [
+        "my-tutoring-app/src/components/lumina/service/math/placeValueRemediation.ts",
+        "my-tutoring-app/src/components/lumina/service/math/gemini-place-value.ts",
+        "my-tutoring-app/src/components/lumina/service/generation/placeValueOpportunityServer.ts",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/PlaceValueChart.tsx"
+      ]
+    }
+  ]
+}

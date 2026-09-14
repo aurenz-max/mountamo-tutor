@@ -1,0 +1,51 @@
+{
+  "output": {
+    "type": "place-value-chart",
+    "instanceId": "opportunity-saturated",
+    "data": {
+      "title": "Exploring Four-Digit Place Values",
+      "description": "Welcome! Together with your live tutor, you will explore four-digit numbers across three phases by identifying places, saying their values out loud, and building numbers.",
+      "challenges": [
+        {
+          "id": "pvc-1",
+          "targetNumber": 4499,
+          "highlightedDigitPlace": 1,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Ones",
+            "Hundreds",
+            "Tens",
+            "Thousands"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 9,
+              "wordForm": "Nine"
+            },
+            {
+              "value": 900,
+              "wordForm": "Nine Hundred"
+            },
+            {
+              "value": 90,
+              "wordForm": "Ninety"
+            },
+            {
+              "value": 0.9,
+              "wordForm": "Nine Tenths"
+            }
+          ]
+        }
+      ],
+      "challengeType": "compare",
+      "showExpandedForm": true,
+      "showMultipliers": false,
+      "supportTier": "medium",
+      "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+    }
+  },
+  "candidateItems": null,
+  "contentHash": "7aeed63cf5df5ec48ad4e0ddf2b1f02c1aab994174305762db19870771093053",
+  "pass": true
+}

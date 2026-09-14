@@ -1,0 +1,64 @@
+{
+  "type": "base-ten-blocks",
+  "instanceId": "pvc-http-qa-d562ee3ca0d94c5d8856f08a6ce90e1e-base-ten-blocks0",
+  "data": {
+    "title": "Four-Digit Place Value Explorer",
+    "description": "Learn to read and understand four-digit numbers using thousands, hundreds, tens, and ones blocks.",
+    "numberValue": 7275,
+    "challenges": [
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 8201,
+        "hint": "Count the thousands blocks first, then the hundreds, tens, and ones.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 2509,
+        "hint": "Look closely at how many flat hundreds blocks are on the mat.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 2305,
+        "hint": "Check the long rod tens column to find the correct tens digit.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 7202,
+        "hint": "Notice there are no tens rods shown on the mat.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 2505,
+        "hint": "Combine all the values starting from the largest block down to the smallest.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      }
+    ],
+    "gradeBand": "4-5",
+    "interactionMode": "decompose",
+    "decimalMode": false,
+    "maxPlace": "thousands",
+    "supplyTray": true,
+    "supportTier": "medium",
+    "learningAdaptation": {
+      "move": "contrast_block_count_and_worth",
+      "status": "already-targeted",
+      "comparisonCount": 2,
+      "source": "saved-observation",
+      "sourcePrimitive": "place-value-chart"
+    }
+  }
+}

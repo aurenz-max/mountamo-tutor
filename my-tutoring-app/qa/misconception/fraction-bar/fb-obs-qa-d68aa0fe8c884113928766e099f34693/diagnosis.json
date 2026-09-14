@@ -1,0 +1,8 @@
+{
+  "abstain": false,
+  "misconceptionText": "The student identifies the bottom number of a fraction as the numerator, choosing it during identification and using it to determine how many parts to shade.",
+  "teachingImplication": "Reinforce the spatial positions of fraction components by explicitly linking the top value to the count of selected parts.",
+  "checkNext": "Present a new fraction identification task asking the student to select the numerator from a non-unit fraction.",
+  "confidence": "high",
+  "evidenceTier": "structured"
+}

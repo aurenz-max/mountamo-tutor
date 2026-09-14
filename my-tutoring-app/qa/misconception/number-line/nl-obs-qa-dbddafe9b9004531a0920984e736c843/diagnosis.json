@@ -1,0 +1,8 @@
+{
+  "abstain": false,
+  "misconceptionText": "The student counts the starting tick mark as the first count rather than counting the hops between numbers, landing one space short of the intended distance.",
+  "teachingImplication": "Emphasize counting the jumps or intervals along the path rather than touching and counting the tick marks.",
+  "checkNext": "Present an unprompted number-line hop task to see if the student continues to count the starting mark as one and land one space short.",
+  "confidence": "high",
+  "evidenceTier": "structured"
+}

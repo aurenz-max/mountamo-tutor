@@ -1,0 +1,20 @@
+{
+  "synthetic": true,
+  "status": "FAIL",
+  "tests": [
+    "Firebase user authenticated; disposable student reserved",
+    "Learner token with a forged service signature rejected by the signature check (HTTP 403)",
+    "Authenticated capture stored one active skill-scoped observation with canonical Grade 3 scope",
+    "Signed backend read returns the one saved observation at its skill and nothing for another skill"
+  ],
+  "boundary": "Real auth/store/delivery/generation; fictional evidence and saved real distiller text. No microphone or canonical learning submission.",
+  "signed_context": {
+    "available": true,
+    "count": 1,
+    "reason": null
+  },
+  "trace": [
+    "{\"trace\":[{\"backend\":\"/api/student-profile/learning-observation-context\",\"status\":200,\"available\":true,\"count\":1,\"evidenceChars\":1575},{\"planner\":\"{\\n  \\\"move\\\": \\\"contrast_same_numerator_denominators\\\",\\n  \\\"observationIds\\\": [\\n    \\\"observation-fb81e7586bc707e7\\\"\\n  ]\\n}\",\"finish\":\"STOP\",\"ms\":984}],\"adaptation\":{\"move\":\"contrast_same_numerator_denominators\",\"status\":\"targeted\",\"comparisonCount\":2,\"source\":\"saved-observation\"},\"pairs\":[\"1/2 vs 1/3\",\"3/4 vs 3/6\",\"2/2 vs 9/12\",\"4/4 vs 1/6\",\"3/3 vs 1/10\"]}"
+  ],
+  "cleanup": "verified absent"
+}

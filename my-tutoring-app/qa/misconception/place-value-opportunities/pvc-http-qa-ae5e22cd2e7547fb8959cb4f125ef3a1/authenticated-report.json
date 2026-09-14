@@ -1,0 +1,14 @@
+{
+  "synthetic": true,
+  "status": "PASS",
+  "tests": [
+    "Firebase user authenticated; collision-checked disposable student reserved",
+    "Learner token without service signature rejected with HTTP 403",
+    "Authenticated capture stored an active hypothesis at canonical Grade 4 scope",
+    "Authenticated Firebase client denied direct private hypothesis read",
+    "Next fetched private focus, generated two compiled targets and issued a student/revision-bound receipt"
+  ],
+  "boundary": "Real authenticated API and Next generation; synthetic diagnosis. No microphone or canonical learning submission.",
+  "receipt_draw": 1,
+  "cleanup": "verified absent"
+}

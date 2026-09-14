@@ -1,0 +1,57 @@
+{
+  "synthetic": true,
+  "status": "PASS",
+  "tests": [
+    "Disposable Firebase user and student reserved",
+    "Real distiller produced a hypothesis from first-choice evidence on a success=true, score=90 activity",
+    "Authenticated capture stored an active skill-scoped hypothesis with a resolved published scope",
+    "Learner token without a valid generation-server signature rejected (403, invalid signature)",
+    "Signed delivery returned exactly the stored observation (with evidence, without attempt IDs)",
+    "Unauthenticated generation of the same task is unadapted",
+    "Authenticated hard-tier generation is unadapted (task gate)",
+    "Two authenticated draws consumed the saved observation: compiled icon-count/total contrast, bare counts offered, medium tier held, no private text in output",
+    "Hypothesis still active; no receipt issued (exposure only)"
+  ],
+  "boundary": "Fictional evidence through the real distiller, authenticated store, signed delivery and Next generation. No microphone, browser, canonical submission or resolution.",
+  "draws": [
+    {
+      "draw": 0,
+      "adaptation": {
+        "move": "contrast_icon_count_and_row_value",
+        "comparisonCount": 2,
+        "status": "targeted",
+        "source": "saved-observation"
+      },
+      "pair": [
+        0,
+        1
+      ],
+      "expected": [
+        25,
+        5,
+        20,
+        15
+      ]
+    },
+    {
+      "draw": 1,
+      "adaptation": {
+        "move": "contrast_icon_count_and_row_value",
+        "comparisonCount": 2,
+        "status": "targeted",
+        "source": "saved-observation"
+      },
+      "pair": [
+        0,
+        1
+      ],
+      "expected": [
+        25,
+        5,
+        20,
+        20
+      ]
+    }
+  ],
+  "cleanup": "verified absent"
+}

@@ -1,5 +1,6 @@
 # backend/app/db/firestore_service.py
 
+from google.api_core.exceptions import AlreadyExists
 from google.cloud import firestore
 from google.cloud.firestore import Client
 from google.oauth2 import service_account
@@ -7,12 +8,16 @@ from collections import Counter
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any, Optional, Union
 import asyncio
+import hashlib
+import json
 import logging
 import math
 import re
 import uuid
 import os
 from ..core.config import settings
+# Module attribute access keeps resolve_scope late-bound for tests.
+from ..services import learning_observations, misconception_receipts
 
 logger = logging.getLogger(__name__)
 
@@ -932,6 +937,35 @@ class FirestoreService:
         """Get reference to students/{student_id}/misconceptions"""
         return self._student_doc(student_id).collection('misconceptions')
 
+    async def save_response_observation(self, student_id: int, packet: Dict[str, Any]) -> str:
+        """One immutable observation per client attempt and primitive; retry-safe.
+
+        Separate from diagnosis slots and all learning-progress writers. Client
+        references are provenance, not certified joins to canonical attempts.
+        """
+        packet = dict(packet)
+        packet['subskill_id'] = await self._resolver.resolve(packet['subskill_id'])
+        if packet.get('skill_id'):
+            packet['skill_id'] = await self._resolver.resolve(packet['skill_id'])
+        if not packet['subskill_id']:
+            raise ValueError('Curriculum lineage could not be resolved')
+        identity = json.dumps([packet['primitive_type'], packet['source_attempt_id']], separators=(',', ':'))
+        record_id = hashlib.sha256(identity.encode()).hexdigest()
+        record = {**packet, 'schema_version': 1, 'status': 'suspected',
+                  'source_reference_kind': 'client-attempt', 'created_at': datetime.now(timezone.utc).isoformat()}
+        doc = self._student_doc(student_id).collection('learning_observations').document(record_id)
+        try:
+            doc.create(record)
+        except AlreadyExists:
+            pass  # First accepted inference wins; retry cannot rewrite history.
+        return record_id
+
+    async def get_response_observations(self, student_id: int):
+        """Bounded most-recent profile projection; no read-time progress rollups."""
+        query = self._student_doc(student_id).collection('learning_observations').order_by(
+            'created_at', direction=firestore.Query.DESCENDING).limit(50)
+        return [(snapshot.id, snapshot.to_dict()) for snapshot in query.stream()]
+
     async def add_or_update_misconception(
         self,
         student_id: int,
@@ -943,7 +977,9 @@ class FirestoreService:
         skill_id: Optional[str] = None,
         confidence: Optional[str] = None,
         evidence_tier: Optional[str] = None,
-        firebase_uid: Optional[str] = None
+        firebase_uid: Optional[str] = None,
+        scope_context: Optional[Dict[str, str]] = None,
+        learning_observation: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Write (or overwrite) the active misconception for a subskill.
 
@@ -959,7 +995,9 @@ class FirestoreService:
                 subskill_id = await self._resolver.resolve(subskill_id)
             if scope == "skill" and not skill_id:
                 raise ValueError("skill_id is required for skill-scoped misconceptions")
-            misconception_key = primitive_type if scope == "primitive" else f"{primitive_type}::{skill_id}"
+            if skill_id:
+                skill_id = await self._resolver.resolve(skill_id)
+            misconception_key = learning_observations.hypothesis_key(primitive_type, skill_id if scope == "skill" else None)
             timestamp = datetime.now(timezone.utc).isoformat()
 
             misconception_data = {
@@ -978,10 +1016,29 @@ class FirestoreService:
                 "resolved_at": None,
                 "firebase_uid": firebase_uid
             }
+            if learning_observation is not None:
+                misconception_data["learning_observation"] = learning_observation
 
             await self._ensure_student_document(student_id, firebase_uid)
 
             doc_ref = self._misconceptions_subcollection(student_id).document(misconception_key)
+            if scope_context is not None:
+                # A hypothesis stamped with a published scope carries a stable
+                # hypothesis_id and a revision: re-diagnosis and retest resolution
+                # contend on this SAME document, and a revision cannot be cleared
+                # by an older retest. The blocking transaction runs off the loop.
+                @firestore.transactional
+                def replace(transaction):
+                    old = doc_ref.get(transaction=transaction)
+                    previous = old.to_dict() if old.exists else {}
+                    data = {**misconception_data,
+                            "scope_context": scope_context,
+                            "hypothesis_id": previous.get("hypothesis_id") or str(uuid.uuid4()),
+                            "revision": int(previous.get("revision", 0)) + 1,
+                            "created_at": previous.get("created_at", timestamp)}
+                    transaction.set(doc_ref, data)
+                    return data
+                return await asyncio.to_thread(replace, self.client.transaction())
             existing_doc = doc_ref.get()
             if existing_doc.exists:
                 existing_data = existing_doc.to_dict()
@@ -1006,13 +1063,19 @@ class FirestoreService:
         primitive_type: str,
         skill_id: Optional[str] = None,
     ) -> bool:
-        """Flip an active misconception to resolved. Returns False when none active."""
+        """Flip an active misconception to resolved. Returns False when none active.
+
+        A scope-stamped (server-delivered) hypothesis never resolves here; only a
+        certified retest receipt can (resolve_misconception_opportunity).
+        """
         try:
-            misconception_key = primitive_type if not skill_id else f"{primitive_type}::{skill_id}"
+            misconception_key = learning_observations.hypothesis_key(primitive_type, skill_id)
             doc_ref = self._misconceptions_subcollection(student_id).document(misconception_key)
             doc = doc_ref.get()
 
             if not doc.exists or doc.to_dict().get("status") != "active":
+                return False
+            if learning_observations.is_server_delivered(doc.to_dict()):
                 return False
 
             doc_ref.update({
@@ -1025,6 +1088,57 @@ class FirestoreService:
         except Exception as e:
             logger.error(f"Error resolving misconception in Firestore: {str(e)}")
             return False
+
+    async def issue_misconception_opportunity(self, student_id, plan):
+        """Certify a compiled retest plan against its source hypothesis; returns the receipt id."""
+        primitive_type, skill = plan.get("primitive_type"), (plan.get("scope") or {}).get("skill_id")
+        if not isinstance(primitive_type, str) or not primitive_type or not isinstance(skill, str) or not skill:
+            return None
+        hypothesis_ref = self._misconceptions_subcollection(student_id).document(
+            learning_observations.hypothesis_key(primitive_type, skill))
+        receipt_id = str(uuid.uuid4())
+        receipt_ref = self._student_doc(student_id).collection("misconception_opportunities").document(receipt_id)
+        @firestore.transactional
+        def issue(transaction):
+            snapshot = hypothesis_ref.get(transaction=transaction)
+            if not snapshot.exists or not misconception_receipts.validate_plan(plan, snapshot.to_dict()):
+                return None
+            transaction.create(receipt_ref, {**plan, "student_id": student_id,
+                "created_at": datetime.now(timezone.utc).isoformat(), "opportunity_set_id": receipt_id,
+                "consumed_attempt_id": None})
+            transaction.update(hypothesis_ref, {"misconception_type": plan["capability_id"]})
+            return receipt_id
+        return await asyncio.to_thread(issue, self.client.transaction())
+
+    async def resolve_misconception_opportunity(self, student_id, receipt_id, attempt_id, evidence, binding):
+        """Consume a receipt when the submission's observations satisfy its policy."""
+        if not isinstance(receipt_id, str) or not re.fullmatch(r"[a-f0-9-]{36}", receipt_id):
+            return False
+        if await learning_observations.resolve_scope(self, binding.get("scope", {})) != binding.get("scope"):
+            return False
+        receipt_ref = self._student_doc(student_id).collection("misconception_opportunities").document(receipt_id)
+        hypothesis_ref = self._misconceptions_subcollection(student_id).document(
+            learning_observations.hypothesis_key(binding.get("primitive_type"), binding.get("scope", {}).get("skill_id")))
+        @firestore.transactional
+        def resolve(transaction):
+            receipt = receipt_ref.get(transaction=transaction)
+            hypothesis = hypothesis_ref.get(transaction=transaction)
+            if not receipt.exists or not hypothesis.exists:
+                return False
+            plan = receipt.to_dict()
+            if plan.get("consumed_attempt_id"):
+                return False
+            if (not misconception_receipts.validate_plan(plan, hypothesis.to_dict())
+                    or not misconception_receipts.validates_observations(plan, evidence, binding)):
+                return False
+            now = datetime.now(timezone.utc).isoformat()
+            transaction.update(hypothesis_ref, {"status": "resolved", "resolved_at": now,
+                "resolution_policy": plan["policy_version"], "resolved_attempt_id": attempt_id,
+                "resolved_opportunity_set_id": receipt_id})
+            transaction.update(receipt_ref, {"consumed_attempt_id": attempt_id, "observations": evidence,
+                "consumed_at": now})
+            return True
+        return await asyncio.to_thread(resolve, self.client.transaction())
 
     async def get_active_misconceptions(
         self,

@@ -32,6 +32,7 @@ import DirectInstructionPrimitivesTester from './DirectInstructionPrimitivesTest
 import HistoryPrimitivesTester from './HistoryPrimitivesTester';
 import DesignStudio from './DesignStudio';
 import DiagnosisLab from './DiagnosisLab';
+import MisconceptionLoopTester from './MisconceptionLoopTester';
 import LessonBenchPanel from './LessonBenchPanel';
 import type { LessonPackage } from '../service/qa/lessonBench/lessonPackage';
 import { PlannerDashboard } from './PlannerDashboard';
@@ -71,6 +72,7 @@ const PANELS: Record<string, ComponentType<DevPanelProps>> = {
   'history-primitives-tester': HistoryPrimitivesTester,
   'design-studio': DesignStudio,
   'diagnosis-lab': DiagnosisLab,
+  'misconception-loop-tester': MisconceptionLoopTester,
   'lumina-tutor-tester': LuminaTutorTester,
   'student-activity-panel': StudentActivityPanel,
   'planner-dashboard': PlannerDashboard,

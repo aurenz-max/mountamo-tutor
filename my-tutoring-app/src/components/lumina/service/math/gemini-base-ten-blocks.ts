@@ -20,6 +20,9 @@ import { createNumberPool } from './numberPoolService';
 import { BASE_TEN_DI_TYPE_DOCS, isBaseTenDiChallengeType } from '../../primitives/visual-primitives/math/baseTenModes';
 import { isAskableTarget, MAX_TARGET, MIN_TARGET } from '../../primitives/visual-primitives/math/baseTenScript';
 import type { BtMode } from '../../primitives/visual-primitives/math/baseTenModel';
+import { selectBlockWorthContrast } from './baseTenRemediation';
+import { planLearningAdaptation } from '../generation/planLearningAdaptation';
+import { baseTenTeaching, eligibleBaseTenTeaching } from './placeValueTeachingCapabilities';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -779,6 +782,12 @@ Return the complete base-ten blocks data structure.`;
 
   logEvalModeResolution('BaseTenBlocks', config?.targetEvalMode, evalConstraint);
 
+  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
+    mode: pinnedType, tier: supportTier ?? undefined };
+  const observations = ctx.learningObservations?.length ? ctx.learningObservations
+    : ctx.remediationFocus ? [{ id: 'active-observation', summary: ctx.remediationFocus }] : [];
+  const remediationMove = eligibleBaseTenTeaching(adaptationTask) && observations.length
+    ? await planLearningAdaptation(baseTenTeaching, adaptationTask, observations) : null;
   const response = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
@@ -799,7 +808,11 @@ Return the complete base-ten blocks data structure.`;
   data.maxPlace = data.maxPlace || 'hundreds';
   data.supplyTray = data.supplyTray ?? true;
   data.challenges = data.challenges || [];
-  data.gradeBand = data.gradeBand || '2-3';
+  // The band follows the code-owned range (the prompt's own mapping), not the
+  // model's label: Grade 4 draws came back '2-3' over four-digit numbers.
+  data.gradeBand = effectiveNumberRange
+    ? (effectiveNumberRange.max <= 20 ? 'K-1' : effectiveNumberRange.max <= 999 ? '2-3' : '4-5')
+    : data.gradeBand || '2-3';
 
   // Validate numberValue is reasonable
   if (data.numberValue < 0) data.numberValue = Math.abs(data.numberValue);
@@ -987,6 +1000,17 @@ Return the complete base-ten blocks data structure.`;
   const diRepairCount = normalizeDiTargets(data.challenges as BaseTenBlocksChallenge[]);
   if (diRepairCount > 0) {
     console.warn(`[BaseTenBlocks] BT-6: re-selected ${diRepairCount} target(s) with no place above the ones for a judged mode`);
+  }
+
+  // Existing DI items/cues consume the selected numbers; the wrapper model
+  // never sees private diagnosis prose. Scope and structural shape are settled.
+  // A validated move is always reported: numbers outside the four-digit band or
+  // decimal mode yield insufficient-capacity, never a silent skip.
+  if (remediationMove) {
+    const selected = selectBlockWorthContrast(data.challenges, data.decimalMode ? null : remediationMove, effectiveNumberRange);
+    data.challenges = [...selected.challenges];
+    data.learningAdaptation = { move: remediationMove, status: selected.status === 'no-focus' ? 'insufficient-capacity' : selected.status,
+      comparisonCount: selected.count };
   }
 
   // Final summary log

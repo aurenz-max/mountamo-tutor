@@ -1,0 +1,10 @@
+{
+  "synthetic": true,
+  "status": "FAIL",
+  "tests": [
+    "Firebase user authenticated; disposable student reserved",
+    "Learner token without service signature rejected (403)",
+    "Real distiller diagnosed a successful retry-until-correct session (score 87, firstResponseScore 0); two skill-scoped hypotheses stored with published scope stamped"
+  ],
+  "cleanup": "verified absent"
+}

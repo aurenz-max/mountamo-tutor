@@ -1,0 +1,8 @@
+{
+  "abstain": false,
+  "misconceptionText": "The student interprets the value of a digit as its face value, reporting only the digit itself rather than its positional value.",
+  "teachingImplication": "Contrast face value with place-based magnitude using base-ten block representations or expanded form.",
+  "checkNext": "Present a four-digit number with a highlighted thousands digit and ask for its value to observe whether the student still answers with the isolated digit name.",
+  "confidence": "high",
+  "evidenceTier": "structured"
+}

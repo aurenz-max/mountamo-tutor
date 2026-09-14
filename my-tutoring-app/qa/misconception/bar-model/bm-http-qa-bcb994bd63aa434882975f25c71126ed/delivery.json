@@ -1,0 +1,10 @@
+{
+  "available": true,
+  "observations": [
+    {
+      "id": "observation-6cd32da293ac99a7",
+      "summary": "The student counts the number of icons in the row directly as single units, ignoring the scale value indicated by the graph's key.",
+      "evidence": "{\"problem\":\"Picture graph reading: 4 graphs, each asking for the total of one named row given a key where one icon stands for more than one item. 1 of 4 were answered correctly on the first choice.\",\"evalMode\":\"picture_graph\",\"phases\":[{\"phase\":\"picture_graph\",\"challenge\":\"How many students chose Apples? Each 🍎 stands for 5. Key: each 🍎 stands for 5. Row \\\"Apples\\\" shows 5 icons. Choices: 5, 20, 25, 30.\",\"expected\":\"25\",\"observed\":\"Selections in order: 5, 25\",\"support\":\"The named row was highlighted. After an incorrect choice the hint was shown and the learner could choose again.\"},{\"phase\":\"picture_graph\",\"challenge\":\"How many students chose Pears? Each 🍎 stands for 5. Key: each 🍎 stands for 5. Row \\\"Pears\\\" shows 3 icons. Choices: 3, 10, 15, 20.\",\"expected\":\"15\",\"observed\":\"Selections in order: 3, 15\",\"support\":\"The named row was highlighted. After an incorrect choice the hint was shown and the learner could choose again.\"},{\"phase\":\"picture_graph\",\"challenge\":\"How many students chose Kiwis? Each 🍎 stands for 5. Key: each 🍎 stands for 5. Row \\\"Kiwis\\\" shows 6 icons. Choices: 6, 25, 30, 35.\",\"expected\":\"30\",\"observed\":\"Selections in order: 6, 30\",\"support\":\"The named row was highlighted. After an incorrect choice the hint was shown and the learner could choose again.\"}]}"
+    }
+  ]
+}

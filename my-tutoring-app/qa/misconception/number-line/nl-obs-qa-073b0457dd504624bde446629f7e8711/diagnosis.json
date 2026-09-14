@@ -1,0 +1,8 @@
+{
+  "abstain": false,
+  "misconceptionText": "The student counts the starting tick mark as the first space rather than counting the jumps between marks, resulting in a landing that is one interval short.",
+  "teachingImplication": "Demonstrate hops as movements through the spaces between numbers rather than counting the tick marks themselves.",
+  "checkNext": "Provide a new forward jump task on a number line to observe whether the student counts the starting tick mark or the intervals.",
+  "confidence": "high",
+  "evidenceTier": "structured"
+}

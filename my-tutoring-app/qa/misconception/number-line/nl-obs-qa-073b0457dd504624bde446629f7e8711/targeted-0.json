@@ -1,0 +1,109 @@
+{
+  "type": "number-line",
+  "instanceId": "nl-obs-qa-073b0457dd504624bde446629f7e8711-0",
+  "data": {
+    "title": "Hop to It: Adding on the Number Line",
+    "description": "Learn how to use a number line to add numbers together by counting on.",
+    "range": {
+      "min": 0,
+      "max": 20
+    },
+    "gradeBand": "K-2",
+    "numberType": "integer",
+    "interactionMode": "jump",
+    "challenges": [
+      {
+        "id": "show_jump-0",
+        "type": "show_jump",
+        "instruction": "Put your finger on 0, then make 1 big hop to the right!",
+        "targetValues": [
+          1
+        ],
+        "hint": "Count the hops as you move forward one space.",
+        "startValue": 0,
+        "operations": [
+          {
+            "type": "add",
+            "startValue": 0,
+            "changeValue": 1,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      },
+      {
+        "id": "show_jump-1",
+        "type": "show_jump",
+        "instruction": "Find the number 16 on your number line and hop forward 1 space to see where you land!",
+        "targetValues": [
+          17
+        ],
+        "hint": "Put your finger on 16 and take one little hop to the right. Count the next number out loud!",
+        "startValue": 16,
+        "operations": [
+          {
+            "type": "add",
+            "startValue": 16,
+            "changeValue": 1,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      },
+      {
+        "id": "show_jump-2",
+        "type": "show_jump",
+        "instruction": "Put your finger on 19. Now, hop back 1 space to the left!",
+        "targetValues": [
+          18
+        ],
+        "hint": "Count one tick mark backward from 19 to find where you land.",
+        "startValue": 19,
+        "operations": [
+          {
+            "type": "subtract",
+            "startValue": 19,
+            "changeValue": 1,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      },
+      {
+        "id": "show_jump-3",
+        "type": "show_jump",
+        "instruction": "Put your finger on 14. Now hop back 1 space to the left to see where you land!",
+        "targetValues": [
+          13
+        ],
+        "hint": "Start at 14 and take 1 hop backward to the left. Count down by one!",
+        "startValue": 14,
+        "operations": [
+          {
+            "type": "subtract",
+            "startValue": 14,
+            "changeValue": 1,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      }
+    ],
+    "highlights": [],
+    "operations": [
+      {
+        "type": "add",
+        "startValue": 0,
+        "changeValue": 1,
+        "showJumpArc": false
+      }
+    ],
+    "learningAdaptation": {
+      "move": "contrast_start_positions",
+      "status": "targeted",
+      "comparisonCount": 2,
+      "source": "saved-observation"
+    },
+    "supportTier": "medium"
+  }
+}

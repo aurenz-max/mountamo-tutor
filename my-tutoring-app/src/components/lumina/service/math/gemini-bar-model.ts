@@ -23,6 +23,14 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { createNumberPool } from "./numberPoolService";
+import { planLearningAdaptation } from "../generation/planLearningAdaptation";
+import {
+  barModelTeaching,
+  eligibleBarModelTeaching,
+  pictureGraphOptions,
+  selectIconCountContrast,
+  type BarModelRemediationMove,
+} from "./barModelRemediation";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -105,6 +113,13 @@ export interface BarModelData {
   description: string;
   /** 3-6 challenges. Required. Walked sequentially by the component. */
   challenges: BarModelChallenge[];
+  /** Safe metadata only: which move ran and whether the compiled contrast survived. */
+  learningAdaptation?: {
+    move: BarModelRemediationMove;
+    status: 'targeted' | 'already-targeted' | 'insufficient-capacity';
+    comparisonCount: number;
+    source?: 'saved-observation';
+  };
 }
 
 /** Internal sub-generator return shape — wrapped before being merged. */
@@ -1383,7 +1398,8 @@ RULES:
       prompt: String(raw.prompt ?? `Each ${iconEmoji} stands for ${iconValue}. How many for ${bars[targetIdx].label}?`),
       hint: String(raw.hint ?? `Count the icons, then multiply by ${iconValue}.`),
       expectedValue,
-      options: deriveOptions(expectedValue, iconValue),
+      // The bare icon count is always a choice, so reading icons as ones is observable.
+      options: pictureGraphOptions(expectedValue, iconValue),
       targetBarIndex: targetIdx,
     },
   };
@@ -1744,6 +1760,14 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
   // no single support tier; apply one only to a single resolved mode.
   const supportTier = resolution?.modes.length === 1 ? normalizeSupportTier(config?.difficulty) : null;
 
+  // Private observations go only to the shared planner; sub-generators never see them.
+  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
+    mode: modes.length === 1 ? mode : undefined, tier: supportTier ?? undefined };
+  const observations = ctx.learningObservations?.length ? ctx.learningObservations
+    : ctx.remediationFocus ? [{ id: 'active-observation', summary: ctx.remediationFocus }] : [];
+  const remediationMove = eligibleBarModelTeaching(adaptationTask) && observations.length
+    ? await planLearningAdaptation(barModelTeaching, adaptationTask, observations) : null;
+
   // Fan out N calls, cycling through the selected per-mode sub-generators. Variance
   // comes from independent generations (per PRD §6a #2 — structured output
   // converges per-call, not across independent calls).
@@ -1789,6 +1813,16 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
     console.log(`[BarModel] Support tier "${supportTier}" applied per-challenge (single-mode ${mode})`);
   }
 
+  // Code executes the validated move on the finished challenges; scaffolds and count are untouched.
+  let learningAdaptation: BarModelData['learningAdaptation'];
+  if (remediationMove) {
+    const selected = selectIconCountContrast(challenges, remediationMove);
+    challenges.splice(0, challenges.length, ...selected.challenges);
+    learningAdaptation = { move: remediationMove, comparisonCount: selected.count,
+      status: selected.status === 'no-focus' ? 'insufficient-capacity' : selected.status };
+    console.log('[BarModel] learning adaptation', learningAdaptation);
+  }
+
   console.log('📊 Bar Model generated:', {
     topic,
     mode,
@@ -1801,5 +1835,6 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
     title: head.title,
     description: head.description,
     challenges,
+    ...(learningAdaptation ? { learningAdaptation } : {}),
   };
 };

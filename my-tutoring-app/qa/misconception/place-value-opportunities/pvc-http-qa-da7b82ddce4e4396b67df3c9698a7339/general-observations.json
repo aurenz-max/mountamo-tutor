@@ -1,0 +1,122 @@
+{
+  "cases": [
+    {
+      "kind": "strength",
+      "draft": {
+        "abstain": false,
+        "kind": "strength",
+        "summary": "The learner verbally stated the place value of highlighted digits in four-digit numbers without a recorded prior correction across two items.",
+        "teachingImplication": "Continue offering opportunities to say the value of highlighted digits in multi-digit numbers under similar conditions.",
+        "checkNext": "Present a four-digit number with a single highlighted digit in the tens or hundreds place and ask the learner to say its value.",
+        "evidenceItemIds": [
+          "a",
+          "b"
+        ]
+      },
+      "observationId": "response:cd2065439201366f8d19f3a637d42319876c76959ee9e30faf1f916ba3df0f62"
+    },
+    {
+      "kind": "support",
+      "draft": {
+        "abstain": false,
+        "kind": "support",
+        "summary": "In the say_value phase, the learner successfully stated the value of a highlighted digit after receiving a recorded correction on two separate items.",
+        "teachingImplication": "Continue offering immediate feedback or modeling when a digit's face value is named instead of its place value, reinforcing the distinction between digit name and value.",
+        "checkNext": "Present a four-digit number with one digit highlighted, such as the 3 in 4381, and ask the learner to state the value of that digit without initial prompting.",
+        "evidenceItemIds": [
+          "a",
+          "b"
+        ]
+      },
+      "observationId": "response:c851d072ead35ba1b5afb982d7c489913761acccd22c8dcc4cf51b267f8fee9a"
+    }
+  ],
+  "observations": [
+    {
+      "id": "response:c851d072ead35ba1b5afb982d7c489913761acccd22c8dcc4cf51b267f8fee9a",
+      "kind": "support",
+      "status": "suspected",
+      "summary": "In the say_value phase, the learner successfully stated the value of a highlighted digit after receiving a recorded correction on two separate items.",
+      "subject": "MATHEMATICS",
+      "grade": "4",
+      "subskillId": "NBT004-01-b",
+      "primitiveType": "place-value-chart",
+      "evalMode": "compare",
+      "updatedAt": "2026-09-13T01:55:26.332057+00:00",
+      "teachingImplication": "Continue offering immediate feedback or modeling when a digit's face value is named instead of its place value, reinforcing the distinction between digit name and value.",
+      "checkNext": "Present a four-digit number with one digit highlighted, such as the 3 in 4381, and ask the learner to state the value of that digit without initial prompting.",
+      "evidence": [
+        {
+          "attemptId": "pvc-http-qa-da7b82ddce4e4396b67df3c9698a7339-support",
+          "itemId": "a",
+          "phase": "say_value",
+          "task": "Say the value of 2 in 2258, highlighted in the hundreds place",
+          "response": "2 (unverified transcription; judge corrected)",
+          "support": "Other assistance and independence are not established.",
+          "referenceKind": "client-attempt"
+        },
+        {
+          "attemptId": "pvc-http-qa-da7b82ddce4e4396b67df3c9698a7339-support",
+          "itemId": "a",
+          "phase": "say_value",
+          "task": "Say the value of 2 in 2258, highlighted in the hundreds place",
+          "response": "two hundred (unverified transcription; judge affirmed)",
+          "support": "One prior tutor correction on this item; other assistance and independence unknown.",
+          "referenceKind": "client-attempt"
+        },
+        {
+          "attemptId": "pvc-http-qa-da7b82ddce4e4396b67df3c9698a7339-support",
+          "itemId": "b",
+          "phase": "say_value",
+          "task": "Say the value of 9 in 3997, highlighted in the tens place",
+          "response": "9 (unverified transcription; judge corrected)",
+          "support": "Other assistance and independence are not established.",
+          "referenceKind": "client-attempt"
+        },
+        {
+          "attemptId": "pvc-http-qa-da7b82ddce4e4396b67df3c9698a7339-support",
+          "itemId": "b",
+          "phase": "say_value",
+          "task": "Say the value of 9 in 3997, highlighted in the tens place",
+          "response": "ninety (unverified transcription; judge affirmed)",
+          "support": "One prior tutor correction on this item; other assistance and independence unknown.",
+          "referenceKind": "client-attempt"
+        }
+      ]
+    },
+    {
+      "id": "response:cd2065439201366f8d19f3a637d42319876c76959ee9e30faf1f916ba3df0f62",
+      "kind": "strength",
+      "status": "suspected",
+      "summary": "The learner verbally stated the place value of highlighted digits in four-digit numbers without a recorded prior correction across two items.",
+      "subject": "MATHEMATICS",
+      "grade": "4",
+      "subskillId": "NBT004-01-b",
+      "primitiveType": "place-value-chart",
+      "evalMode": "compare",
+      "updatedAt": "2026-09-13T01:55:23.280338+00:00",
+      "teachingImplication": "Continue offering opportunities to say the value of highlighted digits in multi-digit numbers under similar conditions.",
+      "checkNext": "Present a four-digit number with a single highlighted digit in the tens or hundreds place and ask the learner to say its value.",
+      "evidence": [
+        {
+          "attemptId": "pvc-http-qa-da7b82ddce4e4396b67df3c9698a7339-strength",
+          "itemId": "a",
+          "phase": "say_value",
+          "task": "Say the value of 2 in 2258, highlighted in the hundreds place",
+          "response": "two hundred (unverified transcription; judge affirmed)",
+          "support": "Other assistance and independence are not established.",
+          "referenceKind": "client-attempt"
+        },
+        {
+          "attemptId": "pvc-http-qa-da7b82ddce4e4396b67df3c9698a7339-strength",
+          "itemId": "b",
+          "phase": "say_value",
+          "task": "Say the value of 9 in 3997, highlighted in the tens place",
+          "response": "ninety (unverified transcription; judge affirmed)",
+          "support": "Other assistance and independence are not established.",
+          "referenceKind": "client-attempt"
+        }
+      ]
+    }
+  ]
+}

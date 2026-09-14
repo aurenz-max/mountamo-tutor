@@ -1,0 +1,114 @@
+{
+  "type": "place-value-chart",
+  "instanceId": "pvc-http-qa-2b1fa50ecef746f6813e784ce95bd780-1",
+  "data": {
+    "title": "Place Value Power: Four-Digit Numbers",
+    "description": "Welcome to your place value challenge! You will explore multiple numbers across three interactive phases by naming places, finding values, and writing numbers.",
+    "challenges": [
+      {
+        "id": "pvc-1",
+        "targetNumber": 8668,
+        "highlightedDigitPlace": 2,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Tens",
+          "Thousands",
+          "Hundreds",
+          "Ones"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 600,
+            "wordForm": "Six Hundred"
+          },
+          {
+            "value": 60,
+            "wordForm": "Sixty"
+          },
+          {
+            "value": 6000,
+            "wordForm": "Six Thousand"
+          },
+          {
+            "value": 6,
+            "wordForm": "Six"
+          }
+        ]
+      },
+      {
+        "id": "pvc-2",
+        "targetNumber": 5772,
+        "highlightedDigitPlace": 1,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Ones",
+          "Tens",
+          "Hundreds",
+          "Thousands"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 7,
+            "wordForm": "Seven"
+          },
+          {
+            "value": 700,
+            "wordForm": "Seven Hundred"
+          },
+          {
+            "value": 0.7000000000000001,
+            "wordForm": "Seven Tenths"
+          },
+          {
+            "value": 70,
+            "wordForm": "Seventy"
+          }
+        ]
+      },
+      {
+        "id": "pvc-3",
+        "targetNumber": 3066,
+        "highlightedDigitPlace": 1,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Ones",
+          "Tens",
+          "Hundreds",
+          "Thousands"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 6,
+            "wordForm": "Six"
+          },
+          {
+            "value": 60,
+            "wordForm": "Sixty"
+          },
+          {
+            "value": 600,
+            "wordForm": "Six Hundred"
+          },
+          {
+            "value": 0.6000000000000001,
+            "wordForm": "Six Tenths"
+          }
+        ]
+      }
+    ],
+    "challengeType": "compare",
+    "showExpandedForm": true,
+    "showMultipliers": false,
+    "supportTier": "medium",
+    "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+    "misconceptionOpportunity": {
+      "id": "8393a2ba-6654-40cc-a233-68fcd59c0cf0",
+      "lessonId": "ac098f25-fc4a-430a-9b31-b3e5bd2b4f8c",
+      "grade": "4",
+      "curriculumVersion": "98202434-e96c-42ed-8c8e-6fd801b451ef@2026-06-09T03:49:30.592858"
+    }
+  }
+}

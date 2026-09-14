@@ -68,6 +68,11 @@ export const flattenManifestToLayout = (
   // raw value too: normalizeObjectiveGrade remains the only parser downstream,
   // while named bands such as "elementary" safely normalize to undefined.
   const lessonGrade = (objectives ?? []).find(o => o.grade)?.grade ?? manifest.gradeLevel;
+  // Canonical curriculum subject id (MATHEMATICS, LANGUAGE_ARTS, …) for every
+  // objective's published scope: the manifest's own pick, else the generation
+  // context's resolved subject. Server-delivered learning observations resolve
+  // (subject, grade, skill, subskill) from config; no generator assumes a subject.
+  const lessonSubject = manifest.subject ?? studentContext?.subject ?? undefined;
   const resolveObjective = (block: { objectiveId: string; objectiveText: string; objectiveVerb: string }) => {
     const auth = objectiveById.get(block.objectiveId);
     return {
@@ -125,6 +130,7 @@ export const flattenManifestToLayout = (
             skillId,
             // Canonical grade for this objective → ctx.grade at the generator boundary.
             objectiveGrade: grade,
+            objectiveSubject: lessonSubject,
             // Private per-objective generation signal. Components must never
             // render this raw diagnosis.
             ...(matchingMisconception
@@ -164,6 +170,7 @@ export const flattenManifestToLayout = (
         // A final assessment spans the lesson, which is single-grade here.
         // Keep the raw spelling for canonical parsing at the generator boundary.
         objectiveGrade: lessonGrade,
+        objectiveSubject: lessonSubject,
         lessonObjectives: (objectives ?? []).map(o => ({
           id: o.id,
           text: o.text,

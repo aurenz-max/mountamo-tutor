@@ -1,0 +1,39 @@
+{
+  "synthetic": true,
+  "sourceDiagnosisRun": "qa/misconception/place-value-chart/2026-09-12T18-53-12-730Z/run.json",
+  "tests": [
+    {
+      "name": "baseline",
+      "eligible": 0,
+      "hash": "1b263cb8ee48941bd4b77df5e21819e2435fa34b75bc3247d31980bc40c669cf",
+      "pass": true,
+      "receipt": false
+    },
+    {
+      "name": "saturated",
+      "eligible": 0,
+      "hash": "7aeed63cf5df5ec48ad4e0ddf2b1f02c1aab994174305762db19870771093053",
+      "pass": true,
+      "receipt": false
+    },
+    {
+      "name": "targeted-1",
+      "eligible": 2,
+      "hash": "4fb0109b4c2ab2f82d87260b363844f080312099a3982c739df85bfa32224ff3",
+      "pass": true,
+      "receipt": false
+    },
+    {
+      "name": "targeted-2",
+      "eligible": 0,
+      "hash": "546c7549f211824aa51448b58c8a96691b71f6b947f36a9b3fe1c1e5f4631cff",
+      "pass": false,
+      "receipt": false
+    }
+  ],
+  "status": "FAIL",
+  "blockers": [
+    "No reviewed compatible curriculum objective; production issuance disabled.",
+    "This probe performs generation only, not authenticated issuance, a mounted learner run or a store transition."
+  ]
+}

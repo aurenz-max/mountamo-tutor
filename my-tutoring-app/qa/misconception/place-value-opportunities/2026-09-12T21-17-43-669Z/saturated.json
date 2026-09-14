@@ -1,0 +1,51 @@
+{
+  "output": {
+    "type": "place-value-chart",
+    "instanceId": "opportunity-saturated",
+    "data": {
+      "title": "Four-Digit Place Value Explorer",
+      "description": "Welcome! You will explore four-digit numbers with your tutor by naming places, saying digit values out loud, and writing numbers into the chart.",
+      "challenges": [
+        {
+          "id": "pvc-1",
+          "targetNumber": 2843,
+          "highlightedDigitPlace": 1,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Ones",
+            "Tens",
+            "Hundreds",
+            "Thousands"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 4,
+              "wordForm": "Four"
+            },
+            {
+              "value": 400,
+              "wordForm": "Four Hundred"
+            },
+            {
+              "value": 0.4,
+              "wordForm": "Four Tenths"
+            },
+            {
+              "value": 40,
+              "wordForm": "Forty"
+            }
+          ]
+        }
+      ],
+      "challengeType": "compare",
+      "showExpandedForm": true,
+      "showMultipliers": false,
+      "supportTier": "medium",
+      "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+    }
+  },
+  "candidateItems": null,
+  "contentHash": "3bea41e6da064c6ca6f898a13a93e06c75a9f2a16c7a4291364aefbbcf872b78",
+  "pass": true
+}

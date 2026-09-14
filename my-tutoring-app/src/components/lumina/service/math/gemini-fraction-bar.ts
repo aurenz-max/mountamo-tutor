@@ -27,6 +27,8 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { planLearningAdaptation } from "../generation/planLearningAdaptation";
+import { eligibleFractionBarTeaching, fractionBarTeaching, selectSharedDigitRoleContrast } from "./fractionBarRemediation";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -531,17 +533,27 @@ GUIDELINES:
 Return ONLY the wrapper metadata in the response schema.
 `;
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-latest",
-    contents: prompt,
-    config: {
-      temperature: 0.9,
-      topP: 0.95,
-      thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-      responseMimeType: "application/json",
-      responseSchema: activeSchema,
-    },
-  });
+  // Saved observations reach only the shared applicability planner, never this
+  // wrapper prompt. No observations or an ineligible task → no planner call.
+  const observations = ctx.learningObservations?.length ? ctx.learningObservations
+    : ctx.remediationFocus ? [{ id: 'active-observation', summary: ctx.remediationFocus }] : [];
+  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
+    mode: pinnedType, tier: supportTier ?? undefined };
+  const [result, remediationMove] = await Promise.all([
+    ai.models.generateContent({
+      model: "gemini-flash-latest",
+      contents: prompt,
+      config: {
+        temperature: 0.9,
+        topP: 0.95,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        responseMimeType: "application/json",
+        responseSchema: activeSchema,
+      },
+    }),
+    observations.length && eligibleFractionBarTeaching(adaptationTask)
+      ? planLearningAdaptation(fractionBarTeaching, adaptationTask, observations) : null,
+  ]);
 
   const wrapper = result.text ? JSON.parse(result.text) : null;
   if (!wrapper) {
@@ -570,7 +582,17 @@ Return ONLY the wrapper metadata in the response schema.
       ? appliedScaffold.distractorTightness
       : 'wide';
 
-  const challenges = buildChallenges(challengeType, instanceCount, distractorTightness);
+  let challenges = buildChallenges(challengeType, instanceCount, distractorTightness);
+  let learningAdaptation: FractionBarData['learningAdaptation'];
+  if (remediationMove && challengeType === 'build') {
+    const selected = selectSharedDigitRoleContrast(challenges, remediationMove, (p) => ({
+      numeratorChoices: buildChoices(p.numerator, p.denominator, 0, distractorTightness),
+      denominatorChoices: buildChoices(p.denominator, p.numerator, 2, distractorTightness),
+    }));
+    challenges = [...selected.challenges];
+    learningAdaptation = { move: remediationMove, comparisonCount: selected.count,
+      status: selected.status === 'no-focus' ? 'insufficient-capacity' : selected.status };
+  }
 
   // Decimal: tier wins when present; else the existing config/grade-based behavior.
   const showDecimal = appliedScaffold
@@ -600,6 +622,7 @@ Return ONLY the wrapper metadata in the response schema.
   });
 
   return {
+    ...(learningAdaptation ? { learningAdaptation } : {}),
     title: wrapper.title || 'Fraction Bar Practice',
     description:
       wrapper.description ||

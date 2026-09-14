@@ -1,0 +1,52 @@
+{
+  "evidence": {
+    "phases": [
+      {
+        "itemId": "bm-1",
+        "phase": "picture_graph",
+        "challenge": "How many students chose Apples? Each 🍎 stands for 5. Key: each 🍎 stands for 5. Row \"Apples\" shows 5 icons. Choices: 5, 20, 25, 30.",
+        "expected": "25",
+        "observed": "Selections in order: 5, 25",
+        "support": "The named row was highlighted. After an incorrect choice the hint was shown and the learner could choose again."
+      },
+      {
+        "itemId": "bm-2",
+        "phase": "picture_graph",
+        "challenge": "How many students chose Pears? Each 🍎 stands for 5. Key: each 🍎 stands for 5. Row \"Pears\" shows 3 icons. Choices: 3, 10, 15, 20.",
+        "expected": "15",
+        "observed": "Selections in order: 3, 15",
+        "support": "The named row was highlighted. After an incorrect choice the hint was shown and the learner could choose again."
+      },
+      {
+        "itemId": "bm-4",
+        "phase": "picture_graph",
+        "challenge": "How many students chose Kiwis? Each 🍎 stands for 5. Key: each 🍎 stands for 5. Row \"Kiwis\" shows 6 icons. Choices: 6, 25, 30, 35.",
+        "expected": "30",
+        "observed": "Selections in order: 6, 30",
+        "support": "The named row was highlighted. After an incorrect choice the hint was shown and the learner could choose again."
+      }
+    ],
+    "firstResponseScore": 25,
+    "challengeSummary": "Picture graph reading: 4 graphs, each asking for the total of one named row given a key where one icon stands for more than one item. 1 of 4 were answered correctly on the first choice.",
+    "expected": "How many students chose Apples? Each 🍎 stands for 5. Key: each 🍎 stands for 5. Row \"Apples\" shows 5 icons. Choices: 5, 20, 25, 30. Correct total: 25.",
+    "observed": "Selections in order: 5, 25",
+    "priorAttempts": [
+      {
+        "challenge": "How many students chose Pears? Each 🍎 stands for 5. Key: each 🍎 stands for 5. Row \"Pears\" shows 3 icons. Choices: 3, 10, 15, 20.",
+        "observed": "Selections in order: 3, 15"
+      },
+      {
+        "challenge": "How many students chose Kiwis? Each 🍎 stands for 5. Key: each 🍎 stands for 5. Row \"Kiwis\" shows 6 icons. Choices: 6, 25, 30, 35.",
+        "observed": "Selections in order: 6, 30"
+      }
+    ]
+  },
+  "diagnosis": {
+    "abstain": false,
+    "misconceptionText": "The student counts each icon as representing one item, ignoring the value specified in the graph's key.",
+    "teachingImplication": "Guide the student to read the key before counting and prompt skip-counting by the value of each symbol.",
+    "checkNext": "Present a picture graph with a non-unit scale factor where the raw symbol count is among the choices.",
+    "confidence": "high",
+    "evidenceTier": "structured"
+  }
+}

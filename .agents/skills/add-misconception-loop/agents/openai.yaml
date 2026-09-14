@@ -1,4 +1,4 @@
 interface:
   display_name: "Add Misconception Loop"
-  short_description: "Wire safe misconception-driven remediation"
-  default_prompt: "Use $add-misconception-loop to wire and verify a primitive misconception loop."
+  short_description: "Wire shared LLM applicability across primitives"
+  default_prompt: "Use $add-misconception-loop to connect and verify the requested primitives through the shared LLM applicability planner and their supported teaching capabilities."

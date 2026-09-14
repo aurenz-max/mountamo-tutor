@@ -1,0 +1,15 @@
+{
+  "synthetic": true,
+  "status": "PASS",
+  "tests": [
+    "Firebase user authenticated; collision-checked disposable student reserved",
+    "Learner token without service signature rejected with HTTP 403",
+    "Authenticated capture stored an active hypothesis at canonical Grade 4 scope",
+    "Tester status endpoint returns own current revision without private diagnosis fields",
+    "Authenticated Firebase client denied direct private hypothesis read",
+    "Authenticated Firebase client denied direct private hypothesis write",
+    "One real LLM diagnosis stored once drives two chart and two block generation draws; null baselines unadapted; compiled contrasts verified; no copied or resolved hypothesis"
+  ],
+  "boundary": "Real LLM/auth/store/generation; fictional error evidence. No canonical learning submission, microphone, or learner transfer/resolution claim.",
+  "cleanup": "verified absent"
+}

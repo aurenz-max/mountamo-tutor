@@ -1,0 +1,21 @@
+{
+  "synthetic": true,
+  "scope": {
+    "subject": "MATHEMATICS",
+    "grade": "4",
+    "skill_id": "NBT004-01",
+    "subskill_id": "NBT004-01-b",
+    "curriculum_version": "98202434-e96c-42ed-8c8e-6fd801b451ef@2026-06-09T03:49:30.592858"
+  },
+  "generated_artifact": "my-tutoring-app\\qa\\misconception\\place-value-opportunities\\2026-09-12T21-17-43-669Z\\targeted-1.json",
+  "boundary": "Real Firestore; synthetic diagnosis and response events; no HTTP, microphone or learning fan-out.",
+  "tests": [
+    "empty compiled plan rejected",
+    "issued and persisted against live published scope",
+    "wrong response preserves active hypothesis",
+    "concurrent consumers resolve exactly once with matching attempt references",
+    "new diagnosis rejects earlier revision receipt"
+  ],
+  "status": "PASS",
+  "cleanup": "verified absent"
+}

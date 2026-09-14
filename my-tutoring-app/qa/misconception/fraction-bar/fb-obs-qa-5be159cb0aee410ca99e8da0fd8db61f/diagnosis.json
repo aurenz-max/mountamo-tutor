@@ -1,0 +1,8 @@
+{
+  "abstain": false,
+  "misconceptionText": "The student treats the bottom number of a fraction as the numerator, selecting it when asked for the numerator and shading that quantity of parts.",
+  "teachingImplication": "Clarify the distinct roles and positions of fraction terms before asking the student to identify parts or construct models.",
+  "checkNext": "Present a new fraction and prompt the student to select the numerator from multiple options.",
+  "confidence": "high",
+  "evidenceTier": "structured"
+}

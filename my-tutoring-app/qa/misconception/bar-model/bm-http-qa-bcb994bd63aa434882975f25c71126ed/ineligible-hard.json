@@ -1,0 +1,194 @@
+{
+  "type": "bar-model",
+  "instanceId": "bm-http-qa-bcb994bd63aa434882975f25c71126ed-hard",
+  "data": {
+    "title": "Favorite Fruits in Our Class",
+    "description": "Read the picture graph to find out how many students chose apples as their favorite fruit.",
+    "challenges": [
+      {
+        "id": "bm-1",
+        "evalMode": "picture_graph",
+        "values": [
+          {
+            "label": "Apple",
+            "value": 20,
+            "color": "blue"
+          },
+          {
+            "label": "Banana",
+            "value": 15,
+            "color": "green"
+          },
+          {
+            "label": "Orange",
+            "value": 10,
+            "color": "purple"
+          },
+          {
+            "label": "Grape",
+            "value": 25,
+            "color": "orange"
+          }
+        ],
+        "graphStyle": "picture",
+        "scale": {
+          "step": 5,
+          "max": 25,
+          "iconEmoji": "🍎",
+          "iconValue": 5
+        },
+        "prompt": "How many students chose Apple as their favorite fruit? Each 🍎 stands for 5 students.",
+        "hint": "Count the apple icons for Apple, then multiply by 5.",
+        "expectedValue": 20,
+        "options": [
+          4,
+          15,
+          20,
+          25
+        ],
+        "targetBarIndex": 0,
+        "showBarValues": false,
+        "showTargetHighlight": false,
+        "supportTier": "hard"
+      },
+      {
+        "id": "bm-2",
+        "evalMode": "picture_graph",
+        "values": [
+          {
+            "label": "Apples",
+            "value": 15,
+            "color": "blue"
+          },
+          {
+            "label": "Bananas",
+            "value": 25,
+            "color": "green"
+          },
+          {
+            "label": "Oranges",
+            "value": 10,
+            "color": "purple"
+          },
+          {
+            "label": "Grapes",
+            "value": 20,
+            "color": "orange"
+          }
+        ],
+        "graphStyle": "picture",
+        "scale": {
+          "step": 5,
+          "max": 25,
+          "iconEmoji": "🍎",
+          "iconValue": 5
+        },
+        "prompt": "How many students chose apples as their favorite fruit? Each 🍎 stands for 5.",
+        "hint": "Count the apple icons in the apple row, then multiply by 5.",
+        "expectedValue": 15,
+        "options": [
+          3,
+          10,
+          15,
+          20
+        ],
+        "targetBarIndex": 0,
+        "showBarValues": false,
+        "showTargetHighlight": false,
+        "supportTier": "hard"
+      },
+      {
+        "id": "bm-3",
+        "evalMode": "picture_graph",
+        "values": [
+          {
+            "label": "Apples",
+            "value": 10,
+            "color": "blue"
+          },
+          {
+            "label": "Bananas",
+            "value": 20,
+            "color": "green"
+          },
+          {
+            "label": "Oranges",
+            "value": 15,
+            "color": "purple"
+          },
+          {
+            "label": "Grapes",
+            "value": 25,
+            "color": "orange"
+          }
+        ],
+        "graphStyle": "picture",
+        "scale": {
+          "step": 5,
+          "max": 25,
+          "iconEmoji": "🍌",
+          "iconValue": 5
+        },
+        "prompt": "How many students chose Bananas? Each 🍌 stands for 5 students.",
+        "hint": "Count the banana icons in the row, then multiply by 5.",
+        "expectedValue": 20,
+        "options": [
+          4,
+          15,
+          20,
+          25
+        ],
+        "targetBarIndex": 1,
+        "showBarValues": false,
+        "showTargetHighlight": false,
+        "supportTier": "hard"
+      },
+      {
+        "id": "bm-4",
+        "evalMode": "picture_graph",
+        "values": [
+          {
+            "label": "Apples",
+            "value": 10,
+            "color": "blue"
+          },
+          {
+            "label": "Bananas",
+            "value": 25,
+            "color": "green"
+          },
+          {
+            "label": "Oranges",
+            "value": 15,
+            "color": "purple"
+          },
+          {
+            "label": "Grapes",
+            "value": 20,
+            "color": "orange"
+          }
+        ],
+        "graphStyle": "picture",
+        "scale": {
+          "step": 5,
+          "max": 25,
+          "iconEmoji": "🍌",
+          "iconValue": 5
+        },
+        "prompt": "How many students chose Bananas as their favorite fruit? Each 🍌 stands for 5.",
+        "hint": "Count the banana icons in the Bananas row, then multiply by 5.",
+        "expectedValue": 25,
+        "options": [
+          5,
+          20,
+          25,
+          30
+        ],
+        "targetBarIndex": 1,
+        "showBarValues": false,
+        "showTargetHighlight": false,
+        "supportTier": "hard"
+      }
+    ]
+  }
+}

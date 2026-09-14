@@ -1,0 +1,3 @@
+[
+  "{\"trace\":[{\"backend\":\"/api/student-profile/learning-observation-context\",\"status\":200,\"ms\":372,\"available\":true,\"count\":1,\"evidenceChars\":1575},{\"planner\":\"{\\n  \\\"move\\\": \\\"contrast_same_numerator_denominators\\\",\\n  \\\"observationIds\\\": [\\n    \\\"observation-6c27bcb45ec4db3e\\\"\\n  ]\\n}\",\"finish\":\"STOP\",\"ms\":795}],\"adaptation\":{\"move\":\"contrast_same_numerator_denominators\",\"status\":\"targeted\",\"comparisonCount\":2,\"source\":\"saved-observation\"},\"pairs\":[\"2/4 vs 2/3\",\"1/2 vs 1/8\",\"4/5 vs 2/6\",\"9/12 vs 2/10\",\"1/3 vs 2/8\"]}"
+]

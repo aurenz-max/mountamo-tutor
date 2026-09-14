@@ -1,0 +1,103 @@
+{
+  "type": "number-line",
+  "instanceId": "nl-obs-qa-073b0457dd504624bde446629f7e8711",
+  "data": {
+    "title": "Hop Along the Number Line!",
+    "description": "Practice adding numbers up to 20 by counting on using the number line.",
+    "range": {
+      "min": 0,
+      "max": 20
+    },
+    "gradeBand": "K-2",
+    "numberType": "integer",
+    "interactionMode": "jump",
+    "challenges": [
+      {
+        "id": "show_jump-0",
+        "type": "show_jump",
+        "instruction": "Put your finger on the number 11. Now, make 4 big jumps to the right by counting on!",
+        "targetValues": [
+          15
+        ],
+        "hint": "Count each hop carefully as you move forward: 1, 2, 3, 4!",
+        "startValue": 11,
+        "operations": [
+          {
+            "type": "add",
+            "startValue": 11,
+            "changeValue": 4,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      },
+      {
+        "id": "show_jump-1",
+        "type": "show_jump",
+        "instruction": "Put your finger on the number 8 and hop forward 5 spaces to find your new spot!",
+        "targetValues": [
+          13
+        ],
+        "hint": "Try counting out loud as you take each hop to the right from 8.",
+        "startValue": 8,
+        "operations": [
+          {
+            "type": "add",
+            "startValue": 8,
+            "changeValue": 5,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      },
+      {
+        "id": "show_jump-2",
+        "type": "show_jump",
+        "instruction": "Put your finger on 11. Now, make 2 big hops to the right to see where you land!",
+        "targetValues": [
+          13
+        ],
+        "hint": "Count the hops one jump at a time, starting from 11.",
+        "startValue": 11,
+        "operations": [
+          {
+            "type": "add",
+            "startValue": 11,
+            "changeValue": 2,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      },
+      {
+        "id": "show_jump-3",
+        "type": "show_jump",
+        "instruction": "Put your finger on 1, and make 5 big hops forward to the right. Where do you land?",
+        "targetValues": [
+          6
+        ],
+        "hint": "Count the hops one jump at a time, starting from 1.",
+        "startValue": 1,
+        "operations": [
+          {
+            "type": "add",
+            "startValue": 1,
+            "changeValue": 5,
+            "showJumpArc": false
+          }
+        ],
+        "highlights": []
+      }
+    ],
+    "highlights": [],
+    "operations": [
+      {
+        "type": "add",
+        "startValue": 11,
+        "changeValue": 4,
+        "showJumpArc": false
+      }
+    ],
+    "supportTier": "medium"
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "output": {
+    "type": "place-value-chart",
+    "instanceId": "opportunity-baseline",
+    "data": {
+      "title": "Exploring Four-Digit Place Value",
+      "description": "Join your tutor to explore four-digit numbers across three interactive phases. You'll identify places, say what digits are worth out loud, and write numbers you hear right into the chart!",
+      "challenges": [
+        {
+          "id": "pvc-1",
+          "targetNumber": 2541,
+          "highlightedDigitPlace": 2,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Tens",
+            "Thousands",
+            "Hundreds",
+            "Ones"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 50,
+              "wordForm": "Fifty"
+            },
+            {
+              "value": 5000,
+              "wordForm": "Five Thousand"
+            },
+            {
+              "value": 500,
+              "wordForm": "Five Hundred"
+            },
+            {
+              "value": 5,
+              "wordForm": "Five"
+            }
+          ]
+        },
+        {
+          "id": "pvc-2",
+          "targetNumber": 6694,
+          "highlightedDigitPlace": 2,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Tens",
+            "Hundreds",
+            "Thousands",
+            "Ones"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 60,
+              "wordForm": "Sixty"
+            },
+            {
+              "value": 6000,
+              "wordForm": "Six Thousand"
+            },
+            {
+              "value": 6,
+              "wordForm": "Six"
+            },
+            {
+              "value": 600,
+              "wordForm": "Six Hundred"
+            }
+          ]
+        },
+        {
+          "id": "pvc-3",
+          "targetNumber": 5764,
+          "highlightedDigitPlace": 1,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Ones",
+            "Hundreds",
+            "Thousands",
+            "Tens"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 6,
+              "wordForm": "Six"
+            },
+            {
+              "value": 60,
+              "wordForm": "Sixty"
+            },
+            {
+              "value": 600,
+              "wordForm": "Six Hundred"
+            },
+            {
+              "value": 0.6000000000000001,
+              "wordForm": "Six Tenths"
+            }
+          ]
+        }
+      ],
+      "challengeType": "compare",
+      "showExpandedForm": true,
+      "showMultipliers": false,
+      "supportTier": "medium",
+      "gradeLevel": "Grade 3"
+    }
+  },
+  "candidateItems": null,
+  "contentHash": "1b263cb8ee48941bd4b77df5e21819e2435fa34b75bc3247d31980bc40c669cf",
+  "pass": true
+}

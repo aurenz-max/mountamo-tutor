@@ -1,0 +1,33 @@
+{
+  "id": "place-value-chart::NBT004-01",
+  "kind": "pattern",
+  "status": "suspected",
+  "summary": "The student interprets a prompt asking to name a digit's place as asking for the total numeric value represented by that digit.",
+  "problem": "Name places in four-digit numbers",
+  "evalMode": "compare",
+  "primitiveType": "place-value-chart",
+  "subject": "MATHEMATICS",
+  "grade": "4",
+  "subskillId": "NBT004-01-b",
+  "updatedAt": "2026-09-13T00:27:20.990089+00:00",
+  "teachingImplication": "Clarify the distinction between the column name of a position and the quantity represented by a digit occupying that position.",
+  "checkNext": "Present an unassisted prompt asking the student to name the place of a single digit in a fresh multi-digit number.",
+  "evidence": [
+    {
+      "attemptId": "pvc-http-qa-a55fe2b3dfc143ae992de47ca6b80eb2",
+      "task": "Name the place of the second 2 in 2258",
+      "response": "two hundred",
+      "support": "Correction observation; other assistance unknown",
+      "phase": "name-place",
+      "itemId": "sample-1"
+    },
+    {
+      "attemptId": "pvc-http-qa-a55fe2b3dfc143ae992de47ca6b80eb2",
+      "task": "Name the place of 9 in 3397",
+      "response": "ninety",
+      "support": "Correction observation; other assistance unknown",
+      "phase": "name-place",
+      "itemId": "sample-2"
+    }
+  ]
+}

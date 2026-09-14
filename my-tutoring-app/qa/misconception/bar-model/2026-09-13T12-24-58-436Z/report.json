@@ -1,0 +1,372 @@
+{
+  "fictional": true,
+  "learningWrites": false,
+  "startedAt": "2026-09-13T12-24-58-436Z",
+  "cases": [
+    {
+      "name": "baseline",
+      "draw": 0,
+      "expected": "abstain",
+      "outcome": "abstain-or-no-call",
+      "adaptation": null,
+      "pair": null,
+      "expectedValues": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "iconCounts": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "allValid": true,
+      "allOfferBareCount": true,
+      "leak": false,
+      "pass": true
+    },
+    {
+      "name": "distilled",
+      "draw": 0,
+      "expected": "targeted",
+      "outcome": "targeted",
+      "adaptation": {
+        "move": "contrast_icon_count_and_row_value",
+        "comparisonCount": 2,
+        "status": "targeted"
+      },
+      "pair": [
+        0,
+        1
+      ],
+      "expectedValues": [
+        25,
+        5,
+        20,
+        20
+      ],
+      "iconCounts": [
+        5,
+        1,
+        4,
+        4
+      ],
+      "allValid": true,
+      "allOfferBareCount": true,
+      "leak": false,
+      "pass": true
+    },
+    {
+      "name": "paraphrase-says-three",
+      "draw": 0,
+      "expected": "targeted",
+      "outcome": "targeted",
+      "adaptation": {
+        "move": "contrast_icon_count_and_row_value",
+        "comparisonCount": 2,
+        "status": "targeted"
+      },
+      "pair": [
+        0,
+        1
+      ],
+      "expectedValues": [
+        25,
+        5,
+        20,
+        20
+      ],
+      "iconCounts": [
+        5,
+        1,
+        4,
+        4
+      ],
+      "allValid": true,
+      "allOfferBareCount": true,
+      "leak": false,
+      "pass": true
+    },
+    {
+      "name": "paraphrase-says-three",
+      "draw": 1,
+      "expected": "targeted",
+      "outcome": "targeted",
+      "adaptation": {
+        "move": "contrast_icon_count_and_row_value",
+        "comparisonCount": 2,
+        "status": "targeted"
+      },
+      "pair": [
+        2,
+        3
+      ],
+      "expectedValues": [
+        20,
+        20,
+        25,
+        5
+      ],
+      "iconCounts": [
+        4,
+        4,
+        5,
+        1
+      ],
+      "allValid": true,
+      "allOfferBareCount": true,
+      "leak": false,
+      "pass": true
+    },
+    {
+      "name": "paraphrase-legend",
+      "draw": 0,
+      "expected": "targeted",
+      "outcome": "targeted",
+      "adaptation": {
+        "move": "contrast_icon_count_and_row_value",
+        "comparisonCount": 2,
+        "status": "targeted"
+      },
+      "pair": [
+        1,
+        2
+      ],
+      "expectedValues": [
+        20,
+        25,
+        5,
+        20
+      ],
+      "iconCounts": [
+        4,
+        5,
+        1,
+        4
+      ],
+      "allValid": true,
+      "allOfferBareCount": true,
+      "leak": false,
+      "pass": true
+    },
+    {
+      "name": "unrelated-more-fewer",
+      "draw": 0,
+      "expected": "abstain",
+      "outcome": "abstain-or-no-call",
+      "adaptation": null,
+      "pair": null,
+      "expectedValues": [
+        20,
+        15,
+        20,
+        20
+      ],
+      "iconCounts": [
+        4,
+        3,
+        4,
+        4
+      ],
+      "allValid": true,
+      "allOfferBareCount": true,
+      "leak": false,
+      "pass": true
+    },
+    {
+      "name": "nearby-axis-step",
+      "draw": 0,
+      "expected": "abstain",
+      "outcome": "abstain-or-no-call",
+      "adaptation": null,
+      "pair": null,
+      "expectedValues": [
+        20,
+        20,
+        20,
+        15
+      ],
+      "iconCounts": [
+        4,
+        4,
+        4,
+        3
+      ],
+      "allValid": true,
+      "allOfferBareCount": true,
+      "leak": false,
+      "pass": true
+    },
+    {
+      "name": "nearby-axis-step",
+      "draw": 1,
+      "expected": "abstain",
+      "outcome": "abstain-or-no-call",
+      "adaptation": null,
+      "pair": null,
+      "expectedValues": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "iconCounts": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "allValid": true,
+      "allOfferBareCount": true,
+      "leak": false,
+      "pass": true
+    },
+    {
+      "name": "nearby-axis-step",
+      "draw": 2,
+      "expected": "abstain",
+      "outcome": "abstain-or-no-call",
+      "adaptation": null,
+      "pair": null,
+      "expectedValues": [
+        15,
+        20,
+        20,
+        15
+      ],
+      "iconCounts": [
+        3,
+        4,
+        4,
+        3
+      ],
+      "allValid": true,
+      "allOfferBareCount": true,
+      "leak": false,
+      "pass": true
+    },
+    {
+      "name": "contradictory",
+      "draw": 0,
+      "expected": "abstain",
+      "outcome": "abstain-or-no-call",
+      "adaptation": null,
+      "pair": null,
+      "expectedValues": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "iconCounts": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "allValid": true,
+      "allOfferBareCount": true,
+      "leak": false,
+      "pass": true
+    },
+    {
+      "name": "contradictory",
+      "draw": 1,
+      "expected": "abstain",
+      "outcome": "abstain-or-no-call",
+      "adaptation": null,
+      "pair": null,
+      "expectedValues": [
+        20,
+        25,
+        20,
+        20
+      ],
+      "iconCounts": [
+        4,
+        5,
+        4,
+        4
+      ],
+      "allValid": true,
+      "allOfferBareCount": true,
+      "leak": false,
+      "pass": true
+    },
+    {
+      "name": "cross-digit-worth",
+      "draw": 0,
+      "expected": "abstain",
+      "outcome": "abstain-or-no-call",
+      "adaptation": null,
+      "pair": null,
+      "expectedValues": [
+        20,
+        20,
+        20,
+        15
+      ],
+      "iconCounts": [
+        4,
+        4,
+        4,
+        3
+      ],
+      "allValid": true,
+      "allOfferBareCount": true,
+      "leak": false,
+      "pass": true
+    },
+    {
+      "name": "cross-digit-worth",
+      "draw": 1,
+      "expected": "abstain",
+      "outcome": "abstain-or-no-call",
+      "adaptation": null,
+      "pair": null,
+      "expectedValues": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "iconCounts": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "allValid": true,
+      "allOfferBareCount": true,
+      "leak": false,
+      "pass": true
+    },
+    {
+      "name": "cross-digit-worth",
+      "draw": 2,
+      "expected": "abstain",
+      "outcome": "abstain-or-no-call",
+      "adaptation": null,
+      "pair": null,
+      "expectedValues": [
+        20,
+        20,
+        20,
+        15
+      ],
+      "iconCounts": [
+        4,
+        4,
+        4,
+        3
+      ],
+      "allValid": true,
+      "allOfferBareCount": true,
+      "leak": false,
+      "pass": true
+    }
+  ],
+  "pass": true
+}
