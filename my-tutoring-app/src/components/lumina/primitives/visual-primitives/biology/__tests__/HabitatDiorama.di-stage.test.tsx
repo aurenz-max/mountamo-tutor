@@ -96,14 +96,33 @@ describe('habitat-diorama judged stage', () => {
     expect(String(runnerState.submitGestureAttempt.mock.calls[0][0])).toContain('MATCHES');
   });
 
+  it('the attempt observation names the committed move, not a verdict, for both model gestures', () => {
+    type Observe = (item: HabitatItem, context: { heard: string | null; verdict: 'affirmed' | 'corrected' }) => { observed: string; challenge: string };
+    render(<HabitatDiorama data={data} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Oak Tree' }));
+    const pack = runnerState.options!.pack as unknown as { items: HabitatItem[]; observation: Observe };
+    expect(pack.observation(pack.items[0], { heard: null, verdict: 'corrected' }).observed).toBe('Connected Snowshoe Hare to Oak Tree.');
+    cleanup();
+    runnerState.index = 1;
+    render(<HabitatDiorama data={data} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ground layer' }));
+    const restore = runnerState.options!.pack as unknown as { items: HabitatItem[]; observation: Observe };
+    const record = restore.observation(restore.items[1], { heard: null, verdict: 'affirmed' });
+    expect(record.observed).toBe('Placed Shelf Fungus in the Ground layer zone.');
+    expect(record.observed).not.toMatch(/did not match|wrong|judged/i);
+  });
+
   it('submits measured evidence when the tutor-owned run finishes', () => {
     render(<HabitatDiorama data={data} />);
     act(() => runnerState.options!.onFinished({
       outcomes: [{ id: 'connect', solved: true }, { id: 'restore', solved: false }],
       solvedCount: 1, firstTryCount: 1, attemptsCount: 3, accuracy: 50, passed: false,
       hearTaps: 0, observations: [], diagnosisEvidence: [],
+      learningResponses: [{ itemId: 'connect', verdict: 'affirmed', observed: 'Connected Snowshoe Hare to Red Fox.' }],
     }));
     expect(submitResult).toHaveBeenCalledOnce();
+    expect(submitResult.mock.calls[0][3].learningResponses).toEqual([
+      { itemId: 'connect', verdict: 'affirmed', observed: 'Connected Snowshoe Hare to Red Fox.' }]);
     expect(submitResult.mock.calls[0][2]).toMatchObject({
       type: 'habitat-diorama', totalChallenges: 2, correctChallenges: 1,
       totalAttempts: 3, accuracy: 50, spokenChallenges: 0, modelChallenges: 2,

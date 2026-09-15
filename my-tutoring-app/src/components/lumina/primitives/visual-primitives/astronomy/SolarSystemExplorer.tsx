@@ -806,12 +806,11 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader,
       retry: () => 'Have another go — say the planet\'s name.',
       done: 'Great sky-watching today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => ({
+    // One record per attempt, right or corrected: the ask as spoken and what was heard; never the verdict.
+    observation: (item, { heard }) => ({
       challenge: `${item.kind}/${item.facet}: ${askFor(item)}`,
       expected: item.answerNames.join(' / '),
-      observed: lastHeard
-        ? `Heard "${lastHeard}".`
-        : 'The tutor judged the answer wrong from the audio.',
+      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
     }),
   }), [items]);
 
@@ -836,7 +835,7 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader,
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );

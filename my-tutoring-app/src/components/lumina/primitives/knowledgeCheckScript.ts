@@ -943,7 +943,7 @@ const tapContract = (item: KnowledgeCheckItem): string =>
 /** What the blind tutor is told the child is LOOKING at. The tutor needs it
  *  to judge ("is that the numeral on the card?"); it never enters the runtime
  *  state block (answer-free by construction — see `stimulusFor`). */
-const stimulusDescription = (item: KnowledgeCheckItem): string => {
+export const stimulusDescription = (item: KnowledgeCheckItem): string => {
   const s = item.stimulus;
   if (!s) return '';
   switch (s.insetType) {

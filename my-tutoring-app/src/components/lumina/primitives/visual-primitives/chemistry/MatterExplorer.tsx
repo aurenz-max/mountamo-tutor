@@ -377,7 +377,7 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -393,9 +393,11 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
       retry: () => 'Listen again — then say your answer.',
       done: 'Great science today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
-      const heard = (lastHeard ?? '').trim();
-      const observed = heard ? `Said "${heard}".` : 'Said something that did not match.';
+    // One record per attempt, right or corrected: the object, change or clues given, and what was said. Never the
+    // verdict, because the same text is kept for right answers.
+    observation: (item, { heard: transcript }) => {
+      const heard = (transcript ?? '').trim();
+      const observed = heard ? `Said "${heard}".` : 'No transcript was captured.';
       switch (item.kind) {
         case 'name_state':
           return {
@@ -411,13 +413,13 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
           };
         case 'name_undo':
           return {
-            challenge: `Say whether the change to ${item.objectName} can be undone.`,
+            challenge: `Say whether the change to ${item.objectName}${item.change ? ` (${item.change.replace(/_/g, ' ')})` : ''} can be undone.`,
             expected: `"${item.answerUndo ? CHANGE_OPTIONS[item.answerUndo].phrase : ''}".`,
             observed,
           };
         case 'mystery_state':
           return {
-            challenge: `Name the state of a withheld object from ${item.clues?.length ?? 0} clues.`,
+            challenge: `Name the state of a withheld object (${item.objectName}) from ${item.clues?.length ?? 0} clues: ${(item.clues ?? []).join('; ')}.`,
             expected: `"${item.answerState}".`,
             observed,
           };

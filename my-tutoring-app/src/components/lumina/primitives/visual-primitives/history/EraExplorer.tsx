@@ -436,7 +436,7 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { eraName, challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      { eraName, challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -452,12 +452,13 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
       retry: () => 'Listen again — then say your answer.',
       done: 'Great history today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
-      const heard = (lastHeard ?? '').trim();
+    // One record per attempt, right or corrected: the statement, the spoken menu, and what was said; never the verdict.
+    observation: (item, { heard: transcript }) => {
+      const heard = (transcript ?? '').trim();
       return {
-        challenge: `${MODE_META[item.kind].badge}: ${item.statement}`,
+        challenge: `${MODE_META[item.kind].badge}: ${item.statement} (choices: ${item.choices.map((c) => c.phrase).join('; ')})`,
         expected: correctChoiceOf(item).phrase,
-        observed: heard ? `Said "${heard}".` : 'Said something that did not match.',
+        observed: heard ? `Said "${heard}".` : 'No transcript was captured.',
       };
     },
   }), [items]);

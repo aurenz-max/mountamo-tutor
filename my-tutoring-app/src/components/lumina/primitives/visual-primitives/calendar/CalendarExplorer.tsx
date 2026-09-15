@@ -856,16 +856,15 @@ const CalendarSequenceExplorer: React.FC<{ data: CalendarExplorerData }> = ({ da
       affirmedNext: 'That keeps the chain going!',
       done: `You finished the ${unit} chain!`,
     },
-    diagnosisObservation: (item, { lastHeard }) => {
+    // One record per attempt, right or corrected: the day or month given and what was heard; never the verdict.
+    observation: (item, { heard }) => {
       const current = item.type === 'day_sequence' ? item.currentDay : item.currentMonth;
       const expected = item.type === 'day_sequence' ? item.expectedDay : item.expectedMonth;
       const itemUnit = item.type === 'day_sequence' ? 'day' : 'month';
       return {
         challenge: `Say the ${itemUnit} that comes after ${current}.`,
         expected,
-        observed: lastHeard
-          ? `Heard "${lastHeard}".`
-          : `The tutor judged the spoken ${itemUnit} wrong from the audio.`,
+        observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
       };
     },
   }), [data.gradeBand, data.supportTier, data.title, items, unit]);
@@ -878,7 +877,8 @@ const CalendarSequenceExplorer: React.FC<{ data: CalendarExplorerData }> = ({ da
       accuracy: summary.accuracy,
       attemptsCount: summary.attemptsCount,
     };
-    evaluation.submitResult(summary.passed, summary.accuracy, metrics, undefined, undefined, summary.diagnosisEvidence);
+    evaluation.submitResult(summary.passed, summary.accuracy, metrics, { learningResponses: summary.learningResponses },
+      undefined, summary.diagnosisEvidence);
   }, [evaluation.submitResult]);
 
   const runner = useJudgedScriptRunner<CalendarSequenceItem>({

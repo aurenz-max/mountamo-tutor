@@ -63,6 +63,7 @@ import type { JudgedScriptPack } from '../hooks/judgedScriptContract';
 import {
   cellVerdictCue,
   itemsFromChallenges,
+  askFor,
   numberWord,
   periodicTablePackBase,
   type ElementFacts,
@@ -154,7 +155,7 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className }) 
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -174,34 +175,38 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className }) 
         : 'Listen again — then tap the box.'),
       done: 'Great work on the table today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
-      const heard = lastHeard?.trim() ?? '';
+    // One factual record per attempt, right or corrected: the clue as asked and what was tapped or said (the
+    // tapped box is read before the retry clears it). Never the verdict, because the same text is kept for
+    // right answers.
+    observation: (item, { heard: transcript }) => {
+      const heard = transcript?.trim() ?? '';
+      const said = heard ? `Said "${heard}".` : 'No transcript was captured.';
       switch (item.kind) {
         case 'find':
           return {
-            challenge: `Find a box on the periodic table (${item.findBy}).`,
+            challenge: `find (by ${item.findBy}): asked "${askFor(item)}"`,
             expected: `A tap on ${item.element?.name}'s box.`,
             observed: tappedNameRef.current
               ? `Tapped ${tappedNameRef.current}'s box.`
-              : 'Tapped a different box.',
+              : 'Tapped a box; which one was not recorded.',
           };
         case 'name':
           return {
-            challenge: `Read the table (clue: ${item.clueBy}) and name the element.`,
+            challenge: `name (clue: ${item.clueBy}): asked "${askFor(item)}"`,
             expected: `"${item.element?.name}".`,
-            observed: heard ? `Said "${heard}".` : 'Said something that did not match.',
+            observed: said,
           };
         case 'compare':
           return {
-            challenge: `${item.axis === 'reactivity' ? 'Reactivity' : 'Atomic size'} comparison: ${item.pair?.[0].name} vs ${item.pair?.[1].name}.`,
+            challenge: `${item.axis === 'reactivity' ? 'Reactivity' : 'Atomic size'} comparison: asked "${askFor(item)}"`,
             expected: `"${item.answerName}".`,
-            observed: heard ? `Said "${heard}".` : 'Said something that did not match.',
+            observed: said,
           };
         case 'valence':
           return {
-            challenge: `Read ${item.element?.name}'s column and count its outer electrons.`,
+            challenge: `valence: ${item.element?.name} (group ${item.element?.group}); asked "${askFor(item)}"`,
             expected: `"${numberWord(item.answerCount ?? 0)}".`,
-            observed: heard ? `Said "${heard}".` : 'Said something that did not match.',
+            observed: said,
           };
       }
     },

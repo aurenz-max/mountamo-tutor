@@ -369,7 +369,7 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
       summary.passed,
       summary.accuracy,
       metrics,
-      { periodLabel, challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      { periodLabel, challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -389,18 +389,26 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
         : 'Listen again — then say your answer.'),
       done: 'Great history today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
-      const heard = (lastHeard ?? '').trim();
+    // One factual record per attempt, right or corrected: the outcome and the cards in play (as text, not ids),
+    // and what was said or built (the placed board is read before the retry clears it). Never the verdict.
+    observation: (item, { heard: transcript }) => {
+      const heard = (transcript ?? '').trim();
+      const textOf = (id: string | null) => (id ? item.cards.find((c) => c.id === id)?.text ?? id : '_');
       const expected = item.kind === 'identify_cause'
         ? (item.isCause ? 'yes' : 'no')
         : item.kind === 'build_chain'
-          ? item.correctOrder.join(' → ')
+          ? item.correctOrder.map(textOf).join(' → ')
           : correctChoiceOf(item).card.text;
       const observed = item.kind === 'build_chain'
-        ? `Built ${placedRef.current.map((id) => id ?? '_').join(' → ')}.`
-        : heard ? `Said "${heard}".` : 'Said something that did not match.';
+        ? `Built ${placedRef.current.map(textOf).join(' → ')}.`
+        : heard ? `Said "${heard}".` : 'No transcript was captured.';
+      const shown = item.kind === 'identify_cause'
+        ? `; asked whether "${item.card.text}" caused it`
+        : item.kind === 'build_chain'
+          ? `; cards to order: ${item.cards.map((c) => c.text).join('; ')}`
+          : `; choices: ${item.choices.map((c) => c.card.text).join('; ')}`;
       return {
-        challenge: `${MODE_META[item.kind].badge}: ${item.outcome.text}`,
+        challenge: `${MODE_META[item.kind].badge}: ${item.outcome.text}${shown}`,
         expected,
         observed,
       };

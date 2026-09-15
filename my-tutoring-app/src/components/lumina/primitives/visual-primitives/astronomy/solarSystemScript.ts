@@ -987,7 +987,7 @@ export const revealTextFor = (item: SolarItem): string =>
 /**
  * Everything solar-system-explorer ever sends the tutor. The component spreads
  * this and adds what only a mounted component can own (status lines, and the
- * `diagnosisObservation` that reads the live sky); the drive-plan endpoint
+ * `observation` that reads the live sky); the drive-plan endpoint
  * builds the identical cues for the headless judged-loop harness.
  */
 export const solarSystemPackBase = (

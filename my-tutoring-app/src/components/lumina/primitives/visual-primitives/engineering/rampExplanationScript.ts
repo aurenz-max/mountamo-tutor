@@ -51,7 +51,9 @@ EVERY learner answer, including repeats and off-task talk, MUST get exactly one 
     contextFor: current => ({ evalMode: 'explain_from_trials', question: current.challenge.brief, phase: 'explain',
       trialCount: '2', supportTier: 'medium', feedback: 'Awaiting a spoken explanation. Private evidence is in the active contract.' }),
     statusLines: { ready: () => 'Explain using both trials.', retry: () => 'Try your explanation again.', done: 'Explanation recorded.' },
-    diagnosisObservation: (current, { lastHeard }) => ({ challenge: current.challenge.brief,
-      expected: current.conclusion, observed: lastHeard || 'No supported comparison heard.' }),
+    // One record per attempt, right or corrected: the question and both recorded trials, and what was heard.
+    observation: (current, { heard }) => ({
+      challenge: `${current.challenge.brief} Recorded trials: ${current.trials.map(rampTrialEvidence).join(' ')}`,
+      expected: current.conclusion, observed: heard?.trim() ? `Heard "${heard.trim()}".` : 'No transcript was captured.' }),
   };
 }

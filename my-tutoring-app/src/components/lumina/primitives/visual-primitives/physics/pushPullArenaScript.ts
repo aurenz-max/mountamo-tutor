@@ -140,7 +140,7 @@ export const howToPlayFor = (item: ArenaItem): string => {
 
 // ── The asks — each closes on a two-word spoken menu ────────────────────────
 
-const askFor = (item: ArenaItem): string => {
+export const askFor = (item: ArenaItem): string => {
   switch (item.kind) {
     case 'predict':
       return `The ${item.objectName} is on ${item.surfaceSpoken}, and a push is coming. Your turn. Will it move, or stay? Say moves, or stays.`;
@@ -426,7 +426,7 @@ export const stimulusFor = (item: ArenaItem): string => {
 /**
  * Everything push-pull-arena ever sends the tutor. `PushPullArena.tsx` spreads
  * this and adds what only a mounted component can own (status lines, and the
- * `diagnosisObservation` that reads the live arena); the drive-plan endpoint
+ * `observation` that reads the live arena); the drive-plan endpoint
  * builds the identical cues for the headless judged-loop harness.
  *
  * The split exists so the harness cannot drift from production — and it had

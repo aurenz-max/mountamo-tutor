@@ -300,17 +300,31 @@ interface JudgedFaceProps { data: HabitatDioramaData; items: HabitatItem[]; reso
 const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId, skillId, exhibitId, onInteraction }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reward, setReward] = useState<{ text: string; ids: string[] } | null>(null);
+  /** The last committed model move, for the attempt observation. */
+  const committedRef = useRef<{ toId?: string; zone?: HabitatZone } | null>(null);
   const isPreReader = data.gradeBand === 'K-2';
   const evaluation = usePrimitiveEvaluation<HabitatDioramaMetrics>({ primitiveType: 'habitat-diorama', instanceId: resolvedInstanceId, skillId: data.skillId ?? skillId, subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId ?? exhibitId, onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined });
   const pack = useMemo<JudgedScriptPack<HabitatItem>>(() => ({
     ...habitatDioramaPackBase(items), passThreshold: 70,
     statusLines: { ready: (item) => item.answerKind === 'voice' ? 'Listen, study the ecosystem, then say your answer.' : 'Listen, then show your thinking on the ecosystem.', retry: (item) => item.answerKind === 'voice' ? 'Try once more — say the evidence or living thing.' : 'Try once more on the habitat model.', done: 'The ecosystem is still alive — and now you can read its story.' },
-    diagnosisObservation: (item, { lastHeard }) => ({ challenge: `${item.kind}: ${askFor(item)}`, expected: item.answerText, observed: item.answerKind === 'voice' ? (lastHeard ? `Heard "${lastHeard}".` : 'The tutor judged the spoken choice wrong.') : 'The committed ecosystem model did not match the relationship key.' }),
+    // One factual record per attempt, right or corrected: the ask and its choices, and what was heard or
+    // committed on the model (the commit ref is set just before each gesture is submitted). Never the verdict.
+    observation: (item, { heard }) => {
+      const names = item.organismNames;
+      const choices = item.optionTexts.length ? ` (choices: ${item.optionTexts.join('; ')})` : '';
+      const committed = committedRef.current;
+      const observed = item.answerKind === 'voice'
+        ? (heard ? `Heard "${heard}".` : 'No transcript was captured.')
+        : item.kind === 'connect'
+          ? (committed?.toId ? `Connected ${names[item.fromId ?? ''] ?? item.fromId} to ${names[committed.toId] ?? committed.toId}.` : 'Connected an organism; which one was not recorded.')
+          : (committed?.zone ? `Placed ${names[item.restorationEntityId ?? ''] ?? 'the organism'} in the ${ZONE_LABELS[committed.zone]} zone.` : 'Placed the organism; which zone was not recorded.');
+      return { challenge: `${item.kind}: ${askFor(item)}${choices}`, expected: item.answerText, observed };
+    },
   }), [items]);
   const handleFinished = useCallback((summary: JudgedRunSummary) => {
     const modeCounts = items.reduce<Record<string, number>>((counts, item) => ({ ...counts, [item.kind]: (counts[item.kind] ?? 0) + 1 }), {});
     const dominantMode = Object.entries(modeCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
-    evaluation.submitResult(summary.passed, summary.accuracy, { type: 'habitat-diorama', evalMode: dominantMode, totalChallenges: items.length, correctChallenges: summary.solvedCount, totalAttempts: summary.attemptsCount, accuracy: summary.accuracy, spokenChallenges: items.filter((item) => item.answerKind === 'voice').length, modelChallenges: items.filter((item) => item.answerKind === 'gesture').length, durationMs: evaluation.elapsedMs }, { challengeResults: summary.outcomes }, undefined, summary.diagnosisEvidence);
+    evaluation.submitResult(summary.passed, summary.accuracy, { type: 'habitat-diorama', evalMode: dominantMode, totalChallenges: items.length, correctChallenges: summary.solvedCount, totalAttempts: summary.attemptsCount, accuracy: summary.accuracy, spokenChallenges: items.filter((item) => item.answerKind === 'voice').length, modelChallenges: items.filter((item) => item.answerKind === 'gesture').length, durationMs: evaluation.elapsedMs }, { challengeResults: summary.outcomes, learningResponses: summary.learningResponses }, undefined, summary.diagnosisEvidence);
   }, [evaluation, items]);
   const runner = useJudgedScriptRunner<HabitatItem>({
     pack, instanceId: resolvedInstanceId, gradeLevel: data.gradeBand, exhibitId: data.exhibitId ?? exhibitId, onFinished: handleFinished,
@@ -324,6 +338,7 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId
     SoundManager.tap(); setSelectedId(id); onInteraction?.({ type: 'organism_inspected', organismId: id, timestamp: Date.now() });
     if (!current || !runner.canAttempt || current.kind !== 'connect' || id === current.fromId) return;
     pip.look('stimulus');
+    committedRef.current = { toId: id };
     runner.submitGestureAttempt(gestureVerdictCue(current, { fromId: current.fromId, toId: id }));
     onInteraction?.({ type: 'relationship_committed', organismId: id, relationshipType: current.relationshipType, timestamp: Date.now() });
   };
@@ -342,7 +357,7 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId
       {current?.kind === 'predict' && <LuminaPanel accent="orange" className={`${accentGlow.orange} ${accentBorder.orange}`}><div className="flex items-start gap-3"><Zap className="mt-0.5 h-5 w-5 text-orange-300" /><div><p className="text-xs font-semibold uppercase tracking-wider text-orange-300">Ecosystem change</p><p className="mt-1 text-sm text-slate-200">{current.disruptionEvent}</p></div></div></LuminaPanel>}
       {pip.store && <div {...pip.dock} />}
       <div {...pip.target('stimulus')}><HabitatScene data={data} isPreReader={isPreReader} selectedId={selectedId} activeIds={activeIds} rewardIds={rewardIds} hideOrganismId={current?.kind === 'restore' ? current.restorationEntityId : undefined} onOrganismTap={handleOrganismTap} /></div>
-      {current?.kind === 'restore' && current.restorationEntityId && <LuminaPanel {...pip.target('zones')} accent="emerald"><div className="mb-3 flex items-center gap-3"><span className="text-3xl">{organismEmoji(data.organisms.find((organism) => organism.id === current.restorationEntityId)!)}</span><div><p className="text-xs uppercase tracking-wider text-emerald-300">Restoration candidate</p><p className="font-semibold text-slate-100">{current.organismNames[current.restorationEntityId]}</p></div></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{(Object.keys(ZONE_LABELS) as HabitatZone[]).map((zone) => <button key={zone} type="button" disabled={!runner.canAttempt} onClick={() => { SoundManager.tap(); pip.look('zones'); runner.submitGestureAttempt(gestureVerdictCue(current, { zone })); onInteraction?.({ type: 'restoration_committed', timestamp: Date.now() }); }} className={`rounded-xl px-3 py-4 text-sm font-semibold transition-all ${dropZoneStateClasses.idle} ${runner.canAttempt ? 'hover:scale-[1.02]' : 'opacity-50'}`}>{ZONE_LABELS[zone]}</button>)}</div></LuminaPanel>}
+      {current?.kind === 'restore' && current.restorationEntityId && <LuminaPanel {...pip.target('zones')} accent="emerald"><div className="mb-3 flex items-center gap-3"><span className="text-3xl">{organismEmoji(data.organisms.find((organism) => organism.id === current.restorationEntityId)!)}</span><div><p className="text-xs uppercase tracking-wider text-emerald-300">Restoration candidate</p><p className="font-semibold text-slate-100">{current.organismNames[current.restorationEntityId]}</p></div></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{(Object.keys(ZONE_LABELS) as HabitatZone[]).map((zone) => <button key={zone} type="button" disabled={!runner.canAttempt} onClick={() => { SoundManager.tap(); pip.look('zones'); committedRef.current = { zone }; runner.submitGestureAttempt(gestureVerdictCue(current, { zone })); onInteraction?.({ type: 'restoration_committed', timestamp: Date.now() }); }} className={`rounded-xl px-3 py-4 text-sm font-semibold transition-all ${dropZoneStateClasses.idle} ${runner.canAttempt ? 'hover:scale-[1.02]' : 'opacity-50'}`}>{ZONE_LABELS[zone]}</button>)}</div></LuminaPanel>}
       {current?.kind === 'defend' && current.evidenceChoices && <div className="grid gap-2 md:grid-cols-3" aria-label="Evidence choices">{current.evidenceChoices.map((choice, index) => <div key={choice.id} className={`rounded-xl border p-4 ${answerStateClasses.idle}`}><p className="text-[10px] font-semibold uppercase tracking-wider text-cyan-300">Evidence {index + 1}</p><p className="mt-2 text-sm leading-relaxed text-slate-100">{choice.text}</p></div>)}</div>}
       {current?.answerKind === 'voice' && current.kind !== 'defend' && <div className="flex flex-wrap justify-center gap-2" aria-label="Answer choices">{current.optionTexts.map((option) => <LuminaBadge key={option} accent="cyan" className="px-3 py-2 text-sm">{option}</LuminaBadge>)}</div>}
       {reward && runner.revealHeld && <LuminaPanel accent="emerald" className={`${motion.reveal} text-center`}><Sprout className="mx-auto h-6 w-6 text-emerald-300" /><p className="mt-2 font-semibold text-emerald-100">{reward.text}</p></LuminaPanel>}

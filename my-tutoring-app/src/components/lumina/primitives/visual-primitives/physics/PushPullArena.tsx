@@ -54,6 +54,7 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
+  askFor,
   itemsFromChallenges,
   pushPullArenaPackBase,
   type ArenaChallengeLike,
@@ -485,10 +486,12 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
       affirmedNext: 'Yes! You said what the physics did.',
       done: 'Great force science today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => ({
-      challenge: `${PHASE_TYPE_CONFIG[item.kind]?.label ?? item.kind}: ${item.objectName} on ${item.surfaceSpoken}.`,
+    // One record per attempt, right or corrected: the ask as spoken (it names the objects and surface) and what
+    // was heard; never the verdict.
+    observation: (item, { heard }) => ({
+      challenge: `${PHASE_TYPE_CONFIG[item.kind]?.label ?? item.kind}: ${askFor(item)}`,
       expected: item.spokenAnswer,
-      observed: lastHeard ? `Heard "${lastHeard}".` : 'The tutor judged the answer wrong from the audio.',
+      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
     }),
   }), [items]);
 
@@ -505,7 +508,8 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
       averageAttemptsPerChallenge:
         summary.attemptsCount / Math.max(summary.outcomes.length, 1),
     };
-    submitResult(summary.accuracy >= 70, summary.accuracy, metrics, undefined, undefined, summary.diagnosisEvidence);
+    submitResult(summary.accuracy >= 70, summary.accuracy, metrics, { learningResponses: summary.learningResponses },
+      undefined, summary.diagnosisEvidence);
   }, [items, submitResult]);
 
   // ── Canvas & physics state ───────────────────────────────────────

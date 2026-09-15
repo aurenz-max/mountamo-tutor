@@ -651,7 +651,7 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -667,9 +667,11 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
       retry: () => 'Listen again — then say your answer.',
       done: 'Great science today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
-      const heard = (lastHeard ?? '').trim();
-      const observed = heard ? `Said "${heard}".` : 'Said something that did not match.';
+    // One record per attempt, right or corrected: the substance, temperatures or pair given, and what was said.
+    // Never the verdict, because the same text is kept for right answers.
+    observation: (item, { heard: transcript }) => {
+      const heard = (transcript ?? '').trim();
+      const observed = heard ? `Said "${heard}".` : 'No transcript was captured.';
       switch (item.kind) {
         case 'name_state':
           return {
@@ -685,7 +687,8 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
           };
         case 'predict_change':
           return {
-            challenge: `Name the phase change ${item.substance?.name} goes through at ${tempSpoken(item.targetTemp ?? 0)}.`,
+            challenge: `Name the phase change ${item.substance?.name} goes through at ${tempSpoken(item.targetTemp ?? 0)}`
+              + `${item.startState && item.startTemp != null ? `, starting as a ${item.startState} at ${tempSpoken(item.startTemp)}` : ''}.`,
             expected: `"${item.answerChange}".`,
             observed,
           };

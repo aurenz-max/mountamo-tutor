@@ -74,6 +74,7 @@ import {
   knowledgeCheckPackBase,
   tapVerdictCue,
   correctOptionText,
+  stimulusDescription,
   type KnowledgeCheckItem,
 } from './knowledgeCheckScript';
 
@@ -212,7 +213,8 @@ const KnowledgeCheckJudged: React.FC<{
         success,
         accuracy,
         metrics,
-        { itemResults: outcomes },
+        { itemResults: outcomes,
+          learningResponses: (summary.learningResponses ?? []).filter((r) => itemById.get(r.itemId)?.problemIndex === index) },
         undefined,
         attachEvidence ? summary.diagnosisEvidence : undefined,
       );
@@ -230,6 +232,8 @@ const KnowledgeCheckJudged: React.FC<{
   const [filed, setFiled] = useState<Record<string, { focus: string; group: string; problemIndex: number }>>({});
   /** choice_tap: which option the child committed (pre-verdict selection). */
   const [tappedId, setTappedId] = useState<string | null>(null);
+  /** The same commit, for the attempt observation: the pack closes over refs, not render state. */
+  const tappedIdRef = useRef<string | null>(null);
 
   const revealTextFor = (item: KnowledgeCheckItem): string => {
     switch (item.kind) {
@@ -258,13 +262,25 @@ const KnowledgeCheckJudged: React.FC<{
       affirmedNext: 'Yes! Next question.',
       done: 'Great thinking today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => ({
-      challenge: `${item.kind}: ${item.prompt}${item.focusText ? ` (${item.focusText})` : ''}`,
-      expected: revealTextFor(item),
-      observed: lastHeard
-        ? `Heard "${lastHeard}".`
-        : 'The tutor judged the answer wrong from the audio.',
-    }),
+    // One factual record per attempt, right or corrected: what the screen shows, the prompt and its options,
+    // and what was heard or touched (the tap is read before the retry clears it). Never the verdict.
+    observation: (item, { heard }) => {
+      const options = item.options?.length ? ` Options: ${item.options.map((o) => o.text).join(', ')}.`
+        : item.wordBank?.length ? ` Word bank: ${item.wordBank.join(', ')}.` : '';
+      let observed = heard ? `Heard "${heard}".` : 'No transcript was captured.';
+      if (item.answerKind === 'gesture') {
+        const id = tappedIdRef.current;
+        const touched = item.stimulus?.insetType === 'number-sentence' && item.kind === 'point_to'
+          ? item.stimulus.tokens.find((t) => t.id === id)?.text
+          : item.options?.find((o) => o.id === id)?.text;
+        observed = touched ? `Touched "${touched}".` : 'Touched a choice; which one was not recorded.';
+      }
+      return {
+        challenge: `${item.kind}: ${stimulusDescription(item)}${item.prompt}${item.focusText ? ` (${item.focusText})` : ''}${options}`,
+        expected: revealTextFor(item),
+        observed,
+      };
+    },
   }), [items]);
 
   const runner = useJudgedScriptRunner<KnowledgeCheckItem>({
@@ -323,6 +339,7 @@ const KnowledgeCheckJudged: React.FC<{
     if (runner.isAwaitingGesture()) return;
     pip.look(`option-${optionId}`);
     setTappedId(optionId);
+    tappedIdRef.current = optionId;
     // The match is CODE-COMPUTED; the cue tells the tutor which line to say.
     runner.submitGestureAttempt(tapVerdictCue(item, index));
   };
@@ -336,6 +353,7 @@ const KnowledgeCheckJudged: React.FC<{
     if (index < 0) return;
     pip.look('question');
     setTappedId(tokenId);
+    tappedIdRef.current = tokenId;
     runner.submitGestureAttempt(tapVerdictCue(item, index));
   };
 

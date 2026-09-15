@@ -98,7 +98,11 @@ export interface RampInvestigationResult {
   prediction: 'a' | 'b' | 'same';
   predictionCorrect: boolean;
   trials: RampTrial[];
-  explanation?: { solved: boolean; corrections: number; score: number };
+  explanation?: {
+    solved: boolean; corrections: number; score: number;
+    /** Every judged attempt at the spoken explanation, right answers included. */
+    learningResponses?: import('../../../evaluation/learningResponseEvidence').LearningResponseEvidence[];
+  };
 }
 
 export const RAMP_FRICTION_COEFFICIENTS: Record<RampFrictionLevel, number> = {

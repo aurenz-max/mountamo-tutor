@@ -145,7 +145,8 @@ export default function RampInvestigation({ challenge, instanceId, exhibitId, gr
     {phase === 'test' && measurementsComplete && <LuminaButton tone="primary" onClick={() => planning ? finish() : setPhase('explain')}>{planning ? 'Record investigation' : 'Explain my results'}</LuminaButton>}
     {spoken && <SpokenEvidence challenge={challenge} trials={trials} instanceId={instanceId} exhibitId={exhibitId} gradeLevel={gradeLevel} onFinished={summary => {
       const outcome = summary.outcomes[0];
-      finish({ solved: outcome?.solved ?? false, corrections: outcome?.corrections ?? 2, score: outcome?.score ?? 0 });
+      finish({ solved: outcome?.solved ?? false, corrections: outcome?.corrections ?? 2, score: outcome?.score ?? 0,
+        learningResponses: summary.learningResponses });
     }} />}
     {phase === 'done' && <LuminaFeedbackCard status="insight">Your plan, prediction, and measurements are saved separately. {planning ? 'A fair comparison lets you investigate one condition at a time.' : 'Use the trial notebook when you explain what changed.'}</LuminaFeedbackCard>}
   </div>;

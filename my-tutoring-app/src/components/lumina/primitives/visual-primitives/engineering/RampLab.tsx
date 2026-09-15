@@ -386,11 +386,14 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
       checksMade: totalChecksRef.current,
       firstTryCorrect: firstTryCorrectRef.current,
     };
+    // Spoken explanations record every judged attempt; the shared observation capture reads them here.
+    const learningResponses = investigationsRef.current.flatMap(result => result.explanation?.learningResponses ?? []);
     submitResult(solved === challenges.length, score, metrics, {
       solvedChallengeIds: Array.from(solvedIds),
       modes: sessionModes,
       checksMade: totalChecksRef.current,
       investigations: investigationsRef.current,
+      ...(learningResponses.length ? { learningResponses } : {}),
     });
     SoundManager.playStreak();
   };

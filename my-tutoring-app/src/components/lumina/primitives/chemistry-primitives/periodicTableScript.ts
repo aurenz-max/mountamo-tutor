@@ -451,7 +451,7 @@ const leadInFor = (item: PeriodicTableItem): string => {
 
 const positionOf = (e: ElementFacts): string => `group ${e.group}, period ${e.period}`;
 
-const askFor = (item: PeriodicTableItem): string => {
+export const askFor = (item: PeriodicTableItem): string => {
   switch (item.kind) {
     case 'find': {
       const e = item.element!;
