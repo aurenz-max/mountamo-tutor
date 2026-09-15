@@ -68,9 +68,10 @@ If wrong, begin with "My turn." Point out the YOU arrow, model "${modelSpatialDe
     dead: 'The tutor went quiet \u2014 tap the microphone to reconnect.',
     done: 'You described the scene clearly.',
   },
-  diagnosisObservation: (item, { lastHeard }) => ({
+  // One record per attempt, right or corrected: the ask names the pictured pair and the viewpoint; never the verdict.
+  observation: (item, { heard }) => ({
     challenge: ask(item),
     expected: modelSpatialDescription(item),
-    observed: lastHeard ?? '(Speech was not transcribed.)',
+    observed: heard?.trim() ? `Heard "${heard.trim()}".` : 'No transcript was captured.',
   }),
 });

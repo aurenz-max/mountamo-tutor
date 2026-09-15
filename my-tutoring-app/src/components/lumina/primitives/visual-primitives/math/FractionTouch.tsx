@@ -40,7 +40,8 @@ export default function FractionTouch({ data, className, localOnly = false }: { 
       type: 'fraction-circles', evalMode: 'touch_fraction', totalChallenges: items.length,
       correctCount: summary.solvedCount, accuracy: summary.accuracy, touchFractionAccuracy: summary.accuracy,
       identifyAccuracy: 0, buildAccuracy: 0, compareAccuracy: 0, equivalentAccuracy: 0, attemptsCount: summary.attemptsCount,
-    }, { challengeResults: summary.outcomes, pictures: items, taps: taps.current }, undefined, summary.diagnosisEvidence);
+    }, { challengeResults: summary.outcomes, pictures: items, taps: taps.current,
+      learningResponses: summary.learningResponses }, undefined, summary.diagnosisEvidence);
   }, [evaluation, items]);
   const resetTap = () => { lastTap.current = null; setSelected(null); pip.clear(); };
   const runner = useJudgedScriptRunner({ pack, instanceId: instance.current,

@@ -961,7 +961,7 @@ export const familyHelperExample = (
 /**
  * Everything number-bond ever sends the tutor. `NumberBond.tsx` spreads this
  * and adds what only a mounted component can own (status lines, and the
- * `diagnosisObservation` that reads the live workspace); the drive-plan
+ * `observation` that reads the live workspace); the drive-plan
  * endpoint builds the identical cues for the headless judged-loop harness.
  */
 export const numberBondPackBase = (

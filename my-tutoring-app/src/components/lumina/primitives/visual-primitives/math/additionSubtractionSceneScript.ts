@@ -732,7 +732,7 @@ export const itemsFromChallenges = (
 /**
  * Everything addition-subtraction-scene ever sends the tutor.
  * `AdditionSubtractionScene.tsx` spreads this and adds what only a mounted
- * component can own (status lines, and the `diagnosisObservation` that reads
+ * component can own (status lines, and the `observation` that reads
  * the live scene); the drive-plan endpoint builds the identical cues for the
  * headless judged-loop harness.
  *

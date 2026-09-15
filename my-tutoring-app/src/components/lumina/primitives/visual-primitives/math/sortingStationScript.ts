@@ -1304,7 +1304,7 @@ export const stimulusFor = (item: SortingStationItem): string => {
 /**
  * Everything of this pack that can reach the tutor, in one value. The component
  * spreads this and adds only what the SCREEN owns (`statusLines`,
- * `diagnosisObservation`); the drive-plan endpoint hands it to
+ * `observation`); the drive-plan endpoint hands it to
  * `run_tutor_live.py --di`. A harness that re-typed these cues would test a
  * fiction.
  */

@@ -22,6 +22,7 @@ import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResult
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useJudgedScriptRunner } from '../../../hooks/useJudgedScriptRunner';
+import type { LearningResponseEvidence } from '../../../evaluation/learningResponseEvidence';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import {
   buildSpatialDescriptionItems,
@@ -201,7 +202,7 @@ const SpokenDescriptionBeat: React.FC<{
   challenge: SpatialSceneChallenge;
   instanceId: string;
   gradeLevel: string;
-  onFinished: (correct: boolean, attempts: number) => void;
+  onFinished: (correct: boolean, attempts: number, learningResponses?: LearningResponseEvidence[]) => void;
   sceneRef?: (element: Element | null) => void;
 }> = ({ challenge, instanceId, gradeLevel, onFinished, sceneRef }) => {
   const [revealRelation, setRevealRelation] = useState(false);
@@ -219,7 +220,7 @@ const SpokenDescriptionBeat: React.FC<{
       setRevealRelation(true);
       if (submittedRef.current) return;
       submittedRef.current = true;
-      onFinished(summary.solvedCount === 1, summary.attemptsCount);
+      onFinished(summary.solvedCount === 1, summary.attemptsCount, summary.learningResponses);
     },
   });
 
@@ -735,11 +736,13 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
           challengesTotal: challenges.length,
         };
 
+        // Spoken description beats record every judged attempt; the shared observation capture reads them here.
+        const learningResponses = challengeResults.flatMap((r) => (r.learningResponses as LearningResponseEvidence[] | undefined) ?? []);
         submitEvaluation(
           correctCount === challenges.length,
           score,
           metrics,
-          { challengeResults },
+          { challengeResults, ...(learningResponses.length ? { learningResponses } : {}) },
         );
       }
       return;
@@ -1121,11 +1124,12 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
                 instanceId={resolvedInstanceId}
                 gradeLevel={gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
                 sceneRef={pip.ref('scene')}
-                onFinished={(correct, attempts) => {
+                onFinished={(correct, attempts, learningResponses) => {
                   recordResult({
                     challengeId: currentChallenge.id,
                     correct,
                     attempts: Math.max(1, attempts),
+                    learningResponses,
                     relation: currentChallenge.correctPosition,
                     referenceObjectName: currentChallenge.referenceObjectName,
                   });

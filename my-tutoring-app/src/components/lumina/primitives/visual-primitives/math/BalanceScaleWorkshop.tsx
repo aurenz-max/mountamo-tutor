@@ -52,9 +52,12 @@ export default function BalanceScaleWorkshop({ data, className }: { data: Balanc
     statusLines: { idle: 'Start the tutor to work with the weights.', ready: (item) => workshopAsk(item.problem, item.step),
       retry: (item) => isHands(item.step) ? 'Try another move with the weights.' : 'Have another go aloud.',
       noVerdict: () => 'Take your time.', affirmedNext: 'Ready for the next part.', affirmedLast: 'You finished the weight activity.', done: 'Nice work!' },
-    diagnosisObservation: (item, { lastHeard }) => isHands(item.step) || item.step === 'explain' ? null : ({
-      challenge: workshopAsk(item.problem, item.step), expected: String(workshopExpected(item.problem, item.step)),
-      observed: lastHeard ?? 'No intelligible response.' }),
+    // One record per spoken number, right or corrected: the ask and the scale as it stands, and what was heard.
+    // Hand work is ungraded exploration and the explanation is coaching, so those record nothing. Never the verdict.
+    observation: (item, { heard }) => isHands(item.step) || item.step === 'explain' ? null : ({
+      challenge: `${item.step}: ${workshopAsk(item.problem, item.step)} On the scale: ${scene(item.problem, boardFor(item))}`,
+      expected: String(workshopExpected(item.problem, item.step)),
+      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.' }),
   }), [items, built.problems, data.gradeBand]);
   const finish = (summary: JudgedRunSummary) => {
     const results = built.problems.map((problem) => {
@@ -76,7 +79,8 @@ export default function BalanceScaleWorkshop({ data, className }: { data: Balanc
       hintsViewed: modeled.current.size, averageAttemptsPerChallenge: attempts / Math.max(1, results.length) };
     // The runner owns the evidence (first-response share, kept phases); the shared capture gate decides.
     evaluation.submitResult(score >= 60, score, metrics, { interactionVersion: 'weight-workshop-di-v1', explorationIsUngraded: true,
-      explanationIsCoaching: true, scoringBasis: 'minimum-of-distinct-spoken-quantities', results }, undefined, summary.diagnosisEvidence);
+      explanationIsCoaching: true, scoringBasis: 'minimum-of-distinct-spoken-quantities', results,
+      learningResponses: summary.learningResponses }, undefined, summary.diagnosisEvidence);
   };
   const runner = useJudgedScriptRunner({ pack, instanceId: instance.current, gradeLevel: data.gradeLevel ?? 'elementary',
     exhibitId: data.exhibitId, silenceCloseMs: 1100, onFinished: finish,

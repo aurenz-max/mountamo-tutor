@@ -278,10 +278,10 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       retry: () => 'Have another go — say your answer.',
       done: 'Great sorting today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
-      const heard = lastHeard
-        ? `Heard "${lastHeard}".`
-        : 'The tutor judged the answer wrong from the audio.';
+    // One factual record per attempt, right or corrected: the card or group asked about and what was heard.
+    // Never the verdict, because the same text is kept for right answers.
+    observation: (item, { heard: transcript }) => {
+      const heard = transcript ? `Heard "${transcript}".` : 'No transcript was captured.';
       switch (item.kind) {
         case 'sort':
           return {
@@ -291,7 +291,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
           };
         case 'pick_rule':
           return {
-            challenge: `pick_rule: which way to sort the set (options: ${item.choices.join(', ')}).`,
+            challenge: `pick_rule: which way to sort the ${item.stimulus} on screen (options: ${item.choices.join(', ')}).`,
             expected: item.answer,
             observed: heard,
           };
@@ -339,7 +339,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       summary.solvedCount === items.length,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );

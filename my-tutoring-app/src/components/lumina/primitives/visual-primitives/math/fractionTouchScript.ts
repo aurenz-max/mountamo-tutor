@@ -64,7 +64,14 @@ export const fractionTouchPack = (items: FractionTouchItem[], lastTap: () => str
   completeCue: () => '[FT_COMPLETE] Say exactly: "You finished your fraction pictures. Thanks for working with me!" The activity is over. No further question or invitation.',
   contextFor: item => ({ challengeType: item.challengeType, instruction: ask(item), denominator: String(item.denominator), numerator: String(item.numerator), shadedCount: 'Picture selection', attemptNumber: 'Runner-owned', currentChallengeIndex: String(items.indexOf(item) + 1), totalChallenges: String(items.length), equivalentDenominator: 'Not used in touch_fraction' }),
   statusLines: { idle: 'Start, then listen for a fraction.', ready: ask, retry: ask, noVerdict: () => 'Touch one picture.', done: 'Fraction pictures complete.' },
-  diagnosisObservation: item => ({ challenge: ask(item), expected: `${item.numerator}/${item.denominator}`, observed: (() => { const c = item.choices.find(c => c.id === lastTap()); return c ? `Touched ${c.numerator}/${c.denominator}.` : 'No picture touched.'; })() }),
+  // One record per touch, right or corrected: the pictures on screen and the one touched, never the verdict.
+  observation: item => {
+    const shaded = (c: FractionPicture) => `${c.numerator} of ${c.denominator} equal parts shaded`;
+    const touched = item.choices.find(c => c.id === lastTap());
+    return { challenge: `${ask(item)} Pictures shown: ${item.choices.map(shaded).join('; ')}.`,
+      expected: `${item.numerator}/${item.denominator}`,
+      observed: touched ? `Touched the picture with ${shaded(touched)}.` : 'Touched a picture; which one was not recorded.' };
+  },
 });
 export const fractionTouchHarnessAnswers = (item: FractionTouchItem) => ({
   correct: 'matching picture', plainWrong: 'different fraction picture',

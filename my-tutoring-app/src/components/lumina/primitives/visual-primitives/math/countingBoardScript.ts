@@ -609,7 +609,7 @@ export const stimulusFor = (item: CountingItem): string => {
 /**
  * Everything counting-board ever sends the tutor. `CountingBoard.tsx` spreads
  * this and adds what only a mounted component can own (status lines, and the
- * `diagnosisObservation` that reads the live board); the drive-plan endpoint
+ * `observation` that reads the live board); the drive-plan endpoint
  * builds the identical cues for the headless judged-loop harness.
  *
  * The split exists so the harness cannot drift from production — a Python

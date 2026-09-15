@@ -992,7 +992,7 @@ export const stimulusFor = (item: TenFrameItem): string => {
 /**
  * Everything ten-frame ever sends the tutor. `TenFrame.tsx` spreads this and
  * adds what only a mounted component can own (status lines, and the
- * `diagnosisObservation` that reads the live board); the drive-plan endpoint
+ * `observation` that reads the live board); the drive-plan endpoint
  * builds the identical cues for the headless judged-loop harness.
  *
  * The split exists so the harness cannot drift from production: a Python

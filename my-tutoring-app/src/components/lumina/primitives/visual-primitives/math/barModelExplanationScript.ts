@@ -86,7 +86,15 @@ export function graphExplanationPack(challenge: BarModelChallenge): JudgedScript
       attemptNumber: '0', currentChallengeIndex: '1', totalChallenges: '1',
     }),
     statusLines: { ready: () => 'Tell me a comparison.', retry: () => 'Try a comparison again.', done: 'Graph finished.' },
-    diagnosisObservation: (current, { lastHeard }) => ({ challenge: current.challenge.prompt,
-      expected: current.facts.join(' '), observed: lastHeard || 'The comparison was not heard correctly.' }),
+    // One record per attempt, right or corrected: the rows on screen, the ask, and what was heard; never the verdict.
+    observation: (current, { heard }) => {
+      const ch = current.challenge;
+      const rows = (values: BarModelChallenge['values']) => values.map((v) => `${v.label} ${v.value}`).join(', ');
+      const shown = ch.secondValues
+        ? `${ch.graphLabel}: ${rows(ch.values)}; ${ch.secondGraphLabel}: ${rows(ch.secondValues)}`
+        : rows(ch.values);
+      return { challenge: `${ask(current)} Picture graph shown: ${shown}.`, expected: current.facts.join(' '),
+        observed: heard?.trim() ? `Heard "${heard.trim()}".` : 'No transcript was captured.' };
+    },
   };
 }

@@ -532,19 +532,37 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
         : 'Have another go — say your answer.',
       done: 'Great number bond work today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
+    // One factual record per attempt, right or corrected: the bond and the counters as they stand, the ask, and
+    // what was heard, split, moved or built, read before the verdict resets the board. Never the verdict,
+    // because the same text is kept for right answers.
+    observation: (item, { heard: transcript }) => {
+      const heard = transcript ? `Heard "${transcript}".` : 'No transcript was captured.';
+      const counters = splitCounts(splitCountersRef.current);
+      const board = `${counters.whole} counters in the whole, ${counters.left} in the left part, ${counters.right} in the right part`;
+      const bond = `the bond ${item.knownPart} and ${item.otherPart} make ${item.whole}`;
+      const built = pendingTilesRef.current.length ? `Built "${pendingTilesRef.current.join(' ')}".` : 'Built nothing.';
+
       if (item.splitPhase === 'say') {
         const question = splitQuestion(item, splitCountersRef.current);
-        return { challenge: question.ask, expected: String(question.answer), observed: lastHeard ?? 'No intelligible response.' };
+        return {
+          challenge: `say-your-part: ${item.whole} counters split ${counters.left} and ${counters.right}; asked "${question.ask}"`,
+          expected: String(question.answer),
+          observed: heard,
+        };
       }
-
       if (item.interactionPhase === 'related-say-addend' || item.interactionPhase === 'related-say-remainder') {
         const question = relatedQuestion(item, splitCountersRef.current);
-        return { challenge: question.ask, expected: String(question.answer), observed: lastHeard ?? 'No intelligible response.' };
+        return { challenge: `${item.interactionPhase} on ${bond}; ${board}; asked "${question.ask}"`, expected: String(question.answer), observed: heard };
       }
       if (item.interactionPhase?.endsWith('model') || item.interactionPhase === 'related-join' || item.interactionPhase === 'related-separate') {
+        const moves: Record<BondModelAction, string> = { join: 'join both groups into the whole', swap: 'swap the two groups',
+          'separate-left': 'move the first group out of the whole', 'separate-right': 'move the second group out of the whole' };
         const action = bondActionOf(splitCountersRef.current, groupsForBond(item));
-        return { challenge: `Transform the ${item.kind} counter model.`, expected: String(item.bondAction ?? 'one meaningful action'), observed: action ?? 'incomplete model' };
+        return {
+          challenge: `${item.interactionPhase} on ${bond}: a hands turn with the counters.`,
+          expected: item.interactionPhase === 'equation-model' || !item.bondAction ? 'join the groups or take one group away' : moves[item.bondAction],
+          observed: `${action ? `Made the move "${moves[action]}"` : 'Made no whole-group join, swap or take-away'}; ${board}.`,
+        };
       }
 
       switch (item.kind) {
@@ -552,9 +570,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
           return {
             challenge: `missing-part: the whole is ${item.whole}, the shown part is ${item.knownPart}.`,
             expected: `${numberWordFor(item.answer)} (${item.answer})`,
-            observed: lastHeard
-              ? `Heard "${lastHeard}".`
-              : 'The tutor judged the answer wrong from the audio.',
+            observed: heard,
           };
         case 'related-fact':
           return {
@@ -562,33 +578,31 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
               ? `related-fact turn 1 of 2 (addition): ${item.knownPart} and how many more make ${item.whole}?`
               : `related-fact turn 2 of 2 (the related subtraction): ${item.whole} take away ${item.knownPart}.`,
             expected: `${numberWordFor(item.answer)} (${item.answer})`,
-            observed: lastHeard
-              ? `Heard "${lastHeard}".`
-              : 'The tutor judged the answer wrong from the audio.',
+            observed: heard,
           };
         case 'ten-and-ones':
+        case 'decompose': {
+          const { left, right } = item.splitPhase ? counters : pendingSplitRef.current;
+          const found = foundPairsRef.current.map(([a, b]) => `${a} and ${b}`).join('; ');
           return {
-            challenge: `ten-and-ones: break ${item.whole} into a full ten and the ones left over.`,
-            expected: `${BOND_TEN} and ${item.otherPart}`,
-            observed: `Split ${pendingSplitRef.current.left} and ${pendingSplitRef.current.right}.`,
+            challenge: item.kind === 'ten-and-ones'
+              ? `ten-and-ones: split ${item.whole} counters into a full ten and the ones left over.`
+              : `decompose: split ${item.whole} counters into two parts${found ? ` (pairs already found: ${found})` : ''}.`,
+            expected: item.kind === 'ten-and-ones' ? `${BOND_TEN} and ${item.otherPart}` : `two parts that make ${item.whole}, not yet found`,
+            observed: `Split ${left} and ${right}${item.splitPhase && counters.whole ? `, with ${counters.whole} still in the whole` : ''}.`,
           };
-        case 'decompose':
-          return {
-            challenge: `decompose: find a new pair that makes ${item.whole}.`,
-            expected: `two parts that make ${item.whole}, not yet found`,
-            observed: `Split ${pendingSplitRef.current.left} and ${pendingSplitRef.current.right}.`,
-          };
+        }
         case 'fact-family':
           return {
-            challenge: `fact-family for ${item.knownPart}, ${item.otherPart}, ${item.whole}.`,
+            challenge: `fact-family on ${bond}${item.familyForm ? `: build the equation for the ${item.familyForm} form` : ''}.`,
             expected: `${factFamilyForms(item.knownPart, item.otherPart).length} distinct equation forms over exactly those three numbers`,
-            observed: `Built "${pendingTilesRef.current.join(' ') || 'nothing'}" for ${item.familyForm ?? 'the current move'}.`,
+            observed: built,
           };
         default:
           return {
-            challenge: `build-equation for the bond ${item.knownPart}+${item.otherPart}=${item.whole}.`,
+            challenge: `build-equation for ${bond}.`,
             expected: `any valid number sentence over exactly those three numbers`,
-            observed: `Built "${pendingTilesRef.current.join(' ') || 'nothing'}".`,
+            observed: built,
           };
       }
     },
@@ -692,7 +706,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { interactionVersion: 'number-bond-model-v2', challengeResults: summary.outcomes,
+      { interactionVersion: 'number-bond-model-v2', challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
         turnOutcomes: rawSummary.outcomes, splitEvidence: splitEvidence.current, splitMoves: splitMoves.current,
         actionEvidence: actionEvidence.current, equationEvidence: equationEvidence.current,
         missingPartEvidence: missingEvidence.current, assistedRelations: Array.from(assistedRelations.current) },

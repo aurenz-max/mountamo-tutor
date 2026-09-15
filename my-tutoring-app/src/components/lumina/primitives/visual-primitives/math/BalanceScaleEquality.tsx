@@ -64,9 +64,11 @@ export default function BalanceScaleEquality({ data, className }: { data: Balanc
       affirmedNext: 'Ready for the next step.', affirmedLast: 'You finished the balance practice.',
       done: 'Nice work with the scale!',
     },
-    diagnosisObservation: (item, { lastHeard }) => item.step === 'build' ? null : ({
-      challenge: item.step === 'total' ? 'Add the chosen right-side weights.' : 'Infer the left weight from equal balance.',
-      expected: String(item.problem.target), observed: lastHeard ?? 'No intelligible number.',
+    // One record per spoken attempt, right or corrected: the ask and the scale as it stands, and what was heard.
+    // The build step is ungraded exploration, so it records nothing. Never the verdict.
+    observation: (item, { heard }) => item.step === 'build' ? null : ({
+      challenge: `${item.step}: ${item.actionContract.instruction} On the scale: ${describeBoard(item.problem, boardFor(item))}`,
+      expected: String(item.problem.target), observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
     }),
   }), [items, built.problems, data.title, data.gradeBand]);
 
@@ -92,7 +94,7 @@ export default function BalanceScaleEquality({ data, className }: { data: Balanc
     // The runner owns the evidence (first-response share, kept phases); the shared capture gate decides.
     evaluation.submitResult(accuracy >= 60, accuracy, metrics,
       { interactionVersion: 'match-compose-infer-di-v2', scoringBasis: 'spoken-sum-and-weight-inference',
-        explorationIsUngraded: true, results }, undefined, summary.diagnosisEvidence);
+        explorationIsUngraded: true, results, learningResponses: summary.learningResponses }, undefined, summary.diagnosisEvidence);
   };
 
   const runner = useJudgedScriptRunner({ pack, instanceId: instance.current,

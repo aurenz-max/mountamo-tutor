@@ -770,7 +770,7 @@ export const stimulusFor = (item: PlaceValueItem): string => {
 /**
  * Everything place-value-chart ever sends the tutor. `PlaceValueChart.tsx`
  * spreads this and adds what only a mounted component can own (status lines,
- * and the `diagnosisObservation` that reads the live chart); the drive-plan
+ * and the `observation` that reads the live chart); the drive-plan
  * endpoint builds the identical cues for the headless judged-loop harness.
  */
 export const placeValuePackBase = (

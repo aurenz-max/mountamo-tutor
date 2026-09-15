@@ -75,6 +75,7 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
+  askFor,
   buildCompareItems,
   orderVerdictCue,
   compareObjectsPackBase,
@@ -425,31 +426,29 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
         : 'Have another go — say your answer.',
       done: 'Great measuring today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
+    // One factual record per attempt, right or corrected: the objects as drawn, the ask as spoken, and what was
+    // heard or touched. Never the verdict, because the same text is kept for right answers.
+    observation: (item, { heard: transcript }) => {
+      const heard = transcript ? `Heard "${transcript}".` : 'No transcript was captured.';
+      const shown = `${item.objectNames.join(', ')} pictured left to right; asked "${askFor(item)}"`;
       switch (item.kind) {
         case 'identify_attribute':
-          return {
-            challenge: `identify_attribute: which attribute the picture of ${item.objectNames.join(' and ')} shows.`,
-            expected: item.attribute,
-            observed: lastHeard ? `Heard "${lastHeard}".` : 'The tutor judged the answer wrong from the audio.',
-          };
+          return { challenge: `identify_attribute: ${shown}`, expected: item.attribute, observed: heard };
         case 'compare_two':
-          return {
-            challenge: `compare_two: which of ${item.objectNames.join(', ')} is ${item.comparisonWord} (${item.attribute}).`,
-            expected: item.answerNames[0],
-            observed: lastHeard ? `Heard "${lastHeard}".` : 'The tutor judged the answer wrong from the audio.',
-          };
+          return { challenge: `compare_two (${item.attribute}): ${shown}`, expected: item.answerNames[0], observed: heard };
         case 'order_three':
           return {
-            challenge: `order_three: order ${item.objectNames.join(', ')} by ${item.attribute}.`,
+            challenge: `order_three (${item.attribute}): ${shown}`,
             expected: item.answerNames.join(', '),
-            observed: `Put them in this order: ${pendingOrderRef.current.join(', ') || 'nothing'}.`,
+            observed: pendingOrderRef.current.length
+              ? `Touched them in this order: ${pendingOrderRef.current.join(', ')}.`
+              : 'Touched none of the objects.',
           };
         default:
           return {
-            challenge: `non_standard: measure the ${item.objectNames[0]} in ${item.unitName}s.`,
+            challenge: `non_standard: ${shown}`,
             expected: `${numberWordFor(item.unitCount)} (${item.unitCount})`,
-            observed: lastHeard ? `Heard "${lastHeard}".` : 'The tutor judged the answer wrong from the audio.',
+            observed: heard,
           };
       }
     },
@@ -476,7 +475,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
       summary.solvedCount === items.length,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );

@@ -88,6 +88,7 @@ import {
 import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
   additionSubtractionScenePackBase,
+  equationSpoken,
   equationVerdictCue,
   itemsFromChallenges,
   parseEquationTiles,
@@ -369,26 +370,31 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
         : 'Have another go — say your answer.',
       done: 'Great story math today!',
     },
-    diagnosisObservation: (item, { lastHeard }) =>
-      item.answerKind === 'gesture'
-        ? {
-            challenge: item.kind === 'build-equation'
-              ? `Build the number sentence for "${item.situation}" (${item.equation}).`
-              : `${item.operation === 'addition' ? 'Bring in' : 'Send away'} ${item.changeCount} — the picture should end with ${item.answer} ${item.objectType}.`,
-            expected: item.kind === 'build-equation'
-              ? item.equation
-              : `${item.answer} ${item.objectType}.`,
-            observed: item.kind === 'build-equation'
-              ? `Built "${pendingTilesRef.current.join(' ') || 'nothing'}".`
-              : `Ended with ${pendingSceneRef.current}.`,
-          }
-        : {
-            challenge: `${item.kind} (${item.unknownPosition} unknown): ${item.situation}`,
-            expected: `${numberWordFor(item.answer)} (${item.answer})`,
-            observed: lastHeard
-              ? `Heard "${lastHeard}".`
-              : 'The tutor judged the answer wrong from the audio.',
-          },
+    // One factual record per attempt, right or corrected: the story or number sentence given, and what was
+    // heard, built or left in the picture, read before the verdict resets the scene. Never the verdict.
+    observation: (item, { heard }) => {
+      if (item.answerKind === 'voice') {
+        return {
+          challenge: `${item.kind} (${item.unknownPosition} unknown): ${item.situation}`,
+          expected: `${numberWordFor(item.answer)} (${item.answer})`,
+          observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
+        };
+      }
+      if (item.kind === 'build-equation') {
+        return {
+          challenge: `build-equation: the story "${item.situation}"; build its number sentence with the tiles.`,
+          expected: item.equation,
+          observed: pendingTilesRef.current.length ? `Built "${pendingTilesRef.current.join(' ')}".` : 'Built nothing.',
+        };
+      }
+      return {
+        challenge: item.kind === 'create-story'
+          ? `create-story: the number sentence ${equationSpoken(item)}; make that story with the ${item.objectType} in the ${item.scene}.`
+          : `act-out: the story "${item.situation}"; act it out with the ${item.objectType} in the picture.`,
+        expected: `${item.answer} ${item.objectType}.`,
+        observed: `Ended with ${pendingSceneRef.current} ${item.objectType} in the picture.`,
+      };
+    },
   }), [items]);
 
   // ── Per-item scene reset — every item owns its starting state ─────────────
@@ -446,7 +452,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
       summary.solvedCount === items.length,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );

@@ -72,9 +72,13 @@ export default function NumberSequencer({ data, className }: { data: NumberSeque
     instanceId: instance.current, skillId: data.skillId, subskillId: data.subskillId,
     objectiveId: data.objectiveId, exhibitId: data.exhibitId, onSubmit: data.onEvaluationSubmit });
   const pack = useMemo<JudgedScriptPack<SequencerItem>>(() => ({ ...sequencerPackBase(items),
-    diagnosisObservation: (item, { lastHeard }) => ({ challenge: item.actionContract.instruction,
+    // One record per attempt, right or corrected: the spoken ask (it states the train or count) and what was heard
+    // or placed, read before the next item clears the cards. Never the verdict.
+    observation: (item, { heard }) => ({ challenge: `${item.challengeType}: ${item.actionContract.instruction}`,
       expected: item.answerKind === 'gesture' ? item.answerOrder.join(', ') : String(item.answer),
-      observed: item.answerKind === 'gesture' ? placedRef.current.join(', ') : lastHeard ?? 'No intelligible number.' }),
+      observed: item.answerKind === 'gesture'
+        ? (placedRef.current.length ? `Placed the cards in this order: ${placedRef.current.join(', ')}.` : 'Placed no cards.')
+        : heard ? `Heard "${heard}".` : 'No transcript was captured.' }),
   }), [items]);
   const finish = (summary: JudgedRunSummary) => {
     const scores = new Map(summary.outcomes.map(o => [o.id, o.score]));
@@ -88,7 +92,7 @@ export default function NumberSequencer({ data, className }: { data: NumberSeque
         fillMissingAccuracy: accuracy('fill-missing'), beforeAfterAccuracy: accuracy('before-after'),
         orderCardsAccuracy: accuracy('order-cards'), countFromAccuracy: accuracy('count-from'),
         spotErrorAccuracy: accuracy('spot-error'), decadeFillAccuracy: accuracy('decade-fill') },
-      { interactionVersion: 'judged-number-train-v1', droppedChallenges, challengeResults: summary.outcomes.map(o => ({ ...o,
+      { interactionVersion: 'judged-number-train-v1', droppedChallenges, learningResponses: summary.learningResponses, challengeResults: summary.outcomes.map(o => ({ ...o,
         sourceId: items.find(i => i.id === o.id)?.sourceId,
         viaVoice: items.find(i => i.id === o.id)?.answerKind === 'voice' })) }, undefined, summary.diagnosisEvidence);
   };

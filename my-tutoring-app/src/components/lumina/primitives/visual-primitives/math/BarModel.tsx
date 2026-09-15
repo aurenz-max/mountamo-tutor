@@ -6,6 +6,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import BarModelExplanation from './BarModelExplanation';
 import type { JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
+import type { LearningResponseEvidence } from '../../../evaluation/learningResponseEvidence';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import {
@@ -762,7 +763,10 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
       const goalMet = correctCount === challenges.length;
       const selections = challenges.map((c) => ({ challengeId: c.id, selectedOptions: selectionsRef.current[c.id] ?? [] }));
       const diagnosisEvidence = buildPictureGraphEvidence(challenges, selections);
+      // Spoken-explanation beats record every judged attempt; the shared observation capture reads them here.
+      const learningResponses = results.flatMap((r) => (r.learningResponses as LearningResponseEvidence[] | undefined) ?? []);
       submitEvaluation(goalMet, overallAccuracy, metrics, {
+        ...(learningResponses.length ? { learningResponses } : {}),
         studentWork: {
           challengeCount: challenges.length,
           evalMode: sessionMode,
@@ -832,7 +836,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     recordedRef.current = true;
     recordResult({ challengeId: currentChallenge.id, evalMode: currentChallenge.evalMode,
       correct: summary.solvedCount === 1, attempts: summary.attemptsCount, score: summary.accuracy,
-      spokenOutcomes: summary.outcomes, observations: summary.observations,
+      spokenOutcomes: summary.outcomes, observations: summary.observations, learningResponses: summary.learningResponses,
     });
     setSpokenFinished(true);
   };

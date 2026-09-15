@@ -74,6 +74,7 @@ import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import {
   SHAPE_PROPERTIES,
+  askFor,
   itemsFromChallenges,
   shapeSorterPackBase,
   type ShapeSorterItem,
@@ -378,7 +379,7 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -394,20 +395,22 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
       noVerdict: () => 'One more time — say your answer out loud.',
       done: 'Great shape work today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
-      const heard = lastHeard?.trim() ?? '';
-      const challenge = item.mode === 'identify'
-        ? 'Look at a drawn shape and say its name out loud'
-        : item.mode === 'count'
-          ? `Look at a drawn shape and say how many ${item.countNoun ?? 'sides'} it has`
-          : 'Look at a drawn shape and say which group it belongs with';
+    // One factual record per attempt, right or corrected: the shape actually drawn (kind, size, colour, turn,
+    // the everyday thing it is drawn as) and what was said. Never the verdict, because the same text is kept
+    // for right answers.
+    observation: (item, { heard }) => {
+      const drawn = challenges.find((c) => c.id === item.challengeId)?.shapes[item.shapeIndex];
+      const look = `a ${drawn ? `${drawn.size} ${drawn.color} ` : ''}${item.shape}`
+        + `${drawn && Math.round(drawn.rotation) % 360 ? ` turned ${Math.round(drawn.rotation)} degrees` : ''}`
+        + `${item.realObject ? `, drawn as a ${item.realObject}` : ''}`;
+      const task = item.mode === 'sort' ? `sort (by ${item.rule ?? 'the rule'}; groups: ${item.choices.join(', ')})` : item.mode;
       return {
-        challenge,
+        challenge: `${task}: ${look} is shown; asked "${askFor(item)}"`,
         expected: `"${item.answer}" said out loud.`,
-        observed: heard ? `Said "${heard}".` : 'Said something that did not match.',
+        observed: heard?.trim() ? `Said "${heard.trim()}".` : 'No transcript was captured.',
       };
     },
-  }), [items]);
+  }), [items, challenges]);
 
   const runner = useJudgedScriptRunner<ShapeSorterItem>({
     pack,
