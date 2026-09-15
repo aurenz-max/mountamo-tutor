@@ -26,10 +26,10 @@
 - **Probe:** all six modes PASS in `qa/eval-reports/counting-board-2026-03-15.md`; oracle `schema` fires on a missing/foreign type.
 
 ### R2 — the board renders exactly `count` objects and the answer is `count` (compare and the counting-out family excepted) · OBSERVED
-- **Property:** `positions = generatePositions(challenge.count, …)` renders exactly `count` tappable objects; for every mode outside the exception list `targetAnswer === count`; for `compare`, `count` is both groups' total and `targetAnswer`/`groupSize` is the strictly-larger group. The 2026-09-08 counting-out family (R9) adds four more exceptions, each with its own answer identity — the exception list is how a new task identity enters this primitive, never an in-place change to what `count` means for the modes above. The manipulative **is** the answer made visible (answer-leak is deliberately NOT checked).
+- **Property:** `positions = generatePositions(challenge.count, …)` renders exactly `count` tappable objects; for every mode outside the exception list `targetAnswer === count`; for `compare`, `count` is both groups' total, `targetAnswer`/`groupSize` is the strictly-larger group, and `compareGroups` holds the two drawn sizes in board order, with the larger group on either side (half each way per session; never always first, CNB-2). The 2026-09-08 counting-out family (R9) adds four more exceptions, each with its own answer identity — the exception list is how a new task identity enters this primitive, never an in-place change to what `count` means for the modes above. The manipulative **is** the answer made visible (answer-leak is deliberately NOT checked).
 - **Demanded by:** answer-key consistency, oracle `answer-key-desync`, cardinality pedagogy.
 - **Evidence:** component `positions` memo `:382`, `checkCountChallenge` `:515`; generator `targetAnswer = count` `:456`; oracle `answer-key-desync`.
-- **Probe:** oracle re-derives displayed count and asserts it equals `targetAnswer` (compare → `groupSize`); a `count 8 / target 7` board must fire.
+- **Probe:** oracle re-derives displayed count and asserts it equals `targetAnswer` (compare → `groupSize`); a `count 8 / target 7` board must fire. Compare: `compareGroups` must sum to `count` with its larger group = `groupSize`, and >70% of larger groups on one side fires `answer-leak`; `CountingBoard.capture.test.tsx` checks the drawn order on the mounted board.
 
 ### R3 — count_all / count_on / group_count are concrete tap-to-count construction · OBSERVED
 - **Property:** the child taps each rendered object exactly once (`handleObjectTap`); the produced answer is `countedObjects.size`, judged against `targetAnswer`; double-counting is blocked and coached, one-to-one correspondence is scored. `count_on` pre-counts `startFrom` objects and the child counts on to the total.
@@ -62,7 +62,7 @@
 - **Probe:** count/subitize/group eval-tests return `showLastNumber: true`; running-count panel absent in any subitize phase.
 
 ### R8 — evaluation records one result per challenge and submits once · OBSERVED
-- **Property:** a challenge records a single correct result before advancing; all-complete auto-submits once with per-mode `CountingBoardMetrics` (counting accuracy w/ retry penalty, one-to-one, subitize accuracy/speed, count-on/grouping flags). Subitize timing stays isolated to subitize challenges.
+- **Property:** a challenge records a single correct result before advancing; all-complete auto-submits once with per-mode `CountingBoardMetrics`, whose `evalMode` is the CATALOG mode (`evalModeForKind`: `count_all` → `count`, `group_count` → `group`, CNB-3) (counting accuracy w/ retry penalty, one-to-one, subitize accuracy/speed, count-on/grouping flags). Subitize timing stays isolated to subitize challenges.
 - **Demanded by:** mastery, IRT, K-stage lifecycle.
 - **Evidence:** component `recordResult`, `advanceToNextChallenge` `:741`, auto-submit guard `:864`, `CountingBoardMetrics` build `:775`.
 - **Probe:** behavioral completion reaches Next then a single evaluation submission with no duplicate.
@@ -82,6 +82,12 @@
 - **Demanded by:** the K "combine a hidden group with visible objects" row; count_on's own task identity — a visible started group can simply be counted from one.
 - **Evidence:** `CountingBoard.tsx` `isKCountOnHidden` / `coveredCount`; catalog `count_on` description.
 - **Probe:** `CountingBoard.counting-out.test.tsx` — K draws 3 of 8 objects plus the basket; Grade 1 draws all 8 and no basket.
+
+### R11 — saved-observation adaptation rewrites one board and keeps every identity above · OBSERVED
+- **Property:** with a delivered observation and a validated move, `take_away`/`add_more` rewrite one later board to its neighbour's start with a different change (1–3, never spoken as the answer, add_more total within the lesson bound and the session's largest board), and `count_on` shrinks one later board to `startFrom + 1` with its spoken start unchanged. R2/R6/R9/R10 hold on the rewritten board: the key is recomputed from start and change, the build gate accepts every board, the oracle stays clean. Abstention or no observation leaves the baseline byte-identical. Baseline add_more draws prefer a start unlike the previous board's, so the contrast is not already present by chance.
+- **Demanded by:** misconception loop consumer (`qa/misconception/counting-board-2026-09-14.md`).
+- **Evidence:** `service/math/countingBoardRemediation.ts`; `gemini-counting-board.ts` selector block; catalog `learningObservations`.
+- **Probe:** `countingBoardRemediation.test.ts`, `gemini-counting-board.adaptation.test.ts` (fails with the selector removed), `scripts/probe-counting-board-applicability.mjs`.
 
 ## Conflicts
 
@@ -110,5 +116,8 @@ _None open._ Item 13 (R4) is **COMPATIBLE / fork-by-band+mode**. It changes only
 
 ## Changelog
 
+- 2026-09-14 — R2 amended (compare's drawn order is `compareGroups`, larger group on either side) and R8 amended (submitted `evalMode` is the catalog mode). Compatible: boards without `compareGroups` render as before, group_count layouts identical (300/300), no other mode's fields changed. Occasion: `/eval-fix` CNB-2/CNB-3.
+
+- 2026-09-14 — R11 (saved-observation adaptation for take_away/add_more/count_on) added; capture evidence now states each board from its own fields (a take_away board was described as "count N"). Compatible: no requirement changed. Occasion: `/add-misconception-loop counting-board`.
 - 2026-09-08 — R9 (K counting-out family: `give_me_n`, `recount_moved`, `take_away`, `add_more`) and R10 (count_on covered at K) added; R2's exception list amended to name them. A fork by eval mode, not an edit in place: every existing mode keeps `targetAnswer === count` and its own board behavior. Occasion: math-k atlas slice 7, `counting-extensions` (five K rows).
 - 2026-07-20 — derived (initial). 8 requirements, 0 open conflicts, 2 gaps (G1 count_on@EMERGING, G2 perceptual flash@Pre-K). Occasion: reader-fit item 13, K `subitize` flash-then-hide display fork.

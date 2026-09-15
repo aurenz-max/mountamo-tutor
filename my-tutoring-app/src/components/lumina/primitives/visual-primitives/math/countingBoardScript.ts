@@ -79,6 +79,8 @@ export interface CountingItem extends JudgedScriptItem {
   target: number;
   startFrom?: number;
   groupSize?: number;
+  /** compare: the two group sizes in board order (first = left). */
+  compareGroups?: number[];
   /** take_away / add_more: how many the child removes or puts on. SPOKEN by the
    *  ask, so it is public — and never equal to the answer (the generator
    *  refuses that draw, because "take away three, three left" recites it). */
@@ -446,6 +448,7 @@ export interface CountingChallengeLike {
   count: number;
   startFrom?: number | null;
   groupSize?: number | null;
+  compareGroups?: number[] | null;
   changeBy?: number | null;
 }
 
@@ -464,6 +467,11 @@ export const ACTION_FOR_KIND: Record<CountingItemKind, string> = {
   take_away: 'take-away',
   add_more: 'add-more',
 };
+
+/** The catalog eval mode a board type is tracked under. Two types carry a different name from their
+ *  mode; every other type is its own mode (CNB-3). */
+export const evalModeForKind = (kind: CountingItemKind): string =>
+  kind === 'count_all' ? 'count' : kind === 'group_count' ? 'group' : kind;
 
 /** The plural object word as SPOKEN. `custom` has no sayable name, so it
  *  becomes "objects" — the one place the board's emoji vocabulary meets the
@@ -518,6 +526,13 @@ export const itemFromChallenge = (
     if (ch.type === 'take_away' && ch.count - changeBy !== target) return null;
     if (ch.type === 'add_more' && ch.count + changeBy !== target) return null;
   }
+  //  - compare whose drawn groups disagree with the key: the board renders
+  //    `compareGroups`, so two groups that do not add up to the board, tie, or
+  //    whose bigger one is not the answer would judge a right child wrong.
+  const compareGroups = ch.type === 'compare' ? ch.compareGroups ?? undefined : undefined;
+  if (compareGroups && (compareGroups.length !== 2 || compareGroups.some((n) => !Number.isInteger(n) || n < 1)
+    || compareGroups[0] + compareGroups[1] !== ch.count || compareGroups[0] === compareGroups[1]
+    || Math.max(...compareGroups) !== target)) return null;
 
   return {
     id: ch.id,
@@ -530,6 +545,7 @@ export const itemFromChallenge = (
     target,
     startFrom,
     groupSize: ch.groupSize ?? undefined,
+    compareGroups,
     changeBy,
   };
 };

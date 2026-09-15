@@ -53,6 +53,9 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  *    10" rendering a 12-object board is content past the objective. Ceiling =
  *    ctx.scopeMax ?? topic ceiling ?? gradeBand intrinsic (K→20, 1→30 — the
  *    generator's own clamps, gemini-counting-board.ts:549-554).
+ *  - answer-leak (compare) : the board draws `compareGroups` in order (absent →
+ *    larger first). Across 3+ compare boards the larger group must not sit on
+ *    one side, or the child reads "the group with more" from position (CNB-2).
  *  - clustering        : targetAnswers spread (no "every board is 5"), and no
  *    exact-duplicate board card (same type + count + arrangement + groupSize +
  *    startFrom renders an identical board).
@@ -116,6 +119,8 @@ export const countingBoardOracle: ContentOracle = {
     }
 
     const targetAnswers: number[] = [];
+    /** compare: which side the larger group is drawn on, per board. */
+    const largerSides: string[] = [];
     const cardSeen = new Map<string, number>();
     let checked = 0;
 
@@ -214,6 +219,23 @@ export const countingBoardOracle: ContentOracle = {
               detail: `compare: the larger group is ${larger} (groupSize), but targetAnswer says ${tgt} — a correct answer would be marked wrong`,
             });
           }
+          // The board draws `compareGroups` in order; without them it draws the larger group first.
+          const drawn = c.compareGroups;
+          if (drawn == null) {
+            largerSides.push('first');
+          } else if (!Array.isArray(drawn) || drawn.length !== 2 || !drawn.every((n) => isInt(n) && (n as number) >= 1)) {
+            violations.push({ check: 'schema', where: id, detail: `compare compareGroups must be two positive integers; got ${JSON.stringify(drawn)}` });
+          } else {
+            const [a, b] = drawn as number[];
+            if (a + b !== cnt || Math.max(a, b) !== larger || a === b) {
+              violations.push({
+                check: 'answer-key-desync',
+                where: id,
+                detail: `compare: the board draws groups of ${a} and ${b}, but count is ${cnt} and the larger group (groupSize) is ${larger}`,
+              });
+            }
+            largerSides.push(a > b ? 'first' : 'second');
+          }
         }
       } else {
         // ── Independence: for every non-compare mode the displayed/counted total is `count` ──
@@ -274,6 +296,12 @@ export const countingBoardOracle: ContentOracle = {
     // ── clustering: targetAnswers spread, no duplicated board card ──
     const variety = checkAnswerVariety(targetAnswers, 'challenges[].targetAnswer');
     if (variety) violations.push(variety);
+    // Two sides, so a balanced session concentrates up to 3 of 5 on one; 0.7 is fast-fact's slot threshold.
+    const sides = checkAnswerVariety(largerSides, 'compare larger-group side', 0.7);
+    if (sides) {
+      violations.push({ ...sides, check: 'answer-leak',
+        detail: `${sides.detail} — the larger group is drawn on the same side, so "the group with more" can be read from position` });
+    }
     cardSeen.forEach((countN, key) => {
       if (countN > 1) {
         violations.push({

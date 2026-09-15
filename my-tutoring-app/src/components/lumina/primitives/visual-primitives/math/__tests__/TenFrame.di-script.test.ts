@@ -320,6 +320,14 @@ describe('ten-frame pack · corrections', () => {
     expect(itemCue(SUBTRACT)).toContain('The starting number "seven" and the number taken away "three" are NOT the answer');
   });
 
+  it('never refuses the right answer on a double: eight take away four accepts "four"', () => {
+    const double = itemFromChallenge({ id: 'tf-double', type: 'subtract', targetCount: 4, startCount: 8 }, READER)!;
+    const cue = itemCue(double);
+    expect(cue).toContain('The correct answer is "four"');
+    expect(cue).toContain('The starting number "eight" is NOT the answer. Here the number taken away is also "four", so "four" is correct.');
+    expect(cue).not.toMatch(/"four"[^.]*NOT the answer/);
+  });
+
   it('carries the accept side — the right answer that does not look right', () => {
     // Subitize refuses a counted route but MUST accept land-on-the-total: a
     // child who says "four" and then verifies by counting is correct.

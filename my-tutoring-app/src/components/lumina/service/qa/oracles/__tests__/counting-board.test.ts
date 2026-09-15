@@ -32,7 +32,8 @@ const countClean = {
 };
 
 // Real compare generation (grade 1): targetAnswer === groupSize (larger), count = larger + smaller.
-const compareClean = {
+// Before CNB-2 these boards had no compareGroups, so every larger group was drawn first.
+const compareLegacy = {
   title: 'Which Has More Bears?',
   objects: { type: 'bears' },
   gradeBand: '1',
@@ -44,6 +45,8 @@ const compareClean = {
     { id: 'c5', type: 'compare', count: 7, targetAnswer: 5, arrangement: 'groups', groupSize: 5, startFrom: null },
   ],
 };
+const DRAWN: Record<string, number[]> = { c1: [4, 8], c2: [4, 1], c3: [3, 7], c4: [6, 2], c5: [2, 5] };
+const compareClean = { ...compareLegacy, challenges: compareLegacy.challenges.map((c) => ({ ...c, compareGroups: DRAWN[c.id] })) };
 
 describe('counting-board oracle', () => {
   it('passes clean count_all data', () => {
@@ -74,6 +77,24 @@ describe('counting-board oracle', () => {
     };
     const v = countingBoardOracle.verify(data, ctxCompare).violations;
     expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'c1')).toBe(true);
+  });
+
+  it('flags answer-leak — the larger compare group drawn on the same side on every board (CNB-2)', () => {
+    const v = countingBoardOracle.verify(compareLegacy, ctxCompare).violations;
+    expect(v).toEqual([expect.objectContaining({ check: 'answer-leak', where: 'compare larger-group side' })]);
+    const allSecond = { ...compareLegacy, challenges: compareLegacy.challenges.map((c) => ({ ...c, compareGroups: [c.count - c.groupSize, c.groupSize] })) };
+    expect(countingBoardOracle.verify(allSecond, ctxCompare).violations.map((x) => x.check)).toEqual(['answer-leak']);
+    // 3 of 5 on one side is a balanced session over two sides.
+    const threeFirst = { ...compareClean, challenges: compareClean.challenges.map((c, i) =>
+      ({ ...c, compareGroups: i < 3 ? [c.groupSize, c.count - c.groupSize] : [c.count - c.groupSize, c.groupSize] })) };
+    expect(countingBoardOracle.verify(threeFirst, ctxCompare).violations).toEqual([]);
+  });
+
+  it('flags answer-key-desync — compare draws groups that disagree with the key', () => {
+    const data = { ...compareClean, challenges: compareClean.challenges.map((c) =>
+      c.id === 'c2' ? { ...c, compareGroups: [2, 3] } : c.id === 'c3' ? { ...c, compareGroups: [5, 5] } : c) };
+    const v = countingBoardOracle.verify(data, ctxCompare).violations;
+    expect(v.filter((x) => x.check === 'answer-key-desync').map((x) => x.where)).toEqual(['c2', 'c3']);
   });
 
   it('flags answer-key-desync — subitize_perceptual answer > 3 is unreachable (only 1/2/3-finger hands)', () => {

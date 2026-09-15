@@ -47,6 +47,7 @@ import {
   countingBoardPackBase,
   countedNoun,
   countWalk,
+  evalModeForKind,
   giveVerdictCue,
   handVerdictCue,
   howToPlayFor,
@@ -573,5 +574,15 @@ describe('the two-branch law (cap-drill finding, 2026-08-15)', () => {
     const prose = JSON.stringify(entry.tutoring);
     expect(prose).not.toContain('Touch each one just one time as you count"');
     expect(prose).not.toContain('Point at the first one. Count with your finger.');
+  });
+});
+
+describe('the submitted eval mode is the catalog mode (CNB-3)', () => {
+  it('every catalog mode\'s challenge types map back to that mode', () => {
+    const modes = MATH_CATALOG.find((p) => p.id === 'counting-board')!.evalModes!;
+    expect(modes.length).toBe(Object.keys(ACTION_FOR_KIND).length);
+    for (const mode of modes) {
+      for (const type of mode.challengeTypes) expect(evalModeForKind(type as CountingItemKind)).toBe(mode.evalMode);
+    }
   });
 });

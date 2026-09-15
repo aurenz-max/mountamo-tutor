@@ -71,6 +71,7 @@ import {
 import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
   countingBoardPackBase,
+  evalModeForKind,
   giveVerdictCue,
   handVerdictCue,
   itemsFromChallenges,
@@ -78,6 +79,7 @@ import {
   objectWordFor,
   type CountingItem,
 } from './countingBoardScript';
+import { countingBoardDiagnosisEvidence, countingObservation } from './countingBoardEvidence';
 import HandIcon from './HandIcon';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
@@ -100,6 +102,9 @@ export interface CountingBoardChallenge {
   count: number;
   arrangement: 'scattered' | 'line' | 'groups' | 'circle';
   groupSize?: number | null;
+  /** compare: the two group sizes in board order (first = left). Code-owned, so the bigger group
+   *  sits on either side. Absent on older boards, which draw the bigger group first. */
+  compareGroups?: number[] | null;
   startFrom?: number | null;    // for count_on mode
   /** take_away / add_more: how many the child removes or puts on. Code-owned. */
   changeBy?: number | null;
@@ -109,6 +114,9 @@ export interface CountingBoardChallenge {
 }
 
 export interface CountingBoardData {
+  /** Safe adaptation metadata; `source` is stamped only by the observation delivery server. */
+  learningAdaptation?: { move: 'contrast_same_start_different_change' | 'count_on_exactly_one_more';
+    status: 'targeted' | 'already-targeted' | 'insufficient-capacity'; comparisonCount: number; source?: 'saved-observation' };
   title: string;
   description?: string;
   objects: {
@@ -253,10 +261,30 @@ function generateLinePositions(count: number): Array<{ x: number; y: number }> {
   });
 }
 
-function generateGroupPositions(count: number, groupSize: number): Array<{ x: number; y: number }> {
-  const numGroups = Math.ceil(count / groupSize);
+interface GroupLayout {
+  positions: Array<{ x: number; y: number }>;
+  /** One ring per group, drawn around exactly the objects placed in it. */
+  rings: Array<{ cx: number; cy: number; rx: number; ry: number }>;
+}
+
+/**
+ * The sizes of the groups a 'groups' board draws, in board order. A compare board names its two groups
+ * (bigger one on either side); every other board is cut into equal groups of `groupSize` with the
+ * remainder last. `cell` is the footprint every group is laid out in.
+ */
+function boardGroups(count: number, groupSize?: number | null, compareGroups?: number[] | null): { sizes: number[]; cell: number } {
+  if (compareGroups && compareGroups.length > 0 && compareGroups.every((n) => Number.isInteger(n) && n >= 1)
+    && compareGroups.reduce((s, n) => s + n, 0) === count) {
+    return { sizes: compareGroups, cell: Math.max(...compareGroups) };
+  }
+  const cell = groupSize || 5;
+  return { sizes: Array.from({ length: Math.ceil(count / cell) }, (_, g) => Math.min(cell, count - g * cell)), cell };
+}
+
+function layoutGroups(sizes: number[], cell: number): GroupLayout {
+  const numGroups = sizes.length;
   const itemSpacing = OBJECT_SIZE + 6;
-  const subCols = Math.min(3, groupSize);
+  const subCols = Math.min(3, cell);
   const groupWidth = (subCols - 1) * itemSpacing + OBJECT_SIZE;
   const groupGap = 20;
 
@@ -265,13 +293,14 @@ function generateGroupPositions(count: number, groupSize: number): Array<{ x: nu
   const groupRows = Math.ceil(numGroups / maxGroupsPerRow);
 
   // Height of one group (tallest possible)
-  const subRows = Math.ceil(groupSize / subCols);
+  const subRows = Math.ceil(cell / subCols);
   const groupHeight = (subRows - 1) * itemSpacing + OBJECT_SIZE;
   const groupRowGap = 16;
   const totalGroupHeight = groupRows * groupHeight + (groupRows - 1) * groupRowGap;
   const startY = (WORKSPACE_HEIGHT - totalGroupHeight) / 2 + OBJECT_SIZE / 2;
 
   const positions: Array<{ x: number; y: number }> = [];
+  const rings: GroupLayout['rings'] = [];
 
   for (let g = 0; g < numGroups; g++) {
     const gRow = Math.floor(g / maxGroupsPerRow);
@@ -283,7 +312,7 @@ function generateGroupPositions(count: number, groupSize: number): Array<{ x: nu
     const groupCenterX = rowStartX + gCol * (groupWidth + groupGap);
     const groupTopY = startY + gRow * (groupHeight + groupRowGap);
 
-    const itemsInGroup = Math.min(groupSize, count - g * groupSize);
+    const itemsInGroup = sizes[g];
     for (let i = 0; i < itemsInGroup; i++) {
       const row = Math.floor(i / subCols);
       const col = i % subCols;
@@ -295,8 +324,17 @@ function generateGroupPositions(count: number, groupSize: number): Array<{ x: nu
         y: groupTopY + row * itemSpacing,
       });
     }
+
+    const rows = Math.ceil(itemsInGroup / subCols);
+    const cols = Math.min(subCols, itemsInGroup);
+    rings.push({
+      cx: groupCenterX,
+      cy: groupTopY + ((rows - 1) * itemSpacing) / 2,
+      rx: Math.max(((cols - 1) * itemSpacing) / 2 + OBJECT_SIZE / 2 + 8, OBJECT_SIZE),
+      ry: Math.max(((rows - 1) * itemSpacing) / 2 + OBJECT_SIZE / 2 + 8, OBJECT_SIZE),
+    });
   }
-  return positions;
+  return { positions, rings };
 }
 
 function generateCirclePositions(count: number): Array<{ x: number; y: number }> {
@@ -313,10 +351,9 @@ function generateCirclePositions(count: number): Array<{ x: number; y: number }>
   });
 }
 
-function generatePositions(count: number, arrangement: string, groupSize?: number | null, seed: number = 42): Array<{ x: number; y: number }> {
+function generatePositions(count: number, arrangement: string, seed: number = 42): Array<{ x: number; y: number }> {
   switch (arrangement) {
     case 'line': return generateLinePositions(count);
-    case 'groups': return generateGroupPositions(count, groupSize || 5);
     case 'circle': return generateCirclePositions(count);
     case 'scattered':
     default: return generateScatteredPositions(count, seed);
@@ -441,29 +478,13 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
       affirmedNext: 'Yes! You counted it.',
       done: 'Great counting today!',
     },
-    diagnosisObservation: (item, { lastHeard }) =>
-      item.kind === 'give_me_n'
-        ? {
-            challenge: `Give ${item.target} ${item.objectWord} from a pile of ${item.count}.`,
-            expected: `${item.target} ${item.objectWord} handed over.`,
-            observed: `Handed over ${givenCountRef.current} ${item.objectWord}.`,
-          }
-        : item.kind === 'subitize_perceptual'
-        ? {
-            challenge: `See ${item.count} ${item.objectWord} and tap the matching hand.`,
-            expected: `The hand with ${item.target} fingers.`,
-            observed: handChoiceRef.current != null
-              ? `Tapped the hand with ${handChoiceRef.current} fingers.`
-              : 'Tapped a hand that did not match.',
-          }
-        : {
-            challenge: `Count ${item.count} ${item.objectWord} and say how many altogether.`,
-            expected: `${numberWordFor(item.target)} (${item.target})`,
-            observed: lastHeard
-              ? `Heard "${lastHeard}".`
-              : 'The tutor judged the answer wrong from the audio.',
-          },
-  }), [items, objectWord]);
+    // Facts from the board's own fields, per mode: a take_away board is described by its start and
+    // change, not as "count N". The same record is kept for right answers in student work.
+    diagnosisObservation: (item, { lastHeard }) => countingObservation(item, gradeBand,
+      { heard: lastHeard, given: givenCountRef.current, hand: handChoiceRef.current }),
+    responseObservation: (item, { lastHeard }) => countingObservation(item, gradeBand,
+      { heard: lastHeard, given: givenCountRef.current, hand: handChoiceRef.current }),
+  }), [items, objectWord, gradeBand]);
 
   // ── Per-item board reset ──────────────────────────────────────────────────
   const resetBoardFor = useCallback((item: CountingItem) => {
@@ -527,7 +548,9 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
 
     const metrics: CountingBoardMetrics = {
       type: 'counting-board',
-      evalMode: challenges[0]?.type ?? 'default',
+      // The catalog's mode name, not the challenge type: `count_all` and `group_count` are the modes
+      // `count` and `group` everywhere difficulty is tracked (CNB-3).
+      evalMode: challenges[0] ? evalModeForKind(challenges[0].type) : 'default',
       countingAccuracy: summary.accuracy,
       oneToOneCorrespondence: oneToOne,
       subitizeAccuracy: subitizeOutcomes.length > 0
@@ -544,15 +567,18 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
       attemptsCount: summary.attemptsCount,
     };
 
+    // A board right after one correction still scores 67, so wrong first answers rarely reach the
+    // session score; the evidence carries the first-response share the shared gate reads.
+    const diagnosisEvidence = countingBoardDiagnosisEvidence(summary, items.map((item) => item.kind));
     evaluation.submitResult(
       summary.solvedCount === challenges.length,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses, diagnosisEvidence },
       undefined,
-      summary.diagnosisEvidence,
+      diagnosisEvidence,
     );
-  }, [challenges, evaluation]);
+  }, [challenges, evaluation, items]);
 
   const runner = useJudgedScriptRunner<CountingItem>({
     pack,
@@ -633,9 +659,17 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     return (h % 2147483646) + 1; // Lehmer RNG needs a seed in 1..2147483646 (never 0)
   }, [currentChallenge?.id, runner.currentIndex, hasMoved]);
 
+  const compareGroupsKey = currentChallenge?.compareGroups?.join(',') ?? '';
+  const groupLayout = useMemo<GroupLayout | null>(() => {
+    if (challengeArrangement !== 'groups') return null;
+    const { sizes, cell } = boardGroups(challengeCount, challengeGroupSize,
+      compareGroupsKey ? compareGroupsKey.split(',').map(Number) : null);
+    return layoutGroups(sizes, cell);
+  }, [challengeCount, challengeArrangement, challengeGroupSize, compareGroupsKey]);
+
   const positions = useMemo(() =>
-    generatePositions(challengeCount, challengeArrangement, challengeGroupSize, scatterSeed),
-    [challengeCount, challengeArrangement, challengeGroupSize, scatterSeed]
+    groupLayout?.positions ?? generatePositions(challengeCount, challengeArrangement, scatterSeed),
+    [groupLayout, challengeCount, challengeArrangement, scatterSeed]
   );
 
   // Pre-K subitize: three hand options (1, 2, 3 fingers), shuffled per
@@ -925,58 +959,20 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
                 />
 
                 {/* Group circles */}
-                {showGroupCircles && challengeArrangement === 'groups' && challengeGroupSize && (
-                  (() => {
-                    const gs = challengeGroupSize;
-                    const numGroups = Math.ceil(challengeCount / gs);
-                    const itemSpacing = OBJECT_SIZE + 6;
-                    const subCols = Math.min(3, gs);
-                    const gw = (subCols - 1) * itemSpacing + OBJECT_SIZE;
-                    const gGap = 20;
-
-                    const usable = WORKSPACE_WIDTH - 2 * OBJECT_PADDING;
-                    const maxGPR = Math.max(1, Math.floor((usable + gGap) / (gw + gGap)));
-                    const gRows = Math.ceil(numGroups / maxGPR);
-
-                    const subRowsMax = Math.ceil(gs / subCols);
-                    const gh = (subRowsMax - 1) * itemSpacing + OBJECT_SIZE;
-                    const gRowGap = 16;
-                    const totalGH = gRows * gh + (gRows - 1) * gRowGap;
-                    const gStartY = (WORKSPACE_HEIGHT - totalGH) / 2 + OBJECT_SIZE / 2;
-
-                    return Array.from({ length: numGroups }, (_, g) => {
-                      const gRow = Math.floor(g / maxGPR);
-                      const gCol = g % maxGPR;
-                      const groupsInRow = Math.min(maxGPR, numGroups - gRow * maxGPR);
-                      const rowTotalW = groupsInRow * gw + (groupsInRow - 1) * gGap;
-                      const rowStartX = (WORKSPACE_WIDTH - rowTotalW) / 2 + gw / 2;
-
-                      const cx = rowStartX + gCol * (gw + gGap);
-                      const topY = gStartY + gRow * (gh + gRowGap);
-
-                      const itemsInGroup = Math.min(gs, challengeCount - g * gs);
-                      const rows = Math.ceil(itemsInGroup / subCols);
-                      const cols = Math.min(subCols, itemsInGroup);
-                      const cy = topY + ((rows - 1) * itemSpacing) / 2;
-                      const rx = Math.max(((cols - 1) * itemSpacing) / 2 + OBJECT_SIZE / 2 + 8, OBJECT_SIZE);
-                      const ry = Math.max(((rows - 1) * itemSpacing) / 2 + OBJECT_SIZE / 2 + 8, OBJECT_SIZE);
-
-                      return (
-                        <ellipse
-                          key={`group-${g}`}
-                          cx={cx}
-                          cy={cy}
-                          rx={rx}
-                          ry={ry}
-                          fill="rgba(234,179,8,0.05)"
-                          stroke="rgba(234,179,8,0.2)"
-                          strokeWidth={1.5}
-                          strokeDasharray="6 3"
-                        />
-                      );
-                    });
-                  })()
-                )}
+                {showGroupCircles && groupLayout?.rings.map((ring, g) => (
+                  <ellipse
+                    key={`group-${g}`}
+                    data-group-ring={g}
+                    cx={ring.cx}
+                    cy={ring.cy}
+                    rx={ring.rx}
+                    ry={ring.ry}
+                    fill="rgba(234,179,8,0.05)"
+                    stroke="rgba(234,179,8,0.2)"
+                    strokeWidth={1.5}
+                    strokeDasharray="6 3"
+                  />
+                ))}
 
                 {/* The K count-on basket — the started group, covered */}
                 {isKCountOnHidden && coveredCount > 0 && (() => {

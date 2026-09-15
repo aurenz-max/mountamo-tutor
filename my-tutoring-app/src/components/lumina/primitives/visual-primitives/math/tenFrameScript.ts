@@ -729,7 +729,11 @@ const discriminationFor = (item: TenFrameItem): string => {
       );
     case 'subtract':
       return (
-        `The starting number "${numberWordFor(item.shown)}" and the number taken away "${numberWordFor(item.removed ?? 0)}" are NOT the answer. `
+        // On a double such as eight take away four the number taken away IS the answer; refusing it
+        // would tell the judge to correct a right answer.
+        (item.removed === item.answer
+          ? `The starting number "${numberWordFor(item.shown)}" is NOT the answer. Here the number taken away is also "${answerWord}", so "${answerWord}" is correct. `
+          : `The starting number "${numberWordFor(item.shown)}" and the number taken away "${numberWordFor(item.removed ?? 0)}" are NOT the answer. `)
         + `Counting aloud that ENDS on "${answerWord}" counts as that answer — the last number said tells how many are left. `
       );
     default:

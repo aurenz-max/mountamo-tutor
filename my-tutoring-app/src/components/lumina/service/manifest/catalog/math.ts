@@ -7,6 +7,8 @@ import { baseTenDeliveryEligible } from '../../math/baseTenRemediation';
 import { fractionBarDeliveryEligible } from '../../math/fractionBarRemediation';
 import { fractionCompareDeliveryEligible } from '../../math/fractionCirclesRemediation';
 import { numberLineDeliveryEligible } from '../../math/numberLineRemediation';
+import { countingBoardDeliveryEligible } from '../../math/countingBoardRemediation';
+import { tenFrameDeliveryEligible } from '../../math/tenFrameRemediation';
 import { numberTracerDeliveryEligible } from '../../math/numberTracerRemediation';
 import { placeValueDeliveryEligible, placeValueRetest } from '../../math/placeValueOpportunityContract';
 /**
@@ -2275,6 +2277,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   // Math Phase 2 Primitives (K-5 Foundations)
   {
     id: 'ten-frame',
+    misconceptionScope: 'skill',
+    observationDelivery: 'server',
+    learningObservations: { eligible: tenFrameDeliveryEligible },
     description: 'Live tutor-judged 2×5 grid manipulative for K-2 number sense (DI modality). The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the answer out loud for subitizing (counters flash, then hide — say how many you saw), for make-ten at grades 1-2 (how many more fill the frame), and for addition and subtraction on the frame; they answer WITH THEIR HANDS for building a number (place exactly N counters), for DECOMPOSING a group (a group of counters arrives all red; turn some yellow to break it into two groups, and a different way each time), and for make-ten at Kindergarten (tap the empty cells until the frame is full), and for TEEN NUMBERS at Kindergarten (place the ones beside a full frame of ten, or find the ten inside a scattered group of 11-19), where working the counters IS the skill. Supports single frame (1-10) and double frame (1-20). The most foundational manipulative for early number sense. ESSENTIAL for grades K-2 number sense, subitizing, decomposing numbers into pairs (K.OA.3), TEEN NUMBERS as ten ones and some further ones (K.NBT.1), make-ten strategy, addition, and subtraction.',
     constraints: 'Best for grades K-2. A microphone is required for the SPOKEN modes (subitize, make-ten at grades 1-2, operate); the hands-only modes (build, decompose) are judged from what the child does on the frame and need no spoken answer. There is no Check button and no typed or stepper answer anywhere. Single frame for K, double frame for grades 1-2 — except the two teen-number modes, which use the double frame at every grade because a ten and some ones will not fit on one frame. Every spoken answer is a number word from 1 to 20 — challenges whose answer would be 0 (an empty frame, a subtraction down to nothing) or above 20 are discarded before the child sees them.',
     affordances: { representation: 'concrete', reader: 'none', answers: ['spoken', 'build'], role: ['visualize', 'apply'], minutes: 5 },
@@ -2414,6 +2419,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'counting-board',
+    misconceptionScope: 'skill',
+    observationDelivery: 'server',
+    learningObservations: { eligible: countingBoardDeliveryEligible },
     description: 'Live tutor-judged Pre-K to Grade 1 counting workspace (DI modality) with tappable objects (bears, apples, stars, fish, butterflies, blocks) in varied arrangements (scattered, line, groups, circle). The child counts by tapping and ANSWERS OUT LOUD: the Live tutor asks with scripted lines, judges the spoken number word from the audio in-band, corrects DISTAR-style, and its own affirmation advances the lesson. Modes: pre-numeric perceptual subitizing (Pre-K, tap the matching hand — fully number-free), count-all (tap each object, say how many), flash subitizing (K: objects flash then hide; say how many you saw), count-on (start from a known group — at K that group sits under a basket, so it must be counted on from rather than counted), group counting (count by 2s/5s/10s), and compare (say how many in the group with more). It also covers the K counting-OUT family: give-me-N (hand back a named number of objects from a pile), same-number-after-they-move (count a set, watch it rearrange, say how many now — conservation), take-away (take some off and say how many are left), and add-more (put more on and say how many altogether). Builds one-to-one correspondence, cardinality principle, conservation, and subitizing fluency from pre-numeric perception upward. ESSENTIAL for Pre-K through Grade 1 counting, number sense, and early addition foundations.',
     constraints: 'Best for grades Pre-K to 1. Pre-K: perceptual subitize 1-3 objects with hand answers (no numerals anywhere in the item). K: count 1-20 objects; count_all, subitize, and the counting-out family (give_me_n, recount_moved, take_away, add_more), plus count_on with the started group hidden under a basket. Grade 1: count to 30, count-on and group counting. In take_away and add_more the bound the objective names is the number the child ENDS on; the app splits the board and chooses how many change. Answers are spoken number words (or a hand tap at Pre-K) judged by the microphone-enabled Lumina tutor; there is no Check button and no typed answer.',
     affordances: { representation: 'concrete', reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },

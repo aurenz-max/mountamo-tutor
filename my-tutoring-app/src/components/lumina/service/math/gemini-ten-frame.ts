@@ -2,6 +2,13 @@ import { Type, Schema } from "@google/genai";
 import { TenFrameData, TenFrameChallenge } from "../../primitives/visual-primitives/math/TenFrame";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { planLearningAdaptation } from "../generation/planLearningAdaptation";
+import {
+  eligibleTenFrameTeaching,
+  selectSameFirstContrast,
+  tenFrameTeachingFor,
+  type TenFrameOperateMove,
+} from "./tenFrameRemediation";
 import {
   resolveEvalModes,
   constrainChallengeTypeEnum,
@@ -622,14 +629,25 @@ Return the complete ten frame configuration.
     `[TenFrame] modes: ${resolution ? `${resolution.modes.map(m => m.evalMode).join('+')} (${resolution.source})` : 'mixed'} → types [${(allowedTypes ?? ['all']).join(', ')}]`,
   );
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: activeSchema,
-    },
-  });
+  // Saved observations reach only the shared applicability planner, never the generation prompt.
+  // No observations or an ineligible task → no planner call.
+  const plannedMode = resolution?.modes.length === 1 ? resolution.modes[0].evalMode : undefined;
+  const observations = ctx.learningObservations ?? [];
+  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
+    mode: plannedMode, tier: supportTier ?? undefined };
+  const capability = tenFrameTeachingFor(plannedMode);
+  const [result, move] = await Promise.all([
+    ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: activeSchema,
+      },
+    }),
+    capability && observations.length && eligibleTenFrameTeaching(adaptationTask)
+      ? planLearningAdaptation<TenFrameOperateMove>(capability, adaptationTask, observations) : null,
+  ]);
 
   const data = result.text ? JSON.parse(result.text) : null;
 
@@ -896,6 +914,22 @@ Return the complete ten frame configuration.
           { id: 'c2', ...fallbacks.split },
         ] as TenFrameChallenge[]
       : [{ id: 'c1', ...fallbacks[fallbackType] ?? fallbacks.build }];
+  }
+
+  // ── Saved-observation adaptation ──
+  // After every gate, override and fallback, before the support tier and the instruction text. The selector
+  // reads the final frame and returns the baseline unless every item is still an operate item.
+  if (move) {
+    const baseline = data.challenges as TenFrameChallenge[];
+    const selected = selectSameFirstContrast(baseline, move, data.mode === 'double' ? 20 : 10);
+    // The model's hint and narration were written for the old numbers; the app owns them on a rewritten item.
+    data.challenges = selected.challenges.map((ch, i) => (ch === baseline[i] ? ch : {
+      ...ch,
+      hint: ch.type === 'add' ? 'Put the first group on the frame, then add the second group.' : 'Take the counters off one at a time.',
+      narration: ch.type === 'add' ? "Let's add on the ten frame." : "Let's take some away on the ten frame.",
+    }));
+    data.learningAdaptation = { move, status: selected.status, comparisonCount: selected.count };
+    console.log(`[TenFrame] Adaptation ${move}: ${selected.status}, ${selected.count} item(s) in the contrast`);
   }
 
   // Final summary log

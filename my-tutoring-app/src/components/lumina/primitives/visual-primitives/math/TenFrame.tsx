@@ -100,21 +100,25 @@ import {
   frameVerdictCue,
   isTeenKind,
   itemsFromChallenges,
+  judgeSplit,
   splitKey,
-  stimulusFor,
   teenTotalFor,
   tenFramePackBase,
   SPLIT_COLOR_A,
   SPLIT_COLOR_B,
   TEEN_TEN,
+  type SplitVerdict,
   type TenFrameBand,
   type TenFrameItem,
 } from './tenFrameScript';
+import { tenFrameDiagnosisEvidence, tenFrameObservation } from './tenFrameEvidence';
 import { numberWordFor } from './countingBoardScript';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { tenFramePipPose } from '../../../pip/tenFramePipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -145,6 +149,9 @@ export interface TenFrameChallenge {
 }
 
 export interface TenFrameData {
+  /** Safe adaptation metadata; `source` is stamped only by the observation delivery server. */
+  learningAdaptation?: { move: 'contrast_same_first_number_different_second';
+    status: 'targeted' | 'already-targeted' | 'insufficient-capacity'; comparisonCount: number; source?: 'saved-observation' };
   title: string;
   description?: string;
   mode: 'single' | 'double';
@@ -194,6 +201,13 @@ const CHALLENGE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
   decompose_teen: { label: 'Find the Ten', icon: '🔍' },
   add: { label: 'Add', icon: '➕' },
   subtract: { label: 'Subtract', icon: '➖' },
+};
+
+/** Challenge types whose catalog eval mode has a different name; every other type is its own mode. */
+const EVAL_MODE_FOR_KIND: Partial<Record<TenFrameChallenge['type'], string>> = {
+  split: 'decompose',
+  add: 'operate',
+  subtract: 'operate',
 };
 
 const COUNTER_COLORS: Record<string, string> = {
@@ -292,6 +306,9 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
    * the middle of a settle window must not lose what came before.
    */
   const shownSplitsRef = useRef<Map<number, Set<string>>>(new Map());
+  /** Evidence only: the code verdict on the last committed split, and "Show again" taps on this item. */
+  const splitVerdictRef = useRef<SplitVerdict | null>(null);
+  const reshowsRef = useRef(0);
 
   const stableInstanceIdRef = useRef(instanceId || `ten-frame-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -320,6 +337,12 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     [challenges],
   );
 
+  const observe = useCallback((item: TenFrameItem, heard: string | null) => tenFrameObservation(item, {
+    heard, onFrame: pendingPlacementRef.current, splitVerdict: splitVerdictRef.current, reshows: reshowsRef.current,
+    equationShown: showEquation && !isPreReader && (item.kind === 'add' || item.kind === 'subtract'),
+    countShown: showCount && (item.kind === 'build' || item.kind === 'make_ten' || item.kind === 'build_teen'),
+  }), [showEquation, showCount, isPreReader]);
+
   // The cue surface (everything the tutor is ever sent) comes from the script
   // module, so the headless judged-loop harness drives the SAME cues this
   // screen does. Below it: what only a mounted component can own.
@@ -335,51 +358,23 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
         : 'Have another go — say your answer.',
       done: 'Great number work today!',
     },
-    diagnosisObservation: (item, { lastHeard }) =>
-      item.answerKind === 'gesture'
-        ? item.kind === 'split'
-          ? {
-              challenge: `Split ${item.answer} counters into a red group and a yellow group`
-                + ((item.splitOrdinal ?? 1) > 1 ? ` — a way not yet shown this session.` : '.'),
-              expected: 'Both groups non-empty, and a pair not already shown for this total.',
-              observed: `Left ${item.answer - pendingPlacementRef.current} red, turned ${pendingPlacementRef.current} yellow.`,
-            }
-          : item.kind === 'decompose_teen'
-            ? {
-                challenge: `Turn exactly ten of the ${item.answer} counters yellow.`,
-                expected: 'Ten yellow, the rest left red.',
-                observed: `Turned ${pendingPlacementRef.current} yellow.`,
-              }
-          : item.kind === 'build_teen'
-            ? {
-                challenge: `Make ${teenTotalFor(item)} with a full ten already on the top frame.`,
-                expected: `${item.answer} more counters placed beside the ten.`,
-                observed: `Placed ${pendingPlacementRef.current - item.shown} more.`,
-              }
-          : {
-            challenge: item.kind === 'build'
-              ? `Put ${item.answer} counters on the ten frame.`
-              : `Fill the frame from ${item.shown} to ${item.capacity}.`,
-            expected: `${item.answer} counters placed.`,
-            observed: `Placed ${pendingPlacementRef.current - (item.kind === 'make_ten' ? item.shown : 0)}.`,
-          }
-        : {
-            challenge: `${item.kind} on a frame of ${item.capacity} (${stimulusFor(item)}).`,
-            expected: `${numberWordFor(item.answer)} (${item.answer})`,
-            observed: lastHeard
-              ? `Heard "${lastHeard}".`
-              : 'The tutor judged the answer wrong from the audio.',
-          },
-  }), [items]);
+    // Facts from the item's own fields and the committed frame, per mode; the same record is kept for
+    // right answers in student work. Read before the verdict resets the frame.
+    diagnosisObservation: (item, { lastHeard }) => observe(item, lastHeard),
+    responseObservation: (item, { lastHeard }) => observe(item, lastHeard),
+  }), [items, observe]);
 
   // ── Per-item frame reset — every item owns its starting state (R6) ────────
   const resetFrameFor = useCallback((item: TenFrameItem) => {
+    pip.clear();
     if (flashTimeoutRef.current) {
       clearTimeout(flashTimeoutRef.current);
       flashTimeoutRef.current = null;
     }
     setIsFlashing(false);
     setFlashAnswerReady(false);
+    splitVerdictRef.current = null;
+    reshowsRef.current = 0;
 
     // A completed frame never carries into the next challenge: build and add
     // start empty, make-ten seeds its shown group, subtract seeds its start,
@@ -434,7 +429,9 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
     const metrics: TenFrameMetrics = {
       type: 'ten-frame',
-      evalMode: items[0]?.kind ?? 'default',
+      // The catalog's mode name, not the challenge type: `split`, `add` and `subtract` are the modes
+      // `decompose` and `operate` everywhere difficulty is tracked.
+      evalMode: items[0] ? EVAL_MODE_FOR_KIND[items[0].kind] ?? items[0].kind : 'default',
       challengesCompleted: summary.solvedCount,
       challengesTotal: items.length,
       subitizeAccuracy: subitizeOutcomes.length > 0
@@ -458,13 +455,16 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       attemptsCount: summary.attemptsCount,
     };
 
+    // An item right after one correction still scores 67, so wrong first answers rarely reach the
+    // session score; the evidence carries the first-response share the shared gate reads.
+    const diagnosisEvidence = tenFrameDiagnosisEvidence(summary, items);
     evaluation.submitResult(
       summary.solvedCount === items.length,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses, diagnosisEvidence },
       undefined,
-      summary.diagnosisEvidence,
+      diagnosisEvidence,
     );
   }, [items, evaluation]);
 
@@ -528,6 +528,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       // indistinguishable, so there is no "wrong slot" to clear the way
       // cvc-speller does. Voice items keep whatever the child built.
       if (item.answerKind === 'gesture') {
+        pip.clear();
         setFilledCells(new Set(
           item.seedCells ?? Array.from({ length: item.shown }, (_, i) => i),
         ));
@@ -544,6 +545,10 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
   const currentItem = runner.currentItem;
   const currentChallenge = currentItem ? challengeById.get(currentItem.id) ?? null : null;
+
+  // Pip's presentation is a projection of the runner's phase and the child's
+  // own taps; it never places, flips, commits, or advances anything.
+  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
 
   // ── The gesture commit ────────────────────────────────────────────────────
   // No Check control: nothing on screen may carry the child forward. The cue
@@ -564,6 +569,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       // be re-offered forever.
       const shown = shownSplitsRef.current.get(item.answer) ?? new Set<string>();
       const alreadyShown = new Set(shown);
+      splitVerdictRef.current = judgeSplit(item, { a: item.answer - onFrame, b: onFrame }, alreadyShown);
       if (onFrame > 0 && onFrame < item.answer) {
         shown.add(splitKey({ a: item.answer - onFrame, b: onFrame }));
         shownSplitsRef.current.set(item.answer, shown);
@@ -677,6 +683,27 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
   }, []);
 
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    // Subitize publishes the frame only: its boxes sit over counters that are
+    // hidden, and Pip does not single out anything the child cannot see.
+    const subitize = currentItem.kind === 'subitize';
+    const visibleIds = ['frame', ...(subitize ? [] : Array.from({ length: totalCells }, (_, i) => `cell-${i}`))];
+    const targets = pip.targets(visibleIds, (id) => (id === 'frame' ? 'Ten frame' : 'A box on the frame'));
+    const pose = tenFramePipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      subitize, gesture: currentItem.answerKind === 'gesture',
+      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentItem.id,
+      label: 'Ten frame', dock: pip.dock.current, targets, pose,
+    };
+  });
+
   // ── Rendering helpers ─────────────────────────────────────────────────────
   const colorForCell = useCallback((index: number): string => {
     // `split` owns its palette outright: the tutor's lines NAME red and yellow,
@@ -713,6 +740,8 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
         cells.push(
           <g key={cellIndex}>
             <rect
+              ref={pip.ref(`cell-${cellIndex}`)}
+              data-pip-object={`cell-${cellIndex}`}
               x={x}
               y={y}
               width={CELL_SIZE}
@@ -723,7 +752,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
               fill={shouldShowCounter ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)'}
               stroke="rgba(255,255,255,0.15)"
               strokeWidth={1.5}
-              onClick={() => handleCellClick(cellIndex)}
+              onClick={() => { pip.look(`cell-${cellIndex}`); handleCellClick(cellIndex); }}
             />
             {shouldShowCounter && (
               <circle
@@ -733,7 +762,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
                 fill={COUNTER_COLORS[colorForCell(cellIndex)] || colorForCell(cellIndex)}
                 className="transition-all duration-200"
                 style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
-                onClick={() => handleCellClick(cellIndex)}
+                onClick={() => { pip.look(`cell-${cellIndex}`); handleCellClick(cellIndex); }}
               />
             )}
           </g>
@@ -763,7 +792,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
         {cells}
       </g>
     );
-  }, [filledCells, countersVisible, colorForCell, handleCellClick]);
+  }, [filledCells, countersVisible, colorForCell, handleCellClick, pip]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   /** `build` runs never speak an answer and `subitize` runs never place one —
@@ -881,6 +910,8 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
             <div className="flex justify-center">
               <svg
+                ref={pip.ref('frame')}
+                data-pip-object="frame"
                 width={svgWidth}
                 height={svgHeight}
                 viewBox={`0 0 ${svgWidth} ${svgHeight}`}
@@ -889,6 +920,9 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
                 {Array.from({ length: frameCount }, (_, i) => renderFrame(i))}
               </svg>
             </div>
+
+            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
 
             {/* The child's own placement trace. Never an empty-space readout —
                 on a make-ten item that number IS the answer (R5). */}
@@ -933,6 +967,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
                       // Direct, not gated: the CHILD asked for this one, so it
                       // is not waiting on anybody's voice.
                       runner.hearStimulus();
+                      reshowsRef.current += 1;
                       if (currentItem) presentFlash(currentItem);
                     }}
                   >

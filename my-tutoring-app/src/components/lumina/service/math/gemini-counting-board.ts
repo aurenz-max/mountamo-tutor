@@ -3,6 +3,16 @@ import { CountingBoardData } from "../../primitives/visual-primitives/math/Count
 import { numberWordFor } from "../../primitives/visual-primitives/math/countingBoardScript";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { planLearningAdaptation } from "../generation/planLearningAdaptation";
+import {
+  MAX_CHANGE,
+  countingBoardTeachingFor,
+  eligibleCountingBoardTeaching,
+  selectOneMoreCountOn,
+  selectSameStartContrast,
+  type CountingBoardChangeMove,
+  type CountingBoardCountOnMove,
+} from "./countingBoardRemediation";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -594,14 +604,24 @@ Return the complete counting board configuration.
 
   logEvalModeResolution('CountingBoard', config?.targetEvalMode, evalConstraint);
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: activeSchema,
-    },
-  });
+  // Saved observations reach only the shared applicability planner, never the generation prompt.
+  // No observations or an ineligible task → no planner call.
+  const observations = ctx.learningObservations ?? [];
+  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
+    mode: pinnedType, tier: supportTier ?? undefined };
+  const capability = countingBoardTeachingFor(pinnedType);
+  const [result, move] = await Promise.all([
+    ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: activeSchema,
+      },
+    }),
+    capability && observations.length && eligibleCountingBoardTeaching(adaptationTask)
+      ? planLearningAdaptation<string>(capability, adaptationTask, observations) : null,
+  ]);
 
   const data = result.text ? JSON.parse(result.text) : null;
 
@@ -653,7 +673,56 @@ Return the complete counting board configuration.
    *  decision `objectWordFor` makes on the spoken side. */
   const objectWordForBoard =
     data.objects?.type === 'custom' ? 'objects' : (data.objects?.type ?? 'objects');
+  const changeInstruction = (type: string, delta: number) => type === 'take_away'
+    ? `Take away ${numberWordFor(delta)} ${objectWordForBoard}. How many are left?`
+    : `Put ${numberWordFor(delta)} more ${objectWordForBoard} on the board. How many altogether?`;
 
+  // ── DI answer-leak guard (spoken-answer port). The instruction is on
+  // screen while the child works, and the COUNT is now the graded SPOKEN
+  // answer — an instruction naming the target ("Count all 7 bears!") prints
+  // the answer. Only the TARGET is guarded: count_on's startFrom is
+  // legitimate stimulus. Runs after the target is forced, so it guards the
+  // value the judge will actually accept.
+  const guardInstructionLeak = (challenge: { type: string; targetAnswer: number; instruction?: string }) => {
+    const target = challenge.targetAnswer;
+    const leak = new RegExp(`(^|\\D)${target}(\\D|$)|\\b${numberWordFor(target)}\\b`, 'i');
+    // give_me_n is the one mode whose ask STATES the target — "give me five
+    // bears" is the task, not a leak (publicValuesFor says the same on the
+    // spoken side).
+    if (challenge.type !== 'give_me_n' && leak.test(challenge.instruction ?? '')) {
+      const fallbackAsk: Record<string, string> = {
+        recount_moved: `Count the ${objectWordForBoard}. Then watch them move!`,
+        take_away: 'Take some away. How many are left?',
+        add_more: 'Put more on the board. How many altogether?',
+        count_all: `Can you count all the ${objectWordForBoard}?`,
+        subitize: 'How many do you see right away?',
+        subitize_perceptual: 'How many do you see?',
+        count_on: 'Count on to find how many altogether!',
+        group_count: 'Count the groups — how many altogether?',
+        compare: 'Which group has more? Count it!',
+      };
+      challenge.instruction = fallbackAsk[challenge.type] ?? `Can you count the ${objectWordForBoard}?`;
+    }
+  };
+
+  // Which side the bigger compare group is drawn on: half the boards each way, shuffled. When it was
+  // always drawn first, "how many in the group with more" was answered by the left group (CNB-2).
+  const compareTotal = (data.challenges as Array<{ type: string }>).filter((c) => c.type === 'compare').length;
+  const firstSideCount = Math.random() < 0.5 ? Math.ceil(compareTotal / 2) : Math.floor(compareTotal / 2);
+  const largerFirst = Array.from({ length: Math.max(1, compareTotal) }, (_, i) => i < firstSideCount)
+    .map((v) => ({ v, k: Math.random() }))
+    .sort((a, b) => a.k - b.k)
+    .map(({ v }) => v);
+  // The two group sizes: larger 4-8, smaller 2-4 fewer. Handed out without repeats — drawn per board, about
+  // half of five-board sessions asked the same comparison twice.
+  const comparePairs = [4, 5, 6, 7, 8]
+    .flatMap((larger) => [2, 3, 4].filter((gap) => larger - gap >= 1).map((gap) => ({ larger, smaller: larger - gap })))
+    .map((pair) => ({ pair, k: Math.random() }))
+    .sort((a, b) => a.k - b.k)
+    .map(({ pair }) => pair);
+  let compareIndex = 0;
+
+  let previousAddStart: number | null = null;
   for (const challenge of data.challenges) {
     // Validate arrangement
     if (!validArrangements.includes(challenge.arrangement)) {
@@ -682,13 +751,12 @@ Return the complete counting board configuration.
     // compare: force 2 groups with different sizes so one is visibly "more"
     if (challenge.type === 'compare') {
       challenge.arrangement = 'groups';
-      // Pick two distinct group sizes (larger 4-8, smaller 2-5, at least 2 apart)
-      const larger = 4 + Math.floor(Math.random() * 5);            // 4-8
-      const smaller = Math.max(1, larger - 2 - Math.floor(Math.random() * 3)); // at least 2 less
-      // groupSize = larger so first group is the big one
+      const { larger, smaller } = comparePairs[compareIndex % comparePairs.length];
       challenge.groupSize = larger;
       challenge.count = larger + smaller;
       challenge.targetAnswer = larger;
+      challenge.compareGroups = largerFirst[compareIndex % largerFirst.length] ? [larger, smaller] : [smaller, larger];
+      compareIndex += 1;
     }
 
     // Validate count
@@ -749,22 +817,30 @@ Return the complete counting board configuration.
     }
     if (challenge.type === 'take_away') {
       const start = Math.max(3, challenge.count);
-      let delta = 1 + Math.floor(Math.random() * Math.min(3, start - 1));
-      if (start - delta === delta) delta = delta + 1 <= start - 1 ? delta + 1 : Math.max(1, delta - 1);
+      let delta = 1 + Math.floor(Math.random() * Math.min(MAX_CHANGE, start - 1));
+      // Step off a change that equals the answer without leaving 1..MAX_CHANGE (6 take away 3 became 4).
+      if (start - delta === delta) delta = delta + 1 <= Math.min(MAX_CHANGE, start - 1) ? delta + 1 : Math.max(1, delta - 1);
       challenge.count = start;
       challenge.changeBy = delta;
       challenge.targetAnswer = start - delta;
-      challenge.instruction = `Take away ${numberWordFor(delta)} ${objectWordForBoard}. How many are left?`;
+      challenge.instruction = changeInstruction('take_away', delta);
     }
     if (challenge.type === 'add_more') {
       // The model's count is the FINAL total (that is what the topic bound
       // caps); code splits it into what starts on the board and what is added.
       const total = Math.max(3, challenge.count);
-      const delta = 1 + Math.floor(Math.random() * Math.min(3, total - 1));
+      // Prefer a start unlike the previous board's: the model's totals usually climb by one, and a
+      // random change then gave neighbours the same start in most sessions — the saved-observation
+      // contrast, present by chance and so unavailable as a deliberate one.
+      const changes = Array.from({ length: Math.min(MAX_CHANGE, total - 1) }, (_, k) => k + 1);
+      const freshStart = changes.filter((d) => total - d !== previousAddStart);
+      const pool = freshStart.length ? freshStart : changes;
+      const delta = pool[Math.floor(Math.random() * pool.length)];
+      previousAddStart = total - delta;
       challenge.count = total - delta;
       challenge.changeBy = delta;
       challenge.targetAnswer = total;
-      challenge.instruction = `Put ${numberWordFor(delta)} more ${objectWordForBoard} on the board. How many altogether?`;
+      challenge.instruction = changeInstruction('add_more', delta);
     }
 
     // Force targetAnswer = count (except compare, where targetAnswer = larger group)
@@ -772,34 +848,7 @@ Return the complete counting board configuration.
       challenge.targetAnswer = challenge.count;
     }
 
-    // ── DI answer-leak guard (spoken-answer port). The instruction is on
-    // screen while the child works, and the COUNT is now the graded SPOKEN
-    // answer — an instruction naming the target ("Count all 7 bears!") prints
-    // the answer. Only the TARGET is guarded: count_on's startFrom is
-    // legitimate stimulus. Runs after the target is forced, so it guards the
-    // value the judge will actually accept.
-    {
-      const target = challenge.targetAnswer;
-      const leak = new RegExp(`(^|\\D)${target}(\\D|$)|\\b${numberWordFor(target)}\\b`, 'i');
-      // give_me_n is the one mode whose ask STATES the target — "give me five
-      // bears" is the task, not a leak (publicValuesFor says the same on the
-      // spoken side).
-      if (challenge.type !== 'give_me_n' && leak.test(challenge.instruction ?? '')) {
-        const objectWord = data.objects?.type === 'custom' ? 'objects' : (data.objects?.type ?? 'objects');
-        const fallbackAsk: Record<string, string> = {
-          recount_moved: `Count the ${objectWord}. Then watch them move!`,
-          take_away: 'Take some away. How many are left?',
-          add_more: 'Put more on the board. How many altogether?',
-          count_all: `Can you count all the ${objectWord}?`,
-          subitize: 'How many do you see right away?',
-          subitize_perceptual: 'How many do you see?',
-          count_on: 'Count on to find how many altogether!',
-          group_count: 'Count the groups — how many altogether?',
-          compare: 'Which group has more? Count it!',
-        };
-        challenge.instruction = fallbackAsk[challenge.type] ?? `Can you count the ${objectWord}?`;
-      }
-    }
+    guardInstructionLeak(challenge);
 
     // Ensure groupSize exists when arrangement is 'groups'
     if (challenge.arrangement === 'groups' && !challenge.groupSize) {
@@ -810,7 +859,7 @@ Return the complete counting board configuration.
   // ── Fallback if empty ──
   if (data.challenges.length === 0) {
     const fallbackType = evalConstraint?.allowedTypes[0] ?? 'count_all';
-    const fallbacks: Record<string, { type: string; count: number; arrangement: string; instruction: string; targetAnswer: number; hint: string; narration: string; groupSize?: number; startFrom?: number; changeBy?: number }> = {
+    const fallbacks: Record<string, { type: string; count: number; arrangement: string; instruction: string; targetAnswer: number; hint: string; narration: string; groupSize?: number; compareGroups?: number[]; startFrom?: number; changeBy?: number }> = {
       count_all: { type: 'count_all', count: 5, arrangement: 'scattered', instruction: `Can you count all the ${data.objects?.type || 'stars'}?`, targetAnswer: 5, hint: 'Touch each one as you count!', narration: "Let's count together! Touch each one as you count." },
       subitize: { type: 'subitize', count: 4, arrangement: 'scattered', instruction: 'How many do you see right away?', targetAnswer: 4, hint: 'Look at the whole group — how many?', narration: "Look carefully — how many do you see without counting?" },
       subitize_perceptual: { type: 'subitize_perceptual', count: 2, arrangement: 'scattered', instruction: 'How many do you see?', targetAnswer: 2, hint: 'Look quickly — how many?', narration: 'Look carefully. How many do you see?' },
@@ -820,11 +869,35 @@ Return the complete counting board configuration.
       recount_moved: { type: 'recount_moved', count: 5, arrangement: 'line', instruction: `Count the ${data.objects?.type || 'stars'}. Then watch them move!`, targetAnswer: 5, hint: 'Moving them does not change how many.', narration: 'They moved — but how many are there now?' },
       take_away: { type: 'take_away', count: 6, changeBy: 2, arrangement: 'scattered', instruction: `Take away two ${data.objects?.type || 'stars'}. How many are left?`, targetAnswer: 4, hint: 'Count only the ones still on the board.', narration: 'Take some away, then count what is left.' },
       add_more: { type: 'add_more', count: 4, changeBy: 2, arrangement: 'scattered', instruction: `Put two more ${data.objects?.type || 'stars'} on the board. How many altogether?`, targetAnswer: 6, hint: 'Count on from the ones already there.', narration: 'Put more on, then count them all.' },
-      compare: { type: 'compare', count: 11, arrangement: 'groups', instruction: 'Which group has more?', targetAnswer: 7, hint: 'Count each group and compare!', narration: "Which side has more? Let's find out!", groupSize: 7 },
+      compare: { type: 'compare', count: 11, arrangement: 'groups', instruction: 'Which group has more?', targetAnswer: 7, hint: 'Count each group and compare!', narration: "Which side has more? Let's find out!", groupSize: 7, compareGroups: [4, 7] },
     };
     console.log(`[CountingBoard] No valid challenges — using ${fallbackType} fallback`);
     data.challenges = [{ id: 'c1', ...fallbacks[fallbackType] ?? fallbacks.count_all }];
   }
+
+  // ── Validated teaching move: code rewrites one board; the key is recomputed from what it renders.
+  // Applied only when every board is the mode the move was planned for.
+  let learningAdaptation: CountingBoardData['learningAdaptation'];
+  const boards = data.challenges as CountingBoardData['challenges'];
+  if (move && pinnedType && boards.every((c) => c.type === pinnedType)) {
+    const selected = move === 'contrast_same_start_different_change'
+      ? (pinnedType === 'take_away' || pinnedType === 'add_more'
+        ? selectSameStartContrast(boards, move as CountingBoardChangeMove, scopeCeiling) : null)
+      : move === 'count_on_exactly_one_more' && pinnedType === 'count_on'
+        ? selectOneMoreCountOn(boards, move as CountingBoardCountOnMove) : null;
+    if (selected) {
+      data.challenges = selected.challenges.map((c, i) => {
+        if (c === boards[i]) return c;
+        const next = { ...c };
+        if (next.type === 'take_away' || next.type === 'add_more') next.instruction = changeInstruction(next.type, next.changeBy as number);
+        guardInstructionLeak(next);
+        return next;
+      });
+      learningAdaptation = { move: move as CountingBoardChangeMove | CountingBoardCountOnMove, comparisonCount: selected.count,
+        status: selected.status === 'no-focus' ? 'insufficient-capacity' : selected.status };
+    }
+  }
+  if (learningAdaptation) data.learningAdaptation = learningAdaptation;
 
   // Enable group circles if any challenge uses groups (compare or group_count)
   const hasGroupChallenges = data.challenges.some(
@@ -913,6 +986,8 @@ Return the complete counting board configuration.
     // number is neither, so it is ignored here.
     if (config.arrangement !== undefined || config.groupSize !== undefined) {
       for (const challenge of data.challenges) {
+        // A compare board's two groups and their sizes are its task and its answer key.
+        if (challenge.type === 'compare') continue;
         if (config.arrangement !== undefined) challenge.arrangement = config.arrangement;
         if (config.groupSize !== undefined) challenge.groupSize = config.groupSize;
       }

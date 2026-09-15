@@ -435,7 +435,7 @@
         "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/AreaModel.tsx",
         "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
         "my-tutoring-app/scripts/probe-area-model-applicability.mjs",
-        "backend/scripts/probe_area_model_authenticated.py"
+        "backend/scripts/misconception_authenticated_smoke.py"
       ]
     },
     {
@@ -488,7 +488,117 @@
         "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/NumberTracer.tsx",
         "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
         "my-tutoring-app/scripts/probe-number-tracer-applicability.mjs",
-        "backend/scripts/probe_number_tracer_authenticated.py"
+        "backend/scripts/misconception_authenticated_smoke.py"
+      ]
+    },
+    {
+      "id": "counting-board",
+      "status": "implemented",
+      "mode": "take_away, add_more, count_on",
+      "classification": "Capture repair plus consumers for two task families, implemented. The judged loop already produced correction evidence, but every counted board was described as \"count N and say how many altogether\" (a take_away board of 7 with 3 removed read as \"count 7, expected four\"), right answers were not kept, and a board right after one correction scores 67, so three wrong first answers in five still submitted 80 and the gate never fired. Now: per-mode facts from each board's fields, every judged attempt in student work, firstResponseScore.",
+      "target": "take_away and add_more (Kindergarten or Grade 1, any tier; K COUNT001-02-E/F) and count_on (K covered start, Grade 1 visible start; K COUNT001-02-G). count, recount_moved, give_me_n, subitize, subitize_perceptual and group capture evidence but have no legal move; compare is blocked by CNB-2.",
+      "observed": "On take-away boards the student reports how many were on the board before any were taken away (7 take away 3 answered seven); on add-more boards the start before adding; on count-on the start said back, or the start number said on the first extra object.",
+      "capability": {
+        "task": "Change-then-count (take away or put on one to three, say how many now) and count-on from a spoken start (covered at K, visible and pre-counted at Grade 1); answers are spoken and judged by the tutor, no number printed.",
+        "moves": [
+          {
+            "id": "contrast_same_start_different_change",
+            "description": "Two neighbouring boards with the same start and different changes: 7 take away 1 (6 left) then 7 take away 3 (4 left); 4 put 1 more (5) then 4 put 3 more (7). An answer that ignores the change cannot be right on both.",
+            "holds": "Mode, item count, changes 1-3, the spoken change never equal to the answer, the lesson bound and the session's largest board, distinct boards, ids, arrangement, tier options.",
+            "changes": "The start and change of one later board (instruction re-authored from the change).",
+            "cannotTeach": "Touching each object once, tracking in a scattered set, counting on from a covered group, numerals, conservation. Those observations abstain (tracking and conservation 2/2 each in real draws)."
+          },
+          {
+            "id": "count_on_exactly_one_more",
+            "description": "One board (not the first) with exactly one object beyond the start: five in the basket and one bear, answer six. Saying the start back, or saying the start on the first extra object, gives five.",
+            "holds": "That board's spoken start, distinct starts, mode, item count, bound, tier.",
+            "changes": "How many are counted on for one later board.",
+            "cannotTeach": "Counting many extra objects one to one, counting a covered group from one, a covered group the learner ignores, written addition."
+          }
+        ]
+      },
+      "eligibility": "Delivery: countingBoardDeliveryEligible = targetEvalMode take_away, add_more or count_on. Generator: eligibleCountingBoardTeaching = grade K or 1 and one of those modes; applied only when every board is the planned mode. No topic anchor beyond the number bound, which the selector honours.",
+      "evidence": {
+        "now": "countingBoardEvidence.ts: countingObservation states each board from its fields (start and change, covered or visible start, both compare groups) with what was heard, handed over or tapped; countingBoardDiagnosisEvidence keeps at most 12 phases (every board's first wrong attempt before later ones, in order) and firstResponseScore = boards right first time. CountingBoard.tsx passes responseObservation, so learningResponses in student work hold right and wrong attempts. Catalog misconceptionScope: skill, observationDelivery: server.",
+        "add": "Nothing for these moves."
+      },
+      "delivery": "Catalog learningObservations declaration → shared generateWithLearningObservations → signed launch packet at the objective's published subject, grade and skill. Source stamped server-side; no receipt, no resolution.",
+      "execution": "One planLearningAdaptation call in parallel with the flash-lite board call. After per-board validation and before tier options: selectSameStartContrast (ceiling = the topic bound) or selectOneMoreCountOn, then re-authored instruction and the answer-leak guard on the rewritten board. add_more's baseline change draw now prefers a start unlike the previous board's (the contrast was otherwise present by chance in most sessions), and take_away's leak step-off no longer produces a change of 4.",
+      "preservation": [
+        "Five boards, all the pinned mode; key = start ∓ change or = count; build gate accepts every board; oracle clean.",
+        "Largest board and the topic bound; distinct boards; spoken count_on starts distinct.",
+        "Instruction, cue and screen carry no observation text; abstention is byte-identical."
+      ],
+      "verification": [
+        "countingBoardRemediation.test.ts, gemini-counting-board.adaptation.test.ts (2 of 4 fail with the selector removed; the other two are abstain/no-planner), CountingBoard.capture.test.tsx (mounted runner: 3 wrong first answers of 5 submit success true / 80, firstResponseScore 40, gate fires; 1 wrong stays above the gate), countingBoardEvidence.test.ts (12-phase cap and order), countingBoardObservationServer.test.ts (real registry path with a signed packet).",
+        "Real engines: probe-counting-board-applicability.mjs (rates, distiller, planner, registry generation) and replay-delivery.mjs with a Python-signed packet. Report: my-tutoring-app/qa/misconception/counting-board-2026-09-14.md."
+      ],
+      "probe": "PASS. Distiller 8/8 as expected, planner 20/20 plus 4/4 positive per task shape, registry generation 44/44 (run1) with exploratory cross-mode 4/4 abstain; take_away cases rerun after the change-of-4 fix. Chance 0% in real baselines (12/12 none); simulated chance 0% for add_more and count_on, take_away 26% with uniform and 58% with narrow model counts (repeated neighbouring starts). Capacity miss ≤0.4%. Replay 2/2 adapted, four controls unadapted, 0 backend calls.",
+      "residual": [
+        "/misconception-test counting-board station inventory.",
+        "CNB-2 compare larger group always first (/eval-fix) — then a compare move; CNB-3 evalMode count_all/group_count vs catalog count/group (/eval-fix).",
+        "No legal move for count, recount_moved, give_me_n, subitize, group.",
+        "HUMAN-CHECKS #163 (mic, teaching judgment)."
+      ],
+      "files": [
+        "my-tutoring-app/src/components/lumina/service/math/countingBoardRemediation.ts",
+        "my-tutoring-app/src/components/lumina/service/math/gemini-counting-board.ts",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/countingBoardEvidence.ts",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/CountingBoard.tsx",
+        "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
+        "my-tutoring-app/scripts/probe-counting-board-applicability.mjs"
+      ]
+    },
+    {
+      "id": "ten-frame",
+      "status": "implemented",
+      "mode": "operate (add, subtract)",
+      "classification": "Capture repair on all eight challenge types plus one consumer, implemented. The judged loop already produced correction evidence, but voice items were described as \"subtract on a frame of 10\", right answers were not kept, an item right after one correction scores 67 (three wrong first answers in five still submitted 80), and metrics.evalMode sent the challenge type (add, split) instead of the catalog mode (operate, decompose). Now: per-item facts from each item's fields and the committed frame, every judged attempt in student work, firstResponseScore, catalog eval mode.",
+      "target": "operate at Kindergarten (OPS001-02-D subtraction within 10, OPS001-01-B addition within 5) and Grades 1-2 (within 20, crossing ten), any tier. make_ten, subitize, build, decompose and the teen modes capture evidence but have no legal move.",
+      "observed": "On ten-frame take-away items the student answers with the starting number (seven for seven take away three); on additions the first number said; at Grade 1 the first or starting number on items that cross ten.",
+      "capability": {
+        "task": "Addition or subtraction said aloud by the tutor on one frame (K) or two frames (Grades 1-2); the learner may place or remove counters and says the answer, judged by the tutor.",
+        "moves": [
+          {
+            "id": "contrast_same_first_number_different_second",
+            "description": "Two neighbouring items of one operation share the first number and differ in the second: seven take away one (six left) then seven take away three (four left); eight plus three then eight plus five. An answer that repeats the first number, or does not change with the second, cannot be right on both.",
+            "holds": "Every item's operation, item count, ids, the session's largest answer and second number, whether the item crosses ten, distinct items, an answer never equal to a said number, frame and support tier.",
+            "changes": "The second number (and so the first) of one later item; instruction synthesized after the rewrite; hint and narration app-owned on that item.",
+            "cannotTeach": "An answer that repeats the number taken away (its contrast, same second number, is already in real baselines), counting one to one, making ten, subitizing, splitting a number, equations. Number-taken-away and one-less observations abstain 2/2 each in real draws."
+          }
+        ]
+      },
+      "eligibility": "Delivery: tenFrameDeliveryEligible = targetEvalMode operate. Generator: eligibleTenFrameTeaching = grade K, 1 or 2 and resolved mode operate; the selector applies only when every item is still an add or subtract item that closes on the final frame.",
+      "evidence": {
+        "now": "tenFrameEvidence.ts: tenFrameObservation states each item from its fields (start and number taken away, both addends, counters shown, frame size, split ordinal), what was on screen (equation, count readout, Show again taps) and what was said, placed or turned yellow, with split's code verdict; tenFrameDiagnosisEvidence keeps at most 12 phases (every item's first wrong attempt first, in order) and firstResponseScore. TenFrame.tsx passes responseObservation, so learningResponses hold right and wrong attempts. Catalog misconceptionScope: skill, observationDelivery: server.",
+        "add": "Nothing for this move."
+      },
+      "delivery": "Catalog learningObservations declaration → shared generateWithLearningObservations → signed launch packet at the objective's published subject, grade and skill. Source stamped server-side; no receipt, no resolution.",
+      "execution": "One planLearningAdaptation call in parallel with the flash-lite item call. After every gate, config override and fallback, before the support tier and buildInstruction: selectSameFirstContrast over the final frame. Found and fixed in the same slice: on a subtraction double (8−4) the judging contract refused the number taken away while it was the answer; whether to keep doubles is TF-5.",
+      "preservation": [
+        "Five items, operations unchanged; key recomputed from the two said numbers; build gate accepts every item.",
+        "Largest answer and second number, ten-crossing, distinct items, single frame at K.",
+        "Instruction, cue and screen carry no observation text; abstention is byte-identical."
+      ],
+      "verification": [
+        "tenFrameRemediation.test.ts, gemini-ten-frame.adaptation.test.ts (2 of 4 fail with the selector removed; the other two are abstain/no-planner), TenFrame.capture.test.tsx (mounted runner: 3 wrong first answers of 5 submit success true / 80, evalMode operate, firstResponseScore 40, gate fires; a tapped split records the committed board and verdict), tenFrameEvidence.test.ts (12-phase cap and order), tenFrameObservationServer.test.ts (real registry path with a signed packet).",
+        "Real engines: probe-ten-frame-applicability.mjs (rates, distiller, planner, registry generation) and replay-delivery.mjs with a Python-signed packet. Report: my-tutoring-app/qa/misconception/ten-frame-2026-09-14.md."
+      ],
+      "probe": "PASS. Distiller 8/8 as expected, planner 16/16 plus 4/4 positive per task shape, registry generation 33/33 with exploratory make-ten-on-operate 2/2 abstain. Chance 0% in real K subtraction (0/11) and Grade 1 (0/10) baselines, 4/6 in K addition within five; simulated chance 26% (uniform starts) to 71% (narrow starts), capacity miss up to 20% when operations interleave. Replay 2/2 adapted, four controls unadapted, 0 backend calls.",
+      "residual": [
+        "/misconception-test ten-frame station inventory.",
+        "TF-5 (/eval-fix): subtraction doubles hide the number-taken-away error; pedagogy call on keeping them.",
+        "No legal move for make_ten (partner counts already adjacent 3/3), subitize (ascending sweep 4/4), build, decompose, teen modes.",
+        "HUMAN-CHECKS #164 (mic, teaching judgment)."
+      ],
+      "files": [
+        "my-tutoring-app/src/components/lumina/service/math/tenFrameRemediation.ts",
+        "my-tutoring-app/src/components/lumina/service/math/gemini-ten-frame.ts",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/tenFrameEvidence.ts",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/TenFrame.tsx",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/tenFrameScript.ts",
+        "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
+        "my-tutoring-app/scripts/probe-ten-frame-applicability.mjs"
       ]
     }
   ]
