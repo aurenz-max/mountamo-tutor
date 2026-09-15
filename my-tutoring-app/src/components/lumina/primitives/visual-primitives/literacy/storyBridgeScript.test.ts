@@ -176,9 +176,9 @@ describe('story-bridge cues', () => {
     expect(moveOnCue(items[2], null)).toContain('the activity is over');
   });
 
-  it('records the tapped friend as correction evidence', () => {
+  it('records the tapped friend as a factual observation', () => {
     const pack = storyBridgePack(items, () => first.options[1]);
-    expect(pack.diagnosisObservation!(first, { lastHeard: null })).toEqual({
+    expect(pack.observation!(first, { heard: null, verdict: 'corrected' })).toEqual({
       challenge: `Hear two stories, then: ${askFor(first)}`,
       expected: `${first.target.name} tapped — both ${first.sharedBehavior}.`,
       observed: `Tapped ${first.options[1].name}.`,

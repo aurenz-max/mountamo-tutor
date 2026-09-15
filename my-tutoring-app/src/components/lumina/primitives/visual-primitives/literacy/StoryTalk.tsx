@@ -216,7 +216,7 @@ const StoryTalk: React.FC<StoryTalkProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -232,12 +232,13 @@ const StoryTalk: React.FC<StoryTalkProps> = ({ data, className }) => {
       noVerdict: () => 'One more time — say your answer out loud.',
       done: 'Great listening today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
-      const heard = lastHeard?.trim() ?? '';
+    // One record per attempt, right or corrected: the story heard, the question, and what was said; never the verdict.
+    observation: (item, { heard: transcript }) => {
+      const heard = transcript?.trim() ?? '';
       return {
-        challenge: `Hear a short story, then answer: ${item.question}`,
+        challenge: `Hear the story "${item.story}", then answer: ${item.question}`,
         expected: `"${item.answer}" said out loud.`,
-        observed: heard ? `Said "${heard}".` : 'Said something that did not match.',
+        observed: heard ? `Said "${heard}".` : 'No transcript was captured.',
       };
     },
   }), [items]);

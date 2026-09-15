@@ -168,6 +168,7 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
       {
         challengeResults: summary.outcomes,
         observations: summary.observations,
+        learningResponses: summary.learningResponses,
         hearTaps: summary.hearTaps,
         comparisons: items.map((item) => ({
           id: item.id, mode: item.mode, storyA: item.storyA.id, storyB: item.storyB.id,

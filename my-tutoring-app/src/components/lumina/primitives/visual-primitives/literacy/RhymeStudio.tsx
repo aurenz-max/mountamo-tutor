@@ -271,7 +271,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -306,20 +306,22 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
         : 'Have another go — say your answer.',
       done: 'Great rhyming work today!',
     },
-    diagnosisObservation: (item, { lastHeard }) =>
-      item.mode === 'recognition'
+    // One record per attempt, right or corrected: the words given (with the choices or the rhymes already
+    // collected) and what was heard. Never the verdict, because the same text is kept for right answers.
+    observation: (item, { heard: transcript }) => {
+      const heard = transcript ? `Heard "${transcript}".` : 'No transcript was captured.';
+      return item.mode === 'recognition'
         ? {
             challenge: `Decide whether "${item.targetWord}" and "${item.comparisonWord}" rhyme.`,
             expected: `Say ${item.doesRhyme ? 'yes' : 'no'}, from the ending sound.`,
-            observed: lastHeard
-              ? `Heard "${lastHeard}".`
-              : 'The tutor judged the answer wrong from the audio.',
+            observed: heard,
           }
         : {
             challenge: item.mode === 'identification'
-              ? `Say the word that rhymes with "${item.targetWord}".`
+              ? `Say the word that rhymes with "${item.targetWord}" (choices: ${item.choices.map((c) => c.word).join(', ')}).`
               : item.mode === 'collection'
-                ? `Say a new rhyme for "${item.targetWord}" for slot ${item.collectionSlot ?? 1} of 3.`
+                ? `Say a new rhyme for "${item.targetWord}" for slot ${item.collectionSlot ?? 1} of 3`
+                  + `${item.priorAcceptedWords.length ? ` (already collected: ${item.priorAcceptedWords.join(', ')})` : ''}.`
                 : `Say any word that rhymes with "${item.targetWord}".`,
             // Production names NO example: it has no code-owned answer since the
             // bank was deleted, and `item.answer` is empty there. An "for example
@@ -329,10 +331,9 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
               : item.mode === 'collection'
                 ? `Any real word ending in "${item.rime}" that is not already accepted.`
                 : `Any real word ending in "${item.rime}".`,
-            observed: lastHeard
-              ? `Heard "${lastHeard}".`
-              : 'The tutor judged the answer wrong from the audio.',
-          },
+            observed: heard,
+          };
+    },
   }), [items, modelPair]);
 
   const runner = useJudgedScriptRunner<RhymeItem>({

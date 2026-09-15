@@ -301,7 +301,7 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -320,24 +320,28 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
       noVerdict: () => 'One more time — read the glowing word.',
       done: 'Great book work today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
+    // One factual record per attempt, right or corrected: the printed parts on the page or the sentence read up
+    // to the glowing word, and what was tapped or said (the tap ref is read before the retry clears it).
+    // Never the verdict, because the same text is kept for right answers.
+    observation: (item, { heard: transcript }) => {
       if (item.mode === 'find-feature') {
+        const parts = book ? hotspotsFor(book, item.targetPageId).map((spot) => `${spot.feature} "${spot.text}"`).join('; ') : '';
         return {
-          challenge: `Find the ${item.feature ?? 'book part'} on the page.`,
+          challenge: `Find the ${item.feature ?? 'book part'} on the page${parts ? ` (printed parts: ${parts})` : ''}.`,
           expected: `The printed ${item.feature ?? 'part'}: "${item.targetText}".`,
           observed: tappedRef.current
             ? `Tapped the printed words "${tappedRef.current}".`
-            : 'Tapped a different part of the page.',
+            : 'Tapped the page; which part was not recorded.',
         };
       }
-      const heard = lastHeard?.trim() ?? '';
+      const heard = transcript?.trim() ?? '';
       return {
         challenge: `Hear "${item.readLead ?? ''}" stop, and read the glowing word.`,
         expected: `"${item.targetText}" read aloud.`,
-        observed: heard ? `Said "${heard}".` : 'Said something that did not match.',
+        observed: heard ? `Said "${heard}".` : 'No transcript was captured.',
       };
     },
-  }), [items]);
+  }), [items, book]);
 
   const runner = useJudgedScriptRunner<InteractiveBookItem>({
     pack,

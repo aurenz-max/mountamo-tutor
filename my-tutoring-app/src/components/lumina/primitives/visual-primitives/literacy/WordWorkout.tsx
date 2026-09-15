@@ -319,7 +319,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -343,58 +343,63 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       noVerdict: () => 'One more time — say it out loud.',
       done: 'Great word work today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
+    // One factual record per attempt, right or corrected: the printed word, sentence or pictures, and what was
+    // tapped, read or said (the tap ref is read before the retry clears it). Never the verdict.
+    observation: (item, { heard }) => {
+      const none = 'No transcript was captured.';
       switch (item.kind) {
         case 'picture_tap':
           return {
-            challenge: `Read "${item.targetWord}" and tap its picture.`,
+            challenge: `Read "${item.targetWord}" and tap its picture (pictures shown: ${(item.options ?? []).map((o) => o.word).join(', ')}).`,
             expected: `The picture of "${item.targetWord}".`,
             observed: tappedRef.current
               ? `Tapped the picture of "${tappedRef.current}".`
-              : 'Tapped a picture that did not match.',
+              : 'Tapped a picture; which one was not recorded.',
           };
         case 'real_word':
           return {
             challenge: `Read "${item.pair?.[0]}" and "${item.pair?.[1]}" and say which is a real word.`,
             expected: `"${item.realWord}" said out loud.`,
-            observed: lastHeard ? `Said "${lastHeard}".` : 'The tutor judged the answer wrong from the audio.',
+            observed: heard ? `Said "${heard}".` : none,
           };
-        case 'chain_word':
+        case 'chain_word': {
+          const previous = item.chainIndex ? item.chain?.[item.chainIndex - 1] : undefined;
           return {
-            challenge: `Read the chain word "${chainWordOf(item)}" aloud.`,
+            challenge: `Read the chain word "${chainWordOf(item)}" aloud${previous ? ` (the word before it was "${previous}")` : ''}.`,
             expected: `"${chainWordOf(item)}" read aloud.`,
-            observed: lastHeard ? `Read "${lastHeard}".` : 'The tutor judged the reading wrong from the audio.',
+            observed: heard ? `Read "${heard}".` : none,
           };
+        }
         case 'read_sentence':
           return {
             challenge: `Read the sentence aloud: ${item.sentence}`,
             expected: `"${item.sentence}" read aloud, every word in order.`,
-            observed: lastHeard ? `Read "${lastHeard}".` : 'The tutor judged the reading wrong from the audio.',
+            observed: heard ? `Read "${heard}".` : none,
           };
         case 'answer_question':
           return {
             challenge: `Read "${item.sentence}" and answer: ${item.question}`,
             expected: `"${item.answerWord}" said out loud.`,
-            observed: lastHeard ? `Said "${lastHeard}".` : 'The tutor judged the answer wrong from the audio.',
+            observed: heard ? `Said "${heard}".` : none,
           };
         case 'read_extended_word':
         case 'read_context_word':
           return {
             challenge: `Read the printed word "${item.targetWord}" aloud.`,
             expected: `"${item.targetWord}" read aloud.`,
-            observed: lastHeard ? `Read "${lastHeard}".` : 'The tutor judged the reading wrong from the audio.',
+            observed: heard ? `Read "${heard}".` : none,
           };
         case 'answer_word_meaning':
           return {
-            challenge: `Use the sentence and answer: ${item.question}`,
+            challenge: `Use the sentence${item.meaningSentence ? ` "${item.meaningSentence}"` : ''} and answer: ${item.question}`,
             expected: `A meaning equivalent to "${item.answerWord}".`,
-            observed: lastHeard ? `Said "${lastHeard}".` : 'The tutor judged the meaning answer wrong from the audio.',
+            observed: heard ? `Said "${heard}".` : none,
           };
         case 'choose_context_word':
           return {
-            challenge: `Choose the near-spelled word that fits: ${item.contextSentence}`,
+            challenge: `Choose the near-spelled word that fits${item.contextWords ? ` ("${item.contextWords.join('" or "')}")` : ''}: ${item.contextSentence}`,
             expected: `"${item.answerWord}".`,
-            observed: lastHeard ? `Said "${lastHeard}".` : 'The tutor judged the context choice wrong from the audio.',
+            observed: heard ? `Said "${heard}".` : none,
           };
       }
     },

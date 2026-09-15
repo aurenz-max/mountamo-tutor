@@ -131,6 +131,7 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
       {
         challengeResults: summary.outcomes,
         observations: summary.observations,
+        learningResponses: summary.learningResponses,
         transcripts: transcriptsRef.current,
       },
       undefined,

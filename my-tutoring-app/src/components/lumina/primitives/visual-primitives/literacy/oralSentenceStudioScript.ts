@@ -227,10 +227,12 @@ export const oralSentenceStudioPack = (
     dead: 'The tutor went quiet. Tap the microphone to pick things back up.',
     done: 'Your sentence studio is complete!',
   },
-  diagnosisObservation: (item, { lastHeard }) => ({
-    challenge: `Describe "${item.challenge.sceneTitle}" in one complete sentence using ${wordList(item)} meaningfully.`,
+  // One record per attempt, right or corrected: the scene and its target words, and what was heard; never the verdict.
+  observation: (item, { heard }) => ({
+    challenge: `Describe "${item.challenge.sceneTitle}" (the picture shows ${item.challenge.actorLabel}, `
+      + `${item.challenge.actionLabel}, ${item.challenge.objectLabel}) in one complete sentence using ${wordList(item)} meaningfully.`,
     expected: `Any complete, scene-relevant sentence using both words correctly; examples include: ${item.challenge.acceptedSentences.join(' / ')}`,
-    observed: lastHeard?.trim() ? `Said: "${lastHeard.trim()}"` : 'No usable spoken response was heard.',
+    observed: heard?.trim() ? `Said: "${heard.trim()}"` : 'No transcript was captured.',
   }),
 });
 

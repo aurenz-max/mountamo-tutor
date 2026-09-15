@@ -84,9 +84,9 @@ describe('expression page-work and voice handoff', () => {
     const outcomes = options.pack.items.map((item) => ({ id: item.id,
       solved: item.step !== 'reread', score: item.step === 'reread' ? 0 : 100,
       corrections: item.step === 'reread' ? 2 : 0, seconds: 3 }));
-    expect(options.pack.diagnosisObservation?.(options.pack.items[0], { lastHeard: 'hello' })).toBeNull();
-    expect(options.pack.diagnosisObservation?.(options.pack.items[1], { lastHeard: 'hello' })).toBeNull();
-    const observation = options.pack.diagnosisObservation?.(options.pack.items[2], { lastHeard: 'After the rain the bird sang' });
+    expect(options.pack.observation?.(options.pack.items[0], { heard: 'hello', verdict: 'corrected' })).toBeNull();
+    expect(options.pack.observation?.(options.pack.items[1], { heard: 'hello', verdict: 'corrected' })).toBeNull();
+    const observation = options.pack.observation?.(options.pack.items[2], { heard: 'After the rain the bird sang', verdict: 'corrected' });
     expect(observation).toBeTruthy();
     // The real runner assembles `diagnosisEvidence` from these observations (`judgedRunEvidence`); the fake summary does the same.
     const observations = [{ ...observation!, itemId: options.pack.items[2].id, judgeFeedback: 'My turn: birds.' }];

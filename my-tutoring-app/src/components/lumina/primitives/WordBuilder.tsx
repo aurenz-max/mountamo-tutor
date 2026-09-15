@@ -170,7 +170,7 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -191,12 +191,11 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
       affirmedNext: 'Yes! You built it.',
       done: 'Great work with word parts today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => ({
+    // One record per attempt, right or corrected: the meaning clue and what was heard; never the verdict.
+    observation: (item, { heard }) => ({
       challenge: `Say the word that means: ${item.clue}`,
       expected: `${item.word} (${item.parts.map((p) => p.text).join(' + ')})`,
-      observed: lastHeard
-        ? `Heard "${lastHeard}".`
-        : 'The tutor judged the answer wrong from the audio.',
+      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
     }),
   }), [items]);
 

@@ -242,7 +242,7 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { itemResults: summary.outcomes, hearTaps: summary.hearTaps },
+      { itemResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -258,20 +258,25 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
       noVerdict: () => 'One more time — say your answer out loud.',
       done: 'Great reading today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
-      const heard = lastHeard?.trim() ?? '';
+    // One record per attempt, right or corrected: the text(s) on screen (clipped to stay inside the evidence
+    // limits), the question and choices, and what was said. Never the verdict.
+    observation: (item, { heard: transcript }) => {
+      const heard = transcript?.trim() ?? '';
+      const clip = (text: string) => (text.length > 500 ? `${text.slice(0, 500)}…` : text);
+      const shown = (item.excerptIndex < 0 ? excerpts : excerpts.filter((e) => e.index === item.excerptIndex))
+        .map((e) => `${e.ordinal}: "${clip(e.text)}"`).join(' ');
       const challenge = item.action === 'check-feature'
-        ? `Say yes or no: does ${item.excerptOrdinal} ${item.predicate}?`
+        ? `Say yes or no: does ${item.excerptOrdinal} ${item.predicate}? Text shown: ${shown}`
         : item.action === 'pick-excerpt'
-          ? `Say which of two texts ${item.predicate}.`
-          : 'Read a text, then say what kind of writing it is.';
+          ? `Say which of two texts ${item.predicate}. Texts shown: ${shown}`
+          : `Read a text, then say what kind of writing it is (choices: ${item.choices.join(', ')}). Text shown: ${shown}`;
       return {
         challenge,
         expected: `"${item.answer}" said out loud.`,
-        observed: heard ? `Said "${heard}".` : 'Said something that did not match.',
+        observed: heard ? `Said "${heard}".` : 'No transcript was captured.',
       };
     },
-  }), [items]);
+  }), [items, excerpts]);
 
   const runner = useJudgedScriptRunner<GenreExplorerItem>({
     pack,

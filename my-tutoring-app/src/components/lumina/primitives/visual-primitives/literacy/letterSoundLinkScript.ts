@@ -802,7 +802,7 @@ export const maxCorrectionsFor = (maxAttempts?: number): number =>
  * Everything of this pack that can reach the tutor, in one value.
  *
  * The component spreads this and adds only what the SCREEN owns (`statusLines`,
- * `diagnosisObservation`, which closes over tap state); the drive-plan endpoint
+ * `observation`, which closes over tap state); the drive-plan endpoint
  * hands it to `run_tutor_live.py --di`. A harness that re-typed these cues would
  * test a fiction.
  */

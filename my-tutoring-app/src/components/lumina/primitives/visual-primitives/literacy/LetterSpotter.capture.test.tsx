@@ -71,8 +71,16 @@ async function drive(items: LetterSpotterItem[], wrong: LetterSpotterItem[]) {
 it('three words said straight back, each corrected once: the run passes on the average, the runner evidence fails the first-response gate, and capture calls the distiller', async () => {
   const items = await mount();
   expect(items).toHaveLength(5);
-  const { success, score, diagnosisEvidence, result } = await drive(items, items.slice(1, 4));
+  const { success, score, diagnosisEvidence, studentWork, result } = await drive(items, items.slice(1, 4));
   expect([success, score]).toEqual([true, 80]);
+  // Every attempt reaches student work, right answers included, stated as what was said about the sentence heard.
+  const responses = studentWork.learningResponses as Array<{ itemId: string; verdict: string; challenge: string; observed: string }>;
+  expect(responses.map((r) => `${r.itemId}:${r.verdict}:${r.observed}`)).toEqual([
+    'c1:affirmed:Said "M".', 'c2:corrected:Said "sun".', 'c2:affirmed:Said "S".', 'c3:corrected:Said "top".', 'c3:affirmed:Said "T".',
+    'c4:corrected:Said "pig".', 'c4:affirmed:Said "P".', 'c5:affirmed:Said "N".',
+  ]);
+  expect(responses[1].challenge).toBe('Hear "The sun is hot." and say the letter "sun" starts with.');
+  for (const r of responses) expect(r.observed).not.toMatch(/wrong|did not match|incorrect|does not support|judged/i);
   expect(diagnosisEvidence.firstResponseScore).toBe(40);
   expect(diagnosisEvidence.phases.map((p: { itemId: string; expected: string; observed: string }) => [p.itemId, p.expected, p.observed])).toEqual([
     ['c2', 'The letter "S".', 'Said "sun".'], ['c3', 'The letter "T".', 'Said "top".'], ['c4', 'The letter "P".', 'Said "pig".'],
@@ -90,6 +98,15 @@ it('three words said straight back, each corrected once: the run passes on the a
   expect(distill.params.evidence.firstResponseScore).toBe(40);
   expect(distill.params.evidence.phases).toHaveLength(3);
   expect(authApi.post).toHaveBeenCalledWith('/api/student-profile/misconceptions', expect.objectContaining({ primitive_type: 'letter-spotter', scope: 'primitive' }));
+});
+
+it('a confusion pair comes only from a corrected letter, never from an affirmed one', async () => {
+  const items = await mount();
+  await voice('affirmed', 'n');                       // c1 (m): the judge accepted it; not a confusion
+  await voice('corrected', 'p'); await voice('affirmed', 'S');   // c2 (s): a real confusion
+  for (const item of items.slice(2)) await voice('affirmed', letterSpotterHarnessAnswers(item).correct);
+  const [, , metrics] = seam.submit.mock.calls[0];
+  expect(metrics.confusedLetterPairs).toEqual(['p-s']);
 });
 
 it('one word said back stays above the gate: evidence attached, no model call', async () => {

@@ -188,7 +188,7 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
     const scored = readingSummary(items, summary);
     // The runner owns the evidence: first-response share, every line's first
     // wrong read kept under the phase cap, the pack's activity line. The pack
-    // already records nothing for unscored planning steps (`diagnosisObservation`
+    // already records nothing for unscored planning steps (`observation`
     // returns null there), so scored reads are the only phases it carries.
     const diagnosisEvidence = summary.diagnosisEvidence;
     // The set's actual difficulty. Line length is this pack's structural axis,
@@ -212,7 +212,7 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
       scored.passed,
       scored.accuracy,
       metrics,
-      { lineResults: scored.outcomes,
+      { lineResults: scored.outcomes, learningResponses: summary.learningResponses,
         ...(mode === 'expression' ? {
           practiceVersion: 'phrase-read-reread-v1',
           scoringBasis: 'modeled-reread-word-accuracy',
@@ -253,15 +253,15 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
       moveOn: 'Good try — here comes the next line.',
       done: 'Great reading today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => item.step && item.step !== 'reread' ? null : ({
+    // One record per scored read, right or corrected: the printed line and what was heard; planning steps are
+    // unscored and record nothing. Never the verdict, because the same text is kept for right answers.
+    observation: (item, { heard }) => item.step && item.step !== 'reread' ? null : ({
       challenge: `Read the printed ${item.wordCount}-word line aloud`
         + (item.kind === 'dialogue' ? ` as ${item.speaker} says it` : '')
         + (item.step === 'reread' ? ' after the tutor modelled the phrase' : '')
         + `: "${item.text}".`,
       expected: item.text,
-      observed: lastHeard
-        ? `Heard "${lastHeard}".`
-        : 'The tutor judged the read wrong from the audio.',
+      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
     }),
   }), [items, mode]);
 

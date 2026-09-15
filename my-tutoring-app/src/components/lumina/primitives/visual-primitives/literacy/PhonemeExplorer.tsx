@@ -248,7 +248,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -270,23 +270,26 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       affirmedNext: 'Yes! You heard it.',
       done: 'Great sound work today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => ({
-      challenge: item.kind === 'isolate'
-        ? `Say which word starts with the ${item.phonemeSound ?? item.phoneme} sound.`
-        : item.kind === 'ending'
-        ? `Say which heard word has the same final phoneme as "${item.targetWord}".`
-        : item.kind === 'medial'
-        ? `Say which word has the same middle sound as "${item.targetWord}".`
-        : item.kind === 'blend'
-          ? `Blend ${item.walk} into a whole word.`
-          : item.kind === 'segment'
-            ? `Count the sounds in "${item.targetWord}".`
-            : `${item.operationSpoken ?? 'Change one sound.'} (from "${item.originalWord}")`,
-      expected: item.kind === 'segment' ? `${item.answer} (${item.soundCount})` : item.answer,
-      observed: lastHeard
-        ? `Heard "${lastHeard}".`
-        : 'The tutor judged the answer wrong from the audio.',
-    }),
+    // One record per attempt, right or corrected: the sound task, the word or picture menu, and what was heard.
+    // Never the verdict, because the same text is kept for right answers.
+    observation: (item, { heard }) => {
+      const menu = item.menu?.length ? ` (pictures: ${item.menu.map((card) => card.word).join(', ')})` : '';
+      return {
+        challenge: item.kind === 'isolate'
+          ? `Say which word starts with the ${item.phonemeSound ?? item.phoneme} sound${menu}.`
+          : item.kind === 'ending'
+          ? `Say which heard word has the same final phoneme as "${item.targetWord}"${menu}.`
+          : item.kind === 'medial'
+          ? `Say which word has the same middle sound as "${item.targetWord}"${menu}.`
+          : item.kind === 'blend'
+            ? `Blend ${item.walk} into a whole word.`
+            : item.kind === 'segment'
+              ? `Count the sounds in "${item.targetWord}".`
+              : `${item.operationSpoken ?? 'Change one sound.'} (from "${item.originalWord}")`,
+        expected: item.kind === 'segment' ? `${item.answer} (${item.soundCount})` : item.answer,
+        observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
+      };
+    },
   }), [items]);
 
   const runner = useJudgedScriptRunner<PhonemeExplorerItem>({

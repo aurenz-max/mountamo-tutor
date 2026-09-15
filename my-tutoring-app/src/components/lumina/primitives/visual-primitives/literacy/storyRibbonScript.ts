@@ -283,13 +283,18 @@ export const storyRibbonPack = (items: StoryRibbonItem[]): JudgedScriptPack<Stor
       : 'Tell the whole story from beginning to end.',
     done: 'Your story ribbon is complete!',
   },
-  diagnosisObservation: (item, { lastHeard }) => ({
-    challenge: item.mode === 'story_to_experience'
-      ? 'Identify one story event and explain its connection to a personal, familiar, observed, heard-about, or imagined experience.'
-      : `Tell one connected account of three pictured events in chronological order${item.challenge.timeCue ? ` using ${item.challenge.timeCue.toLowerCase()} time` : ''}.`,
-    expected: item.modelResponse,
-    observed: lastHeard?.trim() ? `Said: "${lastHeard.trim()}"` : 'No usable spoken response was heard.',
-  }),
+  // One record per attempt, right or corrected: the three pictured events and the task, and what was heard.
+  // Never the verdict, because the same text is kept for right answers.
+  observation: (item, { heard }) => {
+    const events = `pictured events, in story order: ${item.challenge.events.map((event) => event.pictureLabel).join('; ')}`;
+    return {
+      challenge: item.mode === 'story_to_experience'
+        ? `Identify one story event (${events}) and explain its connection to a personal, familiar, observed, heard-about, or imagined experience.`
+        : `Tell one connected account of three pictured events in chronological order${item.challenge.timeCue ? ` using ${item.challenge.timeCue.toLowerCase()} time` : ''} (${events}).`,
+      expected: item.modelResponse,
+      observed: heard?.trim() ? `Said: "${heard.trim()}"` : 'No transcript was captured.',
+    };
+  },
 });
 
 export interface StoryRibbonHarnessAnswers {

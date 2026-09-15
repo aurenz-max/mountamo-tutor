@@ -244,7 +244,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -260,14 +260,16 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
       noVerdict: () => 'One more time — say your answer out loud.',
       done: 'Great sorting today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
-      const heard = lastHeard?.trim() ?? '';
+    // One record per attempt, right or corrected: the word heard, the choices on screen, and what was said.
+    // Never the verdict, because the same text is kept for right answers.
+    observation: (item, { heard: transcript }) => {
+      const heard = transcript?.trim() ?? '';
       return {
         challenge: item.mode === 'match_pairs'
-          ? `Hear a word, then say the word on screen that goes with it: "${item.word}"`
-          : `Hear a word, then say which group it belongs with: "${item.word}"`,
+          ? `Hear a word, then say the word on screen that goes with it (${item.choices.join(', ')}): "${item.word}"`
+          : `Hear a word, then say which group it belongs with (${item.choices.join(', ')}): "${item.word}"`,
         expected: `"${item.answer}" said out loud.`,
-        observed: heard ? `Said "${heard}".` : 'Said something that did not match.',
+        observed: heard ? `Said "${heard}".` : 'No transcript was captured.',
       };
     },
   }), [items]);

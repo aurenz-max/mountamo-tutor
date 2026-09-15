@@ -278,7 +278,7 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
       summary.passed,
       summary.accuracy,
       metrics,
-      { itemResults: summary.outcomes, hearTaps: summary.hearTaps },
+      { itemResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -294,20 +294,23 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
       noVerdict: () => 'One more time — say your answer out loud.',
       done: 'Great reading today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
-      const heard = lastHeard?.trim() ?? '';
+    // One record per attempt, right or corrected: the sentence, idea or passage (clipped to stay inside the
+    // evidence limits), the choices, and what was said. Never the verdict.
+    observation: (item, { heard: transcript }) => {
+      const heard = transcript?.trim() ?? '';
+      const choices = item.choices.length ? ` (choices: ${item.choices.join(', ')})` : '';
       const challenge = item.action === 'find-signal'
         ? `Read one sentence, then say the word that links the ideas: "${item.stimulusText}"`
         : item.action === 'name-structure'
-          ? 'Read the whole passage, then say how it is organised.'
-          : `Say which part of the chart an idea belongs in: "${item.stimulusText}"`;
+          ? `Read the whole passage, then say how it is organised${choices}. Passage: "${passage.length > 1200 ? `${passage.slice(0, 1200)}…` : passage}"`
+          : `Say which part of the chart an idea belongs in${choices}: "${item.stimulusText}"`;
       return {
         challenge,
         expected: `"${item.answer}" said out loud.`,
-        observed: heard ? `Said "${heard}".` : 'Said something that did not match.',
+        observed: heard ? `Said "${heard}".` : 'No transcript was captured.',
       };
     },
-  }), [items]);
+  }), [items, passage]);
 
   const runner = useJudgedScriptRunner<TextStructureItem>({
     pack,

@@ -278,7 +278,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -304,39 +304,43 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
       noVerdict: () => 'One more time — say the letter.',
       done: 'Great letter spotting today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
+    // One factual record per attempt, right or corrected: the sentence, grid or letters shown and what was said
+    // or tapped (the tap ref is read before the retry clears it). Never the verdict, because the same text is
+    // kept for right answers.
+    observation: (item, { heard: transcript, verdict }) => {
       const chosen = tappedRef.current;
       switch (item.mode) {
         case 'name-it': {
-          // Spoken mode: the evidence is what the child SAID. A heard single
-          // letter is also a confusion pair, which is the signal this primitive
-          // exists to collect — the tap path used to be the only source.
-          const heard = lastHeard?.trim() ?? '';
+          // Spoken mode: the evidence is what the child SAID. A heard single letter on a CORRECTED attempt is
+          // also a confusion pair, which is the signal this primitive exists to collect — the tap path used to
+          // be the only source. An affirmed attempt is never a confusion (the judge accepts the sound too).
+          const heard = transcript?.trim() ?? '';
           const heardLetter = /^[a-z]$/i.test(heard) ? heard.toLowerCase() : null;
-          if (heardLetter && heardLetter !== item.targetLetter.toLowerCase()) {
+          if (verdict === 'corrected' && heardLetter && heardLetter !== item.targetLetter.toLowerCase()) {
             confusedPairsRef.current.push([item.targetLetter.toLowerCase(), heardLetter]);
           }
           return {
             challenge: `Hear "${item.spokenSentence}" and say the letter "${item.targetWord}" starts with.`,
             expected: `The letter "${item.targetLetter.toUpperCase()}".`,
-            observed: heard ? `Said "${heard}".` : 'Said something that did not match.',
+            observed: heard ? `Said "${heard}".` : 'No transcript was captured.',
           };
         }
         case 'find-it':
           return {
-            challenge: `Find the letter "${item.targetLetter.toUpperCase()}" among sixteen letters.`,
+            challenge: `Find the letter "${item.targetLetter.toUpperCase()}" among sixteen letters`
+              + `${item.letterGrid?.length ? ` (grid: ${item.letterGrid.join(' ')})` : ''}.`,
             expected: `The one cell holding "${item.targetLetter.toUpperCase()}".`,
             observed: chosen
               ? `Tapped a cell holding "${chosen.toUpperCase()}".`
-              : 'Tapped a cell that did not hold it.',
+              : 'Tapped a cell; which one was not recorded.',
           };
         case 'match-it':
           return {
-            challenge: `Match big "${item.targetLetter.toUpperCase()}" to its little form.`,
+            challenge: `Match big "${item.targetLetter.toUpperCase()}" to its little form (little letters shown: ${item.options.join(', ')}).`,
             expected: `The little letter "${item.targetLetter}".`,
             observed: chosen
               ? `Tapped the little letter "${chosen}".`
-              : 'Tapped a little letter that did not match.',
+              : 'Tapped a little letter; which one was not recorded.',
           };
       }
     },

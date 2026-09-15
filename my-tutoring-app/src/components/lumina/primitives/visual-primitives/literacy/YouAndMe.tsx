@@ -84,7 +84,7 @@ function YouAndMeSession({ data, className }: { data: YouAndMeData; className?: 
         }),
       };
       evaluation.submitResult(summary.passed, summary.accuracy, metrics,
-        { outcomes: summary.outcomes, observations: summary.observations,
+        { outcomes: summary.outcomes, observations: summary.observations, learningResponses: summary.learningResponses,
           perspectives: items.map(({ id, sceneId, type, actor, speaker }) => ({ id, sceneId, type, actor, speaker })) },
         undefined, summary.diagnosisEvidence);
     },

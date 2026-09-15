@@ -59,8 +59,9 @@ export const youAndMePack = (items: YouAndMeItem[]): JudgedScriptPack<YouAndMeIt
     currentTurn: String(items.findIndex(candidate => candidate.id === item.id) + 1), totalTurns: String(items.length) }),
   statusLines: { ready: () => 'Tell your partner what happened.', retry: () => 'Try speaking as this partner.',
     noVerdict: () => 'Say that again, please.', done: 'Both partners had a turn.' },
-  diagnosisObservation: (item, { lastHeard }) => ({
+  // One record per attempt, right or corrected: the scene and speaking role, and what was heard; never the verdict.
+  observation: (item, { heard }) => ({
     challenge: `${sceneStatement(item)} ${ask(item)}`, expected: modelSentence(item),
-    observed: lastHeard ?? '(Speech was not transcribed.)',
+    observed: heard?.trim() ? `Heard "${heard.trim()}".` : 'No transcript was captured.',
   }),
 });

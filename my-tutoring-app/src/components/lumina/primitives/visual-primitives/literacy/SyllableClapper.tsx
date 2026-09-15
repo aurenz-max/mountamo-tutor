@@ -249,7 +249,7 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -266,16 +266,15 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
       affirmedNext: 'Yes! You heard the parts.',
       done: 'Great listening today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => ({
+    // One record per attempt, right or corrected: the word and task, and what was heard; never the verdict.
+    observation: (item, { heard }) => ({
       challenge: item.task === 'blend_syllables'
         ? `Blend the parts of "${item.word}" into the whole word.`
         : item.task === 'delete_compound'
           ? `Say "${item.word}" without "${item.removePart}".`
           : `Count the parts in "${item.word}".`,
       expected: item.task === 'count_parts' ? `${item.answer} (${item.partCount})` : item.answer,
-      observed: lastHeard
-        ? `Heard "${lastHeard}".`
-        : 'The tutor judged the answer wrong from the audio.',
+      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
     }),
   }), [items]);
 

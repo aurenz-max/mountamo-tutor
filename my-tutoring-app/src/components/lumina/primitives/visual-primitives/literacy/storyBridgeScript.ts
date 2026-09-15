@@ -409,22 +409,26 @@ export const storyBridgePack = (
     noVerdict: (item) => item.answerKind === 'voice' ? 'Say one comparison using both stories.' : 'Tap one picture choice.',
     done: 'Great story work today!',
   },
-  diagnosisObservation: (item, { lastHeard }) => {
+  // One record per attempt, right or corrected: the two story lines compared, the ask, and what was tapped or
+  // heard. Never the verdict, because the same text is kept for right answers.
+  observation: (item, { heard }) => {
     const rawTap = getLastTap();
     const tapId = typeof rawTap === 'string' ? rawTap : rawTap?.id ?? '';
+    const tapped = tapId ? `Tapped ${choiceLabel(item, tapId)}.` : 'Tapped a choice; which one was not recorded.';
     if (item.mode === 'match_character') {
       return {
         challenge: `Hear two stories, then: ${askFor(item)}`,
         expected: `${item.target.name} tapped — both ${item.sharedBehavior}.`,
-        observed: `Tapped ${choiceLabel(item, tapId)}.`,
+        observed: tapped,
       };
     }
+    const evidence = evidenceFor(item);
     return {
-      challenge: askFor(item),
-      expected: evidenceFor(item).summary,
+      challenge: `${askFor(item)} (story one: "${evidence.storyA}"; story two: "${evidence.storyB}")`,
+      expected: evidence.summary,
       observed: item.answerKind === 'gesture'
-        ? `Tapped ${choiceLabel(item, tapId)}.`
-        : lastHeard?.trim() ? `Said "${lastHeard.trim()}".` : 'Gave no complete comparison across both texts.',
+        ? tapped
+        : heard?.trim() ? `Said "${heard.trim()}".` : 'No transcript was captured.',
     };
   },
 });

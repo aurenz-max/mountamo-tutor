@@ -260,7 +260,7 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
       summary.passed,
       summary.accuracy,
       metrics,
-      { itemResults: summary.outcomes, hearTaps: summary.hearTaps },
+      { itemResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -276,20 +276,23 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
       noVerdict: () => 'One more time — say your answer out loud.',
       done: 'Great grammar work today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
-      const heard = lastHeard?.trim() ?? '';
+    // One record per attempt, right or corrected: the sentence and word asked about, the labels on the wall, and
+    // what was said. Never the verdict, because the same text is kept for right answers.
+    observation: (item, { heard: transcript }) => {
+      const heard = transcript?.trim() ?? '';
+      const wall = item.wallLabels.length ? ` (labels: ${item.wallLabels.join(', ')})` : '';
       const challenge =
         item.action === 'name-type'
-          ? `Say what kind of sentence "${item.sentence}" is.`
+          ? `Say what kind of sentence "${item.sentence}" is${wall}.`
           : item.action === 'name-side'
-            ? `Say whether "${item.targetWord}" is in the subject or the predicate.`
+            ? `Say whether "${item.targetWord}" is in the subject or the predicate of "${item.sentence}".`
             : item.action === 'name-role'
-              ? `Say what job "${item.targetWord}" does in the sentence.`
-              : `Say the part of speech of "${item.targetWord}".`;
+              ? `Say what job "${item.targetWord}" does in "${item.sentence}"${wall}.`
+              : `Say the part of speech of "${item.targetWord}" in "${item.sentence}"${wall}.`;
       return {
         challenge,
         expected: `"${item.answer}" said out loud.`,
-        observed: heard ? `Said "${heard}".` : 'Said something that did not match.',
+        observed: heard ? `Said "${heard}".` : 'No transcript was captured.',
       };
     },
   }), [items]);

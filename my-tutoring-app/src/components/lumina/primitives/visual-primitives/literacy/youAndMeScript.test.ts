@@ -44,10 +44,10 @@ describe('You & Me speaking contract', () => {
       scene, { ...scene, id: 'scene-1-b', speaker: 1 },
     ]))).toEqual([]);
   });
-  it('retains actor and speaker in correction evidence', () => {
+  it('retains actor and speaker in the attempt observation', () => {
     const item = { ...scene, speaker: 1 as const };
-    const evidence = youAndMePack([item]).diagnosisObservation!(item, { lastHeard: 'I packed the bag' });
+    const evidence = youAndMePack([item]).observation!(item, { heard: 'I packed the bag', verdict: 'corrected' });
     expect(evidence).toEqual({ challenge: 'Mina packed the bag. Play Leo. Tell Mina what happened.',
-      expected: 'You packed the bag.', observed: 'I packed the bag' });
+      expected: 'You packed the bag.', observed: 'Heard "I packed the bag".' });
   });
 });

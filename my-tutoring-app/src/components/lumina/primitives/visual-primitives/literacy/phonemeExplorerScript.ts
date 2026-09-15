@@ -746,7 +746,7 @@ export const stimulusFor = (item: PhonemeExplorerItem): string => {
  * component and the DI drive-plan endpoint read the SAME strings. A harness
  * that re-typed these would test a fiction (19f found exactly that drift on both
  * sides of letter-spotter's wire); the component spreads this and adds only what
- * the screen owns — `statusLines` and `diagnosisObservation`.
+ * the screen owns — `statusLines` and `observation`.
  */
 export const phonemeExplorerPackBase = (
   items: PhonemeExplorerItem[],

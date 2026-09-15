@@ -246,7 +246,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -267,26 +267,27 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
         : 'Have another go — say your answer.',
       done: 'Great letter-sound work today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
+    // One factual record per attempt, right or corrected: the sound or letter given, the letters or pictures on
+    // screen, and what was tapped or heard (the tap ref is read before the retry clears it). Never the verdict.
+    observation: (item, { heard }) => {
+      const shown = item.options.map((option) => option.value).join(', ');
       if (item.answerKind === 'gesture') {
         return {
-          challenge: `Hear the sound ${item.spoken} and tap the letter that makes it.`,
+          challenge: `Hear the sound ${item.spoken} and tap the letter that makes it (letters shown: ${shown.toUpperCase()}).`,
           expected: `The letter "${item.answer.toUpperCase()}".`,
           observed: tappedRef.current
             ? `Tapped the letter "${tappedRef.current.toUpperCase()}".`
-            : 'Tapped a letter that did not match.',
+            : 'Tapped a letter; which one was not recorded.',
         };
       }
       return {
         challenge: item.mode === 'see-hear'
           ? `Say the sound the letter "${item.letter.toUpperCase()}" makes.`
-          : `Say which pictured word starts with the sound of "${item.letter.toUpperCase()}".`,
+          : `Say which pictured word starts with the sound of "${item.letter.toUpperCase()}" (pictures shown: ${shown}).`,
         expected: item.mode === 'see-hear'
           ? `The sound ${item.spoken}.`
           : `The word "${item.answer}".`,
-        observed: lastHeard
-          ? `Heard "${lastHeard}".`
-          : 'The tutor judged the answer wrong from the audio.',
+        observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
       };
     },
   }), [items, maxAttempts]);

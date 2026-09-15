@@ -178,6 +178,7 @@ const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => 
       {
         challengeResults: summary.outcomes,
         observations: summary.observations,
+        learningResponses: summary.learningResponses,
         arrangements: arrangementsRef.current,
         arrangementAtTell: arrangementAtTellRef.current,
         transcripts: transcriptsRef.current,

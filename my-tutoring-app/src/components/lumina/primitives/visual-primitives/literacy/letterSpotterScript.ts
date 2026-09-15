@@ -820,7 +820,7 @@ export const stimulusFor = (item: LetterSpotterItem): string => {
  * Everything of this pack that can reach the tutor, in one value.
  *
  * The component spreads this and adds only what the SCREEN owns (`statusLines`,
- * `diagnosisObservation`, which closes over tap state); the drive-plan endpoint
+ * `observation`, which closes over tap state); the drive-plan endpoint
  * hands it to `run_tutor_live.py --di`. A harness that re-typed these cues would
  * test a fiction — and this pack is the reason `JudgedCueSurface` was named at
  * all: 19f found the sayable-length bound drifted to 90 on one side of the wire
