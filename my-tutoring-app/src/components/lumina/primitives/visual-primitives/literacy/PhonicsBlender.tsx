@@ -64,6 +64,8 @@ import {
   pronounceCue,
   type BlendItem,
 } from './phonicsBlenderScript';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { phonicsBlenderPipPose } from '../../../pip/phonicsBlenderPipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -200,6 +202,8 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
   /** Reward picture for the word JUST blended — post-answer only (answer-leak
    *  rule), cleared the moment the next word opens. */
   const [rewardEmoji, setRewardEmoji] = useState<string | null>(null);
+  /** Pip only: the word the loop's last SENT cue was about. */
+  const [cuedWordId, setCuedWordId] = useState<string | null>(null);
 
   // Visual-only timers. NONE advance anything — they clear a highlight. The
   // lane's gate ("no setTimeout-to-advance survives") is about progression, and
@@ -459,6 +463,9 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     enabled: running,
     active: activeInLesson,
     onEmission: handleEmission,
+    onCue: (event) => {
+      if (event.phase === 'sent') setCuedWordId(currentItem()?.id ?? null);
+    },
   });
   loopRef.current = loop;
 
@@ -575,6 +582,26 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this pack's stage and the child's own letter taps; Pip
+  // never answers, judges, or moves to the next word.
+  const pip = usePipTargets(currentWord?.id ?? null, running);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentWord || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(undefined, (id) => (id === 'letters' ? 'The letters' : 'A letter'));
+    const pose = phonicsBlenderPipPose({
+      running, preparing, stage,
+      tutorSpeaking: ctx.isAudioPlaying && activeInLesson,
+      cueOnWord: cuedWordId === currentWord.id,
+      visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentWord.id, label: 'Sound blending',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   // ============================================================================
   // Render
   // ============================================================================
@@ -601,14 +628,17 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
    *  `none` the letters are joined into a solid word, so the child does the
    *  segmenting — the help is withdrawn, never the letters themselves. */
   const renderLetters = () => (
-    <div className={`flex items-center justify-center ${segmentation === 'none' ? 'gap-0' : 'gap-3'}`}>
+    <div ref={pip.ref('letters')} data-pip-object="letters"
+      className={`flex items-center justify-center ${segmentation === 'none' ? 'gap-0' : 'gap-3'}`}>
       {currentWord.phonemes.map((phoneme, i) => (
         <React.Fragment key={phoneme.id}>
           {segmentation === 'full' && i > 0 && (
             <span className="text-slate-600 text-2xl" aria-hidden="true">·</span>
           )}
           <button
-            onClick={() => handlePlaySound(phoneme.id)}
+            ref={pip.ref(`letter-${phoneme.id}`)}
+            data-pip-object={`letter-${phoneme.id}`}
+            onClick={() => { pip.look(`letter-${phoneme.id}`); handlePlaySound(phoneme.id); }}
             aria-label={`sound ${phoneme.sound}`}
             className={`
               rounded-xl border-2 font-bold uppercase transition-all duration-200 cursor-pointer select-none
@@ -671,6 +701,11 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
               <p className="text-center text-xs text-slate-500">
                 Tap a letter to hear its sound, then say the whole word.
               </p>
+            )}
+
+            {pipStore && (
+              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
             )}
 
             {/* Every word here is blended OUT LOUD — the spoken label is the

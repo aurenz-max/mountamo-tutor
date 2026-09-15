@@ -17,6 +17,9 @@ import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { calendarGridPipPose, calendarSequencePipPose } from '../../../pip/calendarExplorerPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 import {
   calendarExplorerSequencePackBase,
   type CalendarDaySequenceItem,
@@ -279,7 +282,7 @@ const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: numbe
     supportTier: supportTier ?? null,
   }), [title, gradeBand, currentChallenge, currentIndex, challenges.length, supportTier]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'calendar-explorer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -439,6 +442,29 @@ const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: numbe
   const canCheckAnswer = selectedAnswer !== null && !feedback;
   const canProceed = feedback?.correct || (feedback && !feedback.correct && currentAttempts >= 3);
 
+  // ── Pip shared surface ──────────────────────────────────────────
+  // A projection of this question's check state, the tutor's speech on it, and
+  // the child's last touch; Pip never picks a date or option, checks, or
+  // advances. Tutor audio counts only while the tutor is on this block and
+  // began on this question.
+  const pip = usePipTargets(currentChallenge?.id ?? null, !hasAnsweredCurrent);
+  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const speechOnQuestion = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || allChallengesComplete) return null;
+    const targets = pip.targets();
+    const pose = calendarGridPipPose({
+      running: true, preparing: false, currentSolved: feedback?.correct === true, revealHeld: false,
+      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnQuestion,
+      type: currentChallenge.type, answerFromGrid,
+      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Calendar',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   // ── Render ──────────────────────────────────────────────────────
   if (!challenges || challenges.length === 0) {
     return (
@@ -501,6 +527,8 @@ const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: numbe
 
             {currentChallenge.type === 'day_offset' && (
               <div
+                ref={pip.ref('offset')}
+                data-pip-object="offset"
                 data-testid="day-offset-surface"
                 className="mb-6 rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-6 text-center"
               >
@@ -526,7 +554,7 @@ const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: numbe
             {/* Calendar Grid */}
             {currentChallenge.type !== 'day_offset' && (
             <div className="mb-6" data-testid="calendar-grid">
-              <div className="grid grid-cols-7 gap-1 max-w-md mx-auto">
+              <div ref={pip.ref('grid')} data-pip-object="grid" className="grid grid-cols-7 gap-1 max-w-md mx-auto">
                 {/* Day headers — orientation scaffold, withdrawn at hard */}
                 {showDayHeaders && DAY_HEADERS.map((day) => (
                   <div
@@ -564,11 +592,14 @@ const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: numbe
                   // the child answers, and it survives selection and highlighting, so it
                   // rides as an extra ring rather than a rung of the colour ladder.
                   const isToday = currentChallenge.todayDate === day;
+                  const pipId = isToday ? 'today' : `date-${day}`;
 
                   return (
                     <button
                       key={day}
-                      onClick={() => handleDateClick(day)}
+                      ref={pip.ref(pipId)}
+                      data-pip-object={pipId}
+                      onClick={() => { pip.look(pipId); handleDateClick(day); }}
                       data-testid={`date-${day}`}
                       data-target-day={isTargetDay ? 'true' : undefined}
                       data-today={isToday ? 'true' : undefined}
@@ -644,16 +675,23 @@ const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: numbe
 
             {/* Answer Options — every challenge that is NOT answered by clicking a
                 date in the grid (count, pattern, and day-name identify). */}
+            {/* Pip's dock sits between the calendar (the cue) and the option
+                buttons (the answers), so a pointer to the star never crosses one. */}
+            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+              className="mx-auto mb-4 flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
+
             {showOptionButtons && (
               <div className="mb-4">
                 <p className="text-xs text-slate-500 mb-2">Choose your answer:</p>
                 <div className="flex flex-wrap gap-2">
-                  {currentChallenge.options.map((option) => (
+                  {currentChallenge.options.map((option, optionIndex) => (
                     <Button
                       key={option}
+                      ref={pip.ref(`option-${optionIndex}`)}
+                      data-pip-object={`option-${optionIndex}`}
                       variant="ghost"
                       data-testid={`option-${option}`}
-                      onClick={() => handleOptionSelect(option)}
+                      onClick={() => { pip.look(`option-${optionIndex}`); handleOptionSelect(option); }}
                       className={`
                         border transition-all
                         ${selectedAnswer === option
@@ -851,6 +889,27 @@ const CalendarSequenceExplorer: React.FC<{ data: CalendarExplorerData }> = ({ da
     onFinished: handleFinished,
   });
 
+  // ── Pip shared surface ──────────────────────────────────────────
+  // A projection of the runner's phase onto the listen card; Pip never says,
+  // judges, or advances anything.
+  const sequenceItem = runner.currentItem;
+  const pip = usePipTargets(sequenceItem?.id ?? null, false);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !sequenceItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(['stimulus'], () => 'The listen card');
+    const pose = calendarSequencePipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === sequenceItem.id,
+      visibleIds: targets.map((target) => target.id),
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: sequenceItem.id, label: 'Calendar chain',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   const phaseResults = useMemo(
     () => phaseResultsFromSummary(items, runner.summary, (item) => ({
       label: `${item.type === 'day_sequence' ? 'Day' : 'Month'} turn ${item.chainPosition}`,
@@ -897,12 +956,16 @@ const CalendarSequenceExplorer: React.FC<{ data: CalendarExplorerData }> = ({ da
 
               {/* Intentionally no printed sequence names or strip. The tutor's
                   voice is the stimulus and the child's voice is the answer. */}
-              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-10 text-center">
+              <div ref={pip.ref('stimulus')} data-pip-object="stimulus"
+                className="rounded-xl border border-white/10 bg-white/5 px-4 py-10 text-center">
                 <div className="text-6xl" aria-hidden="true">📅</div>
                 <p className="mt-4 text-sm uppercase tracking-[0.3em] text-slate-500">
                   listen · think · say
                 </p>
               </div>
+
+              {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
 
               <JudgedMicPanel run={runner} voiceLabel={`Say the next ${unit}`}>
                 <Button

@@ -99,6 +99,9 @@ import { useDiPostRunDisconnect } from './useDiPostRunDisconnect';
 import DiActionPanel from '../../../components/DiActionPanel';
 import RealWorldShapeObject from '../shared/RealWorldShapeObject';
 import type { RealWorldShapeObjectId } from '../shared/realWorldShapeObjects';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { diShapesPipPose } from '../../../pip/diShapesPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 export type {
   DiShapesChallenge,
@@ -739,6 +742,26 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this pack's own phase word onto the drawn shape; Pip never
+  // answers, judges, or moves the stage. Speech counts only when it is this
+  // instance's and began on the shape now drawn.
+  const pip = usePipTargets(currentChallenge?.id ?? null, false);
+  const tutorSpeaking = ctx.isAudioPlaying && activeInLesson;
+  const speechOnShape = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || isComplete || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(['shape'], () => 'The drawn shape');
+    const pose = diShapesPipPose({
+      running, preparing, phase, tutorSpeaking, speechOnShape,
+      visibleIds: targets.map((target) => target.id),
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Shapes',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   // ── Render ───────────────────────────────────────────────────────
   const total = data.challenges.length;
   const isSupported =
@@ -811,7 +834,7 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
                 </div>
               </div>
             ) : (
-              <div key={`shape-${currentChallenge.id}`} className={motion.reveal}>
+              <div key={`shape-${currentChallenge.id}`} ref={pip.ref('shape')} data-pip-object="shape" className={motion.reveal}>
                 {currentChallenge.realObjectId ? (
                   <RealWorldShapeObject objectId={currentChallenge.realObjectId} />
                 ) : (
@@ -868,6 +891,11 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
               })}
             </div>
           </div>
+        )}
+
+        {pipStore && !isComplete && (
+          <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+            className="mx-auto mb-4 flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
         )}
 
         {/* Voice control: the whole interaction runs through the mic. */}

@@ -67,6 +67,7 @@ import ParameterExplorer from '../primitives/visual-primitives/math/ParameterExp
 import FormulaLab, { type FormulaLabData } from '../primitives/visual-primitives/math/FormulaLab';
 import EquationWorkspace, { type EquationWorkspaceData } from '../primitives/visual-primitives/math/EquationWorkspace';
 import FunctionSketch from '../primitives/visual-primitives/math/FunctionSketch';
+import CalendarExplorer, { type CalendarExplorerData } from '../primitives/visual-primitives/calendar/CalendarExplorer';
 import type { FunctionSketchData } from '../primitives/visual-primitives/math/FunctionSketch';
 
 import type { ShapeBuilderData, ComparisonBuilderData, NumberSequencerData, NumberBondData, MeasurementToolsData, EvalModeDefinition, NumberTracerData } from '../types';
@@ -78,12 +79,13 @@ import {
 import { ExhibitProvider } from '../contexts/ExhibitContext';
 import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { MATH_CATALOG } from '../service/manifest/catalog/math';
+import { CALENDAR_CATALOG } from '../service/manifest/catalog/calendar';
 
 interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'polygon-area-builder' | 'circle-explorer' | 'angle-workshop' | 'transformation-lab' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'measure-lab' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'spatial-path' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'formula-lab' | 'equation-workspace' | 'function-sketch';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'polygon-area-builder' | 'circle-explorer' | 'angle-workshop' | 'transformation-lab' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'measure-lab' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'calendar-explorer' | 'spatial-scene' | 'spatial-path' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'formula-lab' | 'equation-workspace' | 'function-sketch';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 type PrimitiveOption = { value: PrimitiveType; label: string; icon: string; topic: string };
@@ -221,6 +223,7 @@ const PRIMITIVE_GROUPS: Array<{ label: string; grade: string; items: PrimitiveOp
       { value: 'measurement-tools', label: 'Measurement Tools', icon: '📏', topic: 'Length, weight, capacity, and temperature measurement' },
       { value: 'analog-clock', label: 'Analog Clock', icon: '🕐', topic: 'Reading and setting time on analog clocks' },
       { value: 'time-sequencer', label: 'Time Sequencer', icon: '🕐', topic: 'daily routines and time' },
+      { value: 'calendar-explorer', label: 'Calendar Explorer', icon: '📅', topic: 'days of the week and reading a calendar' },
       { value: 'coin-counter', label: 'Coin Counter', icon: '🪙', topic: 'coins and money' },
     ],
   },
@@ -788,7 +791,7 @@ const PrimitiveRenderer: React.FC<{
       // ShapeSorter handles its own evaluation via usePrimitiveEvaluation hook
       return (
         <ShapeSorter
-          data={data as any}
+          data={{ ...(data as any), instanceId }}
           className="w-full"
         />
       );
@@ -804,7 +807,7 @@ const PrimitiveRenderer: React.FC<{
       // ShapeTracer handles its own evaluation via usePrimitiveEvaluation hook
       return (
         <ShapeTracer
-          data={data as any}
+          data={{ ...(data as Parameters<typeof ShapeTracer>[0]['data']), instanceId }}
           className="w-full"
         />
       );
@@ -814,7 +817,7 @@ const PrimitiveRenderer: React.FC<{
       // MathFactFluency handles its own evaluation via usePrimitiveEvaluation hook
       return (
         <MathFactFluency
-          data={data as any}
+          data={{ ...(data as Parameters<typeof MathFactFluency>[0]['data']), instanceId }}
           className="w-full"
         />
       );
@@ -891,6 +894,8 @@ const PrimitiveRenderer: React.FC<{
           }}
         />
       );
+    case 'calendar-explorer':
+      return <CalendarExplorer data={{ ...(data as CalendarExplorerData), instanceId }} />;
     case 'spatial-scene':
       return (
         <SpatialScene
@@ -1433,7 +1438,7 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
   const selectedOption = PRIMITIVE_OPTIONS.find(p => p.value === selectedPrimitive)!;
 
   // Look up eval modes from the catalog for the selected primitive
-  const catalogEntry = MATH_CATALOG.find(c => c.id === selectedPrimitive);
+  const catalogEntry = [...MATH_CATALOG, ...CALENDAR_CATALOG].find(c => c.id === selectedPrimitive);
   const evalModes: EvalModeDefinition[] = catalogEntry?.evalModes ?? [];
 
   // Topic from the selected primitive — used by EvaluationProvider for curriculum mapping

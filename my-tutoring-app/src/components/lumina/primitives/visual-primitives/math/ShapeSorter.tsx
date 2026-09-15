@@ -83,6 +83,8 @@ import {
 } from './shapeSorterScript';
 import RealWorldShapeObject from '../shared/RealWorldShapeObject';
 import type { RealWorldShapeObjectId } from '../shared/realWorldShapeObjects';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { shapeSorterPipPose } from '../../../pip/shapeSorterPipPose';
 
 // Re-exported: the geometry table used to live here and the generator kept a
 // hand-synced copy of it. It has one home now (the script module, which is not
@@ -468,6 +470,23 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
     }));
   }, [evaluation.hasSubmitted, runner.summary, items]);
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase onto the shape the ask calls "this
+  // shape"; Pip never answers, points at a mat, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, false);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(['shape', 'mats'], (id) => (id === 'shape' ? 'This shape' : 'The mats'));
+    const pose = shapeSorterPipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      visibleIds: targets.map((target) => target.id),
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Shape sorter', dock: pip.dock.current, targets, pose };
+  });
+
   // ============================================================================
   // Render
   // ============================================================================
@@ -512,7 +531,8 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
             const baseSize = 40 * (SIZE_SCALE[s.size] || 1);
             const isCurrent = i === item.shapeIndex;
             return (
-              <g key={`${s.shape}-${i}`}>
+              <g key={`${s.shape}-${i}`} ref={isCurrent ? pip.ref('shape') : undefined}
+                data-pip-object={isCurrent ? 'shape' : undefined}>
                 {isCurrent && (
                   <circle
                     cx={cx} cy={cy} r={cellSize / 2 - 6}
@@ -536,7 +556,8 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
   /** The single shape a counting item examines, drawn large. */
   const renderCountStage = (item: ShapeSorterItem, shape: ShapeSorterShape) => (
     <div className="flex justify-center">
-      <svg width={220} height={220} viewBox="0 0 220 220" role="img" aria-label="Shape to count">
+      <svg ref={pip.ref('shape')} data-pip-object="shape"
+        width={220} height={220} viewBox="0 0 220 220" role="img" aria-label="Shape to count">
         {renderShapeSVG(shape.shape, 110, 110, 110, shape.color, shape.rotation, {
           showCorners: item.showCornerHints,
         })}
@@ -546,7 +567,8 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
 
   /** One familiar object at a time. Its label names the object, never the shape. */
   const renderRealObjectStage = (item: ShapeSorterItem) => item.realObjectId ? (
-    <div className="flex justify-center rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-5">
+    <div ref={pip.ref('shape')} data-pip-object="shape"
+      className="flex justify-center rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-5">
       <RealWorldShapeObject objectId={item.realObjectId} className="h-48 w-48" />
     </div>
   ) : null;
@@ -558,7 +580,8 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
    * tier's withdrawal lives in the ask instead (`namesChoices`).
    */
   const renderMats = (item: ShapeSorterItem) => (
-    <div className={`grid gap-4 ${item.choices.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+    <div ref={pip.ref('mats')} data-pip-object="mats"
+      className={`grid gap-4 ${item.choices.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
       {item.choices.map((label, idx) => {
         const placed = placedByChoice.get(label) ?? 0;
         const isRevealed = revealedChoice === label;
@@ -644,6 +667,11 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
                 <div className="flex justify-center">
                   <LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} />
                 </div>
+
+                {/* Pip's dock sits between the shape and the mats, so a pointer
+                    to the shape never crosses a sort answer. */}
+                {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                  className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
 
                 {currentItem.mode === 'sort' && renderMats(currentItem)}
 

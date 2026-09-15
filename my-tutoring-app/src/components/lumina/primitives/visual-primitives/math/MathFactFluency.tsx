@@ -23,6 +23,9 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { mathFactFluencyPipPose } from '../../../pip/mathFactFluencyPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -378,7 +381,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
     challenges.length, currentChallengeIndex, maxNumber, gradeBand, targetResponseTime,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'math-fact-fluency',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -713,6 +716,36 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
   }, [allChallengesComplete, challenges, challengeResults]);
 
   // -------------------------------------------------------------------------
+  // Pip shared surface
+  // -------------------------------------------------------------------------
+  // A projection of this fact's check state, the tutor's speech on it, and the
+  // child's last touch; Pip never picks an answer, checks, or advances. Tutor
+  // audio counts only while the tutor is on this block and began on this fact.
+  const pip = usePipTargets(currentChallenge?.id ?? null, !isCurrentChallengeComplete && !allChallengesComplete);
+  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const speechOnFact = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
+    const targets = pip.targets();
+    const pose = mathFactFluencyPipPose({
+      running: true, preparing: false, currentSolved: isCurrentChallengeComplete, revealHeld: false,
+      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnFact,
+      type: currentChallenge.type, matchDirection: currentChallenge.matchDirection,
+      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Math facts',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+  // Pip's dock sits between what the fact is read from (above) and the answer
+  // choices (below), so a pointer to the picture or equation never crosses a choice.
+  const pipDock = pipStore && (
+    <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+      className="mx-auto my-3 flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+  );
+
+  // -------------------------------------------------------------------------
   // Render helpers
   // -------------------------------------------------------------------------
   // Grading-state color language for the answerable options comes from the kit
@@ -731,9 +764,11 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
         return (
           <button
             key={opt}
+            ref={pip.ref(`option-${opt}`)}
+            data-pip-object={`option-${opt}`}
             type="button"
             className={`w-16 h-16 text-2xl font-bold border rounded-xl transition-all duration-200 ${answerStateClass(state)}`}
-            onClick={() => handleSelectOption(opt)}
+            onClick={() => { pip.look(`option-${opt}`); handleSelectOption(opt); }}
             disabled={isCurrentChallengeComplete || allChallengesComplete}
           >
             {opt}
@@ -759,11 +794,11 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
 
   const renderTypedInput = () => (
     <div className="flex flex-col items-center gap-3">
-      <div className="flex items-center gap-2">
+      <div ref={pip.ref('entry')} data-pip-object="entry" className="flex items-center gap-2">
         {/* Minus button */}
         <LuminaButton
           className="w-14 h-14 text-2xl font-bold rounded-xl"
-          onClick={handleDecrement}
+          onClick={() => { pip.look('entry'); handleDecrement(); }}
           disabled={numericValue <= 0 || isCurrentChallengeComplete || allChallengesComplete}
         >
           &minus;
@@ -779,7 +814,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
         {/* Plus button */}
         <LuminaButton
           className="w-14 h-14 text-2xl font-bold rounded-xl"
-          onClick={handleIncrement}
+          onClick={() => { pip.look('entry'); handleIncrement(); }}
           disabled={isCurrentChallengeComplete || allChallengesComplete}
         >
           +
@@ -788,7 +823,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
 
       <LuminaActionButton
         action="check"
-        onClick={handleTypedSubmit}
+        onClick={() => { pip.look('entry'); handleTypedSubmit(); }}
         disabled={typedAnswer === '' || isCurrentChallengeComplete || allChallengesComplete}
       >
         Submit
@@ -798,7 +833,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
 
   const renderMatchEquationOptions = (eqOptions: string[]) => (
     <div className="grid grid-cols-2 gap-2 max-w-md mx-auto">
-      {eqOptions.map((eq) => {
+      {eqOptions.map((eq, idx) => {
         const isSelected = selectedEquation === eq;
         const eqResultVal = parseInt(eq.split('=').pop()?.trim() ?? '', 10);
         const isCorrectOpt = currentChallenge && eqResultVal === currentChallenge.correctAnswer;
@@ -810,9 +845,11 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
         return (
           <button
             key={eq}
+            ref={pip.ref(`equation-${idx}`)}
+            data-pip-object={`equation-${idx}`}
             type="button"
             className={`h-12 text-lg font-mono border rounded-xl transition-all ${answerStateClass(state)}`}
-            onClick={() => handleSelectEquation(eq)}
+            onClick={() => { pip.look(`equation-${idx}`); handleSelectEquation(eq); }}
             disabled={isCurrentChallengeComplete || allChallengesComplete}
           >
             {eq}
@@ -835,9 +872,11 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
         return (
           <button
             key={idx}
+            ref={pip.ref(`picture-${idx}`)}
+            data-pip-object={`picture-${idx}`}
             type="button"
             className={`p-3 rounded-lg border transition-all ${answerStateClass(state)}`}
-            onClick={() => handleSelectVisual(idx)}
+            onClick={() => { pip.look(`picture-${idx}`); handleSelectVisual(idx); }}
             disabled={isCurrentChallengeComplete || allChallengesComplete}
           >
             {/* Bespoke interaction surface — the SVG visual the student picks. */}
@@ -910,7 +949,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
           <div className="relative">
             {/* Visual Aid (visual-fact phase) — bespoke SVG interaction surface */}
             {currentChallenge.type === 'visual-fact' && currentChallenge.visualType && (
-              <div className="mb-4 p-4 bg-slate-800/20 rounded-xl border border-white/5">
+              <div ref={pip.ref('visual')} data-pip-object="visual" className="mb-4 p-4 bg-slate-800/20 rounded-xl border border-white/5">
                 <VisualAid
                   type={currentChallenge.visualType}
                   count={currentChallenge.visualCount ?? currentChallenge.correctAnswer}
@@ -921,7 +960,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
             {/* Equation Display — bespoke math readout */}
             {(currentChallenge.type !== 'match' || currentChallenge.matchDirection === 'equation-to-visual') && (
               <div className="text-center py-6">
-                <span className="text-5xl font-bold text-slate-100 font-mono tracking-wider">
+                <span ref={pip.ref('problem')} data-pip-object="problem" className="text-5xl font-bold text-slate-100 font-mono tracking-wider">
                   {formatEquation(currentChallenge)}
                 </span>
               </div>
@@ -930,12 +969,13 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
             {/* Match: Visual-to-equation — show visual then equation options */}
             {currentChallenge.type === 'match' && currentChallenge.matchDirection === 'visual-to-equation' && (
               <div className="space-y-4">
-                <div className="p-4 bg-slate-800/20 rounded-xl border border-white/5">
+                <div ref={pip.ref('visual')} data-pip-object="visual" className="p-4 bg-slate-800/20 rounded-xl border border-white/5">
                   <VisualAid
                     type={currentChallenge.visualType || 'dot-array'}
                     count={currentChallenge.visualCount ?? currentChallenge.correctAnswer}
                   />
                 </div>
+                {pipDock}
                 {currentChallenge.equationOptions && renderMatchEquationOptions(currentChallenge.equationOptions)}
               </div>
             )}
@@ -943,11 +983,13 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
             {/* Match: Equation-to-visual — show equation then visual options */}
             {currentChallenge.type === 'match' && currentChallenge.matchDirection === 'equation-to-visual' && currentChallenge.visualOptions && (
               <div className="space-y-4">
+                {pipDock}
                 {renderMatchVisualOptions(currentChallenge.visualOptions)}
               </div>
             )}
 
             {/* Answer Inputs (non-match types) */}
+            {currentChallenge.type !== 'match' && pipDock}
             {currentChallenge.type !== 'match' && (
               <div className="mt-4">
                 {currentChallenge.options && currentChallenge.options.length > 0

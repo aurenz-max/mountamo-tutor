@@ -1,4 +1,5 @@
-// Layout check for a Pip surface in the real Math Primitives helper (headless Chromium).
+// Layout check for a Pip surface in a real primitive helper (headless Chromium): Math
+// Primitives by default, or PIP_HELPER="Language Arts" for the literacy helper.
 // Selects a primitive (+ optional eval mode), generates, runs actions, and logs every
 // Pip transition: dock identity vs host anchor, body count, phase/gesture, pointed
 // target, dock/object overlap, horizontal overflow, and regeneration.
@@ -9,7 +10,7 @@
 //   click:<css>   draw:<css>   wait:   start (press the primitive's Start control)
 //   speak:<sec>   inject <sec> of silent tutor audio (signs in; needs a live tutor socket)
 // Pip needs no session; the run signs in only for `start`/`speak:`.
-// Env: PIP_DRIVE_OUT, PIP_CHROME, LUMINA_ENV_FILE (TEST_USER_EMAIL / TEST_USER_PASSWORD).
+// Env: PIP_HELPER, PIP_DRIVE_OUT, PIP_CHROME, LUMINA_ENV_FILE (TEST_USER_EMAIL / TEST_USER_PASSWORD).
 import { chromium } from 'playwright-core';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -24,10 +25,21 @@ fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 const needsTutor = /speak:|(^|;)start(;|$)/.test(actionsArg);
 
+// Chromium's default fake microphone plays a tone. On a voice pack it opens a turn
+// the moment the mic arms and interrupts the tutor before a word is spoken, so capture
+// is fed a silent WAV instead.
+const silence = path.join(out, 'silence.wav');
+{
+  const n = 16000 * 30; const wav = Buffer.alloc(44 + n * 2);
+  wav.write('RIFF', 0); wav.writeUInt32LE(36 + n * 2, 4); wav.write('WAVEfmt ', 8); wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22); wav.writeUInt32LE(16000, 24); wav.writeUInt32LE(32000, 28);
+  wav.writeUInt16LE(2, 32); wav.writeUInt16LE(16, 34); wav.write('data', 36); wav.writeUInt32LE(n * 2, 40);
+  fs.writeFileSync(silence, wav);
+}
 const browser = await chromium.launch({
   executablePath: process.env.PIP_CHROME ?? 'C:/Users/xbox3/AppData/Local/ms-playwright/chromium-1169/chrome-win/chrome.exe',
   headless: true,
-  args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required'],
+  args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-audio-capture=${silence}`, '--autoplay-policy=no-user-gesture-required'],
 });
 // The helper sidebar is not responsive: generate at 1400, then shrink.
 const context = await browser.newContext({ viewport: { width: Math.max(width, 1400), height: 1000 }, permissions: ['microphone'] });
@@ -78,18 +90,18 @@ if (needsTutor) {
 await page.waitForTimeout(6000); // a click before hydration is swallowed
 await page.getByText('Developer Tools').first().click();
 for (let i = 0; i < 10; i++) {
-  await page.getByText('Math Primitives', { exact: true }).first().click().catch(() => {});
+  await page.getByText(process.env.PIP_HELPER ?? 'Math Primitives', { exact: true }).first().click().catch(() => {});
   await page.waitForTimeout(1500);
-  if (await page.getByRole('button', { name: /Generate with AI/ }).count()) break;
+  if (await page.getByRole('button', { name: /Generate with AI|Generate Content/ }).count()) break;
 }
 await page.getByRole('button', { name: new RegExp(label) }).first().click();
 if (modeLabel) await page.getByRole('button', { name: new RegExp(`^${modeLabel}`) }).first().click();
 
 const generate = async () => {
-  await page.getByRole('button', { name: /Generate with AI/ }).click({ force: true });
+  await page.getByRole('button', { name: /Generate with AI|Generate Content/ }).click({ force: true });
   await page.waitForTimeout(300);
   await page.waitForFunction(() => {
-    const b = [...document.querySelectorAll('button')].find((x) => /Generate with AI/.test(x.textContent || ''));
+    const b = [...document.querySelectorAll('button')].find((x) => /Generate with AI|Generate Content/.test(x.textContent || ''));
     return b && !b.disabled;
   }, null, { timeout: 180000 }).catch(() => note({ error: 'generation did not finish' }));
   await page.waitForTimeout(1500);

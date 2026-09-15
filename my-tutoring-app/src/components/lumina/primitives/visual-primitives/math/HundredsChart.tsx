@@ -24,6 +24,9 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { hundredsChartPipPose } from '../../../pip/hundredsChartPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -222,7 +225,7 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
     supportTier: currentChallenge?.supportTier ?? '',
   }), [title, currentChallenge, currentAttempts, selectedCells.size]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'hundreds-chart',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -460,6 +463,31 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
   const showNext = lastResult?.correct && !allChallengesComplete &&
     challengeResults.length === currentChallengeIndex + 1;
 
+  // -------------------------------------------------------------------------
+  // Pip shared surface
+  // -------------------------------------------------------------------------
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the cell or option the child last touched; Pip never selects, checks, or
+  // advances. Tutor audio counts only while the tutor is on this block and began
+  // on this challenge.
+  const currentSolved = challengeResults.some(r => r.challengeId === currentChallenge?.id && r.correct);
+  const pip = usePipTargets(currentChallenge?.id ?? null, !currentSolved && !allChallengesComplete);
+  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || allChallengesComplete) return null;
+    const targets = pip.targets();
+    const pose = hundredsChartPipPose({
+      running: true, preparing: false, currentSolved, revealHeld: false,
+      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
+      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Hundreds chart',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   // Overall score for summary panel
   const localOverallScore = useMemo(() => {
     if (challengeResults.length === 0) return 0;
@@ -517,6 +545,7 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
 
         {/* Hundreds Chart Grid — bespoke drag-to-paint interaction surface */}
         <div className="flex justify-center">
+          <div ref={pip.ref('chart')} data-pip-object="chart">
           <div
             ref={gridRef}
             className="grid gap-[2px] w-fit select-none"
@@ -543,15 +572,18 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
                 <button
                   key={num}
                   data-cell={num}
+                  ref={pip.ref(`cell-${num}`)}
+                  data-pip-object={`cell-${num}`}
                   onMouseDown={(e) => {
                     e.preventDefault(); // prevent text selection
-                    if (clickable) handlePointerDown(num);
+                    if (clickable) { pip.look(`cell-${num}`); handlePointerDown(num); }
                   }}
                   onMouseEnter={() => {
+                    if (clickable && isDraggingRef.current) pip.look(`cell-${num}`);
                     if (clickable) handlePointerEnter(num);
                   }}
                   onTouchStart={() => {
-                    if (clickable) handlePointerDown(num);
+                    if (clickable) { pip.look(`cell-${num}`); handlePointerDown(num); }
                   }}
                   disabled={!clickable && !isGiven}
                   className={`
@@ -568,7 +600,15 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
               );
             })}
           </div>
+          </div>
         </div>
+
+        {/* Pip's dock sits between the chart and the answers below it
+            (options, Check), so an outline on the chart never crosses a choice. */}
+        {pipStore && !allChallengesComplete && (
+          <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+            className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+        )}
 
         {/* Multiple choice options */}
         {isMultipleChoice && currentChallenge && !allChallengesComplete && (
@@ -584,8 +624,10 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
               return (
                 <LuminaAnswerChoice
                   key={opt}
+                  ref={pip.ref(`option-${opt}`)}
+                  data-pip-object={`option-${opt}`}
                   state={state}
-                  onClick={() => handleOptionSelect(opt)}
+                  onClick={() => { pip.look(`option-${opt}`); handleOptionSelect(opt); }}
                   disabled={answeredCorrect}
                   className="w-auto p-3 text-center"
                 >

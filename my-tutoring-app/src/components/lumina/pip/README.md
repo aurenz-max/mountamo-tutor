@@ -65,11 +65,43 @@ Objects hidden by a flash, the count-on basket, or removal are not published.
 | Sorting Station | the named focus card; the tray a count ask names | a tray or card that could be the answer |
 | Compare Objects | the drawing as a whole | an object or name button |
 | Comparison Builder | the workspace as a whole | any answer choice |
+| Ten Frame | the frame as a whole, on every mode (on subitize, before the flash) | a box or counter; on subitize, nothing on the frame is followed |
+| Addition & Subtraction Scene | the story picture; the empty equation tray on build-equation | an object, a tile, the add button |
+| Bar Model | the whole graph; the row the screen already highlights (read modes); the group to count (match a group); the controls (build graph) | a row on most/fewest, compare, or match; a row whose highlight the tier withdrew; a number option |
+| Length Lab | the objects side by side; the clues; the object with the row its units go in | a unit tick, the tile count, an answer or guess button |
+| Analog Clock | the clock face as a region; the option faces on hear-the-time | a hand (a touch on the dial is watched as the dial), a numeral, an option |
+| Time Sequencer | the ordering list as a whole; the event card a time-of-day or before/after question names; the duration pair as a whole; the schedule table | a card to order, a period, an option card, a duration button, a schedule row or activity |
+| Pattern Builder | the next empty "?" slot (extend, find the rule), or the row once every slot is filled; the row as a whole (identify the core); the build zone (create, translate) | a palette token; a single token of the row on identify |
+| Shape Sorter | the one shape the screen rings (or draws alone) on every mode | a mat; any other shape in the pool |
+| DI Spoken Practice | the stimulus panel as a whole; nothing on a listen-only item | one picture of a compare pair; one object of a count |
+| DI Math Facts | the printed problem (its own loop phases mapped onto the gate; the reward beat celebrates) | the completed equation; anything while praise for the previous fact is still playing |
+| Measure Lab | the object pair before the prediction, then the scale; both containers (holds more, least to most); the container while pouring, then the cups row | one object or container; a number option |
+| Math Fact Fluency | the dots, frame or fingers (visual fact, picture-to-equation match); otherwise the printed equation | a number, equation or picture choice; the stepper |
+| Number Line | the whole line (plot, find between); the marked start point (jump); the chips as a row (order) | a tick, a label, or a place where a hop lands |
+| Calendar Explorer | the grid when a date is the answer; the starred "today" cell when an option is the answer; the start-day card (days forward); the listen card on the spoken chain | a date cell that could be the answer; the target-day column; an option |
+| DI Shapes | the whole drawn shape or object (its own loop phases mapped onto the gate; the reward beat celebrates) | one side or corner; the labeled reward; anything while praise for the previous shape is still playing |
+| Equation Builder | the empty slot row (build, rewrite); the printed "?" (missing value, balance); the whole printed equation (true or false) | a tile in the pool, a number option, True or False, the number box |
+| Shape Tracer | the canvas as a whole, on every mode | a dot or vertex (the next dot is the answer once a tier withdraws the numbers and the next-dot ring); a grid corner |
+| Shape Composer | the canvas as a whole — silhouette, picture or composite — on every mode | a palette piece, a decompose shape button, where a piece goes |
+| Hundreds Chart | the chart as a whole, on every mode | a cell; an option |
+| Balance Scale (equality) | the right pan (build); the gathered right-side weights (say the total); the unnumbered left weight (find the left weight) | a tray weight, a placed block |
+| DI Word Reading | the whole printed word, on every mode | one letter; anything while praise for the previous word is still playing |
+| Phonics Blender | the letter row as a whole, on every mode and tier | one letter card (a ring would draw the segmentation the hard tier removes) |
+| CVC Speller | the "?" box (middle sound); the word's picture (sound groups); the box row (spell it) | a vowel column; a bank letter; on sound groups with the picture withdrawn, nothing |
+| Letter Spotter | the star over the hidden letter (name it); the grid as a whole (find it); the big letter (match it) | a grid cell; a little letter |
+| Word Sorter | the word card, on every mode | a mat, its picture, a bank word |
 
-Hands answers (order cards, split, tiles, picture placement, ordering taps, ink) are
-followed with `look` and received with `receive` while judged. Docks sit so that a
+Hands answers (order cards, split, tiles, picture placement, ordering taps, ink, a balanced pan, a
+spelled word) are followed with `look` and received with `receive` while judged. A single
+committed tap (Letter Spotter) is followed with `look`, not received. Docks sit so that a
 pointer to the cue does not cross an answer surface. Pip's pose never calls the
 child's handler, advances the runner, or writes an evaluation.
+
+The three packs that run `useJudgedSpeechLoop` directly (DI Word Reading, Phonics
+Blender, CVC Speller) open the next item on the affirming verdict, before the praise
+is spoken. Each records the item its loop's last *sent* cue was about (`onCue`), the
+runner's `cuedItemId` in miniature: speech counts as a cue only once that id names the
+item on screen, and the praise is held as the confirmed result until then.
 
 ## Trying it
 
@@ -77,6 +109,8 @@ Math Primitives helper: select an integrated primitive and generate. Pip appears
 the dock immediately — idle for judged primitives until Start, working for classic
 ones — and follows touches without any session. Start the lesson to hear cues and
 see pointing. Regenerating or selecting another primitive removes the old surface.
+The Language Arts helper hosts the four literacy primitives the same way; DI Word
+Reading is in the Direct Instruction Lab.
 
 Preview: `/lumina/pip-surface` (also in Pip Lab) demos the actor with local phase
 controls; it does not verify a primitive.
@@ -84,4 +118,4 @@ controls; it does not verify a primitive.
 Verification: `pip/*.test.ts(x)` — store activation, phase gate, speech scope, one
 surface test per primitive, and the helper attach test (real helper, companion and
 actor, no session). Browser layout check: `.claude/skills/add-pip-surface/scripts/`.
-Run log: `qa/pip-surface/sweep-2026-09-14.md`.
+Run logs: `qa/pip-surface/`.

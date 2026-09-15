@@ -10,11 +10,15 @@ import type { BalanceScaleMetrics } from '../../../evaluation/types';
 import { useJudgedScriptRunner, type JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { balanceEqualityPipPose } from '../../../pip/balanceEqualityPipPose';
 import type { BalanceScaleData } from './BalanceScale';
 import { addWeight, removeWeight, balanceState, describeBoard, equalityFeedback, equalityProblem, initialBoard,
   demonstratedBoard, isMatched, WEIGHTS, type WeightBlock, type EqualityBoard, type EqualityChange } from './balanceEqualityModel';
 import { equalityItems, equalityItemCue, equalityChangeCue, equalityCheckCue, equalityCompleteCue,
   equalityHearCue, equalityMoveCue, type EqualityItem } from './balanceEqualityScript';
+
+const PIP_LABELS: Record<string, string> = { left: 'Left weight', right: 'Right pan', sum: 'Right-side weights', tray: 'Weight tray' };
 
 export default function BalanceScaleEquality({ data, className }: { data: BalanceScaleData; className?: string }) {
   const built = useMemo(() => {
@@ -97,6 +101,7 @@ export default function BalanceScaleEquality({ data, className }: { data: Balanc
   const runner = useJudgedScriptRunner({ pack, instanceId: instance.current,
     gradeLevel: data.gradeLevel ?? 'elementary', exhibitId: data.exhibitId, silenceCloseMs: 1100, onFinished: finish,
     onItemOpened: (item, index) => {
+      pip.clear();
       if (index === 0) { boards.current = {}; histories.current = {}; undoStacks.current = {}; helped.current.clear(); }
       if (item.step === 'build') {
         boards.current[item.problem.id] = initialBoard(item.problem);
@@ -115,6 +120,22 @@ export default function BalanceScaleEquality({ data, className }: { data: Balanc
   const item = runner.currentItem;
   const canChange = !!item && item.step === 'build' && runner.canAttempt
     && runner.cuedItemId === item.id && !runner.isAwaitingGesture();
+
+  // Pip's pose is a projection of the runner's phase and the child's own weight
+  // moves; nothing here places a weight, answers, advances, or grades.
+  const pip = usePipTargets(item?.id ?? null, canChange);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !item || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(undefined, (id) => PIP_LABELS[id] ?? id);
+    const pose = balanceEqualityPipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === item.id,
+      step: item.step, visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: instance.current, scopeId: item.id, label: 'Balance scale', dock: pip.dock.current, targets, pose };
+  });
 
   const publishBoard = (next: EqualityBoard, description: string, pushUndo = true) => {
     if (!item || !canChange || runner.isAwaitingGesture()) return;
@@ -138,13 +159,13 @@ export default function BalanceScaleEquality({ data, className }: { data: Balanc
   const place = (value: number) => {
     if (!item || !canChange) return;
     const next = addWeight(boardFor(item), value, nextBlockId.current++);
-    if (next) publishBoard(next, `Added a ${value} weight to the right`);
+    if (next) { pip.look('right'); publishBoard(next, `Added a ${value} weight to the right`); }
   };
   const remove = (id: number) => {
     if (!item || !canChange) return;
     const current = boardFor(item);
     const block = current.blocks.find((entry) => entry.id === id);
-    if (block) publishBoard(removeWeight(current, id), `Removed a ${block.value} weight from the right`);
+    if (block) { pip.look('tray'); publishBoard(removeWeight(current, id), `Removed a ${block.value} weight from the right`); }
   };
 
   if (!item || built.error) return <LuminaCard className={className}><LuminaCardContent>
@@ -183,12 +204,12 @@ export default function BalanceScaleEquality({ data, className }: { data: Balanc
             <div className="grid grid-cols-2 items-end gap-5">
               <section aria-label="left pan" className="flex min-h-56 flex-col items-center justify-end gap-3 pb-3 transition-transform duration-500 motion-reduce:transition-none"
                 style={{ transform: `translateY(${state === 'left-heavy' ? 12 : state === 'right-heavy' ? -12 : 0}px)` }}>
-                <div aria-label="Left weight; number hidden" className="w-9 rounded-sm border border-purple-200/70 bg-purple-400/70"
+                <div ref={pip.ref('left')} data-pip-object="left" aria-label="Left weight; number hidden" className="w-9 rounded-sm border border-purple-200/70 bg-purple-400/70"
                   style={{ height: item.problem.target * 8 }} />
                 <span className="text-sm text-purple-200">Left weight</span>
                 <div className="h-2 w-full rounded-b-xl bg-purple-300/70" />
               </section>
-              <section aria-label="right pan" className="flex min-h-56 flex-col items-center justify-end gap-3 pb-3 transition-transform duration-500 motion-reduce:transition-none"
+              <section ref={pip.ref('right')} data-pip-object="right" aria-label="right pan" className="flex min-h-56 flex-col items-center justify-end gap-3 pb-3 transition-transform duration-500 motion-reduce:transition-none"
                 style={{ transform: `translateY(${state === 'right-heavy' ? 12 : state === 'left-heavy' ? -12 : 0}px)` }}>
                 <div className="flex min-h-20 flex-wrap items-end justify-center gap-2">
                   {!gathered ? board.blocks.map(drawBlock) : <span className="text-sm text-cyan-200">Matched with the blocks below</span>}
@@ -206,7 +227,11 @@ export default function BalanceScaleEquality({ data, className }: { data: Balanc
           <p className="text-center font-medium text-cyan-200" aria-live="polite">
             {state === 'balanced' ? 'Balanced - equal weight' : state === 'left-heavy' ? 'Left side is heavier' : 'Right side is heavier'}
           </p>
-          {gathered && <section aria-label="Add your right-side weights" className="space-y-3 rounded-2xl border border-cyan-300/30 p-4">
+          {/* Pip's dock sits under the scale and above the tray and the gathered
+              weights, so a pointer to the left weight never crosses a tray weight. */}
+          {pipStore && <div ref={pip.dock} data-pip-dock={instance.current}
+            className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
+          {gathered && <section ref={pip.ref('sum')} data-pip-object="sum" aria-label="Add your right-side weights" className="space-y-3 rounded-2xl border border-cyan-300/30 p-4">
             <p className="text-center text-sm text-cyan-200">Your right-side weights, together</p>
             <div className="flex flex-wrap items-end justify-center gap-1">
               {board.blocks.map((block, index) => <React.Fragment key={block.id}>
@@ -220,7 +245,7 @@ export default function BalanceScaleEquality({ data, className }: { data: Balanc
           </section>}
         </LayoutGroup>
         {item.step === 'build' && <div className="space-y-3">
-          <div className="flex flex-wrap items-end justify-center gap-3" aria-label="Weight tray">
+          <div ref={pip.ref('tray')} data-pip-object="tray" className="flex flex-wrap items-end justify-center gap-3" aria-label="Weight tray">
             {WEIGHTS.map((value) => <button key={value} type="button" disabled={!canChange || !addWeight(board, value, nextBlockId.current)}
               onClick={() => place(value)} aria-label={`Add ${value} weight`}
               className="flex min-h-20 min-w-14 flex-col items-center justify-end gap-2 rounded-xl border border-cyan-300/30 p-2 disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-200">
@@ -232,10 +257,10 @@ export default function BalanceScaleEquality({ data, className }: { data: Balanc
             <LuminaButton size="sm" disabled={!canChange || !undoStacks.current[item.problem.id]?.length} onClick={() => {
               if (!canChange || runner.isAwaitingGesture()) return;
               const previous = undoStacks.current[item.problem.id]?.pop();
-              if (previous) publishBoard(previous, 'Undid the last change', false);
+              if (previous) { pip.look('right'); publishBoard(previous, 'Undid the last change', false); }
             }}>Undo</LuminaButton>
             <LuminaButton size="sm" disabled={!canChange || !board.blocks.length}
-              onClick={() => publishBoard(initialBoard(), 'Cleared the right pan')}>Clear weights</LuminaButton>
+              onClick={() => { pip.look('tray'); publishBoard(initialBoard(), 'Cleared the right pan'); }}>Clear weights</LuminaButton>
           </div>
           <p className="text-center text-sm text-slate-300" aria-live="polite">{feedback}</p>
         </div>}

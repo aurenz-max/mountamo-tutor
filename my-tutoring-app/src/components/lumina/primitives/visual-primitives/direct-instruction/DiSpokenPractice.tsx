@@ -56,6 +56,8 @@ import {
   type SpokenPracticeItem,
   type SpokenPracticeMode,
 } from './diSpokenPracticeScript';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { diSpokenPracticePipPose } from '../../../pip/diSpokenPracticePipPose';
 
 export type { SpokenPracticeItem, SpokenPracticeMode } from './diSpokenPracticeScript';
 
@@ -184,6 +186,23 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
     }));
   }, [hasSubmitted, runner.summary, items]);
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase onto the stimulus panel as a whole; Pip
+  // never answers, singles out a picture, or advances.
+  const pip = usePipTargets(item?.id ?? null, false);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !item || hasSubmitted) return null;
+    const targets = pip.targets(['stimulus'], () => 'The picture or words to answer about');
+    const pose = diSpokenPracticePipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === item.id,
+      stimulusKind: item.stimulusKind, visibleIds: targets.map((target) => target.id),
+    });
+    return { instanceId: resolvedInstanceId, scopeId: item.id, label: 'Spoken practice', dock: pip.dock.current, targets, pose };
+  });
+
   // ── Stimulus ──────────────────────────────────────────────────────────────
   // The ONLY thing this component renders that a bespoke pack would. Nothing
   // here may name the answer: 'objects' draws pictures and never a numeral,
@@ -275,9 +294,13 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
               />
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-8">
+            <div ref={pip.ref('stimulus')} data-pip-object="stimulus"
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-8">
               {renderStimulus()}
             </div>
+
+            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
 
             {canHear && (
               <div className="flex justify-center">

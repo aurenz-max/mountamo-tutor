@@ -23,6 +23,10 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import type { PipTarget } from '../../../pip/PipSurfaceStore';
+import { lengthLabPipPose } from '../../../pip/lengthLabPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -205,9 +209,12 @@ interface TilingWorkspaceProps {
    *  wider, so "fewer of them reach the end" is something the child SEES rather
    *  than something the feedback line tells them. */
   unitSpan?: number;
+  /** Pip's target: the object together with the row its units go in, never the count. */
+  pipRef?: (element: Element | null) => void;
+  pipId?: string;
 }
 
-function TilingWorkspace({ objectName, objectLength, objectColor, unitType, correctCount, onComplete, disabled, showAlignmentFeedback = true, unitSpan = 1 }: TilingWorkspaceProps) {
+function TilingWorkspace({ objectName, objectLength, objectColor, unitType, correctCount, onComplete, disabled, showAlignmentFeedback = true, unitSpan = 1, pipRef, pipId }: TilingWorkspaceProps) {
   const [placedUnits, setPlacedUnits] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const objectWidthPx = Math.min(objectLength, MAX_BAR_UNITS) * UNIT_WIDTH;
@@ -243,40 +250,42 @@ function TilingWorkspace({ objectName, objectLength, objectColor, unitType, corr
 
   return (
     <div className="space-y-4">
-      {/* Object to measure */}
-      <div className="space-y-1">
-        <span className="text-slate-400 text-xs uppercase tracking-wider">Object: {objectName}</span>
-        <div
-          className="rounded-md"
-          style={{ width: `${objectWidthPx}px`, height: '28px', backgroundColor: objectColor, minWidth: '24px', opacity: 0.85 }}
-        />
-      </div>
+      <div ref={pipRef} data-pip-object={pipId} className="space-y-4">
+        {/* Object to measure */}
+        <div className="space-y-1">
+          <span className="text-slate-400 text-xs uppercase tracking-wider">Object: {objectName}</span>
+          <div
+            className="rounded-md"
+            style={{ width: `${objectWidthPx}px`, height: '28px', backgroundColor: objectColor, minWidth: '24px', opacity: 0.85 }}
+          />
+        </div>
 
-      {/* Unit tiles below */}
-      <div className="space-y-1">
-        <span className="text-slate-400 text-xs uppercase tracking-wider">Your tiles ({unitType.replace('_', ' ')})</span>
-        <div className="flex items-center gap-0 min-h-[32px]">
-          {Array.from({ length: placedUnits }).map((_, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-center border border-white/20 bg-white/10 text-lg"
-              style={{ width: `${tileWidthPx}px`, height: '28px' }}
-            >
-              {unitEmoji}
+        {/* Unit tiles below */}
+        <div className="space-y-1">
+          <span className="text-slate-400 text-xs uppercase tracking-wider">Your tiles ({unitType.replace('_', ' ')})</span>
+          <div className="flex items-center gap-0 min-h-[32px]">
+            {Array.from({ length: placedUnits }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-center border border-white/20 bg-white/10 text-lg"
+                style={{ width: `${tileWidthPx}px`, height: '28px' }}
+              >
+                {unitEmoji}
+              </div>
+            ))}
+            {placedUnits === 0 && (
+              <span className="text-slate-500 text-sm italic">Tap + to add tiles</span>
+            )}
+          </div>
+          {/* Alignment feedback (withdrawn at medium/hard support tiers) */}
+          {placedUnits > 0 && !submitted && showAlignmentFeedback && (
+            <div className="text-xs text-slate-500">
+              {unitWidthPx < objectWidthPx ? 'Not enough tiles yet...' :
+               unitWidthPx > objectWidthPx ? 'Too many tiles! Remove some.' :
+               'Looks like a perfect fit!'}
             </div>
-          ))}
-          {placedUnits === 0 && (
-            <span className="text-slate-500 text-sm italic">Tap + to add tiles</span>
           )}
         </div>
-        {/* Alignment feedback (withdrawn at medium/hard support tiers) */}
-        {placedUnits > 0 && !submitted && showAlignmentFeedback && (
-          <div className="text-xs text-slate-500">
-            {unitWidthPx < objectWidthPx ? 'Not enough tiles yet...' :
-             unitWidthPx > objectWidthPx ? 'Too many tiles! Remove some.' :
-             'Looks like a perfect fit!'}
-          </div>
-        )}
       </div>
 
       {/* Controls */}
@@ -529,7 +538,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
     supportTier: challenges.find(c => c.supportTier)?.supportTier ?? null,
   }), [unitType, data.gradeBand, challenges]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'length-lab',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -781,6 +790,45 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
     setUnitBCount(null);
   }, [advanceProgress]);
 
+  // ── Pip shared surface ──
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's last touch; Pip never measures, answers, or advances. Tutor audio
+  // counts only while the tutor is on this block.
+  const pip = usePipTargets(currentChallenge?.id ?? null, false);
+  const [pipTouched, setPipTouched] = useState<{ scopeId: string; element: Element } | null>(null);
+  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const isCurrentChallengeCorrect = !!currentChallenge
+    && challengeResults.some((r) => r.challengeId === currentChallenge.id && r.correct);
+  const pipTouch = (node: EventTarget) => {
+    if (!currentChallenge || isCurrentChallengeCorrect || !(node instanceof Element)) return;
+    setPipTouched({ scopeId: currentChallenge.id, element: node.closest('button, [role="button"]') ?? node });
+  };
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
+    const targets: PipTarget[] = pip.targets(
+      ['workspace', 'objects', 'clues', 'measure', 'measure-a', 'measure-b'],
+      (id) => (id === 'objects' ? 'The objects' : id === 'clues' ? 'The clues' : id === 'workspace' ? 'Length workspace' : 'The object and its units'),
+    );
+    const workspace = targets.find((target) => target.id === 'workspace')?.element;
+    const touched = pipTouched?.scopeId === currentChallenge.id && pipTouched.element.isConnected
+      && workspace?.contains(pipTouched.element) ? pipTouched.element : null;
+    if (touched) targets.push({ id: 'touched', label: 'Your last touch', element: touched });
+    const step = currentChallenge.type === 'estimate_then_tile' ? (estimate === null ? 'guess' : 'measure')
+      : currentChallenge.type === 'two_unit_compare'
+        ? (unitACount === null ? 'measure-a' : unitBCount === null ? 'measure-b' : 'answer')
+        : currentChallenge.type === 'tile_and_count' ? 'measure' : 'answer';
+    const pose = lengthLabPipPose({
+      running: true, preparing: false, currentSolved: isCurrentChallengeCorrect, revealHeld: false,
+      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
+      type: currentChallenge.type, step, visibleIds: targets.map((target) => target.id), hasTouch: !!touched,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Length lab',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   // ── Render challenge content ──
   const renderChallenge = () => {
     if (!currentChallenge) return null;
@@ -794,7 +842,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
         return (
           <div className="space-y-5">
             {/* Two objects on shared baseline */}
-            <div className="space-y-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
+            <div ref={pip.ref('objects')} data-pip-object="objects" className="space-y-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
               <ObjectBar name={ch.objectName0} length={ch.objectLength0} color={ch.objectColor0} maxUnits={MAX_BAR_UNITS} showTicks={ch.showUnitTicks} />
               <ObjectBar name={ch.objectName1} length={ch.objectLength1} color={ch.objectColor1} maxUnits={MAX_BAR_UNITS} showTicks={ch.showUnitTicks} />
             </div>
@@ -868,6 +916,8 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
                   onComplete={handleTileComplete}
                   disabled={allChallengesComplete}
                   showAlignmentFeedback={ch.showAlignmentFeedback !== false}
+                  pipRef={pip.ref('measure')}
+                  pipId="measure"
                 />
               </>
             )}
@@ -897,6 +947,8 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
                 onComplete={handleUnitATile}
                 disabled={allChallengesComplete}
                 showAlignmentFeedback={ch.showAlignmentFeedback !== false}
+                pipRef={pip.ref('measure-a')}
+                pipId="measure-a"
               />
             </div>
 
@@ -918,6 +970,8 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
                   onComplete={handleUnitBTile}
                   disabled={allChallengesComplete}
                   showAlignmentFeedback={ch.showAlignmentFeedback !== false}
+                  pipRef={pip.ref('measure-b')}
+                  pipId="measure-b"
                 />
               </div>
             ) : null}
@@ -974,6 +1028,8 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
             onComplete={handleTileComplete}
             disabled={allChallengesComplete}
             showAlignmentFeedback={ch.showAlignmentFeedback !== false}
+            pipRef={pip.ref('measure')}
+            pipId="measure"
           />
         );
 
@@ -981,7 +1037,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
         return (
           <div className="space-y-5">
             {/* Show all objects */}
-            <div className="space-y-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
+            <div ref={pip.ref('objects')} data-pip-object="objects" className="space-y-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
               {orderItems.map(item => (
                 <ObjectBar key={item.name} name={item.name} length={item.length} color={item.color} maxUnits={MAX_BAR_UNITS} showTicks={ch.showUnitTicks} />
               ))}
@@ -1005,7 +1061,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
         return (
           <div className="space-y-5">
             {/* Clues */}
-            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-2">
+            <div ref={pip.ref('clues')} data-pip-object="clues" className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-2">
               <span className="text-slate-400 text-xs uppercase tracking-wider">Clues</span>
               {ch.clue0 && <p className="text-slate-200 text-sm">{ch.clue0}</p>}
               {ch.clue1 && <p className="text-slate-200 text-sm">{ch.clue1}</p>}
@@ -1111,7 +1167,15 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
             <p className="text-slate-200 text-base font-medium">{currentChallenge.instruction}</p>
 
             {/* Challenge content */}
-            {renderChallenge()}
+            <div ref={pip.ref('workspace')} data-pip-object="workspace"
+              onPointerDownCapture={(event) => pipTouch(event.target)} onFocusCapture={(event) => pipTouch(event.target)}>
+              {renderChallenge()}
+            </div>
+
+            {pipStore && (
+              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+            )}
 
             {/* Hint */}
             {showHint && (

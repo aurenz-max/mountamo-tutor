@@ -21,6 +21,10 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import type { PipTarget } from '../../../pip/PipSurfaceStore';
+import { analogClockPipPose } from '../../../pip/analogClockPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -675,7 +679,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
     currentChallenge, currentAttempts,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'analog-clock',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -949,6 +953,47 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
     : 0;
 
   // -------------------------------------------------------------------------
+  // Pip shared surface
+  // -------------------------------------------------------------------------
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's last touch; Pip never moves a hand, chooses, checks, or
+  // advances. Tutor audio counts only while the tutor is on this block.
+  const pip = usePipTargets(currentChallenge?.id ?? null, false);
+  const [pipTouched, setPipTouched] = useState<{ scopeId: string; element: Element } | null>(null);
+  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const pipTouch = (node: EventTarget) => {
+    if (!currentChallenge || isCurrentChallengeCorrect || !(node instanceof Element)) return;
+    // Any touch on the dial is the dial: the hand under a dragging finger is
+    // never singled out.
+    const element = svgContainerRef.current?.contains(node)
+      ? svgContainerRef.current
+      : node.closest('button, [role="button"], [role="slider"]') ?? node;
+    setPipTouched({ scopeId: currentChallenge.id, element });
+  };
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
+    const clock = svgContainerRef.current;
+    const targets: PipTarget[] = [
+      // hear_time hides the dial; a hidden element is never published.
+      ...(clock && currentChallenge.type !== 'hear_time' ? [{ id: 'clock', label: 'The clock face', element: clock }] : []),
+      ...pip.targets(['options'], () => 'The clock choices'),
+    ];
+    const touched = pipTouched?.scopeId === currentChallenge.id && pipTouched.element.isConnected ? pipTouched.element : null;
+    if (touched && touched !== clock) targets.push({ id: 'touched', label: 'Your last touch', element: touched });
+    const pose = analogClockPipPose({
+      running: true, preparing: false, currentSolved: isCurrentChallengeCorrect, revealHeld: false,
+      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
+      type: currentChallenge.type, visibleIds: targets.map((target) => target.id),
+      touchedId: !touched ? undefined : touched === clock ? 'clock' : 'touched',
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Analog clock',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
+  // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
   return (
@@ -997,8 +1042,10 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
                 over the options showing exactly the time being asked for. */}
             <div
               ref={svgContainerRef}
+              data-pip-object="clock"
               hidden={currentChallenge?.type === 'hear_time'}
               className={`relative cursor-${currentChallenge?.type === 'set_time' ? 'grab' : 'default'} touch-none`}
+              onPointerDownCapture={(event) => pipTouch(event.target)}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
@@ -1056,8 +1103,13 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
               </div>
             )}
 
+            {pipStore && (
+              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+            )}
+
             {/* Timeline scrubber */}
-            <div className="w-full max-w-sm">
+            <div className="w-full max-w-sm" onPointerDownCapture={(event) => pipTouch(event.target)}>
               <TimelineScrubber
                 hour={displayHour}
                 minute={displayMinute}
@@ -1073,7 +1125,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
 
             {/* Stopwatch controls (elapsed mode) */}
             {currentChallenge?.type === 'elapsed' && !isCurrentChallengeCorrect && (
-              <div className="flex gap-3">
+              <div className="flex gap-3" onPointerDownCapture={(event) => pipTouch(event.target)}>
                 <LuminaButton
                   className={
                     stopwatchRunning
@@ -1097,7 +1149,8 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
                 it — the inverse of `read`, and the only mode whose options are
                 clocks rather than words. */}
             {currentChallenge && currentChallenge.type === 'hear_time' && !isCurrentChallengeCorrect && (
-              <div className="grid grid-cols-2 gap-4">
+              <div ref={pip.ref('options')} data-pip-object="options" className="grid grid-cols-2 gap-4"
+                onPointerDownCapture={(event) => pipTouch(event.target)}>
                 {getOptions(currentChallenge).map((option, i) => {
                   const [oh, om] = option.split(':').map((n) => parseInt(n, 10));
                   return (
@@ -1138,7 +1191,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
 
             {/* Multiple choice options (read / match / elapsed) */}
             {currentChallenge && ['read', 'match', 'elapsed'].includes(currentChallenge.type) && !isCurrentChallengeCorrect && (
-              <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
+              <div className="grid grid-cols-2 gap-3 w-full max-w-sm" onPointerDownCapture={(event) => pipTouch(event.target)}>
                 {getOptions(currentChallenge).map((option, i) => (
                   <button
                     key={i}

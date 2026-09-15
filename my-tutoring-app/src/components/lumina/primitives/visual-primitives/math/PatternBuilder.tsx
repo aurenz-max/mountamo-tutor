@@ -22,6 +22,9 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { patternBuilderPipPose } from '../../../pip/patternBuilderPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -350,7 +353,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
     supportTier, tutorRevealClause,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'pattern-builder',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -781,6 +784,32 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   );
 
   // -------------------------------------------------------------------------
+  // Pip shared surface
+  // -------------------------------------------------------------------------
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's last touch; Pip never places a token, checks, or advances.
+  // Tutor audio counts only while the tutor is on this block and began on this challenge.
+  const pip = usePipTargets(currentChallenge?.id ?? null, !isCurrentChallengeComplete && !hasSubmittedEvaluation);
+  const pipRef = pip.ref;
+  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
+    const targets = pip.targets();
+    const pose = patternBuilderPipPose({
+      running: true, preparing: false, currentSolved: isCurrentChallengeComplete, revealHeld: false,
+      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
+      phase: currentPhase,
+      openSlotId: extensionAnswers.length < activeSequence.hidden.length ? `slot-${extensionAnswers.length}` : undefined,
+      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Pattern builder',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
+  // -------------------------------------------------------------------------
   // Auto-submit evaluation when all challenges complete
   // -------------------------------------------------------------------------
   const hasAutoSubmittedRef = useRef(false);
@@ -829,6 +858,8 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
     isSelected?: boolean;
     isCoreHighlight?: boolean;
     size?: number;
+    /** Pip's registry id for this cell; presentation only. */
+    pipId?: string;
   }) => {
     const {
       onClick,
@@ -836,6 +867,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       isSelected = false,
       isCoreHighlight = false,
       size = CELL_SIZE,
+      pipId,
     } = opts || {};
 
     const display = getTokenDisplay(token);
@@ -844,6 +876,8 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
     return (
       <div
         key={`${token}-${index}`}
+        ref={pipId ? pipRef(pipId) : undefined}
+        data-pip-object={pipId}
         onClick={onClick}
         className={`
           inline-flex items-center justify-center rounded-lg font-bold text-lg
@@ -872,7 +906,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
         {isHidden ? '?' : display.label}
       </div>
     );
-  }, []);
+  }, [pipRef]);
 
   // -------------------------------------------------------------------------
   // Render
@@ -946,16 +980,17 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
                   ))}
                 </div>
               )}
-              <div className="flex items-center gap-1.5 flex-wrap justify-center">
+              <div ref={pip.ref('pattern')} data-pip-object="pattern" className="flex items-center gap-1.5 flex-wrap justify-center">
                 {activeSequence.given.map((token, i) => {
                   const isCorePos = showCore && i < activeSequence.core.length;
                   const isIdentifyMode = currentPhase === 'identify';
                   return renderToken(token, i, {
                     onClick: isIdentifyMode && !isCurrentChallengeComplete
-                      ? () => handleToggleCoreIndex(i)
+                      ? () => { pip.look(`seq-${i}`); handleToggleCoreIndex(i); }
                       : undefined,
                     isSelected: isIdentifyMode && selectedCoreIndices.has(i),
                     isCoreHighlight: isCorePos && !isIdentifyMode,
+                    pipId: isIdentifyMode ? `seq-${i}` : undefined,
                   });
                 })}
 
@@ -971,12 +1006,14 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
                     return renderToken(answered, activeSequence.given.length + i, {
                       onClick: !isCurrentChallengeComplete
                         ? () => {
+                          pip.look(`slot-${i}`);
                           if (i === extensionAnswers.length - 1) handleRemoveLastExtension();
                         }
                         : undefined,
+                      pipId: `slot-${i}`,
                     });
                   }
-                  return renderToken(token, activeSequence.given.length + i, { isHidden: true });
+                  return renderToken(token, activeSequence.given.length + i, { isHidden: true, pipId: `slot-${i}` });
                 })}
               </div>
             </div>
@@ -995,14 +1032,15 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
         {/* Create Mode */}
         {currentPhase === 'create' && (
           <div className="space-y-3">
-            <div className="flex items-center justify-center gap-1.5 flex-wrap min-h-[60px] bg-slate-800/20 rounded-lg p-3 border border-white/5">
+            <div ref={pip.ref('build')} data-pip-object="build"
+              className="flex items-center justify-center gap-1.5 flex-wrap min-h-[60px] bg-slate-800/20 rounded-lg p-3 border border-white/5">
               {createdPattern.length === 0 ? (
                 <p className="text-slate-500 text-sm">Tap tokens below to build your pattern</p>
               ) : (
                 createdPattern.map((token, i) =>
                   renderToken(token, i, {
                     onClick: !isCurrentChallengeComplete && i === createdPattern.length - 1
-                      ? handleRemoveLastCreated
+                      ? () => { pip.look('build'); handleRemoveLastCreated(); }
                       : undefined,
                   })
                 )
@@ -1054,14 +1092,15 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
               <p className="text-slate-400 text-xs text-center">
                 Your translation ({translationTarget?.targetType || 'target'}):
               </p>
-              <div className="flex items-center justify-center gap-1.5 flex-wrap min-h-[60px] bg-slate-800/20 rounded-lg p-3 border border-white/5">
+              <div ref={pip.ref('build')} data-pip-object="build"
+                className="flex items-center justify-center gap-1.5 flex-wrap min-h-[60px] bg-slate-800/20 rounded-lg p-3 border border-white/5">
                 {translatedPattern.length === 0 ? (
                   <p className="text-slate-500 text-sm">Tap tokens below to translate</p>
                 ) : (
                   translatedPattern.map((token, i) =>
                     renderToken(token, i, {
                       onClick: !isCurrentChallengeComplete && i === translatedPattern.length - 1
-                        ? handleRemoveLastTranslated
+                        ? () => { pip.look('build'); handleRemoveLastTranslated(); }
                         : undefined,
                     })
                   )
@@ -1080,6 +1119,14 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
           </div>
         )}
 
+        {/* Pip's dock sits between the workspace and the palette: every cue
+            (a "?" slot, the pattern row, the build zone) is above it and every
+            answer token is below it, so a pointer never crosses a token. */}
+        {pipStore && currentChallenge && !allChallengesComplete && (
+          <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+            className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+        )}
+
         {/* Token Palette */}
         {!allChallengesComplete && !isCurrentChallengeComplete && (
           <div className="space-y-2">
@@ -1087,7 +1134,9 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
             <div className="flex items-center justify-center gap-2 flex-wrap">
               {availableTokens.map((token, i) =>
                 renderToken(token, i, {
+                  pipId: `token-${i}`,
                   onClick: () => {
+                    pip.look(`token-${i}`);
                     if (currentPhase === 'copy') handleAddExtensionToken(token);
                     else if (currentPhase === 'create') handleAddCreatedToken(token);
                     else if (currentPhase === 'translate') handleAddTranslatedToken(token);

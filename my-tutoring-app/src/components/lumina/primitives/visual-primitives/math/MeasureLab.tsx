@@ -48,6 +48,9 @@ import {
   type MeasureLabMetrics,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { measureLabPipPose } from '../../../pip/measureLabPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ---------------------------------------------------------------------------
 // Public types (mirrored by the generator)
@@ -174,10 +177,13 @@ interface ContainerViewProps {
   state?: 'idle' | 'selected' | 'correct' | 'incorrect';
   badge?: string;
   onClick?: () => void;
+  /** Pip's registry id for this container; presentation only. */
+  pipId?: string;
+  pipRef?: (element: Element | null) => void;
 }
 
 const ContainerView: React.FC<ContainerViewProps> = ({
-  container, poured, capacity, state = 'idle', badge, onClick,
+  container, poured, capacity, state = 'idle', badge, onClick, pipId, pipRef,
 }) => {
   const { w, h } = shapeBox(container.shape);
   const fillFrac = capacity > 0 ? Math.max(0, Math.min(1, poured / capacity)) : 0;
@@ -186,6 +192,8 @@ const ContainerView: React.FC<ContainerViewProps> = ({
 
   return (
     <button
+      ref={pipRef}
+      data-pip-object={pipId}
       type="button"
       disabled={!onClick}
       onClick={onClick}
@@ -346,7 +354,7 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
     unitName: currentChallenge?.unitName,
   }), [title, currentChallenge, currentIndex, challenges.length, currentAttempts]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'measure-lab',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -513,6 +521,34 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
 
   const advanceToNext = () => { advance(); };
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of this challenge's own state, the tutor's speech on it, and
+  // the child's last touch; Pip never predicts, pours, places, or advances.
+  // Tutor audio counts only while the tutor is on this block and began on this challenge.
+  const pip = usePipTargets(currentChallenge?.id ?? null, feedback !== 'correct');
+  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || isComplete || evaluation.hasSubmitted) return null;
+    const { type, id, container, containerA, containerB } = currentChallenge;
+    const pouredBoth = !!containerA && !!containerB
+      && poured[containerA.id] !== undefined && poured[containerB.id] !== undefined;
+    const targets = pip.targets();
+    const pose = measureLabPipPose({
+      running: true, preparing: false, currentSolved: feedback === 'correct', revealHeld: false,
+      judging: feedback === null
+        && ((type === 'balance_predict' && bothPlaced) || (type === 'capacity_predict' && pouredBoth)),
+      tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
+      type,
+      committed: type === 'pour_count'
+        ? !!container && (poured[container.id] ?? 0) >= container.capacity
+        : prediction !== null,
+      visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: resolvedInstanceId, scopeId: id, label: 'Measure lab', dock: pip.dock.current, targets, pose };
+  });
+
   // ── Empty state ───────────────────────────────────────────────────────────
   if (challenges.length === 0) {
     return (
@@ -563,6 +599,12 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
                 <span className="text-base">{ch.prompt}</span>
               </LuminaPrompt>
 
+              {/* Pip's dock sits above the bench: every cue target (the pair, the
+                  scale, the containers, the cups) is below it and is a region, so
+                  no pointer line reaches toward a single choice. */}
+              {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
+
               {/* ── balance_predict ───────────────────────────────────────── */}
               {ch.type === 'balance_predict' && ch.left && ch.right ? (
                 <div className="space-y-4">
@@ -573,12 +615,12 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
                           First — which one do you think is heavier?
                         </LuminaSectionLabel>
                       </div>
-                      <div className="flex justify-center gap-4">
+                      <div ref={pip.ref('objects')} data-pip-object="objects" className="flex justify-center gap-4">
                         {[ch.left, ch.right].map((obj) => (
                           <button
                             key={obj.id}
                             type="button"
-                            onClick={() => { SoundManager.select(); setPrediction(obj.id); }}
+                            onClick={() => { pip.look('scale'); SoundManager.select(); setPrediction(obj.id); }}
                             className={`flex flex-col items-center gap-1 rounded-2xl border px-6 py-4 transition ${answerStateClass('idle')}`}
                           >
                             <span className="text-4xl leading-none">{obj.emoji}</span>
@@ -597,7 +639,8 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
 
                   {/* The bench. The beam tips because of what is on it. */}
                   <div className="flex justify-center">
-                    <svg width={STAGE_W} height={STAGE_H} viewBox={`0 0 ${STAGE_W} ${STAGE_H}`} className="max-w-full h-auto">
+                    <svg ref={pip.ref('scale')} data-pip-object="scale"
+                      width={STAGE_W} height={STAGE_H} viewBox={`0 0 ${STAGE_W} ${STAGE_H}`} className="max-w-full h-auto">
                       {(() => {
                         const cx = STAGE_W / 2;
                         const beamY = 96;
@@ -646,7 +689,7 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
                           <button
                             key={side}
                             type="button"
-                            onClick={() => handlePlace(side)}
+                            onClick={() => { pip.look('scale'); handlePlace(side); }}
                             className={`flex flex-col items-center gap-1 rounded-2xl border px-6 py-3 transition ${answerStateClass('idle')}`}
                           >
                             <span className="text-4xl leading-none">{obj.emoji}</span>
@@ -669,24 +712,26 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
                         : `Now fill them both with ${unitName} and see`}
                     </LuminaSectionLabel>
                   </div>
-                  <div className="flex justify-center items-end gap-8">
+                  <div ref={pip.ref('containers')} data-pip-object="containers" className="flex flex-wrap justify-center items-end gap-4 sm:gap-8">
                     {[ch.containerA, ch.containerB].map((c) => (
                       <ContainerView
                         key={c.id}
+                        pipId={`container-${c.id}`}
+                        pipRef={pip.ref(`container-${c.id}`)}
                         container={c}
                         poured={poured[c.id] ?? 0}
                         capacity={c.capacity}
                         state={prediction === c.id ? 'selected' : 'idle'}
                         badge={poured[c.id] ? `${poured[c.id]} ${unitName}` : undefined}
                         onClick={prediction === null && feedback !== 'correct'
-                          ? () => { SoundManager.select(); setPrediction(c.id); }
+                          ? () => { pip.look(`container-${c.id}`); SoundManager.select(); setPrediction(c.id); }
                           : undefined}
                       />
                     ))}
                   </div>
                   {prediction !== null && !Object.keys(poured).length ? (
                     <div className="flex justify-center">
-                      <LuminaActionButton action="check" onClick={handleCapacityTest}>
+                      <LuminaActionButton action="check" onClick={() => { pip.look('containers'); handleCapacityTest(); }}>
                         Pour {unitName} into both
                       </LuminaActionButton>
                     </div>
@@ -699,6 +744,8 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
                 <div className="space-y-4">
                   <div className="flex justify-center">
                     <ContainerView
+                      pipId="container"
+                      pipRef={pip.ref('container')}
                       container={ch.container}
                       poured={poured[ch.container.id] ?? 0}
                       capacity={ch.container.capacity}
@@ -708,7 +755,7 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
                     <LuminaSectionLabel accent="emerald" size="sm">
                       Tap a {unitName.replace(/s$/, '')} to pour it in
                     </LuminaSectionLabel>
-                    <div className="flex flex-wrap justify-center gap-2">
+                    <div ref={pip.ref('cups')} data-pip-object="cups" className="flex flex-wrap justify-center gap-2">
                       {Array.from({ length: ch.container.capacity + 2 }).map((_, i) => {
                         const used = i < (poured[ch.container!.id] ?? 0);
                         return (
@@ -716,7 +763,7 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
                             key={i}
                             type="button"
                             disabled={used || feedback === 'correct'}
-                            onClick={() => handlePour(ch.container!.id, ch.container!.capacity)}
+                            onClick={() => { pip.look('container'); handlePour(ch.container!.id, ch.container!.capacity); }}
                             className={`text-3xl leading-none transition ${used ? 'opacity-20' : 'hover:scale-110'}`}
                             aria-label="Pour one in"
                           >
@@ -733,13 +780,15 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
                         {(ch.options ?? []).map((opt) => (
                           <LuminaAnswerChoice
                             key={opt}
+                            ref={pip.ref(`count-${opt}`)}
+                            data-pip-object={`count-${opt}`}
                             state={
                               chosenCount === opt
                                 ? (feedback === 'correct' ? 'correct' : 'incorrect')
                                 : feedback === 'correct' && opt === ch.expectedCount ? 'correct' : 'idle'
                             }
                             disabled={feedback === 'correct'}
-                            onClick={() => handleCountChoice(opt)}
+                            onClick={() => { pip.look(`count-${opt}`); handleCountChoice(opt); }}
                             className="w-auto min-w-[64px] pl-5 pr-9 py-3 text-center font-mono text-lg"
                           >
                             {opt}
@@ -759,18 +808,20 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
                       Tap them in order — the least first
                     </LuminaSectionLabel>
                   </div>
-                  <div className="flex justify-center items-end gap-6">
+                  <div ref={pip.ref('containers')} data-pip-object="containers" className="flex flex-wrap justify-center items-end gap-4 sm:gap-6">
                     {ch.containers.map((c) => {
                       const pos = order.indexOf(c.id);
                       return (
                         <ContainerView
                           key={c.id}
+                          pipId={`container-${c.id}`}
+                          pipRef={pip.ref(`container-${c.id}`)}
                           container={c}
                           poured={c.filled ?? 0}
                           capacity={c.capacity}
                           state={pos >= 0 ? 'selected' : 'idle'}
                           badge={pos >= 0 ? `#${pos + 1}` : undefined}
-                          onClick={feedback === 'correct' ? undefined : () => handleOrderTap(c.id)}
+                          onClick={feedback === 'correct' ? undefined : () => { pip.look(`container-${c.id}`); handleOrderTap(c.id); }}
                         />
                       );
                     })}

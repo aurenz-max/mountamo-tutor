@@ -21,6 +21,9 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { timeSequencerPipPose } from '../../../pip/timeSequencerPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -326,12 +329,17 @@ interface EventCardVisualProps {
   /** The challenge-local day window the sky strips share, so the cards are comparable. */
   skyWindow?: [number, number];
   className?: string;
+  /** Pip's registry id for this card; presentation only. */
+  pipId?: string;
+  pipRef?: (element: Element | null) => void;
 }
 
 const EventCardVisual: React.FC<EventCardVisualProps> = ({
-  event, index, selected, onClick, disabled, showTime, showSky, showClock, skyWindow, className = '',
+  event, index, selected, onClick, disabled, showTime, showSky, showClock, skyWindow, className = '', pipId, pipRef,
 }) => (
   <button
+    ref={pipRef}
+    data-pip-object={pipId}
     type="button"
     onClick={onClick}
     disabled={disabled}
@@ -467,7 +475,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     supportTier: supportTier ?? null,
   }), [gradeBand, challenges.length, currentChallengeIndex, currentChallenge, currentAttempts, supportTier]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'time-sequencer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -729,6 +737,28 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     (r) => r.challengeId === currentChallenge?.id && r.correct,
   );
 
+  // ── Pip shared surface ─────────────────────────────────────────────
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's last touch; Pip never picks a card, checks, or advances. Tutor
+  // audio counts only while the tutor is on this block and began on this challenge.
+  const pip = usePipTargets(currentChallenge?.id ?? null, !isCurrentChallengeCorrect);
+  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
+    const targets = pip.targets();
+    const pose = timeSequencerPipPose({
+      running: true, preparing: false, currentSolved: isCurrentChallengeCorrect, revealHeld: false,
+      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
+      type: currentChallenge.type, visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Time sequencer',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   const localOverallScore = useMemo(() => {
     if (!allChallengesComplete || challenges.length === 0) return 0;
     return Math.round(
@@ -792,7 +822,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     const selected = orderedEvents.map((id) => events.find((e) => e.id === id)!).filter(Boolean);
 
     return (
-      <div className="space-y-4">
+      <div ref={pip.ref('events')} data-pip-object="events" className="space-y-4">
         {/* Selected order */}
         {selected.length > 0 && (
           <div className="space-y-2">
@@ -807,7 +837,9 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
                 showSky={currentChallenge.showSkyCue}
                 showClock={currentChallenge.showClockFace}
                 skyWindow={skyWindow}
-                onClick={() => handleToggleSequenceEvent(event.id)}
+                pipId={`card-${event.id}`}
+                pipRef={pip.ref(`card-${event.id}`)}
+                onClick={() => { pip.look(`card-${event.id}`); handleToggleSequenceEvent(event.id); }}
                 disabled={isCurrentChallengeCorrect}
               />
             ))}
@@ -828,7 +860,9 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
                 showSky={currentChallenge.showSkyCue}
                 showClock={currentChallenge.showClockFace}
                 skyWindow={skyWindow}
-                onClick={() => handleToggleSequenceEvent(event.id)}
+                pipId={`card-${event.id}`}
+                pipRef={pip.ref(`card-${event.id}`)}
+                onClick={() => { pip.look(`card-${event.id}`); handleToggleSequenceEvent(event.id); }}
                 disabled={isCurrentChallengeCorrect}
               />
             ))}
@@ -844,14 +878,17 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
       <div className="space-y-4">
         {/* No time anchor here — the clock time would reveal the period (the answer). */}
         <div className="flex justify-center">
-          <EventCardVisual event={currentChallenge.event} disabled className="max-w-xs" />
+          <EventCardVisual event={currentChallenge.event} disabled className="max-w-xs"
+            pipId="event" pipRef={pip.ref('event')} />
         </div>
         <div className="grid grid-cols-2 gap-3">
           {Object.entries(PERIOD_DISPLAY).map(([period, display]) => (
             <button
               key={period}
+              ref={pip.ref(`period-${period}`)}
+              data-pip-object={`period-${period}`}
               type="button"
-              onClick={() => { if (!isCurrentChallengeCorrect) { SoundManager.select(); setSelectedPeriod(period); } }}
+              onClick={() => { pip.look(`period-${period}`); if (!isCurrentChallengeCorrect) { SoundManager.select(); setSelectedPeriod(period); } }}
               disabled={isCurrentChallengeCorrect}
               className={`
                 p-3 rounded-xl border-2 text-center transition-all
@@ -888,6 +925,8 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
               showTime={currentChallenge.showTimeAnchors}
               showSky={currentChallenge.showSkyCue}
               className="max-w-xs mx-auto"
+              pipId="reference"
+              pipRef={pip.ref('reference')}
             />
           )}
         </div>
@@ -897,7 +936,9 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
               key={event.id}
               event={event}
               selected={selectedEvent === event.id}
-              onClick={() => { if (!isCurrentChallengeCorrect) { SoundManager.select(); setSelectedEvent(event.id); } }}
+              pipId={`option-${event.id}`}
+              pipRef={pip.ref(`option-${event.id}`)}
+              onClick={() => { pip.look(`option-${event.id}`); if (!isCurrentChallengeCorrect) { SoundManager.select(); setSelectedEvent(event.id); } }}
               disabled={isCurrentChallengeCorrect}
             />
           ))}
@@ -912,11 +953,13 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     if (!eventA || !eventB) return null;
 
     return (
-      <div className="space-y-4">
+      <div ref={pip.ref('durations')} data-pip-object="durations" className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <button
+            ref={pip.ref('duration-A')}
+            data-pip-object="duration-A"
             type="button"
-            onClick={() => { if (!isCurrentChallengeCorrect) { SoundManager.select(); setDurationAnswer('A'); } }}
+            onClick={() => { pip.look('duration-A'); if (!isCurrentChallengeCorrect) { SoundManager.select(); setDurationAnswer('A'); } }}
             disabled={isCurrentChallengeCorrect}
             className={`p-3 rounded-xl border-2 transition-all ${
               durationAnswer === 'A'
@@ -928,8 +971,10 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
             <span className="text-slate-200 text-sm font-medium">{eventA.label}</span>
           </button>
           <button
+            ref={pip.ref('duration-B')}
+            data-pip-object="duration-B"
             type="button"
-            onClick={() => { if (!isCurrentChallengeCorrect) { SoundManager.select(); setDurationAnswer('B'); } }}
+            onClick={() => { pip.look('duration-B'); if (!isCurrentChallengeCorrect) { SoundManager.select(); setDurationAnswer('B'); } }}
             disabled={isCurrentChallengeCorrect}
             className={`p-3 rounded-xl border-2 transition-all ${
               durationAnswer === 'B'
@@ -943,9 +988,11 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
         </div>
         <div className="flex justify-center">
           <Button
+            ref={pip.ref('duration-same')}
+            data-pip-object="duration-same"
             variant="ghost"
             size="sm"
-            onClick={() => { if (!isCurrentChallengeCorrect) { SoundManager.select(); setDurationAnswer('same'); } }}
+            onClick={() => { pip.look('duration-same'); if (!isCurrentChallengeCorrect) { SoundManager.select(); setDurationAnswer('same'); } }}
             disabled={isCurrentChallengeCorrect}
             className={`text-sm ${
               durationAnswer === 'same'
@@ -969,7 +1016,8 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     return (
       <div className="space-y-4">
         {/* Schedule table */}
-        <div className="rounded-xl bg-slate-800/30 border border-white/5 overflow-hidden">
+        <div ref={pip.ref('schedule')} data-pip-object="schedule"
+          className="rounded-xl bg-slate-800/30 border border-white/5 overflow-hidden">
           <div className="grid grid-cols-[80px_1fr] text-xs font-medium text-slate-400 bg-slate-800/50 px-3 py-2">
             <span>Time</span>
             <span>Activity</span>
@@ -999,11 +1047,13 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
 
         {/* Answer options */}
         <div className="space-y-2">
-          {options.map((activity) => (
+          {options.map((activity, i) => (
             <button
               key={activity}
+              ref={pip.ref(`activity-${i}`)}
+              data-pip-object={`activity-${i}`}
               type="button"
-              onClick={() => { if (!isCurrentChallengeCorrect) { SoundManager.select(); setScheduleAnswer(activity); } }}
+              onClick={() => { pip.look(`activity-${i}`); if (!isCurrentChallengeCorrect) { SoundManager.select(); setScheduleAnswer(activity); } }}
               disabled={isCurrentChallengeCorrect}
               className={`
                 w-full px-4 py-3 rounded-xl border-2 text-left text-sm font-medium transition-all
@@ -1092,6 +1142,12 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
                 <p className="text-blue-200/90 text-xs">{currentChallenge.strategyHint}</p>
               </div>
             )}
+
+            {/* Pip's dock sits above the activity: every cue target (the list,
+                the named card, the pair, the table) is above its answer choices,
+                so a pointer never crosses one. */}
+            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
 
             {(currentChallenge.type === 'sequence-events' || currentChallenge.type === 'clock-sequence') && renderSequenceEvents()}
             {currentChallenge.type === 'match-time-of-day' && renderMatchTimeOfDay()}

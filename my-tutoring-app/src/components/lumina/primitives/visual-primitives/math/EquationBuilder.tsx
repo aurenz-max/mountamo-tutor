@@ -28,6 +28,9 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { equationBuilderPipPose } from '../../../pip/equationBuilderPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -123,6 +126,8 @@ function Tile({
   size = 'md',
   highlight,
   className = '',
+  buttonRef,
+  pipObject,
 }: {
   value: string;
   onClick?: () => void;
@@ -130,6 +135,8 @@ function Tile({
   size?: 'sm' | 'md' | 'lg';
   highlight?: 'correct' | 'incorrect' | null;
   className?: string;
+  buttonRef?: (element: Element | null) => void;
+  pipObject?: string;
 }) {
   const tileType = getTileType(value);
   const isBlank = tileType === 'blank';
@@ -154,6 +161,8 @@ function Tile({
 
   return (
     <button
+      ref={buttonRef}
+      data-pip-object={pipObject}
       onClick={onClick}
       disabled={disabled}
       className={`
@@ -176,19 +185,25 @@ function EquationDisplay({
   parts,
   blankIndex,
   size = 'lg',
+  rowRef,
+  gapRef,
 }: {
   parts: string[];
   blankIndex?: number;
   size?: 'sm' | 'md' | 'lg';
+  rowRef?: (element: Element | null) => void;
+  gapRef?: (element: Element | null) => void;
 }) {
   return (
-    <div className="flex items-center justify-center gap-2 flex-wrap">
+    <div ref={rowRef} data-pip-object={rowRef ? 'equation' : undefined} className="flex items-center justify-center gap-2 flex-wrap">
       {parts.map((part, i) => (
         <Tile
           key={i}
           value={i === blankIndex ? '?' : part}
           disabled
           size={size}
+          buttonRef={i === blankIndex ? gapRef : undefined}
+          pipObject={i === blankIndex && gapRef ? 'gap' : undefined}
         />
       ))}
     </div>
@@ -201,11 +216,13 @@ function BuildWorkspace({
   maxSlots,
   onRemoveSlot,
   disabled,
+  slotRef,
 }: {
   slots: string[];
   maxSlots: number;
   onRemoveSlot: (index: number) => void;
   disabled: boolean;
+  slotRef?: (index: number) => (element: Element | null) => void;
 }) {
   const emptySlots = Math.max(0, maxSlots - slots.length);
   return (
@@ -217,6 +234,8 @@ function BuildWorkspace({
           onClick={() => !disabled && onRemoveSlot(i)}
           disabled={disabled}
           size="md"
+          buttonRef={slotRef?.(i)}
+          pipObject={slotRef ? `slot-${i}` : undefined}
         />
       ))}
       {Array.from({ length: emptySlots }).map((_, i) => (
@@ -453,12 +472,41 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     totalChallenges: challenges.length,
   }), [currentChallenge, currentAttempts, gradeBand, maxNumber, supportTier, currentChallengeIndex, challenges.length]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'equation-builder',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : gradeBand === '1' ? 'Grade 1' : 'Grade 2',
   });
+
+  // -------------------------------------------------------------------------
+  // Pip shared surface
+  // -------------------------------------------------------------------------
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's last touch; Pip never places a tile, picks, checks, or advances.
+  // Tutor audio counts only while the tutor is on this block and began on this challenge.
+  const pip = usePipTargets(currentChallenge?.id ?? null, !challengeSolved && !hasSubmittedEvaluation);
+  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
+    const targets = pip.targets();
+    const pose = equationBuilderPipPose({
+      running: true, preparing: false, currentSolved: challengeSolved, revealHeld: false,
+      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
+      type: currentChallenge.type, visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Equation builder',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+  // The dock sits right below the cue target (slot row or printed equation) and
+  // above the answers (tile pool, options, number box), so a pointer never crosses one.
+  const pipDock = pipStore && (
+    <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+      className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+  );
 
   // Activity introduction
   const hasIntroducedRef = useRef(false);
@@ -841,26 +889,29 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     return (
       <div className="space-y-6">
         {/* Workspace */}
-        <LuminaPanel>
+        <LuminaPanel ref={pip.ref('workspace')} data-pip-object="workspace">
           <p className="text-xs text-slate-500 mb-2 text-center">Your equation</p>
           <BuildWorkspace
             slots={workspaceSlots}
             maxSlots={targetTokenCount}
-            onRemoveSlot={handleRemoveSlot}
+            onRemoveSlot={(i) => { pip.look('pool'); handleRemoveSlot(i); }}
             disabled={disabled}
+            slotRef={(i) => pip.ref(`slot-${i}`)}
           />
         </LuminaPanel>
 
+        {pipDock}
+
         {/* Tile pool */}
-        <div>
+        <div ref={pip.ref('pool')} data-pip-object="pool">
           <p className="text-xs text-slate-500 mb-2 text-center">Available tiles</p>
-          <TilePool tiles={poolTiles} onPickTile={handlePickTile} disabled={disabled} />
+          <TilePool tiles={poolTiles} onPickTile={(i) => { pip.look(`slot-${workspaceSlots.length}`); handlePickTile(i); }} disabled={disabled} />
         </div>
 
         {/* Actions */}
         <div className="flex justify-center gap-3">
           <LuminaButton
-            onClick={handleClearWorkspace}
+            onClick={() => { pip.look('pool'); handleClearWorkspace(); }}
             disabled={disabled || workspaceSlots.length === 0}
           >
             Clear
@@ -886,7 +937,10 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     return (
       <div className="space-y-6">
         {/* Display equation with blank */}
-        <EquationDisplay parts={tokens} blankIndex={blankIdx} size="lg" />
+        <EquationDisplay parts={tokens} blankIndex={blankIdx} size="lg"
+          rowRef={pip.ref('equation')} gapRef={pip.ref('gap')} />
+
+        {pipDock}
 
         {/* MC options — bespoke compact tiles, grading colors tokenized */}
         <div className="flex justify-center gap-3 flex-wrap">
@@ -894,12 +948,14 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
             <button
               key={opt}
               type="button"
+              ref={pip.ref(`option-${opt}`)}
+              data-pip-object={`option-${opt}`}
               className={`
                 w-16 h-16 text-2xl font-bold rounded-xl border transition-all
                 ${answerStateClass(selectedOption === opt ? 'selected' : 'idle')}
                 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
               `}
-              onClick={() => { if (!disabled) { SoundManager.select(); setSelectedOption(opt); } }}
+              onClick={() => { if (!disabled) { pip.look(`option-${opt}`); SoundManager.select(); setSelectedOption(opt); } }}
               disabled={disabled}
             >
               {opt}
@@ -928,30 +984,36 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     return (
       <div className="space-y-6">
         {/* Display equation */}
-        <EquationDisplay parts={tokens} size="lg" />
+        <EquationDisplay parts={tokens} size="lg" rowRef={pip.ref('equation')} />
+
+        {pipDock}
 
         {/* True / False buttons — bespoke pills, grading colors tokenized */}
         <div className="flex justify-center gap-4">
           <button
             type="button"
+            ref={pip.ref('truth-true')}
+            data-pip-object="truth-true"
             className={`
               px-8 py-4 text-lg font-bold rounded-xl border transition-all
               ${answerStateClass(selectedTruthValue === true ? 'selected' : 'idle')}
               ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
             `}
-            onClick={() => { if (!disabled) { SoundManager.select(); setSelectedTruthValue(true); } }}
+            onClick={() => { if (!disabled) { pip.look('truth-true'); SoundManager.select(); setSelectedTruthValue(true); } }}
             disabled={disabled}
           >
             True
           </button>
           <button
             type="button"
+            ref={pip.ref('truth-false')}
+            data-pip-object="truth-false"
             className={`
               px-8 py-4 text-lg font-bold rounded-xl border transition-all
               ${answerStateClass(selectedTruthValue === false ? 'selected' : 'idle')}
               ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
             `}
-            onClick={() => { if (!disabled) { SoundManager.select(); setSelectedTruthValue(false); } }}
+            onClick={() => { if (!disabled) { pip.look('truth-false'); SoundManager.select(); setSelectedTruthValue(false); } }}
             disabled={disabled}
           >
             False
@@ -980,7 +1042,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     return (
       <div className="space-y-6">
         {/* Balance display: left = right */}
-        <div className="flex items-center justify-center gap-4 flex-wrap">
+        <div ref={pip.ref('equation')} data-pip-object="equation" className="flex items-center justify-center gap-4 flex-wrap">
           <div className="flex items-center gap-1">
             {leftTokens.map((t, i) => (
               <Tile key={`l-${i}`} value={t} disabled size="md" />
@@ -989,13 +1051,16 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
           <Tile value="=" disabled size="md" />
           <div className="flex items-center gap-1">
             {rightTokens.map((t, i) => (
-              <Tile key={`r-${i}`} value={i === blankIdx ? '?' : t} disabled size="md" />
+              <Tile key={`r-${i}`} value={i === blankIdx ? '?' : t} disabled size="md"
+                buttonRef={i === blankIdx ? pip.ref('gap') : undefined} pipObject={i === blankIdx ? 'gap' : undefined} />
             ))}
           </div>
         </div>
 
+        {pipDock}
+
         {/* Number input — generic answer entry */}
-        <div className="flex justify-center items-center gap-3">
+        <div ref={pip.ref('entry')} data-pip-object="entry" className="flex justify-center items-center gap-3">
           <span className="text-slate-400 text-sm">? =</span>
           <LuminaInput
             type="number"
@@ -1003,7 +1068,8 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
             min={0}
             max={maxNumber * 2}
             value={balanceAnswer}
-            onChange={(e) => !disabled && setBalanceAnswer(e.target.value)}
+            onFocus={() => { if (!disabled) pip.look('entry'); }}
+            onChange={(e) => { if (!disabled) { pip.look('entry'); setBalanceAnswer(e.target.value); } }}
             disabled={disabled}
             className="w-20 h-14 text-center text-2xl font-bold"
             placeholder="?"
@@ -1037,26 +1103,29 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
         </div>
 
         {/* Workspace */}
-        <LuminaPanel>
+        <LuminaPanel ref={pip.ref('workspace')} data-pip-object="workspace">
           <p className="text-xs text-slate-500 mb-2 text-center">Build a different way to write it</p>
           <BuildWorkspace
             slots={workspaceSlots}
             maxSlots={originalTokens.length}
-            onRemoveSlot={handleRemoveSlot}
+            onRemoveSlot={(i) => { pip.look('pool'); handleRemoveSlot(i); }}
             disabled={disabled}
+            slotRef={(i) => pip.ref(`slot-${i}`)}
           />
         </LuminaPanel>
 
+        {pipDock}
+
         {/* Tile pool */}
-        <div>
+        <div ref={pip.ref('pool')} data-pip-object="pool">
           <p className="text-xs text-slate-500 mb-2 text-center">Available tiles</p>
-          <TilePool tiles={poolTiles} onPickTile={handlePickTile} disabled={disabled} />
+          <TilePool tiles={poolTiles} onPickTile={(i) => { pip.look(`slot-${workspaceSlots.length}`); handlePickTile(i); }} disabled={disabled} />
         </div>
 
         {/* Actions */}
         <div className="flex justify-center gap-3">
           <LuminaButton
-            onClick={handleClearWorkspace}
+            onClick={() => { pip.look('pool'); handleClearWorkspace(); }}
             disabled={disabled || workspaceSlots.length === 0}
           >
             Clear

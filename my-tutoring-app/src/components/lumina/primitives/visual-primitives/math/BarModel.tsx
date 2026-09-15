@@ -26,6 +26,10 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import { buildPictureGraphEvidence } from './barModelEvidence';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import type { PipTarget } from '../../../pip/PipSurfaceStore';
+import { barModelPipPose } from '../../../pip/barModelPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ---------------------------------------------------------------------------
 // Public types (mirrored by the generator)
@@ -171,6 +175,8 @@ interface BarsAreaProps {
   showEmptySlots?: boolean;
   /** K build: show how many stickers the child has placed in each row so far. */
   showPlacedCount?: boolean;
+  /** Registers each row (label and bar) as a Pip target. */
+  rowRef?: (id: string) => (element: Element | null) => void;
 }
 
 const BarsArea: React.FC<BarsAreaProps> = ({
@@ -186,6 +192,7 @@ const BarsArea: React.FC<BarsAreaProps> = ({
   answerBarIndex = null,
   showEmptySlots = false,
   showPlacedCount = false,
+  rowRef,
 }) => {
   // A one-to-one chart carries NO numeric axis: the icons are the count, and a
   // numbered axis under them lets the child read the answer off the scale
@@ -261,7 +268,7 @@ const BarsArea: React.FC<BarsAreaProps> = ({
             const clampedWidth = Math.max(0, Math.min(100, widthPct));
 
             return (
-              <div key={i} className="space-y-1">
+              <div key={i} ref={rowRef?.(`row-${i}`)} data-pip-object={rowRef ? `row-${i}` : undefined} className="space-y-1">
                 <div className="flex items-center gap-2 text-sm">
                   <span className={`font-medium ${isHighlighted ? 'text-amber-300' : 'text-slate-200'}`}>
                     {item.label}
@@ -661,7 +668,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     supportTier: currentChallenge?.supportTier,
   }), [title, currentIndex, challenges.length, currentChallenge, graphStyle, currentAttempts]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'bar-model',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -934,6 +941,41 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
       ? { index: selectedBarIndex, correct: feedback === 'correct' }
       : null;
 
+  // ── Pip shared surface ─────────────────────────────────────────────────────
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's last touch; Pip never places a sticker, chooses, checks, or
+  // advances. Tutor audio counts only while the tutor is on this block.
+  const pip = usePipTargets(currentChallenge?.id ?? null, false);
+  const [pipTouched, setPipTouched] = useState<{ scopeId: string; element: Element } | null>(null);
+  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const isCurrentChallengeCorrect = !!currentChallenge
+    && results.some((r) => r.challengeId === currentChallenge.id && r.correct);
+  const pipTouch = (node: EventTarget) => {
+    if (!currentChallenge || isCurrentChallengeCorrect || !(node instanceof Element)) return;
+    setPipTouched({ scopeId: currentChallenge.id, element: node.closest('button, [role="button"]') ?? node });
+  };
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || isComplete || hasSubmittedEvaluation) return null;
+    const rowIds = valuesToRender.map((_value, i) => `row-${i}`);
+    const targets: PipTarget[] = pip.targets(['graph', 'source', 'controls', ...rowIds], (id) => (
+      id === 'graph' ? 'The graph' : id === 'source' ? 'The group to count' : id === 'controls' ? 'The graph controls'
+        : valuesToRender[Number(id.slice(4))]?.label ?? 'A row'
+    ));
+    const touched = pipTouched?.scopeId === currentChallenge.id && pipTouched.element.isConnected ? pipTouched.element : null;
+    if (touched) targets.push({ id: 'touched', label: 'Your last touch', element: touched });
+    const pose = barModelPipPose({
+      running: true, preparing: false, currentSolved: isCurrentChallengeCorrect, revealHeld: false,
+      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
+      evalMode: currentChallenge.evalMode, markedRowIndex: highlightedIndex,
+      visibleIds: targets.map((target) => target.id), hasTouch: !!touched,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Bar model',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   // ── Empty state ────────────────────────────────────────────────────────────
   if (challenges.length === 0) {
     return (
@@ -991,48 +1033,60 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
 
           {/* Per-challenge UI */}
           {!isComplete && currentChallenge ? (
-            <>
+            <div className="space-y-6" onPointerDownCapture={(event) => pipTouch(event.target)}
+              onFocusCapture={(event) => pipTouch(event.target)}>
               <LuminaPrompt accent="cyan" center>
                 <span className="text-base">{currentChallenge.prompt}</span>
               </LuminaPrompt>
 
               {currentChallenge.sourceItems && currentChallenge.sourceItems.length > 0 ? (
-                <SourceCollection
-                  items={currentChallenge.sourceItems}
-                  scattered={currentChallenge.sourceScattered}
-                  heading={isStickerBuild ? 'Everything we found' : 'Count this group'}
-                />
+                <div ref={pip.ref('source')} data-pip-object="source">
+                  <SourceCollection
+                    items={currentChallenge.sourceItems}
+                    scattered={currentChallenge.sourceScattered}
+                    heading={isStickerBuild ? 'Everything we found' : 'Count this group'}
+                  />
+                </div>
               ) : null}
 
-              <div className="px-2 space-y-5">
-                {currentChallenge.graphLabel && <h3 className="text-lg font-semibold text-cyan-200">{currentChallenge.graphLabel}</h3>}
-                <BarsArea
-                  values={valuesToRender}
-                  graphStyle={graphStyle}
-                  scale={scaleToRender}
-                  highlightedIndex={highlightedIndex}
-                  selectedIndex={selectedBarIndex}
-                  onBarClick={
-                    isStickerBuild || ROW_TAP_MODES.has(currentChallenge.evalMode)
-                      ? handleBarClick
-                      : undefined
-                  }
-                  clickable={
-                    (isStickerBuild || ROW_TAP_MODES.has(currentChallenge.evalMode))
-                    && feedback !== 'correct'
-                  }
-                  feedbackIndex={rowTapFeedback}
-                  showBarValues={currentChallenge.showBarValues ?? true}
-                  answerBarIndex={answerBarIndex}
-                  showEmptySlots={isStickerBuild}
-                  showPlacedCount={false}
-                />
+              {/* Every graph on screen, as one Pip region. */}
+              <div ref={pip.ref('graph')} data-pip-object="graph" className="space-y-6">
+                <div className="px-2 space-y-5">
+                  {currentChallenge.graphLabel && <h3 className="text-lg font-semibold text-cyan-200">{currentChallenge.graphLabel}</h3>}
+                  <BarsArea
+                    values={valuesToRender}
+                    graphStyle={graphStyle}
+                    scale={scaleToRender}
+                    highlightedIndex={highlightedIndex}
+                    selectedIndex={selectedBarIndex}
+                    onBarClick={
+                      isStickerBuild || ROW_TAP_MODES.has(currentChallenge.evalMode)
+                        ? handleBarClick
+                        : undefined
+                    }
+                    clickable={
+                      (isStickerBuild || ROW_TAP_MODES.has(currentChallenge.evalMode))
+                      && feedback !== 'correct'
+                    }
+                    feedbackIndex={rowTapFeedback}
+                    showBarValues={currentChallenge.showBarValues ?? true}
+                    answerBarIndex={answerBarIndex}
+                    showEmptySlots={isStickerBuild}
+                    showPlacedCount={false}
+                    rowRef={pip.ref}
+                  />
+                </div>
+
+                {currentChallenge.secondValues && <div className="px-2 space-y-3">
+                  <h3 className="text-lg font-semibold text-amber-200">{currentChallenge.secondGraphLabel}</h3>
+                  <BarsArea values={currentChallenge.secondValues} graphStyle="picture" scale={scaleToRender} showBarValues={false} />
+                </div>}
               </div>
 
-              {currentChallenge.secondValues && <div className="px-2 space-y-3">
-                <h3 className="text-lg font-semibold text-amber-200">{currentChallenge.secondGraphLabel}</h3>
-                <BarsArea values={currentChallenge.secondValues} graphStyle="picture" scale={scaleToRender} showBarValues={false} />
-              </div>}
+              {pipStore && (
+                <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                  className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+              )}
               {isSpokenGraph && <BarModelExplanation key={currentChallenge.id} challenge={currentChallenge}
                 instanceId={resolvedInstanceId} exhibitId={exhibitId} onFinished={handleSpokenFinished} />}
 
@@ -1084,14 +1138,16 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
 
               {currentChallenge.evalMode === 'build_graph' ? (
                 <div className="space-y-4">
-                  <BuildControls
-                    values={builtValues}
-                    onChange={setBuiltValues}
-                    scaleSteps={currentChallenge.availableScaleSteps ?? [1, 2, 5, 10]}
-                    chosenStep={chosenStep}
-                    onChooseStep={setChosenStep}
-                    disabled={feedback === 'correct'}
-                  />
+                  <div ref={pip.ref('controls')} data-pip-object="controls">
+                    <BuildControls
+                      values={builtValues}
+                      onChange={setBuiltValues}
+                      scaleSteps={currentChallenge.availableScaleSteps ?? [1, 2, 5, 10]}
+                      chosenStep={chosenStep}
+                      onChooseStep={setChosenStep}
+                      disabled={feedback === 'correct'}
+                    />
+                  </div>
                   <div className="flex justify-center">
                     <LuminaActionButton
                       action="check"
@@ -1127,7 +1183,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                   </LuminaActionButton>
                 </div>
               ) : null}
-            </>
+            </div>
           ) : null}
 
           {/* Phase summary panel */}

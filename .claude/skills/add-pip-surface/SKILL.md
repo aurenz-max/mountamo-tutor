@@ -4,8 +4,9 @@ description: >-
   Add or repair Pip's shared-surface interaction in a Lumina primitive, so Pip
   joins the primitive's workspace and looks at, points at, receives, or
   celebrates from the activity's own phases and the child's actions — with no
-  tutor session required. Use when Pip should share a primitive's workspace
-  instead of sitting on its perch, for one primitive or a batch. Not for
+  tutor session required. Use when an existing primitive should share its
+  workspace with Pip, for one primitive or a batch; new primitives get this at
+  birth in /primitive Phase 2d, which follows this skill. Not for
   LLM-driven animation, tutor speech or hints (/add-tutoring-scaffold), or the
   judged spoken loop (/add-di-loop).
 argument-hint: "<primitive-id> [more ids...] — e.g. ten-frame"
@@ -74,7 +75,7 @@ Before wiring, write down per eval mode: what the child must do independently, w
 ## Phase 2 — Host
 
 Nothing to connect. Check only:
-- The helper's `case '<primitive-id>'` in `components/MathPrimitivesTester.tsx` passes the preview `instanceId` into `data` (two primitives were missing it); lessons get it from `ManifestOrderRenderer`.
+- The helper's `case '<primitive-id>'` in `components/MathPrimitivesTester.tsx` (or `LanguageArtsPrimitivesTester.tsx`) passes the preview `instanceId` into `data` (several primitives were missing it); lessons get it from `ManifestOrderRenderer`. The DI Lab passes one for every pack.
 - The primitive uses `data.instanceId` for evaluation, tutoring, and the surface alike.
 - Primitives without a surface need no change; the companion's perch covers them.
 
@@ -95,7 +96,7 @@ cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit   # count vs base
    node pipdrive.mjs "<Helper label>" "<Eval mode label or empty>" 1400 20 'wait:;click:[data-pip-object="…"]'
    node summarize.mjs <printed out dir>/log.json
    ```
-   Expect `bodies=1 inDock=true anchor=true` before any start, `look` after touches, no `OVERLAP` / `PAGE-OVERFLOW-X`, and a new dock with one body after regeneration. Repeat at `760`. To see pointer geometry, add `start;speak:3` (signs in with the test account and injects silent tutor audio); check the screenshot that the ring or outline sits on the intended target and no connector crosses an answer choice.
+   Expect `bodies=1 inDock=true anchor=true` before any start, `look` after touches, no `OVERLAP` / `PAGE-OVERFLOW-X`, and a new dock with one body after regeneration. Repeat at `760`. Literacy primitives live in the Language Arts helper: prefix the same command with `PIP_HELPER="Language Arts"`. DI primitives live in the Direct Instruction Lab, not the math helper: use `scripts/didrive.mjs "<family short label>" "<eval_mode_id>" …` with the same actions (start the run with `start`; click a `data-pip-object` first to scroll the primitive into the screenshot). To see pointer geometry, add `start;speak:3` (signs in with the test account and injects silent tutor audio); check the screenshot that the ring or outline sits on the intended target and no connector crosses an answer choice.
 
 Pip Lab and `/lumina/pip-surface` demo the actor; they do not verify a primitive. State plainly what was not exercised (reduced motion, mouth timing against real speech, lesson scroll handoff).
 

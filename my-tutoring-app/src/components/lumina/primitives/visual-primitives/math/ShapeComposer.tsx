@@ -27,6 +27,9 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { shapeComposerPipPose } from '../../../pip/shapeComposerPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -192,17 +195,19 @@ interface ShapeSVGProps {
   strokeColor?: string;
   strokeWidth?: number;
   showLabel?: boolean;
+  pipRef?: (element: Element | null) => void;
+  pipObject?: string;
 }
 
 const ShapeSVG: React.FC<ShapeSVGProps> = ({
   shape, color, width, height, rotation = 0, x = 0, y = 0,
   opacity = 1, className = '', onClick, onMouseDown,
-  strokeColor = 'rgba(255,255,255,0.3)', strokeWidth = 1.5, showLabel = false,
+  strokeColor = 'rgba(255,255,255,0.3)', strokeWidth = 1.5, showLabel = false, pipRef, pipObject,
 }) => {
   const transform = `translate(${x}, ${y}) rotate(${rotation}, ${width / 2}, ${height / 2})`;
 
   return (
-    <g transform={transform} className={className} onClick={onClick} onMouseDown={onMouseDown}
+    <g ref={pipRef} data-pip-object={pipObject} transform={transform} className={className} onClick={onClick} onMouseDown={onMouseDown}
        style={{ cursor: onClick || onMouseDown ? 'pointer' : 'default' }}>
       {shape === 'circle' ? (
         <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2}
@@ -346,7 +351,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
     return '';
   };
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'shape-composer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -725,6 +730,29 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
   const showingCorrectFeedback = lastResult?.challengeId === currentChallenge?.id && lastResult?.correct;
 
   // -------------------------------------------------------------------------
+  // Pip shared surface
+  // -------------------------------------------------------------------------
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the piece the child last moved; Pip never moves, places, checks, or advances.
+  // Tutor audio counts only while the tutor is on this block and began on this challenge.
+  const pip = usePipTargets(currentChallenge?.id ?? null, !showingCorrectFeedback && !hasSubmittedEvaluation);
+  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
+    const targets = pip.targets();
+    const pose = shapeComposerPipPose({
+      running: true, preparing: false, currentSolved: !!showingCorrectFeedback, revealHeld: false,
+      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
+      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Shape composing canvas',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
+  // -------------------------------------------------------------------------
   // Render helpers
   // -------------------------------------------------------------------------
   const renderPalette = () => {
@@ -741,7 +769,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
           {unplaced.map(piece => (
             <button key={piece.id}
               className={`p-2 rounded-lg transition-colors ${interactive.ghost}`}
-              onClick={() => addPieceToCanvas(piece)}>
+              onClick={() => { pip.look(`piece-${piece.id}`); addPieceToCanvas(piece); }}>
               <svg width={40} height={40} viewBox={`0 0 ${piece.width} ${piece.height}`}>
                 <ShapeSVG shape={piece.shape} color={piece.color || SHAPE_COLORS[piece.shape] || '#8B5CF6'}
                           width={piece.width} height={piece.height} />
@@ -764,7 +792,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
               <button key={i}
                 className={`p-2 rounded-lg transition-colors ${remaining > 0 ? interactive.ghost : 'bg-white/2 border border-white/5 opacity-50'}`}
                 disabled={remaining <= 0}
-                onClick={() => addShapeFromPalette(s.shape, s.color || SHAPE_COLORS[s.shape] || '#8B5CF6', 50, s.shape === 'rectangle' ? 35 : 50)}>
+                onClick={() => { pip.look('canvas'); addShapeFromPalette(s.shape, s.color || SHAPE_COLORS[s.shape] || '#8B5CF6', 50, s.shape === 'rectangle' ? 35 : 50); }}>
                 <svg width={36} height={36} viewBox="0 0 50 50">
                   <ShapeSVG shape={s.shape} color={s.color || SHAPE_COLORS[s.shape] || '#8B5CF6'} width={50} height={50} />
                 </svg>
@@ -785,7 +813,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
           {allowedShapes.map(shape => (
             <button key={shape}
               className={`p-2 rounded-lg transition-colors ${interactive.ghost}`}
-              onClick={() => addShapeFromPalette(shape, SHAPE_COLORS[shape] || '#8B5CF6', 50, shape === 'rectangle' ? 35 : 50)}>
+              onClick={() => { pip.look('canvas'); addShapeFromPalette(shape, SHAPE_COLORS[shape] || '#8B5CF6', 50, shape === 'rectangle' ? 35 : 50); }}>
               <svg width={36} height={36} viewBox="0 0 50 50">
                 <ShapeSVG shape={shape} color={SHAPE_COLORS[shape] || '#8B5CF6'} width={50} height={50} />
               </svg>
@@ -889,7 +917,8 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
             x={s.x} y={s.y}
             strokeColor={selectedShapeId === s.id ? '#FCD34D' : 'rgba(255,255,255,0.3)'}
             strokeWidth={selectedShapeId === s.id ? 2.5 : 1.5}
-            onMouseDown={(e) => handleShapeMouseDown(s.id, e)} />
+            pipRef={pip.ref(`piece-${s.id}`)} pipObject={`piece-${s.id}`}
+            onMouseDown={(e) => { pip.look(`piece-${s.id}`); handleShapeMouseDown(s.id, e); }} />
         ))}
       </svg>
     );
@@ -902,7 +931,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
     return (
       <div className="space-y-3">
         <p className="text-sm text-slate-400">Tap to identify shapes you see:</p>
-        <div className="flex flex-wrap gap-2 justify-center">
+        <div ref={pip.ref('choices')} data-pip-object="choices" className="flex flex-wrap gap-2 justify-center">
           {shapes.map(shape => {
             const count = decomposeTaps.filter(t => t === shape).length;
             const expectedCount = expected.find(c => c.shape === shape)?.count ?? 0;
@@ -911,7 +940,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
                 className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
                   answerStateClass(count >= expectedCount ? 'correct' : 'idle')
                 }`}
-                onClick={() => handleDecomposeTap(shape)}>
+                onClick={() => { pip.look('choices'); handleDecomposeTap(shape); }}>
                 <svg width={24} height={24} viewBox="0 0 50 50">
                   <ShapeSVG shape={shape} color={SHAPE_COLORS[shape] || '#8B5CF6'} width={50} height={50} />
                 </svg>
@@ -939,14 +968,15 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
           Build <span className="text-slate-200 font-medium">{currentChallenge.targetForComposition}</span> using the shapes below.
           How many pieces do you need?
         </p>
-        <div className="flex items-center gap-3 justify-center">
+        <div ref={pip.ref('entry')} data-pip-object="entry" className="flex items-center gap-3 justify-center">
           <LuminaInput
             type="number"
             inputMode="numeric"
             min={1}
             max={20}
             value={howManyAnswer}
-            onChange={(e) => setHowManyAnswer(e.target.value)}
+            onFocus={() => pip.look('entry')}
+            onChange={(e) => { pip.look('entry'); setHowManyAnswer(e.target.value); }}
             className="w-16 text-center text-lg"
             placeholder="?"
           />
@@ -1018,7 +1048,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
 
             {/* Canvas */}
             {(currentChallenge.type !== 'decompose' || currentChallenge.compositeShapePath) && (
-              <div className="relative">
+              <div ref={pip.ref('canvas')} data-pip-object="canvas" className="relative">
                 {renderCanvas()}
                 {/* Shape controls */}
                 {selectedShapeId && !showingCorrectFeedback && (
@@ -1038,9 +1068,16 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
               </div>
             )}
 
+            {/* Pip's dock sits between the canvas and the answers below it
+                (palette pieces, decompose shape buttons, the how-many box). */}
+            {pipStore && (
+              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+            )}
+
             {/* Palette */}
             {!showingCorrectFeedback && currentChallenge.type !== 'decompose' && (
-              <LuminaPanel className="p-3">
+              <LuminaPanel ref={pip.ref('palette')} data-pip-object="palette" className="p-3">
                 <LuminaSectionLabel accent="cyan" size="sm" className="mb-2">Shape Palette — click to add</LuminaSectionLabel>
                 {renderPalette()}
               </LuminaPanel>

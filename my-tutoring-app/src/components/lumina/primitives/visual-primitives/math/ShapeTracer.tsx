@@ -20,6 +20,9 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { shapeTracerPipPose } from '../../../pip/shapeTracerPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -338,11 +341,32 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     return '';
   }, []);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'shape-tracer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
+  });
+
+  // ── Pip shared surface ────────────────────────────────────────────
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the dot the child last tapped; Pip never taps, draws, checks, or advances.
+  // Tutor audio counts only while the tutor is on this block and began on this challenge.
+  const pip = usePipTargets(currentChallenge?.id ?? null, !isCurrentChallengeComplete && !allChallengesComplete && !hasSubmittedEvaluation);
+  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
+    const targets = pip.targets();
+    const pose = shapeTracerPipPose({
+      running: true, preparing: false, currentSolved: isCurrentChallengeComplete, revealHeld: false,
+      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
+      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Shape drawing canvas',
+      dock: pip.dock.current, targets, pose,
+    };
   });
 
   // Activity introduction
@@ -621,6 +645,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     }
 
     // Reset domain-specific state
+    pip.clear();
     setTappedIndices([]);
     setSelectedGridPoints([]);
     setShapeComplete(false);
@@ -638,7 +663,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     );
   }, [
     advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex, tutorRevealClause,
+    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex, tutorRevealClause, pip.clear,
   ]);
 
   // Auto-submit when all complete
@@ -738,7 +763,8 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
           const isNext = idx === tappedIndices.length;
 
           return (
-            <g key={`v-${idx}`} className="cursor-pointer" onClick={() => handleTraceTap(idx)}>
+            <g key={`v-${idx}`} ref={pip.ref(`vertex-${idx}`)} data-pip-object={`vertex-${idx}`} className="cursor-pointer"
+              onClick={() => { pip.look(`vertex-${idx}`); handleTraceTap(idx); }}>
               {/* Pulsing ring for next vertex (next/start cue) */}
               {showNextCue && isNext && !shapeComplete && (
                 <circle
@@ -874,7 +900,8 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
           const isTapped = tappedIndices.includes(idx);
           const isNext = idx === tappedIndices.length;
           return (
-            <g key={`rem-${idx}`} className="cursor-pointer" onClick={() => handleCompleteTap(idx)}>
+            <g key={`rem-${idx}`} ref={pip.ref(`remaining-${idx}`)} data-pip-object={`remaining-${idx}`} className="cursor-pointer"
+              onClick={() => { pip.look(`remaining-${idx}`); handleCompleteTap(idx); }}>
               {showNextCue && isNext && !shapeComplete && (
                 <circle
                   cx={point.x} cy={point.y} r={DOT_RADIUS + 6}
@@ -928,13 +955,15 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
           return (
             <circle
               key={`g-${idx}`}
+              ref={pip.ref(`grid-${idx}`)}
+              data-pip-object={`grid-${idx}`}
               cx={dot.x} cy={dot.y}
               r={isSelected ? GRID_DOT_RADIUS + 4 : GRID_DOT_RADIUS}
               fill={isSelected ? 'rgba(34, 197, 94, 0.4)' : 'rgba(255,255,255,0.08)'}
               stroke={isSelected ? 'rgba(34, 197, 94, 0.7)' : 'none'}
               strokeWidth={isSelected ? 2 : 0}
               className="cursor-pointer transition-all duration-150"
-              onClick={() => handleGridDotClick(dot)}
+              onClick={() => { pip.look(`grid-${idx}`); handleGridDotClick(dot); }}
             />
           );
         })}
@@ -1050,7 +1079,8 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
           const isNext = order[tappedIndices.length] === idx;
 
           return (
-            <g key={`d-${idx}`} className="cursor-pointer" onClick={() => handleConnectDotTap(idx)}>
+            <g key={`d-${idx}`} ref={pip.ref(`dot-${idx}`)} data-pip-object={`dot-${idx}`} className="cursor-pointer"
+              onClick={() => { pip.look(`dot-${idx}`); handleConnectDotTap(idx); }}>
               {showNextCue && isNext && !shapeComplete && (
                 <circle
                   cx={dot.x} cy={dot.y} r={DOT_RADIUS + 6}
@@ -1181,6 +1211,8 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
         {/* Drawing Canvas */}
         <div className="flex justify-center">
           <svg
+            ref={pip.ref('canvas')}
+            data-pip-object="canvas"
             width={CANVAS_WIDTH}
             height={CANVAS_HEIGHT}
             viewBox={`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`}
@@ -1221,6 +1253,12 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
             {currentChallenge?.type === 'connect-dots' && renderConnectDotsCanvas()}
           </svg>
         </div>
+
+        {/* Pip's dock sits under the canvas, away from the Undo / Check buttons. */}
+        {pipStore && !allChallengesComplete && (
+          <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+            className="mx-auto flex min-h-28 w-full max-w-[500px] items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+        )}
 
         {/* Side Counter */}
         {currentChallenge && !allChallengesComplete && totalSides > 0 && (

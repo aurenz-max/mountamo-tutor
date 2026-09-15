@@ -54,6 +54,7 @@ import {
 } from '../evaluation';
 import { ExhibitProvider } from '../contexts/ExhibitContext';
 import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import { CuratorCompanion } from './CuratorCompanion';
 import { getComponentById } from '../service/manifest/catalog';
 import { LITERACY_CATALOG } from '../service/manifest/catalog/literacy';
 import type { ComponentId, EvalModeDefinition } from '../types';
@@ -166,8 +167,10 @@ const STRAND_LABELS: Record<string, { label: string; color: string }> = {
 const PrimitiveRenderer: React.FC<{
   componentId: PrimitiveType;
   data: unknown;
+  /** Per-generation id; the primitives with a Pip surface publish under it. */
+  instanceId: string;
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult) => void;
-}> = ({ componentId, data, onEvaluationSubmit }) => {
+}> = ({ componentId, data, instanceId, onEvaluationSubmit }) => {
   if (!data) return null;
 
   switch (componentId) {
@@ -215,7 +218,7 @@ const PrimitiveRenderer: React.FC<{
         }} />
       );
     case 'phonics-blender':
-      return <PhonicsBlender data={data as Parameters<typeof PhonicsBlender>[0]['data']} />;
+      return <PhonicsBlender data={{ ...(data as Parameters<typeof PhonicsBlender>[0]['data']), instanceId }} />;
     case 'decodable-reader':
       return <DecodableReader data={data as Parameters<typeof DecodableReader>[0]['data']} />;
     case 'interactive-book':
@@ -273,15 +276,15 @@ const PrimitiveRenderer: React.FC<{
     case 'syllable-clapper':
       return <SyllableClapper data={data as Parameters<typeof SyllableClapper>[0]['data']} />;
     case 'letter-spotter':
-      return <LetterSpotter data={data as Parameters<typeof LetterSpotter>[0]['data']} />;
+      return <LetterSpotter data={{ ...(data as Parameters<typeof LetterSpotter>[0]['data']), instanceId }} />;
     case 'letter-sound-link':
       return <LetterSoundLink data={data as Parameters<typeof LetterSoundLink>[0]['data']} />;
     case 'cvc-speller':
-      return <CvcSpeller data={data as Parameters<typeof CvcSpeller>[0]['data']} />;
+      return <CvcSpeller data={{ ...(data as Parameters<typeof CvcSpeller>[0]['data']), instanceId }} />;
     case 'word-workout':
       return <WordWorkout data={data as Parameters<typeof WordWorkout>[0]['data']} />;
     case 'word-sorter':
-      return <WordSorter data={data as Parameters<typeof WordSorter>[0]['data']} />;
+      return <WordSorter data={{ ...(data as Parameters<typeof WordSorter>[0]['data']), instanceId }} />;
     case 'picture-vocabulary':
       return <PictureVocabulary data={data as Parameters<typeof PictureVocabulary>[0]['data']} />;
     case 'story-talk':
@@ -823,11 +826,13 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
+  const [generationKey, setGenerationKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [tutorPanelOpen, setTutorPanelOpen] = useState(true);
   const [repairEvidence, setRepairEvidence] = useState<PrimitiveEvaluationResult | null>(null);
 
   const selectedOption = PRIMITIVE_OPTIONS.find((p) => p.value === selectedPrimitive);
+  const previewInstanceId = `la-helper-${selectedPrimitive}-${generationKey}`;
 
   const handleEvaluationSubmit = (result: PrimitiveEvaluationResult) => {
     console.log('Evaluation submitted:', result);
@@ -869,6 +874,7 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
       }
 
       const result = await response.json();
+      setGenerationKey((key) => key + 1);
       setGeneratedData(result.data || result);
     } catch (err) {
       console.error('Generation error:', err);
@@ -1146,13 +1152,17 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
               </div>
             )}
 
+            {/* Pip joins a primitive that publishes a surface, as in a lesson;
+                no session needed. Others keep the companion's perch. */}
             {generatedData != null && (
-              <div className="space-y-6">
+              <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId} className="space-y-6">
                 <PrimitiveRenderer
                   componentId={selectedPrimitive}
                   data={generatedData}
+                  instanceId={previewInstanceId}
                   onEvaluationSubmit={handleEvaluationSubmit}
                 />
+                <CuratorCompanion />
               </div>
             )}
           </div>

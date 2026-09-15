@@ -84,6 +84,9 @@ import { DiStallCard } from './DiStallCard';
 import { useDiStallRecovery } from './useDiStallRecovery';
 import { useDiPostRunDisconnect } from './useDiPostRunDisconnect';
 import DiActionPanel from '../../../components/DiActionPanel';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { diMathFactsPipPose } from '../../../pip/diMathFactsPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 export type { DiMathFactsChallenge, DiMathFactsChallengeType, DiMathFactsSupportTier } from './diMathFactsScript';
 
@@ -798,6 +801,26 @@ export const DiMathFacts: React.FC<{ data: DiMathFactsData; index?: number }> = 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this pack's own phase word onto the printed problem; Pip
+  // never answers, judges, or moves the stage. Speech counts only when it is
+  // this instance's and began on the fact now printed.
+  const pip = usePipTargets(currentChallenge?.id ?? null, false);
+  const tutorSpeaking = ctx.isAudioPlaying && activeInLesson;
+  const speechOnFact = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || isComplete || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(['problem'], () => 'The printed problem');
+    const pose = diMathFactsPipPose({
+      running, preparing, phase, tutorSpeaking, speechOnFact,
+      visibleIds: targets.map((target) => target.id),
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Math facts',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   // ── Render ───────────────────────────────────────────────────────
   const total = data.challenges.length;
   const isSupported =
@@ -854,7 +877,8 @@ export const DiMathFacts: React.FC<{ data: DiMathFactsData; index?: number }> = 
         )}
 
         {!isComplete && currentChallenge && !stalled && (
-          <div className="mb-6 flex min-h-56 flex-col items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
+          <div ref={pip.ref('problem')} data-pip-object="problem"
+            className="mb-6 flex min-h-56 flex-col items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
             {reward && phase === 'affirmed' ? (
               <div
                 key={`solved-${reward.display}`}
@@ -898,6 +922,11 @@ export const DiMathFacts: React.FC<{ data: DiMathFactsData; index?: number }> = 
               })}
             </div>
           </div>
+        )}
+
+        {pipStore && !isComplete && (
+          <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+            className="mx-auto mb-4 flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
         )}
 
         {/* Voice control: the whole interaction runs through the mic. */}

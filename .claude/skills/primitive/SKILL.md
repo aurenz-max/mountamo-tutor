@@ -29,7 +29,7 @@ This skill builds **L0 of the primitive lifecycle** (ladder: [PRIMITIVE_LIFECYCL
 - **Support tiers, structural difficulty, sound, voice control** → their skills, in the ladder order the birth certificate prints (Phase 8). Spoken-production primitives wire voice with `/add-voice-control` (open-mic answer/choice); its doctrine — asymmetric grading + quiet-tutor laws, plus the push-to-talk reference — lives in `docs/SPOKEN_INTERACTION_DOCTRINE.md` (`/add-spoken-judge` was retired 2026-08-09).
 
 **Never deferred** (expensive or impossible to retrofit — the reason this skill front-loads them):
-multi-instance schema (`challenges[]` required), a challenge-type field in the schema (even with one value — it's what makes densification cheap later), the Fork A/B generator decision, the answer-leak gating audit, Lumina-kit chrome, and `onEvaluationSubmit` wiring. A primitive that leaks answers or emits one binary signal is not "a lower rung" — it's debt (the Bucket A lesson).
+multi-instance schema (`challenges[]` required), a challenge-type field in the schema (even with one value — it's what makes densification cheap later), the Fork A/B generator decision, the answer-leak gating audit, Lumina-kit chrome, `onEvaluationSubmit` wiring, and the Pip surface (Phase 2d — where Pip may point is an answer-leak decision, and the dock is a layout decision, both made while the component is written). A primitive that leaks answers or emits one binary signal is not "a lower rung" — it's debt (the Bucket A lesson).
 
 ## Architecture: Sequential Focused Agents
 
@@ -37,7 +37,7 @@ This skill uses **sequential agent phases** to maximize quality at each step. Th
 
 ```
 Phase 1: Requirements        (main agent)
-Phase 2: Component            (main agent — creative work)
+Phase 2: Component            (main agent — creative work, incl. 2d Pip surface)
 Phase 3: Mechanical registration (2-3 parallel subagents — types, catalog, eval+tester)
 Phase 4: Generator             (FOCUSED agent — schema, prompt, post-validation)
 Phase 5: Type check            (main agent — compile everything)
@@ -316,6 +316,17 @@ REQUIRED FIELDS PER CHALLENGE TYPE:
 
 This manifest is passed to the Generator Agent in Phase 4. It prevents the #1 source of bugs: generators producing data the component can't render.
 
+### 2d. Wire the Pip surface
+
+Every interactive primitive is born with a Pip shared surface, so Pip joins its workspace from the primitive's own events — no tutor session involved. **`/add-pip-surface` is the single source of truth**: read its *How Pip attaches*, *Teaching contract* and *Phase 1 — Implement* sections now and follow them; do not reconstruct the wiring from memory or copy it here.
+
+1. **Decide targeting with the answer-leak audit.** For the core task, write down where Pip may point (where the child works — a gap, the object the ask names, a whole region) and where it must never point (anything that could be the answer). If every tappable thing is an answer choice, Pip points only at the region that holds them.
+2. **Policy** — pick the family reference from `/add-pip-surface` (judged spoken, judged hands, classic synchronous, classic async) and write `lumina/pip/<id>PipPose.ts` on `pipPhasePose`.
+3. **Component** — `usePipTargets` refs plus `data-pip-object` markers on eligible elements, `pip.look` in the child's existing handlers, an inline `usePipSurface` builder, and the dock placed between the cue target and the answer surfaces.
+4. **Test** — `lumina/pip/<Name>.surface.test.tsx`: mock the phase inputs and assert the pose for the cue (including where Pip must not point), a child touch, a confirmed result, and unmount clearing the store.
+
+Display-only primitives skip 2d. Record the targeting lines — they go into the Phase 8 birth certificate.
+
 ---
 
 ## Phase 3: Parallel Mechanical Subagents
@@ -457,6 +468,8 @@ Tasks:
        />
      );
    ```
+   `instanceId` is the preview's stable ID — the helper's anchor and Pip's dock share it, so never omit it or let the component mint its own.
+
    **HARDCODED MOCK FIXTURES ARE A BUG.** If you find yourself constructing a `<Name>Data` object with literal field values in the render case, STOP — that masks all generator changes from the tester preview (the measurement-tools fixture-bug, SHIPPED_LOG §6k #4). Always spread the generator's `data` via `...(data as Parameters<...>[0]['data'])`.
 
    **Edit 5 — Add metrics breakdown block in the results panel:**
@@ -703,6 +716,8 @@ Fix any errors. Common issues:
 - Import path typos
 - Metrics not added to PrimitiveMetrics union
 
+Then run the Pip surface test (and, for math, the helper attach test): `cd "<abs>/my-tutoring-app" && npm test -- src/components/lumina/pip/<Name>.surface.test.tsx src/components/lumina/pip/MathPrimitivesTester.surface.test.tsx`. A layout check in the browser is optional at birth — `/add-pip-surface` Phase 3 has the script.
+
 **Known pre-existing error to IGNORE:** `ManifestViewer.tsx` has an incomplete `Record<ComponentId, string>` that is missing 140+ component IDs. This error predates your changes — do not try to fix it.
 
 ---
@@ -825,6 +840,7 @@ After QA passes, report to the user:
 - Pedagogical moments wired (if interactive) + sendText tags defined
 - Answer-leak audit result (what was walked, what got gated)
 - QA results (pass/fail, any G1/G2/G4/G5 issues found and fixed)
+- Pip surface (if interactive): where Pip points and never points, and the surface test result
 
 **If QA found and fixed issues**, mention what was caught and how. This validates the phased approach.
 
@@ -856,6 +872,7 @@ Print it in the report AND save a copy to `my-tutoring-app/qa/eval-reports/<id>-
 - Answer-leak audit: <what was walked, what got gated>
 - Design gate (Phase 2): <five one-liners — manipulation / simulation / production / timer / layout-leak — each "pass: <how>" or "exception: <justification shown to user>">
 - Curriculum home: <MATCH <skill-id> | MISS — <gap/description/scoping> + action taken>
+- Pip surface (Phase 2d): <family>; points at <…>; never at <…>; surface test <pass> (display-only: N/A)
 
 ## Follow-up queue (run in order — each skill is the single source of truth for its layer)
 
@@ -911,6 +928,7 @@ When adding a **new domain** (not new primitive in existing domain), also update
 9. **Mode-specific answer-leak audit before declaring done**: walk every label, tooltip, panel, stats display in the rendered UI — would it disclose the current mode's correct answer? Fix by gating visibility on `currentChallenge.challengeType`. See [PRD §5 rule 7](../../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules).
 10. **No hardcoded mock fixtures in the tester** — they mask all generator changes. Always spread the generator's `data` via `...(data as Parameters<...>[0]['data'])`. See [SHIPPED_LOG §6k #4](../../../my-tutoring-app/src/components/lumina/docs/SHIPPED_LOG.md).
 11. **Birth ends with a birth certificate** (Phase 8). One core task identity at birth; the eval-mode ladder, tutoring block, support tiers, structural difficulty, and sound are layered by the add- skills in the printed queue order. Never inline another skill's template here — one source of truth per layer, or the copies drift (the pre-refactor version of this skill carried a legacy `resolveEvalModeConstraint` template that /add-eval-modes had already retired).
+12. **Born with a Pip surface** (Phase 2d) — targeting decided with the answer-leak audit, wiring per `/add-pip-surface`, never gated on a tutor session.
 
 ## PRD Reference
 

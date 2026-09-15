@@ -87,6 +87,8 @@ import {
   type CvcItem,
   type CvcTask,
 } from './cvcSpellerScript';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { cvcSpellerPipPose } from '../../../pip/cvcSpellerPipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -258,6 +260,8 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
 
   /** word-sort: the columns, built ONLY out of affirmed answers. */
   const [sorted, setSorted] = useState<Array<{ id: string; word: string; emoji: string; vowel: string }>>([]);
+  /** Pip only: the item the loop's last SENT cue was about. */
+  const [cuedItemId, setCuedItemId] = useState<string | null>(null);
 
   // Visual-only timer. It does NOT advance anything — it clears a highlight.
   // Progression here has exactly one cause: a tutor verdict.
@@ -663,6 +667,9 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     enabled: running,
     active: activeInLesson,
     onEmission: handleEmission,
+    onCue: (event) => {
+      if (event.phase === 'sent') setCuedItemId(currentItem()?.id ?? null);
+    },
   });
   loopRef.current = loop;
 
@@ -864,6 +871,29 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this pack's stage and the child's own box moves; Pip never
+  // places a letter, commits a build, or moves to the next item.
+  const pip = usePipTargets(
+    currentChallenge?.id ?? null,
+    running && stage !== 'judging' && currentChallenge?.taskType === 'spell-word',
+  );
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(undefined, (id) => (id.startsWith('box-') ? `Box ${Number(id.slice(4)) + 1}` : id));
+    const pose = cvcSpellerPipPose({
+      running, preparing, stage, task: currentChallenge.taskType,
+      tutorSpeaking: ctx.isAudioPlaying && activeInLesson,
+      cueOnItem: cuedItemId === currentChallenge.id,
+      visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Sounds and letters',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   // ============================================================================
   // Render
   // ============================================================================
@@ -904,6 +934,8 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
           {item.letters[0]}
         </div>
         <div
+          ref={pip.ref('gap')}
+          data-pip-object="gap"
           className={`w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center text-3xl font-bold uppercase transition-all ${
             reward && stage === 'affirmed'
               ? 'bg-emerald-500/30 border-emerald-400/60 text-emerald-200 animate-bounce'
@@ -931,6 +963,8 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
       {showPicture && (
         <LuminaPanel className="flex items-center justify-center px-5 py-3">
           <span
+            ref={pip.ref('picture')}
+            data-pip-object="picture"
             className="text-4xl"
             role="img"
             aria-label={currentChallenge.imageDescription || currentChallenge.targetWord}
@@ -940,7 +974,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
         </LuminaPanel>
       )}
 
-      <div className="flex items-center justify-center gap-3">
+      <div ref={pip.ref('boxes')} data-pip-object="boxes" className="flex items-center justify-center gap-3">
         {slots.map((letter, index) => {
           const isActive = activeSlotIndex === index && !awaitingBuildRef.current;
           const slotState: DropZoneState = boardFlash
@@ -948,7 +982,9 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
           return (
             <button
               key={index}
-              onClick={() => handleSlotTap(index)}
+              ref={pip.ref(`box-${index}`)}
+              data-pip-object={`box-${index}`}
+              onClick={() => { pip.look(`box-${index}`); handleSlotTap(index); }}
               disabled={!running || stage === 'judging'}
               aria-label={`box ${index + 1}`}
               className={`
@@ -970,7 +1006,12 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
           {letterBank.map((letter, index) => (
             <button
               key={`${letter}-${index}`}
-              onClick={() => handleSelectLetter(letter)}
+              onClick={() => {
+                // Pip watches the box the letter lands in, never the bank letter.
+                const target = activeSlotIndex ?? slots.findIndex((s) => s === null);
+                if (target >= 0) pip.look(`box-${target}`);
+                handleSelectLetter(letter);
+              }}
               disabled={!running || stage === 'judging' || activeSlotIndex === null}
               className={`
                 w-12 h-12 rounded-lg border-2 flex items-center justify-center
@@ -1002,7 +1043,8 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
       <div className="space-y-5">
         {showPicture && (
           <div className="flex justify-center">
-            <span className="text-5xl" role="img" aria-label={currentChallenge.imageDescription || currentChallenge.targetWord}>
+            <span ref={pip.ref('picture')} data-pip-object="picture"
+              className="text-5xl" role="img" aria-label={currentChallenge.imageDescription || currentChallenge.targetWord}>
               {currentChallenge.emoji}
             </span>
           </div>
@@ -1082,6 +1124,13 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
                 <SpeakerIcon className="text-amber-300 mr-1.5" size="w-5 h-5" /> Hear It
               </button>
             </div>
+
+            {/* Pip's dock sits above the stage: a pointer to the gap, picture or
+                boxes never crosses the letter bank below them. */}
+            {pipStore && (
+              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+            )}
 
             {item.task === 'fill-vowel' && renderFillVowel()}
             {item.task === 'spell-word' && renderSpellWord()}

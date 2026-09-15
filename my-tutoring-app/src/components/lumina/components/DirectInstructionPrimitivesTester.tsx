@@ -16,6 +16,7 @@ import DiWorkedProcedure, { type DiWorkedProcedureData } from '../primitives/vis
 import DiDeduction, { type DiDeductionData } from '../primitives/visual-primitives/direct-instruction/DiDeduction';
 import DiWordProblemSetup, { type DiWordProblemSetupData } from '../primitives/visual-primitives/direct-instruction/DiWordProblemSetup';
 import { DiRunLogPanel } from '../primitives/visual-primitives/direct-instruction/DiRunLogPanel';
+import { CuratorCompanion } from './CuratorCompanion';
 import {
   DI_TESTER_PRESETS,
   DI_TESTER_PRIMITIVES,
@@ -400,7 +401,11 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
               )}
             </div>
 
-            <RenderedPrimitive generated={generated} runKey={runKey} />
+            {/* Pip joins a primitive that publishes a surface, as in a lesson; no session needed. */}
+            <div data-primitive-instance-id={`di-tester-${runKey}`}>
+              <RenderedPrimitive generated={generated} runKey={runKey} />
+              <CuratorCompanion />
+            </div>
             <DiRunLogPanel />
 
             <details className="rounded-2xl border border-white/10 bg-slate-900/40">

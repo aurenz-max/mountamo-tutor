@@ -79,6 +79,8 @@ import {
   type WordSorterMode,
   type WordSorterTier,
 } from './wordSorterScript';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { wordSorterPipPose } from '../../../pip/wordSorterPipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -286,6 +288,23 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
   const currentItem = runner.currentItem;
   const modeMeta = MODE_META[currentItem?.mode ?? 'binary_sort'];
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase onto the word card; Pip never answers,
+  // files a word, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, false);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(['word'], () => 'The word card');
+    const pose = wordSorterPipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      visibleIds: targets.map((target) => target.id),
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Word sorter', dock: pip.dock.current, targets, pose };
+  });
+
   /**
    * The words this challenge has already placed — the surviving `showFiledWords`
    * lever. Read off the runner's solved ledger rather than a local map, so the
@@ -483,7 +502,8 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
                     the answer is a group name or a bank word — so printing it
                     leaks nothing, and its picture is the pre-reader's way in. */}
                 <div className="flex justify-center">
-                  <div className="flex flex-col items-center gap-2 rounded-3xl border-2 border-white/15 bg-white/5 px-10 py-6">
+                  <div ref={pip.ref('word')} data-pip-object="word"
+                    className="flex flex-col items-center gap-2 rounded-3xl border-2 border-white/15 bg-white/5 px-10 py-6">
                     {currentItem.emoji && (
                       <span className="text-7xl leading-none">{currentItem.emoji}</span>
                     )}
@@ -497,6 +517,13 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
                     <LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} />
                   </div>
                 </div>
+
+                {/* Pip's dock sits between the word card and the mats or bank,
+                    so a pointer to the card never crosses an answer. */}
+                {pipStore && (
+                  <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                    className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+                )}
 
                 {currentItem.mode === 'match_pairs' ? (
                   <div className="space-y-3">

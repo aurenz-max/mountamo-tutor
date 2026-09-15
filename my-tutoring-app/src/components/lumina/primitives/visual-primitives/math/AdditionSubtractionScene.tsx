@@ -100,6 +100,8 @@ import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSu
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { additionSubtractionScenePipPose } from '../../../pip/additionSubtractionScenePipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -391,6 +393,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
 
   // ── Per-item scene reset — every item owns its starting state ─────────────
   const resetSceneFor = useCallback((item: AddSubSceneItem) => {
+    pip.clear();
     setTappedObjects([]);
     setEquationTiles([]);
     pendingTilesRef.current = [];
@@ -471,6 +474,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
       // The tutor's correction re-modeled and re-asked in-band; restore the
       // working surface for another go. The settle window and the reveal gate
       // are both re-armed by the runner on this path.
+      pip.clear();
       if (item.kind === 'build-equation') {
         // The tray clears: the tiles are indistinguishable from each other, so
         // there is no "wrong slot" to clear the way cvc-speller does.
@@ -489,6 +493,9 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
 
   const currentItem = runner.currentItem;
   const currentSolved = runner.currentSolved;
+  // Pip's presentation is a projection of the runner's phase and the child's
+  // own touches; it never adds, removes, builds, commits, or advances anything.
+  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
   const sceneConfig = currentItem
     ? SCENE_BACKGROUNDS[currentItem.scene] || SCENE_BACKGROUNDS.pond
     : SCENE_BACKGROUNDS.pond;
@@ -682,6 +689,32 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     return [...numberTiles, '+', '-', '='];
   }, [currentItem, maxNumber]);
 
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    // Only what is in the picture right now: a change group still waiting on
+    // the tutor's voice is not rendered, so it is never published.
+    const visibleIds = [
+      'scene',
+      ...(currentItem.kind === 'build-equation' && showEquationBar ? ['tray'] : []),
+      ...sceneObjects.map(({ slotId }) => `object-${slotId}`),
+    ];
+    const targets = pip.targets(visibleIds, (id) => (
+      id === 'scene' ? 'The story picture' : id === 'tray' ? 'The number sentence tray' : currentItem.objectType
+    ));
+    const pose = additionSubtractionScenePipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      kind: currentItem.kind, gesture: currentItem.answerKind === 'gesture',
+      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentItem.id,
+      label: 'Story scene', dock: pip.dock.current, targets, pose,
+    };
+  });
+
   // ── Phase summary ─────────────────────────────────────────────────────────
   /** An all-spoken run never touched the picture and an all-hands run never said
    *  a number — only a mixed set earned a line about both. */
@@ -794,6 +827,8 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
             {/* Scene */}
             <div className="flex justify-center">
               <div
+                ref={pip.ref('scene')}
+                data-pip-object="scene"
                 className={`relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-br ${sceneConfig.gradient}`}
                 style={{ width: SCENE_WIDTH, maxWidth: '100%', height: SCENE_HEIGHT }}
               >
@@ -820,9 +855,11 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
                     return (
                       <g
                         key={slotId}
+                        ref={pip.ref(`object-${slotId}`)}
+                        data-pip-object={`object-${slotId}`}
                         className={`cursor-pointer transition-transform duration-300 ${arriving ? 'animate-fadeIn' : ''}`}
                         style={{ animationFillMode: 'forwards' }}
-                        onClick={() => handleObjectTap(slotId)}
+                        onClick={() => { pip.look(`object-${slotId}`); handleObjectTap(slotId); }}
                       >
                         {/* Hit target — an SVG <g> paints nothing of its own and
                             the emoji <text> is pointer-events-none, so WITHOUT
@@ -875,6 +912,9 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
               </div>
             </div>
 
+            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
+
             {/* Ten-frame aid — mirrors what is ACTUALLY VISIBLE (R8), so it can
                 never fill to the total while the change group is still waiting
                 on her voice. */}
@@ -891,7 +931,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
               <div className="flex justify-center">
                 <button
                   type="button"
-                  onClick={addSceneObject}
+                  onClick={() => { pip.look('scene'); addSceneObject(); }}
                   disabled={!runner.canAttempt || builtCount >= maxNumber}
                   className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-br from-amber-400/25 to-orange-400/25 border-2 border-amber-300/40 text-amber-100 text-xl font-bold shadow-sm active:scale-95 transition hover:from-amber-400/40 hover:to-orange-400/40 disabled:opacity-40 disabled:pointer-events-none"
                 >
@@ -907,7 +947,8 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
                 on a Check. */}
             {kind === 'build-equation' && showEquationBar && (
               <div className="space-y-3">
-                <div className="flex items-center justify-center gap-1 min-h-[44px] bg-slate-800/30 rounded-lg p-2 border border-white/5">
+                <div ref={pip.ref('tray')} data-pip-object="tray"
+                  className="flex items-center justify-center gap-1 min-h-[44px] bg-slate-800/30 rounded-lg p-2 border border-white/5">
                   {equationTiles.length === 0 ? (
                     <span className="text-slate-600 text-sm">Tap the tiles to build the number sentence</span>
                   ) : (
@@ -915,7 +956,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
                       <LuminaButton
                         key={i}
                         className="bg-purple-500/20 border border-purple-400/30 text-purple-200 text-lg font-mono h-9 w-9 p-0 hover:bg-red-500/20 hover:border-red-400/30"
-                        onClick={() => removeTile(i)}
+                        onClick={() => { pip.look('tray'); removeTile(i); }}
                         title="Tap to remove"
                       >
                         {tile}
@@ -928,7 +969,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
                     <LuminaButton
                       key={tile}
                       className="text-slate-200 text-sm font-mono h-8 w-8 p-0"
-                      onClick={() => addTile(tile)}
+                      onClick={() => { pip.look('tray'); addTile(tile); }}
                     >
                       {tile}
                     </LuminaButton>

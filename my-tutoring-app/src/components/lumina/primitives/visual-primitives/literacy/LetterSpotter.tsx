@@ -96,6 +96,8 @@ import {
 } from './letterSpotterScript';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { letterSpotterPipPose } from '../../../pip/letterSpotterPipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -356,10 +358,35 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
       setTapped(null);
       tappedRef.current = null;
       setTappedCell(null);
+      pip.clear();
     },
   });
 
   const currentItem = runner.currentItem;
+
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase and the child's own tap; Pip never
+  // answers, taps, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets();
+    const pose = letterSpotterPipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      mode: currentItem.mode,
+      visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Letter spotter', dock: pip.dock.current, targets, pose };
+  });
+  const pipDock = pipStore && (
+    <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+      className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+  );
+
   /** Affirmed: the first moment the answer may appear on screen. The runner
    *  owns this now — the local `revealed` latch it replaces had to be reset in
    *  `onItemOpened` and set in `onAffirmed`, one more pair to keep in step. */
@@ -434,7 +461,9 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
           <button
             key={`${item.id}-${option}`}
             type="button"
-            onClick={() => handleOptionTap(option)}
+            ref={pip.ref(`option-${option}`)}
+            data-pip-object={`option-${option}`}
+            onClick={() => { pip.look(`option-${option}`); handleOptionTap(option); }}
             disabled={!runner.canAttempt}
             className={`
               h-20 rounded-xl border-2 text-4xl font-bold transition-all
@@ -476,7 +505,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
                     <React.Fragment key={i}>
                       {part}
                       {i < parts.length - 1 && (
-                        <span className="relative inline-block mx-0.5">
+                        <span ref={pip.ref('marker')} data-pip-object="marker" className="relative inline-block mx-0.5">
                           <span className="absolute inset-0 -m-1.5 rounded-full border-2 border-dashed border-amber-400/70 animate-pulse" />
                           {revealed ? (
                             <span className="text-4xl text-emerald-300">
@@ -496,6 +525,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
             </div>
             {/* No answer tiles. The sentence IS the whole stage — the child
                 reads the star, hears the word, and says the letter. */}
+            {pipDock}
           </div>
         );
       }
@@ -534,7 +564,10 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
               </div>
             )}
 
-            <div className="grid grid-cols-4 gap-2 max-w-md mx-auto">
+            {/* Pip outlines the grid as a whole; every cell is a choice. */}
+            {pipDock}
+
+            <div ref={pip.ref('grid')} data-pip-object="grid" className="grid grid-cols-4 gap-2 max-w-md mx-auto">
               {grid.map((letter, i) => {
                 const isTarget = letter.toLowerCase() === item.targetLetter.toLowerCase();
                 const state = revealed && isTarget
@@ -545,7 +578,9 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
                 return (
                   <button
                     key={`${item.id}-${i}`}
-                    onClick={() => handleCellTap(i)}
+                    ref={pip.ref(`cell-${i}`)}
+                    data-pip-object={`cell-${i}`}
+                    onClick={() => { pip.look(`cell-${i}`); handleCellTap(i); }}
                     disabled={!runner.canAttempt}
                     className={`
                       aspect-square rounded-xl border-2 font-bold text-2xl
@@ -571,6 +606,8 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
               <div
                 role="button"
                 tabIndex={0}
+                ref={pip.ref('letter')}
+                data-pip-object="letter"
                 onClick={runner.hearStimulus}
                 className={`
                   text-8xl font-bold ${letterColor(item.targetLetter)}
@@ -582,6 +619,9 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
                 {item.targetLetter.toUpperCase()}
               </div>
             </div>
+            {/* Between the big letter and the little ones, so a pointer to the
+                question side never crosses an option. */}
+            {pipDock}
             {renderOptions(item)}
           </div>
         );

@@ -27,6 +27,9 @@ import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { isFindBetweenAnswerCorrect, isSnappedPlacementExact } from './numberLineGrading';
 import { buildJumpDiagnosisEvidence, jumpFirstResponseScore, jumpResponseFor, type JumpResponse } from './numberLineEvidence';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { numberLinePipPose } from '../../../pip/numberLinePipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -330,7 +333,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
 
   // Refs
-  const svgRef = useRef<SVGSVGElement>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
   const stableInstanceIdRef = useRef(instanceId || `number-line-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
@@ -438,7 +441,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
     placedPoints, currentAttempts, zoomLevel, currentPhase, supportTier,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'number-line',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -799,6 +802,35 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
   })();
 
   // -------------------------------------------------------------------------
+  // Pip shared surface
+  // -------------------------------------------------------------------------
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's last touch; Pip never places a point, checks, or advances. Tutor
+  // audio counts only while the tutor is on this block and began on this challenge.
+  const pip = usePipTargets(currentChallenge?.id ?? null, !isCurrentChallengeComplete && !hasSubmittedEvaluation);
+  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const registerLine = pip.ref('line');
+  const lineRef = useCallback((element: SVGSVGElement | null) => {
+    svgRef.current = element;
+    registerLine(element);
+  }, [registerLine]);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !isInteractive || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
+    const targets = pip.targets();
+    const pose = numberLinePipPose({
+      running: true, preparing: false, currentSolved: isCurrentChallengeComplete, revealHeld: false,
+      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
+      type: currentChallenge.type, visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Number line',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
+  // -------------------------------------------------------------------------
   // Jump Arc Rendering
   // -------------------------------------------------------------------------
   const renderJumpArc = useCallback((startVal: number, endVal: number, color: string, label?: string) => {
@@ -965,19 +997,21 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
 
         {/* Order Mode: Value Chips */}
         {currentChallenge?.type === 'order_values' && !allChallengesComplete && (
-          <div className="flex items-center gap-2 flex-wrap justify-center">
+          <div ref={pip.ref('values')} data-pip-object="values" className="flex items-center gap-2 flex-wrap justify-center">
             <span className="text-slate-400 text-xs mr-2">Tap a value, then tap the line:</span>
-            {currentChallenge.targetValues.map(val => {
+            {currentChallenge.targetValues.map((val, valueIndex) => {
               const isPlaced = orderedPlacements.has(val);
               const isSelected = selectedOrderValue === val;
               return (
                 <LuminaChoiceChip
                   key={val}
+                  ref={pip.ref(`value-${valueIndex}`)}
+                  data-pip-object={`value-${valueIndex}`}
                   accent={isPlaced ? 'emerald' : 'orange'}
                   selected={isPlaced || isSelected}
                   label={formatValue(val, activeNumberType)}
                   className="px-3 py-1.5"
-                  onClick={() => { if (!isPlaced) { SoundManager.select(); setSelectedOrderValue(val); } }}
+                  onClick={() => { pip.look(`value-${valueIndex}`); if (!isPlaced) { SoundManager.select(); setSelectedOrderValue(val); } }}
                   disabled={isPlaced}
                 />
               );
@@ -985,16 +1019,23 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
           </div>
         )}
 
+        {/* Pip's dock sits above the line: the chips and the marked start are its
+            cue targets, and a pointer from above reaches the start without
+            crossing the tick labels below the line. */}
+        {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+          className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
+
         {/* Number Line SVG */}
         <div className="flex justify-center">
           <svg
-            ref={svgRef}
+            ref={lineRef}
+            data-pip-object="line"
             width={SVG_WIDTH}
             height={SVG_HEIGHT}
             viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
             className="max-w-full h-auto rounded-xl cursor-crosshair select-none"
             style={{ background: 'rgba(255,255,255,0.02)' }}
-            onClick={handleLineClick}
+            onClick={(e) => { pip.look('line'); handleLineClick(e); }}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
           >
@@ -1074,7 +1115,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
 
             {/* Jump Mode: Start Point */}
             {currentChallenge?.type === 'show_jump' && activeOperations.length > 0 && (
-              <g>
+              <g ref={pip.ref('start')} data-pip-object="start">
                 <circle
                   cx={valueToX(activeOperations[0].startValue)}
                   cy={LINE_Y}
@@ -1135,7 +1176,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
               return (
                 <g
                   key={`pt-${i}`}
-                  onPointerDown={(e) => handlePointerDown(i, e)}
+                  onPointerDown={(e) => { pip.look('line'); handlePointerDown(i, e); }}
                   className="cursor-grab active:cursor-grabbing"
                 >
                   <circle cx={x} cy={LINE_Y} r={POINT_RADIUS + 5} fill="transparent" />
