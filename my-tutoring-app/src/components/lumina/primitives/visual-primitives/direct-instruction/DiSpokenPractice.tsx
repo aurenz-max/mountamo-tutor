@@ -136,14 +136,13 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
       affirmedNext: 'Yes! You said it.',
       done: 'Great talking today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => ({
+    // One record per attempt, right or corrected: the ask as spoken and what was heard; never the verdict.
+    observation: (item, { heard }) => ({
       challenge:
         `Direct Instruction spoken practice — ${TASK_PHRASE[item.mode]}. `
         + `The tutor asked: "${item.ask}"`,
       expected: item.expectedAnswer,
-      observed: lastHeard
-        ? `Heard "${lastHeard}".`
-        : 'The tutor judged the answer wrong from the audio.',
+      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
     }),
   }), [items]);
 
@@ -160,7 +159,8 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
       averageAttemptsPerChallenge:
         summary.attemptsCount / Math.max(summary.outcomes.length, 1),
     };
-    submitResult(summary.passed, summary.accuracy, metrics, undefined, undefined, summary.diagnosisEvidence);
+    submitResult(summary.passed, summary.accuracy, metrics, { learningResponses: summary.learningResponses },
+      undefined, summary.diagnosisEvidence);
   }, [data.challengeType, submitResult]);
 
   const runner = useJudgedScriptRunner<SpokenPracticeItem>({

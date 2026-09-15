@@ -166,14 +166,13 @@ export const DiDeduction: React.FC<{
       affirmedLast: 'You used every rule!',
       done: 'Great thinking today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => ({
+    // One record per attempt, right or corrected: the rule and case shown, and what was heard; never the verdict.
+    observation: (item, { heard }) => ({
       challenge:
         `Direct Instruction deduction — ${TASK_PHRASE[item.challengeType]}. `
         + `Rule "${item.ruleText}" Case "${item.case.caseText}"`,
       expected: item.answerSpoken,
-      observed: lastHeard
-        ? `Heard "${lastHeard}".`
-        : 'The tutor judged the deduction wrong from the audio.',
+      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
     }),
   }), [items]);
 
@@ -206,7 +205,7 @@ export const DiDeduction: React.FC<{
       summary.passed,
       summary.accuracy,
       metrics,
-      { outcomes: summary.outcomes },
+      { outcomes: summary.outcomes, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );

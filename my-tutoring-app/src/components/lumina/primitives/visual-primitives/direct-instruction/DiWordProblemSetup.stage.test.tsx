@@ -244,6 +244,30 @@ describe('the family builder is honest page-work', () => {
     expect(storyPart("Jen's stickers")).toBeTruthy();
   });
 
+  it('the attempt observation states the story numbers and every placed card, read before the retry clears the board, and the run submits it as student work', () => {
+    render(<DiWordProblemSetup data={DATA} />);
+    buildWrongFamily();
+    const pack = runnerState.options!.pack as unknown as {
+      items: WordProblemItem[];
+      observation: (item: WordProblemItem, context: { heard: string | null; verdict: 'affirmed' | 'corrected' }) =>
+        { challenge: string; expected: string; observed: string } | null;
+    };
+    const [big, family] = pack.items;
+    const record = pack.observation(big, { heard: null, verdict: 'corrected' })!;
+    expect(record.challenge).toContain('Story: Jen has 12 stickers. Tom has 8 more stickers than Jen. How many stickers does Tom have?');
+    expect(record.challenge).toContain("Number cards: Jen's stickers (12), how many more (8), Tom's stickers (?)");
+    expect(record.observed).toBe(`Built the family with "Jen's stickers" in the big-amount slot and "Tom's stickers" and "how many more" in the part slots.`);
+    expect(record.expected).toBe("Tom's stickers");
+    expect(pack.observation(family, { heard: null, verdict: 'corrected' })!.observed).toBe('No transcript was captured.');
+    for (const text of [record.observed, record.challenge]) expect(text).not.toMatch(/wrong|did not match|incorrect|judged/i);
+
+    const learningResponses = [{ ...record, itemId: big.id, verdict: 'corrected' }];
+    act(() => runnerState.options!.onFinished({ outcomes: [], solvedCount: 0, firstTryCount: 0, attemptsCount: 1,
+      accuracy: 0, passed: false, hearTaps: 0, observations: [], learningResponses }));
+    const calls = submitResultSpy.mock.calls;
+    expect(calls[calls.length - 1][3].learningResponses).toEqual(learningResponses);
+  });
+
   it('a correction retry clears the board so the child places again', () => {
     render(<DiWordProblemSetup data={DATA} />);
     buildWrongFamily();

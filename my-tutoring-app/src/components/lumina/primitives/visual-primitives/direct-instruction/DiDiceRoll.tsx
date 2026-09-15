@@ -225,7 +225,8 @@ export const DiDiceRoll: React.FC<{ data: DiDiceRollData; index?: number }> = ({
       affirmedNext: 'Yes! Get ready to roll again.',
       done: 'Great dice work today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => ({
+    // One record per attempt, right or corrected: the pips shown and what was heard; never the verdict.
+    observation: (item, { heard }) => ({
       challenge: item.challengeType === 'count_pips'
         ? `Direct Instruction dice quantity recognition — one die showed ${item.value} pips.`
         : item.challengeType === 'sum_two_dice'
@@ -234,9 +235,7 @@ export const DiDiceRoll: React.FC<{ data: DiDiceRollData; index?: number }> = ({
       expected: item.challengeType === 'compare_dice'
         ? `Say "${item.spokenAnswer}" to identify the larger side or equality.`
         : `Say the number word "${item.spokenAnswer}".`,
-      observed: lastHeard
-        ? `Heard "${lastHeard}".`
-        : 'The tutor judged the spoken quantity wrong.',
+      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
     }),
   }), [items]);
 
@@ -266,7 +265,7 @@ export const DiDiceRoll: React.FC<{ data: DiDiceRollData; index?: number }> = ({
       summary.passed,
       summary.accuracy,
       metrics,
-      { outcomes: summary.outcomes },
+      { outcomes: summary.outcomes, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );

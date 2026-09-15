@@ -155,7 +155,8 @@ export const DiWorkedProcedure: React.FC<{
       affirmedLast: 'You worked every column!',
       done: 'Great subtraction work today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => ({
+    // One record per attempt, right or corrected: the problem, column and step, and what was heard; never the verdict.
+    observation: (item, { heard }) => ({
       challenge:
         `Direct Instruction talk-through subtraction — ${TASK_PHRASE[item.challengeType]}. `
         + `Problem ${item.problemDisplay}, ${item.place} column, `
@@ -165,9 +166,7 @@ export const DiWorkedProcedure: React.FC<{
             ? 'where the correct move is to regroup.'
             : 'where no regrouping is needed.'),
       expected: item.answerSpoken,
-      observed: lastHeard
-        ? `Heard "${lastHeard}".`
-        : 'The tutor judged the step wrong from the audio.',
+      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
     }),
   }), [items]);
 
@@ -200,7 +199,7 @@ export const DiWorkedProcedure: React.FC<{
       summary.passed,
       summary.accuracy,
       metrics,
-      { outcomes: summary.outcomes },
+      { outcomes: summary.outcomes, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );

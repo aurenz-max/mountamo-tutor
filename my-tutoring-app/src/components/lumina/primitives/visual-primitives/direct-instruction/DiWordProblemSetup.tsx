@@ -188,17 +188,26 @@ export const DiWordProblemSetup: React.FC<{
       affirmedLast: 'You set up every problem!',
       done: 'Great word-problem work today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => ({
-      challenge:
-        `Direct Instruction word-problem setup — ${TASK_PHRASE[item.challengeType]}. `
-        + `Story: ${item.plan.story} Step: ${item.actionContract.label}.`,
-      expected: item.kind === 'big_number' ? item.plan.big.label : item.answerSpoken,
-      observed: item.kind === 'big_number'
-        ? `${item.challengeType === 'find_big_number' ? 'Placed' : 'Built the family with'} "${item.plan.quantities.find((x) => x.id === placementsRef.current.big)?.label ?? 'nothing'}" in the big-amount slot.`
-        : lastHeard
-          ? `Heard "${lastHeard}".`
-          : 'The tutor judged the step wrong from the audio.',
-    }),
+    // One factual record per attempt, right or corrected: the story and its number cards, the step, and what was
+    // heard or placed in each slot (the board ref is read before the retry clears it). Never the verdict.
+    observation: (item, { heard }) => {
+      const labelOf = (id: string | null) => item.plan.quantities.find((x) => x.id === id)?.label;
+      const cards = item.plan.quantities.map((x) => `${x.label} (${x.known ? x.value : '?'})`).join(', ');
+      const board = placementsRef.current;
+      const placed = item.challengeType === 'find_big_number'
+        ? `Placed ${labelOf(board.big) ? `"${labelOf(board.big)}"` : 'nothing'} in the big-amount slot.`
+        : `Built the family with ${labelOf(board.big) ? `"${labelOf(board.big)}"` : 'nothing'} in the big-amount slot and `
+          + `${[board.small1, board.small2].map((id) => (labelOf(id) ? `"${labelOf(id)}"` : 'nothing')).join(' and ')} in the part slots.`;
+      return {
+        challenge:
+          `Direct Instruction word-problem setup — ${TASK_PHRASE[item.challengeType]}. `
+          + `Story: ${item.plan.story} Number cards: ${cards}. Step: ${item.actionContract.label}.`,
+        expected: item.kind === 'big_number' ? item.plan.big.label : item.answerSpoken,
+        observed: item.kind === 'big_number'
+          ? placed
+          : heard ? `Heard "${heard}".` : 'No transcript was captured.',
+      };
+    },
   }), [items]);
 
   const handleFinished = useCallback((summary: JudgedRunSummary) => {
@@ -238,7 +247,7 @@ export const DiWordProblemSetup: React.FC<{
       summary.passed,
       summary.accuracy,
       metrics,
-      { outcomes: summary.outcomes },
+      { outcomes: summary.outcomes, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
