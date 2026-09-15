@@ -43,7 +43,11 @@ client = genai.Client(
 )
 
 DEFAULT_VOICE = "Leda"
-MODEL = "gemini-3.1-flash-live-preview"
+# LUMINA_LIVE_MODEL (process env) overrides the Live model for A/B drives.
+# Default flipped to gemini-3.8-live on the user's 2026-09-15 ruling (A/B report:
+# qa/tutor-reports/live-model-ab-gemini-3.8-live-2026-09-15.md). Rollback = the
+# previous default, "gemini-3.1-flash-live-preview", here or via the env override.
+MODEL = os.environ.get("LUMINA_LIVE_MODEL") or "gemini-3.8-live"
 # Audio constants
 FORMAT = "audio/pcm"
 SEND_SAMPLE_RATE = 16000
@@ -1845,10 +1849,11 @@ async def lumina_tutor_session(websocket: WebSocket):
                         gemini_session = session
                         logger.info(
                             f"Gemini Live session connected "
-                            f"({'resuming' if resuming else 'fresh'}, resume #{resume_count})"
+                            f"({'resuming' if resuming else 'fresh'}, resume #{resume_count}, model={MODEL})"
                         )
                         ledger.write(
                             "gemini-connected",
+                            model=MODEL,
                             fresh=not resuming,
                             resume=resume_count,
                             pending_text=text_queue.qsize(),
