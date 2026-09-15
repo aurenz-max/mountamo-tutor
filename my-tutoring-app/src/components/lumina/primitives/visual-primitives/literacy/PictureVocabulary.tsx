@@ -225,7 +225,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -261,31 +261,33 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
      * open, so it names the RELATION and offers the generated partner as an
      * example rather than as the answer.
      */
-    diagnosisObservation: (item, { lastHeard }) =>
+    // One factual record per attempt; the picture is named, because "name the pictured item" alone told the
+    // distiller nothing about what was shown (judged-evidence census, 2026-09-14).
+    observation: (item, { heard }) =>
       item.answerKind === 'gesture'
         ? {
             challenge: `Hear "${item.word}" and tap its picture.`,
             expected: `The picture of "${item.word}".`,
             observed: tappedRef.current
               ? `Tapped the picture of "${tappedRef.current}".`
-              : 'Tapped a picture that did not match.',
+              : 'Tapped a picture; which one was not recorded.',
           }
         : {
             challenge: item.kind === 'naming'
-              ? 'Name the pictured vocabulary item aloud.'
+              ? `Name the pictured item aloud: a picture of a ${item.word} (${item.emoji}) is shown.`
               : item.kind === 'opposite'
-                ? `Produce the opposite of "${item.baseWord}" aloud.`
+                ? `Produce the opposite of "${item.baseWord}" aloud${item.baseEmoji ? ` (its picture ${item.baseEmoji} is shown)` : ''}.`
                 : item.kind === 'association'
-                  ? `Name something that naturally goes with "${item.baseWord}" aloud.`
+                  ? `Name something that naturally goes with "${item.baseWord}" aloud${item.baseEmoji ? ` (its picture ${item.baseEmoji} is shown)` : ''}.`
                   : item.kind === 'gradable_scale'
                     ? `Say the missing word in the scale: ${scaleSpokenFor(item)}.`
                     : `Complete the sentence: ${item.frameDisplay}`,
             expected: item.kind === 'association'
               ? `Any everyday thing that plainly goes with "${item.baseWord}" — for example "${item.word}".`
               : `The word "${item.word}".`,
-            observed: lastHeard
-              ? `Heard "${lastHeard}".`
-              : 'The tutor judged the answer wrong from the audio.',
+            observed: heard
+              ? `Heard "${heard}".`
+              : 'No transcript was captured.',
           },
   }), [items]);
 

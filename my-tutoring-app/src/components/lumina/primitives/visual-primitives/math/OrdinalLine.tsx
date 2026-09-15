@@ -335,16 +335,18 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
         : 'Have another go — say your answer.',
       done: 'Great counting today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
-      const heard = lastHeard
-        ? `Heard "${lastHeard}".`
-        : 'The tutor judged the answer wrong from the audio.';
+    // One factual record per attempt: the line as shown (place 1 first), the ask, and what was heard or
+    // arranged. Stating the line is what lets a count from the wrong end be told from a slip; the distiller
+    // abstained on "who is in place 2 of 5" alone (judged-evidence census, 2026-09-14).
+    observation: (item, { heard: transcript }) => {
+      const heard = transcript ? `Heard "${transcript}".` : 'No transcript was captured.';
+      const line = `the line from the front is ${item.lineNames.join(', ')} (${item.lineNames.length} in line)`;
       switch (item.kind) {
         case 'identify':
           return {
             challenge: item.direction === 'name_character'
-              ? `identify: who is in place ${item.askPosition} of ${item.lineNames.length}.`
-              : `identify: what place the ${item.lineNames[item.askPosition - 1]} is in.`,
+              ? `identify: ${line}; who is in place ${item.askPosition}?`
+              : `identify: ${line}; what place is ${item.lineNames[item.askPosition - 1]} in?`,
             expected: item.answerText,
             observed: heard,
           };
@@ -356,19 +358,20 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
           };
         case 'relative_position':
           return {
-            challenge: `relative_position: who is right ${item.relativeQuery} place ${item.askPosition}.`,
+            challenge: `relative_position: ${line}; who is right ${item.relativeQuery} ${item.lineNames[item.askPosition - 1]} (place ${item.askPosition})?`,
             expected: item.answerText,
             observed: heard,
           };
         case 'sequence_story':
           return {
-            challenge: `sequence_story: what place the ${item.storyName} has in the spoken story.`,
+            challenge: `sequence_story: the story spoken was "${item.storyText}"; what place does ${item.storyName} have?`,
             expected: item.answerText,
             observed: heard,
           };
         default:
           return {
-            challenge: `build_sequence: arrange ${item.answerOrder.length} pictures from spoken clues.`,
+            challenge: `build_sequence: arrange ${item.answerOrder.length} pictures from spoken clues: ${
+              item.clues.map((clue) => `${clue.name} is in place ${clue.position}`).join('; ')}.`,
             expected: item.answerOrder.join(', '),
             observed: `Made this line: ${
               pendingOrderRef.current.filter(Boolean).length
@@ -418,7 +421,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
       summary.solvedCount === items.length,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );

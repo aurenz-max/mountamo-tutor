@@ -3,9 +3,11 @@
 Status: **slice 1 DONE 2026-09-14** ([report](misconception/judged-evidence-census-2026-09-14.md): runner-owned
 evidence, 6 more callers submitting it, census 20/20 gate fires, 14 hypotheses name the signature miss, 4 capture gaps
 queued); **slices 2–4 DONE 2026-09-15** ([report](misconception/judged-evidence-slices-2-4-2026-09-15.md)). Left open
-from them: the 71 packs still on the `diagnosisObservation` alias (migrate, audit their `observed` strings for verdict
-words, delete the alias), and the two per-component mode maps (counting-board, ten-frame), kept because their capture
-tests mock the boundary and the maps are correct. Written 2026-09-14 after `/add-misconception-loop ten-frame`
+from them: the packs still on the `diagnosisObservation` alias (45 implementations; phased plan in
+`HANDOFF-observation-alias-migration-2026-09-15.md`), and the two per-component mode maps
+(counting-board, ten-frame), kept because their capture tests mock the boundary and the maps are correct. The four
+capture gaps from the slice-1 census are closed
+([report](misconception/judged-capture-repairs-2026-09-15.md)). Written 2026-09-14 after `/add-misconception-loop ten-frame`
 (`qa/misconception/ten-frame-2026-09-14.md`); reviewed against the code the same day (claims re-checked, corrections
 folded in below). Four slices, in order; slice 1 carries most of the value.
 

@@ -13,7 +13,7 @@ import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import { useJudgedScriptRunner, type JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
-  SHAPE_LABELS, buildThreeDShapeItems, supportForItem, threeDShapeExplorerPackBase,
+  SHAPE_FACTS, SHAPE_LABELS, buildThreeDShapeItems, supportForItem, threeDShapeExplorerPackBase,
   wrapperTextForSession, type PropertyKey, type ThreeDShapeChallengeLike,
   type ThreeDShapeItem, type ThreeDShapeMode,
 } from './threeDShapeExplorerScript';
@@ -134,7 +134,7 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
       attemptsCount: summary.attemptsCount,
     };
     evaluation.submitResult(summary.passed, summary.accuracy, metrics, {
-      challengeResults: summary.outcomes, hearTaps: summary.hearTaps,
+      challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses,
       observedMetrics: { identification: identification != null, property: property != null, realWorld: realWorld != null },
       droppedChallenges: build.droppedChallenges, droppedItems: build.droppedItems,
     }, undefined, summary.diagnosisEvidence);
@@ -143,7 +143,23 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
   const pack = useMemo<JudgedScriptPack<ThreeDShapeItem>>(() => ({
     ...threeDShapeExplorerPackBase(items),
     statusLines: { idle: 'Tap the microphone to start.', ready: () => 'Look or listen, then say your answer out loud.', retry: () => 'Try the same shape again out loud.', noVerdict: () => 'Say one clear answer out loud.', done: 'Great solid-shape work!' },
-    diagnosisObservation: (item, { lastHeard }) => ({ challenge: `${item.kind} from the visible or spoken stimulus`, expected: `Say "${item.answer}" aloud.`, observed: lastHeard?.trim() ? `Said "${lastHeard.trim()}".` : 'No matching answer was heard.' }),
+    // One factual record per attempt: the solid or object actually shown, by name and geometry, not the mode
+    // name alone (the distiller abstained on "identify_shape from the visible or spoken stimulus" in the
+    // judged-evidence census, 2026-09-14). The property kinds keep the script's stimulus, which names both.
+    observation: (item, { heard }) => {
+      const facts = item.shape3d ? SHAPE_FACTS[item.shape3d] : null;
+      const solid = item.shape3d && facts
+        ? `${SHAPE_LABELS[item.shape3d]} (${facts.flatFaces} flat faces, ${facts.curvedSurfaces} curved ${facts.curvedSurfaces === 1 ? 'surface' : 'surfaces'})`
+        : item.shape ?? 'a shape';
+      const shown = item.kind === 'identify_shape' ? `a ${solid} shown large, unlabeled; say its name`
+        : item.kind === 'classify_dimension' ? `${item.is3d ? `a ${solid}` : `a flat ${item.shape ?? 'shape'}`} shown; say whether it is flat or solid`
+        : item.kind === 'match_object' ? `${item.objectName ?? 'an object'}${item.emoji ? ` ${item.emoji}` : ''} pictured and named; say which solid it is shaped like`
+        : item.kind === 'name_face_shape' ? `a ${solid} shown with one flat face highlighted; say the flat shape of that face`
+        : item.kind === 'solve_riddle' ? `clues spoken: ${(item.clues ?? []).join('; ')}; say the solid they describe`
+        : item.stimulus;
+      return { challenge: `${item.kind}: ${shown}.`, expected: `Say "${item.answer}" aloud.`,
+        observed: heard?.trim() ? `Said "${heard.trim()}".` : 'No transcript was captured.' };
+    },
   }), [items]);
 
   const runner = useJudgedScriptRunner<ThreeDShapeItem>({

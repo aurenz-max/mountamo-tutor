@@ -956,7 +956,7 @@ export const stimulusFor = (item: PictureVocabItem): string => {
 /**
  * Everything picture-vocabulary ever sends the tutor. `PictureVocabulary.tsx`
  * spreads this and adds what only a mounted component can own (status lines, and
- * the `diagnosisObservation` that reads the tapped card); the drive-plan endpoint
+ * the `observation` that reads the tapped card); the drive-plan endpoint
  * builds the identical cues for the headless judged-loop harness.
  *
  * BOTH MODEL PAIRS are derived here rather than passed in, because each is a

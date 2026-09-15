@@ -318,7 +318,7 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
       summary.passed,
       summary.accuracy,
       metrics,
-      { itemResults: summary.outcomes },
+      { itemResults: summary.outcomes, learningResponses: summary.learningResponses },
       undefined,
       summary.diagnosisEvidence,
     );
@@ -345,27 +345,31 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
       affirmedNext: 'Yes! Next one.',
       done: 'Great story time today!',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
+    // One factual record per attempt. A comprehension ask carries the story sentence it draws on and the
+    // choices on screen, so a word lifted from the story can be told from a guess (the distiller abstained on
+    // the bare question in the judged-evidence census, 2026-09-14).
+    observation: (item, { heard }) => {
+      const observed = heard ? `Heard "${heard}".` : 'No transcript was captured.';
       if (item.kind === 'read_line') {
         return {
           challenge: `Read the printed ${item.wordCount}-word line aloud: "${item.text}".`,
           expected: item.text,
-          observed: lastHeard ? `Heard "${lastHeard}".` : 'The tutor judged the read wrong from the audio.',
+          observed,
         };
       }
+      const source = item.evidenceLine ? ` The story sentence it draws on: "${item.evidenceLine}".` : '';
       if (item.kind === 'answer_spoken') {
         return {
-          challenge: `Answer aloud from the story: ${item.question}`,
+          challenge: `Answer aloud from the story: ${item.question}${source}`,
           expected: `The word "${item.answerWord}".`,
-          observed: lastHeard ? `Heard "${lastHeard}".` : 'The tutor judged the answer wrong from the audio.',
+          observed,
         };
       }
+      const choices = item.options?.length ? ` Choices on screen: ${item.options.map((option) => option.text).join(', ')}.` : '';
       return {
-        challenge: `Answer aloud about the story, from the choices: ${item.question}`,
+        challenge: `Answer aloud about the story, from the choices: ${item.question}${choices}${source}`,
         expected: correctOptionText(item),
-        observed: lastHeard
-          ? `Heard "${lastHeard}".`
-          : 'Named a choice the story does not support.',
+        observed,
       };
     },
   }), [items, mode]);
