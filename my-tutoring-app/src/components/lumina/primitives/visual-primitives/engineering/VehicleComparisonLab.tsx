@@ -55,6 +55,7 @@ import {
   type VehicleVisualCategory,
   type VehicleVisualKind,
 } from './vehicleVisualKind';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // -----------------------------------------------------------------------------
 // Data contract
@@ -463,7 +464,7 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
   );
   const winner = useMemo(() => bestForMetric(selectedVehicles, activeMetric), [selectedVehicles, activeMetric]);
 
-  const { sendText, isAudioPlaying } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'vehicle-comparison-lab' as any,
     instanceId,
     primitiveData: {
@@ -1096,6 +1097,18 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
     );
   };
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId,
+    scopeId: view === 'missions' ? (showSummary ? null : currentChallenge?.id ?? null) : hasSubmitted || allChallengesComplete ? null : `compare-${activeMetric}-${selectedVehicleIds.join('+')}`,
+    label: 'The vehicle comparison',
+    solved: view === 'missions' ? challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct) : comparisonRevealed && !!winner && predictionId === winner.id,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === instanceId,
+  });
+
   return (
     <LuminaCard className={cn('w-full overflow-hidden', className)}>
       <LuminaCardHeader className="relative overflow-hidden border-b border-white/10 bg-gradient-to-br from-slate-950/95 via-cyan-950/40 to-slate-900/90">
@@ -1136,7 +1149,12 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
             {metricsExplored.size} metrics tested · {predictionsCorrect}/{predictionsMade} predictions
           </div>
         </div>
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && (view === 'missions' ? !showSummary : !hasSubmitted && !allChallengesComplete) && <div {...pip.dock} />}
+        <div {...pip.workspace}>
         {view === 'compare' ? renderCompareView() : renderMissionsView()}
+        </div>
+
       </LuminaCardContent>
     </LuminaCard>
   );

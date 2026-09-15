@@ -25,6 +25,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -361,7 +362,7 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     currentPercent, currentValue, stepAttempts, supportTier,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'percent-bar',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -687,6 +688,18 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The percent bar',
+    solved: isCurrentChallengeComplete,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <LuminaCard className={`shadow-2xl ${className || ''}`}>
       <LuminaCardHeader className="pb-3">
@@ -768,6 +781,9 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
           </div>
         )}
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* ---- PLACE step: values + bar + calculation ---- */}
         {placeStep && !allChallengesComplete && (
           <>
@@ -938,6 +954,8 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
             })}
           </div>
         )}
+
+        </div>
 
         {/* Feedback */}
         {feedback && feedbackType && (

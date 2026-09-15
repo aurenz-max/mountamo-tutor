@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { CuratorCompanion } from './CuratorCompanion';
 // ============================================================================
 // Primitive Imports
 // ============================================================================
@@ -142,7 +143,7 @@ const PrimitiveRenderer: React.FC<{
         <BridgeBuilder
           data={{
             ...(data as Parameters<typeof BridgeBuilder>[0]['data']),
-            instanceId: `bridge-builder-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-structural-design',
             subskillId: 'bridge-construction',
             objectiveId: 'understand-load-distribution',
@@ -155,7 +156,7 @@ const PrimitiveRenderer: React.FC<{
         <TowerStacker
           data={{
             ...(data as Parameters<typeof TowerStacker>[0]['data']),
-            instanceId: `tower-stacker-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-structural-stability',
             subskillId: 'center-of-gravity',
             objectiveId: 'understand-stability',
@@ -168,7 +169,7 @@ const PrimitiveRenderer: React.FC<{
         <ShapeStrengthTester
           data={{
             ...(data as Parameters<typeof ShapeStrengthTester>[0]['data']),
-            instanceId: `shape-strength-tester-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-structural-design',
             subskillId: 'triangulation',
             objectiveId: 'understand-shape-strength',
@@ -181,7 +182,7 @@ const PrimitiveRenderer: React.FC<{
         <FoundationBuilder
           data={{
             ...(data as Parameters<typeof FoundationBuilder>[0]['data']),
-            instanceId: `foundation-builder-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-foundations',
             subskillId: 'soil-pressure',
             objectiveId: 'understand-foundations',
@@ -194,7 +195,7 @@ const PrimitiveRenderer: React.FC<{
         <ExcavatorArmSimulator
           data={{
             ...(data as Parameters<typeof ExcavatorArmSimulator>[0]['data']),
-            instanceId: `excavator-arm-simulator-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-hydraulics',
             subskillId: 'multi-joint-systems',
             objectiveId: 'understand-excavators',
@@ -207,7 +208,7 @@ const PrimitiveRenderer: React.FC<{
         <DumpTruckLoader
           data={{
             ...(data as Parameters<typeof DumpTruckLoader>[0]['data']),
-            instanceId: `dump-truck-loader-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-material-handling',
             subskillId: 'capacity-management',
             objectiveId: 'understand-dump-trucks',
@@ -236,7 +237,7 @@ const PrimitiveRenderer: React.FC<{
             targetWeeks: 12,
             parallelAllowed: true,
             challenges: [],
-            instanceId: `construction-sequence-planner-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-project-planning',
             subskillId: 'task-sequencing',
             objectiveId: 'understand-construction-order',
@@ -248,7 +249,7 @@ const PrimitiveRenderer: React.FC<{
         <BlueprintCanvas
           data={{
             ...(data as Parameters<typeof BlueprintCanvas>[0]['data']),
-            instanceId: `blueprint-canvas-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-technical-drawing',
             subskillId: 'floor-plans',
             objectiveId: 'understand-blueprint-drawing',
@@ -268,7 +269,7 @@ const PrimitiveRenderer: React.FC<{
             aircraftType: 'cessna',
             aircraftName: 'Cessna 172',
             gradeBand: '3-5',
-            instanceId: `flight-forces-explorer-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-aerodynamics',
             subskillId: 'four-forces-of-flight',
             objectiveId: 'understand-flight-forces',
@@ -280,7 +281,7 @@ const PrimitiveRenderer: React.FC<{
         <AirfoilLab
           data={{
             ...(data as Parameters<typeof AirfoilLab>[0]['data']),
-            instanceId: `airfoil-lab-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-aerodynamics',
             subskillId: 'wing-shape-and-lift',
             objectiveId: 'understand-airfoil-lift',
@@ -293,7 +294,7 @@ const PrimitiveRenderer: React.FC<{
         <VehicleComparisonLab
           data={{
             ...(data as Parameters<typeof VehicleComparisonLab>[0]['data']),
-            instanceId: `vehicle-comparison-lab-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-data-analysis',
             subskillId: 'vehicle-comparison',
             objectiveId: 'compare-vehicles-with-data',
@@ -309,7 +310,7 @@ const PrimitiveRenderer: React.FC<{
             description: "Newton's Third Law",
             overview: 'Explore how different vehicles create thrust',
             gradeBand: '3-5',
-            instanceId: `propulsion-lab-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-propulsion',
             subskillId: 'newtons-third-law',
             objectiveId: 'understand-propulsion',
@@ -321,7 +322,7 @@ const PrimitiveRenderer: React.FC<{
         <HydraulicsLab
           data={{
             ...(data as Parameters<typeof HydraulicsLab>[0]['data']),
-            instanceId: `hydraulics-lab-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-hydraulics',
             subskillId: 'force-multiplication',
             objectiveId: 'understand-hydraulic-force',
@@ -333,7 +334,7 @@ const PrimitiveRenderer: React.FC<{
         <PropulsionTimeline
           data={{
             ...(data as Parameters<typeof PropulsionTimeline>[0]['data']),
-            instanceId: `propulsion-timeline-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-history',
             subskillId: 'transportation-evolution',
             objectiveId: 'understand-transportation-history',
@@ -346,7 +347,7 @@ const PrimitiveRenderer: React.FC<{
         <PaperAirplaneDesigner
           data={{
             ...(data as Parameters<typeof PaperAirplaneDesigner>[0]['data']),
-            instanceId: `paper-airplane-designer-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-design-process',
             subskillId: 'iterative-design',
             objectiveId: 'understand-paper-airplane-design',
@@ -358,7 +359,7 @@ const PrimitiveRenderer: React.FC<{
         <EngineExplorer
           data={{
             ...(data as Parameters<typeof EngineExplorer>[0]['data']),
-            instanceId: `engine-explorer-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-engines',
             subskillId: 'engine-components',
             objectiveId: 'understand-engine-types',
@@ -370,7 +371,7 @@ const PrimitiveRenderer: React.FC<{
         <VehicleDesignStudio
           data={{
             ...(data as Parameters<typeof VehicleDesignStudio>[0]['data']),
-            instanceId: `vehicle-design-studio-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-vehicle-design',
             subskillId: 'iterative-design',
             objectiveId: 'understand-vehicle-engineering',
@@ -382,7 +383,7 @@ const PrimitiveRenderer: React.FC<{
         <TransportChallenge
           data={{
             ...(data as Parameters<typeof TransportChallenge>[0]['data']),
-            instanceId: `transport-challenge-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'engineering-transport',
             subskillId: 'vehicle-selection',
             objectiveId: 'understand-transport-constraints',
@@ -804,6 +805,13 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
+  // One instance id per generated preview: evaluation, tutoring and Pip's surface
+  // all key on it, so it must not change when the helper re-renders.
+  const previewInstanceId = useMemo(
+    () => `engineering-helper-${selectedPrimitive}-${Date.now()}`,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [generatedData],
+  );
   const [error, setError] = useState<string | null>(null);
   const [tutorPanelOpen, setTutorPanelOpen] = useState(true);
   const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
@@ -1059,11 +1067,14 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
 
             {generatedData != null && (
               <div className="space-y-6">
-                <PrimitiveRenderer
-                  componentId={selectedPrimitive}
-                  data={generatedData}
-                  onEvaluationSubmit={handleEvaluationSubmit}
-                />
+                <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId}>
+                  <PrimitiveRenderer
+                    componentId={selectedPrimitive}
+                    data={{ ...(generatedData as object), instanceId: previewInstanceId }}
+                    onEvaluationSubmit={handleEvaluationSubmit}
+                  />
+                  <CuratorCompanion />
+                </div>
               </div>
             )}
           </div>

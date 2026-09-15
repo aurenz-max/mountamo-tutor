@@ -6,6 +6,7 @@ import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../eval
 import type { RocketBuilderMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { LuminaReadAloud } from '../../../ui';
 
 // =============================================================================
@@ -299,7 +300,7 @@ const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) =
     builtPartNames, rocketStats.componentCount, attemptCount, flightOutcome,
   ]);
 
-  const { sendText, isAudioPlaying } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'rocket-builder',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -1055,6 +1056,14 @@ const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) =
   // Render
   // =============================================================================
 
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: 'rocket',
+    label: 'The parts and your rocket',
+    solved: !!launchResult?.success,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <div className={`w-full ${className}`}>
       <div className="max-w-7xl mx-auto glass-panel rounded-3xl border border-white/10 p-8 relative overflow-hidden shadow-2xl">
@@ -1115,8 +1124,10 @@ const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) =
             </div>
           )}
 
+          {pip.store && <div {...pip.dock} className={`${pip.dock.className} mb-6`} />}
           {/* Main Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div {...pip.workspace} className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Component Library */}
             <div className="lg:col-span-1 space-y-4">
               {!isPreReader && (
@@ -1320,6 +1331,8 @@ const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) =
                   {isPreReader ? <span className="text-3xl leading-none" aria-hidden="true">↺</span> : 'Reset'}
                 </button>
               </div>
+            </div>
+
             </div>
 
             {/* Results Panel */}

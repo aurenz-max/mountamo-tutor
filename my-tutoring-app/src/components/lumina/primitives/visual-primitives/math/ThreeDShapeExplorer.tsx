@@ -17,6 +17,9 @@ import {
   wrapperTextForSession, type PropertyKey, type ThreeDShapeChallengeLike,
   type ThreeDShapeItem, type ThreeDShapeMode,
 } from './threeDShapeExplorerScript';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { stimulusPipPose } from '../../../pip/stimulusPipPose';
+import { PIP_DOCK_CLASS } from '../../../pip/useWorkspacePipSurface';
 
 export interface ThreeDShapeExplorerChallenge extends ThreeDShapeChallengeLike {}
 
@@ -152,6 +155,24 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
   const displayedIndex = item ? items.findIndex((entry) => entry.id === item.id) : 0;
   const meta = MODE_META[item?.sourceMode ?? 'identify-3d'];
   const support = item ? supportForItem(item, !!revealItem) : null;
+
+  // ── Pip shared surface ───────────────────────────────────────────────────
+  // Every answer is spoken; the solid, object, flat shape or clue list is the
+  // question side, so Pip points at it as a whole — never at one face or edge.
+  const pip = usePipTargets(runner.currentItem?.id ?? null, false);
+  const pipStore = usePipSurface(() => {
+    const current = runner.currentItem;
+    if (!pip.dock.current || !current || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(['stimulus'], () => 'The shape');
+    const pose = stimulusPipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === current.id,
+      visibleIds: targets.map((target) => target.id),
+    });
+    return { instanceId: resolvedInstanceId, scopeId: current.id, label: 'Solid shape lab', dock: pip.dock.current, targets, pose };
+  });
   const phases = useMemo<PhaseResult[]>(() => evaluation.hasSubmitted
     ? phaseResultsFromSummary(items, runner.summary, (entry) => ({ label: MODE_META[entry.sourceMode].label, icon: MODE_META[entry.sourceMode].icon, accentColor: MODE_META[entry.sourceMode].accent }))
     : [], [evaluation.hasSubmitted, items, runner.summary]);
@@ -175,7 +196,8 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
     <LuminaCardContent className="space-y-5">
       {!evaluation.hasSubmitted && item && <>
         <div className="flex items-center justify-center gap-4"><LuminaChallengeCounter current={Math.max(1, displayedIndex + 1)} total={items.length} variant="dots" /><button type="button" onClick={runner.hearStimulus} className={`flex h-11 w-11 items-center justify-center rounded-full border-2 border-amber-500/30 bg-amber-500/15 transition hover:bg-amber-500/25 ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}`} aria-label="Hear the question again"><span aria-hidden>🔁</span></button></div>
-        {renderStimulus(item)}
+        {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId} className={PIP_DOCK_CLASS} />}
+        <div ref={pip.ref('stimulus')} data-pip-object="stimulus" className="mx-auto w-fit">{renderStimulus(item)}</div>
         {item.sourceMode === 'faces-and-properties' && !revealItem && <p className="text-center text-xs uppercase tracking-wide text-slate-500">Look for: {propertyLabel(item.propertyKey)}</p>}
         {show3dRotation && item.shape3d && item.supportTier !== 'hard' && <p className="text-center text-xs text-slate-500">Look all the way around the solid.</p>}
         <div className="flex justify-center"><LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} /></div>

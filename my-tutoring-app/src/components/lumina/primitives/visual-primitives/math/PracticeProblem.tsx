@@ -53,6 +53,7 @@ import {
 } from '../../../evaluation';
 import type { PracticeProblemMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { SoundManager } from '../../../utils/SoundManager';
 import type {
   PracticeProblemSolution,
@@ -228,7 +229,7 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
     [data, phase.kind, strokes.length],
   );
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'practice-problem',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -434,6 +435,20 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
   const canvasReady =
     phase.kind === 'solving' || phase.kind === 'judging' || phase.kind === 'judge-error';
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // Pip outlines the whiteboard during the tutor's cue, looks where the child
+  // writes, receives the work while the judge compares it, and celebrates only
+  // a correct verdict. It never reads, corrects, or submits the derivation.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: 'problem',
+    label: 'Your whiteboard',
+    solved: phase.kind === 'reveal' && phase.verdict.verdict === 'correct',
+    checking: isJudging,
+    handover: true,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <LuminaCard className={`relative overflow-hidden ${className ?? ''}`}>
       <LuminaCardHeader className="pb-3">
@@ -450,6 +465,9 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
           )}
         </div>
         <LuminaCardTitle className="text-lg">{data.title}</LuminaCardTitle>
+        {/* Pip's dock stays in the header so it holds one position through solving,
+            judging, and the reveal overlay. */}
+        {pip.store && <div {...pip.dock} className={`${pip.dock.className} mt-3`} />}
       </LuminaCardHeader>
 
       <LuminaCardContent className="p-0">
@@ -611,6 +629,7 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
                   </div>
 
                   <div
+                    {...pip.workspace}
                     className={`flex-1 min-h-[420px] relative ${
                       phase.kind === 'solving' ? '' : 'pointer-events-none'
                     }`}

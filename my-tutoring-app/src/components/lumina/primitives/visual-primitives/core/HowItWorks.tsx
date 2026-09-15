@@ -29,6 +29,7 @@ import type { HowItWorksMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SpotlightCard } from '../../../components/SpotlightCard';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -261,7 +262,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     totalChallenges: challenges.length,
   }), [title, overview, totalSteps, stepsExplored, challengeAnswers.length, challenges.length]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'how-it-works',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -742,6 +743,8 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
           </button>
         </div>
 
+        {pip.store && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-8">
         {/* Order slots (tap a filled card to send it back) */}
         <div className="flex justify-center gap-4 flex-wrap">
           {preReader.steps.map((_, position) => {
@@ -795,6 +798,8 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
             })}
           </div>
         )}
+
+        </div>
 
         {preStatus === 'correct' && (
           <div className="text-center text-6xl animate-bounce">🎉</div>
@@ -990,6 +995,9 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
 
         <p className="text-slate-100 text-sm font-medium">{currentChallenge.question}</p>
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && <div {...pip.dock} />}
+        <div {...pip.workspace}>
         {/* Multiple choice (identify / predict / explain) */}
         {(currentChallenge.type === 'identify' || currentChallenge.type === 'predict' || currentChallenge.type === 'explain') && currentChallenge.options && (
           <div className="space-y-2">
@@ -1080,6 +1088,8 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
           </div>
         )}
 
+        </div>
+
         {/* Feedback */}
         {showChallengeFeedback && (
           <div className="space-y-3">
@@ -1133,6 +1143,18 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   // Pre-reader (K / PRE) subset: the picture-order task replaces the whole
   // reading-heavy magazine + text quiz. No header chrome, no counters — the
   // emoji cards are the entire surface and the tutor carries the words.
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: preReader ? 'pre-order' : allChallengesComplete || hasSubmittedEvaluation || !showChallenges || !currentChallenge ? null : `challenge-${currentChallengeIndex}`,
+    label: 'The challenge answers',
+    solved: preReader ? preStatus === 'correct' : currentChallenge?.type === 'sequence' ? sequenceChecked && sequenceCorrect : showChallengeFeedback && selectedOption === currentChallenge?.correctIndex,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   if (preReader) {
     return (
       <div className={`space-y-6 ${className || ''}`}>

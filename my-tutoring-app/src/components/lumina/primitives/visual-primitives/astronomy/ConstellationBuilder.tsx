@@ -12,6 +12,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // =============================================================================
 // Type Definitions — Single Source of Truth
@@ -258,7 +259,7 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
     instruction: currentChallenge?.instruction ?? '',
   }), [title, gradeLevel, currentChallenge, connectedCount, totalStars, lastStarTapped]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'constellation-builder',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -608,6 +609,18 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
     return challengeResults.some(r => r.challengeId === currentChallenge.id);
   }, [currentChallenge, challengeResults]);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete ? null : currentChallenge?.id ?? null,
+    label: 'The stars and your answer',
+    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
       <CardHeader>
@@ -673,6 +686,9 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
               )}
             </div>
 
+            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-4">
             {/* Star field */}
             {(currentChallenge.type === 'guided_trace' || currentChallenge.type === 'free_connect' || currentChallenge.type === 'identify') && (
               <div className="relative bg-slate-950 rounded-lg border border-white/10 overflow-hidden">
@@ -863,6 +879,8 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
                 )}
               </div>
             )}
+
+            </div>
 
             {/* Feedback message */}
             {feedback && (

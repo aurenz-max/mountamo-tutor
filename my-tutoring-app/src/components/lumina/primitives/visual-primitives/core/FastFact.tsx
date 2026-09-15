@@ -18,6 +18,7 @@ import {
 import type { FastFactMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -301,11 +302,24 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
     challenges.length, currentChallengeIndex, gradeBand, targetResponseTime,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'fast-fact',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand ?? 'Elementary',
+  });
+
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The fact and its choices',
+    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+    running: gamePhase === 'playing',
   });
 
   const hasIntroducedRef = useRef(false);
@@ -637,9 +651,13 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
           </div>
         )}
 
+        {/* Pip's dock sits above the fact and its answer choices, which it
+            outlines together as the workspace. */}
+        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+
         {/* Main Challenge Area */}
         {gamePhase === 'playing' && currentChallenge && !allChallengesComplete && (
-          <div className="relative">
+          <div {...pip.workspace} className="relative">
             {/* Visual (if present) */}
             {currentChallenge.prompt.visual && (
               <div className="mb-4 p-4 bg-slate-800/20 rounded-xl border border-white/5">

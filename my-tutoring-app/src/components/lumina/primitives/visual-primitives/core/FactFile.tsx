@@ -32,6 +32,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import { PreReaderSelfCheck, buildSelfCheckReadAloud } from '../../shared/PreReaderSelfCheck';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -225,7 +226,7 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
     currentKeyStats: keyStats.map(s => `${s.label}: ${s.value} ${s.unit}`).join(', '),
   }), [title, category, activeTab, sectionsExplored, totalSections, checkAnswers.length, selfChecks.length, keyStats]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'fact-file',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -576,6 +577,9 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
 
         <p className="text-slate-100 text-sm font-medium">{currentCheck.question}</p>
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && <div {...pip.dock} />}
+        <div {...pip.workspace}>
         <div className="space-y-2">
           {currentCheck.options.map((opt, i) => {
             const isSelected = selectedOption === i;
@@ -602,6 +606,8 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
               </LuminaAnswerChoice>
             );
           })}
+        </div>
+
         </div>
 
         {showCheckFeedback && (
@@ -648,6 +654,18 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
   // reads each self-check aloud and the child answers by tapping a picture. Adult
   // chrome (title/category/tabs/counters/stat labels) is hidden.
   // -------------------------------------------------------------------------
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChecksComplete || hasSubmittedEvaluation || !(showSelfChecks || preReader) || !currentCheck ? null : `check-${currentCheckIndex}`,
+    label: 'The answer choices',
+    solved: showCheckFeedback && selectedOption === currentCheck?.correctIndex,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   if (preReader) {
     return (
       <LuminaCard className={className} topAccent="cyan">
@@ -655,6 +673,9 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
           {allChecksComplete ? (
             renderResults()
           ) : currentCheck ? (
+            <>
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace}>
             <PreReaderSelfCheck
               key={currentCheckIndex}
               question={currentCheck.question}
@@ -673,6 +694,8 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
               onAskTutor={(msg) => sendText(msg)}
               onResult={(correct, attempts) => { if (correct) handlePreCheckPass(attempts); }}
             />
+            </div>
+            </>
           ) : (
             <p className="text-center text-slate-400 text-sm py-8">All done! 🎉</p>
           )}

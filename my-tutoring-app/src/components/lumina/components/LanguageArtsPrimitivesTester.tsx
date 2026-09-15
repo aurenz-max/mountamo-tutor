@@ -189,7 +189,7 @@ const PrimitiveRenderer: React.FC<{
       return (
         <YouAndMe data={{
           ...(data as Parameters<typeof YouAndMe>[0]['data']),
-          instanceId: 'you-and-me-tester',
+          instanceId,
           onEvaluationSubmit,
         }} />
       );
@@ -197,7 +197,7 @@ const PrimitiveRenderer: React.FC<{
       return (
         <StoryBridge data={{
           ...(data as Parameters<typeof StoryBridge>[0]['data']),
-          instanceId: 'story-bridge-tester',
+          instanceId,
           onEvaluationSubmit,
         }} />
       );
@@ -205,7 +205,7 @@ const PrimitiveRenderer: React.FC<{
       return (
         <StoryRibbon data={{
           ...(data as Parameters<typeof StoryRibbon>[0]['data']),
-          instanceId: 'story-ribbon-tester',
+          instanceId,
           onEvaluationSubmit,
         }} />
       );
@@ -213,20 +213,20 @@ const PrimitiveRenderer: React.FC<{
       return (
         <LetterWorkshop data={{
           ...(data as Parameters<typeof LetterWorkshop>[0]['data']),
-          instanceId: 'letter-workshop-tester',
+          instanceId,
           onEvaluationSubmit,
         }} />
       );
     case 'phonics-blender':
       return <PhonicsBlender data={{ ...(data as Parameters<typeof PhonicsBlender>[0]['data']), instanceId }} />;
     case 'decodable-reader':
-      return <DecodableReader data={data as Parameters<typeof DecodableReader>[0]['data']} />;
+      return <DecodableReader data={{ ...(data as Parameters<typeof DecodableReader>[0]['data']), instanceId }} />;
     case 'interactive-book':
       return (
         <InteractiveBook
           data={{
             ...(data as Parameters<typeof InteractiveBook>[0]['data']),
-            instanceId: 'interactive-book-tester',
+            instanceId,
             skillId: 'literacy-reading-comprehension',
             subskillId: 'text-features',
             objectiveId: 'identify-book-features',
@@ -235,62 +235,62 @@ const PrimitiveRenderer: React.FC<{
         />
       );
     case 'story-map':
-      return <StoryMap data={data as Parameters<typeof StoryMap>[0]['data']} />;
+      return <StoryMap data={{ ...(data as Parameters<typeof StoryMap>[0]['data']), instanceId }} />;
     case 'character-web':
-      return <CharacterWeb data={data as Parameters<typeof CharacterWeb>[0]['data']} />;
+      return <CharacterWeb data={{ ...(data as Parameters<typeof CharacterWeb>[0]['data']), instanceId }} />;
     case 'poetry-lab':
-      return <PoetryLab data={data as Parameters<typeof PoetryLab>[0]['data']} />;
+      return <PoetryLab data={{ ...(data as Parameters<typeof PoetryLab>[0]['data']), instanceId }} />;
     case 'genre-explorer':
-      return <GenreExplorer data={data as Parameters<typeof GenreExplorer>[0]['data']} />;
+      return <GenreExplorer data={{ ...(data as Parameters<typeof GenreExplorer>[0]['data']), instanceId }} />;
     case 'text-structure-analyzer':
-      return <TextStructureAnalyzer data={data as Parameters<typeof TextStructureAnalyzer>[0]['data']} />;
+      return <TextStructureAnalyzer data={{ ...(data as Parameters<typeof TextStructureAnalyzer>[0]['data']), instanceId }} />;
     case 'evidence-finder':
-      return <EvidenceFinder data={data as Parameters<typeof EvidenceFinder>[0]['data']} />;
+      return <EvidenceFinder data={{ ...(data as Parameters<typeof EvidenceFinder>[0]['data']), instanceId }} />;
     case 'paragraph-architect':
-      return <ParagraphArchitect data={data as Parameters<typeof ParagraphArchitect>[0]['data']} />;
+      return <ParagraphArchitect data={{ ...(data as Parameters<typeof ParagraphArchitect>[0]['data']), instanceId }} />;
     case 'story-planner':
       return <StoryPlanner data={data as Parameters<typeof StoryPlanner>[0]['data']} />;
     case 'opinion-builder':
-      return <OpinionBuilder data={data as Parameters<typeof OpinionBuilder>[0]['data']} />;
+      return <OpinionBuilder data={{ ...(data as Parameters<typeof OpinionBuilder>[0]['data']), instanceId }} />;
     case 'revision-workshop':
-      return <RevisionWorkshop data={data as Parameters<typeof RevisionWorkshop>[0]['data']} />;
+      return <RevisionWorkshop data={{ ...(data as Parameters<typeof RevisionWorkshop>[0]['data']), instanceId }} />;
     case 'reading-repair-studio':
       return <ReadingRepairStudio data={{ ...(data as Parameters<typeof ReadingRepairStudio>[0]['data']),
         instanceId: 'reading-repair-studio-tester' }} onEvaluationSubmit={onEvaluationSubmit} />;
     case 'read-aloud-studio':
-      return <ReadAloudStudio data={data as Parameters<typeof ReadAloudStudio>[0]['data']} />;
+      return <ReadAloudStudio data={{ ...(data as Parameters<typeof ReadAloudStudio>[0]['data']), instanceId }} />;
     case 'sentence-builder':
       return <SentenceBuilder data={data as Parameters<typeof SentenceBuilder>[0]['data']} />;
     case 'context-clues-detective':
-      return <ContextCluesDetective data={data as Parameters<typeof ContextCluesDetective>[0]['data']} />;
+      return <ContextCluesDetective data={{ ...(data as Parameters<typeof ContextCluesDetective>[0]['data']), instanceId }} />;
     case 'figurative-language-finder':
-      return <FigurativeLanguageFinder data={data as Parameters<typeof FigurativeLanguageFinder>[0]['data']} />;
+      return <FigurativeLanguageFinder data={{ ...(data as Parameters<typeof FigurativeLanguageFinder>[0]['data']), instanceId }} />;
     case 'spelling-pattern-explorer':
-      return <SpellingPatternExplorer data={data as Parameters<typeof SpellingPatternExplorer>[0]['data']} />;
+      return <SpellingPatternExplorer data={{ ...(data as Parameters<typeof SpellingPatternExplorer>[0]['data']), instanceId }} />;
     case 'rhyme-studio':
-      return <RhymeStudio data={data as Parameters<typeof RhymeStudio>[0]['data']} />;
+      return <RhymeStudio data={{ ...(data as Parameters<typeof RhymeStudio>[0]['data']), instanceId }} />;
     case 'sound-swap':
-      return <SoundSwap data={data as Parameters<typeof SoundSwap>[0]['data']} />;
+      return <SoundSwap data={{ ...(data as Parameters<typeof SoundSwap>[0]['data']), instanceId }} />;
     case 'phoneme-explorer':
-      return <PhonemeExplorer data={data as Parameters<typeof PhonemeExplorer>[0]['data']} />;
+      return <PhonemeExplorer data={{ ...(data as Parameters<typeof PhonemeExplorer>[0]['data']), instanceId }} />;
     case 'syllable-clapper':
-      return <SyllableClapper data={data as Parameters<typeof SyllableClapper>[0]['data']} />;
+      return <SyllableClapper data={{ ...(data as Parameters<typeof SyllableClapper>[0]['data']), instanceId }} />;
     case 'letter-spotter':
       return <LetterSpotter data={{ ...(data as Parameters<typeof LetterSpotter>[0]['data']), instanceId }} />;
     case 'letter-sound-link':
-      return <LetterSoundLink data={data as Parameters<typeof LetterSoundLink>[0]['data']} />;
+      return <LetterSoundLink data={{ ...(data as Parameters<typeof LetterSoundLink>[0]['data']), instanceId }} />;
     case 'cvc-speller':
       return <CvcSpeller data={{ ...(data as Parameters<typeof CvcSpeller>[0]['data']), instanceId }} />;
     case 'word-workout':
-      return <WordWorkout data={data as Parameters<typeof WordWorkout>[0]['data']} />;
+      return <WordWorkout data={{ ...(data as Parameters<typeof WordWorkout>[0]['data']), instanceId }} />;
     case 'word-sorter':
       return <WordSorter data={{ ...(data as Parameters<typeof WordSorter>[0]['data']), instanceId }} />;
     case 'picture-vocabulary':
-      return <PictureVocabulary data={data as Parameters<typeof PictureVocabulary>[0]['data']} />;
+      return <PictureVocabulary data={{ ...(data as Parameters<typeof PictureVocabulary>[0]['data']), instanceId }} />;
     case 'story-talk':
-      return <StoryTalk data={data as Parameters<typeof StoryTalk>[0]['data']} />;
+      return <StoryTalk data={{ ...(data as Parameters<typeof StoryTalk>[0]['data']), instanceId }} />;
     case 'word-flip':
-      return <WordFlip data={data as Parameters<typeof WordFlip>[0]['data']} />;
+      return <WordFlip data={{ ...(data as Parameters<typeof WordFlip>[0]['data']), instanceId }} />;
     default:
       return (
         <div className="max-w-4xl mx-auto">

@@ -6,6 +6,7 @@ import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../eval
 import type { ProcessAnimatorMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
 import { Play, Pause, SkipBack, SkipForward, ChevronLeft, ChevronRight, CheckCircle2, XCircle, RotateCcw, Sparkles, ArrowRight, Zap, Image as ImageIcon } from 'lucide-react';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * Process Animator - Step-Through Biological Process Visualization
@@ -599,6 +600,18 @@ const ProcessAnimator: React.FC<ProcessAnimatorProps> = ({ data, className = '' 
 
   const progress = ((currentStageIndex + 1) / sortedStages.length) * 100;
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId || 'bio-process-animator',
+    scopeId: hasSubmitted ? null : activeCheckpoint !== null ? `checkpoint-${activeCheckpoint}` : currentStage.id,
+    label: 'The process stage and checkpoint',
+    solved: activeCheckpoint !== null && showExplanation && checkpointResponses[checkpointResponses.length - 1]?.isCorrect === true,
+    tutorSpeaking: false,
+  });
+
   return (
     <div className={`relative ${className}`}>
       {/* Header */}
@@ -641,6 +654,9 @@ const ProcessAnimator: React.FC<ProcessAnimatorProps> = ({ data, className = '' 
         {renderStageIndicator()}
       </div>
 
+      {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+      {pip.store && !hasSubmitted && <div {...pip.dock} />}
+      <div {...pip.workspace}>
       {/* Checkpoint Question (if active) */}
       {renderCheckpointQuestion()}
 
@@ -709,6 +725,8 @@ const ProcessAnimator: React.FC<ProcessAnimatorProps> = ({ data, className = '' 
           </Accordion>
         </CardContent>
       </Card>
+
+      </div>
 
       {/* Playback Controls */}
       <div className="flex items-center justify-between mb-6">

@@ -7,6 +7,9 @@ import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { FractionCirclesMetrics } from '../../../evaluation/types';
 import type { FractionCirclesData } from './FractionCircles';
 import { buildFractionTouchItems, fractionTouchPack, fractionTouchVerdictCue, type FractionPicture } from './fractionTouchScript';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { stimulusPipPose } from '../../../pip/stimulusPipPose';
+import { PIP_DOCK_CLASS } from '../../../pip/useWorkspacePipSurface';
 
 export function FractionTouchPicture({ picture }: { picture: FractionPicture }) {
   const r = 66, center = 72;
@@ -39,15 +42,31 @@ export default function FractionTouch({ data, className, localOnly = false }: { 
       identifyAccuracy: 0, buildAccuracy: 0, compareAccuracy: 0, equivalentAccuracy: 0, attemptsCount: summary.attemptsCount,
     }, { challengeResults: summary.outcomes, pictures: items, taps: taps.current }, undefined, summary.diagnosisEvidence);
   }, [evaluation, items]);
-  const resetTap = () => { lastTap.current = null; setSelected(null); };
+  const resetTap = () => { lastTap.current = null; setSelected(null); pip.clear(); };
   const runner = useJudgedScriptRunner({ pack, instanceId: instance.current,
     gradeLevel: data.gradeBand === '3-5' ? '3' : '1', exhibitId: data.exhibitId,
     onFinished: finished, onItemOpened: resetTap, onCorrectionRetry: resetTap,
   });
   const item = runner.currentItem ?? items[0];
+  // Pip: every picture is an answer choice, so it outlines the pictures only as
+  // a group and watches the one the child touches; it never touches one itself.
+  const pip = usePipTargets(item?.id ?? null, runner.canAttempt);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !item || evaluation.hasSubmitted) return null;
+    const targets = pip.targets();
+    const pose = stimulusPipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === item.id, gesture: true,
+      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: instance.current, scopeId: item.id, label: 'Fraction pictures', dock: pip.dock.current, targets, pose };
+  });
   if (!item) return <p>No fraction pictures are available.</p>;
   const touch = (id: string) => {
     if (!runner.canAttempt || runner.isAwaitingGesture() || evaluation.hasSubmitted) return;
+    pip.look(`picture-${id}`);
     lastTap.current = id; setSelected(id);
     (taps.current[item.id] ??= []).push(id);
     runner.submitGestureAttempt(fractionTouchVerdictCue(item, id));
@@ -57,8 +76,10 @@ export default function FractionTouch({ data, className, localOnly = false }: { 
     <LuminaCardContent className="space-y-6">
       {evaluation.hasSubmitted ? <p className="text-center text-lg text-slate-100">You finished your fraction pictures.</p> : <>
         <LuminaChallengeCounter current={runner.currentIndex + 1} total={items.length} variant="dots" />
-        <div className="grid grid-cols-3 gap-2 sm:gap-5" aria-label="Fraction pictures">
+        {pipStore && <div ref={pip.dock} data-pip-dock={instance.current} className={PIP_DOCK_CLASS} />}
+        <div ref={pip.ref('stimulus')} data-pip-object="stimulus" className="grid grid-cols-3 gap-2 sm:gap-5" aria-label="Fraction pictures">
           {item.choices.map((picture, index) => <button key={picture.id} type="button"
+            ref={pip.ref(`picture-${picture.id}`)} data-pip-object={`picture-${picture.id}`}
             aria-label={`Picture ${index + 1}: ${picture.numerator} of ${picture.denominator} equal parts shaded`}
             aria-pressed={selected === picture.id} onClick={() => touch(picture.id)}
             disabled={!runner.canAttempt || runner.isAwaitingGesture()}

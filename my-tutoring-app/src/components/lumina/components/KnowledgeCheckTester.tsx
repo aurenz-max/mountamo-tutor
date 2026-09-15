@@ -5,6 +5,7 @@ import { KnowledgeCheck } from '../primitives/KnowledgeCheck';
 import { ProblemData, ProblemType, InsetType } from '../types';
 import { generateKnowledgeCheckProblems } from '../service/geminiClient-api';
 import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
+import { CuratorCompanion } from './CuratorCompanion';
 
 // ---------------------------------------------------------------------------
 // Bloom's Taxonomy Tiers (IRT §6.8)
@@ -422,7 +423,11 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
           ) : (
             <div className="overflow-y-auto max-h-[600px]">
               <LuminaAIProvider>
-                <KnowledgeCheck key={generationKey} data={{ problems }} />
+                {/* Pip joins the check's surface, as in a lesson; no session needed. */}
+                <div key={generationKey} data-primitive-instance-id={`kc-tester-${generationKey}`} className="space-y-6">
+                  <KnowledgeCheck data={{ problems, instanceId: `kc-tester-${generationKey}` }} />
+                  <CuratorCompanion />
+                </div>
               </LuminaAIProvider>
             </div>
           )}

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { InheritanceLabMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Interface (Single source of truth)
@@ -436,6 +437,18 @@ const InheritanceLab: React.FC<InheritanceLabProps> = ({ data, className }) => {
     data.description ||
     `Predict offspring genotypes and phenotypes for ${data.trait.name} using a Punnett square.`;
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'inheritance-lab'),
+    scopeId: activeTab !== 'punnett' || (showPunnettResults && !allCorrect) ? null : 'punnett',
+    label: 'The Punnett square',
+    solved: showPunnettResults && allCorrect,
+    tutorSpeaking: false,
+  });
+
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
       <CardHeader className="pb-4">
@@ -550,6 +563,9 @@ const InheritanceLab: React.FC<InheritanceLabProps> = ({ data, className }) => {
             </TabsTrigger>
           </TabsList>
 
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && activeTab === 'punnett' && !(showPunnettResults && !allCorrect) && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* Punnett Square Tab */}
           <TabsContent value="punnett" className="space-y-4 mt-4">
             <div className="text-sm text-slate-400 mb-2">
@@ -606,6 +622,8 @@ const InheritanceLab: React.FC<InheritanceLabProps> = ({ data, className }) => {
               )}
             </div>
           </TabsContent>
+
+          </div>
 
           {/* Simulation Tab */}
           <TabsContent value="simulation" className="mt-4">

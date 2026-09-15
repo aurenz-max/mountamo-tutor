@@ -15,7 +15,7 @@ const slug = (x) => x.replace(/\W+/g, '-').toLowerCase();
 const out = path.join(process.env.PIP_DRIVE_OUT ?? path.join(os.tmpdir(), 'pip-drives'), `${slug(label)}-${slug(modeLabel) || 'auto'}-${width}`);
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
-const needsTutor = /speak:|(^|;)start(;|$)/.test(actionsArg);
+const needsTutor = /speak:|(^|;)start(:[^;]*)?(;|$)/.test(actionsArg);
 
 // Chromium's default fake microphone plays a tone. On a voice pack it opens a turn
 // the moment the mic arms and interrupts the tutor before a word is spoken, so capture
@@ -156,8 +156,9 @@ while (Date.now() < deadline) {
   if (actions.length && s.bodies && Date.now() > nextAction) {
     const a = actions.shift();
     let ok;
-    if (a === 'start') {
-      const start = page.getByRole('button', { name: /Start lesson|Tap to start/ }).first();
+    if (a === 'start' || a.startsWith('start:')) {
+      const label = a.startsWith('start:') ? a.slice(6) : null;
+      const start = page.getByRole('button', { name: label ?? /Start lesson|Tap to start/ }).first();
       ok = await start.count() ? await start.click().then(() => true) : 'no start control';
     } else if (a.startsWith('speak:')) ok = speak(Number(a.slice(6)));
     else if (a.startsWith('wait:')) ok = true;

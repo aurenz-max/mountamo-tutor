@@ -53,6 +53,8 @@ import {
   useJudgedScriptRunner,
   type JudgedRunSummary,
 } from '../hooks/useJudgedScriptRunner';
+import { usePipSurface, usePipTargets } from '../pip/PipSurfaceContext';
+import { knowledgeCheckPipPose } from '../pip/knowledgeCheckPipPose';
 import type { JudgedScriptPack } from '../hooks/judgedScriptContract';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../components/JudgedMicPanel';
@@ -291,14 +293,35 @@ const KnowledgeCheckJudged: React.FC<{
     },
     onCorrectionRetry: () => {
       setTappedId(null);
+      pip.clear();
     },
   });
 
   const currentItem = runner.currentItem;
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase onto the question card and the child's
+  // own tap; Pip never answers, taps, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || finished) return null;
+    const targets = pip.targets(undefined, (id) => (id === 'question' ? 'The question' : 'A choice'));
+    const pose = knowledgeCheckPipPose({
+      gesture: currentItem.answerKind === 'gesture',
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: instanceId, scopeId: currentItem.id, label: 'Knowledge check', dock: pip.dock.current, targets, pose };
+  });
+
   const handleTapChoice = (item: KnowledgeCheckItem, optionId: string, index: number) => {
     if (!runner.canAttempt || item.answerKind !== 'gesture') return;
     if (runner.isAwaitingGesture()) return;
+    pip.look(`option-${optionId}`);
     setTappedId(optionId);
     // The match is CODE-COMPUTED; the cue tells the tutor which line to say.
     runner.submitGestureAttempt(tapVerdictCue(item, index));
@@ -311,6 +334,7 @@ const KnowledgeCheckJudged: React.FC<{
     if (item.stimulus?.insetType !== 'number-sentence') return;
     const index = item.stimulus.tokens.findIndex((t) => t.id === tokenId);
     if (index < 0) return;
+    pip.look('question');
     setTappedId(tokenId);
     runner.submitGestureAttempt(tapVerdictCue(item, index));
   };
@@ -354,6 +378,8 @@ const KnowledgeCheckJudged: React.FC<{
     return isTapKind ? (
       <button
         key={option.id}
+        ref={pip.ref(`option-${option.id}`)}
+        data-pip-object={`option-${option.id}`}
         type="button"
         disabled={!runner.canAttempt}
         onClick={() => handleTapChoice(item, option.id, index)}
@@ -381,7 +407,7 @@ const KnowledgeCheckJudged: React.FC<{
 
     return (
       <div className="space-y-4">
-        <div className="rounded-2xl border border-blue-400/20 bg-gradient-to-br from-blue-500/10 to-slate-900/50 p-6">
+        <div ref={pip.ref('question')} data-pip-object="question" className="rounded-2xl border border-blue-400/20 bg-gradient-to-br from-blue-500/10 to-slate-900/50 p-6">
           {prompt}
           {/* Production kinds (KC redesign P2): the STIMULUS the child names,
               counts, or points at. Static for the spoken kinds; for point_to
@@ -535,6 +561,10 @@ const KnowledgeCheckJudged: React.FC<{
         )}
 
         <div className="p-6 md:p-10 space-y-5">
+          {/* Pip's dock sits above the question card, which it outlines as a
+              region; the choices are below it. */}
+          {pipStore && !finished && <div ref={pip.dock} data-pip-dock={instanceId}
+            className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
           {!finished && currentItem && renderStage(currentItem)}
 
           {!finished && (

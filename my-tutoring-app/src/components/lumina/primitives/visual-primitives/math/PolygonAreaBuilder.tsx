@@ -24,6 +24,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -832,7 +833,7 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
     currentAttempts,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'polygon-area-builder',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -1005,6 +1006,18 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The polygon workspace',
+    solved: isCurrentComplete,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   if (!currentChallenge) {
     return (
       <LuminaCard className={className}>
@@ -1062,6 +1075,9 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
           })}
         </div>
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* Canvas — bespoke interaction surface (drag-to-decompose). Left as painting. */}
         <div className="p-3 bg-slate-800/30 rounded-2xl border border-cyan-500/20">
           <canvas
@@ -1109,6 +1125,8 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
             </div>
           </LuminaPanel>
         )}
+
+        </div>
 
         {/* Feedback */}
         {feedback && feedbackType === 'success' && (

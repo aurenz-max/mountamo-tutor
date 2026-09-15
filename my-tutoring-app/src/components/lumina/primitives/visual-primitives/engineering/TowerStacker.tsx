@@ -13,6 +13,7 @@ import {
   LuminaPanel,
   LuminaCallout,
 } from '../../../ui';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * Tower Stacker - Interactive vertical building challenge for teaching structural engineering
@@ -563,6 +564,18 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
     }
   };
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'tower-stacker'),
+    scopeId: 'tower',
+    label: 'The tower and the building pieces',
+    solved: towerStood && heightAchieved,
+    tutorSpeaking: false,
+  });
+
   return (
     <div className={`w-full max-w-4xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -635,6 +648,9 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
             )}
           </div>
 
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* SVG Canvas — bespoke interaction surface, left untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden mb-6 border border-slate-700/50">
             <svg
@@ -935,6 +951,8 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
                 <span className="text-sm">Rotate</span>
               </button>
             )}
+          </div>
+
           </div>
 
           {/* Controls */}

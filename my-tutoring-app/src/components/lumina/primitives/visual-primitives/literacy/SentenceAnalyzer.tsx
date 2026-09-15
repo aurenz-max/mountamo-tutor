@@ -65,6 +65,7 @@ import {
   LuminaReadAloudGlyph,
 } from '../../../ui';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -304,6 +305,11 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
 
   const currentItem = runner.currentItem;
   const actionMeta = ACTION_META[currentItem?.action ?? 'name-pos'];
+  // Pip: the sentence is the question side (its highlight already marks the word);
+  // the label wall is the answer, so Pip outlines only the sentence.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The sentence', finished: evaluation.hasSubmitted,
+  });
 
   /** What the tutor is affirming right now, for the reveal. Guarded on the
    *  ACTION: by render time the surface may already point at the next step. */
@@ -476,7 +482,8 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
               <LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} />
             </div>
 
-            {renderSentence()}
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.target('stimulus')}>{renderSentence()}</div>
 
             {wall.length > 0 && renderWall()}
 

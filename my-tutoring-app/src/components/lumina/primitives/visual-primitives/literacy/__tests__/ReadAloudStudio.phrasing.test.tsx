@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { StudioItem } from '../readAloudPhrasing';
 import type { JudgedScriptRunnerOptions } from '../../../../hooks/useJudgedScriptRunner';
+import { judgedRunEvidence } from '../../../../hooks/judgedRunEvidence';
 
 const state = vi.hoisted(() => ({ index: 0, running: true, awaiting: false,
   submit: vi.fn(), evaluationSubmit: vi.fn(), options: null as unknown }));
@@ -87,8 +88,11 @@ describe('expression page-work and voice handoff', () => {
     expect(options.pack.diagnosisObservation?.(options.pack.items[1], { lastHeard: 'hello' })).toBeNull();
     const observation = options.pack.diagnosisObservation?.(options.pack.items[2], { lastHeard: 'After the rain the bird sang' });
     expect(observation).toBeTruthy();
+    // The real runner assembles `diagnosisEvidence` from these observations (`judgedRunEvidence`); the fake summary does the same.
+    const observations = [{ ...observation!, itemId: options.pack.items[2].id, judgeFeedback: 'My turn: birds.' }];
     options.onFinished({ outcomes, accuracy: 67, passed: true, solvedCount: 4,
-      firstTryCount: 4, attemptsCount: 10, hearTaps: 0, observations: [{ ...observation!, judgeFeedback: 'My turn: birds.' }] });
+      firstTryCount: 4, attemptsCount: 10, hearTaps: 0, observations,
+      diagnosisEvidence: judgedRunEvidence({ outcomes, observations, items: options.pack.items, pack: options.pack }) });
     const [passed, score, metrics, work] = state.evaluationSubmit.mock.calls[0];
     expect(passed).toBe(false);
     expect(score).toBe(0);

@@ -9,6 +9,7 @@ import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../eval
 import type { DnaExplorerMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
 import { DnaHelixScene } from './DnaHelixScene';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Interface (Single source of truth)
@@ -515,6 +516,18 @@ const DnaExplorer: React.FC<DnaExplorerProps> = ({ data, className }) => {
     return data.nucleotides.find((n) => n.base === base) || null;
   }, [selectedBase, data.sequence, data.nucleotides]);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId || 'dna-explorer',
+    scopeId: hasSubmitted ? null : activeTab,
+    label: 'The DNA workspace',
+    solved: activeTab === 'build' && allChallengesCompleted && correctChallenges === data.buildChallenges.length,
+    tutorSpeaking: false,
+  });
+
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
       <CardHeader>
@@ -560,6 +573,9 @@ const DnaExplorer: React.FC<DnaExplorerProps> = ({ data, className }) => {
             )}
           </TabsList>
 
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && !hasSubmitted && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* Explore Tab */}
           <TabsContent value="explore" className="space-y-4">
             {/* DNA Visualization */}
@@ -800,6 +816,8 @@ const DnaExplorer: React.FC<DnaExplorerProps> = ({ data, className }) => {
               </div>
             </TabsContent>
           )}
+          </div>
+
         </Tabs>
       </CardContent>
     </Card>

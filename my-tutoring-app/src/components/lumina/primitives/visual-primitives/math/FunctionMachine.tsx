@@ -21,6 +21,7 @@ import { useChallengeProgress, type ChallengeResult } from '../../../hooks/useCh
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -368,7 +369,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     predictionsTotal, guessAttempts, guessResult,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'function-machine',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -619,6 +620,18 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The function machine',
+    solved: challengeDone && challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <div className={`w-full max-w-6xl mx-auto my-8 space-y-6 ${className || ''}`}>
       {/* Header Card */}
@@ -689,6 +702,10 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
         />
       )}
 
+      {/* Pip's dock stays mounted through the interstitial so a solved machine can
+          be celebrated; it outlines the active workspace below as a region. */}
+      {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+
       {/* Between-challenge interstitial */}
       {challengeDone && !allChallengesComplete && (
         <LuminaCard className="bg-emerald-500/10 border-emerald-400/40">
@@ -710,6 +727,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
       {/* Active interaction (hidden once challenge is done or all done) */}
       {!challengeDone && !allChallengesComplete && (
         <>
+          <div {...pip.workspace} className="space-y-6">
           {/* Machine Visualization */}
           <LuminaCard>
             <LuminaCardContent className="py-8">
@@ -963,6 +981,8 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
               </LuminaButton>
             </div>
           )}
+
+          </div>
 
           {/* How to Use (first challenge only) */}
           {currentIndex === 0 && processedPairs.length === 0 && challengeType !== 'create_rule' && showHowItWorks && (

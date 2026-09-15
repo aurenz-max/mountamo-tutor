@@ -8,6 +8,7 @@ import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../eval
 import type { TimelineBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -114,7 +115,7 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
     currentChallenge: challenges[0]?.title,
   }), [title, gradeBand, challenges]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'timeline-builder',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -339,6 +340,18 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
   const canRetry = feedback?.checked && !isCorrect && !hasAnsweredCurrent;
   const canProceed = hasAnsweredCurrent;
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete ? null : currentChallenge?.id ?? null,
+    label: 'The timeline',
+    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   // ── Helper: get event by id ──────────────────────────────────
   const eventById = useMemo(() => {
     const map = new Map<string, TimelineEvent>();
@@ -407,6 +420,11 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
               </p>
             </div>
 
+            {/* Pip's dock sits above the timeline and the event bank, which it
+                outlines together as the workspace. */}
+            {pip.store && <div {...pip.dock} />}
+
+            <div {...pip.workspace} className="space-y-6">
             {/* Timeline visualization */}
             <div className="relative">
               {/* Scale labels */}
@@ -523,6 +541,8 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
                 </div>
               </div>
             )}
+
+            </div>
 
             {/* Feedback message */}
             {feedback?.checked && (

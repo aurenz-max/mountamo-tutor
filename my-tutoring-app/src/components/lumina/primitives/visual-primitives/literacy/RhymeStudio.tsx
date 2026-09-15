@@ -75,6 +75,8 @@ import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSu
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { stableShuffle } from '../../../utils/choiceOrder';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { rhymeStudioPipPose } from '../../../pip/rhymeStudioPipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -354,6 +356,24 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
   const revealed = runner.currentSolved;
   const currentChallenge = challenges.find((challenge) => challenge.id === currentItem?.challengeId);
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase onto the card the ask names; Pip never
+  // answers, judges, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, false);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(undefined, (id) => (id === 'pair' ? 'The two words' : 'The word card'));
+    const pose = rhymeStudioPipPose({
+      mode: currentItem.mode,
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      visibleIds: targets.map((target) => target.id),
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Rhyme studio', dock: pip.dock.current, targets, pose };
+  });
+
   // ── Support-tier display levers (read with `!== false` so an ABSENT field is
   //    the full-help render). The band support always WINS at PRE. ──
   const showRhymeFamilyHighlight = currentChallenge?.showRhymeFamilyHighlight !== false;
@@ -422,6 +442,8 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
   const renderTargetCard = (item: RhymeItem) => (
     <div className="flex justify-center">
       <div
+        ref={pip.ref('target')}
+        data-pip-object="target"
         role="button"
         tabIndex={0}
         onClick={runner.hearStimulus}
@@ -509,6 +531,8 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
               comparison shows it only when the pair really rhymes — that is the
               teaching moment. */}
           <div
+            ref={pip.ref('pair')}
+            data-pip-object="pair"
             role="button"
             tabIndex={0}
             onClick={runner.hearStimulus}
@@ -603,6 +627,13 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
                   variant="dots"
                 />
               </div>
+            )}
+
+            {/* Pip's dock sits above the stage: a pointer to the word card
+                never crosses a choice card or a rhyme slot below it. */}
+            {pipStore && (
+              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
             )}
 
             {currentItem && renderChallenge(currentItem)}

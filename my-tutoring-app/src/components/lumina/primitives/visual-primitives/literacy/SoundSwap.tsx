@@ -71,6 +71,8 @@ import {
   pronounceCue,
   type SwapItem,
 } from './soundSwapScript';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { soundSwapPipPose } from '../../../pip/soundSwapPipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -237,6 +239,8 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
   /** The new word JUST made — post-answer only (answer-leak rule), cleared the
    *  moment the next challenge opens. */
   const [reward, setReward] = useState<{ word: string; image: string } | null>(null);
+  /** Pip only: the item the loop's last SENT cue was about. */
+  const [cuedItemId, setCuedItemId] = useState<string | null>(null);
 
   // Visual-only timer. It does NOT advance anything — it clears a highlight.
   // Progression here has exactly one cause: a tutor verdict.
@@ -506,6 +510,9 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     enabled: running,
     active: activeInLesson,
     onEmission: handleEmission,
+    onCue: (event) => {
+      if (event.phase === 'sent') setCuedItemId(currentItem()?.id ?? null);
+    },
   });
   loopRef.current = loop;
 
@@ -619,6 +626,26 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this pack's stage and the child's own sound taps; Pip
+  // never answers, judges, or moves to the next item.
+  const pip = usePipTargets(currentChallenge?.id ?? null, running);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(undefined, (id) => (id === 'word' ? 'The starting word' : 'A sound'));
+    const pose = soundSwapPipPose({
+      running, preparing, stage,
+      tutorSpeaking: ctx.isAudioPlaying && activeInLesson,
+      cueOnItem: cuedItemId === currentChallenge.id,
+      visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Sound swap',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   // ============================================================================
   // Render
   // ============================================================================
@@ -658,7 +685,9 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
       {currentChallenge.originalPhonemes.map((phoneme, i) => (
         <button
           key={`${currentChallenge.id}-${i}`}
-          onClick={() => handlePlaySound(i)}
+          ref={pip.ref(`sound-${i}`)}
+          data-pip-object={`sound-${i}`}
+          onClick={() => { pip.look(`sound-${i}`); handlePlaySound(i); }}
           aria-label={`sound ${phoneme}`}
           // Perception scaffold, withdrawn at the hard tier. Exposed as an
           // attribute because it is styling otherwise, and a scaffold nobody
@@ -716,7 +745,8 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
               {showImage && !isPreReader && (
                 <p className="text-sm text-slate-500 italic">{currentChallenge.originalImage}</p>
               )}
-              <p className="text-4xl font-bold text-slate-100">{currentChallenge.originalWord}</p>
+              <p ref={pip.ref('word')} data-pip-object="word"
+                className="text-4xl font-bold text-slate-100">{currentChallenge.originalWord}</p>
               {renderSounds()}
               {reward && stage === 'affirmed' && (
                 <div className="mt-2 space-y-1">
@@ -734,6 +764,11 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
               <p className="text-center text-xs text-slate-500">
                 Tap a sound to hear it, then say the new word.
               </p>
+            )}
+
+            {pipStore && (
+              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
             )}
 
             {/* The answer here is SPOKEN on every item — the orb's spoken

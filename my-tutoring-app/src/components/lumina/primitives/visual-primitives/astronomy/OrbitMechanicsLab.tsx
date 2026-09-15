@@ -22,6 +22,7 @@ import {
   type OrbitalElements,
   type SpeedChoiceId,
 } from '../../../service/astronomy/orbitPhysics';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // Export data interface - single source of truth
 export interface OrbitConfig {
@@ -359,7 +360,7 @@ const OrbitMechanicsLab: React.FC<OrbitMechanicsLabProps> = ({ data, className =
     centralBodyProps.name, speedChoices, chosenSpeedLabel, flightState, launchAttempts,
   ]);
 
-  const { sendText, isAudioPlaying } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'orbit-mechanics-lab',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -855,6 +856,18 @@ const OrbitMechanicsLab: React.FC<OrbitMechanicsLabProps> = ({ data, className =
     [data.title, data.description, data.challenge?.description],
   );
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: `flight-${launchAttempts}`,
+    label: 'The rocket and its orbit',
+    solved: isPreReader ? preReaderSucceeded : challengeComplete,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <div className={`w-full ${className}`}>
       <div className="max-w-7xl mx-auto glass-panel rounded-3xl border border-white/10 p-8 relative overflow-hidden shadow-2xl">
@@ -927,6 +940,9 @@ const OrbitMechanicsLab: React.FC<OrbitMechanicsLabProps> = ({ data, className =
             </div>
           )}
 
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* Main Visualization */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Simulation Canvas */}
@@ -1470,6 +1486,8 @@ const OrbitMechanicsLab: React.FC<OrbitMechanicsLabProps> = ({ data, className =
                 )}
               </div>
             )}
+          </div>
+
           </div>
 
           {/* K-1: the hint is a thing you HEAR, not a disclosure you open */}

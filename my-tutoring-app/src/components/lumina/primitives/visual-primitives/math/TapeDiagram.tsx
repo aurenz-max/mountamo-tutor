@@ -27,6 +27,7 @@ import {
   motion,
   type DropZoneState,
 } from '../../../ui';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ---------------------------------------------------------------------------
 // Data Interfaces
@@ -571,7 +572,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     bars.length, allUnknowns.length, feedback, wordProblem, challengeHintCount, supportTier,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'tape-diagram',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -1383,6 +1384,18 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   // Empty state
   // =========================================================================
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: isComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The tape diagram',
+    solved: results.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   if (challenges.length === 0) {
     return (
       <div className={`w-full max-w-6xl mx-auto my-12 ${className || ''}`}>
@@ -1462,10 +1475,15 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
           {/* Mode-specific content */}
           {!isComplete && currentChallenge && (
             <>
+              {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+              {pip.store && <div {...pip.dock} />}
+              <div {...pip.workspace}>
               {challengeType === 'represent' && renderRepresentMode()}
               {challengeType === 'solve_part_whole' && renderPartWholeMode()}
               {challengeType === 'solve_comparison' && renderComparisonMode()}
               {challengeType === 'multi_step' && renderMultiStepMode()}
+
+              </div>
 
               {/* Per-challenge advance CTA */}
               {currentChallengeSolved && (

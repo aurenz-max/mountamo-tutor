@@ -7,6 +7,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 export interface TreeNode {
   value: number;
@@ -244,7 +245,7 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     supportTier,
   }), [currentRootValue, tree, leavesNow, guidedMode, currentChallengeIndex, challenges.length, supportTier]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'factor-tree',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -582,6 +583,18 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     );
   }
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? 'tree',
+    label: 'The factor tree',
+    solved: treeNowComplete,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -688,6 +701,9 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
             </div>
           )}
 
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* Tree Visualization */}
           {!allChallengesComplete && (
             <div className="mb-8 p-8 bg-slate-800/30 backdrop-blur-sm rounded-2xl border border-amber-500/20 overflow-x-auto relative">
@@ -784,6 +800,8 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
               </div>
             </div>
           )}
+
+          </div>
 
           {/* Legend & Controls */}
           {!allChallengesComplete && (

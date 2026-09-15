@@ -90,15 +90,80 @@ Objects hidden by a flash, the count-on basket, or removal are not published.
 | CVC Speller | the "?" box (middle sound); the word's picture (sound groups); the box row (spell it) | a vowel column; a bank letter; on sound groups with the picture withdrawn, nothing |
 | Letter Spotter | the star over the hidden letter (name it); the grid as a whole (find it); the big letter (match it) | a grid cell; a little letter |
 | Word Sorter | the word card, on every mode | a mat, its picture, a bank word |
+| Rhyme Studio | both cards as one region (do they rhyme); the target word card (find, think of, build a family) | a choice card; a rhyme slot |
+| Sound Swap | the printed starting word | one sound tile (on substitution a ring would be the sound-to-change highlight the hard tier removes) |
+| Word Workout | both words as one region (real or silly); the printed word (picture match, extended word, its meaning); the chain row the screen marks; the near word the screen marks; the whole sentence (read it, its question, which word fits) | a picture; one word of a sentence; a near-word card on the choice |
+| Phoneme Explorer | the sound tile, heard word card or starting word; the blend tiles as one row | a menu card; one blend tile; the worked example |
+| Decodable Reader | the whole printed line; the read-along story; otherwise the question card | one word; a choice card |
+| Story Talk | the listening card | — (nothing on screen can be the answer before the affirm) |
+| Picture Vocabulary | the stimulus card — picture, base word, scale, or sentence frame (spoken modes); the picture cards as one region (receptive match) | one picture card; the "?" slot |
+| Word Flip | the one → many (or today → yesterday) frame as a whole | — (the answer is only a blank) |
+| Interactive Book | the glowing word the screen marks (read it); the whole page or cover (find a book part) | a title, author, heading, caption or page number |
+| Spatial Scene | the grid or perspective scene as a whole, on every mode | a cell; a position-word button; the target cell |
+| Letter Workshop | the writing paper as a whole (trace, copy, write — including while the browser speaks the letter name) | a start dot or arrow; the copy model; the model write reveals after a check |
+| You & Me | both partners and the scene sentence as one region | one partner (the speaker highlight and actor marker are tier-withdrawn scaffolds) |
+| Story Bridge | the ringed friend when it is in the first story (match characters); the Venn detail; story one's event (compare events); both stories as one region otherwise | a choice card or button; the ringed friend in the second story (on a narrow screen the choices sit between it and the dock) |
+| Story Ribbon | the three-picture ribbon as a whole | one picture card (it would suggest which moment comes first) |
+| Letter-Sound Link | the big letter card (see-hear, keyword match); the letter buttons as one region (hear-see) | one letter button; a keyword picture |
+| Syllable Clapper | the hear-it-again button (the word is never printed) | the reveal bar's parts |
+| Knowledge Check | the question card as a whole, on every item kind (judged surface only; the no-mic tap flow keeps the perch) | a choice, True/False card, sort group, word-bank word, or number-sentence token |
+| DI Letter Sounds | the stage (picture with the letter, or with the word on first-sound items) | the word's first letter |
+| DI Sentence Reading | the whole printed sentence; its reward beat celebrates | one word; anything while praise for the previous sentence plays |
+
+### Shared surfaces
+
+Most classic primitives use `useWorkspacePipSurface` (policy `workspacePipPose`): one
+`workspace` region that wraps the item's model and its answer controls, a dock above it,
+a point at the region only while the tutor speaks on this block and item, a `look` at
+whatever the child presses or focuses inside it, and a celebration only on the
+primitive's own confirmed result. It never points at a single control. Surface tests use
+`pip/testing/classicSurface.tsx` (`expectClassicWorkspace`).
+
+| Workspace primitives | Workspace region |
+| --- | --- |
+| Shape Builder, Strategy Picker, Timeline Builder, Fast Fact | the drawing grid; the strategy cards; the event lane; the fact card and answer pad |
+| Base Ten Blocks (click modes), Fraction Bar, Fraction Circles (click modes), Area Model | the place columns; the step panels; the circle and its controls; the grid with its factor inputs |
+| Array Grid, Multiplication Explorer, Skip Counting Runner, Regrouping Workbench, Coin Counter | the build/answer steps; the representations; the number line and jump controls; blocks beside the written problem; the challenge's coins and inputs |
+| Measurement Tools, Percent Bar, Ratio Table, Double Number Line, Factor Tree | the measure/compare phase; the place and choice steps; the table, bars and inputs; both lines and the input row; the tree and factor panel |
+| Function Machine, Equation Workspace, Formula Lab, Parameter Explorer, Practice Problem | the machine and its panels (dock stays through the "Complete" card); the equation readout and operation menu; the model and prediction panels; the sliders, observations and challenge; the whiteboard (dock in the header so it holds through the reveal overlay; the drawing is received while the judge compares it) |
+| Angle Workshop, Circle Explorer, Polygon Area Builder, Transformation Lab, Net Folder | the canvas with its answer panel; the solid, its net and the challenge (Net Folder) |
+| Histogram, Two-Way Table, Coordinate Graph, Distribution Explorer, Slope Triangle, Systems of Equations, Matrix Display, Function Sketch, Spatial Path | the chart or table with its answer controls; the whole workbench (Distribution Explorer, no celebration on guided exploration); the route map |
+| Context Clues, Figurative Language (classify and interpret only — find and review are unscoped because a look at a tapped plain span would mark the figurative ones), Paragraph Architect, Poetry Lab (rhyme hunt), Evidence Finder, Spelling Patterns (celebrates only where the tier shows live correctness), Story Map, Character Web, Opinion Builder, Revision Workshop, Reading Repair Studio | the phase blocks; the poem and word cards; the reading round (Reading Repair never celebrates: its verdicts are provisional practice feedback) |
+| Ramp Lab, Light & Shadow Lab, Day/Night & Seasons, Moon Phases, Life Cycle Sequencer | the scene or model with its controls and choices |
+| Classification Sorter, Food Web Builder, Adaptation Investigator, Cell Builder, Microscope Viewer, Compare & Contrast (Venn only), Process Animator, DNA Explorer, Energy Cycle Engine, Evolution Timeline, Inheritance Lab (Punnett tab), Protein Folder (fold phase) | the sorting grid, web, panels, mission, lens, Venn, checkpoint, tabs or grid |
+| Atom Builder, Mixing & Dissolving, Molecule Constructor, Reaction Lab (explain phase), pH Explorer, Equation Balancer, Energy of Reactions, Gas Laws Simulator, Stoichiometry Lab | the model or bench through its answer controls |
+| Constellation Builder, Planetary Explorer (planet questions and quiz), Telescope Simulator, Orbit Mechanics, Mission Planner, Rocket Builder, Gravity Drop Tower, Motion Diagram, Race Track Lab, Sound Wave Explorer | the sky, viewport, orbit grid, mission controls, parts and rocket, or simulation with its answer area |
+| Bridge Builder, Tower Stacker, Shape Strength Tester, Transport Challenge, Dump Truck Loader, Excavator Arm, Hydraulics Lab, Construction Sequence, Foundation Builder, Airfoil Lab, Flight Forces, Paper Airplane, Propulsion Lab, Propulsion Timeline, Engine Explorer, Vehicle Comparison, Vehicle Design Studio (the test run is received), Blueprint Canvas (the drawing is received while graded) | the build site or simulation with its controls |
+| Digital Skills Sim, Foundation Explorer, Fact File, How It Works, Timeline Explorer, Vocabulary Explorer, Comparison Panel, Feature Exhibit, Image Panel (placed labels are received while graded), Tape Diagram | the practice area or the assessed check's answer controls (pre-reader faces use the same region) |
+
+Components with no tutor hook pass `tutorSpeaking: false`: Pip never points there, but still follows touches and celebrates confirmed results.
+
+Judged primitives whose question side is one panel use `useStimulusPipSurface` (policy
+`stimulusPipPose`): Pip points at the stimulus region (or at an object the ask already
+marks), looks at it while the child answers, receives it only when the tapped work is a
+hands answer, and celebrates the held reveal. Surface tests use
+`pip/testing/runnerSurface.tsx` (`expectStimulusSurface`). Place Value Chart and 3D Shape
+Explorer have their own policies (`placeValueChartPipPose`, `stimulusPipPose`).
+
+| Stimulus primitives | Stimulus (cue target) | Never a target |
+| --- | --- | --- |
+| Genre Explorer, Sentence Analyzer | the texts; the sentence | the genre menu; the label wall |
+| Text Structure | the passage; the idea card on place-idea items | the structure menu, the mats |
+| Oral Sentence Studio, Word Builder | the scene; the clue | the target words; the word-part wall |
+| Read Aloud Studio | the printed line (a phrase plan is received while judged) | a break mark |
+| DI Dice Roll, DI Deduction, DI Worked Procedure, DI Word Problem Setup | the dice; the rule and case; the written problem; the story (the big-amount builder is looked at and received on placement items) | a verdict pill, a story-part card |
+| Solar System, Habitat Diorama, Matter Explorer, States of Matter, Push Pull Arena, Periodic Table, Cause & Effect Chain, Era Explorer | the sky; the habitat (connect and restore taps are looked at, never received); the bench; the arena; the table (find taps are looked at); the staged ending; the statement | a single body, organism, cell, or event card |
 
 Hands answers (order cards, split, tiles, picture placement, ordering taps, ink, a balanced pan, a
 spelled word) are followed with `look` and received with `receive` while judged. A single
-committed tap (Letter Spotter) is followed with `look`, not received. Docks sit so that a
+committed tap (Letter Spotter, Word Workout and Picture Vocabulary pictures, Interactive Book
+parts, Story Bridge choices) is followed with `look`, not received, and neither is Story
+Ribbon's arrangement, which plans a spoken story rather than being judged. Docks sit so that a
 pointer to the cue does not cross an answer surface. Pip's pose never calls the
 child's handler, advances the runner, or writes an evaluation.
 
-The three packs that run `useJudgedSpeechLoop` directly (DI Word Reading, Phonics
-Blender, CVC Speller) open the next item on the affirming verdict, before the praise
+The packs that run `useJudgedSpeechLoop` directly without a reward beat (DI Word Reading, DI Letter
+Sounds, Phonics Blender, CVC Speller, Sound Swap, Word Flip) open the next item on the affirming verdict, before the praise
 is spoken. Each records the item its loop's last *sent* cue was about (`onCue`), the
 runner's `cuedItemId` in miniature: speech counts as a cue only once that id names the
 item on screen, and the praise is held as the confirmed result until then.
@@ -109,8 +174,9 @@ Math Primitives helper: select an integrated primitive and generate. Pip appears
 the dock immediately — idle for judged primitives until Start, working for classic
 ones — and follows touches without any session. Start the lesson to hear cues and
 see pointing. Regenerating or selecting another primitive removes the old surface.
-The Language Arts helper hosts the four literacy primitives the same way; DI Word
-Reading is in the Direct Instruction Lab.
+The Language Arts helper hosts the literacy primitives the same way (it passes each
+preview a per-generation `la-helper-<primitive>-<n>` instance id); Spatial Scene is in
+the math helper; DI Word Reading is in the Direct Instruction Lab.
 
 Preview: `/lumina/pip-surface` (also in Pip Lab) demos the actor with local phase
 controls; it does not verify a primitive.

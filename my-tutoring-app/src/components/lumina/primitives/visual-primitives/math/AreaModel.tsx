@@ -7,6 +7,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import {
@@ -356,11 +357,23 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     factor1Parts, factor2Parts, factor1Total, factor2Total, algebraicMode, supportTier,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'area-model',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel,
+  });
+
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: isComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The area model',
+    solved: challengeDone && results.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
   const revealPolicy = tutorRevealPolicy(supportTier, sessionChallengeType);
@@ -990,6 +1003,8 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
             </div>
           </div>
 
+          {pip.store && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* Area Model Grid */}
           <div className="flex justify-center items-center">
             <div className="relative inline-block">

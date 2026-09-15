@@ -11,6 +11,7 @@ import {
 import type { MoleculeConstructorMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Element Data
@@ -279,7 +280,7 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
     placedElements: placedAtoms.map(a => a.element).join(', '),
   }), [placedAtoms, bonds, formula, allSatisfied, targetMolecule, challengeIndex, challenges.length, currentChallenge, attemptsCount, gradeBand]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'molecule-constructor',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -648,6 +649,18 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
 
   // ---- Render ----
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'molecule-constructor'),
+    scopeId: hasSubmitted ? null : currentChallenge?.id ?? null,
+    label: 'The molecule builder',
+    solved: !!currentChallenge && completedChallenges.has(currentChallenge.id) && ['build_target', 'formula_write', 'identify'].includes(currentChallenge.type),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'molecule-constructor'),
+  });
+
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
       <CardHeader className="pb-3">
@@ -691,6 +704,9 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
           </div>
         )}
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !hasSubmitted && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* Workspace + Info panel */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* SVG Workspace */}
@@ -908,6 +924,8 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
               );
             })}
           </div>
+        </div>
+
         </div>
 
         {/* Molecule Gallery */}

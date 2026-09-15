@@ -14,6 +14,7 @@ import {
   LuminaPanel,
   LuminaProgress,
 } from '../../../ui';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /* -------------------------------------------------------------------------- */
 /*                                PHYSICS ENGINE                              */
@@ -672,6 +673,18 @@ const ShapeStrengthTester: React.FC<ShapeStrengthTesterProps> = ({ data, classNa
     };
   }, []);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'shape-strength-tester'),
+    scopeId: hasSubmittedEvaluation ? null : 'structure',
+    label: 'The structure and the materials',
+    solved: !!currentTest?.survived,
+    tutorSpeaking: false,
+  });
+
   return (
     <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -743,6 +756,9 @@ const ShapeStrengthTester: React.FC<ShapeStrengthTesterProps> = ({ data, classNa
             )}
           </div>
 
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* Building Canvas — bespoke interaction surface, untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden mb-6 border border-slate-700/50">
             <svg
@@ -966,6 +982,8 @@ const ShapeStrengthTester: React.FC<ShapeStrengthTesterProps> = ({ data, classNa
               </div>
             </div>
           )}
+
+          </div>
 
           {/* Controls */}
           <div className="flex flex-wrap gap-3 justify-center">

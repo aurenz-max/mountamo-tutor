@@ -17,6 +17,7 @@ import {
 import type { PhExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -482,7 +483,7 @@ const PhExplorer: React.FC<PhExplorerProps> = ({ data, className }) => {
     currentAttempts, challengeAnswer, neutralization, mixRatio, cabbageJuiceSubstances.size, title,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'ph-explorer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -725,6 +726,18 @@ const PhExplorer: React.FC<PhExplorerProps> = ({ data, className }) => {
   // Render
   // -------------------------------------------------------------------------
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The pH lab and your answer',
+    solved: isCurrentChallengeComplete && (currentChallenge?.type !== 'sort' || substances.every((s) => sortResults.get(s.id) === s.type)),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
       <CardHeader className="pb-3">
@@ -780,6 +793,9 @@ const PhExplorer: React.FC<PhExplorerProps> = ({ data, className }) => {
           </div>
         )}
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* pH Scale */}
         {showPHScale && (
           <PHScaleBar
@@ -924,6 +940,8 @@ const PhExplorer: React.FC<PhExplorerProps> = ({ data, className }) => {
             </Button>
           </div>
         )}
+
+        </div>
 
         {/* Feedback */}
         {feedback && (

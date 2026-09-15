@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import * as d3 from 'd3';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { TelescopeSimulatorMetrics } from '../../../evaluation/types';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // =============================================================================
 // Exported Data Types (Single Source of Truth)
@@ -783,6 +784,18 @@ const TelescopeSimulator: React.FC<TelescopeSimulatorProps> = ({ data, className
     }
   }, [allTargetsFound, hasSubmitted, hasTargets, handleSubmitEvaluation]);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId || 'telescope-simulator',
+    scopeId: hasSubmitted ? null : 'observe',
+    label: 'The telescope view',
+    solved: allTargetsFound,
+    tutorSpeaking: false,
+  });
+
   // ---- Render ----
   return (
     <div className={`bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden ${className || ''}`}>
@@ -797,6 +810,9 @@ const TelescopeSimulator: React.FC<TelescopeSimulatorProps> = ({ data, className
       <div className="flex flex-col lg:flex-row">
         {/* ---- Viewport + Controls ---- */}
         <div className="flex-1 p-4">
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && !hasSubmitted && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* Viewport */}
           <div
             ref={containerRef}
@@ -846,6 +862,8 @@ const TelescopeSimulator: React.FC<TelescopeSimulatorProps> = ({ data, className
                 </div>
               </div>
             )}
+          </div>
+
           </div>
 
           {/* Controls Bar */}

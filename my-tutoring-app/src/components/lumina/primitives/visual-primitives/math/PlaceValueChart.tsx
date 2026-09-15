@@ -67,6 +67,9 @@ import {
   useJudgedScriptRunner,
   type JudgedRunSummary,
 } from '../../../hooks/useJudgedScriptRunner';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { placeValueChartPipPose } from '../../../pip/placeValueChartPipPose';
+import { PIP_DOCK_CLASS } from '../../../pip/useWorkspacePipSurface';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
   buildVerdictCue,
@@ -228,30 +231,16 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
           ? 'Listen to the number, then write it.'
           : 'Listen, then answer out loud.',
     },
-    diagnosisObservation: (item, { lastHeard }) => {
-      if (item.answerKind === 'gesture') {
-        const written = item.chartPlaces
-          .map((p) => writtenRef.current[p] ?? '·')
-          .join('');
-        return {
-          challenge: `write ${item.targetNumber} from dictation`,
-          expected: String(item.targetNumber),
-          observed: written,
-        };
-      }
-      return placeValueVoiceObservation(item, lastHeard);
-    },
-    responseObservation: (item, { lastHeard }) => {
+    // One record per attempt. The voice helper annotates an apparent contradiction on the assumption of a
+    // correction, so an affirmed attempt keeps the actual transcript instead.
+    observation: (item, { heard, verdict }) => {
       if (item.answerKind === 'gesture') return {
         challenge: `write ${item.targetNumber} from dictation`,
         expected: String(item.targetNumber),
         observed: item.chartPlaces.map(p => writtenRef.current[p] ?? '·').join(''),
       };
-      if (!lastHeard) return null;
-      const task = placeValueVoiceObservation(item, lastHeard);
-      // The diagnosis helper annotates apparent contradictions assuming a
-      // correction. General response capture must preserve the actual text.
-      return task ? { ...task, observed: lastHeard } : null;
+      const task = placeValueVoiceObservation(item, heard);
+      return verdict === 'corrected' ? task : heard ? { ...task, observed: heard } : null;
     },
   }), [items]);
 
@@ -345,6 +334,24 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
   });
 
   const currentItem = runner.currentItem;
+
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase onto the stage and the column the child
+  // is writing in; Pip never writes a digit, judges, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets();
+    const pose = placeValueChartPipPose({
+      gesture: currentItem.answerKind === 'gesture',
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Place value', dock: pip.dock.current, targets, pose };
+  });
 
   // ── The gesture commit ────────────────────────────────────────────────────
   // No Submit control: nothing on screen may carry the child forward. The
@@ -471,6 +478,9 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
               {item.chartPlaces.map((p) => (
                 <input
                   key={`i${p}`}
+                  ref={pip.ref(`digit-${p}`)}
+                  data-pip-object={`digit-${p}`}
+                  onFocus={() => pip.look(`digit-${p}`)}
                   type="text"
                   inputMode="numeric"
                   value={digitsByPlace[p] || ''}

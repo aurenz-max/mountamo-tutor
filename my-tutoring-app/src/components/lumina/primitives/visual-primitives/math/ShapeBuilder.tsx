@@ -20,6 +20,7 @@ import {
 import type { ShapeBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -550,7 +551,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
       + 'properties it needs; let them count their own corners.';
   }, [supportTier]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'shape-builder',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -1056,6 +1057,18 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
     (r) => r.challengeId === currentChallenge?.id && r.correct,
   );
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The shape workspace',
+    solved: isCurrentChallengeComplete,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   const advanceToNextChallenge = useCallback(() => {
     if (!advanceProgress()) {
       // All challenges done — send AI summary and submit evaluation
@@ -1548,8 +1561,12 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
             </div>
           )}
 
+        {/* Pip's dock sits above the drawing grid, which it outlines as the
+            workspace; never a vertex, a grid point, or a shape to classify. */}
+        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+
         {/* SVG Workspace */}
-        <div className="flex justify-center">
+        <div {...pip.workspace} className="mx-auto flex w-fit justify-center">
           <svg
             ref={svgRef}
             width={svgWidth}

@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../evaluation';
 import { LuminaButton, LuminaPanel, LuminaCallout } from '../ui';
+import { useWorkspacePipSurface } from '../pip/useWorkspacePipSurface';
 
 /**
  * Feature Exhibit - Interactive deep-dive editorial with 3-phase comprehension evaluation
@@ -308,6 +309,18 @@ export const FeatureExhibit: React.FC<FeatureExhibitProps> = ({ data, onTermClic
   const exploreCorrect = exploreAnswer === data.exploreCorrectAnswer;
   const synthesisCorrect = synthesisAnswer === data.synthesisCorrectId;
 
+  // Pip shares each phase's answer area as one region and follows the child's
+  // taps; it celebrates only a submitted correct explore or synthesis answer.
+  // Reading has no answer area, so Pip stays on its perch there.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId || 'feature-exhibit',
+    scopeId: currentPhase === 'reading' || (hasSubmittedEvaluation && !synthesisCorrect) ? null : currentPhase,
+    label: 'The answer area',
+    solved: currentPhase === 'explore' ? exploreSubmitted && exploreCorrect
+      : currentPhase === 'practice' ? practiceSubmitted : synthesisSubmitted && synthesisCorrect,
+    tutorSpeaking: false,
+  });
+
   return (
     <div className="w-full max-w-6xl mx-auto my-20 animate-fade-in">
       {/* Section Header */}
@@ -501,7 +514,8 @@ export const FeatureExhibit: React.FC<FeatureExhibitProps> = ({ data, onTermClic
                     </LuminaPanel>
 
                     {/* True/False Buttons */}
-                    <div className="grid grid-cols-2 gap-4 mb-8">
+                    {pip.store && <div {...pip.dock} />}
+                    <div {...pip.workspace} className="grid grid-cols-2 gap-4 mb-8">
                       {[
                         { value: true, label: 'True', icon: '✓' },
                         { value: false, label: 'False', icon: '✗' }
@@ -609,7 +623,8 @@ export const FeatureExhibit: React.FC<FeatureExhibitProps> = ({ data, onTermClic
                     </div>
 
                     {/* Tab Content */}
-                    <div className="flex-1 overflow-y-auto">
+                    {pip.store && <div {...pip.dock} />}
+                    <div {...pip.workspace} className="flex-1 overflow-y-auto">
                       {/* Practice Tab */}
                       {practiceViewTab === 'practice' && (
                         <div className="space-y-6 mb-8">
@@ -752,7 +767,8 @@ export const FeatureExhibit: React.FC<FeatureExhibitProps> = ({ data, onTermClic
                     </LuminaPanel>
 
                     {/* Multiple Choice Options */}
-                    <div className="space-y-3 mb-8">
+                    {pip.store && <div {...pip.dock} />}
+                    <div {...pip.workspace} className="space-y-3 mb-8">
                       {data.synthesisOptions.map((option) => {
                         let statusClass = "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20";
 

@@ -18,6 +18,7 @@ import {
   LuminaPanel,
   LuminaSectionLabel,
 } from '../ui';
+import { useWorkspacePipSurface } from '../pip/useWorkspacePipSurface';
 
 interface ComparisonPanelProps {
   data: ComparisonData;
@@ -115,7 +116,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
     allGatesCompleted,
   };
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'comparison-panel',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -438,6 +439,18 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
 
   const isGateCorrect = gateSubmitted && gateAnswer === currentGate?.correctAnswer;
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'comparison-panel'),
+    scopeId: hasSubmittedEvaluation || allGatesCompleted || !currentGate || !(preReader ? canShowPreGate : canShowFirstGate) ? null : `gate-${currentGateIndex}`,
+    label: 'The true-or-false check',
+    solved: isGateCorrect,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'comparison-panel'),
+  });
+
   return (
     <div className="w-full max-w-7xl mx-auto my-20 animate-fade-in">
       {/* Header (adult chrome — hidden for pre-readers) */}
@@ -657,6 +670,10 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
           first view and from the 🔊 button; a wrong tap gives an eyes-free spoken
           hint. Reuses the shared PreReaderSelfCheck (a boolean gate is a 2-option
           self-check). No "Comprehension Check N of M" chrome. */}
+      {/* Pip's dock sits above a showing gate, which it outlines as a region; there is
+          no empty dock over the reading. */}
+      {pip.store && !hasSubmittedEvaluation && !allGatesCompleted && (preReader ? canShowPreGate : canShowFirstGate) && <div {...pip.dock} />}
+      <div {...pip.workspace}>
       {preReader && canShowPreGate && (
         <div className="mt-8 mb-8 max-w-2xl mx-auto animate-fade-in">
           <PreReaderSelfCheck
@@ -776,6 +793,8 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
           </div>
         </div>
       )}
+
+      </div>
 
       {/* Synthesis Section (reader mode — prose wall; hidden for pre-readers, who
           hear the [SYNTHESIS_UNLOCKED] walkthrough spoken instead) */}

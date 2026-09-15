@@ -6,6 +6,7 @@ import {
   type MotionDiagramMetrics,
 } from '../../../evaluation';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * Motion Diagram / Strobe Diagram - Interactive visualization for teaching kinematics
@@ -397,6 +398,18 @@ const MotionDiagram: React.FC<MotionDiagramProps> = ({ data, className }) => {
     resetEvaluationAttempt();
   };
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'motion-diagram'),
+    scopeId: hasSubmittedEvaluation ? null : 'analyze',
+    label: 'The motion diagram and the motion choices',
+    solved: false,
+    tutorSpeaking: false,
+  });
+
   return (
     <div className={`space-y-4 ${className || ''}`}>
       {/* Header */}
@@ -409,6 +422,9 @@ const MotionDiagram: React.FC<MotionDiagramProps> = ({ data, className }) => {
         </p>
       </div>
 
+      {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+      {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
+      <div {...pip.workspace} className="space-y-4">
       {/* Canvas */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         <canvas
@@ -472,6 +488,8 @@ const MotionDiagram: React.FC<MotionDiagramProps> = ({ data, className }) => {
           </div>
         </div>
       )}
+
+      </div>
 
       {/* Info Panel */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

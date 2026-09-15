@@ -60,6 +60,7 @@ import {
   type LuminaAccent,
 } from '../../../ui';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
@@ -780,6 +781,11 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
    * else puts the previous item's answer over the next item's substance.
    */
   const staged = showReveal && reveal ? reveal.item : currentItem;
+  // Pip: the substances on the bench are the question side; on a pair item both
+  // are possible answers, so Pip outlines them together and never one.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The substances on the bench', finished: evaluation.hasSubmitted,
+  });
   const stagedTemp = showReveal && rampTemp != null
     ? rampTemp
     : staged?.startTemp ?? 0;
@@ -838,7 +844,8 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
                 no state badge, no substance switcher — every one of them either
                 answers the ask or lets the child run the experiment the tutor
                 is asking them to predict. */}
-            <div className="flex flex-col sm:flex-row gap-4 items-start justify-center">
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.target('stimulus')} className="flex flex-col sm:flex-row gap-4 items-start justify-center">
               {staged?.pair
                 ? staged.pair.map((s) => (
                     <MatterLab

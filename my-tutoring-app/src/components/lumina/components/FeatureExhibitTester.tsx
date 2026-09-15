@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { CuratorCompanion } from './CuratorCompanion';
 import { getPrimitive } from '../config/primitiveRegistry';
 import type { FeatureExhibitData } from '../service/feature-exhibit/gemini-feature-exhibit';
 import {
@@ -138,6 +139,9 @@ const FeatureExhibitTesterInner: React.FC<FeatureExhibitTesterProps> = ({ onBack
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedData, setGeneratedData] = useState<FeatureExhibitData | null>(null);
+  // One id per generated exhibit: evaluation and Pip's surface key on it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const previewInstanceId = useMemo(() => `feature-exhibit-${Date.now()}`, [generatedData]);
   const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
 
   const evaluationContext = useEvaluationContext();
@@ -295,12 +299,12 @@ const FeatureExhibitTesterInner: React.FC<FeatureExhibitTesterProps> = ({ onBack
           {/* Preview Area */}
           <div className="flex-1 bg-slate-800/50 rounded-2xl p-4 border border-slate-700 min-h-[calc(100vh-200px)]">
             {generatedData && FeatureExhibitComponent ? (
-              <div className="bg-slate-900/50 rounded-xl overflow-hidden h-full">
+              <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId} className="bg-slate-900/50 rounded-xl overflow-hidden h-full">
                 <FeatureExhibitComponent
                   data={{
                     ...generatedData,
                     // Inject evaluation props using ManifestOrderRenderer pattern
-                    instanceId: `feature-exhibit-${Date.now()}`,
+                    instanceId: previewInstanceId,
                     exhibitId: evaluationContext?.exhibitId,
                     skillId: 'reading-comprehension',
                     subskillId: 'deep-reading',
@@ -309,6 +313,7 @@ const FeatureExhibitTesterInner: React.FC<FeatureExhibitTesterProps> = ({ onBack
                   }}
                   onTermClick={handleTermClick}
                 />
+                <CuratorCompanion />
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-slate-500">

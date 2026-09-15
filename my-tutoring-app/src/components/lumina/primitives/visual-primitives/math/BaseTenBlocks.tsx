@@ -19,6 +19,7 @@ import {
 import type { BaseTenBlocksMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import CalculatorInput from '../../input-primitives/CalculatorInput';
@@ -364,7 +365,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
     supportTier: supportTier ?? 'medium',
   }), [numberValue, interactionMode, decimalMode, gradeBand, currentTotal, activePlaces, columns, currentChallenge, currentAttempts, regroupCount, description, supportTier]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'base-ten-blocks',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -668,6 +669,18 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   const isCurrentComplete = currentChallenge
     ? challengeResults.some(r => r.challengeId === currentChallenge.id)
     : false;
+
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? (challengesWithIds.length === 0 ? 'explore' : null),
+    label: 'The place value mat',
+    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
 
   const localOverallScore = useMemo(() => {
     if (!allChallengesComplete || challengesWithIds.length === 0) return 0;

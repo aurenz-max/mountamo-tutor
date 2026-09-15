@@ -20,6 +20,7 @@ import {
   RotateCcw,
   Image as ImageIcon,
 } from 'lucide-react';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * Adaptation Investigator - Structure-Function-Environment Reasoning
@@ -806,14 +807,31 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
   // Main Render
   // ============================================================================
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId || 'adaptation-investigator',
+    scopeId: hasSubmitted ? null : currentPhase,
+    label: 'The adaptation panels and questions',
+    solved: currentPhase === 'apply' && whatIfResponses.length > 0 && whatIfResponses.every((r) => r.isCorrect === true),
+    tutorSpeaking: false,
+  });
+
   return (
     <div className={`relative ${className}`}>
       {renderOrganismHeader()}
       {renderPhaseIndicator()}
       {renderPhaseInstructions()}
+      {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+      {pip.store && !hasSubmitted && <div {...pip.dock} />}
+      <div {...pip.workspace}>
       {renderThreePanels()}
       {(currentPhase === 'practice' || currentPhase === 'apply') && renderMisconception()}
       {currentPhase === 'apply' && renderWhatIfScenarios()}
+      </div>
+
       {renderActions()}
       {renderSuccessSummary()}
     </div>

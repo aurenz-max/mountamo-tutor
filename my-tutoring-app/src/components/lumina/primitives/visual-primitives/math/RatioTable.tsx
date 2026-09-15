@@ -27,6 +27,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -248,7 +249,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
     challenges.length, currentAttempts, supportTier,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'ratio-table',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -595,6 +596,18 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The ratio table',
+    solved: isCurrentChallengeComplete,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
@@ -638,6 +651,9 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
           </LuminaPrompt>
         )}
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* Ratio Table Visualization */}
         {currentChallenge && !allChallengesComplete && (
           <div className="grid grid-cols-2 gap-4">
@@ -837,6 +853,8 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
             </LuminaButton>
           </div>
         )}
+
+        </div>
 
         {/* Feedback */}
         {feedback && (

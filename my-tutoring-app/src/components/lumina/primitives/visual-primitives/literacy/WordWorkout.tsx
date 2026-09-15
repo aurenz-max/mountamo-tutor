@@ -87,6 +87,8 @@ import {
   type WordWorkoutMode,
   type WordWorkoutPictureOption,
 } from './wordWorkoutScript';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { wordWorkoutPipPose } from '../../../pip/wordWorkoutPipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -422,6 +424,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       // The tutor's correction re-modeled in-band; free the pictures again.
       setTapped(null);
       tappedRef.current = null;
+      pip.clear();
     },
   });
 
@@ -429,6 +432,25 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
   /** Affirmed: the first moment an answer may be marked on screen. */
   const revealed = runner.currentSolved;
   const meta = KIND_META[currentItem?.kind ?? 'real_word'];
+
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase and the child's own picture tap; Pip
+  // never answers, taps, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets();
+    const pose = wordWorkoutPipPose({
+      kind: currentItem.kind,
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Word workout', dock: pip.dock.current, targets, pose };
+  });
 
   // ── The tap — picture-match only; the tap IS the commit ───────────────────
   const handlePictureTap = useCallback((option: WordWorkoutPictureOption) => {
@@ -439,10 +461,11 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     // state, this stops a second tap inside the same tick.
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
+    pip.look(`picture-${option.word}`);
     setTapped(option.word);
     tappedRef.current = option.word;
     runner.submitGestureAttempt(pictureVerdictCue(item, option.word));
-  }, [runner, evaluation.hasSubmitted]);
+  }, [runner, evaluation.hasSubmitted, pip]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const celebrationMessage = useMemo(() => {
@@ -473,7 +496,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
    *  is the costume this port deleted. The real one is marked only on the
    *  affirm. */
   const renderRealWord = (item: WordWorkoutItem) => (
-    <div className="grid grid-cols-2 gap-4">
+    <div ref={pip.ref('pair')} data-pip-object="pair" className="grid grid-cols-2 gap-4">
       {(item.pair ?? []).map((word) => {
         const isReal = word === item.realWord;
         const state = revealed ? (isReal ? 'correct' : 'dimmed') : 'idle';
@@ -496,7 +519,8 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
   const renderPictureTap = (item: WordWorkoutItem) => (
     <div className="space-y-4">
       <div className="text-center">
-        <div className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 border border-white/20">
+        <div ref={pip.ref('word')} data-pip-object="word"
+          className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 border border-white/20">
           <span className="text-3xl font-bold text-slate-100">{item.targetWord}</span>
         </div>
       </div>
@@ -511,6 +535,8 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
           return (
             <button
               key={`${item.id}-${option.word}`}
+              ref={pip.ref(`picture-${option.word}`)}
+              data-pip-object={`picture-${option.word}`}
               onClick={() => handlePictureTap(option)}
               disabled={!runner.canAttempt}
               className={`
@@ -544,6 +570,8 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
           return (
             <div
               key={`${word}-${idx}`}
+              ref={isActive ? pip.ref('chain-row') : undefined}
+              data-pip-object={isActive ? 'chain-row' : undefined}
               className={`
                 flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300
                 ${isActive && !isRead
@@ -599,7 +627,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     const isRead = item.kind === 'read_sentence';
     return (
       <div className="space-y-4">
-        <div className="rounded-xl bg-white/5 border border-white/10 p-6">
+        <div ref={pip.ref('sentence')} data-pip-object="sentence" className="rounded-xl bg-white/5 border border-white/10 p-6">
           <div className="flex flex-wrap gap-2 justify-center">
             {words.map((word, idx) => {
               const clean = word.replace(/[.,!?'"]/g, '').toLowerCase();
@@ -635,7 +663,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
    *  chunks appear only after the tutor has judged the attempt. */
   const renderExtendedWord = (item: WordWorkoutItem) => (
     <div className="space-y-4 text-center">
-      <div className="inline-flex px-10 py-6 rounded-2xl bg-white/5 border-2 border-white/15">
+      <div ref={pip.ref('word')} data-pip-object="word" className="inline-flex px-10 py-6 rounded-2xl bg-white/5 border-2 border-white/15">
         <span className="text-4xl font-bold tracking-wide text-slate-100">{item.targetWord}</span>
       </div>
       {item.kind === 'read_extended_word' && revealed && (
@@ -664,7 +692,8 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
   const renderContextWords = (item: WordWorkoutItem) => (
     <div className="space-y-5">
       {item.kind === 'choose_context_word' && (
-        <p className="rounded-xl border border-white/10 bg-white/5 p-5 text-center text-2xl font-semibold text-slate-100">
+        <p ref={pip.ref('sentence')} data-pip-object="sentence"
+          className="rounded-xl border border-white/10 bg-white/5 p-5 text-center text-2xl font-semibold text-slate-100">
           {item.contextSentence}
         </p>
       )}
@@ -675,6 +704,8 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
           return (
             <div
               key={`${item.id}-${word}`}
+              ref={active ? pip.ref('context-target') : undefined}
+              data-pip-object={active ? 'context-target' : undefined}
               className={`rounded-2xl border-2 px-6 py-6 text-center text-3xl font-bold tracking-wide
                 ${correct
                   ? answerStateClass('correct')
@@ -768,6 +799,14 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
                 <span className="text-xl">🔁</span>
               </button>
             </div>
+
+            {/* Pip's dock sits above the stage: every cue target (the word, the
+                sentence, the marked row or card) is at the top of its stage, so
+                a pointer never crosses a picture or a near-word card. */}
+            {pipStore && (
+              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+            )}
 
             {currentItem && renderStage(currentItem)}
 

@@ -14,6 +14,7 @@ import {
   LuminaActionButton,
   LuminaFeedbackCard,
 } from '../../../ui';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * Blueprint Canvas - Grid-based drawing surface for creating technical drawings
@@ -421,6 +422,16 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
 
   const colors = themeColors[theme];
 
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'blueprint-canvas'),
+    scopeId: 'blueprint',
+    label: 'Your blueprint drawing',
+    solved: hasSubmitted && !!fullEvaluation?.targetMet,
+    tutorSpeaking: false,
+    checking: isEvaluating,
+    handover: true,
+  });
+
   return (
     <div className={`${className || ''}`}>
       {/* Header */}
@@ -453,10 +464,11 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
         </div>
       )}
 
+      {pip.store && <div {...pip.dock} className={`${pip.dock.className} mb-4`} />}
       {/* Main Canvas Area — wide canvas, compact sidebar */}
       <div className="flex flex-col gap-4 lg:flex-row">
         {/* Drawing Canvas — bespoke interaction surface (technical-drawing frame + toolbar) */}
-        <div className={`${colors.bg} min-w-0 flex-1 rounded-xl overflow-hidden shadow-2xl border-2 ${colors.border}`}>
+        <div {...pip.workspace} className={`${colors.bg} min-w-0 flex-1 rounded-xl overflow-hidden shadow-2xl border-2 ${colors.border}`}>
           <div className="p-3 flex items-center justify-between border-b border-slate-700 bg-slate-900">
             <div className="flex items-center gap-2">
               <span className="font-bold tracking-wider text-sm uppercase text-blue-400">

@@ -21,6 +21,7 @@ import {
   LuminaActionButton,
   LuminaInput,
 } from '../../../ui';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * Array Grid — multi-challenge array builder / counter / multiplier.
@@ -257,7 +258,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     ],
   );
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'array-grid',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -578,6 +579,18 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
   }
 
   // ── Session summary ────────────────────────────────────────────
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: isComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The array',
+    solved: challengeDone && results.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   if (isComplete) {
     return (
       <div className={`w-full max-w-6xl mx-auto my-16 ${className || ''}`}>
@@ -670,6 +683,9 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
             </div>
           )}
 
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* Step 1: Build (build_array mode only) */}
           {!isPreBuilt && !challengeDone && (
             <div className="mb-8">
@@ -869,6 +885,8 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
               </div>
             </div>
           )}
+
+          </div>
 
           {/* Feedback Display */}
           {feedback && (

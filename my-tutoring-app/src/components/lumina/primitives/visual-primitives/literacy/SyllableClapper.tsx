@@ -69,6 +69,8 @@ import type { SyllableTask } from './syllableClapperModes';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { syllableClapperPipPose } from '../../../pip/syllableClapperPipPose';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 
 // ============================================================================
@@ -292,6 +294,23 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
    *  ALREADY replaced the affirmed one by render time (18b). */
   const revealItem = runner.revealHeld ? revealed : null;
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase onto the hear-it-again button; Pip never
+  // answers, judges, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, false);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(['stimulus'], () => 'Hear the question again');
+    const pose = syllableClapperPipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      visibleIds: targets.map((target) => target.id),
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Syllable clapper', dock: pip.dock.current, targets, pose };
+  });
+
   // ── Tap ONE part of the reveal bar to hear it (post-affirm only) ──────────
   const hearPart = useCallback((part: string) => {
     if (!ctx.isConnected) return;
@@ -357,6 +376,8 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
                 every ask states its stimulus and withholds its answer). */}
             <div className="flex flex-col items-center gap-3">
               <button
+                ref={pip.ref('stimulus')}
+                data-pip-object="stimulus"
                 onClick={runner.hearStimulus}
                 disabled={!runner.running}
                 data-testid="hear-word"
@@ -375,6 +396,10 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
                 {currentItem ? promptLineFor(currentItem) : 'Listen, then answer out loud.'}
               </p>
             </div>
+
+            {/* Pip's dock sits below the question, above the reveal bar. */}
+            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
 
             {/* The reveal — the first moment the word, the split and the count
                 may appear on screen, and it holds for exactly as long as she is

@@ -20,6 +20,7 @@ import {
 } from '../../../evaluation';
 import type { EvidenceFinderMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -616,6 +617,18 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
   // Main Render
   // ============================================================================
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId || 'evidence-finder',
+    scopeId: hasSubmittedEvaluation ? null : currentPhase,
+    label: 'The passage and the claims',
+    solved: currentPhase === 'find' && feedbackType === 'success',
+    tutorSpeaking: false,
+  });
+
   if (!passage || passage.sentences.length === 0 || claims.length === 0) {
     return (
       <LuminaCard className={className}>
@@ -648,9 +661,14 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
       <LuminaCardContent className="space-y-4">
         {renderPhaseProgress()}
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {currentPhase === 'find' && renderFindPhase()}
         {currentPhase === 'evaluate' && renderEvaluatePhase()}
         {currentPhase === 'reason' && renderReasonPhase()}
+        </div>
+
       </LuminaCardContent>
     </LuminaCard>
   );

@@ -24,6 +24,7 @@ import type { HydraulicsLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -1158,7 +1159,7 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
     loadWeight, systemPressure, outputForce, forceRatio, isLifting,
     exploredZones, currentMission.title, solvedMissionIds.size, missions.length, selectedZone]);
 
-  const { sendText, isConnected, isAudioPlaying } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'hydraulics-lab',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -1442,6 +1443,18 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
   const icon = SCENARIO_ICONS[scenario] || '⚙️';
   const zoneInfo = selectedZone ? zoneDescs[selectedZone] : null;
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'hydraulics-lab'),
+    scopeId: hasSubmittedEvaluation ? null : currentMission.id,
+    label: 'The hydraulic machine and its controls',
+    solved: currentSolved,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'hydraulics-lab'),
+  });
+
   return (
     <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -1663,6 +1676,9 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
             </LuminaPanel>
           )}
 
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
+          <div {...pip.workspace} className="space-y-5">
           {/* Simulation Canvas — bespoke interaction surface, left untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50">
             <HydraulicsSimulation
@@ -1801,6 +1817,8 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
                 <div className="h-full bg-amber-500/50 rounded-full" style={{ width: `${Math.min(100, (loadWeight / 2000) * 100)}%` }} />
               </div>
             </LuminaPanel>
+          </div>
+
           </div>
 
           {/* Work conservation insight */}

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { CuratorCompanion } from './CuratorCompanion';
 import MotionDiagram from '../primitives/visual-primitives/physics/MotionDiagram';
 import SoundWaveExplorer from '../primitives/visual-primitives/physics/SoundWaveExplorer';
 import PushPullArena from '../primitives/visual-primitives/physics/PushPullArena';
@@ -55,7 +56,7 @@ const PrimitiveRenderer: React.FC<{
           data={{
             ...(data as Parameters<typeof MotionDiagram>[0]['data']),
             // Evaluation integration props
-            instanceId: `motion-diagram-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'physics-kinematics',
             subskillId: 'motion-analysis',
             objectiveId: 'understand-velocity-acceleration',
@@ -68,7 +69,7 @@ const PrimitiveRenderer: React.FC<{
         <SoundWaveExplorer
           data={{
             ...(data as Parameters<typeof SoundWaveExplorer>[0]['data']),
-            instanceId: `sound-wave-explorer-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'physics-waves',
             subskillId: 'sound-waves',
             objectiveId: 'understand-sound-vibrations',
@@ -80,7 +81,7 @@ const PrimitiveRenderer: React.FC<{
         <PushPullArena
           data={{
             ...(data as Parameters<typeof PushPullArena>[0]['data']),
-            instanceId: `push-pull-arena-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'physics-forces',
             subskillId: 'push-pull-forces',
             objectiveId: 'understand-forces-motion',
@@ -92,7 +93,7 @@ const PrimitiveRenderer: React.FC<{
         <RaceTrackLab
           data={{
             ...(data as Parameters<typeof RaceTrackLab>[0]['data']),
-            instanceId: `race-track-lab-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'physics-kinematics',
             subskillId: 'speed-velocity-acceleration',
             objectiveId: 'understand-race-track-motion',
@@ -104,7 +105,7 @@ const PrimitiveRenderer: React.FC<{
         <GravityDropTower
           data={{
             ...(data as Parameters<typeof GravityDropTower>[0]['data']),
-            instanceId: `gravity-drop-tower-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'gravity-basics',
             subskillId: 'free-fall',
           }}
@@ -231,6 +232,13 @@ const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ 
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
+  // One instance id per generated preview: evaluation, tutoring and Pip's surface
+  // all key on it, so it must not change when the helper re-renders.
+  const previewInstanceId = useMemo(
+    () => `physics-helper-${selectedPrimitive}-${Date.now()}`,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [generatedData],
+  );
   const [generationKey, setGenerationKey] = useState(0);
   const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
 
@@ -446,12 +454,14 @@ const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ 
           <h3 className="text-2xl font-bold text-white mb-6">Preview</h3>
 
           {generatedData ? (
-            <PrimitiveRenderer
-              key={generationKey}
-              componentId={selectedPrimitive}
-              data={generatedData}
-              onEvaluationSubmit={handleEvaluationSubmit}
-            />
+            <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId}>
+              <PrimitiveRenderer
+                componentId={selectedPrimitive}
+                data={{ ...(generatedData as object), instanceId: previewInstanceId }}
+                onEvaluationSubmit={handleEvaluationSubmit}
+              />
+              <CuratorCompanion />
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-slate-500">
               <span className="text-4xl mb-4">{selectedOption.icon}</span>

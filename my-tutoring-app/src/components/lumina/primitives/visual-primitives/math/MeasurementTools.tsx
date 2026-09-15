@@ -23,6 +23,7 @@ import { useChallengeProgress, type ChallengeResult } from '../../../hooks/useCh
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // =============================================================================
 // Data Interface (Single Source of Truth)
@@ -593,7 +594,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     effectiveConvertToUnit, measureComplete, comparisonDone,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'measurement-tools',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -1081,6 +1082,18 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
   const convertStepSize = 0.5;
 
   // -- Render ---------------------------------------------------------------
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: isFullyComplete || hasSubmitted ? null : measureComplete ? 'compare' : currentChallenge?.id ?? null,
+    label: 'The measuring workspace',
+    solved: measureComplete ? comparisonDone : convertStep ? convertFeedback?.correct === true : feedback?.correct === true,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
@@ -1144,6 +1157,9 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
           />
         )}
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !isFullyComplete && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* COMPARE — Comparison phase (after all shapes measured) */}
         {challengeType === 'compare' && measureComplete && !comparisonDone && !isFullyComplete && (
           <div className="space-y-4">
@@ -1425,6 +1441,8 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
             )}
           </>
         )}
+
+        </div>
 
         {isFullyComplete && (
           <div className="flex justify-center">

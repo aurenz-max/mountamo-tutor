@@ -76,6 +76,7 @@ import {
   useJudgedScriptRunner,
   type JudgedRunSummary,
 } from '../../../hooks/useJudgedScriptRunner';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
   correctChoiceOf,
@@ -479,6 +480,9 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
   });
 
   const showReveal = runner.revealHeld && reveal !== null;
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The statement', finished: evaluation.hasSubmitted,
+  });
 
   // Correct/incorrect used to fire on a Check press; the tutor's verdict is the
   // check now, so the reward rides the REVEAL — which opens on her affirmation
@@ -638,8 +642,9 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
             {/* THE STATEMENT. The question side, printed for a reader and read
                 aloud for everyone — no bins under it, no captions, no hint, no
                 explanation until the tutor has affirmed. */}
+            {pip.store && <div {...pip.dock} />}
             {staged && (
-              <LuminaPrompt accent="amber" center>
+              <LuminaPrompt {...pip.target('stimulus')} accent="amber" center>
                 {staged.statement}
               </LuminaPrompt>
             )}

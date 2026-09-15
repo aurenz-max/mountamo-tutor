@@ -75,6 +75,8 @@ import {
 } from './letterSoundLinkScript';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { letterSoundLinkPipPose } from '../../../pip/letterSoundLinkPipPose';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 
@@ -303,6 +305,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
       // The tutor's correction re-modeled in-band; free the letters for another go.
       setTapped(null);
       tappedRef.current = null;
+      pip.clear();
     },
   });
 
@@ -310,6 +313,25 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   /** Affirmed: the first moment the answer may appear on screen. The runner
    *  owns this latch now (it replaces the `onItemOpened`/`onAffirmed` pair). */
   const revealed = runner.currentSolved;
+
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase and the child's own letter tap; Pip
+  // never answers, taps, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets();
+    const pose = letterSoundLinkPipPose({
+      mode: currentItem.mode,
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Letter-sound link', dock: pip.dock.current, targets, pose };
+  });
 
   // ── The tap — hear-see only; the tap IS the commit ────────────────────────
   const handleLetterTap = useCallback((letter: string) => {
@@ -320,13 +342,14 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     // state, this stops a second tap inside the same tick.
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
+    pip.look(`option-${letter}`);
     setTapped(letter);
     tappedRef.current = letter;
     if (letter.toLowerCase() !== item.answer.toLowerCase()) {
       confusedPairsRef.current.push([item.answer.toLowerCase(), letter.toLowerCase()]);
     }
     runner.submitGestureAttempt(tapVerdictCue(item, letter));
-  }, [runner, evaluation.hasSubmitted]);
+  }, [runner, evaluation.hasSubmitted, pip]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   /** What the child actually DID. A run of `hear-see` items is answered by
@@ -363,6 +386,8 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   const renderLetterCard = (item: LetterSoundItem) => (
     <div className="flex justify-center">
       <div
+        ref={pip.ref('letter')}
+        data-pip-object="letter"
         role="button"
         tabIndex={0}
         onClick={runner.hearStimulus}
@@ -417,7 +442,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
                 <span className="text-4xl">🔊</span>
               </button>
             </div>
-            <div className="flex items-center justify-center gap-6 sm:gap-10">
+            <div ref={pip.ref('options')} data-pip-object="options" className="flex items-center justify-center gap-6 sm:gap-10">
               {item.options.map((option, idx) => {
                 const isTarget = option.value.toLowerCase() === item.answer.toLowerCase();
                 const state = revealed && isTarget
@@ -428,6 +453,8 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
                 return (
                   <button
                     key={`${item.id}-${idx}`}
+                    ref={pip.ref(`option-${option.value}`)}
+                    data-pip-object={`option-${option.value}`}
                     onClick={() => handleLetterTap(option.value)}
                     disabled={!runner.canAttempt}
                     className={`
@@ -524,6 +551,11 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
                 variant="dots"
               />
             </div>
+
+            {/* Pip's dock sits above the stage: the letter card or the letter
+                buttons (outlined as a group) are below it. */}
+            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
 
             {currentItem && renderChallenge(currentItem)}
 

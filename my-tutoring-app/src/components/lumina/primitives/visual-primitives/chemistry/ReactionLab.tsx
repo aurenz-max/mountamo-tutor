@@ -17,6 +17,7 @@ import {
 import type { ReactionLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -470,7 +471,7 @@ const ReactionLab: React.FC<ReactionLabProps> = ({ data, className }) => {
     currentChallenge, currentAttempts,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'reaction-lab',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -757,6 +758,18 @@ const ReactionLab: React.FC<ReactionLabProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
+
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: hasSubmittedEvaluation || allChallengesComplete || currentPhase !== 'explain' ? null : currentChallenge?.id ?? null,
+    label: 'The challenge and your answer',
+    solved: isCurrentChallengeComplete && !!currentChallenge && ((!!currentChallenge.isTrueFalse && currentChallenge.correctBoolean !== undefined) || (!!currentChallenge.options && !!currentChallenge.correctOptionId) || currentChallenge.type === 'classify'),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
 
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
@@ -1166,6 +1179,9 @@ const ReactionLab: React.FC<ReactionLabProps> = ({ data, className }) => {
               </div>
             )}
 
+            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+            {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+            <div {...pip.workspace}>
             {/* Current challenge */}
             {currentChallenge && !allChallengesComplete && (
               <div className="bg-slate-800/30 rounded-xl p-4 border border-white/5 space-y-3">
@@ -1287,6 +1303,8 @@ const ReactionLab: React.FC<ReactionLabProps> = ({ data, className }) => {
                 )}
               </div>
             )}
+
+            </div>
 
             {/* All complete */}
             {allChallengesComplete && (

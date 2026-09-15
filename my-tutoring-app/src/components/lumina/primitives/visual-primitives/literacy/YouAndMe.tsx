@@ -12,6 +12,8 @@ import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { youAndMePack, buildYouAndMeItems, sceneStatement, taskPrompt } from './youAndMeScript';
 import type { SupportTier } from '../../../service/generation/generationContext';
 import { supportFor, type YouAndMeSupportScaffold } from './youAndMeSupport';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { youAndMePipPose } from '../../../pip/youAndMePipPose';
 
 export type YouAndMeMode = 'describe_action' | 'describe_independent_action';
 
@@ -88,6 +90,24 @@ function YouAndMeSession({ data, className }: { data: YouAndMeData; className?: 
     },
   });
   const item = run.currentItem ?? items[0];
+
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase onto the scene as a whole; Pip never
+  // answers, judges, or advances.
+  const pip = usePipTargets(item?.id ?? null, false);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !item || run.summary) return null;
+    const targets = pip.targets(['scene'], () => 'The partners and the scene');
+    const pose = youAndMePipPose({
+      running: run.running, preparing: run.preparing,
+      currentSolved: run.currentSolved, revealHeld: run.revealHeld,
+      judging: run.stage === 'judging', tutorSpeaking: run.tutorSpeaking,
+      cueMatchesItem: run.cuedItemId === item.id,
+      visibleIds: targets.map((target) => target.id),
+    });
+    return { instanceId, scopeId: item.id, label: 'You and me', dock: pip.dock.current, targets, pose };
+  });
+
   if (!item) return <LuminaCard><LuminaCardContent>No scenes available. Generate a new activity.</LuminaCardContent></LuminaCard>;
   if (run.summary) return <PhaseSummaryPanel
     phases={phaseResultsFromSummary(items, run.summary, ch => ({
@@ -111,7 +131,7 @@ function YouAndMeSession({ data, className }: { data: YouAndMeData; className?: 
       <div className="flex justify-center"><LuminaBadge accent="pink">
         {swapped ? 'Trade roles · same action, new speaker' : 'Meet the partners'}
       </LuminaBadge></div>
-      <div className="relative grid grid-cols-2 gap-4 rounded-3xl bg-gradient-to-br from-rose-950/20 to-teal-950/25 p-4 sm:p-8">
+      <div ref={pip.ref('scene')} data-pip-object="scene" className="relative grid grid-cols-2 gap-4 rounded-3xl bg-gradient-to-br from-rose-950/20 to-teal-950/25 p-4 sm:p-8">
         {item.participants.map((person, index) => <div key={person.name}
           className={`relative flex min-h-52 flex-col items-center justify-center gap-3 rounded-3xl border-2 p-4 transition-all duration-500 ${support.showSpeakerHighlight && index === item.speaker ? 'border-pink-300 bg-pink-300/10 shadow-lg shadow-pink-300/10' : 'border-slate-600/40 bg-slate-800/20'}`}>
           <span className="text-6xl sm:text-7xl" role="img" aria-label={person.name}>{person.emoji}</span>
@@ -124,6 +144,9 @@ function YouAndMeSession({ data, className }: { data: YouAndMeData; className?: 
         <div className="col-span-2 text-center text-lg text-slate-100">{sceneStatement(item)}</div>
       </div>
       <LuminaPrompt>{taskPrompt(item)}</LuminaPrompt>
+      {/* Pip's dock sits below the prompt: the scene is outlined as a region. */}
+      {pipStore && <div ref={pip.dock} data-pip-dock={instanceId}
+        className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
       {support.preparation && <LuminaPanel><p className="text-center text-slate-200">{support.preparation}</p></LuminaPanel>}
       {correctedId === item.id && <LuminaPanel>
         <p className="text-center text-slate-200">{speaker.name} is speaking. {actor.name} did the action.</p>

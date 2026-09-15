@@ -31,6 +31,7 @@ import {
   type RampScenario,
   type RampInvestigationResult,
 } from './rampChallenges';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 export { selectMixedRampChallenges, selectRampChallenges } from './rampChallenges';
 export type { RampChallenge, RampChallengeMode } from './rampChallenges';
@@ -421,6 +422,18 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
     if (currentChallenge && 'variable' in currentChallenge) variablesExploredRef.current.add(currentChallenge.variable);
   };
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId || fallbackInstanceIdRef.current,
+    scopeId: hasSubmitted || !currentChallenge || isInvestigation ? null : currentChallenge.id,
+    label: 'The ramp and its controls',
+    solved: currentSolved,
+    tutorSpeaking: false,
+  });
+
   return (
     <div className={`mx-auto my-12 w-full max-w-5xl animate-fade-in ${className || ''}`}>
       <div className="mb-7 flex items-center justify-center gap-4">
@@ -487,6 +500,9 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
             </div>
           </>}
           {!isInvestigation && <>
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && <div {...pip.dock} />}
+          <div {...pip.workspace} className="space-y-6">
           <div className="relative overflow-hidden rounded-2xl border border-slate-700/60 bg-slate-950/60">
             <div className={`absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full border px-4 py-2 font-mono text-xs ${
               diagnosticsRevealed
@@ -582,6 +598,8 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
             <LuminaStat label="Surface" value={frictionLabel[frictionLevel]} accent="amber" />
             <LuminaStat label="Position" value={`${loadPosition.toFixed(0)}%`} accent="emerald" />
             <LuminaStat label="Force evidence" value={diagnosticsRevealed ? `${thresholdForce.toFixed(1)} N threshold` : 'hidden until check'} accent={diagnosticsRevealed ? 'purple' : undefined} />
+          </div>
+
           </div>
 
           {currentChallenge?.mode === 'compare_conditions' && feedback && (

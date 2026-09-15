@@ -68,6 +68,7 @@ import {
   type LuminaAccent,
 } from '../../../ui';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
@@ -492,6 +493,12 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
    * else puts the previous item's answer over the next item's object.
    */
   const staged = showReveal && reveal ? reveal.item : runner.currentItem;
+  // Pip: the object on the bench is the question side; Pip outlines it during the
+  // ask and watches it while the child answers aloud. The explore face has none.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The object on the bench',
+    finished: evaluation.hasSubmitted || !judged,
+  });
   const modeMeta = MODE_META[staged?.kind ?? 'name_state'];
 
   if (!judged) {
@@ -568,7 +575,8 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
             {/* THE BENCH. No bins, no property panel, no slider, no text box —
                 every one of them either prints the answer or lets the child
                 pick it from a menu the tutor never offered. */}
-            <div className="flex justify-center">
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.target('stimulus')} className="flex justify-center">
               {staged && <ObjectStage item={staged} revealed={showReveal} />}
             </div>
 

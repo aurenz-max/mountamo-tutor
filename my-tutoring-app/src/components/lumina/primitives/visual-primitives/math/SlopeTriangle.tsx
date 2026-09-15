@@ -25,6 +25,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -565,7 +566,7 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
     currentAttempts,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'slope-triangle',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -791,6 +792,18 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The slope triangle and your answer',
+    solved: !!isCurrentComplete,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   if (!currentChallenge) {
     return (
       <LuminaCard className={className}>
@@ -849,6 +862,9 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
           })}
         </div>
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* Canvas — bespoke interaction surface (painting), left untouched */}
         <div className="p-3 bg-slate-800/30 rounded-2xl border border-green-500/20">
           <canvas
@@ -940,6 +956,8 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
             )}
           </LuminaPanel>
         )}
+
+        </div>
 
         {/* Feedback */}
         {feedback && (

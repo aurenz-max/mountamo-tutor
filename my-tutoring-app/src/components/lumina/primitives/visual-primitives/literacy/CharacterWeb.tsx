@@ -18,6 +18,7 @@ import {
 } from '../../../evaluation';
 import type { CharacterWebMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -285,6 +286,18 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
   const activeChar = characters[activeCharacterIdx];
   const activeTraits = activeChar ? (studentTraits[activeChar.characterId] || []) : [];
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId || 'character-web',
+    scopeId: hasSubmittedEvaluation ? null : currentPhase,
+    label: 'The character web',
+    solved: false,
+    tutorSpeaking: false,
+  });
+
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
@@ -308,6 +321,9 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
           <p className="text-slate-300 text-sm">{storyContext}</p>
         </LuminaPanel>
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* Phase 1: Profile */}
         {currentPhase === 'profile' && (
           <div className="space-y-3">
@@ -540,6 +556,8 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
             </div>
           </div>
         )}
+        </div>
+
       </LuminaCardContent>
     </LuminaCard>
   );

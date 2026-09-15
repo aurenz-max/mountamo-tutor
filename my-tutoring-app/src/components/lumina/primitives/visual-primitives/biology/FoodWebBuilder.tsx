@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { FoodWebBuilderMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -286,6 +287,18 @@ const FoodWebBuilder: React.FC<FoodWebBuilderProps> = ({ data, className }) => {
 
   const evaluation = evaluateWeb();
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId || 'food-web-builder',
+    scopeId: hasSubmitted ? null : 'web',
+    label: 'The food web',
+    solved: false,
+    tutorSpeaking: false,
+  });
+
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className}`}>
       <CardHeader>
@@ -325,6 +338,9 @@ const FoodWebBuilder: React.FC<FoodWebBuilderProps> = ({ data, className }) => {
           </div>
         </div>
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !hasSubmitted && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-6">
         {/* Web Canvas */}
         <div className="relative w-full h-[500px] bg-gradient-to-b from-slate-900/50 to-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
           {/* SVG for connection arrows */}
@@ -474,6 +490,8 @@ const FoodWebBuilder: React.FC<FoodWebBuilderProps> = ({ data, className }) => {
             </div>
           </div>
         )}
+
+        </div>
 
         {/* Evaluation Feedback */}
         {hasSubmitted && (

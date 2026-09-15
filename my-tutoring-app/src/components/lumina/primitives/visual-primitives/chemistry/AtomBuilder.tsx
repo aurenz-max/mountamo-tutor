@@ -11,6 +11,7 @@ import {
 import type { AtomBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -430,7 +431,7 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
     gradeBand,
   }), [protons, neutrons, electrons, charge, massNumber, element, shells, shellsCorrect, valenceElectrons, challengeIndex, challenges.length, currentChallenge, attemptsCount, gradeBand]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'atom-builder',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -604,6 +605,18 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
   // ---- Nucleus color based on element category ----
   const nucleusColor = element?.categoryColor || '#475569';
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'atom-builder'),
+    scopeId: hasSubmitted ? null : currentChallenge?.id ?? null,
+    label: 'The atom and the particle tray',
+    solved: !!currentChallenge && completedChallenges.has(currentChallenge.id),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'atom-builder'),
+  });
+
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
       <CardHeader className="pb-3">
@@ -647,6 +660,9 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
           </div>
         )}
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !hasSubmitted && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* Main workspace: Bohr model + Identity card */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Bohr Model Visualization */}
@@ -770,6 +786,8 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
             disabled={hasSubmitted}
             maxProtons={constraints.maxProtons}
           />
+        </div>
+
         </div>
 
         {/* Feedback */}

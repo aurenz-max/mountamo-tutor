@@ -25,6 +25,7 @@ import {
   LuminaSectionLabel,
 } from '../../../ui';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { OralSentenceStudioMetrics } from '../../../evaluation/types';
@@ -160,6 +161,11 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
   });
 
   const currentItem = runner.currentItem ?? items[0] ?? null;
+  // Pip: the scene is the question side; the sentence is the child's own, so
+  // Pip points only at the scene and watches it while the child speaks.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The picture', finished: evaluation.hasSubmitted,
+  });
   const phaseResults = useMemo(() => {
     if (!evaluation.hasSubmitted) return [];
     return phaseResultsFromSummary(items, runner.summary, () => PHASE_CONFIG.describe_scene);
@@ -209,7 +215,8 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
               Look at the scene. Say one complete sentence that uses both new words.
             </LuminaPrompt>
 
-            <LuminaPanel accent="cyan" className="overflow-hidden">
+            {pip.store && <div {...pip.dock} />}
+            <LuminaPanel {...pip.target('stimulus')} accent="cyan" className="overflow-hidden">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <LuminaSectionLabel>Picture to describe</LuminaSectionLabel>

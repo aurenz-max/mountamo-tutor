@@ -23,6 +23,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -359,7 +360,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     gradeBand, challenges.length, currentChallengeIndex, currentChallenge, currentAttempts, supportTier,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'coin-counter',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -1106,6 +1107,18 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
   };
 
   // ── Main Render ────────────────────────────────────────────────────
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The coins',
+    solved: isCurrentChallengeCorrect,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
@@ -1170,12 +1183,17 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
               <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
             </LuminaPanel>
 
+            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-4">
             {/* Challenge-type-specific UI */}
             {currentChallenge.type === 'identify' && renderIdentifyChallenge()}
             {currentChallenge.type === 'count' && renderCountChallenge()}
             {currentChallenge.type === 'make-amount' && renderMakeAmountChallenge()}
             {currentChallenge.type === 'compare' && renderCompareChallenge()}
             {currentChallenge.type === 'make-change' && renderMakeChangeChallenge()}
+
+            </div>
 
             {/* Feedback */}
             {feedback && (

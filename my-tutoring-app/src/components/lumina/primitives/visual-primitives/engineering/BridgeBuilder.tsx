@@ -14,6 +14,7 @@ import {
   LuminaPanel,
   LuminaFeedbackCard,
 } from '../../../ui';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * Bridge Builder - Interactive 2D bridge construction for teaching structural engineering
@@ -814,6 +815,18 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
   const piecesUsed = members.length;
   const withinBudget = !budget || piecesUsed <= budget;
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'bridge-builder'),
+    scopeId: 'bridge',
+    label: 'The bridge and the building pieces',
+    solved: bridgeSuccess,
+    tutorSpeaking: false,
+  });
+
   return (
     <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -871,6 +884,9 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
             )}
           </div>
 
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* SVG Canvas */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden mb-6 border border-slate-700/50">
             <svg
@@ -1201,6 +1217,8 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
                 </button>
               );
             })}
+          </div>
+
           </div>
 
           {/* Controls */}

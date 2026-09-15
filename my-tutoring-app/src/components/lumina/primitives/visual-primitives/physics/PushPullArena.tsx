@@ -61,6 +61,7 @@ import {
 } from './pushPullArenaScript';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 
@@ -602,6 +603,11 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
     ? challengeById.get(runner.currentItem.id) ?? null
     : null;
   const currentKind = runner.currentItem?.kind;
+  // Pip: the arena is the question side and the experiment; every answer is
+  // spoken, so Pip outlines the arena and watches it, and never runs it.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The arena', finished: hasSubmitted,
+  });
   const showForceArrows = currentChallenge?.showForceArrows ?? true;
   const showMotionReadout = currentChallenge?.showMotionReadout ?? true;
 
@@ -723,7 +729,8 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
             )}
 
             {/* Canvas arena — the stimulus and the experiment */}
-            <div className="rounded-lg overflow-hidden border border-white/10">
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.target('stimulus')} className="rounded-lg overflow-hidden border border-white/10">
               <canvas
                 ref={canvasRef}
                 className="w-full"

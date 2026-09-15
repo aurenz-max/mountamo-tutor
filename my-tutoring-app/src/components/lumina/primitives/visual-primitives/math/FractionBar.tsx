@@ -9,6 +9,7 @@ import {
 } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -246,7 +247,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     ],
   );
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'fraction-bar',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -284,6 +285,19 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     objectiveId,
     exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
+
+
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: isComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The fraction steps',
+    solved: challengeDone && results.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
   // ── PhaseSummaryPanel: one row, aggregated by eval mode ────────

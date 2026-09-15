@@ -32,6 +32,7 @@ export {
   selectDumpTruckJobs,
   selectMixedDumpTruckJobs,
 } from './dumpTruckJobs';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 export type { MaterialType, DumpTruckJob, DumpTruckJobMode } from './dumpTruckJobs';
 
 /**
@@ -1036,6 +1037,18 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
   // Reveal which meter is the binding limit — but don't spoil a pending prediction.
   const limitRevealed = !currentJob.predict || !!predictGuess || currentSolved;
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'dump-truck-loader'),
+    scopeId: hasSubmitted ? null : currentJob.id,
+    label: 'The dump truck, its controls, and the meters',
+    solved: currentSolved,
+    tutorSpeaking: false,
+  });
+
   return (
     <LuminaCard className={`w-full max-w-7xl mx-auto my-8 animate-fade-in ${className || ''}`}>
       <LuminaCardHeader>
@@ -1142,6 +1155,9 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
           )}
         </LuminaPanel>
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !hasSubmitted && <div {...pip.dock} />}
+        <div {...pip.workspace}>
         {/* Canvas — bespoke interaction surface, left untouched */}
         <div className="relative mb-4 bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl">
           <canvas
@@ -1314,6 +1330,8 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
               {targetLoads && <span className="text-sm text-slate-400">/{targetLoads}</span>}
             </div>
           </LuminaPanel>
+        </div>
+
         </div>
 
         {timeLimit && (

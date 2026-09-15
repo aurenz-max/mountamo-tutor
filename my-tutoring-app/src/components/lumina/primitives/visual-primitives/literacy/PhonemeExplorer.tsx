@@ -80,6 +80,8 @@ import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { phonemeExplorerPipPose } from '../../../pip/phonemeExplorerPipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -301,6 +303,25 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
   const revealed = runner.currentSolved;
   const currentChallenge = currentItem ? challengeById.get(currentItem.id) : undefined;
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase and the child's own tap-to-hear; Pip
+  // never answers, judges, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, runner.running);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets();
+    const pose = phonemeExplorerPipPose({
+      kind: currentItem.kind,
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Phoneme explorer', dock: pip.dock.current, targets, pose };
+  });
+
   // ── Tap-to-hear question-side audio (never a commit, never the answer) ────
   const hearWord = useCallback((word: string | undefined) => {
     if (!word || !ctx.isConnected) return;
@@ -349,7 +370,9 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
           return (
             <button
               key={`${item.id}-${idx}`}
-              onClick={() => hearWord(card.word)}
+              ref={pip.ref(`card-${idx}`)}
+              data-pip-object={`card-${idx}`}
+              onClick={() => { pip.look(`card-${idx}`); hearWord(card.word); }}
               className={`
                 rounded-xl border-2 p-4 flex flex-col items-center gap-2
                 transition-all duration-200 cursor-pointer
@@ -377,7 +400,9 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       {/* Phoneme tile — the stimulus. Tap to hear the sound. */}
       <div className="flex flex-col items-center gap-3">
         <button
-          onClick={() => hearSound(item.phonemeSound ?? item.phoneme)}
+          ref={pip.ref('stimulus')}
+          data-pip-object="stimulus"
+          onClick={() => { pip.look('stimulus'); hearSound(item.phonemeSound ?? item.phoneme); }}
           className="rounded-2xl bg-blue-500/15 border-2 border-blue-500/30 px-10 py-6 text-center cursor-pointer"
         >
           <div className="text-5xl font-black text-blue-200 tracking-wide">{item.phoneme}</div>
@@ -389,7 +414,9 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
           sub-label goes first at medium. Tap to hear the example word. */}
       {ch?.showExampleWord !== false && item.exampleWord && (
         <button
-          onClick={() => hearWord(item.exampleWord)}
+          ref={pip.ref('example')}
+          data-pip-object="example"
+          onClick={() => { pip.look('example'); hearWord(item.exampleWord); }}
           className="mx-auto flex items-center justify-center gap-3 rounded-xl bg-white/5 border border-white/10 px-5 py-3 cursor-pointer"
         >
           <span className="text-3xl">{item.exampleEmoji}</span>
@@ -420,7 +447,9 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     <div className="space-y-5">
       <div className="flex flex-col items-center gap-3">
         <button
-          onClick={() => hearWord(item.targetWord)}
+          ref={pip.ref('stimulus')}
+          data-pip-object="stimulus"
+          onClick={() => { pip.look('stimulus'); hearWord(item.targetWord); }}
           className="rounded-2xl bg-cyan-500/15 border-2 border-cyan-500/30 px-10 py-6 text-center cursor-pointer"
         >
           <span className="text-5xl">
@@ -458,7 +487,9 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     <div className="space-y-5">
       <div className="flex flex-col items-center gap-3">
         <button
-          onClick={() => hearWord(item.targetWord)}
+          ref={pip.ref('stimulus')}
+          data-pip-object="stimulus"
+          onClick={() => { pip.look('stimulus'); hearWord(item.targetWord); }}
           className="rounded-2xl bg-rose-500/15 border-2 border-rose-500/30 px-10 py-6 text-center cursor-pointer"
         >
           <span className="text-5xl">
@@ -493,11 +524,13 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
         {ch?.showBlendCue !== false && (
           <p className="text-sm text-purple-400/70 font-medium">Blend these sounds together:</p>
         )}
-        <div className="flex items-center gap-2">
+        <div ref={pip.ref('sounds')} data-pip-object="sounds" className="flex items-center gap-2">
           {item.phonemeSequence?.map((p, i) => (
             <React.Fragment key={i}>
               <button
-                onClick={() => hearSound(p)}
+                ref={pip.ref(`sound-${i}`)}
+                data-pip-object={`sound-${i}`}
+                onClick={() => { pip.look(`sound-${i}`); hearSound(p); }}
                 className="rounded-xl bg-purple-500/15 border-2 border-purple-500/30 px-5 py-4 text-center cursor-pointer"
               >
                 <span className="text-2xl font-black text-purple-200">/{p.replace(/\//g, '')}/</span>
@@ -530,7 +563,9 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
           The picture (tier-withdrawable) + tap-to-hear carry the stimulus. */}
       <div className="flex flex-col items-center gap-3">
         <button
-          onClick={() => hearWord(item.targetWord)}
+          ref={pip.ref('stimulus')}
+          data-pip-object="stimulus"
+          onClick={() => { pip.look('stimulus'); hearWord(item.targetWord); }}
           className="rounded-2xl bg-emerald-500/15 border-2 border-emerald-500/30 px-10 py-6 text-center cursor-pointer"
         >
           <span className="text-5xl">
@@ -563,7 +598,9 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       {/* Original word — the stimulus, printed (sound-swap's rule). Tap to hear. */}
       <div className="flex flex-col items-center gap-3">
         <button
-          onClick={() => hearWord(item.originalWord)}
+          ref={pip.ref('stimulus')}
+          data-pip-object="stimulus"
+          onClick={() => { pip.look('stimulus'); hearWord(item.originalWord); }}
           className="rounded-2xl bg-amber-500/15 border-2 border-amber-500/30 px-10 py-6 text-center cursor-pointer"
         >
           {(ch?.showChoiceEmoji !== false) && <span className="text-4xl">{item.originalEmoji}</span>}
@@ -630,6 +667,13 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
                 variant="dots"
               />
             </div>
+
+            {/* Pip's dock sits above the stage: the stimulus tops every mode, so
+                a pointer to it never crosses a menu card. */}
+            {pipStore && (
+              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+            )}
 
             {currentItem && currentItem.kind === 'isolate' && renderIsolate(currentItem, currentChallenge)}
             {currentItem && currentItem.kind === 'ending' && renderEnding(currentItem, currentChallenge)}

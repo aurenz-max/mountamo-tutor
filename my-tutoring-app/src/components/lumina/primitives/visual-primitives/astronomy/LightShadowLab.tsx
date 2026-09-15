@@ -11,6 +11,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // =============================================================================
 // Data Interface — Single Source of Truth
@@ -291,7 +292,7 @@ export default function LightShadowLab({ data, className = '' }: LightShadowLabP
     ...(supportTier ? { supportTier } : {}),
   }), [theme, gradeLevel, challenges.length, supportTier]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'light-shadow-lab',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -584,6 +585,18 @@ export default function LightShadowLab({ data, className = '' }: LightShadowLabP
   const objectHeightPx = primaryObject.height * 40;
 
   // ── Render ───────────────────────────────────────────────────────
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || submittedResult ? null : currentChallenge?.id ?? null,
+    label: 'The shadow scene and answer choices',
+    solved: feedback?.correct === true,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className}`}>
       <CardHeader>
@@ -606,6 +619,9 @@ export default function LightShadowLab({ data, className = '' }: LightShadowLabP
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* ── SVG Scene ────────────────────────────────────────── */}
         <div className="relative rounded-xl overflow-hidden border border-white/10">
           <svg
@@ -839,6 +855,8 @@ export default function LightShadowLab({ data, className = '' }: LightShadowLabP
             )}
           </div>
         )}
+
+        </div>
 
         {/* ── Phase Summary ────────────────────────────────────── */}
         {allChallengesComplete && phaseResults.length > 0 && (

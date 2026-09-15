@@ -21,6 +21,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -167,7 +168,7 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
     progress: `${currentIndex + 1}/${challenges.length}`,
   }), [data.title, challenge, currentIndex, challenges.length]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'coordinate-graph',
     instanceId: resolvedInstanceId,
     primitiveData: aiData,
@@ -325,6 +326,18 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
   };
 
   // --- Guard ---
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete ? null : challenge?.id ?? null,
+    label: 'The coordinate plane and answer choices',
+    solved: feedback === 'correct',
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   if (!challenges || challenges.length === 0) {
     return (
       <LuminaCard className="max-w-2xl mx-auto">
@@ -374,6 +387,9 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
               {challenge.instruction}
             </p>
 
+            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+            {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-5">
             {/* SVG Coordinate Plane — bespoke interaction surface, untouched */}
             <div className="flex justify-center">
               <svg
@@ -604,6 +620,8 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
                 })}
               </div>
             )}
+
+            </div>
 
             {/* Feedback */}
             {feedback === 'correct' && (

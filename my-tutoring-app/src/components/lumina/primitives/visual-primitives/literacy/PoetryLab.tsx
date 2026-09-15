@@ -27,6 +27,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -241,7 +242,7 @@ const RhymeHunt: React.FC<RhymeHuntProps> = ({ data, className }) => {
     currentAttempts, firstTryCorrect,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'poetry-lab',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -379,6 +380,18 @@ const RhymeHunt: React.FC<RhymeHuntProps> = ({ data, className }) => {
     isLocked, recordResult, rounds.length, selectedWords, sendText,
   ]);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allRoundsComplete || hasSubmittedEvaluation ? null : currentRound?.id ?? null,
+    label: 'The poem and the word cards',
+    solved: correctWords.length === 2,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   if (rounds.length === 0) {
     return (
       <LuminaCard className={className}>
@@ -417,6 +430,9 @@ const RhymeHunt: React.FC<RhymeHuntProps> = ({ data, className }) => {
           ))}
         </div>
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-5">
         <LuminaPanel className="space-y-1 text-center font-serif" aria-label="Poem">
           {currentRound.poemLines.map((line, index) => (
             <p key={`${currentRound.id}-line-${index}`} className="text-base leading-relaxed text-slate-200">
@@ -444,6 +460,8 @@ const RhymeHunt: React.FC<RhymeHuntProps> = ({ data, className }) => {
               </LuminaAnswerChoice>
             );
           })}
+        </div>
+
         </div>
 
         {correctWords.length === 2 && (

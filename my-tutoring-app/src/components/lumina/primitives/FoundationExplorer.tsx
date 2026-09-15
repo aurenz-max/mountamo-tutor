@@ -32,6 +32,7 @@ import {
   type AnswerChoiceState,
   type LuminaAccent,
 } from '../ui';
+import { useWorkspacePipSurface } from '../pip/useWorkspacePipSurface';
 
 /**
  * FoundationExplorer - Objective-driven concept exploration
@@ -174,7 +175,7 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
     allCompleted: isComplete,
   };
 
-  const { sendText, isAIResponding } = useLuminaAI({
+  const { sendText, isAIResponding, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'foundation-explorer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -397,6 +398,18 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
   };
 
   // ── Pre-reader render: picture-primary, one concept at a time, read aloud ──
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: ((data as any).instanceId || 'foundation-explorer'),
+    scopeId: isComplete || hasSubmittedEvaluation ? null : selectedConceptId,
+    label: 'The self-check choices',
+    solved: !!selectedConceptId && isMastered(selectedConceptId),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === ((data as any).instanceId || 'foundation-explorer'),
+  });
+
   if (preReader) {
     return (
       <div className={`w-full ${className || ''}`}>
@@ -456,6 +469,8 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
                   </div>
 
                   {/* Self-check — the graded, picture-primary interaction */}
+                  {pip.store && <div {...pip.dock} />}
+                  <div {...pip.workspace}>
                   <PreReaderSelfCheck
                     key={selectedConcept.id}
                     question={selectedConcept.selfCheck.prompt}
@@ -472,6 +487,7 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
                       if (correct) handlePreConceptPass(selectedConcept, attemptCount);
                     }}
                   />
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -719,6 +735,9 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
                       </div>
                       <p className="text-white text-sm mb-3 leading-relaxed">{selectedConcept.selfCheck.prompt}</p>
 
+                      {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+                      {pip.store && <div {...pip.dock} />}
+                      <div {...pip.workspace}>
                       {/* Options (deterministically shuffled) */}
                       <div className="space-y-2">
                         {(optionOrder[selectedConcept.id] || []).map((originalIndex) => {
@@ -738,6 +757,8 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
                             </button>
                           );
                         })}
+                      </div>
+
                       </div>
 
                       {/* Hint (auto-surfaces on a miss) */}

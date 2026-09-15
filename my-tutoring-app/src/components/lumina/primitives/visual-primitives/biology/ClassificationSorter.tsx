@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { LuminaDropZone, LuminaReadAloud, type DropZoneState } from '../../../ui';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * Classification Sorter - Interactive biology primitive for categorizing organisms
@@ -196,7 +197,7 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
     categoryLabels, stagedItem, unplacedItems, correctCount, lastPlacementCorrect,
   ]);
 
-  const { sendText, isAudioPlaying } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'classification-sorter',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -575,6 +576,18 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
   // Main Render
   // ============================================================================
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: hasSubmitted ? null : isPreReader && stagedItem ? stagedItem.id : 'sort',
+    label: 'The sorting groups and cards',
+    solved: totalItems > 0 && correctItems === totalItems,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <div className={`w-full ${className}`}>
       {/* Header */}
@@ -668,6 +681,9 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
         </div>
       )}
 
+      {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+      {pip.store && !hasSubmitted && <div {...pip.dock} />}
+      <div {...pip.workspace}>
       {/* Categories Grid */}
       <div className={`grid gap-6 mb-6 ${
         data.categories.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
@@ -693,6 +709,8 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
           </CardContent>
         </Card>
       )}
+
+      </div>
 
       {/* Action Buttons */}
       <div className="flex gap-3">

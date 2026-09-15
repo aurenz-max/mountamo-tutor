@@ -86,6 +86,8 @@ import {
   type DecodableReaderItem,
   type DecodableReaderMode,
 } from './decodableReaderScript';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { decodableReaderPipPose } from '../../../pip/decodableReaderPipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -382,6 +384,24 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
    *  it used to be a `useState` reset in `onItemOpened` and set in `onAffirmed`. */
   const revealed = runner.currentSolved;
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase onto the line, story or question; Pip
+  // never answers, judges, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, false);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(undefined, (id) => (id === 'line' ? 'The line' : id === 'story' ? 'The story' : 'The question'));
+    const pose = decodableReaderPipPose({
+      kind: currentItem.kind,
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      visibleIds: targets.map((target) => target.id),
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Decodable reader', dock: pip.dock.current, targets, pose };
+  });
+
   // ── Phase summary — `solved` is not `solved alone` ────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!evaluation.hasSubmitted) return [];
@@ -412,7 +432,7 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
    *  surface. No word is tappable: audio on demand is an echo route through the
    *  measurement (see the header). */
   const renderLine = (item: DecodableReaderItem) => (
-    <p className={`font-bold leading-snug tracking-wide ${lineSizeClass(item.wordCount)}`}>
+    <p ref={pip.ref('line')} data-pip-object="line" className={`font-bold leading-snug tracking-wide ${lineSizeClass(item.wordCount)}`}>
       {(item.words ?? []).map((word, i) => (
         <React.Fragment key={word.id}>
           <span
@@ -479,11 +499,11 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
             pre-reader following print IS the shared-reading task. */}
         {item.storyText && (
           <LuminaPanel accent="purple" className="p-5">
-            <p className="text-center text-2xl leading-relaxed text-slate-100">{item.storyText}</p>
+            <p ref={pip.ref('story')} data-pip-object="story" className="text-center text-2xl leading-relaxed text-slate-100">{item.storyText}</p>
           </LuminaPanel>
         )}
         <div className="rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-6 text-center">
-          <p className="text-xl font-semibold leading-snug text-white">{item.question}</p>
+          <p ref={pip.ref('question')} data-pip-object="question" className="text-xl font-semibold leading-snug text-white">{item.question}</p>
           <div className="mt-3 text-xs uppercase tracking-[0.25em] text-cyan-300">
             {runner.stage === 'judging' ? 'listening' : revealed ? 'yes!' : 'say your answer'}
           </div>
@@ -532,6 +552,13 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
                 variant="dots"
               />
             </div>
+
+            {/* Pip's dock sits above the stage: the line, story and question top
+                their stages, so a pointer never crosses a choice card. */}
+            {pipStore && (
+              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+            )}
 
             {currentItem && renderStage(currentItem)}
 

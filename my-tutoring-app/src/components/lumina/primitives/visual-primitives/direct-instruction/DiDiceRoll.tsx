@@ -33,6 +33,7 @@ import {
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import DiActionPanel from '../../../components/DiActionPanel';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 import {
@@ -290,6 +291,11 @@ export const DiDiceRoll: React.FC<{ data: DiDiceRollData; index?: number }> = ({
   // Normalize again at the component boundary because stored payloads and
   // runner test doubles may predate the shared action contract.
   const item = runner.currentItem ? withDiceRollAction(runner.currentItem) : null;
+  // Pip: the dice panel is the question side. Pip points at it as a region during
+  // the cue and watches it while the child rolls and answers; it never rolls.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The dice', finished: hasSubmitted,
+  });
 
   const handleRoll = useCallback(() => {
     if (!item || !runner.canAttempt || isRolling || displayedValues != null) return;
@@ -409,7 +415,8 @@ export const DiDiceRoll: React.FC<{ data: DiDiceRollData; index?: number }> = ({
 
             <LuminaPrompt>{studentPrompt(item)}</LuminaPrompt>
 
-            <LuminaPanel accent="purple" className="flex min-h-64 flex-col items-center justify-center py-8">
+            {pip.store && <div {...pip.dock} />}
+            <LuminaPanel {...pip.target('stimulus')} accent="purple" className="flex min-h-64 flex-col items-center justify-center py-8">
               <button
                 type="button"
                 onClick={handleRoll}

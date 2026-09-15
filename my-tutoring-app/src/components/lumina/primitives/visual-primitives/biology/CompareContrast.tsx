@@ -6,6 +6,7 @@ import type { CompareContrastMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
 import { LuminaDropZone, LuminaReadAloud, type DropZoneState } from '../../../ui';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * Compare & Contrast Viewer - Biology primitive for comparing entities
@@ -922,7 +923,7 @@ const CompareContrast: React.FC<CompareContrastProps> = ({ data, className = '' 
     currentAttribute, answeredCount, items.length, checked,
   ]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'bio-compare-contrast',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -1029,6 +1030,18 @@ const CompareContrast: React.FC<CompareContrastProps> = ({ data, className = '' 
     });
   };
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: checked || data.mode !== 'venn-interactive' ? null : isPreReader ? (currentAttribute === 'nothing yet' ? null : currentAttribute) : 'venn',
+    label: 'The comparison',
+    solved: false,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <div className={`${className}`}>
       {/* Title */}
@@ -1054,6 +1067,9 @@ const CompareContrast: React.FC<CompareContrastProps> = ({ data, className = '' 
         )}
       </div>
 
+      {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+      {pip.store && data.mode === 'venn-interactive' && !checked && <div {...pip.dock} />}
+      <div {...pip.workspace}>
       {/* Content */}
       {data.mode === 'side-by-side' ? (
         <SideBySideView data={data} isPreReader={isPreReader} readAloud={readAloud} />
@@ -1070,6 +1086,8 @@ const CompareContrast: React.FC<CompareContrastProps> = ({ data, className = '' 
       ) : (
         <VennInteractiveView data={data} allAttributes={items} onEvaluate={handleEvaluate} />
       )}
+
+      </div>
 
       {/* Key Insight */}
       <div className="mt-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-xl border border-blue-400/30 p-6">

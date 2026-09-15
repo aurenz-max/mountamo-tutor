@@ -7,6 +7,7 @@ import { LuminaBadge } from '../ui';
 import { KaTeX } from './annotated-example/StepContentRenderer';
 import { getFamily, resolveParameters } from '../lib/probability';
 import { useLuminaAI } from '../hooks/useLuminaAI';
+import { useWorkspacePipSurface } from '../pip/useWorkspacePipSurface';
 import { DistributionPlot } from './distribution-explorer/DistributionPlot';
 import { ParameterPanel } from './distribution-explorer/ParameterPanel';
 import { MomentReadout } from './distribution-explorer/MomentReadout';
@@ -77,7 +78,7 @@ export const DistributionExplorer: React.FC<DistributionExplorerProps> = ({ data
     },
   }), [family, data.evalMode, params, activeChallenge, evaluated]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'distribution-explorer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -160,6 +161,19 @@ export const DistributionExplorer: React.FC<DistributionExplorerProps> = ({ data
     setActiveChallengeIdx((i) => Math.min(i + 1, data.challenges.length));
   }, [activeChallengeIdx, data.challenges, family, sendText]);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // Pip outlines the workbench (family, sliders, chart and challenge strip) as one
+  // region during the tutor's speech, looks at what the child moves, and celebrates
+  // only a committed correct answer. Guided exploration has no graded answer, so it
+  // never celebrates.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: activeChallenge?.id ?? null,
+    label: 'The distribution workbench',
+    solved: !!activeChallenge && activeChallenge.type !== 'guided_exploration' && results[activeChallenge.id] === true,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <div className={`max-w-7xl mx-auto font-sans text-slate-200 ${className || ''}`}>
       {/* ── Header ─────────────────────────────────────────────── */}
@@ -177,7 +191,8 @@ export const DistributionExplorer: React.FC<DistributionExplorerProps> = ({ data
       </div>
 
       {/* ── Workbench grid ─────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      {pip.store && activeChallenge && <div {...pip.dock} className={`${pip.dock.className} mb-4`} />}
+      <div {...pip.workspace} className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left rail — family + params + moments */}
         <div className="lg:col-span-4 space-y-4">
           <FamilySelector active={family} onChange={handleFamilyChange} disabled={identifyPending} />

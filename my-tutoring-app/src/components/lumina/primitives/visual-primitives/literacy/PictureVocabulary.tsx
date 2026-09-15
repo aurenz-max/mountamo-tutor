@@ -69,6 +69,8 @@ import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { pictureVocabularyPipPose } from '../../../pip/pictureVocabularyPipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -301,6 +303,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
       // The tutor's line re-oriented in-band; free the cards for another go.
       setTapped(null);
       tappedRef.current = null;
+      pip.clear();
     },
   });
 
@@ -308,6 +311,25 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
   /** Affirmed: the first moment the answer may appear on screen. The runner
    *  owns this latch now (it replaces the `onItemOpened`/`onAffirmed` pair). */
   const revealed = runner.currentSolved;
+
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase and the child's own picture tap; Pip
+  // never answers, taps, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets();
+    const pose = pictureVocabularyPipPose({
+      kind: currentItem.kind,
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Picture vocabulary', dock: pip.dock.current, targets, pose };
+  });
 
   // ── The tap — gesture modes only; the tap IS the commit ───────────────────
   const handleOptionTap = useCallback((option: PictureVocabOption) => {
@@ -318,10 +340,11 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
     // state, this stops a second tap inside the same tick.
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
+    pip.look(`card-${option.word}`);
     setTapped(option.word);
     tappedRef.current = option.word;
     runner.submitGestureAttempt(tapVerdictCue(item, option.word));
-  }, [runner, evaluation.hasSubmitted]);
+  }, [runner, evaluation.hasSubmitted, pip]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   /** Say-it and tap-it runs are both legitimate here, so the copy names what
@@ -360,7 +383,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
     + (runner.stimulusTapped ? 'ring-2 ring-cyan-300/60 ' : '');
 
   const renderTapCards = (item: PictureVocabItem) => (
-    <div className="grid grid-cols-2 gap-3">
+    <div ref={pip.ref('cards')} data-pip-object="cards" className="grid grid-cols-2 gap-3">
       {(item.options ?? []).map((option, idx) => {
         const isTarget = option.word.toLowerCase() === item.word.toLowerCase();
         const state = revealed && isTarget
@@ -371,6 +394,8 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
         return (
           <button
             key={`${item.id}-${idx}`}
+            ref={pip.ref(`card-${option.word}`)}
+            data-pip-object={`card-${option.word}`}
             onClick={() => handleOptionTap(option)}
             disabled={!runner.canAttempt}
             className={`
@@ -416,6 +441,8 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
           <div className="space-y-5">
             <div className="flex justify-center">
               <div
+                ref={pip.ref('stimulus')}
+                data-pip-object="stimulus"
                 role="button"
                 tabIndex={0}
                 onClick={runner.hearStimulus}
@@ -435,6 +462,8 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
           <div className="space-y-5">
             <div className="flex justify-center items-center gap-4">
               <div
+                ref={pip.ref('stimulus')}
+                data-pip-object="stimulus"
                 role="button"
                 tabIndex={0}
                 onClick={runner.hearStimulus}
@@ -481,6 +510,8 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
           <div className="space-y-5">
             <div className="flex justify-center">
               <div
+                ref={pip.ref('stimulus')}
+                data-pip-object="stimulus"
                 role="button"
                 tabIndex={0}
                 onClick={runner.hearStimulus}
@@ -506,6 +537,8 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
           <div className="space-y-5">
             <div className="flex justify-center">
               <div
+                ref={pip.ref('stimulus')}
+                data-pip-object="stimulus"
                 role="button"
                 tabIndex={0}
                 onClick={runner.hearStimulus}
@@ -544,6 +577,8 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
             {/* No emoji pre-solve — the picture IS the answer. */}
             <div className="flex justify-center">
               <div
+                ref={pip.ref('stimulus')}
+                data-pip-object="stimulus"
                 role="button"
                 tabIndex={0}
                 onClick={runner.hearStimulus}
@@ -612,6 +647,14 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
                 variant="dots"
               />
             </div>
+
+            {/* Pip's dock sits above the stage: the stimulus tops every spoken
+                mode, and receptive match is outlined as a group, never pointed
+                through. */}
+            {pipStore && (
+              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+            )}
 
             {currentItem && renderChallenge(currentItem)}
 

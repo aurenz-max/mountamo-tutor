@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { CuratorCompanion } from './CuratorCompanion';
 // ============================================================================
 // Primitive Imports
 // ============================================================================
@@ -109,7 +110,7 @@ const PrimitiveRenderer: React.FC<{
         <MoleculeViewer
           data={{
             ...(data as Parameters<typeof MoleculeViewer>[0]['data']),
-            instanceId: `molecule-viewer-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
           }}
         />
       );
@@ -125,7 +126,7 @@ const PrimitiveRenderer: React.FC<{
         <MatterExplorer
           data={{
             ...(data as Parameters<typeof MatterExplorer>[0]['data']),
-            instanceId: `matter-explorer-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'chemistry-states-of-matter',
             subskillId: 'matter-classification',
             objectiveId: 'classify-matter-states',
@@ -138,7 +139,7 @@ const PrimitiveRenderer: React.FC<{
         <StatesOfMatter
           data={{
             ...(data as Parameters<typeof StatesOfMatter>[0]['data']),
-            instanceId: `states-of-matter-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'chemistry-states-of-matter',
             subskillId: 'phase-transitions',
             objectiveId: 'understand-particle-model',
@@ -151,7 +152,7 @@ const PrimitiveRenderer: React.FC<{
         <AtomBuilder
           data={{
             ...(data as Parameters<typeof AtomBuilder>[0]['data']),
-            instanceId: `atom-builder-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'chemistry-atomic-structure',
             subskillId: 'subatomic-particles',
             objectiveId: 'build-atoms',
@@ -164,7 +165,7 @@ const PrimitiveRenderer: React.FC<{
         <MoleculeConstructor
           data={{
             ...(data as Parameters<typeof MoleculeConstructor>[0]['data']),
-            instanceId: `molecule-constructor-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'chemistry-bonding',
             subskillId: 'molecular-structure',
             objectiveId: 'build-molecules',
@@ -178,7 +179,7 @@ const PrimitiveRenderer: React.FC<{
         <ReactionLab
           data={{
             ...(data as Parameters<typeof ReactionLab>[0]['data']),
-            instanceId: `reaction-lab-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'chemistry-reactions',
             subskillId: 'chemical-change',
             objectiveId: 'identify-reaction-signs',
@@ -191,7 +192,7 @@ const PrimitiveRenderer: React.FC<{
         <EquationBalancer
           data={{
             ...(data as Parameters<typeof EquationBalancer>[0]['data']),
-            instanceId: `equation-balancer-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'chemistry-reactions',
             subskillId: 'equation-balancing',
             objectiveId: 'balance-chemical-equations',
@@ -204,7 +205,7 @@ const PrimitiveRenderer: React.FC<{
         <StoichiometryLab
           data={{
             ...(data as Parameters<typeof StoichiometryLab>[0]['data']),
-            instanceId: `stoichiometry-lab-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'chemistry-reactions',
             subskillId: 'stoichiometry',
             objectiveId: 'mole-conversions-limiting-reagent',
@@ -217,7 +218,7 @@ const PrimitiveRenderer: React.FC<{
         <GasLawsSimulator
           data={{
             ...(data as Parameters<typeof GasLawsSimulator>[0]['data']),
-            instanceId: `gas-laws-simulator-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'chemistry-gas-behavior',
             subskillId: 'gas-laws',
             objectiveId: 'kmt-pv-nrt',
@@ -229,7 +230,7 @@ const PrimitiveRenderer: React.FC<{
         <EnergyOfReactions
           data={{
             ...(data as Parameters<typeof EnergyOfReactions>[0]['data']),
-            instanceId: `energy-of-reactions-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'chemistry-energy',
             subskillId: 'exothermic-endothermic',
             objectiveId: 'understand-reaction-energy',
@@ -243,7 +244,7 @@ const PrimitiveRenderer: React.FC<{
         <MixingAndDissolving
           data={{
             ...(data as Parameters<typeof MixingAndDissolving>[0]['data']),
-            instanceId: `mixing-and-dissolving-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'chemistry-solutions',
             subskillId: 'dissolving',
             objectiveId: 'understand-solutions-mixtures',
@@ -256,7 +257,7 @@ const PrimitiveRenderer: React.FC<{
         <PhExplorer
           data={{
             ...(data as Parameters<typeof PhExplorer>[0]['data']),
-            instanceId: `ph-explorer-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'chemistry-acids-bases',
             subskillId: 'ph-scale',
             objectiveId: 'understand-ph-acids-bases',
@@ -269,7 +270,7 @@ const PrimitiveRenderer: React.FC<{
         <SafetyLab
           data={{
             ...(data as Parameters<typeof SafetyLab>[0]['data']),
-            instanceId: `safety-lab-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'chemistry-safety',
             subskillId: 'hazard-identification',
             objectiveId: 'identify-lab-hazards',
@@ -691,6 +692,13 @@ const ChemistryPrimitivesTesterContent: React.FC<ChemistryPrimitivesTesterProps>
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
+  // One instance id per generated preview: evaluation, tutoring and Pip's surface
+  // all key on it, so it must not change when the helper re-renders.
+  const previewInstanceId = useMemo(
+    () => `chemistry-helper-${selectedPrimitive}-${Date.now()}`,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [generatedData],
+  );
   const [error, setError] = useState<string | null>(null);
   const [tutorPanelOpen, setTutorPanelOpen] = useState(true);
   const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
@@ -938,11 +946,14 @@ const ChemistryPrimitivesTesterContent: React.FC<ChemistryPrimitivesTesterProps>
 
             {generatedData != null && (
               <div className="space-y-6">
-                <PrimitiveRenderer
-                  componentId={selectedPrimitive}
-                  data={generatedData}
-                  onEvaluationSubmit={handleEvaluationSubmit}
-                />
+                <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId}>
+                  <PrimitiveRenderer
+                    componentId={selectedPrimitive}
+                    data={{ ...(generatedData as object), instanceId: previewInstanceId }}
+                    onEvaluationSubmit={handleEvaluationSubmit}
+                  />
+                  <CuratorCompanion />
+                </div>
               </div>
             )}
           </div>

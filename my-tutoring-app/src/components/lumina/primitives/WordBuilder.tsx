@@ -64,6 +64,7 @@ import {
   type WordBuilderItem,
 } from './visual-primitives/literacy/wordBuilderScript';
 import JudgedMicPanel from '../components/JudgedMicPanel';
+import { useStimulusPipSurface } from '../pip/useStimulusPipSurface';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../hooks/usePhaseResults';
 import type { WordBuilderData } from '../types';
@@ -209,6 +210,11 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
   });
 
   const currentItem = runner.currentItem;
+  // Pip: the clue is the question side; the word-part wall is what the answer
+  // is built from, so Pip points only at the clue.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The clue', finished: evaluation.hasSubmitted,
+  });
   const showReveal = runner.revealHeld && revealed != null;
 
   // ── Phase summary ─────────────────────────────────────────────────────────
@@ -264,8 +270,9 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
             {/* The clue — the whole question side, printed AND spoken. This
                 band reads, so print is honest stimulus; the tutor says it too
                 because every correction re-ask inherits the ask. */}
+            {pip.store && <div {...pip.dock} />}
             {currentItem && (
-              <LuminaPanel className="text-center">
+              <LuminaPanel {...pip.target('stimulus')} className="text-center">
                 <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-1">
                   Build the word that means
                 </p>

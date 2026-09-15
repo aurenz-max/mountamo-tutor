@@ -18,6 +18,7 @@ import {
 import type { StrategyPickerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -604,7 +605,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
     supportTier,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'strategy-picker',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -822,6 +823,18 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
     return false;
   }, [currentChallenge, hasSubmittedEvaluation, answerInput, chosenStrategy, compareAnswer, matchSelection]);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The strategy workspace',
+    solved: isCurrentChallengeComplete,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -873,9 +886,13 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
           </div>
         )}
 
+        {/* Pip's dock sits above the problem, strategy picture and answer
+            controls, which it outlines together as the workspace. */}
+        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+
         {/* Problem Display */}
         {currentChallenge && !allChallengesComplete && (
-          <>
+          <div {...pip.workspace} className="space-y-4">
             {/* Equation */}
             <div className="text-center">
               <span className="text-3xl font-bold text-white tracking-wider">
@@ -1104,7 +1121,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {/* Feedback */}

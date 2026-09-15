@@ -23,6 +23,7 @@ import {
 import type { ContextCluesDetectiveMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -202,7 +203,7 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
     selectedClueType, highlightedSentenceIds,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'context-clues-detective',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -736,6 +737,18 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
   // Main Render
   // ============================================================================
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: hasSubmittedEvaluation || !currentChallenge ? null : `${currentChallenge.id}:${currentPhase}`,
+    label: 'The passage and the clue questions',
+    solved: feedbackType === 'success',
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   if (!currentChallenge) {
     return (
       <LuminaCard className={className}>
@@ -779,9 +792,14 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
       <LuminaCardContent className="space-y-4">
         {renderPhaseProgress()}
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {currentPhase === 'find' && renderFindPhase()}
         {currentPhase === 'classify' && renderClassifyPhase()}
         {currentPhase === 'define' && renderDefinePhase()}
+        </div>
+
       </LuminaCardContent>
     </LuminaCard>
   );

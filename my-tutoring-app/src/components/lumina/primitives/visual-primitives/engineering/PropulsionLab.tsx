@@ -23,6 +23,7 @@ import type { PropulsionLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -705,7 +706,7 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
     challengeProgress: `${challengeResults.length}/${challenges.length}`,
   }), [propulsion, medium, throttle, speed, exploredCombos.size, noThrustMoments, challengeResults.length, challenges.length]);
 
-  const { sendText, isConnected, isAudioPlaying } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'propulsion-lab' as any,
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -892,6 +893,18 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
   const currentChallenge = challenges[currentChallengeIdx];
 
   // ---- Render ----
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'propulsion-lab'),
+    scopeId: hasSubmittedEvaluation ? null : showChallenges && currentChallenge ? currentChallenge.id : 'explore',
+    label: 'The propulsion simulator and the challenge',
+    solved: answerFeedback === 'correct',
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'propulsion-lab'),
+  });
+
   return (
     <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -927,6 +940,9 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
         </LuminaCardHeader>
 
         <LuminaCardContent className="space-y-5">
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
+          <div {...pip.workspace} className="space-y-5">
           {/* Simulation Canvas — bespoke interaction surface, left untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50">
             <PropulsionSimulation
@@ -1110,6 +1126,8 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
               )}
             </LuminaPanel>
           )}
+
+          </div>
 
           {allChallengesDone && showChallenges && (
             <LuminaFeedbackCard status="correct" label="All challenges complete!">

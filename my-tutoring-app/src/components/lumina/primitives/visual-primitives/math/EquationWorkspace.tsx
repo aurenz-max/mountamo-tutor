@@ -29,6 +29,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -212,7 +213,7 @@ const EquationWorkspace: React.FC<{ data: EquationWorkspaceData; index?: number 
     supportTier: supportTier ?? null,
   }), [title, context, challenges, supportTier]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'equation-workspace',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -501,6 +502,18 @@ const EquationWorkspace: React.FC<{ data: EquationWorkspaceData; index?: number 
   // The expected operation to highlight (process scaffold, never the final answer).
   const hintOperationId = showNextStepHint && expectedStep ? expectedStep.operationId : null;
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete ? null : currentChallenge?.id ?? null,
+    label: 'The equation workspace',
+    solved: challengeSolved,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <LuminaCard>
       <LuminaCardHeader>
@@ -559,6 +572,9 @@ const EquationWorkspace: React.FC<{ data: EquationWorkspaceData; index?: number 
               </LuminaPanel>
             )}
 
+            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-6">
             {/* Equation display / Step history — bespoke KaTeX readout surface */}
             <LuminaPanel className="p-6 space-y-3">
               {/* Support tier (easy/medium): balanced-state PROCESS indicator. Confirms
@@ -724,6 +740,8 @@ const EquationWorkspace: React.FC<{ data: EquationWorkspaceData; index?: number 
                 </LuminaActionButton>
               </div>
             )}
+
+            </div>
 
             {/* Known values reference */}
             {currentChallenge.knownValues && Object.keys(currentChallenge.knownValues).length > 0 && (

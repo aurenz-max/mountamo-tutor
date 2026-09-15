@@ -45,6 +45,8 @@ import {
   type StoryRibbonSupportOptions,
   type SupportTier,
 } from './storyRibbonSupport';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { storyRibbonPipPose } from '../../../pip/storyRibbonPipPose';
 
 export type StoryRibbonChallengeType =
   | 'tell_connected_account'
@@ -249,8 +251,27 @@ const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => 
       ? Boolean(selectedEventId)
       : eventOrder.every((id, index) => id === currentItem.challenge.events[index]?.id));
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase onto the ribbon and the child's own
+  // card taps; Pip never moves a card, judges, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, !runner.currentSolved && !evaluation.hasSubmitted);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(undefined, (id) => (id === 'ribbon' ? 'The picture ribbon' : 'A story picture'));
+    const pose = storyRibbonPipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Story ribbon', dock: pip.dock.current, targets, pose };
+  });
+
   const handleEventTap = (eventId: string) => {
     if (!currentItem || runner.currentSolved || evaluation.hasSubmitted) return;
+    pip.look(`card-${eventId}`);
     if (isExperienceItem(currentItem)) {
       SoundManager.select();
       setSelectedEventId(eventId);
@@ -339,6 +360,11 @@ const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => 
 
             <LuminaPrompt>{prompt}</LuminaPrompt>
 
+            {/* Pip's dock sits between the prompt and the ribbon, which it
+                outlines as a region. */}
+            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
+
             <LuminaPanel accent="emerald" className="overflow-hidden">
               <div className="mb-4 flex items-center justify-center gap-3 text-center">
                 <span className="text-4xl" role="img" aria-label={currentItem.challenge.characterName}>
@@ -356,11 +382,13 @@ const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => 
                 </div>
               )}
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
+              <div ref={pip.ref('ribbon')} data-pip-object="ribbon" className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
                 {displayedEvents.map((event, index) => (
                   <React.Fragment key={event.id}>
                     <button
                       type="button"
+                      ref={pip.ref(`card-${event.id}`)}
+                      data-pip-object={`card-${event.id}`}
                       onClick={() => handleEventTap(event.id)}
                       aria-pressed={selectedEventId === event.id}
                       aria-label={`${support.showSequenceLabels ? `${['First', 'Next', 'Last'][index]} picture` : 'Story picture'}: ${event.pictureLabel}. ${experienceMode ? 'Tap to choose this story moment.' : 'Tap to move it.'}`}

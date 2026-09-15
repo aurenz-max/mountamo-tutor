@@ -16,6 +16,7 @@ import {
   LuminaReadAloud,
 } from '../../../ui';
 import { ReadMeButton } from '../../shared/ReadMeButton';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * Excavator Arm Simulator — "Dig Site Job Board"
@@ -544,7 +545,7 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
     digsUsed, pipeStrikes, spilledUnits,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'excavator-arm-simulator',
     instanceId: resolvedAiInstanceId,
     primitiveData: aiPrimitiveData,
@@ -1649,6 +1650,18 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
   const goal = layout.goalUnits;
   const progressFrac = Math.min(1, missionProgress / goal);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedAiInstanceId,
+    scopeId: hasSubmitted ? null : currentMission.id,
+    label: 'The excavator and its dig and dump buttons',
+    solved: currentSolved,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedAiInstanceId,
+  });
+
   return (
     <div className={`w-full max-w-5xl mx-auto my-8 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -1915,6 +1928,9 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         </LuminaPanel>
       )}
 
+      {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+      {pip.store && !hasSubmitted && <div {...pip.dock} />}
+      <div {...pip.workspace}>
       {/* Interactive canvas — the bespoke interaction surface */}
       <div className="mb-4 rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl bg-slate-800/40 backdrop-blur-sm">
         <canvas
@@ -1945,6 +1961,8 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         >
           ⬇ Dump
         </button>
+      </div>
+
       </div>
 
       {/* Site stats */}

@@ -5,6 +5,7 @@ import { usePrimitiveEvaluation, type ImagePanelMetrics } from '../evaluation';
 import { SoundManager } from '../utils/SoundManager';
 import html2canvas from 'html2canvas';
 import { LuminaBadge, LuminaButton, LuminaDropZone, type DropZoneState } from '../ui';
+import { useWorkspacePipSurface } from '../pip/useWorkspacePipSurface';
 
 // Annotation data structure
 export interface ImageAnnotation {
@@ -392,6 +393,24 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
   const displayImageUrl = data.imageUrl || generatedImageUrl;
 
   // Show component even without imageUrl if we have imagePrompt
+  // Pip shares the label cards and the image as one region, receives the placed
+  // labels while the grader scores them, and celebrates only when every label
+  // lands within the grader's threshold.
+  const pipSolved = !!evaluationFeedback?.annotationResults && (data.annotations ?? []).every((annotation) => {
+    const result = evaluationFeedback.annotationResults.find((r: { label?: string; annotationId?: string }) =>
+      r.label === annotation.label || r.annotationId === annotation.id);
+    return (result?.proximityScore ?? 0) >= (annotation.isKey ? 75 : 70);
+  });
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId || 'image-panel',
+    scopeId: isInteractive && (!hasSubmitted || pipSolved) ? 'annotate' : null,
+    label: 'The labels and the image',
+    solved: pipSolved,
+    checking: isEvaluating,
+    handover: true,
+    tutorSpeaking: false,
+  });
+
   if (!displayImageUrl && !data.imagePrompt && !isLoading) return null;
 
   return (
@@ -461,9 +480,10 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
               </div>
             ) : displayImageUrl ? (
               <div className="w-full">
+                {pip.store && isInteractive && <div {...pip.dock} />}
                 {/* Interactive Mode with Annotations */}
                 {isInteractive ? (
-                  <div className="flex flex-col lg:flex-row gap-4 p-4">
+                  <div {...pip.workspace} className="flex flex-col lg:flex-row gap-4 p-4">
                     {/* Annotation Cards Panel */}
                     <div className="lg:w-80 flex-shrink-0 space-y-3">
                       <div className={`p-3 ${config.bgColor} rounded-lg border ${config.borderColor}`}>

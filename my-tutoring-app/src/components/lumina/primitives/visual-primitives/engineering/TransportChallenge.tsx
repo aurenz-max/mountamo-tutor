@@ -24,6 +24,7 @@ import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ─── Data Interfaces ──────────────────────────────────────────────────────────
 
@@ -317,7 +318,7 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
   // ── AI Tutoring ───────────────────────────────────────────────────────────
   const currentScenario = scenarios[currentIndex];
 
-  const { sendText, isAudioPlaying } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'transport-challenge' as any,
     instanceId: resolvedInstanceId,
     primitiveData: {
@@ -556,6 +557,18 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
   ]);
 
   // ── Early return ──────────────────────────────────────────────────────────
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'transport-challenge'),
+    scopeId: allScenariosComplete || hasSubmitted ? null : currentScenario?.id ?? null,
+    label: 'The vehicles, the trip, and the question',
+    solved: scenarioPhase === 'answered' && questionAnswer === currentScenario?.tradeOffCorrectIndex && !!selectedOutcome?.allConstraintsMet,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'transport-challenge'),
+  });
+
   if (!scenarios.length) {
     return (
       <LuminaCard className={className}>
@@ -607,6 +620,9 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
           />
         )}
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !allScenariosComplete && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {!allScenariosComplete && scenario && (
           <>
             {/* ── Scenario Header ──────────────────────────────────────── */}
@@ -947,6 +963,8 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
             )}
           </>
         )}
+        </div>
+
       </LuminaCardContent>
     </LuminaCard>
   );

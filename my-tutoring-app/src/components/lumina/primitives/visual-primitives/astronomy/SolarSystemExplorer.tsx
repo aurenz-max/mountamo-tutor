@@ -51,6 +51,7 @@ import {
 } from './solarSystemScript';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import { phaseResultsFromSummary, type PhaseConfig } from '../../../hooks/usePhaseResults';
 
 export type { SolarChallengeType };
@@ -864,6 +865,11 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader,
   });
 
   const currentItem = runner.currentItem;
+  // Pip: the sky is the question side. On identify items one body is spotlit and
+  // unlabelled, so Pip outlines the whole sky and never rings a body.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The solar system', finished: evaluation.hasSubmitted,
+  });
 
   // A tap is LOOKING: it opens the research card (where the band allows one)
   // and counts as exploration. It never commits anything.
@@ -950,6 +956,8 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader,
             </button>
           </div>
 
+          {pip.store && <div {...pip.dock} />}
+          <div {...pip.target('stimulus')}>
           <SolarCanvas
             bodies={data.bodies}
             isPreReader={isPreReader}
@@ -967,6 +975,7 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader,
             spotlightBodyIds={spotlightBodyIds}
             revealBodyIds={revealBodyIds}
           />
+          </div>
 
           {/* The reveal — the first moment an answer may appear. Gated on
               `revealHeld`, never on `currentSolved` (18b). */}

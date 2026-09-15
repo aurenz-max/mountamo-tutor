@@ -63,6 +63,7 @@ import {
   LuminaReadAloudGlyph,
 } from '../../../ui';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -283,6 +284,11 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
 
   const currentItem = runner.currentItem;
   const actionMeta = ACTION_META[currentItem?.action ?? 'check-feature'];
+  // Pip: the texts are the question side and the genre menu is the answer, so
+  // Pip outlines the texts as a region during the cue and never the menu.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The texts', finished: evaluation.hasSubmitted,
+  });
 
   /**
    * The evidence this run has already EARNED, in the order it was earned. Read
@@ -477,7 +483,8 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
               <LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} />
             </div>
 
-            {renderExcerpts()}
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.target('stimulus')}>{renderExcerpts()}</div>
 
             {findings.length > 0 && renderFindings()}
 

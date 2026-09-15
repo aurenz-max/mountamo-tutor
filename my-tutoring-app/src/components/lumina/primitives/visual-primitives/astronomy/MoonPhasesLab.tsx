@@ -7,6 +7,7 @@ import type { MoonPhasesLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { LuminaReadAloud } from '../../../ui';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // DATA INTERFACES (Single Source of Truth)
@@ -392,7 +393,7 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
     challengePhaseLabel, isAnimating, illumination,
   ]);
 
-  const { sendText, isAudioPlaying } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'moon-phases-lab',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -827,6 +828,18 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
     resetAttempt();
   };
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: hasSubmitted ? null : 'explore',
+    label: 'The Moon model and its controls',
+    solved: false,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <div className={`bg-slate-900 rounded-xl p-6 ${className}`}>
       {/* Header */}
@@ -846,6 +859,9 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
         </div>
       </div>
 
+      {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+      {pip.store && !hasSubmitted && <div {...pip.dock} />}
+      <div {...pip.workspace}>
       {/* Main Content */}
       <div className={`grid gap-6 ${viewMode === 'split_view' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
         {/* Space View */}
@@ -1045,6 +1061,8 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
           </div>
         </div>
       )}
+
+      </div>
 
       {/* Tidal Locking Explanation */}
       {showTidalLocking && (

@@ -8,9 +8,12 @@
 //   node pipdrive.mjs "<Primitive label>" ["<Eval mode label>"] [width] [seconds] [actions]
 // actions (`;`-separated, one every 4s once Pip is on screen):
 //   click:<css>   draw:<css>   wait:   start (press the primitive's Start control)
+//   start:<label> (a Start control with a custom label, e.g. start:talk for "Let's talk")
 //   speak:<sec>   inject <sec> of silent tutor audio (signs in; needs a live tutor socket)
 // Pip needs no session; the run signs in only for `start`/`speak:`.
 // Env: PIP_HELPER, PIP_DRIVE_OUT, PIP_CHROME, LUMINA_ENV_FILE (TEST_USER_EMAIL / TEST_USER_PASSWORD).
+// A single-primitive tester (e.g. PIP_HELPER="Knowledge Check") has no primitive list: pass "-" as the label.
+// PIP_PRECLICKS="Water Cycle;Recall" presses those buttons (by name) before generating.
 import { chromium } from 'playwright-core';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -20,10 +23,11 @@ const [label, modeLabel = '', widthArg = '1400', secondsArg = '30', actionsArg =
 if (!label) { console.error('usage: node pipdrive.mjs "<Primitive label>" ["<Eval mode>"] [width] [seconds] [actions]'); process.exit(2); }
 const width = Number(widthArg);
 const slug = (x) => x.replace(/\W+/g, '-').toLowerCase();
+const GENERATE = /Generate with AI|Generate Content|Orchestrate & Preview|^\s*Generate\s*$/;
 const out = path.join(process.env.PIP_DRIVE_OUT ?? path.join(os.tmpdir(), 'pip-drives'), `${slug(label)}-${slug(modeLabel) || 'auto'}-${width}`);
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
-const needsTutor = /speak:|(^|;)start(;|$)/.test(actionsArg);
+const needsTutor = /speak:|(^|;)start(:[^;]*)?(;|$)/.test(actionsArg);
 
 // Chromium's default fake microphone plays a tone. On a voice pack it opens a turn
 // the moment the mic arms and interrupts the tutor before a word is spoken, so capture
@@ -92,16 +96,19 @@ await page.getByText('Developer Tools').first().click();
 for (let i = 0; i < 10; i++) {
   await page.getByText(process.env.PIP_HELPER ?? 'Math Primitives', { exact: true }).first().click().catch(() => {});
   await page.waitForTimeout(1500);
-  if (await page.getByRole('button', { name: /Generate with AI|Generate Content/ }).count()) break;
+  if (await page.getByRole('button', { name: GENERATE }).count()) break;
 }
-await page.getByRole('button', { name: new RegExp(label) }).first().click();
+if (label !== '-') await page.getByRole('button', { name: new RegExp(label) }).first().click();
+for (const name of (process.env.PIP_PRECLICKS ?? '').split(';').filter(Boolean)) {
+  await page.getByRole('button', { name }).first().click().catch((e) => note({ error: `preclick ${name}: ${String(e).slice(0, 80)}` }));
+}
 if (modeLabel) await page.getByRole('button', { name: new RegExp(`^${modeLabel}`) }).first().click();
 
 const generate = async () => {
-  await page.getByRole('button', { name: /Generate with AI|Generate Content/ }).click({ force: true });
+  await page.getByRole('button', { name: GENERATE }).first().click({ force: true });
   await page.waitForTimeout(300);
   await page.waitForFunction(() => {
-    const b = [...document.querySelectorAll('button')].find((x) => /Generate with AI|Generate Content/.test(x.textContent || ''));
+    const b = [...document.querySelectorAll('button')].find((x) => /Generate with AI|Generate Content|Orchestrate & Preview|^\s*Generate\s*$/.test(x.textContent || ''));
     return b && !b.disabled;
   }, null, { timeout: 180000 }).catch(() => note({ error: 'generation did not finish' }));
   await page.waitForTimeout(1500);
@@ -163,8 +170,9 @@ while (Date.now() < deadline) {
   if (actions.length && s.bodies && Date.now() > nextAction) {
     const a = actions.shift();
     let ok;
-    if (a === 'start') {
-      const start = page.getByRole('button', { name: /Start lesson|Tap to start/ }).first();
+    if (a === 'start' || a.startsWith('start:')) {
+      const label = a.startsWith('start:') ? a.slice(6) : null;
+      const start = page.getByRole('button', { name: label ?? /Start lesson|Tap to start/ }).first();
       ok = await start.count() ? await start.click().then(() => true) : 'no start control';
     } else if (a.startsWith('speak:')) ok = speak(Number(a.slice(6)));
     else if (a.startsWith('wait:')) ok = true;

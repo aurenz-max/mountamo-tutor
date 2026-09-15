@@ -44,6 +44,7 @@ import {
   drawFeatureMarkers,
 } from './canvas-2d/shapes';
 import type { CurvePoint, FeatureMarker } from './canvas-2d/types';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // Re-export shared types so existing call sites (manifest schemas, etc.)
 // keep importing from FunctionSketch.
@@ -189,7 +190,9 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
   } = data;
 
   // ── Evaluation ─────────────────────────────────────────────────
-  const resolvedInstanceId = instanceId || `function-sketch-${Date.now()}`;
+  // A fallback id made once: an id minted per render re-registers Pip's surface every render.
+  const fallbackInstanceId = useRef(`function-sketch-${Date.now()}`).current;
+  const resolvedInstanceId = instanceId || fallbackInstanceId;
 
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation<FunctionSketchMetrics>({
     primitiveType: 'function-sketch',
@@ -202,7 +205,7 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
   });
 
   // ── AI Tutoring ────────────────────────────────────────────────
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'function-sketch',
     instanceId: resolvedInstanceId,
     // supportTier is session-uniform (difficulty is a student property), so the
@@ -535,6 +538,18 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
   }, [challenge, feedback, hitFeatures.size, selectedOption, controlPoints.length, selectedCurve]);
 
   // ── Early return ───────────────────────────────────────────────
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmitted ? null : challenge?.id ?? null,
+    label: 'The function graph and your answer',
+    solved: challengeResults.some((r) => r.challengeId === challenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   if (!challenges || challenges.length === 0) {
     return (
       <LuminaCard>
@@ -601,6 +616,9 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
               )}
             </LuminaPrompt>
 
+            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+            {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-4">
             {/* Canvas — bespoke interaction surface (left untouched) */}
             <div className="flex justify-center">
               <canvas
@@ -684,6 +702,8 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
                 ))}
               </div>
             )}
+
+            </div>
 
             {/* Feedback */}
             {feedback && (

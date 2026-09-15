@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { CuratorCompanion } from './CuratorCompanion';
 import OrganismCard from '../primitives/visual-primitives/biology/OrganismCard';
 import SpeciesProfile from '../primitives/biology-primitives/SpeciesProfile';
 import ClassificationSorter from '../primitives/visual-primitives/biology/ClassificationSorter';
@@ -96,7 +97,7 @@ const PrimitiveRenderer: React.FC<{
         <ClassificationSorter
           data={{
             ...(data as Parameters<typeof ClassificationSorter>[0]['data']),
-            instanceId: `classification-sorter-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
@@ -106,7 +107,7 @@ const PrimitiveRenderer: React.FC<{
         <LifeCycleSequencer
           data={{
             ...(data as Parameters<typeof LifeCycleSequencer>[0]['data']),
-            instanceId: `life-cycle-sequencer-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
@@ -121,7 +122,7 @@ const PrimitiveRenderer: React.FC<{
       return (
         <HabitatDiorama
           data={data as Parameters<typeof HabitatDiorama>[0]['data']}
-          instanceId={`habitat-diorama-${Date.now()}`}
+          instanceId={(data as { instanceId: string }).instanceId}
           onInteraction={(interaction) => {
             console.log('Habitat interaction:', interaction);
           }}
@@ -132,7 +133,7 @@ const PrimitiveRenderer: React.FC<{
         <CompareContrast
           data={{
             ...(data as Parameters<typeof CompareContrast>[0]['data']),
-            instanceId: `bio-compare-contrast-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
@@ -142,7 +143,7 @@ const PrimitiveRenderer: React.FC<{
         <ProcessAnimator
           data={{
             ...(data as Parameters<typeof ProcessAnimator>[0]['data']),
-            instanceId: `bio-process-animator-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
@@ -152,7 +153,7 @@ const PrimitiveRenderer: React.FC<{
         <MicroscopeViewer
           data={{
             ...(data as Parameters<typeof MicroscopeViewer>[0]['data']),
-            instanceId: `microscope-viewer-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
@@ -162,7 +163,7 @@ const PrimitiveRenderer: React.FC<{
         <AdaptationInvestigator
           data={{
             ...(data as Parameters<typeof AdaptationInvestigator>[0]['data']),
-            instanceId: `adaptation-investigator-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
@@ -172,7 +173,7 @@ const PrimitiveRenderer: React.FC<{
         <FoodWebBuilder
           data={{
             ...(data as Parameters<typeof FoodWebBuilder>[0]['data']),
-            instanceId: `food-web-builder-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
@@ -182,7 +183,7 @@ const PrimitiveRenderer: React.FC<{
         <CellBuilder
           data={{
             ...(data as Parameters<typeof CellBuilder>[0]['data']),
-            instanceId: `cell-builder-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
@@ -192,7 +193,7 @@ const PrimitiveRenderer: React.FC<{
         <InheritanceLab
           data={{
             ...(data as Parameters<typeof InheritanceLab>[0]['data']),
-            instanceId: `inheritance-lab-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
@@ -202,7 +203,7 @@ const PrimitiveRenderer: React.FC<{
         <DnaExplorer
           data={{
             ...(data as Parameters<typeof DnaExplorer>[0]['data']),
-            instanceId: `dna-explorer-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
@@ -212,7 +213,7 @@ const PrimitiveRenderer: React.FC<{
         <ProteinFolder
           data={{
             ...(data as Parameters<typeof ProteinFolder>[0]['data']),
-            instanceId: `protein-folder-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
@@ -222,7 +223,7 @@ const PrimitiveRenderer: React.FC<{
         <EnergyCycleEngine
           data={{
             ...(data as Parameters<typeof EnergyCycleEngine>[0]['data']),
-            instanceId: `energy-cycle-engine-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
           }}
         />
@@ -330,6 +331,13 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
+  // One instance id per generated preview: evaluation, tutoring and Pip's surface
+  // all key on it, so it must not change when the helper re-renders.
+  const previewInstanceId = useMemo(
+    () => `biology-helper-${selectedPrimitive}-${Date.now()}`,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [generatedData],
+  );
   const [error, setError] = useState<string | null>(null);
 
   const selectedOption = PRIMITIVE_OPTIONS.find((p) => p.value === selectedPrimitive);
@@ -603,10 +611,13 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
 
             {generatedData != null && (
               <div className="space-y-6">
-                <PrimitiveRenderer
-                  componentId={selectedPrimitive}
-                  data={generatedData}
-                />
+                <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId}>
+                  <PrimitiveRenderer
+                    componentId={selectedPrimitive}
+                    data={{ ...(generatedData as object), instanceId: previewInstanceId }}
+                  />
+                  <CuratorCompanion />
+                </div>
               </div>
             )}
           </div>

@@ -15,7 +15,8 @@
  * throws outright without it.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { CuratorCompanion } from './CuratorCompanion';
 import EraExplorer from '../primitives/visual-primitives/history/EraExplorer';
 import CauseEffectChain from '../primitives/visual-primitives/history/CauseEffectChain';
 import { EvaluationProvider, useEvaluationContext } from '../evaluation';
@@ -77,7 +78,7 @@ const PrimitiveRenderer: React.FC<{
         <EraExplorer
           data={{
             ...(data as Parameters<typeof EraExplorer>[0]['data']),
-            instanceId: `era-explorer-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             onEvaluationSubmit,
           }}
         />
@@ -87,7 +88,7 @@ const PrimitiveRenderer: React.FC<{
         <CauseEffectChain
           data={{
             ...(data as Parameters<typeof CauseEffectChain>[0]['data']),
-            instanceId: `cause-effect-chain-${Date.now()}`,
+            instanceId: (data as { instanceId: string }).instanceId,
             onEvaluationSubmit,
           }}
         />
@@ -163,6 +164,13 @@ const HistoryPrimitivesTesterContent: React.FC<HistoryPrimitivesTesterProps> = (
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
+  // One instance id per generated preview: evaluation, tutoring and Pip's surface
+  // all key on it, so it must not change when the helper re-renders.
+  const previewInstanceId = useMemo(
+    () => `history-helper-${selectedPrimitive}-${Date.now()}`,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [generatedData],
+  );
   const [lastResult, setLastResult] = useState<PrimitiveEvaluationResult | null>(null);
   const [showJson, setShowJson] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -391,11 +399,14 @@ const HistoryPrimitivesTesterContent: React.FC<HistoryPrimitivesTesterProps> = (
             )}
 
             {generatedData != null && (
-              <PrimitiveRenderer
-                componentId={selectedPrimitive}
-                data={generatedData}
-                onEvaluationSubmit={setLastResult}
-              />
+              <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId}>
+                <PrimitiveRenderer
+                  componentId={selectedPrimitive}
+                  data={{ ...(generatedData as object), instanceId: previewInstanceId }}
+                  onEvaluationSubmit={setLastResult}
+                />
+                <CuratorCompanion />
+              </div>
             )}
 
             {!isGenerating && generatedData == null && !error && (

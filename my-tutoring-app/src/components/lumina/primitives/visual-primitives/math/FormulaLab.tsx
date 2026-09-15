@@ -34,6 +34,7 @@ import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResult
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { evaluateFormulaExpression } from './formulaLabMath';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 export type FormulaLabDirection = 'increase' | 'decrease' | 'stay-same';
 export type FormulaLabSceneKind = 'motion' | 'geometry' | 'container' | 'relationship';
@@ -580,7 +581,7 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
     challengeDone,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'formula-lab',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -963,6 +964,18 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
     ? substitutedExpression(expression, variables, currentChallenge?.targetValues ?? [])
     : '';
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: hasSubmitted ? null : currentChallenge?.id ?? null,
+    label: 'The formula lab',
+    solved: challengeDone && challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <LuminaCard className={className} topAccent="cyan">
       <LuminaCardHeader className="space-y-3">
@@ -1041,6 +1054,9 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
               </LuminaPanel>
             )}
 
+            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace}>
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
               <LuminaPanel className="overflow-hidden p-2 md:p-4">
                 <div className="mb-1 flex items-center justify-between px-2">
@@ -1258,6 +1274,8 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
                   </LuminaPanel>
                 )}
               </div>
+            </div>
+
             </div>
 
             {strategyCue === 'hint' && !challengeDone && (!isPredictionMode || !predictionLocked) && (

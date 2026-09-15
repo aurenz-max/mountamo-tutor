@@ -22,6 +22,7 @@ import {
   answerStateClass,
   type AnswerChoiceState,
 } from '../../../ui';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * Double Number Line — Multi-instance proportional reasoning primitive.
@@ -324,7 +325,7 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
     challenges.length, currentChallenge, currentAttempts, supportTier,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'double-number-line',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -545,6 +546,18 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
   const allInputsFilled =
     !!currentChallenge && studentValues.every((v) => v !== '' && !isNaN(parseFloat(v)));
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: isComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The double number line',
+    solved: feedback === 'correct',
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -620,6 +633,9 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
             </LuminaPrompt>
           )}
 
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && !isComplete && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* Double Number Line Visualization */}
           {!isComplete && currentChallenge && topScale && bottomScale && (
             <div className="w-full max-w-3xl mx-auto px-8 py-12 space-y-24">
@@ -873,6 +889,8 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
               </div>
             </div>
           )}
+
+          </div>
 
           {/* Session-complete summary panel */}
           {isComplete && phaseResults.length > 0 && (

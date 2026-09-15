@@ -33,6 +33,7 @@ import {
   Sparkles,
   Zap,
 } from 'lucide-react';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * A routable set of cell-biology missions, not a mandatory three-page
@@ -447,6 +448,18 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
   const modeTabs = phases.map((phase) => ({ value: phase, label: PHASE_LABELS[phase] }));
   const cellTypeLabel = `${cellType.charAt(0).toUpperCase()}${cellType.slice(1)} cell`;
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: stableInstanceId.current,
+    scopeId: hasSubmitted ? null : currentPhase,
+    label: 'The cell mission',
+    solved: currentComplete && (currentPhase === 'cell_inventory' ? organelles.every((item) => sortDecisions[item.id] === item.belongsInCell) : currentPhase === 'organelle_placement' ? validOrganelles.every((item) => !!item.correctZone && placements[item.id] === item.correctZone) : currentPhase === 'structure_function' ? validOrganelles.every((item) => matchConnections[item.id] === item.id) : quantityOrganelles.every((item) => quantityAnswers[item.id] === item.expectedQuantity)),
+    tutorSpeaking: false,
+  });
+
   return (
     <LuminaCard className={['overflow-hidden shadow-2xl', className].filter(Boolean).join(' ')}>
       <LuminaCardHeader className="relative overflow-hidden border-b border-white/5">
@@ -480,6 +493,9 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
           </div>
         </LuminaPrompt>
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !hasSubmitted && <div {...pip.dock} />}
+        <div {...pip.workspace}>
         {currentPhase === 'cell_inventory' && (
           <div className="grid gap-3 sm:grid-cols-2">
             {organelles.map((organelle) => {
@@ -682,6 +698,8 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
             </div>
           </div>
         )}
+
+        </div>
 
         {feedback && (
           <LuminaFeedbackCard status="insight" label={hasSubmitted ? 'Cell report' : 'Mission checked'} teachingNote={currentComplete && !hasSubmitted ? 'Your first committed answer is what counts; the reveal is for learning, not rescoring.' : undefined}>

@@ -21,6 +21,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -508,7 +509,7 @@ const StoichiometryLab: React.FC<StoichiometryLabProps> = ({ data, className }) 
     return '';
   }, [supportTier, currentChallenge?.type]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'stoichiometry-lab',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -685,6 +686,18 @@ const StoichiometryLab: React.FC<StoichiometryLabProps> = ({ data, className }) 
     ? Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100)
     : 0;
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The mole tools and your answer',
+    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   if (!currentChallenge) {
     return (
       <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
@@ -767,6 +780,9 @@ const StoichiometryLab: React.FC<StoichiometryLabProps> = ({ data, className }) 
           </p>
         </div>
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* Given — compact chips (no conversion shown yet) */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-slate-400 text-[10px] uppercase tracking-wider">Given</span>
@@ -927,6 +943,8 @@ const StoichiometryLab: React.FC<StoichiometryLabProps> = ({ data, className }) 
             </Button>
           </div>
         )}
+
+        </div>
 
         {/* Feedback */}
         {feedback && (

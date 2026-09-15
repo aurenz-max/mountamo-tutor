@@ -32,6 +32,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -452,7 +453,7 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
     ],
   );
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'parameter-explorer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -687,6 +688,18 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
     return Math.round((correct / challenges.length) * 100);
   }, [challengeResults, challenges.length]);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? 'explore',
+    label: 'The parameter explorer',
+    solved: answerFeedback === 'correct',
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
@@ -735,6 +748,9 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
           )}
         </div>
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-6">
         {/* ── Parameter Sliders ── */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -928,6 +944,8 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
             )}
           </LuminaPanel>
         )}
+
+        </div>
 
         {/* ── Phase Summary ── */}
         {allChallengesComplete && phaseResults.length > 0 && (

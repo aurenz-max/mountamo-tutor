@@ -54,6 +54,7 @@ import {
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import DiActionPanel from '../../../components/DiActionPanel';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 import { SHAPE_WORD, type Quantity } from './diWordProblemPlan';
@@ -255,6 +256,13 @@ export const DiWordProblemSetup: React.FC<{
   });
 
   const current = runner.currentItem;
+  // Pip: the printed story is the question side. Placing the big amount is a
+  // hands answer: Pip looks at the builder while the child places and receives it
+  // while the stillness verdict is judged; the story-part cards are never targets.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The story', finished: hasSubmitted,
+    gesture: current?.kind === 'big_number', handover: current?.kind === 'big_number',
+  });
 
   // ── Hands: place, remove, and the stillness close ─────────────────────────
   /** Called by the runner's stillness window once the placement has sat still.
@@ -287,6 +295,7 @@ export const DiWordProblemSetup: React.FC<{
       if (next[key] === id) next[key] = null;
     });
     next[slot] = id;
+    pip.look('builder');
     placementsRef.current = next;
     setPlacements(next);
     setSelectedId(null);
@@ -449,7 +458,7 @@ export const DiWordProblemSetup: React.FC<{
     return (
       <div className="space-y-5">
         {/* The story, printed. */}
-        <div className="rounded-xl border border-white/10 bg-white/5 px-5 py-4">
+        <div {...pip.target('stimulus')} className="rounded-xl border border-white/10 bg-white/5 px-5 py-4">
           {classifyMark && (
             <div className={`mb-2 text-[11px] uppercase tracking-[0.2em] ${tone(classifyMark)}`}>
               {SHAPE_WORD[plan.shape]} problem
@@ -470,7 +479,7 @@ export const DiWordProblemSetup: React.FC<{
 
         {focusedBigMode ? (
           /* The entry mode asks one honest question and gives it one target. */
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-5" aria-label="Big amount builder">
+          <div {...pip.target('builder')} className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-5" aria-label="Big amount builder">
             <div className="mb-1 text-center text-sm font-semibold text-slate-200">
               {bigMark ? 'The big amount' : 'Find the big amount'}
             </div>
@@ -484,7 +493,7 @@ export const DiWordProblemSetup: React.FC<{
           </div>
         ) : (
           /* Family modes make the whole mathematical relationship visible. */
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-5">
+          <div {...pip.target('builder')} className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-5">
             <div className="mb-1 text-center text-sm font-semibold text-slate-200">
               {isBigStep ? 'Build the number family' : 'Your number family'}
             </div>
@@ -588,6 +597,7 @@ export const DiWordProblemSetup: React.FC<{
               />
             </div>
 
+            {pip.store && <div {...pip.dock} />}
             {renderStage()}
 
             <DiActionPanel

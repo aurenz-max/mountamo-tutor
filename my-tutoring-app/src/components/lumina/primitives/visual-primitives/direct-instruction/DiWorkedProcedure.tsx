@@ -49,6 +49,7 @@ import {
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import DiActionPanel from '../../../components/DiActionPanel';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
   diWorkedProcedurePackBase,
@@ -216,6 +217,11 @@ export const DiWorkedProcedure: React.FC<{
   });
 
   const current = runner.currentItem;
+  // Pip: the written problem is the question side (the screen already rings the
+  // current column); every answer is spoken, so Pip outlines the problem only.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The problem', finished: hasSubmitted,
+  });
   const currentAction: ActionableWorkedProcedureItem | null = current
     ? withWorkedProcedureAction(current)
     : null;
@@ -363,7 +369,8 @@ export const DiWorkedProcedure: React.FC<{
               />
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-10">
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.target('stimulus')} className="rounded-xl border border-white/10 bg-white/5 px-4 py-10">
               {renderProblem()}
             </div>
 

@@ -21,6 +21,7 @@ import type { FlightForcesExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -835,7 +836,7 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
     challengeProgress: `${challengeResults.length}/${challenges.length}`,
   }), [acDef.label, flightState, thrustPct, aoa, speed, altitude, stallCount, statesExplored.size, hasGrabbedPlane, challengeResults.length, challenges.length]);
 
-  const { sendText, isConnected, isAudioPlaying } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'flight-forces-explorer' as any,
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -1021,6 +1022,18 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
   const maxCargo = Math.floor(acDef.emptyWeight * 0.3);
 
   // ---- Render ----
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'flight-forces-explorer'),
+    scopeId: hasSubmittedEvaluation ? null : showChallenges && currentChallenge ? currentChallenge.id : 'explore',
+    label: 'The flight simulator and the challenge',
+    solved: answerFeedback === 'correct',
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'flight-forces-explorer'),
+  });
+
   return (
     <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -1069,6 +1082,9 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
         </LuminaCardHeader>
 
         <LuminaCardContent className="space-y-5">
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
+          <div {...pip.workspace} className="space-y-5">
           {/* Simulation Canvas — bespoke interaction surface, untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50">
             <FlightSimulation
@@ -1289,6 +1305,8 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
               )}
             </LuminaPanel>
           )}
+
+          </div>
 
           {allChallengesDone && showChallenges && (
             <LuminaPanel accent="emerald" className="text-center bg-green-500/10">

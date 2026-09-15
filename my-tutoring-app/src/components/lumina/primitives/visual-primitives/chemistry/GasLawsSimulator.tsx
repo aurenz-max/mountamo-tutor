@@ -22,6 +22,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -743,7 +744,7 @@ const GasLawsSimulator: React.FC<GasLawsSimulatorProps> = ({ data, className }) 
     challenges.length, currentChallenge, studentNumber, studentDirection, phase, currentAttempts,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'gas-laws-simulator',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -920,6 +921,18 @@ const GasLawsSimulator: React.FC<GasLawsSimulatorProps> = ({ data, className }) 
     ? Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100)
     : 0;
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The gas cylinder and your answer',
+    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   if (!currentChallenge) {
     return (
       <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
@@ -995,6 +1008,9 @@ const GasLawsSimulator: React.FC<GasLawsSimulatorProps> = ({ data, className }) 
           </p>
         </div>
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* Canvas + variable panel */}
         <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-3 items-start">
           <div className="flex justify-center">
@@ -1157,6 +1173,8 @@ const GasLawsSimulator: React.FC<GasLawsSimulatorProps> = ({ data, className }) 
             </Button>
           </div>
         )}
+
+        </div>
 
         {/* Feedback */}
         {feedback && (

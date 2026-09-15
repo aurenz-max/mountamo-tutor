@@ -59,6 +59,9 @@ import type { PrimitiveEvaluationResult } from '../../../evaluation/types';
 import type { DiSentenceReadingMetrics } from '../../../evaluation/types';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { useJudgedSpeechLoop } from '../../../hooks/useJudgedSpeechLoop';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { diSentenceReadingPipPose } from '../../../pip/diSentenceReadingPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 import type { LoopEmission } from '../../../hooks/judgedLoopModel';
 import {
   flushDiRunLog,
@@ -786,6 +789,26 @@ export const DiSentenceReading: React.FC<{ data: DiSentenceReadingData; index?: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this pack's own phase word onto the printed sentence; Pip
+  // never reads, judges, or moves the stage. Speech counts only when it is this
+  // instance's and began on the sentence now printed.
+  const pip = usePipTargets(currentChallenge?.id ?? null, false);
+  const pipTutorSpeaking = ctx.isAudioPlaying && activeInLesson;
+  const speechOnSentence = useSpeechScope(currentChallenge?.id ?? null, pipTutorSpeaking);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || isComplete || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(['sentence'], () => 'The sentence');
+    const pose = diSentenceReadingPipPose({
+      running, preparing, phase, tutorSpeaking: pipTutorSpeaking, speechOnSentence,
+      visibleIds: targets.map((target) => target.id),
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Sentence reading',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   // ── Render ───────────────────────────────────────────────────────
   const total = data.challenges.length;
   const isSupported =
@@ -845,6 +868,8 @@ export const DiSentenceReading: React.FC<{ data: DiSentenceReadingData; index?: 
             {reward && phase === 'affirmed' ? (
               <div
                 key={`read-${reward.text}`}
+                ref={pip.ref('sentence')}
+                data-pip-object="sentence"
                 className={`rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-6 py-3 font-bold leading-snug tracking-wide text-emerald-300 ${sentenceSizeClass(reward.wordCount)} ${motion.pop}`}
               >
                 {reward.text}
@@ -852,6 +877,8 @@ export const DiSentenceReading: React.FC<{ data: DiSentenceReadingData; index?: 
             ) : (
               <div
                 key={`sentence-${currentChallenge.id}`}
+                ref={pip.ref('sentence')}
+                data-pip-object="sentence"
                 className={`font-bold leading-snug tracking-wide text-white ${sentenceSizeClass(currentChallenge.wordCount)} ${motion.reveal}`}
               >
                 {currentChallenge.text}
@@ -861,6 +888,11 @@ export const DiSentenceReading: React.FC<{ data: DiSentenceReadingData; index?: 
               <div className="mt-3 text-5xl leading-none" aria-hidden="true">{reward.emoji}</div>
             )}
           </div>
+        )}
+
+        {pipStore && !isComplete && (
+          <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+            className="mx-auto mb-6 flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
         )}
 
         {/* Completion recap — a per-sentence mark, kit-styled. Every sentence

@@ -14,6 +14,7 @@ import {
   LuminaActionButton,
   LuminaFeedbackCard,
 } from '../../../ui';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * Foundation Builder - Soil/foundation simulator for K-5 engineering education
@@ -274,6 +275,18 @@ const FoundationBuilder: React.FC<FoundationBuilderProps> = ({ data, className }
   const currentArea = footingArea();
   const optimalArea = buildingLoad / soilCapacity;
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'foundation-builder'),
+    scopeId: hasSubmittedEvaluation ? null : 'design',
+    label: 'The foundation and its controls',
+    solved: !!testResult?.passed,
+    tutorSpeaking: false,
+  });
+
   return (
     <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -348,6 +361,9 @@ const FoundationBuilder: React.FC<FoundationBuilderProps> = ({ data, className }
             </div>
           </div>
 
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* Visualization — bespoke simulation surface, untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden mb-6 border border-slate-700/50 p-6">
             <svg
@@ -619,6 +635,8 @@ const FoundationBuilder: React.FC<FoundationBuilderProps> = ({ data, className }
               )}
             </div>
           )}
+
+          </div>
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3 justify-center">

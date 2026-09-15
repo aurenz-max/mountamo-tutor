@@ -21,6 +21,7 @@ import {
   Image as ImageIcon,
   MessageSquare,
 } from 'lucide-react';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * Microscope Viewer - Simulated Microscope Experience
@@ -652,6 +653,18 @@ const MicroscopeViewer: React.FC<MicroscopeViewerProps> = ({ data, className = '
   // Main Render
   // ============================================================================
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId || 'microscope-viewer',
+    scopeId: hasSubmitted ? null : `zoom-${currentZoomIndex}`,
+    label: 'The microscope view',
+    solved: currentZoom.visibleStructures.length > 0 && currentZoom.visibleStructures.every((structure) => revealedLabels.has(structure.id)),
+    tutorSpeaking: false,
+  });
+
   return (
     <div className={`relative ${className}`}>
       {/* Header */}
@@ -706,6 +719,9 @@ const MicroscopeViewer: React.FC<MicroscopeViewerProps> = ({ data, className = '
       {/* Zoom Selector */}
       {renderZoomSelector()}
 
+      {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+      {pip.store && !hasSubmitted && <div {...pip.dock} />}
+      <div {...pip.workspace}>
       {/* Main viewport */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Lens - takes 2 columns */}
@@ -790,6 +806,8 @@ const MicroscopeViewer: React.FC<MicroscopeViewerProps> = ({ data, className = '
             </Card>
           )}
         </div>
+      </div>
+
       </div>
 
       {/* Comparison Note */}

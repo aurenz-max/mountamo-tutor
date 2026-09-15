@@ -17,6 +17,7 @@ import { usePrimitiveEvaluation } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -671,7 +672,7 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
   });
 
   // ---- AI Tutoring ----
-  const { sendText, isAudioPlaying } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'airfoil-lab' as any,
     instanceId: data.instanceId || `al-${Date.now()}`,
     primitiveData: {
@@ -856,6 +857,18 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
       : '');
 
   // ---- Render ----
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (data.instanceId || 'airfoil-lab'),
+    scopeId: activeChallenge ? `challenge-${data.challenges.indexOf(activeChallenge)}` : 'explore',
+    label: 'The wind tunnel and the challenges',
+    solved: !!activeChallenge && challengeOptimality >= 100,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === (data.instanceId || 'airfoil-lab'),
+  });
+
   return (
     <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -916,6 +929,9 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
             </div>
           )}
 
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* Main layout: Canvas + controls */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
             {/* Canvas wind tunnel (3 cols) */}
@@ -1274,6 +1290,8 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                 </LuminaCardContent>
               </LuminaCard>
             )}
+          </div>
+
           </div>
 
           {/* Educational context */}

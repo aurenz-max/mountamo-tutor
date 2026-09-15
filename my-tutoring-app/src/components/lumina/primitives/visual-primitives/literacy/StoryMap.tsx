@@ -23,6 +23,7 @@ import {
   accentSoftBorder,
   accentSolidBg,
 } from '../../../ui';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // =============================================================================
 // Type Definitions
@@ -908,6 +909,18 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
     selectedCharacters.size === characterOptions.length &&
     selectedSetting === 'correct';
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId || 'story-map',
+    scopeId: hasSubmitted ? null : phase,
+    label: 'The story and the story map',
+    solved: phase === 'identify' ? phase1Checked && phase1Success : phase === 'sequence' ? phase2Checked && placedEvents.length === data.events.length && placedEvents.every((pe) => data.events.find((e) => e.id === pe.eventId)?.arcPosition === pe.arcPosition) : phase3Checked && selectedConflict === data.elements.conflict?.type,
+    tutorSpeaking: false,
+  });
+
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-4">
@@ -991,6 +1004,9 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
           </p>
         </LuminaPrompt>
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !hasSubmitted && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-6">
         {/* Passage Section */}
         <div>
           <LuminaButton
@@ -1583,6 +1599,8 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
         )}
 
         {/* ================================================================== */}
+        </div>
+
         {/* Success / Final Section */}
         {/* ================================================================== */}
         {hasSubmitted && (

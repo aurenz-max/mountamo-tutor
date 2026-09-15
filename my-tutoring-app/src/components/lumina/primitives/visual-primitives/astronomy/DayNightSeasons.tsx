@@ -7,6 +7,7 @@ import type { DayNightSeasonsMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { LuminaReadAloud } from '../../../ui';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // DATA INTERFACES (Single Source of Truth)
@@ -1332,7 +1333,7 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
     timeOfDayAtMarker, dynamicAnnotation.title, isAnimating, daylightHours,
   ]);
 
-  const { sendText, isAudioPlaying } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'day-night-seasons',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -1472,6 +1473,18 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
     resetAttempt();
   };
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: hasSubmitted ? null : 'explore',
+    label: 'The Earth model and its controls',
+    solved: false,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <div className={`bg-slate-900 rounded-xl p-6 ${className}`}>
       {/* Header */}
@@ -1491,6 +1504,9 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
         </div>
       </div>
 
+      {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+      {pip.store && !hasSubmitted && <div {...pip.dock} />}
+      <div {...pip.workspace}>
       {/* D3 Visualization */}
       <div className="bg-slate-950 rounded-lg p-4 mb-4 flex justify-center">
         <svg
@@ -1698,6 +1714,8 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
             </div>
           </div>
         )}
+      </div>
+
       </div>
 
       {/* Sun Angle Visualization Section */}

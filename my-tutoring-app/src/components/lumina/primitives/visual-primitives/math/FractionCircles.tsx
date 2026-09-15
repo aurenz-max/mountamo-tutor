@@ -22,6 +22,7 @@ import {
 import type { FractionCirclesMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -306,7 +307,7 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
     shadedSlices.size, currentAttempts,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'fraction-circles',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -598,6 +599,18 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
   const isCurrentChallengeCorrect = challengeResults.some(
     r => r.challengeId === currentChallenge?.id && r.correct,
   );
+
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The fraction circles',
+    solved: isCurrentChallengeCorrect,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
 
   const localOverallScore = useMemo(() => {
     if (!allChallengesComplete || challenges.length === 0) return 0;

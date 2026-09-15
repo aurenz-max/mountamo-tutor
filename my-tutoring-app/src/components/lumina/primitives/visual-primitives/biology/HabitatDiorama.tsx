@@ -44,6 +44,7 @@ import {
   motion,
 } from '../../../ui';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import {
   askFor,
   gestureVerdictCue,
@@ -322,9 +323,16 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId
   const handleOrganismTap = (id: string) => {
     SoundManager.tap(); setSelectedId(id); onInteraction?.({ type: 'organism_inspected', organismId: id, timestamp: Date.now() });
     if (!current || !runner.canAttempt || current.kind !== 'connect' || id === current.fromId) return;
+    pip.look('stimulus');
     runner.submitGestureAttempt(gestureVerdictCue(current, { fromId: current.fromId, toId: id }));
     onInteraction?.({ type: 'relationship_committed', organismId: id, relationshipType: current.relationshipType, timestamp: Date.now() });
   };
+  // Pip: the habitat is the question side. A connect tap and a restore zone are
+  // single committed taps: Pip looks at them and never makes one.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The habitat', finished: evaluation.hasSubmitted,
+    gesture: current?.answerKind === 'gesture',
+  });
   if (evaluation.hasSubmitted && runner.summary) return <LuminaPanel accent="emerald" className="py-8 text-center"><LuminaScoreRing score={runner.summary.accuracy} size={128} showTier /><h4 className="mt-4 text-xl font-bold text-slate-100">Ecosystem field report complete</h4><p className="mt-2 text-sm text-slate-300">You observed evidence, traced relationships, and reasoned about change.</p></LuminaPanel>;
   return (
     <div className="space-y-4">
@@ -332,8 +340,9 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId
       <LuminaProgress value={items.length ? ((runner.currentIndex + 1) / items.length) * 100 : 0} accent="emerald" />
       {current && <LuminaPrompt accent={current.answerKind === 'voice' ? 'cyan' : 'emerald'}>{askFor(current)}</LuminaPrompt>}
       {current?.kind === 'predict' && <LuminaPanel accent="orange" className={`${accentGlow.orange} ${accentBorder.orange}`}><div className="flex items-start gap-3"><Zap className="mt-0.5 h-5 w-5 text-orange-300" /><div><p className="text-xs font-semibold uppercase tracking-wider text-orange-300">Ecosystem change</p><p className="mt-1 text-sm text-slate-200">{current.disruptionEvent}</p></div></div></LuminaPanel>}
-      <HabitatScene data={data} isPreReader={isPreReader} selectedId={selectedId} activeIds={activeIds} rewardIds={rewardIds} hideOrganismId={current?.kind === 'restore' ? current.restorationEntityId : undefined} onOrganismTap={handleOrganismTap} />
-      {current?.kind === 'restore' && current.restorationEntityId && <LuminaPanel accent="emerald"><div className="mb-3 flex items-center gap-3"><span className="text-3xl">{organismEmoji(data.organisms.find((organism) => organism.id === current.restorationEntityId)!)}</span><div><p className="text-xs uppercase tracking-wider text-emerald-300">Restoration candidate</p><p className="font-semibold text-slate-100">{current.organismNames[current.restorationEntityId]}</p></div></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{(Object.keys(ZONE_LABELS) as HabitatZone[]).map((zone) => <button key={zone} type="button" disabled={!runner.canAttempt} onClick={() => { SoundManager.tap(); runner.submitGestureAttempt(gestureVerdictCue(current, { zone })); onInteraction?.({ type: 'restoration_committed', timestamp: Date.now() }); }} className={`rounded-xl px-3 py-4 text-sm font-semibold transition-all ${dropZoneStateClasses.idle} ${runner.canAttempt ? 'hover:scale-[1.02]' : 'opacity-50'}`}>{ZONE_LABELS[zone]}</button>)}</div></LuminaPanel>}
+      {pip.store && <div {...pip.dock} />}
+      <div {...pip.target('stimulus')}><HabitatScene data={data} isPreReader={isPreReader} selectedId={selectedId} activeIds={activeIds} rewardIds={rewardIds} hideOrganismId={current?.kind === 'restore' ? current.restorationEntityId : undefined} onOrganismTap={handleOrganismTap} /></div>
+      {current?.kind === 'restore' && current.restorationEntityId && <LuminaPanel {...pip.target('zones')} accent="emerald"><div className="mb-3 flex items-center gap-3"><span className="text-3xl">{organismEmoji(data.organisms.find((organism) => organism.id === current.restorationEntityId)!)}</span><div><p className="text-xs uppercase tracking-wider text-emerald-300">Restoration candidate</p><p className="font-semibold text-slate-100">{current.organismNames[current.restorationEntityId]}</p></div></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{(Object.keys(ZONE_LABELS) as HabitatZone[]).map((zone) => <button key={zone} type="button" disabled={!runner.canAttempt} onClick={() => { SoundManager.tap(); pip.look('zones'); runner.submitGestureAttempt(gestureVerdictCue(current, { zone })); onInteraction?.({ type: 'restoration_committed', timestamp: Date.now() }); }} className={`rounded-xl px-3 py-4 text-sm font-semibold transition-all ${dropZoneStateClasses.idle} ${runner.canAttempt ? 'hover:scale-[1.02]' : 'opacity-50'}`}>{ZONE_LABELS[zone]}</button>)}</div></LuminaPanel>}
       {current?.kind === 'defend' && current.evidenceChoices && <div className="grid gap-2 md:grid-cols-3" aria-label="Evidence choices">{current.evidenceChoices.map((choice, index) => <div key={choice.id} className={`rounded-xl border p-4 ${answerStateClasses.idle}`}><p className="text-[10px] font-semibold uppercase tracking-wider text-cyan-300">Evidence {index + 1}</p><p className="mt-2 text-sm leading-relaxed text-slate-100">{choice.text}</p></div>)}</div>}
       {current?.answerKind === 'voice' && current.kind !== 'defend' && <div className="flex flex-wrap justify-center gap-2" aria-label="Answer choices">{current.optionTexts.map((option) => <LuminaBadge key={option} accent="cyan" className="px-3 py-2 text-sm">{option}</LuminaBadge>)}</div>}
       {reward && runner.revealHeld && <LuminaPanel accent="emerald" className={`${motion.reveal} text-center`}><Sprout className="mx-auto h-6 w-6 text-emerald-300" /><p className="mt-2 font-semibold text-emerald-100">{reward.text}</p></LuminaPanel>}

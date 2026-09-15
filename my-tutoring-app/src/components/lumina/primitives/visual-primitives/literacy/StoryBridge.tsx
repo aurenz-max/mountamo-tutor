@@ -24,6 +24,8 @@ import {
   evidenceFor, itemsFromChallenges, storyBridgePack, tapVerdictCue,
   type StoryBridgeItem,
 } from './storyBridgeScript';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { storyBridgePipPose } from '../../../pip/storyBridgePipPose';
 
 export type StoryBridgeChallengeType =
   | 'match_character'
@@ -188,20 +190,43 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
       setTappedChoice(null);
       tappedChoiceRef.current = null;
       setChoiceOrder(shuffle(item.choiceIds));
+      pip.clear();
     },
   });
 
   const currentItem = runner.currentItem;
   const revealed = runner.currentSolved;
+
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase, the marked question side, and the
+  // child's own tap; Pip never answers, taps, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets();
+    const pose = storyBridgePipPose({
+      mode: currentItem.mode, gesture: currentItem.answerKind === 'gesture',
+      anchorFirst: currentItem.anchorStory.id === currentItem.storyA.id,
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Story bridge', dock: pip.dock.current, targets, pose };
+  });
+
   const handleTap = useCallback((choiceId: string) => {
     const item = runner.currentItem;
     if (!item || item.answerKind !== 'gesture') return;
     if (!runner.canAttempt || evaluation.hasSubmitted || runner.isAwaitingGesture()) return;
+    pip.look(`choice-${choiceId}`);
     setTappedChoice(choiceId);
     tappedChoiceRef.current = choiceId;
     (tapLogRef.current[item.id] ??= []).push(choiceId);
     runner.submitGestureAttempt(tapVerdictCue(item, choiceId));
-  }, [runner, evaluation.hasSubmitted]);
+  }, [runner, evaluation.hasSubmitted, pip]);
 
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!evaluation.hasSubmitted) return [];
@@ -221,8 +246,10 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
   const renderCharacterCard = (character: StoryBridgeCharacter, role: 'anchor' | 'choice' | 'context') => {
     const tappable = role === 'choice' && currentItem?.answerKind === 'gesture' && !revealed;
     const state: AnswerChoiceState = role === 'anchor' ? 'selected' : role === 'context' ? 'dimmed' : choiceState(character.id);
+    const pipId = role === 'choice' ? `choice-${character.id}` : role === 'anchor' && character.id === currentItem?.anchor.id ? 'anchor' : null;
     return (
       <button key={character.id} type="button" onClick={() => handleTap(character.id)}
+        ref={pipId ? pip.ref(pipId) : undefined} data-pip-object={pipId ?? undefined}
         disabled={!tappable || !runner.canAttempt || evaluation.hasSubmitted}
         aria-label={role === 'anchor' ? `${character.name}, the friend to compare` : character.name}
         className={`flex min-w-[6rem] flex-col items-center gap-1 rounded-2xl border-2 px-3 py-3 transition-all ${answerStateClass(state)} ${role === 'anchor' ? 'ring-2 ring-cyan-300/70 shadow-lg shadow-cyan-400/20 scale-105' : ''} ${tappable ? 'hover:scale-105 active:scale-95 cursor-pointer' : 'cursor-default'}`}>
@@ -273,6 +300,7 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
             if (!event) return null;
             return (
               <button key={id} type="button" onClick={() => handleTap(id)} disabled={!runner.canAttempt || revealed}
+                ref={pip.ref(`choice-${id}`)} data-pip-object={`choice-${id}`}
                 className={`rounded-2xl border-2 p-4 text-center transition-all ${answerStateClass(choiceState(id))}`}>
                 <span className="block text-4xl" role="img" aria-hidden>{event.emoji}{event.eventEmoji}</span>
                 <span className="mt-1 block text-xs text-slate-300">Story two event</span>
@@ -293,6 +321,7 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
       <div className={`grid gap-2 ${currentItem.mode === 'match_setting' ? 'grid-cols-2' : 'grid-cols-3'}`}>
         {(choiceOrder.length ? choiceOrder : currentItem.choiceIds).map((id) => (
           <button key={id} type="button" onClick={() => handleTap(id)} disabled={!runner.canAttempt || revealed}
+            ref={pip.ref(`choice-${id}`)} data-pip-object={`choice-${id}`}
             className={`rounded-2xl border-2 p-4 text-center transition-all ${answerStateClass(choiceState(id))}`}>
             <span className="block text-3xl" role="img" aria-hidden>{labels[id]?.icon}</span>
             <span className="mt-1 block text-xs font-semibold text-slate-100">{labels[id]?.label}</span>
@@ -332,7 +361,11 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
                 aria-label="Hear both stories again"><span className="text-xl">🔁</span></button>
               <LuminaReadAloudGlyph size={32} speaking={runner.tutorSpeaking} />
             </div>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_1fr] md:items-stretch">
+            {/* Pip's dock sits above both stories: every marked question side
+                is below it, and the choices sit below those. */}
+            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
+            <div ref={pip.ref('stories')} data-pip-object="stories" className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_1fr] md:items-stretch">
               {renderStoryPanel(currentItem.storyA)}
               <div className={`flex items-center justify-center rounded-2xl px-3 py-2 md:min-w-[4.5rem] bg-gradient-to-b from-sky-500/10 via-sky-500/25 to-sky-500/10 border border-sky-400/20 transition-all duration-500 ${revealed ? 'shadow-lg shadow-cyan-400/20' : ''}`} aria-hidden>
                 <span className={`text-3xl transition-transform duration-500 ${revealed ? 'scale-125' : 'opacity-60'}`}>{revealed ? '🌉' : '🌊'}</span>
@@ -340,10 +373,10 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
               {renderStoryPanel(currentItem.storyB)}
             </div>
             {currentItem.mode === 'venn_place' && !revealed && (
-              <div className="mx-auto max-w-md rounded-full border-2 border-cyan-400/30 bg-cyan-500/10 px-5 py-3 text-center text-sm font-semibold text-slate-100">💬 {currentItem.vennDetail}</div>
+              <div ref={pip.ref('detail')} data-pip-object="detail" className="mx-auto max-w-md rounded-full border-2 border-cyan-400/30 bg-cyan-500/10 px-5 py-3 text-center text-sm font-semibold text-slate-100">💬 {currentItem.vennDetail}</div>
             )}
             {currentItem.mode === 'sequence_two' && !revealed && (
-              <div className="mx-auto flex max-w-sm items-center justify-center gap-3 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 p-3">
+              <div ref={pip.ref('event')} data-pip-object="event" className="mx-auto flex max-w-sm items-center justify-center gap-3 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 p-3">
                 <span className="text-xs uppercase tracking-wide text-slate-400">Story one event</span>
                 <span className="text-4xl" role="img" aria-hidden>{currentItem.anchor.emoji}{currentItem.anchor.eventEmoji}</span>
               </div>

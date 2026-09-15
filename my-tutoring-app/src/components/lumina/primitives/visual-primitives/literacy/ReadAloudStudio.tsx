@@ -67,6 +67,7 @@ import {
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import DiActionPanel from '../../../components/DiActionPanel';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import {
   studioItems, studioItemCue, studioMoveCue, studioHearCue, phrasePlanCue,
   markedGroups, scoredReadingItems, readingSummary, type StudioItem,
@@ -290,6 +291,13 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
   const revealed = runner.currentSolved;
   const currentBreaks = currentItem ? phrasePlans[currentItem.lineId] ?? [] : [];
   const canMark = currentItem?.step === 'mark' && runner.canAttempt && !runner.isAwaitingGesture();
+  // Pip: the printed line is the whole question side. A phrase plan is a hands
+  // answer, so Pip receives the line while the plan is judged; it never marks a
+  // break itself.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The line', finished: evaluation.hasSubmitted,
+    handover: currentItem?.step === 'mark',
+  });
   const updateBreak = (boundary: number) => {
     if (!currentItem || !canMark || runner.isAwaitingGesture()) return;
     const previous = phrasePlansRef.current[currentItem.lineId] ?? [];
@@ -345,9 +353,10 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
               />
             </div>
 
+            {pip.store && <div {...pip.dock} />}
             {/* One printed line persists through planning, reading and modeling. */}
             {currentItem && (
-              <div className="flex min-h-56 flex-col items-center justify-center gap-4 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
+              <div {...pip.target('stimulus')} className="flex min-h-56 flex-col items-center justify-center gap-4 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
                 {currentItem.kind === 'dialogue' && currentItem.speaker && (
                   <LuminaBadge accent="amber" className="text-xs">🎭 {currentItem.speaker} says</LuminaBadge>
                 )}

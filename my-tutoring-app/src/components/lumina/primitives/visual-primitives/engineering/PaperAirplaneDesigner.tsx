@@ -21,6 +21,7 @@ import {
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * Paper Airplane Designer — Design-Build-Test-Iterate
@@ -333,7 +334,7 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
     gradeBand,
   }), [selectedTemplate, currentDesign, launchAngle, launchForce, flightLog, designVersion, flightResults, challenges, gradeBand]);
 
-  const { sendText, isAudioPlaying } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'paper-airplane-designer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -767,6 +768,18 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
     return challenges.every(c => allCompletedIds.has(c.id));
   }, [flightLog, challenges, getCompletedChallenges]);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'paper-airplane-designer'),
+    scopeId: hasSubmittedEvaluation ? null : `${phase === 'analyze' ? 'results' : 'design'}-${flightLog.length}`,
+    label: 'The airplane design and its flight',
+    solved: phase === 'analyze' && !!flightResults && getCompletedChallenges(flightResults).length > 0,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'paper-airplane-designer'),
+  });
+
   return (
     <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -825,6 +838,9 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
             })}
           </div>
 
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* ─── BUILD PHASE ─────────────────────────────────────────── */}
           {phase === 'build' && (
             <div className="space-y-6">
@@ -1244,6 +1260,8 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
               </div>
             </div>
           )}
+
+          </div>
 
           {/* ─── Educational tips ─────────────────────────────────────── */}
           <LuminaPanel accent="cyan" className="mt-8 p-5">

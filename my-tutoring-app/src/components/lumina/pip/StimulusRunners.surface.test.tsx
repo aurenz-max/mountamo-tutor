@@ -1,0 +1,119 @@
+// @vitest-environment jsdom
+import React from 'react';
+import { cleanup } from '@testing-library/react';
+import { afterEach, beforeEach, describe, it, vi } from 'vitest';
+import { mountWithStore } from './testing/classicSurface';
+import { expectStimulusSurface, initialRunnerPhase, type RunnerPhase } from './testing/runnerSurface';
+import WordBuilder from '../primitives/WordBuilder';
+import OralSentenceStudio from '../primitives/visual-primitives/literacy/OralSentenceStudio';
+import { DiDiceRoll } from '../primitives/visual-primitives/direct-instruction/DiDiceRoll';
+import GenreExplorer from '../primitives/visual-primitives/literacy/GenreExplorer';
+import TextStructureAnalyzer from '../primitives/visual-primitives/literacy/TextStructureAnalyzer';
+import ReadAloudStudio from '../primitives/visual-primitives/literacy/ReadAloudStudio';
+import fixtures from './testing/workspaceFixtures.json';
+import SolarSystemExplorer from '../primitives/visual-primitives/astronomy/SolarSystemExplorer';
+import HabitatDiorama from '../primitives/visual-primitives/biology/HabitatDiorama';
+import MatterExplorer from '../primitives/visual-primitives/chemistry/MatterExplorer';
+import StatesOfMatter from '../primitives/visual-primitives/chemistry/StatesOfMatter';
+import PushPullArena from '../primitives/visual-primitives/physics/PushPullArena';
+import CauseEffectChain from '../primitives/visual-primitives/history/CauseEffectChain';
+import EraExplorer from '../primitives/visual-primitives/history/EraExplorer';
+import SentenceAnalyzer from '../primitives/visual-primitives/literacy/SentenceAnalyzer';
+import DiDeduction from '../primitives/visual-primitives/direct-instruction/DiDeduction';
+import DiWorkedProcedure from '../primitives/visual-primitives/direct-instruction/DiWorkedProcedure';
+import DiWordProblemSetup from '../primitives/visual-primitives/direct-instruction/DiWordProblemSetup';
+
+const phase = vi.hoisted((): RunnerPhase => ({ stage: 'asking', running: true, tutorSpeaking: false, currentSolved: false, revealHeld: false, itemIndex: 0 }));
+vi.mock('../hooks/useJudgedScriptRunner', async (original) => ({
+  ...(await original<object>()),
+  ...(await import('./testing/runnerSurface')).fakeRunnerModule(phase as never),
+}));
+vi.mock('../hooks/useLuminaAI', () => ({ useLuminaAI: () => ({ sendText: vi.fn(), isConnected: false, isAudioPlaying: false }) }));
+vi.mock('../components/JudgedMicPanel', () => ({ default: () => null }));
+vi.mock('@/contexts/LuminaAIContext', async (original) => ({
+  ...(await original<object>()),
+  useLuminaAIContext: () => ({ isConnected: false, isAudioPlaying: false, sessionMode: 'idle', activePrimitiveId: null, sendText: vi.fn(), updateContext: vi.fn() }),
+}));
+vi.mock('../components/DiActionPanel', () => ({ default: () => null }));
+vi.mock('../evaluation', () => ({
+  usePrimitiveEvaluation: () => ({ submitResult: vi.fn(), hasSubmitted: false, submittedResult: null, elapsedMs: 0 }),
+  useEvaluationContext: () => null,
+}));
+vi.mock('../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => vi.fn() }) }));
+vi.mock('../components/PhaseSummaryPanel', () => ({ default: () => <p>Done</p> }));
+beforeEach(() => { Object.assign(phase, initialRunnerPhase()); });
+afterEach(cleanup);
+
+describe('judged primitives share their stimulus panel with Pip', () => {
+  it('Word Builder points at the clue, never the word-part wall', () => {
+    const data = {
+      title: 'Build', complexityLevel: 'simple_affix' as const, instanceId: 'words',
+      availableParts: [
+        { id: 'pre-un', text: 'un', type: 'prefix' as const, meaning: 'not' },
+        { id: 'root-help', text: 'help', type: 'root' as const, meaning: 'to help' },
+        { id: 'suf-ful', text: 'ful', type: 'suffix' as const, meaning: 'full of' },
+      ],
+      targets: [{ word: 'unhelpful', parts: ['pre-un', 'root-help', 'suf-ful'], hint: 'Describing someone who does not make things any easier',
+        definition: 'Not giving any assistance.', sentenceContext: 'The broken lift was ___ for anyone pushing a pram.' }],
+    };
+    expectStimulusSurface({ mounted: mountWithStore(() => <WordBuilder data={data} />), phase, instanceId: 'words' });
+  });
+
+  it('Oral Sentence Studio points at the scene', () => {
+    const data = {
+      title: 'Sentences', description: 'Say one', challengeType: 'describe_scene' as const, instanceId: 'oral',
+      challenges: [{
+        id: 'oral-1', type: 'describe_scene' as const, sceneTitle: 'A Garden Discovery', settingEmoji: '🌿', settingLabel: 'in the garden',
+        actorEmoji: '🧒', actorLabel: 'Mina', actionEmoji: '🔎', actionLabel: 'looks closely at', objectEmoji: '🐛', objectLabel: 'a caterpillar',
+        targetWords: ['curious', 'tiny'], wordMeanings: ['wanting to learn more', 'very small'],
+        sceneMeaning: 'Mina looks closely at a small caterpillar in the garden.',
+        acceptedSentences: ['Curious Mina studies the tiny caterpillar.', 'Mina is curious about the tiny caterpillar.',
+          'The tiny caterpillar makes curious Mina look closely.'],
+      }],
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expectStimulusSurface({ mounted: mountWithStore(() => <OralSentenceStudio data={data as any} />), phase, instanceId: 'oral' });
+  });
+
+  it('DI Dice Roll points at the dice panel', () => {
+    const data = {
+      title: 'Dice Time', description: 'Roll and say the number.', challengeType: 'count_pips' as const, instanceId: 'dice',
+      challenges: [{ id: 'roll-1', challengeType: 'count_pips' as const, action: 'count_pips', answerKind: 'voice', responseClass: 'number_word_to_20', sides: 6 as const, value: 4 as const, spokenAnswer: 'four', asrAliases: ['4'], supportTier: 'medium' as const }],
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expectStimulusSurface({ mounted: mountWithStore(() => <DiDiceRoll data={data as any} />), phase, instanceId: 'dice' });
+  });
+
+  // Generated by the Language Arts helper during the batch drives.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const generated = (id: string) => ({ ...(fixtures as Record<string, any>)[id], instanceId: id });
+
+  it('Genre Explorer outlines the texts, never the genre menu', () => {
+    expectStimulusSurface({ mounted: mountWithStore(() => <GenreExplorer data={generated('genre-explorer')} />), phase, instanceId: 'genre-explorer' });
+  });
+
+  it('Text Structure Analyzer outlines the passage (the idea card on place-idea items)', () => {
+    const data = generated('text-structure-analyzer');
+    const mounted = mountWithStore(() => <TextStructureAnalyzer data={data} />);
+    const cue = mounted.container.querySelector('[data-pip-object="idea"]') ? 'idea' : 'stimulus';
+    expectStimulusSurface({ mounted, phase, instanceId: 'text-structure-analyzer', cueId: cue });
+  });
+
+  it('Read Aloud Studio outlines the printed line', () => {
+    expectStimulusSurface({ mounted: mountWithStore(() => <ReadAloudStudio data={generated('read-aloud-studio')} />), phase, instanceId: 'read-aloud-studio' });
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const SCIENCE: Array<[string, React.ComponentType<{ data: any }>]> = [
+    ['solar-system-explorer', SolarSystemExplorer], ['habitat-diorama', HabitatDiorama], ['matter-explorer', MatterExplorer],
+    ['states-of-matter', StatesOfMatter], ['push-pull-arena', PushPullArena],
+    ['cause-effect-chain', CauseEffectChain], ['era-explorer', EraExplorer], ['sentence-analyzer', SentenceAnalyzer],
+    ['di-deduction', DiDeduction], ['di-worked-procedure', DiWorkedProcedure], ['di-word-problem-setup', DiWordProblemSetup],
+  ];
+  it.each(SCIENCE)('%s outlines its stimulus panel', (id, Primitive) => {
+    // The generated packs open on a hands answer here (build the chain; place the big amount),
+    // which Pip receives while it is judged.
+    const receive = id === 'cause-effect-chain' || id === 'di-word-problem-setup';
+    expectStimulusSurface({ mounted: mountWithStore(() => <Primitive data={generated(id)} />), phase, instanceId: id, receive });
+  });
+});

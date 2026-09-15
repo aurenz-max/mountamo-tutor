@@ -12,6 +12,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // =============================================================================
 // Data Interface — Single Source of Truth
@@ -468,7 +469,7 @@ export default function GravityDropTower({ data, className = '' }: GravityDropTo
     supportTier,
   }), [challenges.length, supportTier]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'gravity-drop-tower',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -700,6 +701,18 @@ export default function GravityDropTower({ data, className = '' }: GravityDropTo
   const needsAnswerFirst = isPredictMode && !simComplete && !feedback?.correct;
 
   // ── Render ───────────────────────────────────────────────────────
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete ? null : currentChallenge?.id ?? null,
+    label: 'The drop tower and your answer',
+    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className}`}>
       <CardHeader>
@@ -729,6 +742,9 @@ export default function GravityDropTower({ data, className = '' }: GravityDropTo
           />
         )}
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* Canvas drop tower */}
         <div className="rounded-lg overflow-hidden border border-white/10">
           <canvas
@@ -867,6 +883,8 @@ export default function GravityDropTower({ data, className = '' }: GravityDropTo
             )}
           </div>
         )}
+        </div>
+
       </CardContent>
     </Card>
   );

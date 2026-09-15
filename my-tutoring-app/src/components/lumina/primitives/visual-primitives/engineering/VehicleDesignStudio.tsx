@@ -25,6 +25,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 import type { VehicleDesignStudioMetrics } from '../../../evaluation/types';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ─── Data Interfaces ─────────────────────────────────────────────
 
@@ -399,7 +400,7 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
   });
 
   // ─── AI Tutoring ─────────────────────────────────────────────
-  const { sendText, isAudioPlaying } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'vehicle-design-studio' as any,
     instanceId: resolvedInstanceId,
     primitiveData: {
@@ -640,6 +641,20 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
   const domainAccent = DOMAIN_ACCENTS[domain] ?? 'indigo';
 
   // ─── Render ───────────────────────────────────────────────────
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'vehicle-design-studio'),
+    scopeId: hasSubmittedEvaluation ? null : activeChallenge ? `mission-${activeChallenge.name}` : 'free-design',
+    label: 'The parts and the test results',
+    solved: !isSimulating && !!latestSimulation?.meetsConstraints,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'vehicle-design-studio'),
+    checking: isSimulating,
+    handover: true,
+  });
+
   return (
     <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -768,6 +783,9 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
             </div>
           )}
 
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* Main layout: Parts Palette + Performance */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             {/* Parts Palette (left) */}
@@ -995,6 +1013,8 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
           )}
 
           {/* Controls */}
+          </div>
+
           <div className="flex flex-wrap gap-3 justify-center mb-6">
             <LuminaButton
               tone="primary"

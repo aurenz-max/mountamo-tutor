@@ -5,6 +5,7 @@ import { SoundManager } from '../../../utils/SoundManager';
 import { LuminaDropZone, LuminaReadAloud, type DropZoneState } from '../../../ui';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { Clock, ArrowRight, CheckCircle2, XCircle, RotateCcw, Lightbulb, Sparkles, RefreshCw, GripVertical, ChevronDown, ChevronUp, HelpCircle, Zap } from 'lucide-react';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * Life Cycle Sequencer - Enhanced Interactive Biology Primitive
@@ -175,7 +176,7 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     placedCount, selectedStage, isChecked,
   ]);
 
-  const { sendText, isAudioPlaying } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'life-cycle-sequencer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -675,6 +676,18 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
   const correctCount = Array.from(stageResults.values()).filter(v => v).length;
   const progress = (timelineStages.filter(s => s !== null).length / data.stages.length) * 100;
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: 'sequence',
+    label: 'The stage cards and your timeline',
+    solved: isChecked && correctCount === data.stages.length,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <div className={`relative ${className}`}>
       {/* Tutorial Overlay */}
@@ -737,6 +750,9 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
         </div>
       </div>
 
+      {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+      {pip.store && <div {...pip.dock} />}
+      <div {...pip.workspace}>
       {/* Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 mb-6">
         {/* Left Column - Scrambled Cards */}
@@ -816,6 +832,8 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
             {timelineStages.map((_, index) => renderDropZone(index))}
           </div>
         </div>
+      </div>
+
       </div>
 
       {/* Misconception Trap */}

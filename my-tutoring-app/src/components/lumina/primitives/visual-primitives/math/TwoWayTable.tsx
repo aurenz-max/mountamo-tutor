@@ -25,6 +25,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types — canonical interface re-exported from the generator
@@ -372,7 +373,7 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
     currentIndex, currentAttempts, gradeBand,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'two-way-table',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -574,6 +575,18 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
   }, [advanceProgress, currentAttempts, currentChallenge, recordResult, challenges, currentIndex, sendText]);
 
   // ── Early return ──────────────────────────────────────────────────
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmitted ? null : currentChallenge?.id ?? null,
+    label: 'The two-way table and your answer',
+    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   if (!challenges || challenges.length === 0) {
     return (
       <LuminaCard className={className}>
@@ -630,6 +643,9 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
               <p className="text-slate-100 text-sm font-medium">{currentChallenge.question}</p>
             </LuminaPrompt>
 
+            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+            {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-4">
             {/* Frequency table (tier-gated totals) — bespoke painting */}
             <FrequencyTable challenge={currentChallenge} />
 
@@ -657,6 +673,8 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
               <span className="text-xs text-slate-500 italic">
                 Decimal 0-1 (e.g., 0.25). Percentages accepted with %.
               </span>
+            </div>
+
             </div>
 
             {/* Feedback */}

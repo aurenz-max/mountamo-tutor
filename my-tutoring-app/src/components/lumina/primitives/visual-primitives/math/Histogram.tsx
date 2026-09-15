@@ -23,6 +23,7 @@ import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResult
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // =============================================================================
 // Data Interface (Single Source of Truth)
@@ -532,7 +533,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     [challengeType, currentIndex, challenges.length, currentChallenge, attempts, gradeBand, data.supportTier],
   );
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'histogram',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -825,6 +826,18 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     );
   }, [isComplete, challenges.length, challengeResults]);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: isComplete || hasSubmitted ? null : currentChallenge?.id ?? null,
+    label: 'The histogram and your answer',
+    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   // -- Render ---------------------------------------------------------------
   return (
     <LuminaCard className={`shadow-2xl ${className || ''}`}>
@@ -883,6 +896,9 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
               <p className="text-slate-200 mt-1">{currentChallenge.prompt}</p>
             </div>
 
+            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+            {pip.store && !isComplete && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-4">
             {/* Chart */}
             <LuminaPanel>
               <HistogramChart
@@ -998,6 +1014,8 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
                 </div>
               )}
             </div>
+            </div>
+
           </>
         )}
 

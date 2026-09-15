@@ -7,6 +7,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { EvolutionTimelineMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // =============================================================================
 // Data Interface (single source of truth)
@@ -247,6 +248,18 @@ const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({ data, className }
     });
   };
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'evolution-timeline'),
+    scopeId: hasSubmitted ? null : 'explore',
+    label: 'The evolution timeline',
+    solved: false,
+    tutorSpeaking: false,
+  });
+
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
       <CardHeader>
@@ -280,6 +293,9 @@ const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({ data, className }
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !hasSubmitted && <div {...pip.dock} />}
+        <div {...pip.workspace}>
         <Tabs defaultValue="timeline" className="w-full">
           <TabsList className="bg-slate-800/50 border border-white/10">
             <TabsTrigger value="timeline" className="data-[state=active]:bg-white/10 text-slate-300">
@@ -599,6 +615,8 @@ const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({ data, className }
             </Button>
           </TabsContent>
         </Tabs>
+
+        </div>
 
         {/* Submit Exploration */}
         <div className="flex items-center gap-3 pt-2 border-t border-white/10">

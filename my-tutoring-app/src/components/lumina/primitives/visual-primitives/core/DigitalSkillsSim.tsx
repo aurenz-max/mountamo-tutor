@@ -17,6 +17,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -180,7 +181,7 @@ const DigitalSkillsSim: React.FC<DigitalSkillsSimProps> = ({ data, className }) 
     instruction: currentChallenge?.instruction ?? '',
   }), [title, currentChallenge, currentIndex, challenges.length]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'digital-skills-sim',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -569,6 +570,18 @@ const DigitalSkillsSim: React.FC<DigitalSkillsSimProps> = ({ data, className }) 
   // -------------------------------------------------------------------------
   // Main Render
   // -------------------------------------------------------------------------
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
+    label: 'The practice area',
+    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <LuminaCard className={`shadow-2xl ${className || ''}`}>
       <LuminaCardHeader className="pb-3">
@@ -618,10 +631,15 @@ const DigitalSkillsSim: React.FC<DigitalSkillsSimProps> = ({ data, className }) 
               {currentChallenge.instruction}
             </p>
 
+            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace}>
             {/* Phase-specific UI */}
             {currentChallenge.type === 'click' && renderClickChallenge()}
             {currentChallenge.type === 'drag' && renderDragChallenge()}
             {currentChallenge.type === 'type' && renderTypeChallenge()}
+
+            </div>
 
             {/* Feedback toast */}
             {showFeedback && (

@@ -32,6 +32,8 @@ import type { PrimitiveEvaluationResult } from '../../../evaluation/types';
 import type { DiLetterSoundsMetrics } from '../../../evaluation/types';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { useJudgedSpeechLoop } from '../../../hooks/useJudgedSpeechLoop';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { diLetterSoundsPipPose } from '../../../pip/diLetterSoundsPipPose';
 import type { LoopEmission } from '../../../hooks/judgedLoopModel';
 import {
   flushDiRunLog,
@@ -178,6 +180,8 @@ export const DiLetterSounds: React.FC<{ data: DiLetterSoundsData; index?: number
   const [preparing, setPreparing] = useState(false);
   const [phase, setPhase] = useState<'idle' | 'ready' | 'listening' | 'judging' | 'affirmed' | 'done'>('idle');
   const [statusLine, setStatusLine] = useState('Tap the microphone to start.');
+  /** Pip only: the item the loop's last SENT cue was about. */
+  const [cuedItemId, setCuedItemId] = useState<string | null>(null);
 
   // Progression authority is useChallengeProgress; mirror the index into a ref
   // so the emission handler (fires inside the loop's dispatch) reads it live.
@@ -469,6 +473,7 @@ export const DiLetterSounds: React.FC<{ data: DiLetterSoundsData; index?: number
       logDiCue(event, logCtx());
       // (iii-a): lets the post-run disconnect see the closing cue go out.
       postRun.noteCue(event);
+      if (event.phase === 'sent') setCuedItemId(currentOf()?.id ?? null);
     },
   });
   loopRef.current = loop;
@@ -598,6 +603,25 @@ export const DiLetterSounds: React.FC<{ data: DiLetterSoundsData; index?: number
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this pack's own phase word onto the stage; Pip never
+  // answers, judges, or moves to the next item.
+  const pip = usePipTargets(currentChallenge?.id ?? null, false);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || isComplete || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(['stage'], () => 'The letter or word');
+    const pose = diLetterSoundsPipPose({
+      running, preparing, phase,
+      tutorSpeaking: ctx.isAudioPlaying && activeInLesson,
+      cueOnItem: cuedItemId === currentChallenge.id,
+      visibleIds: targets.map((target) => target.id),
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Letter sounds',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   // ── Render ───────────────────────────────────────────────────────
   const total = data.challenges.length;
   const isSupported =
@@ -650,7 +674,7 @@ export const DiLetterSounds: React.FC<{ data: DiLetterSoundsData; index?: number
         )}
 
         {!isComplete && currentChallenge && !stalled && (
-          <div className="mb-6 flex min-h-56 flex-col items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
+          <div ref={pip.ref('stage')} data-pip-object="stage" className="mb-6 flex min-h-56 flex-col items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
             <div className="text-8xl leading-none" aria-hidden="true">{currentChallenge.emoji}</div>
             {currentChallenge.challengeType === 'first_sound_in_word' ? (
               <div className="mt-4 text-5xl font-bold lowercase tracking-wide text-white">
@@ -662,6 +686,11 @@ export const DiLetterSounds: React.FC<{ data: DiLetterSoundsData; index?: number
               </div>
             )}
           </div>
+        )}
+
+        {pipStore && !isComplete && (
+          <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+            className="mx-auto mb-6 flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
         )}
 
         {/* Completion recap — a per-letter mark, kit-styled. */}

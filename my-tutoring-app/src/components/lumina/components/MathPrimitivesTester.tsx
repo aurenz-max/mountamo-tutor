@@ -475,7 +475,7 @@ const PrimitiveRenderer: React.FC<{
         />
       );
     case 'coordinate-graph':
-      return <CoordinateGraph data={data as CoordinateGraphData} />;
+      return <CoordinateGraph data={{ ...(data as CoordinateGraphData), instanceId }} />;
     case 'slope-triangle':
       // SlopeTriangle produces multi-challenge sessions (3-6 lines per mode).
       // Evaluation flows through onEvaluationSubmit per PRD §6a #9.
@@ -713,9 +713,9 @@ const PrimitiveRenderer: React.FC<{
         />
       );
     case 'base-ten-blocks':
-      return <BaseTenBlocks data={data as Parameters<typeof BaseTenBlocks>[0]['data']} />;
+      return <BaseTenBlocks data={{ ...(data as Parameters<typeof BaseTenBlocks>[0]['data']), instanceId }} />;
     case 'shape-builder':
-      return <ShapeBuilder data={data as ShapeBuilderData} />;
+      return <ShapeBuilder data={{ ...(data as ShapeBuilderData), instanceId }} />;
     case 'comparison-builder':
       return (
         <ComparisonBuilder
@@ -799,7 +799,7 @@ const PrimitiveRenderer: React.FC<{
       // ThreeDShapeExplorer handles its own evaluation via usePrimitiveEvaluation hook
       return (
         <ThreeDShapeExplorer
-          data={data as any}
+          data={{ ...(data as any), instanceId }}
           className="w-full"
         />
       );
@@ -825,7 +825,7 @@ const PrimitiveRenderer: React.FC<{
       // StrategyPicker handles its own evaluation via usePrimitiveEvaluation hook
       return (
         <StrategyPicker
-          data={data as any}
+          data={{ ...(data as any), instanceId }}
           className="w-full"
         />
       );

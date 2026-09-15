@@ -47,6 +47,7 @@ import {
   type LuminaAccent,
 } from '../ui';
 import JudgedMicPanel from '../components/JudgedMicPanel';
+import { useStimulusPipSurface } from '../pip/useStimulusPipSurface';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../hooks/usePhaseResults';
 import {
@@ -237,6 +238,13 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className }) 
   });
 
   const currentItem = runner.currentItem;
+  // Pip: the table is the question side and every cell is a possible answer, so
+  // Pip outlines the table as a region and watches it after a find tap; it never
+  // rings a cell.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The periodic table', finished: evaluation.hasSubmitted,
+    gesture: currentItem?.kind === 'find',
+  });
 
   // ── The tap IS the commit (find items only; one tap = one verdict) ────────
   const handleCellTap = useCallback((element: ChemicalElement) => {
@@ -245,10 +253,11 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className }) 
     if (!runner.canAttempt || evaluation.hasSubmitted) return;
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
+    pip.look('stimulus');
     tappedNameRef.current = element.name;
     if (element.number !== item.element.number) setWrongTapNumber(element.number);
     runner.submitGestureAttempt(cellVerdictCue(item, element.name));
-  }, [runner, evaluation.hasSubmitted]);
+  }, [runner, evaluation.hasSubmitted, pip]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
@@ -317,7 +326,8 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className }) 
 
             {/* The table IS the page. No search, no filter chips, no modal —
                 the exploration apparatus would answer the asks for the child. */}
-            <div className="w-full overflow-x-auto pb-2">
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.target('stimulus')} className="w-full overflow-x-auto pb-2">
               <PeriodicTableGrid
                 elements={ELEMENTS}
                 onSelectElement={handleCellTap}

@@ -73,6 +73,8 @@ import {
   pronounceCue,
   type FlipItem,
 } from './wordFlipScript';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { wordFlipPipPose } from '../../../pip/wordFlipPipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -190,6 +192,8 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
   /** The more-than-one word JUST produced — post-answer only (answer-leak rule),
    *  cleared the moment the next item opens. */
   const [reward, setReward] = useState<string | null>(null);
+  /** Pip only: the item the loop's last SENT cue was about. */
+  const [cuedItemId, setCuedItemId] = useState<string | null>(null);
 
   // Visual-only timer. It does NOT advance anything — it clears a highlight.
   // Progression here has exactly one cause: a tutor verdict.
@@ -444,6 +448,9 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
     enabled: running,
     active: activeInLesson,
     onEmission: handleEmission,
+    onCue: (event) => {
+      if (event.phase === 'sent') setCuedItemId(currentItem()?.id ?? null);
+    },
   });
   loopRef.current = loop;
 
@@ -558,6 +565,26 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this pack's stage and the child's own tap on the source
+  // card; Pip never answers, judges, or moves to the next item.
+  const pip = usePipTargets(currentChallenge?.id ?? null, running);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(undefined, (id) => (id === 'frame' ? 'The word frame' : 'The one-thing card'));
+    const pose = wordFlipPipPose({
+      running, preparing, stage,
+      tutorSpeaking: ctx.isAudioPlaying && activeInLesson,
+      cueOnItem: cuedItemId === currentChallenge.id,
+      visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Word flip',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   // ============================================================================
   // Render
   // ============================================================================
@@ -619,9 +646,11 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
             {/* The transformation frame. Plurals use one/many; past tense uses
                 today/yesterday. The source is tappable, while the transformed
                 answer stays blank until the tutor affirms it. */}
-            <div className="flex items-stretch justify-center gap-3">
+            <div ref={pip.ref('frame')} data-pip-object="frame" className="flex items-stretch justify-center gap-3">
               <button
-                onClick={handleSayWord}
+                ref={pip.ref('source')}
+                data-pip-object="source"
+                onClick={() => { pip.look('source'); handleSayWord(); }}
                 aria-label={`word ${currentChallenge.sourceWord}`}
                 className={`
                   rounded-2xl border-2 px-5 py-4 text-center flex-1 max-w-[180px]
@@ -666,6 +695,11 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
               <p className="text-center text-xs text-slate-500">
                 Tap the word to hear it, then say the new word.
               </p>
+            )}
+
+            {pipStore && (
+              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
             )}
 
             {/* The answer here is SPOKEN on every item — the orb's spoken

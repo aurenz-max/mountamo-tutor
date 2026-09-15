@@ -22,6 +22,7 @@ import type { ConstructionSequencePlannerMetrics } from '../../../evaluation/typ
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -681,7 +682,7 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
     ...(supportTier ? { supportTier } : {}),
   }), [projectType, gradeLevel, tasks.length, targetWeeks, criticalPath.length, parallelAllowed, supportTier]);
 
-  const { sendText, isConnected, isAudioPlaying } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'construction-sequence-planner',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -1029,6 +1030,18 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
   const feedbackStatus: FeedbackStatus =
     feedbackType === 'success' ? 'correct' : feedbackType === 'error' ? 'incorrect' : 'insight';
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'construction-sequence-planner'),
+    scopeId: `sequence-${attempts}`,
+    label: 'The build site and your task order',
+    solved: buildSuccess,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'construction-sequence-planner'),
+  });
+
   return (
     <div className={`w-full ${className || ''}`}>
       <LuminaCard>
@@ -1062,6 +1075,9 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
         </LuminaCardHeader>
 
         <LuminaCardContent className="space-y-6">
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && <div {...pip.dock} />}
+          <div {...pip.workspace} className="space-y-6">
           {/* Build Scene Canvas */}
           <div className="rounded-xl overflow-hidden border border-white/10 bg-slate-950/50">
             <canvas
@@ -1250,6 +1266,8 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
               )}
             </>
           )}
+
+          </div>
 
           {/* Feedback */}
           {feedback && (

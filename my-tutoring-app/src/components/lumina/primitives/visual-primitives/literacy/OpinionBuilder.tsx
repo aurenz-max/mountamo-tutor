@@ -17,6 +17,7 @@ import {
 } from '../../../evaluation';
 import type { OpinionBuilderMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -331,6 +332,18 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
   // Main Render
   // ============================================================================
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId || 'opinion-builder',
+    scopeId: hasSubmittedEvaluation ? null : currentPhase,
+    label: 'Your argument',
+    solved: false,
+    tutorSpeaking: false,
+  });
+
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
@@ -354,6 +367,9 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
           <p className="text-slate-200 text-sm font-medium">{prompt}</p>
         </LuminaPrompt>
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* Claim Phase */}
         {currentPhase === 'claim' && (
           <div className="space-y-3">
@@ -465,6 +481,8 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
             )}
           </div>
         )}
+        </div>
+
       </LuminaCardContent>
     </LuminaCard>
   );

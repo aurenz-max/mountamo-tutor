@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { CuratorCompanion } from './CuratorCompanion';
 import SolarSystemExplorer from '../primitives/visual-primitives/astronomy/SolarSystemExplorer';
 import ScaleComparator from '../primitives/visual-primitives/astronomy/ScaleComparator';
 import DayNightSeasons from '../primitives/visual-primitives/astronomy/DayNightSeasons';
@@ -256,6 +257,13 @@ const AstronomyPrimitivesTesterContent: React.FC<AstronomyPrimitivesTesterProps>
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
+  // One instance id per generated preview: evaluation, tutoring and Pip's surface
+  // all key on it, so it must not change when the helper re-renders.
+  const previewInstanceId = useMemo(
+    () => `astronomy-helper-${selectedPrimitive}-${Date.now()}`,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [generatedData],
+  );
   const [error, setError] = useState<string | null>(null);
   const [generationKey, setGenerationKey] = useState(0);
   const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
@@ -533,11 +541,13 @@ const AstronomyPrimitivesTesterContent: React.FC<AstronomyPrimitivesTesterProps>
 
             {generatedData != null && (
               <div className="space-y-6">
-                <PrimitiveRenderer
-                  key={generationKey}
-                  componentId={selectedPrimitive}
-                  data={generatedData}
-                />
+                <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId}>
+                  <PrimitiveRenderer
+                    componentId={selectedPrimitive}
+                    data={{ ...(generatedData as object), instanceId: previewInstanceId }}
+                  />
+                  <CuratorCompanion />
+                </div>
               </div>
             )}
           </div>

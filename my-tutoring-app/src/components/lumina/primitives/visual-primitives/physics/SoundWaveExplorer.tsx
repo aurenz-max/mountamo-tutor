@@ -12,6 +12,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // =============================================================================
 // Data Interface — Single Source of Truth
@@ -450,7 +451,7 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
     ...(supportTier ? { supportTier } : {}),
   }), [theme, gradeLevel, challenges.length, supportTier]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'sound-wave-explorer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -712,6 +713,18 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
   const slidersInteractive = currentChallenge?.type === 'observe' || allChallengesComplete;
 
   // ── Render ───────────────────────────────────────────────────────
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete ? null : currentChallenge?.id ?? null,
+    label: 'The sound maker, the wave, and your answer',
+    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className}`}>
       <CardHeader>
@@ -734,6 +747,9 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* ── Object Stage + Wave Display ─────────────────────── */}
         <div className="grid grid-cols-[240px_1fr] gap-3">
           {/* Left: Object stage */}
@@ -950,6 +966,8 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
             )}
           </div>
         )}
+
+        </div>
 
         {/* ── Phase Summary ──────────────────────────────────────── */}
         {allChallengesComplete && phaseResults.length > 0 && (

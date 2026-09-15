@@ -15,6 +15,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -311,7 +312,7 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
     ...(supportTier ? { supportTier } : {}),
   }), [currentPlanet, currentPlanetIndex, planets, currentFlatQuestion, currentQuizQuestion, gradeLevel, viewMode, supportTier, selectedOption, challengeResults, currentAttempts]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'planetary-explorer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -1122,14 +1123,31 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
     </div>
   );
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: viewMode === 'planet-questions' ? currentFlatQuestion?.id ?? null : viewMode === 'quiz' && currentQuizQuestion ? `quiz-q${quizIndex}` : null,
+    label: 'The solar system and the question',
+    solved: viewMode === 'planet-questions' ? challengeResults.some((r) => r.challengeId === currentFlatQuestion?.id && r.correct) : viewMode === 'quiz' && !!quizResults[quizIndex]?.correct,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   // ── Main render ──
   return (
     <div className={`w-full max-w-3xl mx-auto space-y-2 ${className ?? ''}`}>
       {viewMode === 'overview' && renderOverview()}
       {viewMode === 'planet-info' && renderPlanetInfo()}
+      {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+      {pip.store && (viewMode === 'planet-questions' || viewMode === 'quiz') && <div {...pip.dock} />}
+      <div {...pip.workspace}>
       {viewMode === 'planet-questions' && renderPlanetQuestions()}
       {viewMode === 'transition' && renderTransition()}
       {viewMode === 'quiz' && renderQuiz()}
+      </div>
+
       {viewMode === 'summary' && renderSummary()}
     </div>
   );

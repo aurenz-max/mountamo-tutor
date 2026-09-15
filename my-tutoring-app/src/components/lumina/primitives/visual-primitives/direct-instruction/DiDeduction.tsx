@@ -50,6 +50,7 @@ import {
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import DiActionPanel from '../../../components/DiActionPanel';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
   diDeductionPackBase,
@@ -227,6 +228,11 @@ export const DiDeduction: React.FC<{
   // still saying its closing line; the next case appears when her next cue is
   // SENT.
   const shown = runner.revealHeld && lastAffirmed ? lastAffirmed : current;
+  // Pip: the rule and the case are the question side; the verdict pills are the
+  // spoken answers, so Pip outlines only the rule and case.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The rule and the case', finished: hasSubmitted,
+  });
   const shownAction: ActionableDeductionItem | null = shown
     ? withDeductionAction(shown)
     : null;
@@ -261,6 +267,7 @@ export const DiDeduction: React.FC<{
     const litVerdict = shownMark ? shown.case.verdict : null;
     return (
       <div className="space-y-4">
+        <div {...pip.target('stimulus')} className="space-y-4">
         <div className="rounded-xl border border-cyan-300/30 bg-cyan-400/5 px-5 py-4">
           <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-300/80">Rule</div>
           <div className="mt-1 text-2xl font-semibold text-slate-100">{shown.ruleText}</div>
@@ -268,6 +275,7 @@ export const DiDeduction: React.FC<{
         <div className="rounded-xl border border-white/10 bg-white/5 px-5 py-4">
           <div className="text-[10px] uppercase tracking-[0.3em] text-slate-400">Case</div>
           <div className="mt-1 text-2xl font-semibold text-slate-100">{shown.case.caseText}</div>
+        </div>
         </div>
 
         {isVerdictShape && (
@@ -352,6 +360,7 @@ export const DiDeduction: React.FC<{
               />
             </div>
 
+            {pip.store && <div {...pip.dock} />}
             {renderStage()}
 
             <div className="flex justify-center">

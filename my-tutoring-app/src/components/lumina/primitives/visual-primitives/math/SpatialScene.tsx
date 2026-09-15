@@ -28,6 +28,10 @@ import {
   modelSpatialDescription,
   spatialSceneDescriptionPack,
 } from './spatialSceneDescriptionScript';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import type { PipTarget } from '../../../pip/PipSurfaceStore';
+import { spatialScenePipPose } from '../../../pip/spatialScenePipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -152,14 +156,16 @@ const POSITION_LABELS: Record<PositionWord, string> = {
 interface PerspectiveSceneProps {
   challenge: SpatialSceneChallenge;
   revealRelation?: boolean;
+  /** Pip only: registers the scene as a shared-surface target. */
+  sceneRef?: (element: Element | null) => void;
 }
 
 /** Fixed viewer-relative scene: row 0 is far, row 2 is nearest the YOU marker. */
-const PerspectiveScene: React.FC<PerspectiveSceneProps> = ({ challenge, revealRelation = false }) => {
+const PerspectiveScene: React.FC<PerspectiveSceneProps> = ({ challenge, revealRelation = false, sceneRef }) => {
   const targetName = challenge.targetObject.name;
   const referenceName = challenge.referenceObjectName;
   return (
-    <div className="relative mx-auto h-72 w-full max-w-xl overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-sky-950/50 via-emerald-950/25 to-slate-950/80 p-4">
+    <div ref={sceneRef} data-pip-object="scene" className="relative mx-auto h-72 w-full max-w-xl overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-sky-950/50 via-emerald-950/25 to-slate-950/80 p-4">
       <div className="absolute inset-x-8 top-12 h-px bg-white/10" />
       <div className="absolute inset-x-5 top-32 h-px bg-white/10" />
       <div className="absolute inset-x-2 top-52 h-px bg-white/10" />
@@ -196,7 +202,8 @@ const SpokenDescriptionBeat: React.FC<{
   instanceId: string;
   gradeLevel: string;
   onFinished: (correct: boolean, attempts: number) => void;
-}> = ({ challenge, instanceId, gradeLevel, onFinished }) => {
+  sceneRef?: (element: Element | null) => void;
+}> = ({ challenge, instanceId, gradeLevel, onFinished, sceneRef }) => {
   const [revealRelation, setRevealRelation] = useState(false);
   const submittedRef = useRef(false);
   const items = useMemo(() => buildSpatialDescriptionItems([challenge]), [challenge]);
@@ -219,7 +226,7 @@ const SpokenDescriptionBeat: React.FC<{
   const revealed = revealRelation || run.revealHeld || !!run.summary;
   return (
     <div className="space-y-4">
-      <PerspectiveScene challenge={challenge} revealRelation={revealed} />
+      <PerspectiveScene challenge={challenge} revealRelation={revealed} sceneRef={sceneRef} />
       {revealed ? (
         <LuminaPanel accent="cyan">
           <p className="text-center text-sm font-medium text-cyan-100">{challenge.modelDescription ?? modelSpatialDescription(challenge)}</p>
@@ -266,6 +273,8 @@ interface GridSceneProps {
    * must offer the tap affordance. Every other mode taps empty cells only (contract R11).
    */
   allowOccupiedTaps?: boolean;
+  /** Pip only: registers the grid as a shared-surface target. */
+  sceneRef?: (element: Element | null) => void;
 }
 
 /** What a single grid cell renders: the object standing there, plus anything nested in it. */
@@ -276,7 +285,7 @@ interface CellContents {
 
 const GridScene: React.FC<GridSceneProps> = ({
   gridSize, sceneObjects, placedObjects = [], highlightCell, targetHighlight, onCellClick, interactive,
-  showGrid = true, showLabels = true, nestPlaced = false, allowOccupiedTaps = false,
+  showGrid = true, showLabels = true, nestPlaced = false, allowOccupiedTaps = false, sceneRef,
 }) => {
   // Build a lookup map of what's in each cell
   const cellMap = useMemo(() => {
@@ -298,6 +307,8 @@ const GridScene: React.FC<GridSceneProps> = ({
 
   return (
     <div
+      ref={sceneRef}
+      data-pip-object="scene"
       className="grid gap-1 mx-auto"
       style={{
         gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
@@ -470,7 +481,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     supportTier: currentChallenge?.supportTier,
   }), [gradeBand, challenges.length, currentChallengeIndex, currentChallenge, currentAttempts]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'spatial-scene',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -825,6 +836,38 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     return hints;
   }, [currentChallenge]);
 
+  // ── Pip shared surface ─────────────────────────────────────────────
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's last touch; Pip never chooses, checks, or advances. Tutor audio
+  // counts only while the tutor is on this block (or its spoken-scene beat).
+  const pip = usePipTargets(currentChallenge?.id ?? null, false);
+  const [pipTouched, setPipTouched] = useState<{ scopeId: string; element: Element } | null>(null);
+  const pipWork = useRef<HTMLDivElement>(null);
+  const tutorSpeaking = isAudioPlaying && !!currentChallenge && (activePrimitiveId === resolvedInstanceId
+    || activePrimitiveId === `${resolvedInstanceId}-${currentChallenge.id}`);
+  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const pipTouch = (node: EventTarget) => {
+    if (!currentChallenge || isCurrentChallengeCorrect || !(node instanceof Element)) return;
+    const element = node.closest('button, [role="button"]') ?? node;
+    if (pipWork.current?.contains(element)) setPipTouched({ scopeId: currentChallenge.id, element });
+  };
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
+    const targets: PipTarget[] = pip.targets(['scene'], () => 'The scene');
+    const touched = pipTouched?.scopeId === currentChallenge.id && pipTouched.element.isConnected
+      && pipWork.current?.contains(pipTouched.element) ? pipTouched.element : null;
+    if (touched) targets.push({ id: 'touched', label: 'Your last touch', element: touched });
+    const pose = spatialScenePipPose({
+      running: true, preparing: false, currentSolved: isCurrentChallengeCorrect, revealHeld: false,
+      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
+      visibleIds: targets.map((target) => target.id), hasTouch: !!touched,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Spatial scene',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   // ── Render Helpers ─────────────────────────────────────────────────
 
   const renderIdentifyOrDescribe = () => {
@@ -834,6 +877,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     return (
       <div className="space-y-4">
         <GridScene
+          sceneRef={pip.ref('scene')}
           gridSize={gridSize}
           sceneObjects={currentChallenge.sceneObjects}
           highlightCell={currentChallenge.targetObject.position}
@@ -915,6 +959,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
           </p>
         </div>
         <GridScene
+          sceneRef={pip.ref('scene')}
           gridSize={gridSize}
           sceneObjects={currentChallenge.sceneObjects}
           placedObjects={placed}
@@ -977,6 +1022,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
         )}
 
         <GridScene
+          sceneRef={pip.ref('scene')}
           gridSize={gridSize}
           sceneObjects={currentChallenge.sceneObjects}
           placedObjects={placedObjects}
@@ -1058,6 +1104,15 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
               <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
             </div>
 
+            {/* Pip's dock sits between the instruction and the scene: the scene
+                is outlined as a region, so no connector crosses a word button. */}
+            {pipStore && (
+              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+            )}
+
+            <div ref={pipWork} className="space-y-4"
+              onPointerDownCapture={(event) => pipTouch(event.target)} onFocusCapture={(event) => pipTouch(event.target)}>
             {(currentChallenge.type === 'identify' || currentChallenge.type === 'describe') && renderIdentifyOrDescribe()}
             {currentChallenge.type === 'describe_scene' && (
               <SpokenDescriptionBeat
@@ -1065,6 +1120,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
                 challenge={currentChallenge}
                 instanceId={resolvedInstanceId}
                 gradeLevel={gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
+                sceneRef={pip.ref('scene')}
                 onFinished={(correct, attempts) => {
                   recordResult({
                     challengeId: currentChallenge.id,
@@ -1078,6 +1134,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
             )}
             {CELL_JUDGED_TYPES.has(currentChallenge.type) && renderPlace()}
             {currentChallenge.type === 'follow_directions' && renderFollowDirections()}
+            </div>
 
             {/* Feedback */}
             {feedback && (

@@ -9,6 +9,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { EnergyCycleEngineMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Interface (Single Source of Truth)
@@ -467,6 +468,18 @@ const EnergyCycleEngine: React.FC<EnergyCycleEngineProps> = ({ data, className }
     resetAttempt();
   }, [handleResetExperiment, resetAttempt]);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId || 'energy-cycle-engine',
+    scopeId: hasSubmitted ? null : activeExperiment !== null ? `experiment-${activeExperiment}` : activeTab,
+    label: 'The energy cycle and experiments',
+    solved: activeExperiment !== null && !!experimentRevealed[activeExperiment] && (experimentAnswers[activeExperiment] ?? '').toLowerCase().trim() === (experiments[activeExperiment]?.expectedOutcome ?? '').toLowerCase().trim(),
+    tutorSpeaking: false,
+  });
+
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
       <CardHeader>
@@ -487,6 +500,9 @@ const EnergyCycleEngine: React.FC<EnergyCycleEngineProps> = ({ data, className }
       </CardHeader>
 
       <CardContent className="space-y-6">
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !hasSubmitted && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-3 bg-slate-800/50 border border-white/10">
             <TabsTrigger value="photosynthesis" className="data-[state=active]:bg-emerald-600/30 data-[state=active]:text-emerald-300">
@@ -652,6 +668,8 @@ const EnergyCycleEngine: React.FC<EnergyCycleEngineProps> = ({ data, className }
             </div>
           </div>
         )}
+
+        </div>
 
         {/* Coupling Points Info */}
         {couplingPoints.length > 0 && (

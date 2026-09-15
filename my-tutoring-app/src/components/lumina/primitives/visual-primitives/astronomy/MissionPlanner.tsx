@@ -6,6 +6,7 @@ import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../eval
 import type { MissionPlannerMetrics } from '../../../evaluation/types';
 import { LuminaReadAloud } from '../../../ui';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // =============================================================================
 // Type Definitions - Single Source of Truth
@@ -705,7 +706,7 @@ const MissionPlanner: React.FC<MissionPlannerProps> = ({ data, className }) => {
     destinationCount: destinations.length,
   }), [title, gradeLevel, currentPhase, destinations, selectedDestination, missionType, phaseInstruction]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'mission-planner',
     instanceId: instanceId || `mission-planner-${title}`,
     primitiveData: aiPrimitiveData,
@@ -917,6 +918,18 @@ const MissionPlanner: React.FC<MissionPlannerProps> = ({ data, className }) => {
     setPackedSupplies((prev) => ({ ...prev, [supplyId]: days }));
   }, []);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || `mission-planner-${title}`),
+    scopeId: hasSubmitted ? null : currentPhase,
+    label: 'The mission controls',
+    solved: false,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || `mission-planner-${title}`),
+  });
+
   return (
     <div className={`bg-gradient-to-br from-slate-900 via-indigo-950/50 to-slate-900 rounded-2xl border border-slate-700/50 overflow-hidden ${className || ''}`}>
       {/* Header */}
@@ -974,6 +987,9 @@ const MissionPlanner: React.FC<MissionPlannerProps> = ({ data, className }) => {
 
           {/* Right: Controls Panel */}
           <div className="space-y-4">
+            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+            {pip.store && !hasSubmitted && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-4">
             {/* EXPLORE Phase: Destination Selection */}
             {currentPhase === 'explore' && (
               <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
@@ -1179,6 +1195,8 @@ const MissionPlanner: React.FC<MissionPlannerProps> = ({ data, className }) => {
                 )}
               </div>
             )}
+
+            </div>
 
             {/* Navigation buttons */}
             {currentPhase !== 'launch' && (

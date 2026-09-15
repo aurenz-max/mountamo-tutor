@@ -19,6 +19,7 @@ import { usePrimitiveEvaluation } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 /**
  * PropulsionTimeline - History of How Humans Move
@@ -164,7 +165,7 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
   });
 
   // ── AI Tutoring ───────────────────────────────────────────────────────────
-  const { sendText, isAudioPlaying } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'propulsion-timeline' as any,
     instanceId: data.instanceId || `pt-${Date.now()}`,
     primitiveData: {
@@ -657,6 +658,18 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
   };
 
   // ── Main Render ───────────────────────────────────────────────────────────
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (data.instanceId || 'propulsion-timeline'),
+    scopeId: hasSubmitted ? null : phase === 'sequence' ? (currentSeqChallenge ? `sequence-${seqChallengeIdx}` : null) : phase,
+    label: 'The timeline activity',
+    solved: phase === 'sequence' && seqChecked && seqResults[seqResults.length - 1] === true,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === (data.instanceId || 'propulsion-timeline'),
+  });
+
   return (
     <SpotlightCard
       className={`w-full ${className || ''}`}
@@ -702,11 +715,16 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
             ))}
           </div>
 
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && !hasSubmitted && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {/* Phase Content */}
           {phase === 'explore' && renderExplorePhase()}
           {phase === 'sequence' && renderSequencePhase()}
           {phase === 'connect' && renderConnectPhase()}
           {phase === 'speed' && renderSpeedPhase()}
+          </div>
+
         </LuminaCardContent>
       </LuminaCard>
     </SpotlightCard>

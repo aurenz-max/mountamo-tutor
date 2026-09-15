@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Eraser, ArrowRight } from 'lucide-react';
 import {
   LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardDescription,
@@ -21,6 +21,9 @@ import {
 import { LETTER_WORKSHOP_MODES, LETTER_WORKSHOP_MODE_INFO, isLetterWorkshopMode, type LetterWorkshopMode } from './letterWorkshopModes';
 import { resolveSupportStructure, normalizeSupportTier, type SupportTier, type letterStructure } from './letterWorkshopDifficulty';
 import { useLetterWorkshopCue } from './useLetterWorkshopCue';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { letterWorkshopPipPose } from '../../../pip/letterWorkshopPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 export interface LetterWorkshopChallenge {
   id: string;
@@ -145,6 +148,29 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
   const { sendText, requestHint, isConnected, isAudioPlaying, sessionMode, activePrimitiveId } = useLuminaAI({ primitiveType: 'letter-workshop',
     instanceId: instanceRef.current, primitiveData: aiData, gradeLevel: data.gradeLevel });
   const tutorActive = isConnected && (sessionMode !== 'lesson' || activePrimitiveId === instanceRef.current);
+
+  // ── Pip shared surface ──────────────────────────────────────────────────
+  // A projection of this letter's check state, the spoken cue, and the child's
+  // ink; Pip never draws, checks, or advances. Tutor audio counts only while the
+  // tutor is on this block; the browser letter-name cue is scoped to this item.
+  const pip = usePipTargets(current.id, false);
+  const tutorAudio = isAudioPlaying && activePrimitiveId === instanceRef.current;
+  const speechOnItem = useSpeechScope(current.id, tutorAudio);
+  const pipPaper = pip.ref('paper');
+  const paperRef = useCallback((element: SVGSVGElement | null) => {
+    (svgRef as React.MutableRefObject<SVGSVGElement | null>).current = element;
+    pipPaper(element);
+  }, [pipPaper]);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || progress.isComplete) return null;
+    const targets = pip.targets(['paper'], () => 'The writing paper');
+    const pose = letterWorkshopPipPose({
+      running: true, preparing: false, currentSolved: !!assessment?.passed, revealHeld: false, judging: false,
+      tutorSpeaking: tutorAudio || cue.state === 'speaking', cueMatchesItem: !tutorAudio || speechOnItem,
+      visibleIds: targets.map((target) => target.id), hasInk: strokes.length > 0,
+    });
+    return { instanceId: instanceRef.current, scopeId: current.id, label: 'Letter workshop', dock: pip.dock.current, targets, pose };
+  });
 
   useEffect(() => {
     strokesRef.current = [];
@@ -307,6 +333,10 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
       {support.showChecklist && <LuminaCardDescription data-testid="letter-self-check">{mode === 'trace'
         ? 'Check: start, follow the path, then lift between strokes.'
         : 'Check: use the writing lines, make your marks, then compare after checking.'}</LuminaCardDescription>}
+      {/* Pip's dock sits above the paper: it outlines the paper as a region, so
+          no connector crosses the model or a start dot. */}
+      {pipStore && <div ref={pip.dock} data-pip-dock={instanceRef.current}
+        className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
       <div className="flex items-start gap-4 flex-wrap">
       {(mode === 'copy' || modelRevealed) && <div className="w-40 shrink-0" data-testid="letter-copy-model">
         <LuminaCardDescription>{mode === 'copy' ? 'Model' : 'Compare with the model'}</LuminaCardDescription>
@@ -314,7 +344,7 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
           {template.strokes.map((path, index) => <path key={index} d={pointsToPath(path)} fill="none" stroke="#386f72" strokeWidth="6" strokeLinecap="round" />)}
         </svg>
       </div>}
-      <svg ref={svgRef} viewBox="0 0 400 300" role="img"
+      <svg ref={paperRef} data-pip-object="paper" viewBox="0 0 400 300" role="img"
         aria-label={mode === 'write' ? 'Writing paper; draw with a finger, pen, or mouse' : `Writing paper for ${template.letterCase} ${template.letter}; draw with a finger, pen, or mouse`}
         data-testid="letter-writing-paper"
         className="block w-full min-w-0 flex-1 basis-72 max-w-2xl mx-auto rounded-2xl shadow-lg"

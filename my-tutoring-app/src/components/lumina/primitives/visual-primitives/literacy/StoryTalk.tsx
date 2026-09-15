@@ -67,6 +67,8 @@ import {
   storyTalkPackBase,
   type StoryTalkItem,
 } from './storyTalkScript';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { storyTalkPipPose } from '../../../pip/storyTalkPipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -253,6 +255,23 @@ const StoryTalk: React.FC<StoryTalkProps> = ({ data, className }) => {
   const revealed = runner.currentSolved;
   const modeMeta = MODE_META[currentItem?.mode ?? 'who_what_where'];
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase onto the listening card; Pip never
+  // answers, judges, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, false);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(undefined, () => 'The listening card');
+    const pose = storyTalkPipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      visibleIds: targets.map((target) => target.id),
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Story talk', dock: pip.dock.current, targets, pose };
+  });
+
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!evaluation.hasSubmitted) return [];
@@ -324,6 +343,8 @@ const StoryTalk: React.FC<StoryTalkProps> = ({ data, className }) => {
             {currentItem && (
               <div className="flex flex-col items-center gap-3">
                 <div
+                  ref={pip.ref('card')}
+                  data-pip-object="card"
                   className={`
                     rounded-2xl border-2 px-8 py-6 text-center max-w-md w-full transition-colors
                     ${revealed
@@ -361,6 +382,13 @@ const StoryTalk: React.FC<StoryTalkProps> = ({ data, className }) => {
                   {currentItem.question}
                 </p>
               </div>
+            )}
+
+            {/* Pip's dock sits below the question: nothing on this stage is an
+                answer, so a pointer up to the card crosses no choice. */}
+            {pipStore && (
+              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
             )}
 
             {/* Open for the whole run — no tutor-busy gate, no push-to-talk. */}

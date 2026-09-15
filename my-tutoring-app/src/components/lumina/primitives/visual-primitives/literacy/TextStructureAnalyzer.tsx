@@ -70,6 +70,7 @@ import {
   type DropZoneState,
 } from '../../../ui';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -319,6 +320,13 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
 
   const currentItem = runner.currentItem;
   const actionMeta = ACTION_META[currentItem?.action ?? 'find-signal'];
+  // Pip: the passage is the question side. On a place-idea item the idea card
+  // is already marked on screen, so Pip may point at it; the structure menu and
+  // the mats are answers and are never targets.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The passage', finished: evaluation.hasSubmitted,
+    cueId: currentItem?.action === 'place-idea' ? 'idea' : 'stimulus',
+  });
 
   /**
    * The linking words this run has already earned, by sentence. Read off the
@@ -526,14 +534,15 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
               <LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} />
             </div>
 
-            {renderPassage()}
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.target('stimulus')}>{renderPassage()}</div>
 
             {currentItem?.action === 'name-structure' && renderStructureMenu(currentItem)}
 
             {currentItem?.action === 'place-idea' && (
               <div className="space-y-3">
                 <div className="flex justify-center">
-                  <div className="rounded-2xl border-2 border-white/15 bg-white/5 px-6 py-3 text-center text-sm font-medium text-slate-100">
+                  <div {...pip.target('idea')} className="rounded-2xl border-2 border-white/15 bg-white/5 px-6 py-3 text-center text-sm font-medium text-slate-100">
                     {currentItem.stimulusText}
                   </div>
                 </div>

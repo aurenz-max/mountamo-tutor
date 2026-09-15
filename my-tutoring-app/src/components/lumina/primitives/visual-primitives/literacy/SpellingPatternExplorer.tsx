@@ -21,6 +21,7 @@ import {
 } from '../../../evaluation';
 import type { SpellingPatternExplorerMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -229,6 +230,18 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
 
   const accuracyPct = dictationWords.length > 0 ? Math.round((wordsCorrect / dictationWords.length) * 100) : 0;
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId || 'spelling-pattern-explorer',
+    scopeId: hasSubmittedEvaluation ? null : currentPhase,
+    label: 'The pattern words and your spellings',
+    solved: currentPhase === 'apply' && liveCorrectGlow && dictationWords.length > 0 && wordsCorrect === dictationWords.length,
+    tutorSpeaking: false,
+  });
+
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
@@ -248,6 +261,9 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
       <LuminaCardContent className="space-y-4">
         {renderProgress()}
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
         {/* Phase 1: Observe */}
         {currentPhase === 'observe' && (
           <div className="space-y-3">
@@ -404,6 +420,8 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
             )}
           </div>
         )}
+        </div>
+
       </LuminaCardContent>
     </LuminaCard>
   );

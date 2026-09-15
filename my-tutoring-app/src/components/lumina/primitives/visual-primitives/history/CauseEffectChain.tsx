@@ -101,6 +101,7 @@ import {
   type ChainKind,
   type ChainTier,
 } from './causeEffectChainScript';
+import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -420,6 +421,10 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
   });
 
   const showReveal = runner.revealHeld && reveal !== null;
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The ending and the events', finished: evaluation.hasSubmitted,
+    handover: runner.currentItem?.kind === 'build_chain',
+  });
 
   // ── Hands: place, remove, and the stillness close ─────────────────────────
   /** Called by the runner's stillness window once the full chain has sat still.
@@ -809,7 +814,8 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
                 </LuminaPrompt>
               )}
 
-              {staged && renderStage(staged)}
+              {pip.store && <div {...pip.dock} />}
+              {staged && <div {...pip.target('stimulus')}>{renderStage(staged)}</div>}
 
               {/* Reveal-on-affirm: the teaching note, for exactly as long as the
                   tutor's affirmation is being spoken (runner.revealHeld). Not on

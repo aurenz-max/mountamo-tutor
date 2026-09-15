@@ -23,6 +23,7 @@ import {
 import type { TimelineExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -205,7 +206,7 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
     totalChallenges: challenges.length,
   }), [title, timeSpan, totalEvents, selectedEventIndex, selectedEvent, eventsExplored, challengeAnswers.length, challenges.length]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'timeline-explorer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -666,6 +667,9 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
 
         <p className="text-slate-100 text-sm font-medium">{currentChallenge.question}</p>
 
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && <div {...pip.dock} />}
+        <div {...pip.workspace}>
         {/* Multiple choice (identify / date) */}
         {(currentChallenge.type === 'identify' || currentChallenge.type === 'date') && currentChallenge.options && (
           <div className="space-y-2">
@@ -849,6 +853,8 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
           </div>
         )}
 
+        </div>
+
         {/* Feedback */}
         {showChallengeFeedback && (
           <div className="space-y-3">
@@ -904,6 +910,18 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
   // -------------------------------------------------------------------------
   // Main Render
   // -------------------------------------------------------------------------
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation || !showChallenges || !currentChallenge ? null : `challenge-${currentChallengeIndex}`,
+    label: 'The challenge answers',
+    solved: currentChallenge?.type === 'order' ? orderChecked && orderCorrect : currentChallenge?.type === 'cause_effect' ? ceChecked && ceCorrect : showChallengeFeedback && selectedOption === currentChallenge?.correctIndex,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   return (
     <LuminaCard className={`shadow-2xl ${className || ''}`}>
       <LuminaCardHeader className="pb-3">

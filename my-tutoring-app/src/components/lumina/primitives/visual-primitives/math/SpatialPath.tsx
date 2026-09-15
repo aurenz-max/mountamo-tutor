@@ -24,6 +24,7 @@ import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResult
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 export type SpatialPathRelation = 'over' | 'under' | 'through' | 'around' | 'across';
 
@@ -204,7 +205,7 @@ export default function SpatialPath({ data, className }: { data: SpatialPathData
     currentChallenge: currentIndex + 1,
     totalChallenges: challenges.length,
   }), [current, currentIndex, challenges.length]);
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'spatial-path', instanceId, primitiveData: aiPrimitiveData,
     gradeLevel: data.gradeBand === 'K' ? 'Kindergarten' : `Grade ${data.gradeBand ?? '1'}`,
   });
@@ -283,6 +284,18 @@ export default function SpatialPath({ data, className }: { data: SpatialPathData
     ? Math.round(results.reduce((sum, result) => sum + (result.correct ? 100 : 0), 0) / challenges.length)
     : 0);
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: instanceId,
+    scopeId: isComplete || evaluation.hasSubmitted ? null : current?.id ?? null,
+    label: 'The route map',
+    solved: feedback?.status === 'correct',
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === instanceId,
+  });
+
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader>
@@ -302,9 +315,14 @@ export default function SpatialPath({ data, className }: { data: SpatialPathData
           <>
             <div className="flex justify-center"><LuminaBadge accent="cyan">Same start + same finish</LuminaBadge></div>
             <LuminaPrompt>{current.instruction}</LuminaPrompt>
+            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace}>
             <RouteScene challenge={current} selectedRouteId={selectedRouteId}
               submitted={submittedRoute} animationNonce={animationNonce}
               onSelect={(routeId) => { SoundManager.select(); setSelectedRouteId(routeId); setFeedback(null); }} />
+            </div>
+
             <LuminaPanel>
               <p className="text-center text-sm text-slate-300">Tap a numbered route. The destination is the same; the path itself is your answer.</p>
             </LuminaPanel>

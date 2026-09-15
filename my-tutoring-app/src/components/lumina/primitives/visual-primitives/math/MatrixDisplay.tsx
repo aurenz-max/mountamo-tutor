@@ -21,6 +21,7 @@ import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResult
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types — re-exported from the generator's canonical interface
@@ -425,7 +426,7 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
     supportTier: supportTier ?? null,
   }), [title, sessionChallengeType, currentIndex, challenges.length, gradeBand, supportTier]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'matrix-display',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -668,6 +669,18 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
   }, [advanceProgress, challenges, currentIndex, currentAttempts, currentChallenge, recordResult, sendText, revealPolicy]);
 
   // ── Early return ────────────────────────────────────────────────
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmitted ? null : currentChallenge?.id ?? null,
+    label: 'The matrices and your answer',
+    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
   if (!challenges || challenges.length === 0) {
     return (
       <LuminaCard>
@@ -716,6 +729,9 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
               <p className="text-slate-100 text-sm font-medium">{currentChallenge.instruction}</p>
             </LuminaPanel>
 
+            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+            {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+            <div {...pip.workspace}>
             {/* Source matrices */}
             <LuminaPanel className="flex flex-wrap items-center justify-center gap-6">
               <MatrixRenderer
@@ -764,6 +780,8 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
                 />
               ) : null}
             </LuminaPanel>
+
+            </div>
 
             {/* Feedback */}
             {feedback && (

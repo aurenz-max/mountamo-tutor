@@ -9,6 +9,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { ProteinFolderMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // =============================================================================
 // Data Interface (Single Source of Truth)
@@ -416,6 +417,18 @@ const ProteinFolder: React.FC<ProteinFolderProps> = ({ data, className }) => {
     );
   };
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'protein-folder'),
+    scopeId: hasSubmitted || phase !== 'fold' || (foldingChecked && foldingScore < 100) ? null : 'fold',
+    label: 'The amino acid chain',
+    solved: foldingChecked && foldingScore === 100,
+    tutorSpeaking: false,
+  });
+
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
       <CardHeader>
@@ -478,6 +491,9 @@ const ProteinFolder: React.FC<ProteinFolderProps> = ({ data, className }) => {
               ))}
             </div>
 
+            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+            {pip.store && phase === 'fold' && !hasSubmitted && !(foldingChecked && foldingScore < 100) && <div {...pip.dock} />}
+            <div {...pip.workspace}>
             {/* Linear amino acid sequence */}
             <div className="p-4 bg-black/20 rounded-xl border border-white/5">
               <p className="text-slate-500 text-xs mb-3 uppercase tracking-wider font-medium">
@@ -486,6 +502,8 @@ const ProteinFolder: React.FC<ProteinFolderProps> = ({ data, className }) => {
               <div className="flex flex-wrap gap-1.5">
                 {sequence.map((aa) => renderResidueChip(aa, true))}
               </div>
+            </div>
+
             </div>
 
             {/* Selected residue info */}

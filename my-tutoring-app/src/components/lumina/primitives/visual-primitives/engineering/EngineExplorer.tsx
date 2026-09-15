@@ -21,6 +21,7 @@ import type { EngineExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -777,7 +778,7 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
     selectedZone: selectedZone || 'none',
   }), [engineType, engineName, vehicleContext, fuel, load, rpm, exploredZones, challengeResults.length, challenges.length, selectedZone]);
 
-  const { sendText, isConnected, isAudioPlaying } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'engine-explorer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -977,6 +978,18 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
   const currentChallenge = challenges[currentChallengeIdx];
   const zoneInfo = selectedZone ? zoneDescs[selectedZone] : null;
 
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: (instanceId || 'engine-explorer'),
+    scopeId: hasSubmittedEvaluation ? null : showChallenges && currentChallenge ? currentChallenge.id : 'explore',
+    label: 'The engine and its controls',
+    solved: showChallenges && !!currentChallenge && challengeResults.some((r) => r.id === currentChallenge.id && r.correct),
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'engine-explorer'),
+  });
+
   return (
     <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -1015,6 +1028,9 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
         </LuminaCardHeader>
 
         <LuminaCardContent className="space-y-5">
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
+          <div {...pip.workspace} className="space-y-5">
           {/* Simulation Canvas — bespoke interaction surface, untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50">
             <EngineSimulation
@@ -1217,6 +1233,8 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
               )}
             </LuminaPanel>
           )}
+
+          </div>
 
           {allChallengesDone && showChallenges && (
             <div className="text-center p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/30">

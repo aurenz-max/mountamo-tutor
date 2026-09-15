@@ -12,6 +12,7 @@ import { usePhaseResults } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { useVoiceCapture } from '../../../hooks/useVoiceCapture';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { classifyReadingRepair, readingWords, repairSummary, REPAIR_OUTCOME_COPY,
   type ReadingRepairAttempt, type ReadingRepairEvidence, type ReadingRepairVerdict } from './readingRepairEvidence';
 
@@ -275,7 +276,7 @@ function ReadingRepairSession({ data, className }: { data: ReadingRepairStudioDa
   const activeProgress = progress?.challengeId === current?.id && !roundDone ? progress : null;
   // Deliberately omit print, transcripts, verdicts and selected word identities.
   // Only an explicit voice-tip request or final completion enables connection.
-  const { sendText, isConnected, isAudioPlaying, isAIResponding } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, isAIResponding, activePrimitiveId } = useLuminaAI({
     primitiveType: 'reading-repair-studio', instanceId: stableId.current,
     gradeLevel: data.gradeLevel, enabled: tutorEnabled || isComplete, ownsOpening: true,
     primitiveData: { assessmentStatus: 'provisional-local-only', sessionComplete: isComplete,
@@ -335,12 +336,24 @@ function ReadingRepairSession({ data, className }: { data: ReadingRepairStudioDa
     sendText('[ALL_COMPLETE] Reading checking practice is finished. Offer one short encouragement for careful checking. Do not claim accuracy or mastery.', { silent: true });
   }, [isComplete, isConnected, sendText]);
 
+  // Pip shares the round (the printed sentence, recordings and controls) as one
+  // region and follows the child's taps. Verdicts here are provisional practice
+  // feedback, never a confirmed result, so Pip does not celebrate.
+  const pip = useWorkspacePipSurface({
+    instanceId: stableId.current,
+    scopeId: isComplete || roundDone ? null : current?.id ?? null,
+    label: 'The sentence you are reading',
+    solved: false,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === stableId.current,
+  });
+
   return <LuminaCard className={className}>
     <LuminaCardHeader><div className="flex flex-wrap items-center justify-between gap-3">
       <LuminaCardTitle>{data.title}</LuminaCardTitle><LuminaBadge accent="blue">Read · Check · Reread</LuminaBadge>
     </div><LuminaCardDescription>{data.description}</LuminaCardDescription></LuminaCardHeader>
     <LuminaCardContent className="space-y-6">
       {!isComplete && current && <LuminaChallengeCounter current={currentIndex + 1} total={data.challenges.length} />}
+      {pip.store && !isComplete && current && <div {...pip.dock} />}
       {isComplete ? <div className="space-y-5">
         <LuminaPrompt>Your reading practice</LuminaPrompt>
         {evidence.map(row => <LuminaFeedbackCard key={row.challengeId} status="insight"
@@ -355,13 +368,13 @@ function ReadingRepairSession({ data, className }: { data: ReadingRepairStudioDa
       </div> : roundDone ? <div className="space-y-5">
         <LuminaFeedbackCard status="insight">{REPAIR_OUTCOME_COPY[roundDone.outcome]}</LuminaFeedbackCard>
         <LuminaActionButton action="next" onClick={() => { setRoundDone(null); advance(); }}>Try a fresh sentence</LuminaActionButton>
-      </div> : current ? <ReadingRepairRound key={current.id} challenge={current} tutorAudible={isAudioPlaying}
+      </div> : current ? <div {...pip.workspace}><ReadingRepairRound key={current.id} challenge={current} tutorAudible={isAudioPlaying}
         tutorResponding={isAIResponding || tipInFlight} onProgress={onProgress} onHearTip={hearTip} onCancelTip={cancelTip} onComplete={row => {
         setEvidence(previous => [...previous, row]);
         setRoundDone(row);
         recordResult({ challengeId: row.challengeId, correct: ['accurate_first_read', 'independent_repair', 'supported_repair'].includes(row.outcome),
           attempts: row.attempts.length, outcome: row.outcome });
-      }} /> : <p>No sentences are available. Generate a new activity.</p>}
+      }} /></div> : <p>No sentences are available. Generate a new activity.</p>}
     </LuminaCardContent>
   </LuminaCard>;
 }

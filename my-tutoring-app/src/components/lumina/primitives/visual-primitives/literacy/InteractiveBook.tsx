@@ -79,6 +79,8 @@ import {
 } from './interactiveBookScript';
 import { generateConceptImage } from '../../../service/geminiClient-api';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { interactiveBookPipPose } from '../../../pip/interactiveBookPipPose';
 
 export type InteractiveBookMode = 'text-features' | 'focus-word-reading' | 'mixed';
 export type InteractiveBookChallengeType = 'find-feature' | 'read-focus-word';
@@ -351,6 +353,7 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
       // The tutor's correction re-modelled in-band; free the page for another go.
       setTapped(null);
       tappedRef.current = null;
+      pip.clear();
     },
   });
 
@@ -392,6 +395,25 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
     }
   }, [currentImage, ensureImage]);
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase, the glowing word, and the child's own
+  // tap on a printed part; Pip never answers, taps, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets();
+    const pose = interactiveBookPipPose({
+      mode: currentItem.mode,
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Interactive book', dock: pip.dock.current, targets, pose };
+  });
+
   // ── The tap IS the commit (find-feature) ──────────────────────────────────
   const handleHotspotTap = useCallback((hotspot: BookHotspot) => {
     const item = runner.currentItem;
@@ -401,10 +423,11 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
     // ref flips synchronously and stops a second tap in the same tick.
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
+    pip.look(`part-${hotspot.id}`);
     setTapped(hotspot.text);
     tappedRef.current = hotspot.text;
     runner.submitGestureAttempt(tapVerdictCue(item, hotspot.text));
-  }, [runner, evaluation.hasSubmitted]);
+  }, [runner, evaluation.hasSubmitted, pip]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
@@ -445,6 +468,8 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
     return (
       <button
         key={hotspot.id}
+        ref={pip.ref(`part-${hotspot.id}`)}
+        data-pip-object={`part-${hotspot.id}`}
         type="button"
         onClick={() => handleHotspotTap(hotspot)}
         disabled={!tappable || !runner.canAttempt}
@@ -521,6 +546,8 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
           return (
             <span
               key={tokenIndex}
+              ref={pip.ref('glow')}
+              data-pip-object="glow"
               className={`rounded px-0.5 font-semibold underline decoration-2 underline-offset-4 transition-all ${
                 revealed
                   ? 'bg-emerald-400/15 text-emerald-200 decoration-emerald-300'
@@ -589,8 +616,15 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
               </button>
             </div>
 
+            {/* Pip's dock sits above the book: the glowing word and the page
+                outline are both below it, and find-feature parts are never pointed through. */}
+            {pipStore && (
+              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+            )}
+
             {currentPageId === 'cover' ? (
-              <div className={`mx-auto max-w-xl rounded-r-[2rem] rounded-l-lg bg-gradient-to-br ${COVER_GRADIENTS[book.coverColor]} p-5 shadow-2xl ring-1 ring-white/15`}>
+              <div ref={pip.ref('page')} data-pip-object="page" className={`mx-auto max-w-xl rounded-r-[2rem] rounded-l-lg bg-gradient-to-br ${COVER_GRADIENTS[book.coverColor]} p-5 shadow-2xl ring-1 ring-white/15`}>
                 {renderImage()}
                 <div className="mt-5 space-y-3 text-white">
                   {renderHotspot(hotspots[0], 'w-full text-3xl font-black tracking-tight')}
@@ -598,7 +632,7 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
                 </div>
               </div>
             ) : currentPage ? (
-              <div className="rounded-[2rem] border border-white/10 bg-slate-900/75 p-5 shadow-2xl">
+              <div ref={pip.ref('page')} data-pip-object="page" className="rounded-[2rem] border border-white/10 bg-slate-900/75 p-5 shadow-2xl">
                 <div className="mb-4 flex items-start justify-between gap-3">
                   {renderHotspot(hotspots[0], 'text-2xl font-black text-cyan-50')}
                   {renderHotspot(hotspots[2], 'shrink-0 text-sm font-bold')}
