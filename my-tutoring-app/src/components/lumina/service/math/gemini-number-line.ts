@@ -12,7 +12,7 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { createSubRangePool } from './numberPoolService';
-import { planLearningAdaptation } from '../generation/planLearningAdaptation';
+import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';
 import {
   eligibleNumberLineTeaching,
   numberLineTeaching,
@@ -1254,8 +1254,10 @@ Return ONLY:
     challenges,
     highlights: [],
     operations: globalOps,
-    ...(adaptation && config?.remediationMove && adaptation.status !== 'no-focus'
-      ? { learningAdaptation: { move: config.remediationMove, status: adaptation.status, comparisonCount: adaptation.count } }
+    // Always stamped when a move was planned: a single-step baseline reports the selector's status; a
+    // multi-step scaffold never ran the selector and reports insufficient capacity rather than nothing.
+    ...(config?.remediationMove
+      ? { learningAdaptation: stampAdaptation(config.remediationMove, adaptation ?? { status: 'insufficient-capacity', count: 0 })! }
       : {}),
   };
 }
@@ -1551,13 +1553,9 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
   // a resolution failure leaves it undefined and the grade-band defaults stand.
   // One applicability decision before content generation. No observations or an
   // ineligible task makes no model call; failures abstain inside the planner.
-  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
-    mode: config?.targetEvalMode, tier: supportTier ?? undefined };
-  const observations = ctx.learningObservations?.length ? ctx.learningObservations
-    : ctx.remediationFocus ? [{ id: 'active-observation', summary: ctx.remediationFocus }] : [];
-  const remediationMovePromise = eligibleNumberLineTeaching(adaptationTask) && observations.length
-    ? planLearningAdaptation(numberLineTeaching, adaptationTask, observations)
-    : Promise.resolve(null);
+  // The planned mode is the resolved catalog eval mode, never the raw pin: `a|b` and `mixed` name no skill.
+  const adaptationTask = adaptationTaskFor(ctx, topic, { mode: plannedMode(evalConstraint), tier: supportTier ?? undefined });
+  const remediationMovePromise = planAdaptation(ctx, { task: adaptationTask, capability: numberLineTeaching, eligible: eligibleNumberLineTeaching });
 
   let resolvedRange = config?.numberRange;
   let resolvedScope: ResolvedNumberLineScope | null = null;

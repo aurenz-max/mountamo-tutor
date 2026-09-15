@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { countingBoardDiagnosisEvidence, countingObservation, countingTask } from './countingBoardEvidence';
+import { countingBoardEvidenceSummary, countingObservation, countingTask } from './countingBoardEvidence';
 import { itemFromChallenge, type CountingItem } from './countingBoardScript';
 
 const item = (id: string, type: CountingItem['kind'], count: number, targetAnswer: number, patch: Record<string, number> = {}) =>
@@ -21,35 +21,15 @@ it('states each board from its own fields: start and change, covered start, both
   expect(countingObservation(item('g', 'give_me_n', 9, 4), 'K', { given: 5 }).observed).toBe('Handed over 5 bears.');
 });
 
-it('no wrong attempt means no evidence', () => {
-  const outcomes = ['a', 'b'].map(id => ({ id, solved: true, corrections: 0, score: 100, seconds: 3 }));
-  expect(countingBoardDiagnosisEvidence({ outcomes, observations: [] }, ['take_away', 'take_away'])).toBeUndefined();
-});
-
-it('keeps at most 12 phases: every board\'s first wrong attempt before later ones, emitted in the order they happened', () => {
-  // 8 boards, each corrected twice and then affirmed or capped: 16 wrong attempts.
+it('states the session and its key per mode; the runner adds the count, policy and first-time share', () => {
   const boards = Array.from({ length: 8 }, (_, i) => item(`c${i + 1}`, 'take_away', 6 + (i % 3), 5 + (i % 3), { changeBy: 1 }));
-  const observations = boards.flatMap(b => [1, 2].map(n => ({ ...countingObservation(b, 'K', { heard: `${b.id}-try${n}` }), itemId: b.id, phase: 'take-away',
-    support: `Correction observation; ${n - 1} prior corrections on this item. Other assistance is not established.` })));
-  observations[15] = { ...observations[15], judgeFeedback: 'My turn: count what is left.' } as typeof observations[number];
-  const outcomes = boards.map((b, i) => ({ id: b.id, solved: i % 2 === 0, corrections: 2, score: i % 2 === 0 ? 33 : 0, seconds: 5 }));
-  const evidence = countingBoardDiagnosisEvidence({ outcomes, observations }, boards.map(b => b.kind))!;
-  expect(evidence.firstResponseScore).toBe(0);
-  expect(evidence.phases).toHaveLength(12);
-  const said = evidence.phases!.map(p => p.observed.replace(/^Said "|"\.$/g, ''));
-  // All 8 first tries survive; the 4 earliest second tries fill the rest; order is the order they happened.
-  expect(said).toEqual(['c1-try1', 'c1-try2', 'c2-try1', 'c2-try2', 'c3-try1', 'c3-try2', 'c4-try1', 'c4-try2', 'c5-try1', 'c6-try1', 'c7-try1', 'c8-try1']);
-  expect(evidence.judgeFeedback).toBe('My turn: count what is left.');
-  expect(evidence.challengeSummary).toContain('Counting board (take_away), 8 boards');
-  expect(evidence.challengeSummary).toContain('0 of 8 boards were answered right the first time');
-  expect(evidence.expected).toBe('The number left on the board: the start minus the number taken away.');
-  expect(evidence.observed.length).toBeLessThanOrEqual(2000);
-  expect(evidence.phases![0]).toMatchObject({ itemId: 'c1', phase: 'take-away', expected: 'five (5) left' });
-});
-
-it('first-response score counts boards affirmed with no correction', () => {
-  const boards = ['a', 'b', 'c', 'd', 'e'].map(id => item(id, 'add_more', 4, 6, { changeBy: 2 }));
-  const outcomes = boards.map((b, i) => ({ id: b.id, solved: true, corrections: i < 3 ? 1 : 0, score: i < 3 ? 67 : 100, seconds: 4 }));
-  const observations = boards.slice(0, 3).map(b => ({ ...countingObservation(b, 'K', { heard: 'four' }), itemId: b.id, phase: 'add-more' }));
-  expect(countingBoardDiagnosisEvidence({ outcomes, observations }, boards.map(b => b.kind))!.firstResponseScore).toBe(40);
+  expect(countingBoardEvidenceSummary(boards)).toEqual({
+    task: 'Counting board (take_away), 8 boards: each board starts with some objects, the tutor says how many to take away, the learner removes them and says how many are left.',
+    expected: 'The number left on the board: the start minus the number taken away.',
+  });
+  expect(countingBoardEvidenceSummary([item('a', 'count_all', 5, 5), item('b', 'subitize', 3, 3)])).toEqual({
+    task: 'Counting board (count_all, subitize), 2 boards: boards of count_all, subitize.',
+    expected: 'The number of objects the board shows.',
+  });
+  expect(countingBoardEvidenceSummary([item('a', 'count_all', 5, 5)]).task).toBe('Counting board (count_all), 1 boards: the learner counts the objects on each board and says how many.');
 });

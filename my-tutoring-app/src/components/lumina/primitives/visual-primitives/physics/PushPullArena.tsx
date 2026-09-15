@@ -505,7 +505,7 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
       averageAttemptsPerChallenge:
         summary.attemptsCount / Math.max(summary.outcomes.length, 1),
     };
-    submitResult(summary.accuracy >= 70, summary.accuracy, metrics);
+    submitResult(summary.accuracy >= 70, summary.accuracy, metrics, undefined, undefined, summary.diagnosisEvidence);
   }, [items, submitResult]);
 
   // ── Canvas & physics state ───────────────────────────────────────

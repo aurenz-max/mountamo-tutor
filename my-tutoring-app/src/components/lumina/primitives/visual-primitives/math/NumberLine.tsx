@@ -67,6 +67,7 @@ export interface NumberLineChallenge {
   highlights?: { label: string; value: number }[];
 }
 
+import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
 export interface NumberLineData {
   title: string;
   description?: string;
@@ -89,12 +90,7 @@ export interface NumberLineData {
   supportTier?: 'easy' | 'medium' | 'hard';
 
   /** Safe generation metadata: which teaching move shaped the jumps and whether it landed. Never rendered. */
-  learningAdaptation?: {
-    move: 'contrast_start_positions';
-    status: 'targeted' | 'already-targeted' | 'insufficient-capacity';
-    comparisonCount: number;
-    source?: 'saved-observation';
-  };
+  learningAdaptation?: LearningAdaptation<'contrast_start_positions'>;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;

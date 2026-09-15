@@ -1,6 +1,3 @@
-import type { DiagnosisEvidence } from '../../../evaluation/diagnosis/types';
-import type { JudgedDiagnosisObservation } from '../../../hooks/judgedScriptContract';
-import type { JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
 import { numberWordFor } from './countingBoardScript';
 import { TEEN_TEN, teenTotalFor, type SplitVerdict, type TenFrameItem, type TenFrameItemKind } from './tenFrameScript';
 
@@ -104,37 +101,14 @@ const SESSION: Record<TenFrameItemKind, string> = {
 };
 
 /**
- * Factual evidence for the shared distiller, or undefined when every judged attempt was right.
- *
- * A judged item is re-asked after a correction and scores 67 or 33 when later right, so the session score
- * rarely shows a wrong first answer; `firstResponseScore` is the share of items right first time. The store
- * keeps 12 phases: the first wrong attempt on every item comes before an item's later wrong attempts, and the
- * kept phases are emitted in the order they happened.
+ * The session and its correct outcome, stated per kind for the distiller. The runner's `judgedRunEvidence`
+ * adds the item count, the correction policy, the first-response share and the kept phases; this only says
+ * what a session of these items IS and what a right answer on it is.
  */
-export function tenFrameDiagnosisEvidence(
-  summary: Pick<JudgedRunSummary, 'outcomes' | 'observations'>, items: readonly Pick<TenFrameItem, 'kind'>[],
-): DiagnosisEvidence | undefined {
-  const wrong = summary.observations;
-  const total = summary.outcomes.length;
-  if (!wrong.length || !total) return undefined;
-  const clean = summary.outcomes.filter((o) => o.solved && o.corrections === 0).length;
-  const seen = new Set<string>();
-  const firsts = new Set<JudgedDiagnosisObservation>();
-  for (const o of wrong) if (!seen.has(o.itemId ?? '')) { seen.add(o.itemId ?? ''); firsts.add(o); }
-  const kept = new Set(Array.from(firsts).concat(wrong.filter((o) => !firsts.has(o))).slice(0, 12));
-  const phases = wrong.filter((o) => kept.has(o));
-  const judged = [...wrong].reverse().find((o) => o.judgeFeedback);
+export function tenFrameEvidenceSummary(items: readonly Pick<TenFrameItem, 'kind'>[]): { task: string; expected: string } {
   const modes = Array.from(new Set(items.map((item) => item.kind)));
-  const what = modes.map((kind) => SESSION[kind]).join('; ');
   return {
-    firstResponseScore: Math.round((clean / total) * 100),
-    challengeSummary: `Ten frame (${modes.join(', ')}), ${total} items: ${what}. A wrong answer gets the tutor's scripted correction and the same question again, up to two corrections per item. ${clean} of ${total} items were answered right the first time.`,
+    task: `Ten frame (${modes.join(', ')}), ${items.length} items: ${modes.map((kind) => SESSION[kind]).join('; ')}.`,
     expected: modes.map((kind) => EXPECTED[kind]).join(' '),
-    observed: phases.map((o) => `${o.challenge} ${o.observed}`).join(' | ').slice(0, 2000),
-    ...(judged?.judgeFeedback ? { judgeFeedback: judged.judgeFeedback } : {}),
-    phases: phases.map((o) => ({
-      itemId: o.itemId ?? 'unknown', phase: o.phase ?? 'unspecified', challenge: o.challenge, expected: o.expected, observed: o.observed,
-      support: o.support ?? 'Assistance history unknown',
-    })),
   };
 }

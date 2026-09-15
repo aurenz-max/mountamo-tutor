@@ -20,7 +20,8 @@ const server = await vite.createServer({ configFile: false, root: ROOT, logLevel
   resolve: { alias: { '@': resolve(ROOT, 'src'), 'server-only': resolve(ROOT, 'vitest.stubs/server-only.ts') } } });
 const runner = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
 const MATH = '/src/components/lumina/primitives/visual-primitives/math';
-const { tenFrameDiagnosisEvidence, tenFrameObservation } = await runner.import(`${MATH}/tenFrameEvidence.ts`);
+const { tenFrameEvidenceSummary, tenFrameObservation } = await runner.import(`${MATH}/tenFrameEvidence.ts`);
+const { judgedRunEvidence } = await runner.import('/src/components/lumina/hooks/judgedRunEvidence.ts');
 const script = await runner.import(`${MATH}/tenFrameScript.ts`);
 const remediation = await runner.import('/src/components/lumina/service/math/tenFrameRemediation.ts');
 const { generateTenFrame } = await runner.import('/src/components/lumina/service/math/gemini-ten-frame.ts');
@@ -127,7 +128,7 @@ function judgedRun(rows, grade = 'K') {
       support: 'Correction observation; 0 prior corrections on this item. Other assistance is not established.', judgeFeedback: correctionLine(item) });
     return { id: item.id, solved: true, corrections: wrong === null ? 0 : 1, score: wrong === null ? 100 : 67, seconds: 6 };
   });
-  const evidence = tenFrameDiagnosisEvidence({ outcomes, observations }, items);
+  const evidence = judgedRunEvidence({ outcomes, observations, items, pack: { activityLine: 'Ten frame', evidenceSummary: tenFrameEvidenceSummary } });
   const modes = { add: 'operate', subtract: 'operate', split: 'decompose' };
   return { evidence, score: Math.round(outcomes.reduce((s, o) => s + o.score, 0) / outcomes.length), success: true, mode: modes[items[0].kind] ?? items[0].kind };
 }

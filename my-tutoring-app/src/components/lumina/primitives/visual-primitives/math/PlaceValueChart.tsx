@@ -111,6 +111,7 @@ export interface PlaceValueChartChallenge {
   digitValueChoices: { value: number; wordForm: string }[];
 }
 
+import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
 export interface PlaceValueChartData {
   title: string;
   description: string;
@@ -124,7 +125,7 @@ export interface PlaceValueChartData {
   supportTier?: 'easy' | 'medium' | 'hard';
   gradeLevel?: string;
   misconceptionOpportunity?: { id: string; lessonId: string; grade: string; curriculumVersion: string };
-  learningAdaptation?: { move: 'contrast_digit_worth' | 'contrast_place_name_and_value'; status: 'targeted' | 'already-targeted' | 'insufficient-capacity'; comparisonCount: number; source?: 'saved-observation' };
+  learningAdaptation?: LearningAdaptation<'contrast_digit_worth' | 'contrast_place_name_and_value'>;
 
   // Evaluation integration (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -603,8 +604,10 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
               </button>
             </div>
 
+            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId} className={PIP_DOCK_CLASS} />}
+
             {/* The stage. The tutor speaks the ask — no printed instruction. */}
-            <div className="bg-white/[0.02] rounded-xl border border-white/5 overflow-x-auto">
+            <div ref={pip.ref('stage')} data-pip-object="stage" className="bg-white/[0.02] rounded-xl border border-white/5 overflow-x-auto">
               {isGestureItem ? renderChart(currentItem) : renderNumeral(currentItem)}
             </div>
 

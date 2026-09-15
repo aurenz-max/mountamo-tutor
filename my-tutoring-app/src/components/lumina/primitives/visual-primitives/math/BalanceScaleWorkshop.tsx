@@ -74,11 +74,9 @@ export default function BalanceScaleWorkshop({ data, className }: { data: Balanc
       totalChallenges: results.length, correctCount: results.filter((result) => result.solved).length, overallAccuracy: score,
       attemptsCount: attempts, firstTryCount: results.filter((result) => result.score === 100).length,
       hintsViewed: modeled.current.size, averageAttemptsPerChallenge: attempts / Math.max(1, results.length) };
-    const observation = [...summary.observations].reverse().find((entry) => entry.judgeFeedback);
+    // The runner owns the evidence (first-response share, kept phases); the shared capture gate decides.
     evaluation.submitResult(score >= 60, score, metrics, { interactionVersion: 'weight-workshop-di-v1', explorationIsUngraded: true,
-      explanationIsCoaching: true, scoringBasis: 'minimum-of-distinct-spoken-quantities', results }, undefined,
-    score < 60 && observation ? { challengeSummary: observation.challenge, expected: observation.expected,
-      observed: observation.observed, judgeFeedback: observation.judgeFeedback } : undefined);
+      explanationIsCoaching: true, scoringBasis: 'minimum-of-distinct-spoken-quantities', results }, undefined, summary.diagnosisEvidence);
   };
   const runner = useJudgedScriptRunner({ pack, instanceId: instance.current, gradeLevel: data.gradeLevel ?? 'elementary',
     exhibitId: data.exhibitId, silenceCloseMs: 1100, onFinished: finish,

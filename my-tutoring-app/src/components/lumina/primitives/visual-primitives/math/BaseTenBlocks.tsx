@@ -44,10 +44,9 @@ export interface BaseTenBlocksChallenge {
   showBlocksTotal?: boolean;  // live "Blocks Total" self-check panel
 }
 
+import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
 export interface BaseTenBlocksData {
-  learningAdaptation?: { move: 'contrast_block_count_and_worth';
-    status: 'targeted' | 'already-targeted' | 'insufficient-capacity'; comparisonCount: number;
-    source?: 'saved-observation' };
+  learningAdaptation?: LearningAdaptation<'contrast_block_count_and_worth'>;
   title: string;
   description: string;
   numberValue: number;
@@ -787,8 +786,12 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
           </LuminaPanel>
         )}
 
+        {/* Pip's dock sits above the place value mat, which it outlines as the
+            workspace — never one column or one block. */}
+        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+
         {/* Place Value Columns */}
-        <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${activePlaces.length}, 1fr)` }}>
+        <div {...pip.workspace} className="grid gap-3" style={{ gridTemplateColumns: `repeat(${activePlaces.length}, 1fr)` }}>
           {activePlaces.map(place => {
             const config = PLACE_CONFIG[place];
             const count = columns[place] || 0;

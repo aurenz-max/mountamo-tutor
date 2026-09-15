@@ -55,14 +55,14 @@ export interface FractionCirclesChallenge {
   supportTier?: 'easy' | 'medium' | 'hard';
 }
 
+import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
 export interface FractionCirclesData {
   title: string;
   description?: string;
   challenges: FractionCirclesChallenge[];
   gradeBand?: 'K-2' | '3-5';
   /** Safe generation metadata only; never rendered, never observation text. */
-  learningAdaptation?: { move: 'contrast_same_numerator_denominators';
-    status: 'targeted' | 'already-targeted' | 'insufficient-capacity'; comparisonCount: number; source?: 'saved-observation' };
+  learningAdaptation?: LearningAdaptation<'contrast_same_numerator_denominators'>;
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -867,8 +867,12 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
           </LuminaPanel>
         )}
 
+        {/* Pip's dock sits above the circle and its controls, which it outlines
+            as the workspace — never one slice. */}
+        {pip.store && currentChallenge && !allChallengesComplete && <div {...pip.dock} />}
+
         {/* Challenge Content */}
-        {renderChallengeContent()}
+        <div {...pip.workspace}>{renderChallengeContent()}</div>
 
         {/* Feedback */}
         {feedback && (

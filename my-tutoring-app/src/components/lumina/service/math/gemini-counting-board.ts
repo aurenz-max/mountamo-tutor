@@ -3,7 +3,7 @@ import { CountingBoardData } from "../../primitives/visual-primitives/math/Count
 import { numberWordFor } from "../../primitives/visual-primitives/math/countingBoardScript";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
-import { planLearningAdaptation } from "../generation/planLearningAdaptation";
+import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';
 import {
   MAX_CHANGE,
   countingBoardTeachingFor,
@@ -606,10 +606,10 @@ Return the complete counting board configuration.
 
   // Saved observations reach only the shared applicability planner, never the generation prompt.
   // No observations or an ineligible task → no planner call.
-  const observations = ctx.learningObservations ?? [];
-  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
-    mode: pinnedType, tier: supportTier ?? undefined };
-  const capability = countingBoardTeachingFor(pinnedType);
+  // The planned mode is the resolved catalog eval mode; the adaptive modes (take_away, add_more, count_on)
+  // share their names with their challenge types, so the capability keys match.
+  const adaptationMode = plannedMode(evalConstraint);
+  const adaptationTask = adaptationTaskFor(ctx, topic, { mode: adaptationMode, tier: supportTier ?? undefined });
   const [result, move] = await Promise.all([
     ai.models.generateContent({
       model: "gemini-flash-lite-latest",
@@ -619,8 +619,7 @@ Return the complete counting board configuration.
         responseSchema: activeSchema,
       },
     }),
-    capability && observations.length && eligibleCountingBoardTeaching(adaptationTask)
-      ? planLearningAdaptation<string>(capability, adaptationTask, observations) : null,
+    planAdaptation<string>(ctx, { task: adaptationTask, capability: countingBoardTeachingFor(adaptationMode), eligible: eligibleCountingBoardTeaching }),
   ]);
 
   const data = result.text ? JSON.parse(result.text) : null;
@@ -893,8 +892,7 @@ Return the complete counting board configuration.
         guardInstructionLeak(next);
         return next;
       });
-      learningAdaptation = { move: move as CountingBoardChangeMove | CountingBoardCountOnMove, comparisonCount: selected.count,
-        status: selected.status === 'no-focus' ? 'insufficient-capacity' : selected.status };
+      learningAdaptation = stampAdaptation(move as CountingBoardChangeMove | CountingBoardCountOnMove, selected);
     }
   }
   if (learningAdaptation) data.learningAdaptation = learningAdaptation;

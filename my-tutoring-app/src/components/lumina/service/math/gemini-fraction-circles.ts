@@ -20,7 +20,7 @@ import {
   buildModeConstraintSection,
   type ChallengeTypeDoc,
 } from "../evalMode";
-import { planLearningAdaptation } from "../generation/planLearningAdaptation";
+import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';
 import {
   eligibleFractionCompareTeaching,
   fractionCompareTeaching,
@@ -495,12 +495,8 @@ Return the complete fraction circles configuration.
   // content prompt. No observations or an ineligible task → no planner call.
   // planLearningAdaptation never rejects, so it can run alongside the content draw.
   const pinnedType = evalConstraint?.allowedTypes.length === 1 ? evalConstraint.allowedTypes[0] : undefined;
-  const observations = ctx.learningObservations?.length ? ctx.learningObservations
-    : ctx.remediationFocus ? [{ id: 'active-observation', summary: ctx.remediationFocus }] : [];
-  const adaptationTask = { grade: ctx.grade, topic, intent: config.intent, objectiveText: ctx.objective.text,
-    mode: pinnedType, tier: supportTier ?? undefined };
-  const plannedMove = observations.length && eligibleFractionCompareTeaching(adaptationTask)
-    ? planLearningAdaptation(fractionCompareTeaching, adaptationTask, observations) : Promise.resolve(null);
+  const adaptationTask = adaptationTaskFor(ctx, topic, { mode: plannedMode(evalConstraint), tier: supportTier ?? undefined });
+  const plannedMove = planAdaptation(ctx, { task: adaptationTask, capability: fractionCompareTeaching, eligible: eligibleFractionCompareTeaching });
 
   let data: any = null;
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -824,8 +820,7 @@ Return the complete fraction circles configuration.
     const selected = selectSameNumeratorContrast(data.challenges, remediationMove, legalDenominators(adaptationTask));
     data.challenges = selected.challenges.map((c) => c.type === 'compare' && c.compareFraction
       ? { ...c, instruction: compareInstruction(c), narration: compareInstruction(c) } : c);
-    data.learningAdaptation = { move: remediationMove, status: selected.status === 'no-focus' ? 'insufficient-capacity' : selected.status,
-      comparisonCount: selected.count };
+    data.learningAdaptation = stampAdaptation(remediationMove, selected);
   }
 
   // Final summary log

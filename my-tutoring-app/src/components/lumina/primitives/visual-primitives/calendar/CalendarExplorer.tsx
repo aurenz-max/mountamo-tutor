@@ -878,7 +878,7 @@ const CalendarSequenceExplorer: React.FC<{ data: CalendarExplorerData }> = ({ da
       accuracy: summary.accuracy,
       attemptsCount: summary.attemptsCount,
     };
-    evaluation.submitResult(summary.passed, summary.accuracy, metrics);
+    evaluation.submitResult(summary.passed, summary.accuracy, metrics, undefined, undefined, summary.diagnosisEvidence);
   }, [evaluation.submitResult]);
 
   const runner = useJudgedScriptRunner<CalendarSequenceItem>({

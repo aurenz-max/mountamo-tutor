@@ -79,7 +79,7 @@ import {
   objectWordFor,
   type CountingItem,
 } from './countingBoardScript';
-import { countingBoardDiagnosisEvidence, countingObservation } from './countingBoardEvidence';
+import { countingBoardEvidenceSummary, countingObservation } from './countingBoardEvidence';
 import HandIcon from './HandIcon';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
@@ -113,10 +113,10 @@ export interface CountingBoardChallenge {
   narration: string;
 }
 
+import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
 export interface CountingBoardData {
   /** Safe adaptation metadata; `source` is stamped only by the observation delivery server. */
-  learningAdaptation?: { move: 'contrast_same_start_different_change' | 'count_on_exactly_one_more';
-    status: 'targeted' | 'already-targeted' | 'insufficient-capacity'; comparisonCount: number; source?: 'saved-observation' };
+  learningAdaptation?: LearningAdaptation<'contrast_same_start_different_change' | 'count_on_exactly_one_more'>;
   title: string;
   description?: string;
   objects: {
@@ -479,11 +479,10 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
       done: 'Great counting today!',
     },
     // Facts from the board's own fields, per mode: a take_away board is described by its start and
-    // change, not as "count N". The same record is kept for right answers in student work.
-    diagnosisObservation: (item, { lastHeard }) => countingObservation(item, gradeBand,
-      { heard: lastHeard, given: givenCountRef.current, hand: handChoiceRef.current }),
-    responseObservation: (item, { lastHeard }) => countingObservation(item, gradeBand,
-      { heard: lastHeard, given: givenCountRef.current, hand: handChoiceRef.current }),
+    // change, not as "count N". One record per attempt; right answers reach student work too.
+    observation: (item, { heard }) => countingObservation(item, gradeBand,
+      { heard, given: givenCountRef.current, hand: handChoiceRef.current }),
+    evidenceSummary: countingBoardEvidenceSummary,
   }), [items, objectWord, gradeBand]);
 
   // ── Per-item board reset ──────────────────────────────────────────────────
@@ -568,8 +567,8 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     };
 
     // A board right after one correction still scores 67, so wrong first answers rarely reach the
-    // session score; the evidence carries the first-response share the shared gate reads.
-    const diagnosisEvidence = countingBoardDiagnosisEvidence(summary, items.map((item) => item.kind));
+    // session score; the runner's evidence carries the first-response share the shared gate reads.
+    const diagnosisEvidence = summary.diagnosisEvidence;
     evaluation.submitResult(
       summary.solvedCount === challenges.length,
       summary.accuracy,

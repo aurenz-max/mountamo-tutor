@@ -130,10 +130,8 @@ export default function BaseTenBlocksDi({ data, className }: { data: BaseTenBloc
     // misconceptionScope 'skill'): corrections carry the same factual task and
     // answer words as the response ledger. regroup supplies no correction
     // evidence, so capture skips it without a model call.
-    diagnosisObservation: (item, { lastHeard }) => (mode === 'read_blocks'
-      ? { ...readBlocksTask(item), observed: lastHeard ?? 'No intelligible answer.' } : null),
-    responseObservation: (item, { lastHeard }) => (mode === 'read_blocks' && lastHeard
-      ? { ...readBlocksTask(item), observed: lastHeard } : null),
+    observation: (item, { heard }) => (mode === 'read_blocks'
+      ? { ...readBlocksTask(item), observed: heard ?? 'No intelligible answer.' } : null),
   }), [items]);
 
   const finish = (summary: JudgedRunSummary) => {
@@ -168,11 +166,8 @@ export default function BaseTenBlocksDi({ data, className }: { data: BaseTenBloc
     };
     // Correction evidence is kept whatever the average. A step corrected once
     // still scores 67, so a bare count on every worth step passes the average;
-    // the first-try share is what the shared failure gate can see.
-    const diagnosisEvidence = mode === 'read_blocks' && summary.diagnosisEvidence
-      ? { ...summary.diagnosisEvidence,
-        firstResponseScore: Math.round((100 * summary.firstTryCount) / Math.max(1, summary.outcomes.length)) }
-      : undefined;
+    // the runner's `firstResponseScore` is what the shared failure gate can see.
+    const diagnosisEvidence = mode === 'read_blocks' ? summary.diagnosisEvidence : undefined;
     evaluation.submitResult(
       accuracy >= 60,
       accuracy,

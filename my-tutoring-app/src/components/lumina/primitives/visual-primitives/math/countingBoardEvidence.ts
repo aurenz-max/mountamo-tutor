@@ -1,6 +1,3 @@
-import type { DiagnosisEvidence } from '../../../evaluation/diagnosis/types';
-import type { JudgedDiagnosisObservation } from '../../../hooks/judgedScriptContract';
-import type { JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
 import { numberWordFor, type CountingItem } from './countingBoardScript';
 
 /** What the learner produced on one judged attempt, as the board and the runner recorded it. */
@@ -72,37 +69,15 @@ const SESSION: Partial<Record<CountingItem['kind'], string>> = {
 };
 
 /**
- * Factual evidence for the shared distiller, or undefined when every judged attempt was right.
- *
- * A judged board is re-asked after a correction and scores 67 or 33 when later right, so the session score
- * rarely shows a wrong first answer; `firstResponseScore` is the share of boards right first time. The store
- * keeps 12 phases: the first wrong attempt on every board comes before a board's later wrong attempts, and
- * the kept phases are emitted in the order they happened.
+ * The session and its correct outcome, stated per mode for the distiller. The runner's `judgedRunEvidence`
+ * adds the board count, the correction policy, the first-response share and the kept phases; this only says
+ * what a session of these boards IS and what a right answer on it is.
  */
-export function countingBoardDiagnosisEvidence(
-  summary: Pick<JudgedRunSummary, 'outcomes' | 'observations'>, kinds: readonly CountingItem['kind'][],
-): DiagnosisEvidence | undefined {
-  const wrong = summary.observations;
-  const boards = summary.outcomes.length;
-  if (!wrong.length || !boards) return undefined;
-  const clean = summary.outcomes.filter((o) => o.solved && o.corrections === 0).length;
-  const seen = new Set<string>();
-  const firsts = new Set<JudgedDiagnosisObservation>();
-  for (const o of wrong) if (!seen.has(o.itemId ?? '')) { seen.add(o.itemId ?? ''); firsts.add(o); }
-  const kept = new Set(Array.from(firsts).concat(wrong.filter((o) => !firsts.has(o))).slice(0, 12));
-  const phases = wrong.filter((o) => kept.has(o));
-  const judged = [...wrong].reverse().find((o) => o.judgeFeedback);
-  const modes = Array.from(new Set(kinds));
+export function countingBoardEvidenceSummary(items: readonly Pick<CountingItem, 'kind'>[]): { task: string; expected: string } {
+  const modes = Array.from(new Set(items.map((item) => item.kind)));
   const what = modes.length === 1 ? SESSION[modes[0]] ?? 'the learner counts the objects on each board and says how many' : `boards of ${modes.join(', ')}`;
   return {
-    firstResponseScore: Math.round((clean / boards) * 100),
-    challengeSummary: `Counting board (${modes.join(', ')}), ${boards} boards: ${what}. A wrong answer gets the tutor's scripted correction and the same question again, up to two corrections per board. ${clean} of ${boards} boards were answered right the first time.`,
+    task: `Counting board (${modes.join(', ')}), ${items.length} boards: ${what}.`,
     expected: (modes.length === 1 && EXPECTED[modes[0]]) || 'The number of objects the board shows.',
-    observed: phases.map((o) => `${o.challenge} ${o.observed}`).join(' | ').slice(0, 2000),
-    ...(judged?.judgeFeedback ? { judgeFeedback: judged.judgeFeedback } : {}),
-    phases: phases.map((o) => ({
-      itemId: o.itemId ?? 'unknown', phase: o.phase ?? 'unspecified', challenge: o.challenge, expected: o.expected, observed: o.observed,
-      support: o.support ?? 'Assistance history unknown',
-    })),
   };
 }

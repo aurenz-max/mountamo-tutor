@@ -42,11 +42,10 @@ export interface FractionBarChallenge {
   denominatorChoices: number[];
 }
 
+import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
 export interface FractionBarData {
   /** Safe adaptation metadata only; `source` is stamped by the generation server. */
-  learningAdaptation?: { move: 'contrast_shared_digit_roles';
-    status: 'targeted' | 'already-targeted' | 'insufficient-capacity'; comparisonCount: number;
-    source?: 'saved-observation' };
+  learningAdaptation?: LearningAdaptation<'contrast_shared_digit_roles'>;
   title: string;
   description: string;
   /** 1-6 challenges. Walked sequentially by the component. */
@@ -797,6 +796,8 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
           {/* ═══════════════════════════════════════════════════
               Phase 1 — Identify the Numerator
              ═══════════════════════════════════════════════════ */}
+          {pip.store && <div {...pip.dock} />}
+          <div {...pip.workspace}>
           {currentPhase === 'identify-numerator' && !challengeDone && (
             <div className="glass-panel rounded-2xl border border-purple-500/30 p-6 mb-6 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500" />
@@ -985,6 +986,8 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
               </div>
             </div>
           )}
+
+          </div>
 
           {/* ── Feedback bar ───────────────────────────────── */}
           {feedback && (

@@ -56,6 +56,7 @@ import {
   type JudgedStatusLines,
 } from './judgedScriptContract';
 import { SoundManager } from '../utils/SoundManager';
+import { judgedRunEvidence } from './judgedRunEvidence';
 import type { DiagnosisEvidence } from '../evaluation/diagnosis/types';
 import type { LearningResponseEvidence } from '../evaluation/learningResponseEvidence';
 
@@ -536,32 +537,14 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
       : 0;
     const passed = accuracy >= (packRef.current.passThreshold ?? DEFAULT_PASS_THRESHOLD);
 
-    // Tier-A evidence assembly (cvc-speller shape): prefer the latest
-    // judge-backed observation — the correction line NAMES the error — over
-    // the merely latest one.
+    // Evidence for the shared capture layer: first-response share, every item's
+    // first wrong attempt kept under the phase cap, the pack's own session
+    // statement. A passing average can hide wrong first answers, so the
+    // evidence is assembled whatever the score; capture policy owns gating.
     const observations = observationsRef.current;
-    const latest = observations[observations.length - 1];
-    const judgeBacked = [...observations].reverse().find((o) => o.judgeFeedback);
-    const source = judgeBacked || latest;
-    // A passing average can contain unsolved phases. Preserve observations;
-    // the primitive's submission verdict and shared capture policy own gating.
-    const diagnosisEvidence: DiagnosisEvidence | undefined = source
-      ? {
-          challengeSummary: source.challenge,
-          expected: source.expected,
-          observed: source.observed,
-          judgeFeedback: judgeBacked?.judgeFeedback,
-          phases: observations.slice(-12).map(o => ({
-            itemId: o.itemId ?? 'unknown', phase: o.phase ?? 'unspecified',
-            challenge: o.challenge, expected: o.expected, observed: o.observed,
-            support: o.support ?? 'Assistance history unknown',
-          })),
-          priorAttempts: observations
-            .filter((o) => o !== source)
-            .slice(-4)
-            .map((o) => ({ challenge: o.challenge, observed: o.observed })),
-        }
-      : undefined;
+    const diagnosisEvidence: DiagnosisEvidence | undefined = judgedRunEvidence({
+      outcomes, observations, items: packRef.current.items, pack: packRef.current,
+    });
 
     const runSummary: JudgedRunSummary = {
       ...(optionsRef.current.recordOpportunityEvents ? { opportunityEvents: [...opportunityEventsRef.current] } : {}),
@@ -697,28 +680,38 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
           if (item && item.answerKind !== 'gesture') setStatusLine(lines.noVerdict(item));
           break;
         }
-        if (item && packRef.current.responseObservation) {
+        const corrected = emission.judgment === 'corrected';
+        const correctionSupport = (id: string) =>
+          `Correction observation; ${correctionsRef.current.get(id) ?? 0} prior corrections on this item. Other assistance is not established.`;
+        if (item && packRef.current.observation) {
+          // ONE callback per attempt. Every attempt that carries evidence (a
+          // gesture, or a voice attempt with a transcript) goes to the response
+          // ledger; a correction is also a diagnosis observation, transcript or
+          // not, and the pack states "no transcript" itself.
           const attempt = emission.attempt;
-          // No transcript means no voice evidence. A verdict alone is insufficient.
-          const observed = attempt.source === 'gesture' || attempt.transcript?.trim()
-            ? packRef.current.responseObservation(item, { lastHeard: attempt.transcript }) : null;
+          const heard = attempt.source === 'gesture' ? null : (attempt.transcript ?? lastHeardRef.current);
+          const carriesEvidence = attempt.source === 'gesture' || !!attempt.transcript?.trim();
+          const observed = carriesEvidence || corrected
+            ? packRef.current.observation(item, { heard, verdict: emission.judgment }) : null;
           if (observed?.observed.trim()) {
-            const priorCorrections = correctionsRef.current.get(item.id) ?? 0;
-            learningResponsesRef.current.push({ ...observed, itemId: item.id,
-              phase: item.action ?? item.responseClass, verdict: emission.judgment,
-              source: attempt.source, priorCorrections, hearTapsSoFar: hearTapsRef.current,
-              support: `${priorCorrections} prior corrections on this item; ${hearTapsRef.current} stimulus replays so far in this run. Other assistance and independence are not established.`,
-            });
+            if (carriesEvidence) {
+              const priorCorrections = correctionsRef.current.get(item.id) ?? 0;
+              learningResponsesRef.current.push({ ...observed, itemId: item.id,
+                phase: item.action ?? item.responseClass, verdict: emission.judgment,
+                source: attempt.source, priorCorrections, hearTapsSoFar: hearTapsRef.current,
+                support: `${priorCorrections} prior corrections on this item; ${hearTapsRef.current} stimulus replays so far in this run. Other assistance and independence are not established.`,
+              });
+            }
+            if (corrected) observationsRef.current.push({ ...observed, itemId: item.id,
+              phase: item.action ?? item.responseClass, support: correctionSupport(item.id) });
           }
-        }
-        if (emission.judgment === 'corrected' && item) {
+        } else if (corrected && item) {
+          // Legacy packs: corrections only (see `diagnosisObservation`).
           const observation = packRef.current.diagnosisObservation?.(item, {
             lastHeard: lastHeardRef.current,
           });
           if (observation) observationsRef.current.push({ ...observation,
-            itemId: item.id, phase: item.action ?? item.responseClass,
-            support: `Correction observation; ${correctionsRef.current.get(item.id) ?? 0} prior corrections on this item. Other assistance is not established.`,
-          });
+            itemId: item.id, phase: item.action ?? item.responseClass, support: correctionSupport(item.id) });
         }
         applyVerdict(emission.judgment, emission.attempt.turn?.openedAt);
         break;

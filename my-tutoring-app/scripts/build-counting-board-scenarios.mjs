@@ -17,7 +17,11 @@ const server = await vite.createServer({
 try {
   const L = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const S = '/src/components/lumina/primitives/visual-primitives/math';
-  const { countingBoardDiagnosisEvidence, countingObservation, countingTask } = await L.import(S + '/countingBoardEvidence.ts');
+  const { countingBoardEvidenceSummary, countingObservation, countingTask } = await L.import(S + '/countingBoardEvidence.ts');
+  const { judgedRunEvidence } = await L.import('/src/components/lumina/hooks/judgedRunEvidence.ts');
+  // The runner owns first-response scoring and phase selection (slice 1); the pack supplies the per-mode statement.
+  const countingBoardDiagnosisEvidence = (summary, items) => judgedRunEvidence({ outcomes: summary.outcomes, observations: summary.observations, items,
+    pack: { activityLine: 'Counting board', evidenceSummary: countingBoardEvidenceSummary } });
 
   // Helper: build one CountingItem.
   const item = (kind, fields) => ({ id: fields.id, kind, objectWord: fields.objectWord ?? 'bears', ...fields });
@@ -34,7 +38,7 @@ try {
     const observations = items.map((it) => countingObservation(it, gradeBand, { heard: String(it.changeBy) }));
     const outcomes = items.map((it) => ({ id: it.id, solved: true, corrections: 1, score: 67, seconds: 6 }));
     const summary = { outcomes, observations, solvedCount: 3, firstTryCount: 0, attemptsCount: 6, accuracy: 67, passed: true, hearTaps: 3 };
-    const evidence = countingBoardDiagnosisEvidence(summary, items.map((i) => i.kind));
+    const evidence = countingBoardDiagnosisEvidence(summary, items);
     writeFileSync(resolve(out, 'cb-scenario-take-away-states-change.json'), JSON.stringify(evidence, null, 2));
   }
 
@@ -49,7 +53,7 @@ try {
     const observations = items.map((it) => countingObservation(it, gradeBand, { heard: String(it.count - (it.startFrom ?? 0)) }));
     const outcomes = items.map((it) => ({ id: it.id, solved: true, corrections: 1, score: 67, seconds: 8 }));
     const summary = { outcomes, observations, solvedCount: 3, firstTryCount: 0, attemptsCount: 6, accuracy: 67, passed: true, hearTaps: 3 };
-    const evidence = countingBoardDiagnosisEvidence(summary, items.map((i) => i.kind));
+    const evidence = countingBoardDiagnosisEvidence(summary, items);
     writeFileSync(resolve(out, 'cb-scenario-count-on-extras-only.json'), JSON.stringify(evidence, null, 2));
   }
 
@@ -65,7 +69,7 @@ try {
     const observations = items.map((it) => countingObservation(it, gradeBand, { heard: String(it.count + 1) }));
     const outcomes = items.map((it) => ({ id: it.id, solved: true, corrections: 1, score: 67, seconds: 7 }));
     const summary = { outcomes, observations, solvedCount: 3, firstTryCount: 0, attemptsCount: 6, accuracy: 67, passed: true, hearTaps: 3 };
-    const evidence = countingBoardDiagnosisEvidence(summary, items.map((i) => i.kind));
+    const evidence = countingBoardDiagnosisEvidence(summary, items);
     writeFileSync(resolve(out, 'cb-scenario-recount-moved-conservation.json'), JSON.stringify(evidence, null, 2));
   }
 
@@ -84,7 +88,7 @@ try {
     ];
     const outcomes = items.map((it) => ({ id: it.id, solved: true, corrections: 1, score: 67, seconds: 9 }));
     const summary = { outcomes, observations, solvedCount: 3, firstTryCount: 0, attemptsCount: 6, accuracy: 67, passed: true, hearTaps: 3 };
-    const evidence = countingBoardDiagnosisEvidence(summary, items.map((i) => i.kind));
+    const evidence = countingBoardDiagnosisEvidence(summary, items);
     // Attach one judge-backed correction line, mirroring the DI sentinel script, to test a tier-A packet.
     evidence.judgeFeedback = 'My turn: I put two more bears on and counted them all — one, two, three, four, five, six. Your turn. How many altogether?';
     writeFileSync(resolve(out, 'cb-scenario-add-more-inconsistent.json'), JSON.stringify(evidence, null, 2));
@@ -101,7 +105,7 @@ try {
     const observations = items.map((it) => countingObservation(it, gradeBand, { heard: String(it.count) }));
     const outcomes = items.map((it) => ({ id: it.id, solved: true, corrections: 1, score: 67, seconds: 6 }));
     const summary = { outcomes, observations, solvedCount: 3, firstTryCount: 0, attemptsCount: 6, accuracy: 67, passed: true, hearTaps: 3 };
-    const evidence = countingBoardDiagnosisEvidence(summary, items.map((i) => i.kind));
+    const evidence = countingBoardDiagnosisEvidence(summary, items);
     writeFileSync(resolve(out, 'cb-scenario-take-away-states-start.json'), JSON.stringify(evidence, null, 2));
   }
 
@@ -116,7 +120,7 @@ try {
     const observations = items.map((it) => countingObservation(it, gradeBand, { heard: String(it.startFrom) }));
     const outcomes = items.map((it) => ({ id: it.id, solved: true, corrections: 1, score: 67, seconds: 8 }));
     const summary = { outcomes, observations, solvedCount: 3, firstTryCount: 0, attemptsCount: 6, accuracy: 67, passed: true, hearTaps: 3 };
-    const evidence = countingBoardDiagnosisEvidence(summary, items.map((i) => i.kind));
+    const evidence = countingBoardDiagnosisEvidence(summary, items);
     writeFileSync(resolve(out, 'cb-scenario-count-on-says-start-back.json'), JSON.stringify(evidence, null, 2));
   }
 

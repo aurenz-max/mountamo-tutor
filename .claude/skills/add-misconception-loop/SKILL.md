@@ -90,6 +90,15 @@ items to the owning queue with this skill named (`/pm`). Missing evidence or a
 missing move is additional work, never a reason to ship a nominal adaptation.
 Preserve unrelated working-tree changes.
 
+**A real-baseline census per candidate mode decides scope; simulation only
+brackets the risk.** Draw 3 to 11 registry generations per mode before any code
+and count how often the candidate contrast is already there. On ten-frame that
+ruled out make_ten, subitize and a second operate move, while one simulated
+distribution put the Grade 1 chance rate at 50% against 0 of 10 real sessions.
+Record a "no move" verdict with one reason from this list, with the measured
+rate where it applies: contrast already present (x of n real baselines); no
+content lever; answer judged in code; blocked by a named defect.
+
 ## Phase 2 — Capture (skip for a consumer-only connection)
 
 1. **Record every checked response** in the component, including tries later
@@ -102,21 +111,46 @@ Preserve unrelated working-tree changes.
    loops and rounded per-item scores often report 100 anyway (number-line,
    fraction-circles, bar-model and area-model all did). If the error is invisible,
    set `firstResponseScore` in the evidence (percent of items with no wrong
-   response); the shared gate applies its `< 60` threshold to it. Queue the
+   response); the shared gate applies its `< 60` threshold to it. The judged
+   runner sets it for every pack (`hooks/judgedRunEvidence.ts`); only a
+   non-judged primitive sets it itself. Queue the
    scoring defect to `/eval-fix` — do not change the score in this slice.
-3. **Build `<id>Evidence.ts`**: a pure function returning `DiagnosisEvidence` or
-   `undefined` when nothing was wrong. Facts only; no error type named in code.
-   Stay inside the store's limits, because capture trims silently:
+3. **Judged-runner primitives build no evidence.** The runner assembles it in
+   `hooks/judgedRunEvidence.ts`: `firstResponseScore`, every item's first wrong
+   attempt ahead of later ones under the 12-phase cap, the pack's session
+   statement, the latest judge line. The pack supplies ONE `observation(item,
+   { heard, verdict })` callback (facts from the item's own fields and the
+   committed board, read before the verdict resets it; the runner calls it on
+   every verdict, keeps all of them as `learningResponses` and the corrected
+   ones as diagnosis observations, so the text must state what was heard or
+   done, never the verdict) and `evidenceSummary(items)` (what a session of
+   these kinds is, and what a right answer on it is, per kind). The component
+   submits `summary.diagnosisEvidence`. `diagnosisObservation` is a deprecated
+   corrections-only alias for packs not yet migrated.
+   Do not write an `<id>Evidence.ts` builder or a `firstResponseScore` patch for a
+   judged primitive; counting-board, ten-frame and base-ten-blocks had three
+   copies before the runner owned it.
+
+   **Non-judged primitives build `<id>Evidence.ts`**: a pure function returning
+   `DiagnosisEvidence` or `undefined` when nothing was wrong. Facts only; no error
+   type named in code. Stay inside the store's limits, because capture trims silently:
 
    | Field | Limit |
    |---|---|
-   | `phases` | **12** — capture keeps `slice(-12)`, dropping the earliest errors. Emit ≤ 12 yourself, wrong responses first. |
+   | `phases` | **12** — capture keeps `slice(-12)`. Emit ≤ 12 yourself with every item's first wrong attempt ahead of any later one, in the order they happened (the judged runner does this). |
    | `challenge`, `expected`, `observed`, `problem` | 2000 chars |
    | `support` | 600; `itemId`, `phase` 200 |
    | distilled `misconception_text` | 600 |
    | delivered to the planner | ≤ 10 observations, summary 4000, evidence 7000 (planner rejects > 8000) |
 
 4. **Pass it as the sixth argument** of `submitResult(success, score, metrics, studentWork, partialCredit, diagnosisEvidence)`.
+   The submitted `metrics.evalMode` is normalised to a catalog eval-mode key at
+   the evaluation boundary (`evaluation/evalModeKey.ts`, in `submitResult`): a
+   single-key manifest pin wins, a catalog mode is kept, a challenge type listed
+   under one mode becomes that mode, anything else is kept and warned about once
+   in development. Report a catalog mode from the component anyway; a challenge
+   type that several modes share (knowledge-check's `multiple_choice`) cannot be
+   resolved and keys IRT on the type.
 5. **Declare the source** in the catalog entry: `misconceptionScope: 'skill'`,
    `observationDelivery: 'server'`. Production backend code names no primitive
    (2026-09-13 ruling); capture relays the declaration.
@@ -160,8 +194,17 @@ that look like a capability failure.
    `componentId ===` case. Scope subject comes from `config.objectiveSubject`. A
    certified retest is a catalog `retest` declaration (`placeValueRetest`), not a
    new server module. Read `/student-data-loop` before changing delivery itself.
-2. **Generator:** read `ctx.learningObservations`; no observations or an
-   ineligible task means no planner call. Call `planLearningAdaptation` in
+2. **Generator:** use the shared step in `service/generation/adaptationStep.ts`,
+   never a hand-rolled copy: `plannedMode(resolution)` (the resolved catalog eval
+   mode when exactly one; a blend or `mixed` is undefined), `adaptationTaskFor(ctx,
+   topic, { mode, tier })`, `planAdaptation(ctx, { task, capability, eligible })`
+   (no capability, no observations or an ineligible task means no planner call)
+   and `stampAdaptation(move, selected)` (the one status rule: a selector's
+   `no-focus` is reported as `insufficient-capacity`, never omitted). Type the
+   data field as `LearningAdaptation<Move>` from `learningAdaptation.ts`. The
+   planned mode is never the first allowed challenge type: ten-frame's pinned
+   type for `operate` is `add`, and a capability described for `operate`
+   abstains on it. Call `planLearningAdaptation` in
    parallel with any wrapper call, and never put observation text in a wrapper
    prompt or output.
 3. **Execute:** for code-owned content, run the selector over the mode's full
@@ -187,7 +230,7 @@ that look like a capability failure.
 | `<id>Remediation.test.ts` | gates per mode/grade; compiled recheck positives and negatives; selector keeps count, ids, flags, uniqueness; capacity miss returns the baseline |
 | `gemini-<id>.adaptation.test.ts` | seeded baseline without the contrast gains it; **fails with the selector removed (check it)**; abstain and unknown move leave a byte-identical baseline; no planner call without observations or when ineligible; private text absent from wrapper and output; oracle clean |
 | `<Component>.capture.test.tsx` | mounted: wrong first responses recorded factually, submitted outcome unchanged, gate fires; all-correct attaches no evidence |
-| `<id>Evidence.test.ts` | phase cap and ordering |
+| `<id>Evidence.test.ts` | non-judged builders: phase cap and ordering. Judged packs: the `evidenceSummary` text per kind; cap and ordering are the runner's (`hooks/judgedRunEvidence.test.ts`) |
 | `service/generation/<id>ObservationServer.test.ts` | real registry path with a packet from `learningObservationPacket.fixtures.ts` (`signedObservation`): the delivered id reaches the planner, private text stays out, ineligible tasks and requests without a packet never plan, abstention claims no origin |
 
 **Real engines.** Copy `my-tutoring-app/scripts/probe-area-model-applicability.mjs`
@@ -212,6 +255,11 @@ when shared capture, store, packet or delivery code changes.
   `learningObservations` are stripped from every declared consumer, so a probe
   through them reports every draw unadapted.
 - **Build evidence with the shipped evidence module**, not hand-written packets.
+  For a judged primitive that is `judgedRunEvidence` over the mounted pack's
+  `diagnosisObservation`. `scripts/misconception-harness/judged-evidence-census.mjs`
+  does this for every declared judged source (real generation → mounted pack →
+  real distiller, report under `artifacts/learning-applicability/judged-census/`)
+  and is the rerun after any runner, capture or observation-text change.
 - **Cases, with expected outcomes written in the script before running:**
   distilled text; two meaning-preserving paraphrases; each eligible mode and the
   hard tier; unrelated; a nearby concept the move cannot teach; contradictory
@@ -232,7 +280,10 @@ when shared capture, store, packet or delivery code changes.
 - **Report two rates:** chance rate (how often unadapted content already carries
   the contrast) and capacity-miss rate (simulate the selector over the picker for
   code-owned pools, e.g. 20,000 sessions).
-- Read compiled outputs, not only metadata. Never retry a semantic failure until
+- Read compiled outputs, not only metadata. For a judged primitive also read the
+  item cue (`itemCue`) for rewritten and baseline items: the ten-frame contract on
+  8 take away 4 refused the right answer (TF-5), and no rendered field showed it.
+  Never retry a semantic failure until
   it passes: find the cause, repair the contract, keep the failed run, then rerun
   every case the repair could affect.
 

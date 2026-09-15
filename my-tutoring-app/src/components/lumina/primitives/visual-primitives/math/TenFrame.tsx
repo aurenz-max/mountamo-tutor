@@ -111,7 +111,7 @@ import {
   type TenFrameBand,
   type TenFrameItem,
 } from './tenFrameScript';
-import { tenFrameDiagnosisEvidence, tenFrameObservation } from './tenFrameEvidence';
+import { tenFrameEvidenceSummary, tenFrameObservation } from './tenFrameEvidence';
 import { numberWordFor } from './countingBoardScript';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
@@ -148,10 +148,10 @@ export interface TenFrameChallenge {
   narration: string;
 }
 
+import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
 export interface TenFrameData {
   /** Safe adaptation metadata; `source` is stamped only by the observation delivery server. */
-  learningAdaptation?: { move: 'contrast_same_first_number_different_second';
-    status: 'targeted' | 'already-targeted' | 'insufficient-capacity'; comparisonCount: number; source?: 'saved-observation' };
+  learningAdaptation?: LearningAdaptation<'contrast_same_first_number_different_second'>;
   title: string;
   description?: string;
   mode: 'single' | 'double';
@@ -358,10 +358,10 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
         : 'Have another go — say your answer.',
       done: 'Great number work today!',
     },
-    // Facts from the item's own fields and the committed frame, per mode; the same record is kept for
-    // right answers in student work. Read before the verdict resets the frame.
-    diagnosisObservation: (item, { lastHeard }) => observe(item, lastHeard),
-    responseObservation: (item, { lastHeard }) => observe(item, lastHeard),
+    // Facts from the item's own fields and the committed frame, per mode; one record per attempt, so
+    // right answers reach student work too. Read before the verdict resets the frame.
+    observation: (item, { heard }) => observe(item, heard),
+    evidenceSummary: tenFrameEvidenceSummary,
   }), [items, observe]);
 
   // ── Per-item frame reset — every item owns its starting state (R6) ────────
@@ -457,7 +457,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
     // An item right after one correction still scores 67, so wrong first answers rarely reach the
     // session score; the evidence carries the first-response share the shared gate reads.
-    const diagnosisEvidence = tenFrameDiagnosisEvidence(summary, items);
+    const diagnosisEvidence = summary.diagnosisEvidence;
     evaluation.submitResult(
       summary.solvedCount === items.length,
       summary.accuracy,

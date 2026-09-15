@@ -10,7 +10,7 @@ import {
 } from '../evalMode';
 import { buildScopePromptSection, type PedagogicalScope } from '../scopeContext';
 import type { GenerationContext } from '../generation/generationContext';
-import { planLearningAdaptation } from '../generation/planLearningAdaptation';
+import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';
 import { eligibleNumberTracerTeaching, numberTracerSequenceTeaching, selectGapPositionContrast } from './numberTracerRemediation';
 
 // ===========================================================================
@@ -596,9 +596,7 @@ export async function generateNumberTracer(ctx: GenerationContext): Promise<Numb
 
   // Saved observations reach only the shared applicability planner, never a generation prompt.
   // No observations or an ineligible task → no planner call.
-  const observations = ctx.learningObservations ?? [];
-  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
-    mode: pinnedType, tier: supportTier ?? undefined };
+  const adaptationTask = adaptationTaskFor(ctx, topic, { mode: plannedMode(evalConstraint), tier: supportTier ?? undefined });
   const [handwriting, sequence, move] = await Promise.all([
     wantsHandwriting
       ? generateHandwriting(topic, gradeLevel, gradeBand, handwritingTypes, hwCount, scope, evalConstraint, tierSection)
@@ -606,8 +604,7 @@ export async function generateNumberTracer(ctx: GenerationContext): Promise<Numb
     wantsSequence
       ? generateSequence(topic, gradeLevel, gradeBand, seqCount, scope, tierSection)
       : Promise.resolve(null),
-    observations.length && eligibleNumberTracerTeaching(adaptationTask)
-      ? planLearningAdaptation(numberTracerSequenceTeaching, adaptationTask, observations) : null,
+    planAdaptation(ctx, { task: adaptationTask, capability: numberTracerSequenceTeaching, eligible: eligibleNumberTracerTeaching }),
   ]);
 
   // ── Validated teaching move: code rewrites one run; the answer stays sequenceNumbers[missingIndex].
@@ -615,8 +612,7 @@ export async function generateNumberTracer(ctx: GenerationContext): Promise<Numb
   if (move && pinnedType === 'sequence' && sequence && !handwriting) {
     const selected = selectGapPositionContrast(sequence.challenges, move);
     sequence.challenges = [...selected.challenges];
-    learningAdaptation = { move, comparisonCount: selected.count,
-      status: selected.status === 'no-focus' ? 'insufficient-capacity' : selected.status };
+    learningAdaptation = stampAdaptation(move, selected);
   }
 
   // ── Combine — handwriting first (easier), then sequence (harder) ──

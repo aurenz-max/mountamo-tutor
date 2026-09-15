@@ -82,10 +82,10 @@ export interface NumberTracerChallenge {
   supportTier?: 'easy' | 'medium' | 'hard';
 }
 
+import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
 export interface NumberTracerData {
   /** Safe adaptation metadata; `source` is stamped only by the observation delivery server. */
-  learningAdaptation?: { move: 'contrast_gap_positions_in_one_run'; status: 'targeted' | 'already-targeted' | 'insufficient-capacity';
-    comparisonCount: number; source?: 'saved-observation' };
+  learningAdaptation?: LearningAdaptation<'contrast_gap_positions_in_one_run'>;
   title: string;
   description?: string;
   challenges: NumberTracerChallenge[];

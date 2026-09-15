@@ -10,6 +10,7 @@ import type {
 import type { DiagnosisEvidence } from '../diagnosis/types';
 import { useEvaluationContext } from '../contexts/EvaluationContext';
 import { useExhibitContext } from '../../contexts/ExhibitContext';
+import { resolveSubmittedEvalMode, warnUnresolvedEvalMode } from '../evalModeKey';
 import { resolveRemediationIdentity } from '../remediation/remediationTransport';
 
 /**
@@ -269,12 +270,25 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     // their explicit/problem-level ids or lesson fallback.
     const resolvedSkillId = objectiveOwn?.skillId || skillId || evaluationContext?.curriculumSkillId;
     const resolvedSubskillId = objectiveOwn?.subskillId || subskillId || evaluationContext?.curriculumSubskillId;
+
+    // The submitted eval mode is a CATALOG key (handoff slice 3): a single-key
+    // manifest pin for this instance wins, a reported catalog mode is kept, a
+    // challenge type listed under one mode becomes that mode, anything else is
+    // kept and warned about once in development. Written back into the
+    // metrics, because capture and the backend both read `metrics.evalMode`.
+    const manifestItem = exhibitContext.manifestItems.find((candidate) => candidate.instanceId === instanceId);
+    const reportedEvalMode = metrics.evalMode ?? ('challengeType' in metrics ? String(metrics.challengeType) : undefined);
+    const resolvedEvalMode = resolveSubmittedEvalMode(primitiveType, reportedEvalMode, manifestItem?.config?.targetEvalMode);
+    warnUnresolvedEvalMode(primitiveType, resolvedEvalMode);
+    const submittedMetrics: TMetrics = resolvedEvalMode.evalMode && resolvedEvalMode.evalMode !== metrics.evalMode
+      ? { ...metrics, evalMode: resolvedEvalMode.evalMode }
+      : metrics;
     const remediationIdentity = resolveRemediationIdentity(
       exhibitContext.manifestItems,
       instanceId,
       primitiveType,
       resolvedSkillId,
-      metrics.evalMode ?? ('challengeType' in metrics ? String(metrics.challengeType) : undefined),
+      resolvedEvalMode.evalMode,
     );
 
     // Determine provenance of the IDs so the backend knows whether to trust them
@@ -322,7 +336,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
       success,
       score: Math.max(0, Math.min(100, score)), // Clamp to 0-100
       partialCredit: partialCredit !== undefined ? Math.max(0, Math.min(100, partialCredit)) : undefined,
-      metrics,
+      metrics: submittedMetrics,
       skillId: resolvedSkillId,
       subskillId: resolvedSubskillId,
       objectiveId: objectiveId || objectiveOwn?.id,

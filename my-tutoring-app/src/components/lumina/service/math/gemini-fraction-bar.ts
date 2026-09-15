@@ -27,7 +27,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
-import { planLearningAdaptation } from "../generation/planLearningAdaptation";
+import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';
 import { eligibleFractionBarTeaching, fractionBarTeaching, selectSharedDigitRoleContrast } from "./fractionBarRemediation";
 
 // ---------------------------------------------------------------------------
@@ -535,10 +535,7 @@ Return ONLY the wrapper metadata in the response schema.
 
   // Saved observations reach only the shared applicability planner, never this
   // wrapper prompt. No observations or an ineligible task → no planner call.
-  const observations = ctx.learningObservations?.length ? ctx.learningObservations
-    : ctx.remediationFocus ? [{ id: 'active-observation', summary: ctx.remediationFocus }] : [];
-  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
-    mode: pinnedType, tier: supportTier ?? undefined };
+  const adaptationTask = adaptationTaskFor(ctx, topic, { mode: plannedMode(evalConstraint), tier: supportTier ?? undefined });
   const [result, remediationMove] = await Promise.all([
     ai.models.generateContent({
       model: "gemini-flash-latest",
@@ -551,8 +548,7 @@ Return ONLY the wrapper metadata in the response schema.
         responseSchema: activeSchema,
       },
     }),
-    observations.length && eligibleFractionBarTeaching(adaptationTask)
-      ? planLearningAdaptation(fractionBarTeaching, adaptationTask, observations) : null,
+    planAdaptation(ctx, { task: adaptationTask, capability: fractionBarTeaching, eligible: eligibleFractionBarTeaching }),
   ]);
 
   const wrapper = result.text ? JSON.parse(result.text) : null;
@@ -590,8 +586,7 @@ Return ONLY the wrapper metadata in the response schema.
       denominatorChoices: buildChoices(p.denominator, p.numerator, 2, distractorTightness),
     }));
     challenges = [...selected.challenges];
-    learningAdaptation = { move: remediationMove, comparisonCount: selected.count,
-      status: selected.status === 'no-focus' ? 'insufficient-capacity' : selected.status };
+    learningAdaptation = stampAdaptation(remediationMove, selected);
   }
 
   // Decimal: tier wins when present; else the existing config/grade-based behavior.

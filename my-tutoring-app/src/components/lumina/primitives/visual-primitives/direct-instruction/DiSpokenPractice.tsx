@@ -160,7 +160,7 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
       averageAttemptsPerChallenge:
         summary.attemptsCount / Math.max(summary.outcomes.length, 1),
     };
-    submitResult(summary.passed, summary.accuracy, metrics);
+    submitResult(summary.passed, summary.accuracy, metrics, undefined, undefined, summary.diagnosisEvidence);
   }, [data.challengeType, submitResult]);
 
   const runner = useJudgedScriptRunner<SpokenPracticeItem>({

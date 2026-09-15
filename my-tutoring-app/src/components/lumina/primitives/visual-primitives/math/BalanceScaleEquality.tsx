@@ -89,13 +89,10 @@ export default function BalanceScaleEquality({ data, className }: { data: Balanc
       attemptsCount: attempts, firstTryCount: results.filter((result) => result.score === 100).length,
       hintsViewed: helped.current.size, overallAccuracy: accuracy,
       averageAttemptsPerChallenge: attempts / Math.max(1, results.length) };
-    const source = [...summary.observations].reverse().find((observation) => observation.judgeFeedback)
-      ?? summary.observations[summary.observations.length - 1];
+    // The runner owns the evidence (first-response share, kept phases); the shared capture gate decides.
     evaluation.submitResult(accuracy >= 60, accuracy, metrics,
       { interactionVersion: 'match-compose-infer-di-v2', scoringBasis: 'spoken-sum-and-weight-inference',
-        explorationIsUngraded: true, results }, undefined,
-      accuracy < 60 && source ? { challengeSummary: source.challenge, expected: source.expected,
-        observed: source.observed, judgeFeedback: source.judgeFeedback } : undefined);
+        explorationIsUngraded: true, results }, undefined, summary.diagnosisEvidence);
   };
 
   const runner = useJudgedScriptRunner({ pack, instanceId: instance.current,

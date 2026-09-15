@@ -582,25 +582,40 @@ export interface JudgedScriptPack<Item extends JudgedScriptItem> {
   /** Session pass threshold for the summary. Default 60. */
   passThreshold?: number;
   statusLines?: Partial<JudgedStatusLines<Item>>;
-  /** Build Tier-A evidence at each correction; return null to skip. May close
-   *  over component state (board contents etc.) — the runner reads the pack
-   *  through a ref, so closures stay fresh. */
+  /**
+   * One factual observation per judged attempt: what was asked, the key, and
+   * what was heard or done, from the item's own fields and the committed board
+   * (the runner calls it before the verdict resets the board). Called on EVERY
+   * verdict: the runner keeps all of them as `learningResponses` (student work)
+   * and the corrected ones as the diagnosis observations behind
+   * `summary.diagnosisEvidence`. State what was heard or done, never the
+   * verdict, because the same text is recorded for right answers. `heard` is
+   * the judged attempt's transcript (null for a gesture or a silent attempt).
+   * May close over component state; the runner reads the pack through a ref.
+   */
+  observation?: (
+    item: Item,
+    context: { heard: string | null; verdict: 'affirmed' | 'corrected' },
+  ) => { challenge: string; expected: string; observed: string } | null;
+  /** @deprecated Corrections only, so right answers never reach student work.
+   *  Kept so existing packs compile; migrate to `observation`. Ignored when
+   *  `observation` is set. */
   diagnosisObservation?: (
     item: Item,
     context: { lastHeard: string | null },
   ) => Omit<JudgedDiagnosisObservation, 'judgeFeedback'> | null;
-  /** Opt-in factual response capture on both verdicts, before reveal/reset.
-   * Voice text belongs to the judged attempt, never the previous item. */
-  responseObservation?: (
-    item: Item,
-    context: { lastHeard: string | null },
-  ) => { challenge: string; expected: string; observed: string } | null;
+  /** How the run's session and its correct outcome read to the distiller, from
+   *  the items actually asked (a mode-forked pack describes each kind present).
+   *  The runner adds the item count, the correction policy and the first-time
+   *  share itself (`judgedRunEvidence`). Omit = `activityLine` and the latest
+   *  observation's `expected`. */
+  evidenceSummary?: (items: readonly Item[]) => { task: string; expected: string };
 }
 
 /**
  * THE WIRE: every field of a pack that can reach the tutor. The rest of
  * `JudgedScriptPack` is component-owned — status lines are rendered, and
- * `diagnosisObservation` closes over board state — so a pack splits cleanly
+ * `observation` closes over board state — so a pack splits cleanly
  * into "what the tutor is told" and "what the screen does with the verdict".
  *
  * Named because a SECOND consumer arrived: the DI drive-plan endpoint

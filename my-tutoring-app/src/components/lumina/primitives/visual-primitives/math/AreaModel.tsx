@@ -84,11 +84,10 @@ export interface AreaModelChallenge {
   };
 }
 
+import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
 export interface AreaModelData {
   /** Safe adaptation metadata; `source` is stamped only by the observation delivery server. */
-  learningAdaptation?: { move: 'contrast_same_fact_across_places' | 'contrast_equal_area_perimeters';
-    status: 'targeted' | 'already-targeted' | 'insufficient-capacity'; comparisonCount: number;
-    source?: 'saved-observation' };
+  learningAdaptation?: LearningAdaptation<'contrast_same_fact_across_places' | 'contrast_equal_area_perimeters'>;
   title: string;
   description: string;
   /** 1-6 challenges. Walked sequentially by the component. */
@@ -1335,6 +1334,8 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
               </LuminaCardContent>
             </LuminaCard>
           )}
+
+          </div>
 
           {/* Between-challenge interstitial: shown after the current challenge is done */}
           {challengeDone && (

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { tenFrameDiagnosisEvidence, tenFrameObservation, tenFrameTask } from './tenFrameEvidence';
+import { tenFrameEvidenceSummary, tenFrameObservation, tenFrameTask } from './tenFrameEvidence';
 import { itemFromChallenge, itemsFromChallenges, type TenFrameChallengeLike, type TenFrameBand } from './tenFrameScript';
 
 const item = (ch: Omit<TenFrameChallengeLike, 'id'> & { id?: string }, capacity = 10, band: TenFrameBand = 'K') =>
@@ -38,34 +38,14 @@ it('observes what was said, placed or turned yellow', () => {
   expect(tenFrameObservation(item({ type: 'build', targetCount: 6 }), { onFrame: 5 }).observed).toBe('Placed 5 counters.');
 });
 
-it('no wrong attempt means no evidence', () => {
-  const outcomes = ['a', 'b'].map(id => ({ id, solved: true, corrections: 0, score: 100, seconds: 3 }));
-  expect(tenFrameDiagnosisEvidence({ outcomes, observations: [] }, [{ kind: 'subtract' }, { kind: 'subtract' }])).toBeUndefined();
-});
-
-it('keeps at most 12 phases: every item\'s first wrong attempt before later ones, emitted in the order they happened', () => {
-  // 8 items, each corrected twice: 16 wrong attempts.
+it('states the session and its key per kind; the runner adds the count, policy and first-time share', () => {
   const items = Array.from({ length: 8 }, (_, i) => item({ id: `c${i + 1}`, type: 'subtract', startCount: 6 + (i % 3), targetCount: 4 }));
-  const observations = items.flatMap(it => [1, 2].map(k => ({ ...tenFrameObservation(it, { heard: `${it.id}-try${k}` }), itemId: it.id, phase: 'operate',
-    support: `Correction observation; ${k - 1} prior corrections on this item. Other assistance is not established.` })));
-  observations[15] = { ...observations[15], judgeFeedback: 'My turn: seven take away three leaves four.' } as typeof observations[number];
-  const outcomes = items.map((it, i) => ({ id: it.id, solved: i % 2 === 0, corrections: 2, score: i % 2 === 0 ? 33 : 0, seconds: 5 }));
-  const evidence = tenFrameDiagnosisEvidence({ outcomes, observations }, items)!;
-  expect(evidence.firstResponseScore).toBe(0);
-  expect(evidence.phases).toHaveLength(12);
-  expect(evidence.phases!.map(p => p.observed.replace(/^Said "|"\.$/g, ''))).toEqual(
-    ['c1-try1', 'c1-try2', 'c2-try1', 'c2-try2', 'c3-try1', 'c3-try2', 'c4-try1', 'c4-try2', 'c5-try1', 'c6-try1', 'c7-try1', 'c8-try1']);
-  expect(evidence.judgeFeedback).toBe('My turn: seven take away three leaves four.');
-  expect(evidence.challengeSummary).toContain('Ten frame (subtract), 8 items: the tutor says a take-away');
-  expect(evidence.challengeSummary).toContain('0 of 8 items were answered right the first time');
-  expect(evidence.expected).toBe('The number left: the start minus the number taken away.');
-  expect(evidence.observed.length).toBeLessThanOrEqual(2000);
-  expect(evidence.phases![0]).toMatchObject({ itemId: 'c1', phase: 'operate', expected: 'four (4) left' });
-});
-
-it('first-response score counts items affirmed with no correction', () => {
-  const items = ['a', 'b', 'c', 'd', 'e'].map(id => item({ id, type: 'add', addend1: 3, addend2: 2, targetCount: 5 }));
-  const outcomes = items.map((it, i) => ({ id: it.id, solved: true, corrections: i < 3 ? 1 : 0, score: i < 3 ? 67 : 100, seconds: 4 }));
-  const observations = items.slice(0, 3).map(it => ({ ...tenFrameObservation(it, { heard: 'three' }), itemId: it.id, phase: 'operate' }));
-  expect(tenFrameDiagnosisEvidence({ outcomes, observations }, items)!.firstResponseScore).toBe(40);
+  expect(tenFrameEvidenceSummary(items)).toEqual({
+    task: 'Ten frame (subtract), 8 items: the tutor says a take-away and the learner says how many are left.',
+    expected: 'The number left: the start minus the number taken away.',
+  });
+  expect(tenFrameEvidenceSummary([item({ type: 'add', addend1: 3, addend2: 2, targetCount: 5 }), item({ type: 'split', targetCount: 5 })])).toEqual({
+    task: 'Ten frame (add, split), 2 items: the tutor says an addition and the learner says how many altogether; a group of red counters is on the frame and the learner turns some yellow to make two groups, a different way each time.',
+    expected: 'The number altogether: the first number plus the second. Two non-empty colour groups, a different pair each time the same total is asked again.',
+  });
 });

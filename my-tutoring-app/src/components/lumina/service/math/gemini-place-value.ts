@@ -34,7 +34,7 @@ import {
 } from "../evalMode";
 import { createNumberPool } from './numberPoolService';
 import { selectPlaceValueContrast } from './placeValueRemediation';
-import { planLearningAdaptation } from '../generation/planLearningAdaptation';
+import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';
 import { eligiblePlaceValueTeaching, placeValueTeaching } from './placeValueTeachingCapabilities';
 import {
   isAskablePlace,
@@ -828,12 +828,8 @@ GUIDELINES:
 Return ONLY the wrapper metadata in the response schema.
 `;
 
-  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
-    mode: pinnedType, tier: supportTier ?? undefined };
-  const observations = ctx.learningObservations?.length ? ctx.learningObservations
-    : ctx.remediationFocus ? [{ id: 'active-observation', summary: ctx.remediationFocus }] : [];
-  const plannedMove = eligiblePlaceValueTeaching(adaptationTask) && observations.length
-    ? await planLearningAdaptation(placeValueTeaching, adaptationTask, observations) : null;
+  const adaptationTask = adaptationTaskFor(ctx, topic, { mode: plannedMode(evalConstraint), tier: supportTier ?? undefined });
+  const plannedMove = await planAdaptation(ctx, { task: adaptationTask, capability: placeValueTeaching, eligible: eligiblePlaceValueTeaching });
   const result = await ai.models.generateContent({
     model: "gemini-flash-latest",
     contents: prompt,
@@ -883,10 +879,9 @@ Return ONLY the wrapper metadata in the response schema.
       };
     });
     console.info('[PlaceValue remediation]', { move, count: selected.count, reason: selected.reason });
-    learningAdaptation = {
-      move, comparisonCount: selected.count,
-      status: selected.count < 2 ? 'insufficient-capacity' : selected.reason === 'already-targeted' ? 'already-targeted' : 'targeted',
-    };
+    // This selector reports a reason and a compiled count; the status follows the shared rule.
+    learningAdaptation = stampAdaptation(move, { count: selected.count,
+      status: selected.count < 2 ? 'insufficient-capacity' : selected.reason === 'already-targeted' ? 'already-targeted' : 'targeted' });
   }
 
   // ── Judged-loop content gates, generator-side (KEEP-OR-DROP, never repair;

@@ -20,7 +20,8 @@ const server = await vite.createServer({ configFile: false, root: ROOT, logLevel
   resolve: { alias: { '@': resolve(ROOT, 'src'), 'server-only': resolve(ROOT, 'vitest.stubs/server-only.ts') } } });
 const runner = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
 const MATH = '/src/components/lumina/primitives/visual-primitives/math';
-const { countingBoardDiagnosisEvidence, countingObservation } = await runner.import(`${MATH}/countingBoardEvidence.ts`);
+const { countingBoardEvidenceSummary, countingObservation } = await runner.import(`${MATH}/countingBoardEvidence.ts`);
+const { judgedRunEvidence } = await runner.import('/src/components/lumina/hooks/judgedRunEvidence.ts');
 const script = await runner.import(`${MATH}/countingBoardScript.ts`);
 const remediation = await runner.import('/src/components/lumina/service/math/countingBoardRemediation.ts');
 const { generateCountingBoard } = await runner.import('/src/components/lumina/service/math/gemini-counting-board.ts');
@@ -112,7 +113,7 @@ function judgedRun(boards, band = 'K') {
       support: 'Correction observation; 0 prior corrections on this item. Other assistance is not established.', judgeFeedback: correctionLine(item) });
     return { id: item.id, solved: true, corrections: wrong === null ? 0 : 1, score: wrong === null ? 100 : 67, seconds: 6 };
   });
-  const evidence = countingBoardDiagnosisEvidence({ outcomes, observations }, items.map(item => item.kind));
+  const evidence = judgedRunEvidence({ outcomes, observations, items, pack: { activityLine: 'Counting board', evidenceSummary: countingBoardEvidenceSummary } });
   return { evidence, score: Math.round(outcomes.reduce((s, o) => s + o.score, 0) / outcomes.length), success: true, mode: items[0].kind };
 }
 const away = (count, changeBy) => ({ type: 'take_away', count, changeBy, targetAnswer: count - changeBy });

@@ -21,7 +21,7 @@ import { BASE_TEN_DI_TYPE_DOCS, isBaseTenDiChallengeType } from '../../primitive
 import { isAskableTarget, MAX_TARGET, MIN_TARGET } from '../../primitives/visual-primitives/math/baseTenScript';
 import type { BtMode } from '../../primitives/visual-primitives/math/baseTenModel';
 import { selectBlockWorthContrast } from './baseTenRemediation';
-import { planLearningAdaptation } from '../generation/planLearningAdaptation';
+import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';
 import { baseTenTeaching, eligibleBaseTenTeaching } from './placeValueTeachingCapabilities';
 
 // ---------------------------------------------------------------------------
@@ -782,12 +782,8 @@ Return the complete base-ten blocks data structure.`;
 
   logEvalModeResolution('BaseTenBlocks', config?.targetEvalMode, evalConstraint);
 
-  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
-    mode: pinnedType, tier: supportTier ?? undefined };
-  const observations = ctx.learningObservations?.length ? ctx.learningObservations
-    : ctx.remediationFocus ? [{ id: 'active-observation', summary: ctx.remediationFocus }] : [];
-  const remediationMove = eligibleBaseTenTeaching(adaptationTask) && observations.length
-    ? await planLearningAdaptation(baseTenTeaching, adaptationTask, observations) : null;
+  const adaptationTask = adaptationTaskFor(ctx, topic, { mode: plannedMode(evalConstraint), tier: supportTier ?? undefined });
+  const remediationMove = await planAdaptation(ctx, { task: adaptationTask, capability: baseTenTeaching, eligible: eligibleBaseTenTeaching });
   const response = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
@@ -1009,8 +1005,7 @@ Return the complete base-ten blocks data structure.`;
   if (remediationMove) {
     const selected = selectBlockWorthContrast(data.challenges, data.decimalMode ? null : remediationMove, effectiveNumberRange);
     data.challenges = [...selected.challenges];
-    data.learningAdaptation = { move: remediationMove, status: selected.status === 'no-focus' ? 'insufficient-capacity' : selected.status,
-      comparisonCount: selected.count };
+    data.learningAdaptation = stampAdaptation(remediationMove, selected);
   }
 
   // Final summary log

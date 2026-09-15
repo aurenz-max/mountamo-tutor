@@ -23,7 +23,8 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { createNumberPool } from "./numberPoolService";
-import { planLearningAdaptation } from "../generation/planLearningAdaptation";
+import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';
+import type { LearningAdaptation } from '../generation/learningAdaptation';
 import {
   barModelTeaching,
   eligibleBarModelTeaching,
@@ -114,12 +115,7 @@ export interface BarModelData {
   /** 3-6 challenges. Required. Walked sequentially by the component. */
   challenges: BarModelChallenge[];
   /** Safe metadata only: which move ran and whether the compiled contrast survived. */
-  learningAdaptation?: {
-    move: BarModelRemediationMove;
-    status: 'targeted' | 'already-targeted' | 'insufficient-capacity';
-    comparisonCount: number;
-    source?: 'saved-observation';
-  };
+  learningAdaptation?: LearningAdaptation<BarModelRemediationMove>;
 }
 
 /** Internal sub-generator return shape — wrapped before being merged. */
@@ -1761,12 +1757,9 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
   const supportTier = resolution?.modes.length === 1 ? normalizeSupportTier(config?.difficulty) : null;
 
   // Private observations go only to the shared planner; sub-generators never see them.
-  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
-    mode: modes.length === 1 ? mode : undefined, tier: supportTier ?? undefined };
-  const observations = ctx.learningObservations?.length ? ctx.learningObservations
-    : ctx.remediationFocus ? [{ id: 'active-observation', summary: ctx.remediationFocus }] : [];
-  const remediationMove = eligibleBarModelTeaching(adaptationTask) && observations.length
-    ? await planLearningAdaptation(barModelTeaching, adaptationTask, observations) : null;
+  // Bar-model's modes and challenge types share names, so the single resolved mode is the catalog mode.
+  const adaptationTask = adaptationTaskFor(ctx, topic, { mode: modes.length === 1 ? mode : undefined, tier: supportTier ?? undefined });
+  const remediationMove = await planAdaptation(ctx, { task: adaptationTask, capability: barModelTeaching, eligible: eligibleBarModelTeaching });
 
   // Fan out N calls, cycling through the selected per-mode sub-generators. Variance
   // comes from independent generations (per PRD §6a #2 — structured output
@@ -1818,8 +1811,7 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
   if (remediationMove) {
     const selected = selectIconCountContrast(challenges, remediationMove);
     challenges.splice(0, challenges.length, ...selected.challenges);
-    learningAdaptation = { move: remediationMove, comparisonCount: selected.count,
-      status: selected.status === 'no-focus' ? 'insufficient-capacity' : selected.status };
+    learningAdaptation = stampAdaptation(remediationMove, selected);
     console.log('[BarModel] learning adaptation', learningAdaptation);
   }
 

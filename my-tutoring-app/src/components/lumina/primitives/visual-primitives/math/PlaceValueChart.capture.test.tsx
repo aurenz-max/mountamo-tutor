@@ -112,7 +112,13 @@ it('mounts the component, caps real runner worth attempts, and transports its em
   const [success, score, metrics, , , diagnosisEvidence] = seam.submissions[0];
   expect(success).toBe(false);
   expect(score).toBeLessThan(60);
-  expect(diagnosisEvidence).toMatchObject({ challengeSummary: 'say the value of the 4 in 2345', observed: 'four' });
+  // The runner owns the evidence shape: the pack's activity line plus the run's first-time share, every
+  // correction as a phase, and `observed` joining them.
+  const evidence = diagnosisEvidence as { firstResponseScore?: number; challengeSummary: string; phases?: Array<{ challenge: string; observed: string }> };
+  expect(evidence.firstResponseScore).toBe(50);
+  expect(evidence.phases?.map((p) => [p.challenge, p.observed]))
+    .toEqual([['say the value of the 4 in 2345', 'four'], ['say the value of the 4 in 2345', 'four'], ['say the value of the 4 in 2345', 'four']]);
+  expect(evidence.challengeSummary).toContain('1 of 2 items were answered right the first time');
   await captureMisconception({ ...seam.identity, success, score, metrics, diagnosisEvidence, attemptId: 'synthetic-mounted' } as PrimitiveEvaluationResult, { sessionId: 'mounted', subskillId: 'NBT003-02-a' });
   expect(authApi.post).toHaveBeenCalledWith('/api/student-profile/misconceptions', expect.objectContaining({ skill_id: 'NBT003-02', subskill_id: 'NBT003-02-a', scope: 'skill' }));
 });

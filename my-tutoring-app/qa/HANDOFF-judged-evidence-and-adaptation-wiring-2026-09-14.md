@@ -1,13 +1,18 @@
 # Judged-loop evidence in the runner, catalog eval modes at submit, one generator adaptation step
 
-Status: not started. Written 2026-09-14 after `/add-misconception-loop ten-frame`
+Status: **slice 1 DONE 2026-09-14** ([report](misconception/judged-evidence-census-2026-09-14.md): runner-owned
+evidence, 6 more callers submitting it, census 20/20 gate fires, 14 hypotheses name the signature miss, 4 capture gaps
+queued); **slices 2–4 DONE 2026-09-15** ([report](misconception/judged-evidence-slices-2-4-2026-09-15.md)). Left open
+from them: the 71 packs still on the `diagnosisObservation` alias (migrate, audit their `observed` strings for verdict
+words, delete the alias), and the two per-component mode maps (counting-board, ten-frame), kept because their capture
+tests mock the boundary and the maps are correct. Written 2026-09-14 after `/add-misconception-loop ten-frame`
 (`qa/misconception/ten-frame-2026-09-14.md`); reviewed against the code the same day (claims re-checked, corrections
 folded in below). Four slices, in order; slice 1 carries most of the value.
 
-**Before slice 1: `/ship`.** The counting-board and ten-frame slices this plan builds on are uncommitted (untracked:
-`countingBoardEvidence.ts`, `tenFrameEvidence.ts`, both `*.capture.test.tsx`, both remediation modules), inside a
-133-file working tree. Slice 1 deletes half of those builders, so commit them first: the regression fence then exists in
-git and slice 1's diff is the deletion, not an edit to files that were never recorded.
+**Before slice 2:** the slice-1 working tree is uncommitted and shares the tree with a Pip surface sweep (untracked
+`pip/*.surface.test.tsx` + `*PipPose.ts`, five literacy components modified); `/ship` slices them apart.
+`scripts/misconception-harness/judged-evidence-census.mjs` is the rerun after any runner, capture or observation-text
+change (`RUN=<name> STAGES=G,E,D`; `STAGES=E,D` reuses a run's generated data).
 Executors: slices 1, 2 and 4 `/add-misconception-loop` (its Phase 2 and Phase 4 contracts change); slice 3 `/eval-fix`.
 Queue: `qa/di/BACKLOG.md` item 18.
 
@@ -37,7 +42,7 @@ replayed with no login. The cost and the defects sit on either side of it.
 4. **Each generator consumer re-types the adaptation step**, and the planned mode comes from three different places across
    the ten consumers (appendix). ten-frame showed why that matters: its `pinnedType` for `operate` is `add`.
 
-## Slice 1 — the runner owns first-response scoring and phase selection
+## Slice 1 — the runner owns first-response scoring and phase selection (DONE 2026-09-14)
 
 **Build.** A pure module `hooks/judgedRunEvidence.ts`, called from the runner's finish path in place of the inline
 assembly:
@@ -103,7 +108,7 @@ take-away board). Measure it before calling the slice done:
 **Done when:** `typecheck:lumina` 0, full tsc unchanged (last recorded 771; never trust 0), full vitest green, the distiller census recorded in a dated report
 under `qa/misconception/`, and item 18 plus `WORKSTREAMS.md` updated.
 
-## Slice 2 — one observation callback
+## Slice 2 — one observation callback (DONE 2026-09-15)
 
 Replace the pair with `observation?: (item, { heard, verdict }) => { challenge, expected, observed } | null`. The runner
 calls it at every verdict (for `learningResponses`) and keeps the `corrected` ones as diagnosis observations. It reads it
@@ -117,7 +122,7 @@ before `applyVerdict`, as today, so board state is still the committed board.
   those to state what was heard or done.
 - Test: a mounted run with one right and one wrong attempt records both in `learningResponses` from one callback.
 
-## Slice 3 — the submitted eval mode is a catalog key
+## Slice 3 — the submitted eval mode is a catalog key (DONE 2026-09-15)
 
 Normalize at the evaluation boundary (`evaluation/hooks/usePrimitiveEvaluation.ts`, `submitResult`), not in 58 components.
 Write the normalized key back into the result's `metrics.evalMode`, not only into a payload field: capture reads
@@ -140,7 +145,7 @@ for CNB-3 and TF-6.
 Test: `usePrimitiveEvaluation.test.ts` covers the four rules, plus a table test that every catalog `challengeTypes` entry
 resolves to its mode or is reported ambiguous.
 
-## Slice 4 — one generator adaptation step
+## Slice 4 — one generator adaptation step (DONE 2026-09-15)
 
 `service/generation/adaptationStep.ts`:
 

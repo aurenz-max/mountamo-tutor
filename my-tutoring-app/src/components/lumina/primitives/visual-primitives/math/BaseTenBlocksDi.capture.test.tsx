@@ -74,10 +74,12 @@ it('originates a skill-scoped observation from read_blocks corrections, with the
   expect(score).toBe(50);
   expect(diagnosisEvidence.firstResponseScore).toBe(75);
   const said = baseTenHarnessAnswers(worth);
-  expect(diagnosisEvidence).toMatchObject({ observed: said.signatureWrong!.text, expected: said.correct,
-    judgeFeedback: 'My turn: each rod is worth ten.' });
+  // The runner owns the evidence shape: `observed` joins the kept phases, each phase holds the bare answer word.
+  expect(diagnosisEvidence).toMatchObject({ expected: said.correct, judgeFeedback: 'My turn: each rod is worth ten.' });
+  expect(diagnosisEvidence.observed).toContain(said.signatureWrong!.text);
   expect(diagnosisEvidence.phases).toHaveLength(3);
-  expect(diagnosisEvidence.phases.every((p: { itemId: string; expected: string }) => p.itemId === worth.id && p.expected === said.correct)).toBe(true);
+  expect(diagnosisEvidence.phases.every((p: { itemId: string; expected: string; observed: string }) =>
+    p.itemId === worth.id && p.expected === said.correct && p.observed === said.signatureWrong!.text)).toBe(true);
   expect(studentWork.diagnosisEvidence).toEqual(diagnosisEvidence);
 
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ abstain: false, confidence: 'high', evidenceTier: 'judge',

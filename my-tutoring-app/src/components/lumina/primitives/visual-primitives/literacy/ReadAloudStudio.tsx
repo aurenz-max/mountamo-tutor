@@ -186,16 +186,11 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
 
   const handleFinished = useCallback((summary: JudgedRunSummary) => {
     const scored = readingSummary(items, summary);
-    // The runner also acknowledges unscored planning. Build failure evidence
-    // from scored-reading observations even if its all-step average passed.
-    const source = [...summary.observations].reverse().find((observation) => observation.judgeFeedback)
-      ?? summary.observations[summary.observations.length - 1];
-    const diagnosisEvidence = !scored.passed && source ? {
-      challengeSummary: source.challenge, expected: source.expected, observed: source.observed,
-      judgeFeedback: source.judgeFeedback,
-      priorAttempts: summary.observations.filter((observation) => observation !== source).slice(-4)
-        .map((observation) => ({ challenge: observation.challenge, observed: observation.observed })),
-    } : undefined;
+    // The runner owns the evidence: first-response share, every line's first
+    // wrong read kept under the phase cap, the pack's activity line. The pack
+    // already records nothing for unscored planning steps (`diagnosisObservation`
+    // returns null there), so scored reads are the only phases it carries.
+    const diagnosisEvidence = summary.diagnosisEvidence;
     // The set's actual difficulty. Line length is this pack's structural axis,
     // and without it the metrics cannot tell a 3-word set from an 8-word one.
     const meanLineWords = readingItems.length

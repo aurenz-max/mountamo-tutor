@@ -27,6 +27,7 @@ import { render, act, cleanup } from '@testing-library/react';
 import type { LoopEmission, LoopAttempt } from './judgedLoopModel';
 import { itemsFromChallenges, placeValuePackBase, type PlaceValueItem } from '../primitives/visual-primitives/math/placeValueScript';
 import { placeValueVoiceObservation } from '../primitives/visual-primitives/math/placeValueEvidence';
+import { isDiagnosableFailure } from '../evaluation/diagnosis/types';
 
 const updateContext = vi.hoisted(() => vi.fn());
 const sendText = vi.hoisted(() => vi.fn());
@@ -414,8 +415,71 @@ describe('diagnosis (Tier-A evidence)', () => {
     expect(summary.accuracy).toBeLessThan(60);
     expect(summary.passed).toBe(false);
     expect(summary.observations).toHaveLength(3);
-    expect(summary.diagnosisEvidence?.challengeSummary).toBe('say the value of the 4 in 2345');
+    // The runner owns the evidence shape: the pack's activity line plus the run's count, policy and
+    // first-time share; the key still comes from the observation when the pack states no summary.
+    expect(summary.diagnosisEvidence?.challengeSummary).toBe(`${pack.activityLine.replace(/[.:;,]?$/, '.')} 2 items; a wrong answer gets the tutor's scripted correction and the same question again, up to 2 corrections per item. 1 of 2 items were answered right the first time.`);
+    expect(summary.diagnosisEvidence?.firstResponseScore).toBe(50);
+    expect(summary.diagnosisEvidence?.phases).toHaveLength(3);
     expect(summary.diagnosisEvidence?.priorAttempts).toEqual(expect.arrayContaining([expect.objectContaining({ challenge: 'say the value of the 4 in 2345', observed: 'four' })]));
+  });
+  it('a run wrong first on three of five items and right after one correction passes on the average but fails the first-response gate', async () => {
+    const items = ['a', 'b', 'c', 'd', 'e'].map((id) => voiceItem(id, id));
+    const { onFinished } = mount(items, {
+      diagnosisObservation: (item, { lastHeard }) => ({ challenge: `Say ${item.word}.`, expected: item.word, observed: `Heard "${lastHeard}".` }),
+      evidenceSummary: (asked) => ({ task: `Five words (${asked.map((i) => i.word).join(', ')})`, expected: 'The word as cued.' }),
+    });
+    await startRun();
+    for (const item of items) {
+      if (['b', 'c', 'd'].includes(item.id)) {
+        emit({ kind: 'attempt-open', attempt: voiceAttempt });
+        emit({ kind: 'attempt-transcript', attempt: voiceAttempt, text: `not-${item.word}`, responseMs: 900, commitLagMs: 400 });
+        verdict('corrected');
+      }
+      verdict('affirmed');
+    }
+    const summary = onFinished.mock.calls[0][0];
+    expect([summary.accuracy, summary.passed, summary.solvedCount, summary.firstTryCount]).toEqual([80, true, 5, 2]);
+    const evidence = summary.diagnosisEvidence!;
+    expect(evidence.firstResponseScore).toBe(40);
+    expect(evidence.phases?.map((p) => [p.itemId, p.observed])).toEqual([['b', 'Heard "not-b".'], ['c', 'Heard "not-c".'], ['d', 'Heard "not-d".']]);
+    expect(evidence.challengeSummary).toBe('Five words (a, b, c, d, e). 5 items; a wrong answer gets the tutor\'s scripted correction and the same question again, up to 2 corrections per item. 2 of 5 items were answered right the first time.');
+    expect(evidence.expected).toBe('The word as cued.');
+    expect(isDiagnosableFailure({ success: summary.passed, score: summary.accuracy }, evidence)).toBe(true);
+    expect(isDiagnosableFailure({ success: summary.passed, score: summary.accuracy })).toBe(false);
+  });
+  it('one `observation` callback records every attempt in learningResponses and keeps the corrected ones as diagnosis observations', async () => {
+    const observation = vi.fn((item: TestItem, { heard, verdict }: { heard: string | null; verdict: 'affirmed' | 'corrected' }) =>
+      ({ challenge: `Say ${item.word}.`, expected: item.word, observed: heard ? `Said "${heard}".` : `No transcript (${verdict}).` }));
+    const { onFinished } = mount([voiceItem('a', 'cat'), voiceItem('b', 'dog')], {
+      observation,
+      // Ignored once `observation` is set: the legacy path must not double-record.
+      diagnosisObservation: () => ({ challenge: 'legacy', expected: 'legacy', observed: 'legacy' }),
+    });
+    await startRun();
+    const say = (text: string | null) => {
+      emit({ kind: 'attempt-open', attempt: voiceAttempt });
+      if (text) emit({ kind: 'attempt-transcript', attempt: voiceAttempt, text, responseMs: 900, commitLagMs: 400 });
+      return { ...voiceAttempt, transcript: text };
+    };
+    emit({ kind: 'verdict', judgment: 'affirmed', attempt: say('cat'), misses: 0 });
+    emit({ kind: 'verdict', judgment: 'corrected', attempt: say('dig'), misses: 0 });
+    emit({ kind: 'verdict-text', judgment: 'corrected', text: 'My turn: dog.' });
+    // A silent correction carries no response evidence but is still a diagnosis observation.
+    emit({ kind: 'verdict', judgment: 'corrected', attempt: say(null), misses: 0 });
+    emit({ kind: 'verdict', judgment: 'affirmed', attempt: say('dog'), misses: 0 });
+    const summary = onFinished.mock.calls[0][0];
+    // The runner clears the last transcript when an attempt opens, so a silent attempt is heard as null.
+    expect(observation.mock.calls.map(([item, ctx]) => [item.id, ctx.heard, ctx.verdict])).toEqual([
+      ['a', 'cat', 'affirmed'], ['b', 'dig', 'corrected'], ['b', null, 'corrected'], ['b', 'dog', 'affirmed'],
+    ]);
+    expect(summary.learningResponses?.map((r) => `${r.itemId}:${r.verdict}:${r.observed}:${r.priorCorrections}`)).toEqual([
+      'a:affirmed:Said "cat".:0', 'b:corrected:Said "dig".:0', 'b:affirmed:Said "dog".:2',
+    ]);
+    expect(summary.observations.map((o) => [o.itemId, o.observed, o.judgeFeedback])).toEqual([
+      ['b', 'Said "dig".', 'My turn: dog.'], ['b', 'No transcript (corrected).', undefined],
+    ]);
+    expect(summary.observations.some((o) => o.observed === 'legacy')).toBe(false);
+    expect(summary.diagnosisEvidence?.firstResponseScore).toBe(50);
   });
   it('collects observations at corrections, attaches the judge’s finished line, and assembles evidence on a failed run', async () => {
     const { onFinished } = mount([voiceItem('i1', 'cat')], {
@@ -443,9 +507,13 @@ describe('diagnosis (Tier-A evidence)', () => {
       judgeFeedback: 'My turn: not cap — cat.',
     });
     expect(summary.diagnosisEvidence).toMatchObject({
-      challengeSummary: 'Say cat.',
+      expected: 'cat',
+      // `lastHeard` is the last transcript of the run, so every correction on this item reads it.
+      observed: 'Say cat. Heard "cap". | Say cat. Heard "cap". | Say cat. Heard "cap".',
       judgeFeedback: 'My turn: not cap — cat.',
+      firstResponseScore: 0,
     });
+    expect(summary.diagnosisEvidence?.challengeSummary).toContain('0 of 1 item was answered right the first time');
   });
 });
 

@@ -2,7 +2,7 @@ import { Type, Schema } from "@google/genai";
 import { TenFrameData, TenFrameChallenge } from "../../primitives/visual-primitives/math/TenFrame";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
-import { planLearningAdaptation } from "../generation/planLearningAdaptation";
+import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';
 import {
   eligibleTenFrameTeaching,
   selectSameFirstContrast,
@@ -631,11 +631,8 @@ Return the complete ten frame configuration.
 
   // Saved observations reach only the shared applicability planner, never the generation prompt.
   // No observations or an ineligible task → no planner call.
-  const plannedMode = resolution?.modes.length === 1 ? resolution.modes[0].evalMode : undefined;
-  const observations = ctx.learningObservations ?? [];
-  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
-    mode: plannedMode, tier: supportTier ?? undefined };
-  const capability = tenFrameTeachingFor(plannedMode);
+  const adaptationMode = plannedMode(resolution);
+  const adaptationTask = adaptationTaskFor(ctx, topic, { mode: adaptationMode, tier: supportTier ?? undefined });
   const [result, move] = await Promise.all([
     ai.models.generateContent({
       model: "gemini-flash-lite-latest",
@@ -645,8 +642,7 @@ Return the complete ten frame configuration.
         responseSchema: activeSchema,
       },
     }),
-    capability && observations.length && eligibleTenFrameTeaching(adaptationTask)
-      ? planLearningAdaptation<TenFrameOperateMove>(capability, adaptationTask, observations) : null,
+    planAdaptation<TenFrameOperateMove>(ctx, { task: adaptationTask, capability: tenFrameTeachingFor(adaptationMode), eligible: eligibleTenFrameTeaching }),
   ]);
 
   const data = result.text ? JSON.parse(result.text) : null;
@@ -928,7 +924,7 @@ Return the complete ten frame configuration.
       hint: ch.type === 'add' ? 'Put the first group on the frame, then add the second group.' : 'Take the counters off one at a time.',
       narration: ch.type === 'add' ? "Let's add on the ten frame." : "Let's take some away on the ten frame.",
     }));
-    data.learningAdaptation = { move, status: selected.status, comparisonCount: selected.count };
+    data.learningAdaptation = stampAdaptation(move, selected);
     console.log(`[TenFrame] Adaptation ${move}: ${selected.status}, ${selected.count} item(s) in the contrast`);
   }
 
