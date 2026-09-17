@@ -149,6 +149,9 @@ export interface JudgedSpeechLoopOptions {
 }
 
 export interface JudgedSpeechLoop {
+  /** Immediate cancellation boundary, independent of React's next render. */
+  suspend: () => void;
+  resume: () => void;
   /** The underlying turn authority (floors telemetry, isVoiceActive, config). */
   voiceTurns: LiveVoiceTurns;
   /** Queue a cue to send after the current speech settles (verify beat). */
@@ -184,6 +187,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   /** Read at cue-fire time (a timer), so it rides a ref like the rest. */
   const activeRef = useRef(active);
   activeRef.current = active;
+  const suspendedRef = useRef(false);
 
   /**
    * The tutor channel, reached through a ref rather than through `ctx`.
@@ -360,7 +364,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
       // where no cue was ever queued — the two look identical from outside.
       // 'inactive' first: a cue from a block the student is not on would land
       // on another primitive's floor (item 31). It re-fires on the active edge.
-      const blockedBy = !activeRef.current ? 'inactive'
+      const blockedBy = !activeRef.current || suspendedRef.current ? 'inactive'
         : audioPlayingRef.current && !offScript ? 'audio'
         : voiceActiveRef.current() ? 'voice'
         : loopStateRef.current.attempt != null && !offScript ? 'attempt'
@@ -390,6 +394,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   }, [armDeadCueWatch, noteCueSent]);
 
   const dispatch = useCallback((event: LoopEvent) => {
+    if (suspendedRef.current) return;
     const step = reduceJudgedLoop(loopStateRef.current, event, configRef.current);
     loopStateRef.current = step.state;
     for (const emission of step.emissions) callbacksRef.current.onEmission?.(emission);
@@ -646,6 +651,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   }, [clearCueTimers, noteCueDropped]);
 
   const queueCue = useCallback((text: string) => {
+    if (suspendedRef.current) return;
     // A queue that overwrites an unsent cue is a real (if usually benign)
     // event — the replaced cue is never spoken. Reported as dropped so the
     // timeline shows one 'sent' per 'queued' when the run is coherent.
@@ -692,6 +698,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   }, [queueCue]);
 
   const sendCueNow = useCallback((text: string) => {
+    if (suspendedRef.current) return;
     // Immediate openers have the same ownership rule as paced cues. A start
     // that races viewport activation waits for its own activity's floor.
     if (!activeRef.current) {
@@ -738,6 +745,8 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
 
   return {
     voiceTurns,
+    suspend: () => { suspendedRef.current = true; reset(); },
+    resume: () => { reset(); suspendedRef.current = false; },
     queueCue,
     submitGestureAttempt,
     sendCueNow,

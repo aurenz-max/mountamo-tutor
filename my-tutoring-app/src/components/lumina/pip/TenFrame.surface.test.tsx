@@ -24,6 +24,7 @@ vi.mock('../hooks/useJudgedScriptRunner', () => ({
   },
 }));
 vi.mock('../evaluation', () => ({ usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: vi.fn() }) }));
+vi.mock('@/contexts/LuminaAIContext', () => ({ useLuminaAIContext: () => ({ isConnected: false, isListening: false, sessionMode: 'idle', activePrimitiveId: null }) }));
 vi.mock('../components/JudgedMicPanel', () => ({ default: () => null }));
 vi.mock('../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => vi.fn() }) }));
 

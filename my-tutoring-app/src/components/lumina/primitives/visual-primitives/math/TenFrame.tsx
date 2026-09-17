@@ -75,6 +75,9 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import { useTenFrameRuntime } from './useTenFrameRuntime';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -243,13 +246,19 @@ const SUBITIZE_FLASH_MS = 1500;   // default; per-challenge `flashDuration` wins
 interface TenFrameProps {
   data: TenFrameData;
   className?: string;
+  /** The live sandbox opts in only after its correlated mount handoff. */
+  autoStart?: boolean;
+  runtimePlanItemId?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
+const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false, runtimePlanItemId }) => {
+  const live = useLuminaAIContext();
+  const runtime = useLiveRuntime();
+  const autoStartedRef = useRef(false);
   const {
     title,
     description,
@@ -469,6 +478,8 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   }, [items, evaluation]);
 
   const runner = useJudgedScriptRunner<TenFrameItem>({
+    runtime,
+    ...(runtimePlanItemId ? { completionCue: '[TF_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
     pack,
     instanceId: resolvedInstanceId,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1-2',
@@ -543,7 +554,20 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     },
   });
 
+  const runtimeHint = useTenFrameRuntime({ runner, instanceId: resolvedInstanceId, objectiveId,
+    planItemId: runtimePlanItemId, evalMode: items[0] ? EVAL_MODE_FOR_KIND[items[0].kind] ?? items[0].kind : 'default',
+    filledCells, flippedCells, cancelPresentation: () => {
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = null;
+    } });
   const currentItem = runner.currentItem;
+  const startRunnerRef = useRef(runner.start); startRunnerRef.current = runner.start;
+  useEffect(() => {
+    if (!autoStart || autoStartedRef.current || !live.isConnected || !live.isListening
+        || (live.sessionMode === 'lesson' && live.activePrimitiveId !== resolvedInstanceId)) return;
+    autoStartedRef.current = true;
+    void startRunnerRef.current();
+  }, [autoStart, live.isConnected, live.isListening, live.sessionMode, live.activePrimitiveId, resolvedInstanceId]);
   const currentChallenge = currentItem ? challengeById.get(currentItem.id) ?? null : null;
 
   // Pip's presentation is a projection of the runner's phase and the child's
@@ -597,6 +621,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
   // ── Frame taps ────────────────────────────────────────────────────────────
   const handleCellClick = useCallback((cellIndex: number) => {
+    if (runtime && runner.runtimeControls.getState().suspended) return;
     const item = runner.currentItem;
     // NEVER gate interaction on the stage word — the runner sets `affirmed` and
     // opens the next item in the same dispatch, so a stage-gated frame ships
@@ -889,6 +914,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
+        {runtimeHint && <p role="status" className="rounded-xl border border-cyan-400/40 bg-cyan-950/40 p-3 text-cyan-100">{runtimeHint}</p>}
         {!evaluation.hasSubmitted && currentItem && (
           <>
             {!isPreReader && (

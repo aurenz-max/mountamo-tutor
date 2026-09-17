@@ -166,5 +166,7 @@ export const useAudioPlayback = ({ sampleRate = DEFAULT_SAMPLE_RATE }: UseAudioP
     stopAudioPlayback,
     resetForNextTurn,
     isAudioPlaying,
+    // Includes the prebuffer before React has observed the first playing edge.
+    hasPendingAudio: () => activeSourcesRef.current.length > 0 || preBufferRef.current.length > 0,
   };
 };

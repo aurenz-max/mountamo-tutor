@@ -9,9 +9,42 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 
 ## Open — ONE list, newest first (as of 2026-09-09, K Language Arts atlas refresh)
 
-> **117 rows open.** **Newest:** #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
+> **118 rows open.** **Newest:** #167 live runtime lab (help/return; mic after adoption); #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
 > tablet + MIC · #144 You & Me role-switch MIC · #143 Letter Workshop manuscript/touch/audio ·
-> #142 ten-frame teen numbers. Next free ID is **#167**.
+> #142 ten-frame teen numbers. Next free ID is **#168**.
+
+### #167 — **Live lesson runtime: TenFrame + Number Line adopted; microphone and combined lesson gate open**
+
+**User verdict 2026-09-17: STOP.** The synthetic connected fixture was barely usable:
+no real manipulative, fragmented transcript, and a refusal to check spoken answers.
+[Earlier passes](tutor-reports/live-runtime-connected-2026-09-17.md) were transport
+tests with supplied checked answers, not experience acceptance. The old
+/lumina/live-activity/runtime/live URL now redirects to /lumina/live-activity,
+restoring the existing Ten Frame lesson. Its transcript groups streaming chunks
+without changing the append-only voice-judge feed. The offline runtime lab remains
+an infrastructure diagnostic only.
+
+**Subsequent user-authorized adoption:** shared judged-runner lifecycle, TenFrame
+adapter and the existing host are now integrated. [Three real-model/mounted-component
+journeys passed](tutor-reports/ten-frame-runtime-live-2026-09-17.md): wrong spoken
+answer corrected, hint, worked example, unchanged frame returned and re-asked once,
+fresh item, one settled completion. Voice boundaries/playback and paint were simulated.
+
+At `/lumina/live-activity`, select Make ten / Grade 1. Check automatic opening,
+wrong/right spoken answers, Help me start → Show an example → Return to my task,
+transcript readability, pause microphone and End session during speech. Confirm
+the frame is unchanged on return and the tutor asks once. Browser control was
+unavailable; this is still not microphone acceptance.
+
+**Number Line update, 2026-09-17:** select Activity: Number Line / Subtraction jumps
+in the same tester. Try an incorrect landing, ask to retry, repeat the instruction,
+show/hide the reminder, open an example mid-work, return, then check a correct
+landing and continue. Confirm prompt focus, preserved work, automatic next-item
+instruction, English throughout, and an explanation of the example's actual
+quantities. [Machine action evidence](tutor-reports/number-line-runtime-live-2026-09-17.md)
+does not close this sitting; model narration and intervention restraint need review.
+Both planned activity orders remain separate bounded work. **G1–G3 across the
+combined lesson and actual mic acceptance remain OPEN.**
 
 ### #166 🎤👀 — **`counting-board` themed objects: does a board of trucks hold the pilot student longer than a board of stars, at the same numbers?** This is the whole reason the interests path was built — paper worksheets themed on excavators and dump trucks hold him where generic ones do not (user observation 2026-09-15), and nothing machine-checkable can settle whether that carries to the screen. Shipped and machine-verified 2026-09-16: 12/12 live draws produce a complete themed triple, the tutor says "Touch each dump truck one time as you count", and the full pipeline traces interests → persona → manifest intent → a 🚛 board ([probe](eval-reports/counting-board-themed-objects-2026-09-16.json), [trace](topic-traces/counting-board-student-interests-2026-09-16.json)). **Also the first browser sighting of this board** — nobody has seen a themed emoji render at 40px or hit-tested one. Signed in as the pilot student (confirm `students/9001` is his), interests already set: (a) in a K counting lesson, does the board draw the truck glyph cleanly at object size, and does tapping register (hit-testing is by center distance, so a wide glyph should not matter)? (b) does the tutor SAY "dump trucks" and "dump truck" out loud, never "objects"? (c) sit with him on `give_me_n`, trucks vs stars, the same numbers — does the theme change whether he stays for four items? (d) if the emoji reads as the wrong machine to a four-year-old (there is no excavator emoji; the generator reaches for 🚜/🚛/🚚), say so — an SVG object set is the next step, not a bug in this one. Owner: user.
 

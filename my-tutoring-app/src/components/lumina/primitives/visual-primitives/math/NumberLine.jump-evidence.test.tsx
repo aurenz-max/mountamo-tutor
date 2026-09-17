@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 
-const state = vi.hoisted(() => ({ submissions: [] as unknown[][] }));
-vi.mock('../../../hooks/useLuminaAI', () => ({ useLuminaAI: () => ({ sendText: vi.fn(), isConnected: false }) }));
+const state = vi.hoisted(() => ({ submissions: [] as unknown[][], tutorState: {} as Record<string, unknown> }));
+vi.mock('../../../hooks/useLuminaAI', () => ({ useLuminaAI: ({ primitiveData }: { primitiveData: Record<string, unknown> }) => {
+  state.tutorState = primitiveData;
+  return { sendText: vi.fn(), isConnected: false };
+} }));
 vi.mock('../../../components/PhaseSummaryPanel', () => ({ default: () => <p>Block complete</p> }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => undefined }) }));
 vi.mock('../../../evaluation', async () => {
@@ -15,7 +18,7 @@ vi.mock('../../../evaluation', async () => {
       submitResult: (...args: unknown[]) => { state.submissions.push(args); setSubmitted(true); return {}; } };
   } };
 });
-import NumberLine, { type NumberLineData } from './NumberLine';
+import NumberLine, { type NumberLineData, type NumberLineControls } from './NumberLine';
 
 const data: NumberLineData = {
   title: 'Hops', range: { min: 0, max: 20 }, gradeBand: 'K-2', numberType: 'integer', interactionMode: 'jump', supportTier: 'medium',
@@ -43,6 +46,35 @@ function tap(value: number) {
   fireEvent.click(svg, { clientX: a.x + ((value - a.v) * (b.x - a.x)) / (b.v - a.v) });
 }
 const check = () => fireEvent.click(screen.getByRole('button', { name: /check/i }));
+
+it('allows tutor progression only after checked success, rejects duplicate and stale commands, and clears prior work', () => {
+  let controls: NumberLineControls | null = null;
+  const register = (value: NumberLineControls | null) => { controls = value; };
+  render(<NumberLine data={data} onControlsReady={register} />);
+  expect(controls!.advance(0)).toBe('rejected');
+  tap(10); check();
+  expect(controls!.advance(0)).toBe('rejected');
+  tap(11); check();
+  expect(controls!.getState().isCurrentChallengeComplete).toBe(true);
+  act(() => {
+    expect(controls!.advance(0)).toBe('advanced');
+    expect(controls!.advance(0)).toBe('rejected');
+  });
+  expect(controls!.getState()).toMatchObject({ currentChallengeIndex: 1,
+    instruction: data.challenges![1].instruction, jumpEndPoints: [], isCurrentChallengeComplete: false });
+  expect(controls!.advance(0)).toBe('rejected');
+  tap(11); check();
+  expect(controls!.advance(1)).toBe('complete');
+  expect(state.submissions).toHaveLength(1);
+});
+
+it('sends the actual jump endpoint to the tutor before grading', () => {
+  render(<NumberLine data={data} />);
+  expect(state.tutorState.jumpEndPoints).toEqual([]);
+  tap(10);
+  expect(state.tutorState.jumpEndPoints).toEqual([10]);
+  expect(state.tutorState.placedPoints).toEqual([]);
+});
 
 it('grades a landing one hop short as wrong, keeps that try, and submits first-response evidence', () => {
   render(<NumberLine data={data} />);

@@ -120,6 +120,7 @@ vi.mock('../../../../hooks/useJudgedScriptRunner', () => ({
 // this suite touches the AI context at all.
 vi.mock('@/contexts/LuminaAIContext', () => ({
   useMicLevel: () => 0,
+  useLuminaAIContext: () => ({ isConnected: false, isListening: false, sessionMode: 'idle', activePrimitiveId: null }),
 }));
 
 vi.mock('../../../../evaluation', () => ({

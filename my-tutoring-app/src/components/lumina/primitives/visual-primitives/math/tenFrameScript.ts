@@ -526,7 +526,7 @@ export const howToPlayFor = (item: TenFrameItem): string => {
 export const SPLIT_COLOR_A = 'red';
 export const SPLIT_COLOR_B = 'yellow';
 
-const askFor = (item: TenFrameItem): string => {
+export const askFor = (item: TenFrameItem): string => {
   const answerWord = numberWordFor(item.answer);
   const shownWord = numberWordFor(item.shown);
   const capWord = numberWordFor(item.capacity);

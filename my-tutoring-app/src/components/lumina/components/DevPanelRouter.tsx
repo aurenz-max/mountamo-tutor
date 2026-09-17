@@ -40,6 +40,7 @@ import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { VisualPrimitivesGallery } from './VisualPrimitivesGallery';
 import { ScratchPad } from './scratch-pad';
 import TypeSafeSelectTester from './TypeSafeSelectTester';
+import LiveActivitySandbox from './live-activity/LiveActivitySandbox';
 import { PulseAdaptiveSession } from '../pulse/PulseAdaptiveSession';
 
 interface DevPanelProps {
@@ -80,6 +81,7 @@ const PANELS: Record<string, ComponentType<DevPanelProps>> = {
   'analytics-dashboard': AnalyticsDashboard,
   'visual-tester': VisualPrimitivesGallery,
   'typesafe-select-tester': TypeSafeSelectTester,
+  'live-activity-tester': LiveActivitySandbox,
 };
 
 interface DevPanelRouterProps {

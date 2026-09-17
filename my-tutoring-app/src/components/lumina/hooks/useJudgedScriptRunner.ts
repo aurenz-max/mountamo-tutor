@@ -56,6 +56,7 @@ import {
   type JudgedStatusLines,
 } from './judgedScriptContract';
 import { SoundManager } from '../utils/SoundManager';
+import type { LiveLessonRuntime } from '../components/live-activity/runtime/LiveLessonRuntime';
 import { judgedRunEvidence } from './judgedRunEvidence';
 import type { DiagnosisEvidence } from '../evaluation/diagnosis/types';
 import type { LearningResponseEvidence } from '../evaluation/learningResponseEvidence';
@@ -140,6 +141,9 @@ export interface JudgedRunSummary {
 }
 
 export interface JudgedScriptRunnerOptions<Item extends JudgedScriptItem> {
+  /** Opt-in live host lifecycle. Existing standalone callers keep their behavior. */
+  runtime?: LiveLessonRuntime | null;
+  completionCue?: string;
   /** Opt-in observations only; certification and transitions remain server-owned. */
   recordOpportunityEvents?: boolean;
   pack: JudgedScriptPack<Item>;
@@ -215,6 +219,14 @@ export interface JudgedScriptRunnerOptions<Item extends JudgedScriptItem> {
 }
 
 export interface JudgedScriptRun<Item extends JudgedScriptItem> {
+  suspended: boolean;
+  runtimeControls: {
+    suspend(): void;
+    resume(): void;
+    replay(): boolean;
+    getState(): { running: boolean; suspended: boolean; stage: JudgedRunStage; item: Item | null; corrections: number; heard: string | null;
+      attempts: number; correctness: 'correct' | 'incorrect' | 'unknown' };
+  };
   running: boolean;
   preparing: boolean;
   stage: JudgedRunStage;
@@ -370,7 +382,15 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
 
   // ── State (refs mirror what emission handlers must read live) ─────────────
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [stage, setStage] = useState<JudgedRunStage>('idle');
+  const [stage, renderStage] = useState<JudgedRunStage>('idle');
+  const stageRef = useRef<JudgedRunStage>('idle');
+  const setStage = (value: JudgedRunStage) => { stageRef.current = value; renderStage(value); };
+  const [suspended, setSuspended] = useState(false);
+  const suspendedRef = useRef(false);
+  const lifecycleGeneration = useRef(0);
+  const cancelResumeRef = useRef<(() => void) | null>(null);
+  const pendingFinishRef = useRef<JudgedRunSummary | null>(null);
+  const cueHolds = useRef(new Map<string, { release: (settled?: boolean) => void; cancel?: () => void }>());
   const [statusLine, setStatusLine] = useState(
     pack.statusLines?.idle ?? DEFAULT_STATUS_LINES.idle,
   );
@@ -414,6 +434,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   /** What the child SAID — DATA only, never rendered (a stray write to a
    *  status line in this family gets spoken aloud). */
   const lastHeardRef = useRef<string | null>(null);
+  const runtimeEvidenceRef = useRef({ attempts: 0, correctness: 'unknown' as 'correct' | 'incorrect' | 'unknown' });
   /** A gesture commit awaits its verdict. Gates the auto-commit so one
    *  placement can never fire twice, and gates unanchored-verdict adoption. */
   const awaitingGestureRef = useRef(false);
@@ -481,13 +502,14 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
 
   const armStillness = useCallback((commit: () => void, ms?: number) => {
     clearStillness();
+    if (suspendedRef.current) return;
     stillnessCommitRef.current = commit;
     const wait = ms ?? optionsRef.current.stillnessMs ?? DEFAULT_STILLNESS_MS;
     stillnessTimerRef.current = setTimeout(() => {
       stillnessTimerRef.current = null;
       const run = stillnessCommitRef.current;
       stillnessCommitRef.current = null;
-      run?.();
+      if (!suspendedRef.current) run?.();
     }, wait);
   }, [clearStillness]);
 
@@ -563,7 +585,8 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     setRunning(false);
     setStage('done');
     setStatusLine(lines.done);
-    optionsRef.current.onFinished(runSummary);
+    if (optionsRef.current.runtime && cueHolds.current.size) pendingFinishRef.current = runSummary;
+    else optionsRef.current.onFinished(runSummary);
   }, [clearStillness, lines]);
 
   // ── Progression ───────────────────────────────────────────────────────────
@@ -576,6 +599,8 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     const nextIndex = idxRef.current + 1;
     const next = itemOf(nextIndex);
     if (!next) return false;
+    runtimeEvidenceRef.current = { attempts: 0, correctness: 'unknown' };
+    lastHeardRef.current = null;
     setCurrentIndex(nextIndex);
     idxRef.current = nextIndex;
     setStimulusTapped(false);
@@ -590,6 +615,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   }, [armStimulus, clearStillness, itemOf]);
 
   const applyVerdict = useCallback((judgment: 'affirmed' | 'corrected', turnOpenedAt?: number) => {
+    if (suspendedRef.current || finishedRef.current) return;
     const item = currentItem();
     const loop = loopRef.current;
     if (!item || !loop) return;
@@ -619,7 +645,8 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
       // Capped: acknowledge and move the lesson forward.
       closeItem(item, false);
       const nextIndex = idxRef.current + 1;
-      loop.queueCue(packRef.current.moveOnCue(item, itemOf(nextIndex), cueOptsFor(nextIndex)));
+      loop.queueCue(!itemOf(nextIndex) && optionsRef.current.completionCue
+        ? optionsRef.current.completionCue : packRef.current.moveOnCue(item, itemOf(nextIndex), cueOptsFor(nextIndex)));
       if (openNext()) {
         setStage('asking');
         setStatusLine(lines.moveOn);
@@ -647,15 +674,17 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
       openNext();
     } else {
       setStatusLine(lines.affirmedLast);
-      loop.queueCue(packRef.current.completeCue());
+      loop.queueCue(optionsRef.current.completionCue ?? packRef.current.completeCue());
       finish();
     }
   }, [armStimulus, clearStillness, closeItem, cueOptsFor, currentItem, finish, itemOf, lines, openNext]);
 
   const handleEmission = useCallback((emission: LoopEmission) => {
+    if (suspendedRef.current || finishedRef.current) return;
     const item = currentItem();
     switch (emission.kind) {
       case 'attempt-open':
+        runtimeEvidenceRef.current = { attempts: runtimeEvidenceRef.current.attempts + 1, correctness: 'unknown' };
         if (item) recordOpportunity(item.id, 'response', { source: emission.attempt.source,
           turn_opened_at: emission.attempt.turn?.openedAt, turn_closed_at: emission.attempt.turn?.closedAt,
           during_tutor_audio: emission.attempt.turn?.duringTutorAudio });
@@ -681,6 +710,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
           break;
         }
         const corrected = emission.judgment === 'corrected';
+        runtimeEvidenceRef.current.correctness = corrected ? 'incorrect' : 'correct';
         const correctionSupport = (id: string) =>
           `Correction observation; ${correctionsRef.current.get(id) ?? 0} prior corrections on this item. Other assistance is not established.`;
         if (item && packRef.current.observation) {
@@ -787,6 +817,23 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   // window in which a stimulus can fire against the previous item's audio.
   // `sendCueNow` reports 'sent' too, so the run opener lands here as well.
   const handleCue = useCallback((event: CueLogEvent) => {
+    const runtime = optionsRef.current.runtime;
+    if (runtime) {
+      if (event.phase === 'queued' && !cueHolds.current.has(event.text)) {
+        cueHolds.current.set(event.text, { release: runtime.holdTeachingTurn({ allowTutorActions: true }) });
+      }
+      const held = cueHolds.current.get(event.text);
+      const settle = () => {
+        if (cueHolds.current.get(event.text) !== held) return;
+        cueHolds.current.delete(event.text); held?.cancel?.(); held?.release();
+        if (!cueHolds.current.size && pendingFinishRef.current) {
+          const summary = pendingFinishRef.current; pendingFinishRef.current = null;
+          optionsRef.current.onFinished(summary);
+        }
+      };
+      if (event.phase === 'sent' && held) held.cancel = runtime.speech.afterNextTurn(settle);
+      if (event.phase === 'dropped') settle();
+    }
     if (event.phase !== 'sent') return;
     const id = currentItem()?.id ?? null;
     setCuedItemId(id);
@@ -808,7 +855,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   const loop = useJudgedSpeechLoop({
     enabled: running,
     listenForVoice,
-    active: activeInLesson,
+    active: activeInLesson && !suspended,
     voice: voiceConfig,
     onEmission: handleEmission,
     onCue: handleCue,
@@ -853,7 +900,8 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   //     happen. A child cannot answer about a frame that never flashed.
   useEffect(() => {
     if (armedItemId == null || tutorHasSpoken) return;
-    const timer = setTimeout(() => setTutorHasSpoken(true), stimulusFallbackMs);
+    const generation = lifecycleGeneration.current;
+    const timer = setTimeout(() => { if (!suspendedRef.current && generation === lifecycleGeneration.current) setTutorHasSpoken(true); }, stimulusFallbackMs);
     return () => clearTimeout(timer);
   }, [armedItemId, armedSeq, tutorHasSpoken, stimulusFallbackMs]);
 
@@ -862,6 +910,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   useEffect(() => {
     if (armedItemId == null || !tutorHasSpoken || tutorSpeaking) return;
     const timer = setTimeout(() => {
+      if (suspendedRef.current) return;
       const index = packRef.current.items.findIndex((i) => i.id === armedItemId);
       const item = index < 0 ? null : (packRef.current.items[index] as Item);
       setStimulusArm(null);
@@ -877,7 +926,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
 
   const submitGestureAttempt = useCallback((cue: string) => {
     const loop = loopRef.current;
-    if (!loop || awaitingGestureRef.current) return;
+    if (!loop || awaitingGestureRef.current || suspendedRef.current || finishedRef.current) return;
     awaitingGestureRef.current = true;
     // The board is in the tutor's hands now; a window still counting down would
     // commit it a second time the moment the child fidgets.
@@ -889,6 +938,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
 
   // ── Tap-to-hear — never withdrawn by band or tier ─────────────────────────
   const hearStimulus = useCallback(() => {
+    if (suspendedRef.current) return;
     const item = currentItem();
     const pronounce = packRef.current.pronounceCue;
     if (!item || !pronounce) return;
@@ -905,6 +955,8 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
 
   // ── Start ─────────────────────────────────────────────────────────────────
   const startRun = useCallback(() => {
+    suspendedRef.current = false; setSuspended(false);
+    runtimeEvidenceRef.current = { attempts: 0, correctness: 'unknown' };
     const first = itemOf(0);
     const activeLoop = loopRef.current;
     if (!first || !activeLoop) return;
@@ -946,6 +998,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
 
   const start = useCallback(async () => {
     if (preparing) return;
+    const generation = lifecycleGeneration.current;
     setPreparing(true);
     setStatusLine('Getting ready…');
     try {
@@ -976,6 +1029,16 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
       while (!listeningRef.current && performance.now() - micStarted < 10_000) await sleep(100);
       if (!listeningRef.current) throw new Error('The microphone did not open.');
 
+      const runtime = optionsRef.current.runtime;
+      if (generation !== lifecycleGeneration.current) return;
+      if (runtime) {
+        const waiting = performance.now();
+        while (!runtime.grantOwnership('runner')) {
+          if (generation !== lifecycleGeneration.current) return;
+          if (runtime.getSnapshot().status === 'stopped' || performance.now() - waiting > 15000) throw new Error('The tutor is still finishing. Please try again.');
+          await sleep(50);
+        }
+      }
       startRunRef.current();
     } catch (error) {
       setStatusLine(error instanceof Error ? error.message : 'Could not start.');
@@ -988,7 +1051,15 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   }, [itemOf, preparing]);
 
   // Unmount: never leave Live holding the mic, never leave a timer running.
-  useEffect(() => () => {
+  useEffect(() => {
+    suspendedRef.current = false;
+    return () => {
+    suspendedRef.current = true;
+    lifecycleGeneration.current++;
+    cancelResumeRef.current?.();
+    pendingFinishRef.current = null;
+    cueHolds.current.forEach(hold => { hold.cancel?.(); hold.release(false); });
+    cueHolds.current.clear();
     if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
     if (stillnessTimerRef.current) clearTimeout(stillnessTimerRef.current);
     if (weConnectedRef.current) {
@@ -997,12 +1068,56 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     }
     // Context methods are stable; unmount-only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    };
   }, []);
 
   const current = itemOf(currentIndex);
   const currentSolved = current != null && solvedIds.has(current.id);
 
   return {
+    suspended,
+    runtimeControls: {
+      getState: () => ({ running: stageRef.current !== 'idle' && !finishedRef.current,
+        suspended: suspendedRef.current, stage: stageRef.current, item: currentItem(),
+        corrections: correctionsRef.current.get(currentItem()?.id ?? '') ?? 0, heard: lastHeardRef.current, ...runtimeEvidenceRef.current }),
+      suspend: () => {
+        suspendedRef.current = true; setSuspended(true); lifecycleGeneration.current++;
+        cancelResumeRef.current?.(); cancelResumeRef.current = null;
+        clearStillness(); setStimulusArm(null); awaitingGestureRef.current = false;
+        loopRef.current?.suspend();
+        pendingFinishRef.current = null;
+        cueHolds.current.forEach(hold => { hold.cancel?.(); hold.release(false); }); cueHolds.current.clear();
+      },
+      resume: () => {
+        const runtime = optionsRef.current.runtime;
+        if (!runtime || !suspendedRef.current || finishedRef.current) return;
+        const generation = lifecycleGeneration.current;
+        // Ignore the help/return conversation and any abandoned judgment. Re-arm
+        // only after the return turn settles, then issue this item's own cue.
+        let turnSettled = false, responseSent = false;
+        const resumeWhenReady = () => {
+          if (!turnSettled || !responseSent) return;
+          if (generation !== lifecycleGeneration.current) return;
+          const item = currentItem(); if (!item) return;
+          loopRef.current?.resume(); suspendedRef.current = false; setSuspended(false);
+          setStage('asking'); setStatusLine(lines.ready(item));
+          armStimulus(item);
+          loopRef.current?.queueCue(packRef.current.itemCue(item, cueOptsFor(idxRef.current)));
+          loopRef.current?.arm();
+        };
+        const cancelTurn = runtime.speech.afterNextTurn(() => { turnSettled = true; resumeWhenReady(); });
+        const cancelResponse = runtime.afterVisibleResponse(() => { responseSent = true; resumeWhenReady(); });
+        cancelResumeRef.current = () => { cancelTurn(); cancelResponse(); };
+      },
+      replay: () => {
+        const item = currentItem();
+        if (!item || suspendedRef.current || finishedRef.current) return false;
+        clearStillness(); loopRef.current?.reset(); awaitingGestureRef.current = false;
+        setStage('asking'); armStimulus(item);
+        loopRef.current?.queueCue(packRef.current.itemCue(item, cueOptsFor(idxRef.current)));
+        loopRef.current?.arm(); return true;
+      },
+    },
     running,
     preparing,
     stage,
@@ -1011,7 +1126,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     currentItem: current,
     solvedIds,
     currentSolved,
-    canAttempt: running && current != null && !currentSolved && stage !== 'judging',
+    canAttempt: !suspended && running && current != null && !currentSolved && stage !== 'judging',
     summary,
     // No `micLevel` here BY DESIGN (19b): a per-audio-frame value on the run
     // object re-renders every consumer of the run — the whole primitive — at
