@@ -17,6 +17,8 @@ from google.genai.types import LiveConnectConfig, SpeechConfig, VoiceConfig, Pre
 
 from ...core.config import settings
 from ...services.session_ledger import SessionLedger, classify_cue
+from ...services.live_activity_tools import LiveActivityTools, activity_tool, parse_activity_spec, activity_instruction
+from ...services.live_runtime_tools import LiveRuntimeTools, CombinedLiveTools, runtime_tool, parse_runtime_spec, RUNTIME_INSTRUCTION
 
 # Enhanced logging configuration
 logging.basicConfig(
@@ -886,6 +888,27 @@ async def lumina_tutor_session(websocket: WebSocket):
 
         # Extract session mode and contexts
         session_mode = auth_data.get("session_mode", "standalone")
+        sandbox_spec = None
+        if auth_data.get("activity_sandbox") is not None:
+            if settings.ENVIRONMENT.lower() not in ("dev", "development", "local", "test"):
+                await websocket.close(code=4003, reason="Activity sandbox requires a development backend")
+                return
+            try:
+                sandbox_spec = parse_activity_spec(auth_data["activity_sandbox"])
+            except ValueError as error:
+                await websocket.close(code=4003, reason=f"Activity sandbox: {error}")
+                return
+        sandbox_enabled = sandbox_spec is not None
+        runtime_spec = None
+        if auth_data.get("runtime_sandbox") is not None:
+            if settings.ENVIRONMENT.lower() not in ("dev", "development", "local", "test"):
+                await websocket.close(code=4003, reason="Runtime sandbox requires development")
+                return
+            try:
+                runtime_spec = parse_runtime_spec(auth_data["runtime_sandbox"], activity_enabled=sandbox_enabled)
+            except ValueError as error:
+                await websocket.close(code=4003, reason=str(error))
+                return
         primitive_context = auth_data.get("primitive_context", {})
         lesson_context = auth_data.get("lesson_context", {})
         student_progress = auth_data.get("student_progress", {})
@@ -949,7 +972,12 @@ async def lumina_tutor_session(websocket: WebSocket):
             )
             logger.info(f"Standalone system instruction built for {primitive_type}")
 
-        # Step 3: Configure Gemini session
+        # Step 3: Generic transport rules plus the host's actual capabilities.
+        if sandbox_spec:
+            system_instruction += "\n" + activity_instruction(sandbox_spec)
+        if runtime_spec:
+            system_instruction += "\n" + RUNTIME_INSTRUCTION
+
         speech_config = SpeechConfig(
             voice_config=VoiceConfig(
                 prebuilt_voice_config=PrebuiltVoiceConfig(voice_name=DEFAULT_VOICE)
@@ -1020,6 +1048,8 @@ async def lumina_tutor_session(websocket: WebSocket):
                 ),
                 session_resumption=types.SessionResumptionConfig(handle=handle),
                 system_instruction=Content(parts=[{"text": system_instruction}]),
+                tools=((([runtime_tool()] if runtime_spec else []) +
+                        ([activity_tool(sandbox_spec)] if sandbox_enabled else [])) or None),
             )
 
         logger.info("Starting Gemini Live session for Lumina tutoring...")
@@ -1031,6 +1061,15 @@ async def lumina_tutor_session(websocket: WebSocket):
         text_queue: asyncio.Queue = asyncio.Queue()
         audio_queue: asyncio.Queue = asyncio.Queue()
         ws_send_queue: asyncio.Queue[dict] = asyncio.Queue()
+        tool_response_queue: asyncio.Queue = asyncio.Queue()
+        sandbox = LiveActivityTools(ws_send_queue.put, tool_response_queue.put, sandbox_spec) if sandbox_enabled else None
+        runtime_bridge = LiveRuntimeTools(ws_send_queue.put, tool_response_queue.put, runtime_spec) if runtime_spec else None
+        tool_bridge = CombinedLiveTools(sandbox, runtime_bridge) if runtime_bridge else sandbox
+
+        async def handle_tool_responses(session):
+            while True:
+                response = await tool_response_queue.get()
+                await session.send_tool_response(function_responses=[response])
         # Set when the client disconnects or a fatal error makes resuming moot —
         # breaks the reconnection loop below.
         stop_event = asyncio.Event()
@@ -1196,7 +1235,57 @@ async def lumina_tutor_session(websocket: WebSocket):
                     # TextQueueEntry.interrupt.
                     interrupt = bool(message.get("interrupt", False))
 
-                    if message_type == "update_context":
+                    if message_type == "runtime_state" and runtime_bridge:
+                        if runtime_bridge.update(message.get("state")):
+                            primitive_state.merge({"liveRuntime": runtime_bridge.state})
+
+                    elif message_type == "runtime_result" and runtime_bridge:
+                        accepted = await runtime_bridge.result(message)
+                        if accepted:
+                            primitive_state.merge({"liveRuntime": runtime_bridge.state})
+                        ledger.write("runtime-result", call_id=message.get("commandId"),
+                                     status=message.get("status"), accepted=accepted)
+
+                    elif message_type == "activity_result" and sandbox:
+                        # The browser acknowledges only after the real component commits.
+                        if sandbox.pending_type in sandbox.activities and message.get("status") == "mounted" and isinstance(message.get("data"), dict):
+                            message["guidance"] = (get_primitive_specific_instructions(
+                                sandbox.pending_type, message["data"], message.get("tutoring"))
+                                + "\n" + sandbox.activities[sandbox.pending_type]["guidance"])
+                        mounted = await sandbox.result(message)
+                        if mounted:
+                            primitive_type = sandbox.active_type
+                            instance_id = message["instanceId"]
+                            primitive_data = message["data"]
+                            tutoring_scaffold = message.get("tutoring")
+                            primitive_state.reset(primitive_data)
+                        ledger.write("activity-result", call_id=message.get("callId"),
+                                     status=message.get("status"), accepted=mounted)
+
+                    elif message_type == "visual_state" and sandbox:
+                        if (sandbox.active and sandbox.active[1] == message.get("instanceId")
+                                and sandbox.active_type in {v["primitiveId"] for v in sandbox.visuals.values()}
+                                and isinstance(message.get("state"), dict)):
+                            primitive_state.merge(message["state"])
+                            await sandbox.state(message["instanceId"], message["state"])
+
+                    elif message_type == "activity_command_result" and sandbox:
+                        accepted = await sandbox.command_result(message)
+                        if accepted:
+                            primitive_state.merge(message["state"])
+                        ledger.write("activity-command-result", call_id=message.get("callId"),
+                                     status=message.get("status"), accepted=accepted)
+
+                    elif message_type == "activity_cancel" and sandbox:
+                        if message.get("callId") == sandbox.pending:
+                            await sandbox.cancel_pending("cancelled by learner")
+
+                    elif message_type == "plan_item_complete" and sandbox:
+                        accepted = await sandbox.item_complete(message)
+                        ledger.write("plan-item-complete", call_id=message.get("callId"), item_id=message.get("itemId"),
+                                     next_item_id=message.get("nextItemId"), accepted=accepted)
+
+                    elif message_type == "update_context":
                         # Handle real-time primitive state updates
                         new_state = message.get("primitive_data", {})
                         progress_update = message.get("student_progress", {})
@@ -1216,12 +1305,17 @@ async def lumina_tutor_session(websocket: WebSocket):
                         # next message that genuinely asks for a turn (see
                         # PrimitiveState), fresher than this push ever was.
                         primitive_state.merge(new_state)
+                        if sandbox:
+                            await sandbox.state(instance_id, new_state)
                         if progress_update:
                             primitive_state.merge({
                                 "student progress": json.dumps(progress_update)
                             })
 
                     elif message_type == "switch_primitive":
+                        if sandbox:
+                            # The correlated mount result owns sandbox activation.
+                            continue
                         # Handle primitive context switch within a lesson session
                         new_primitive = message.get("primitive_context", {})
                         old_type = primitive_type
@@ -1288,6 +1382,9 @@ async def lumina_tutor_session(websocket: WebSocket):
                         })
 
                     elif message_type == "text":
+                        if sandbox and message.get("content", "").startswith("[ACTIVITY_START]"):
+                            # The mount tool response already gives the tutor its opening.
+                            continue
                         await text_queue.put(TextQueueEntry(
                             text=message.get("content", ""),
                             end_of_turn=True,
@@ -1638,6 +1735,16 @@ async def lumina_tutor_session(websocket: WebSocket):
                     audio_frames = 0
                     audio_bytes = 0
                     async for response in session.receive():
+                        if tool_bridge:
+                            cancellation = getattr(response, "tool_call_cancellation", None)
+                            if cancellation:
+                                await tool_bridge.cancelled_by_model(cancellation.ids or [])
+                            tool_call = getattr(response, "tool_call", None)
+                            if tool_call:
+                                for function_call in tool_call.function_calls or []:
+                                    await tool_bridge.call(function_call)
+                                    ledger.write("activity-tool-call", call_id=function_call.id,
+                                                 name=function_call.name, args=function_call.args)
                         # Dev fault injection: forced drop deadline reached —
                         # raise out of the receive loop, exactly the shape of
                         # a real 1011/1008 mid-generation connection death.
@@ -1906,6 +2013,8 @@ async def lumina_tutor_session(websocket: WebSocket):
                             asyncio.create_task(handle_text_to_gemini(session)),
                             asyncio.create_task(handle_audio_to_gemini(session)),
                         ]
+                        if tool_bridge:
+                            gemini_tasks.append(asyncio.create_task(handle_tool_responses(session)))
                         response_task = asyncio.create_task(handle_gemini_responses(session))
                         stop_task = asyncio.create_task(stop_event.wait())
 
@@ -1921,6 +2030,10 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 t.cancel()
                         await asyncio.gather(*gemini_tasks, response_task, stop_task,
                                              return_exceptions=True)
+                        if tool_bridge:
+                            await tool_bridge.reset()
+                            while not tool_response_queue.empty():
+                                tool_response_queue.get_nowait()
 
                         outcome = response_task.result() if response_task in done else 'stop'
                 except Exception as connect_err:
@@ -1960,6 +2073,8 @@ async def lumina_tutor_session(websocket: WebSocket):
                 # No handle / terminal outcome → stop.
                 break
         finally:
+            if tool_bridge:
+                await tool_bridge.reset()
             ledger.write(
                 "floor-gate-summary",
                 yielded=floor.yielded,
