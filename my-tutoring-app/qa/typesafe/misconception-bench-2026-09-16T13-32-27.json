@@ -1,0 +1,4003 @@
+{
+  "probes": {
+    "A": {
+      "summary": {
+        "n": 48,
+        "generative": 30,
+        "abstain": 18,
+        "distiller": {
+          "accuracy": 0.9583333333333334,
+          "generativeRecall": 0.9333333333333333,
+          "abstainRecall": 1,
+          "msMean": 10563.854166666666
+        },
+        "typesafe": {
+          "accuracy": 0.9791666666666666,
+          "generativeRecall": 0.9666666666666667,
+          "abstainRecall": 1,
+          "msMean": 255.25,
+          "tokensMean": 785.6875,
+          "pRuleGen": 0.8226666666666668,
+          "pRuleAbs": 0.14833333333333334
+        },
+        "agree": 0.9791666666666666,
+        "agreePrecision": 0.9787234042553191,
+        "gateCurves": {
+          "distillerConfidence": {
+            "50%": 1,
+            "70%": 1,
+            "80%": 1,
+            "90%": 1,
+            "100%": 1
+          },
+          "typesafePRule": {
+            "50%": 1,
+            "70%": 1,
+            "80%": 1,
+            "90%": 1,
+            "100%": 1
+          },
+          "typesafeStrength": {
+            "50%": 1,
+            "70%": 1,
+            "80%": 1,
+            "90%": 1,
+            "100%": 1
+          }
+        },
+        "generativeVerdicts": 28
+      },
+      "rows": [
+        {
+          "id": "place-value-chart-bare-digit-4",
+          "family": "NBT003-02-a",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 32288,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "judge",
+            "text": "The student interprets the value of a digit as its face value, reporting only the name of the digit rather than the quantity determined by its place.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 355,
+            "tokens": 681,
+            "pRule": 0.9,
+            "strength": 2.99,
+            "strengthConf": 0.99,
+            "pReliable": 0.85
+          }
+        },
+        {
+          "id": "place-value-chart-bare-digit-7",
+          "family": "NBT003-02-a",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 10423,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "judge",
+            "text": "The student interprets the value of a digit as its face value regardless of its position, so they name the digit itself rather than accounting for its place.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 397,
+            "tokens": 681,
+            "pRule": 0.89,
+            "strength": 2.99,
+            "strengthConf": 0.99,
+            "pReliable": 0.84
+          }
+        },
+        {
+          "id": "place-value-chart-missing-transcript",
+          "family": "NBT003-02-a",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 18262,
+            "abstain": true,
+            "confidence": null,
+            "tier": "judge",
+            "text": "",
+            "reason": "There is no reliable transcript of the student's response to identify an error pattern."
+          },
+          "typesafe": {
+            "ms": 164,
+            "tokens": 651,
+            "pRule": 0.15,
+            "strength": 0.99,
+            "strengthConf": 0.95,
+            "pReliable": 0.14
+          }
+        },
+        {
+          "id": "maya-comparison",
+          "family": "MATH-G2-OA-COMP-02",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 6711,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student interprets the question 'how many fewer' as asking to identify the smaller quantity itself rather than the difference between the two quantities.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 378,
+            "tokens": 691,
+            "pRule": 0.85,
+            "strength": 2.8,
+            "strengthConf": 0.8,
+            "pReliable": 0.53
+          }
+        },
+        {
+          "id": "fraction-bigger-denominator",
+          "family": "MATH-G3-NF-COMP-01",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 8972,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student treats denominators as whole numbers when comparing unit fractions, deciding that the fraction with the greater denominator represents a larger quantity.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 350,
+            "tokens": 684,
+            "pRule": 0.93,
+            "strength": 2.98,
+            "strengthConf": 0.98,
+            "pReliable": 0.54
+          }
+        },
+        {
+          "id": "subtraction-smaller-from-larger",
+          "family": "MATH-G2-NBT-SUB-03",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 15766,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "When subtracting multi-digit numbers, the student subtracts the smaller digit from the larger digit in each column regardless of which number is on top.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 152,
+            "tokens": 701,
+            "pRule": 0.75,
+            "strength": 2.78,
+            "strengthConf": 0.78,
+            "pReliable": 0.57
+          }
+        },
+        {
+          "id": "area-perimeter-confusion",
+          "family": "MATH-G4-MD-AREA-01",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 7277,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student confuses area with perimeter, calculating the perimeter by summing the lengths of all four sides whenever asked to find the area.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 160,
+            "tokens": 654,
+            "pRule": 0.93,
+            "strength": 2.99,
+            "strengthConf": 0.99,
+            "pReliable": 0.56
+          }
+        },
+        {
+          "id": "reading-main-idea-judge",
+          "family": "ELA-G3-RI-MAIN-02",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 9388,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "judge",
+            "text": "The student identifies the main idea by selecting the first concrete detail stated in the opening sentence of a passage.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 539,
+            "tokens": 685,
+            "pRule": 0.82,
+            "strength": 2.81,
+            "strengthConf": 0.81,
+            "pReliable": 0.56
+          }
+        },
+        {
+          "id": "spoken-blend-first-sound-only",
+          "family": "ELA-GK-PHON-BLEND-01",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 11786,
+            "abstain": false,
+            "confidence": "medium",
+            "tier": "judge",
+            "text": "The student interprets a prompt to blend spoken phonemes as a direction to isolate and produce only the initial sound.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 164,
+            "tokens": 667,
+            "pRule": 0.88,
+            "strength": 2.87,
+            "strengthConf": 0.87,
+            "pReliable": 0.61
+          }
+        },
+        {
+          "id": "picture-vocabulary-animal-overgeneralization",
+          "family": "ELA-GK-VOCAB-NAMING",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 11245,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "judge",
+            "text": "The student overgeneralizes the familiar label \"dog\" to refer to any four-legged mammal.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 173,
+            "tokens": 685,
+            "pRule": 0.95,
+            "strength": 3,
+            "strengthConf": 1,
+            "pReliable": 0.84
+          }
+        },
+        {
+          "id": "picture-vocabulary-repeats-prompt-object",
+          "family": "ELA-GK-VOCAB-ASSOCIATION",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 4741,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student interprets the prompt to name what goes with an object as an instruction to label or echo the presented object itself.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 152,
+            "tokens": 676,
+            "pRule": 0.93,
+            "strength": 3,
+            "strengthConf": 1,
+            "pReliable": 0.63
+          }
+        },
+        {
+          "id": "picture-vocabulary-single-naming-slip",
+          "family": "ELA-GK-VOCAB-NAMING",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 15721,
+            "abstain": true,
+            "confidence": null,
+            "tier": "judge",
+            "text": "",
+            "reason": "The student made an isolated naming slip and immediately self-corrected, showing no systematic misconception."
+          },
+          "typesafe": {
+            "ms": 274,
+            "tokens": 637,
+            "pRule": 0.05,
+            "strength": 0.01,
+            "strengthConf": 0.99,
+            "pReliable": 0.76
+          }
+        },
+        {
+          "id": "phoneme-explorer-final-sound-omission",
+          "family": "ELA-GK-PHON-SEGMENT",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 7780,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student isolates only the initial consonant and vowel sounds when segmenting a word, omitting the final phoneme.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 344,
+            "tokens": 656,
+            "pRule": 0.85,
+            "strength": 2.88,
+            "strengthConf": 0.88,
+            "pReliable": 0.5
+          }
+        },
+        {
+          "id": "phoneme-explorer-blend-first-sound",
+          "family": "ELA-GK-PHON-BLEND",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 6807,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student listens only to the initial phoneme of the segmented sequence and selects a word starting with that sound, disregarding the middle and final sounds.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 331,
+            "tokens": 640,
+            "pRule": 0.83,
+            "strength": 2.97,
+            "strengthConf": 0.97,
+            "pReliable": 0.51
+          }
+        },
+        {
+          "id": "phoneme-explorer-single-slip",
+          "family": "ELA-GK-PHON-ISOLATE",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 10194,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "The error was an isolated occurrence immediately followed by correct responses, indicating a momentary slip or guess rather than a systematic misconception."
+          },
+          "typesafe": {
+            "ms": 254,
+            "tokens": 599,
+            "pRule": 0.09,
+            "strength": 0.1,
+            "strengthConf": 0.9,
+            "pReliable": 0.22
+          }
+        },
+        {
+          "id": "cvc-speller-vowel-substitution",
+          "family": "ELA-GK-PHON-CVC-ENCODE",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 6681,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student maps the auditory vowel phoneme /ɪ/ to the letter e.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 449,
+            "tokens": 676,
+            "pRule": 0.86,
+            "strength": 2.96,
+            "strengthConf": 0.96,
+            "pReliable": 0.54
+          }
+        },
+        {
+          "id": "cvc-speller-spoken-final-omission",
+          "family": "ELA-GK-PHON-CVC-ENCODE",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 8770,
+            "abstain": false,
+            "confidence": "medium",
+            "tier": "judge",
+            "text": "The student blends only the onset and vowel of a three-phoneme word, dropping the final consonant sound.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 359,
+            "tokens": 636,
+            "pRule": 0.63,
+            "strength": 2.46,
+            "strengthConf": 0.46,
+            "pReliable": 0.3
+          }
+        },
+        {
+          "id": "cvc-speller-single-vowel-slip",
+          "family": "ELA-GK-PHON-CVC-ENCODE",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 12739,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "The student immediately self-corrected after a single mistake, indicating an isolated slip rather than a consistent wrong rule."
+          },
+          "typesafe": {
+            "ms": 191,
+            "tokens": 610,
+            "pRule": 0.11,
+            "strength": 0.14,
+            "strengthConf": 0.86,
+            "pReliable": 0.26
+          }
+        },
+        {
+          "id": "letter-sound-voicing-confusion",
+          "family": "ELA-GK-PHON-LETTER-SOUND",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 17620,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student reads the letter 'T' as representing the voiced sound /d/ and corresponding to the letter 'd'.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 359,
+            "tokens": 654,
+            "pRule": 0.82,
+            "strength": 2.98,
+            "strengthConf": 0.98,
+            "pReliable": 0.43
+          }
+        },
+        {
+          "id": "letter-sound-spoken-onset-omission",
+          "family": "ELA-GK-PHON-LETTER-SOUND",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 11712,
+            "abstain": true,
+            "confidence": null,
+            "tier": "judge",
+            "text": "",
+            "reason": "A single instance of omitting an initial consonant does not distinguish an articulation slip, misheard vocabulary word, or audio artifact from a consistent conceptual rule."
+          },
+          "typesafe": {
+            "ms": 371,
+            "tokens": 622,
+            "pRule": 0.74,
+            "strength": 2.48,
+            "strengthConf": 0.48,
+            "pReliable": 0.46
+          }
+        },
+        {
+          "id": "letter-sound-single-mistap",
+          "family": "ELA-GK-PHON-LETTER-SOUND",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 9684,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "A single error followed by an immediate successful correction indicates an accidental slip or guess rather than a systematic misconception."
+          },
+          "typesafe": {
+            "ms": 173,
+            "tokens": 600,
+            "pRule": 0.13,
+            "strength": 0.35,
+            "strengthConf": 0.65,
+            "pReliable": 0.45
+          }
+        },
+        {
+          "id": "rhyme-studio-onset-matching",
+          "family": "ELA-GK-PHON-RHYME",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 3103,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student treats rhyming as sharing the same initial sound rather than the same ending sound, consistently selecting words with matching onsets.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 172,
+            "tokens": 668,
+            "pRule": 0.92,
+            "strength": 2.99,
+            "strengthConf": 0.99,
+            "pReliable": 0.55
+          }
+        },
+        {
+          "id": "rhyme-studio-spoken-rime-change",
+          "family": "ELA-GK-PHON-RHYME",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 52991,
+            "abstain": true,
+            "confidence": null,
+            "tier": "judge",
+            "text": "",
+            "reason": "There is only a single attempt with no prior session history or corroborating pattern. Producing 'cap' instead of a rhyming word for 'cat' could be an articulation slip, a mishearing, or confusing rhyme with alliteration, so inferring a consistent misconception would require inventing an unsupported story."
+          },
+          "typesafe": {
+            "ms": 154,
+            "tokens": 632,
+            "pRule": 0.18,
+            "strength": 0.62,
+            "strengthConf": 0.38,
+            "pReliable": 0.59
+          }
+        },
+        {
+          "id": "rhyme-studio-single-slip",
+          "family": "ELA-GK-PHON-RHYME",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 8018,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "A single initial error that was immediately corrected upon replay indicates an isolated slip rather than a systematic misconception."
+          },
+          "typesafe": {
+            "ms": 369,
+            "tokens": 595,
+            "pRule": 0.08,
+            "strength": 0.17,
+            "strengthConf": 0.83,
+            "pReliable": 0.48
+          }
+        },
+        {
+          "id": "sound-swap-position-confusion",
+          "family": "ELA-G1-PHON-MANIP",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 11537,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student interprets any phoneme substitution task as an instruction to modify the initial sound of the word regardless of which position was specified.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 347,
+            "tokens": 646,
+            "pRule": 0.76,
+            "strength": 2.78,
+            "strengthConf": 0.78,
+            "pReliable": 0.57
+          }
+        },
+        {
+          "id": "sound-swap-single-slip",
+          "family": "ELA-G1-PHON-MANIP",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 9419,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "A single tap on an adjacent sound followed by an immediate self-correction reflects a momentary slip rather than a consistent wrong rule."
+          },
+          "typesafe": {
+            "ms": 428,
+            "tokens": 600,
+            "pRule": 0.14,
+            "strength": 0.5,
+            "strengthConf": 0.5,
+            "pReliable": 0.3
+          }
+        },
+        {
+          "id": "di-math-facts-successor-for-subtraction",
+          "family": "MATH-GK-OPS-SUB-01",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 13249,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "judge",
+            "text": "The student interprets the minus sign as an addition sign, adding the numbers together instead of taking away.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 165,
+            "tokens": 931,
+            "pRule": 0.77,
+            "strength": 2.87,
+            "strengthConf": 0.87,
+            "pReliable": 0.9
+          }
+        },
+        {
+          "id": "di-math-facts-echoes-last-number",
+          "family": "MATH-GK-OPS-ADD-01",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 3787,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "judge",
+            "text": "The student interprets an addition expression by simply repeating the second addend instead of combining the two quantities.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 169,
+            "tokens": 828,
+            "pRule": 0.56,
+            "strength": 2.68,
+            "strengthConf": 0.68,
+            "pReliable": 0.89
+          }
+        },
+        {
+          "id": "di-letter-sounds-name-for-sound",
+          "family": "ELA-GK-PHON-LSC-01",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 3573,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "judge",
+            "text": "The student says the alphabetical name of the letter instead of producing its phonemic sound.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 169,
+            "tokens": 800,
+            "pRule": 0.94,
+            "strength": 3,
+            "strengthConf": 1,
+            "pReliable": 0.89
+          }
+        },
+        {
+          "id": "di-math-facts-single-fact-slip",
+          "family": "MATH-GK-OPS-ADD-01",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 5541,
+            "abstain": true,
+            "confidence": null,
+            "tier": "judge",
+            "text": "",
+            "reason": "A single isolated error on an addition fact without prior attempts provides insufficient evidence to distinguish a counting slip or guess from a systematic misconception."
+          },
+          "typesafe": {
+            "ms": 155,
+            "tokens": 663,
+            "pRule": 0.1,
+            "strength": 0.13,
+            "strengthConf": 0.87,
+            "pReliable": 0.82
+          }
+        },
+        {
+          "id": "di-sentence-reading-mixed-misreads",
+          "family": "ELA-G1-READ-ACC-01",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 3033,
+            "abstain": true,
+            "confidence": null,
+            "tier": "judge",
+            "text": "",
+            "reason": "The student read the article accurately in a previous attempt, making the substitution in this trial an isolated slip rather than a consistent rule."
+          },
+          "typesafe": {
+            "ms": 161,
+            "tokens": 793,
+            "pRule": 0.21,
+            "strength": 0.91,
+            "strengthConf": 0.09,
+            "pReliable": 0.83
+          }
+        },
+        {
+          "id": "single-arithmetic-slip",
+          "family": "MATH-G2-OA-COMP-02",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 3041,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "A single off-by-one response without prior attempts is insufficient to distinguish an isolated arithmetic slip from a systematic counting error."
+          },
+          "typesafe": {
+            "ms": 153,
+            "tokens": 612,
+            "pRule": 0.1,
+            "strength": 0.11,
+            "strengthConf": 0.89,
+            "pReliable": 0.28
+          }
+        },
+        {
+          "id": "inconsistent-errors",
+          "family": "MATH-G3-OA-MUL-04",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 9349,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "The observed errors do not follow a consistent systematic rule and instead reflect arithmetic slips or isolated miscounts."
+          },
+          "typesafe": {
+            "ms": 358,
+            "tokens": 671,
+            "pRule": 0.43,
+            "strength": 1.84,
+            "strengthConf": 0,
+            "pReliable": 0.5
+          }
+        },
+        {
+          "id": "guess-then-quit",
+          "family": "SCI-G4-PS-MATTER-02",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 8465,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "A single two-second response on a multiple-choice question cannot be reliably distinguished from an unreflective guess or misclick."
+          },
+          "typesafe": {
+            "ms": 360,
+            "tokens": 599,
+            "pRule": 0.12,
+            "strength": 0.38,
+            "strengthConf": 0.62,
+            "pReliable": 0.35
+          }
+        },
+        {
+          "id": "tier-c-no-evidence",
+          "family": "MATH-G1-OA-ADD-01",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 8,
+            "abstain": true,
+            "confidence": null,
+            "tier": "none",
+            "text": "",
+            "reason": "No diagnosable evidence (Tier C): needs judge feedback or expected+observed."
+          },
+          "typesafe": {
+            "ms": 152,
+            "tokens": 581,
+            "pRule": 0.05,
+            "strength": 0.93,
+            "strengthConf": 0.93,
+            "pReliable": 0.06
+          }
+        },
+        {
+          "id": "counting-board-take-away-states-start",
+          "family": "COUNT001-02-E",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 7940,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student interprets the question asking how many are left as asking for the starting quantity on the board, so they report the initial total rather than the remaining subset.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 349,
+            "tokens": 1009,
+            "pRule": 0.89,
+            "strength": 2.99,
+            "strengthConf": 0.99,
+            "pReliable": 0.49
+          }
+        },
+        {
+          "id": "counting-board-take-away-states-change",
+          "family": "COUNT001-02-E",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 18677,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student interprets the prompt asking how many are left as asking for the quantity of items that were taken away.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 346,
+            "tokens": 1006,
+            "pRule": 0.9,
+            "strength": 2.98,
+            "strengthConf": 0.98,
+            "pReliable": 0.5
+          }
+        },
+        {
+          "id": "counting-board-count-on-says-start-back",
+          "family": "COUNT001-02-G",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 21740,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student interprets the question asking how many altogether as a request to name the initial group, so they repeat the starting number given by the tutor rather than counting on the additional objects.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 349,
+            "tokens": 1068,
+            "pRule": 0.93,
+            "strength": 3,
+            "strengthConf": 1,
+            "pReliable": 0.57
+          }
+        },
+        {
+          "id": "counting-board-recount-moved-conservation",
+          "family": "COUNT001-02-C",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 20182,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student assumes that moving or rearranging a counted set of objects increases the total by one, so they respond with the next number in the counting sequence.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 161,
+            "tokens": 1028,
+            "pRule": 0.87,
+            "strength": 2.98,
+            "strengthConf": 0.98,
+            "pReliable": 0.49
+          }
+        },
+        {
+          "id": "counting-board-add-more-inconsistent",
+          "family": "COUNT001-02-F",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 9637,
+            "abstain": true,
+            "confidence": null,
+            "tier": "judge",
+            "text": "",
+            "reason": "The observed responses do not follow a consistent pattern across items and one transcript is missing, suggesting unsystematic guessing or slips rather than a single stable wrong rule."
+          },
+          "typesafe": {
+            "ms": 326,
+            "tokens": 1055,
+            "pRule": 0.2,
+            "strength": 1.47,
+            "strengthConf": 0.49,
+            "pReliable": 0.15
+          }
+        },
+        {
+          "id": "fraction-bar-role-swap",
+          "family": "fraction-bar",
+          "label": "generative",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 5895,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student swaps the positions of fraction terms, identifying the bottom number as the numerator and the top number as the denominator, and consequently shades the quantity indicated by the bottom value.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 149,
+            "tokens": 1812,
+            "pRule": 0.92,
+            "strength": 2.99,
+            "strengthConf": 0.99,
+            "pReliable": 0.79
+          }
+        },
+        {
+          "id": "fraction-bar-single-build-slip",
+          "family": "fraction-bar",
+          "label": "abstain",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 2409,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "A single off-by-one shading error without prior attempts provides insufficient evidence to distinguish a systematic rule from a slip or incomplete action."
+          },
+          "typesafe": {
+            "ms": 145,
+            "tokens": 778,
+            "pRule": 0.13,
+            "strength": 0.78,
+            "strengthConf": 0.5,
+            "pReliable": 0.57
+          }
+        },
+        {
+          "id": "fraction-circles-bigger-denominator",
+          "family": "fraction-circles",
+          "label": "generative",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 10849,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student treats the fraction with the larger denominator as the larger amount, assuming that having more total parts means a greater overall value.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 223,
+            "tokens": 1271,
+            "pRule": 0.91,
+            "strength": 3,
+            "strengthConf": 1,
+            "pReliable": 0.58
+          }
+        },
+        {
+          "id": "fraction-circles-mixed-slip",
+          "family": "fraction-circles",
+          "label": "abstain",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 5804,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "The single incorrect response contradicts earlier correct comparisons of fractions with different denominators, suggesting an isolated slip rather than a systematic misconception."
+          },
+          "typesafe": {
+            "ms": 167,
+            "tokens": 1084,
+            "pRule": 0.28,
+            "strength": 1.1,
+            "strengthConf": 0.06,
+            "pReliable": 0.51
+          }
+        },
+        {
+          "id": "bar-model-icon-count-for-total",
+          "family": "bar-model",
+          "label": "generative",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 5234,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student treats each icon as representing one item, counting the displayed symbols directly rather than applying the graph key's scale value.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 196,
+            "tokens": 1206,
+            "pRule": 0.84,
+            "strength": 2.95,
+            "strengthConf": 0.95,
+            "pReliable": 0.69
+          }
+        },
+        {
+          "id": "bar-model-single-slip",
+          "family": "bar-model",
+          "label": "abstain",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 4486,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "The student answered two out of three scaled graph items correctly on the first attempt, indicating this error is an isolated slip rather than a consistent rule."
+          },
+          "typesafe": {
+            "ms": 142,
+            "tokens": 806,
+            "pRule": 0.16,
+            "strength": 0.4,
+            "strengthConf": 0.6,
+            "pReliable": 0.56
+          }
+        },
+        {
+          "id": "number-line-start-tick-as-hop",
+          "family": "number-line",
+          "label": "generative",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 9139,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student counts the starting tick mark as the first hop, so they stop one space short of the specified distance.",
+            "reason": ""
+          },
+          "typesafe": {
+            "ms": 154,
+            "tokens": 1158,
+            "pRule": 0.73,
+            "strength": 2.85,
+            "strengthConf": 0.85,
+            "pReliable": 0.56
+          }
+        },
+        {
+          "id": "number-line-scattered-misses",
+          "family": "number-line",
+          "label": "abstain",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 5392,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "A single off-by-one error on a subtraction jump without repeated evidence is indistinguishable from a simple counting slip."
+          },
+          "typesafe": {
+            "ms": 144,
+            "tokens": 1027,
+            "pRule": 0.14,
+            "strength": 0.46,
+            "strengthConf": 0.54,
+            "pReliable": 0.64
+          }
+        }
+      ]
+    },
+    "B": {
+      "summary": {
+        "n": 28,
+        "supportedOwnMean": 0.9103571428571428,
+        "supportedOtherMean": 0.04785714285714287,
+        "supportAccuracy": 1,
+        "supportSeparation": 1,
+        "leakDetect": 1,
+        "leakFalse": 0,
+        "leaksOwnMean": 0.09821428571428573,
+        "leaksInjectedMean": 0.9232142857142858,
+        "msMean": 183.53571428571428,
+        "tokensMean": 1199.75
+      },
+      "rows": [
+        {
+          "id": "place-value-chart-bare-digit-4",
+          "family": "NBT003-02-a",
+          "ms": 344,
+          "tokens": 1033,
+          "hypothesis": "The student interprets the value of a digit as its face value, reporting only the name of the digit rather than the quantity determined by its place.",
+          "otherFrom": "maya-comparison",
+          "supported": {
+            "own": 0.95,
+            "other": 0.02,
+            "leaked": 0.94
+          },
+          "leaks": {
+            "own": 0.19,
+            "other": 0.12,
+            "leaked": 0.96
+          }
+        },
+        {
+          "id": "place-value-chart-bare-digit-7",
+          "family": "NBT003-02-a",
+          "ms": 394,
+          "tokens": 1033,
+          "hypothesis": "The student interprets the value of a digit as its face value regardless of its position, so they name the digit itself rather than accounting for its place.",
+          "otherFrom": "fraction-bigger-denominator",
+          "supported": {
+            "own": 0.95,
+            "other": 0.02,
+            "leaked": 0.96
+          },
+          "leaks": {
+            "own": 0.11,
+            "other": 0.05,
+            "leaked": 0.97
+          }
+        },
+        {
+          "id": "maya-comparison",
+          "family": "MATH-G2-OA-COMP-02",
+          "ms": 328,
+          "tokens": 1072,
+          "hypothesis": "The student interprets the question 'how many fewer' as asking to identify the smaller quantity itself rather than the difference between the two quantities.",
+          "otherFrom": "fraction-bigger-denominator",
+          "supported": {
+            "own": 0.92,
+            "other": 0.02,
+            "leaked": 0.91
+          },
+          "leaks": {
+            "own": 0.08,
+            "other": 0.05,
+            "leaked": 0.97
+          }
+        },
+        {
+          "id": "fraction-bigger-denominator",
+          "family": "MATH-G3-NF-COMP-01",
+          "ms": 344,
+          "tokens": 1063,
+          "hypothesis": "The student treats denominators as whole numbers when comparing unit fractions, deciding that the fraction with the greater denominator represents a larger quantity.",
+          "otherFrom": "subtraction-smaller-from-larger",
+          "supported": {
+            "own": 0.96,
+            "other": 0.02,
+            "leaked": 0.96
+          },
+          "leaks": {
+            "own": 0.06,
+            "other": 0.05,
+            "leaked": 0.97
+          }
+        },
+        {
+          "id": "subtraction-smaller-from-larger",
+          "family": "MATH-G2-NBT-SUB-03",
+          "ms": 147,
+          "tokens": 1102,
+          "hypothesis": "When subtracting multi-digit numbers, the student subtracts the smaller digit from the larger digit in each column regardless of which number is on top.",
+          "otherFrom": "area-perimeter-confusion",
+          "supported": {
+            "own": 0.81,
+            "other": 0.02,
+            "leaked": 0.81
+          },
+          "leaks": {
+            "own": 0.05,
+            "other": 0.06,
+            "leaked": 0.97
+          }
+        },
+        {
+          "id": "area-perimeter-confusion",
+          "family": "MATH-G4-MD-AREA-01",
+          "ms": 160,
+          "tokens": 1018,
+          "hypothesis": "The student confuses area with perimeter, calculating the perimeter by summing the lengths of all four sides whenever asked to find the area.",
+          "otherFrom": "reading-main-idea-judge",
+          "supported": {
+            "own": 0.96,
+            "other": 0.02,
+            "leaked": 0.95
+          },
+          "leaks": {
+            "own": 0.07,
+            "other": 0.04,
+            "leaked": 0.97
+          }
+        },
+        {
+          "id": "reading-main-idea-judge",
+          "family": "ELA-G3-RI-MAIN-02",
+          "ms": 195,
+          "tokens": 998,
+          "hypothesis": "The student identifies the main idea by selecting the first concrete detail stated in the opening sentence of a passage.",
+          "otherFrom": "spoken-blend-first-sound-only",
+          "supported": {
+            "own": 0.93,
+            "other": 0.02,
+            "leaked": 0.94
+          },
+          "leaks": {
+            "own": 0.05,
+            "other": 0.03,
+            "leaked": 0.76
+          }
+        },
+        {
+          "id": "spoken-blend-first-sound-only",
+          "family": "ELA-GK-PHON-BLEND-01",
+          "ms": 161,
+          "tokens": 975,
+          "hypothesis": "The student interprets a prompt to blend spoken phonemes as a direction to isolate and produce only the initial sound.",
+          "otherFrom": "picture-vocabulary-animal-overgeneralization",
+          "supported": {
+            "own": 0.88,
+            "other": 0.01,
+            "leaked": 0.89
+          },
+          "leaks": {
+            "own": 0.06,
+            "other": 0.03,
+            "leaked": 0.96
+          }
+        },
+        {
+          "id": "picture-vocabulary-animal-overgeneralization",
+          "family": "ELA-GK-VOCAB-NAMING",
+          "ms": 151,
+          "tokens": 1005,
+          "hypothesis": "The student overgeneralizes the familiar label \"dog\" to refer to any four-legged mammal.",
+          "otherFrom": "picture-vocabulary-repeats-prompt-object",
+          "supported": {
+            "own": 0.86,
+            "other": 0.09,
+            "leaked": 0.82
+          },
+          "leaks": {
+            "own": 0.05,
+            "other": 0.07,
+            "leaked": 0.5
+          }
+        },
+        {
+          "id": "picture-vocabulary-repeats-prompt-object",
+          "family": "ELA-GK-VOCAB-ASSOCIATION",
+          "ms": 141,
+          "tokens": 1044,
+          "hypothesis": "The student interprets the prompt to name what goes with an object as an instruction to label or echo the presented object itself.",
+          "otherFrom": "phoneme-explorer-final-sound-omission",
+          "supported": {
+            "own": 0.94,
+            "other": 0.03,
+            "leaked": 0.93
+          },
+          "leaks": {
+            "own": 0.05,
+            "other": 0.04,
+            "leaked": 0.94
+          }
+        },
+        {
+          "id": "phoneme-explorer-final-sound-omission",
+          "family": "ELA-GK-PHON-SEGMENT",
+          "ms": 139,
+          "tokens": 1035,
+          "hypothesis": "The student isolates only the initial consonant and vowel sounds when segmenting a word, omitting the final phoneme.",
+          "otherFrom": "phoneme-explorer-blend-first-sound",
+          "supported": {
+            "own": 0.9,
+            "other": 0.06,
+            "leaked": 0.88
+          },
+          "leaks": {
+            "own": 0.1,
+            "other": 0.05,
+            "leaked": 0.96
+          }
+        },
+        {
+          "id": "phoneme-explorer-blend-first-sound",
+          "family": "ELA-GK-PHON-BLEND",
+          "ms": 150,
+          "tokens": 1006,
+          "hypothesis": "The student listens only to the initial phoneme of the segmented sequence and selects a word starting with that sound, disregarding the middle and final sounds.",
+          "otherFrom": "cvc-speller-vowel-substitution",
+          "supported": {
+            "own": 0.93,
+            "other": 0.04,
+            "leaked": 0.9
+          },
+          "leaks": {
+            "own": 0.08,
+            "other": 0.05,
+            "leaked": 0.94
+          }
+        },
+        {
+          "id": "cvc-speller-vowel-substitution",
+          "family": "ELA-GK-PHON-CVC-ENCODE",
+          "ms": 139,
+          "tokens": 1029,
+          "hypothesis": "The student maps the auditory vowel phoneme /ɪ/ to the letter e.",
+          "otherFrom": "letter-sound-voicing-confusion",
+          "supported": {
+            "own": 0.95,
+            "other": 0.02,
+            "leaked": 0.9
+          },
+          "leaks": {
+            "own": 0.09,
+            "other": 0.05,
+            "leaked": 0.95
+          }
+        },
+        {
+          "id": "cvc-speller-spoken-final-omission",
+          "family": "ELA-GK-PHON-CVC-ENCODE",
+          "ms": 151,
+          "tokens": 973,
+          "hypothesis": "The student blends only the onset and vowel of a three-phoneme word, dropping the final consonant sound.",
+          "otherFrom": "rhyme-studio-onset-matching",
+          "supported": {
+            "own": 0.9,
+            "other": 0.03,
+            "leaked": 0.89
+          },
+          "leaks": {
+            "own": 0.07,
+            "other": 0.04,
+            "leaked": 0.92
+          }
+        },
+        {
+          "id": "letter-sound-voicing-confusion",
+          "family": "ELA-GK-PHON-LETTER-SOUND",
+          "ms": 139,
+          "tokens": 1013,
+          "hypothesis": "The student reads the letter 'T' as representing the voiced sound /d/ and corresponding to the letter 'd'.",
+          "otherFrom": "rhyme-studio-onset-matching",
+          "supported": {
+            "own": 0.93,
+            "other": 0.07,
+            "leaked": 0.91
+          },
+          "leaks": {
+            "own": 0.07,
+            "other": 0.29,
+            "leaked": 0.95
+          }
+        },
+        {
+          "id": "rhyme-studio-onset-matching",
+          "family": "ELA-GK-PHON-RHYME",
+          "ms": 147,
+          "tokens": 1039,
+          "hypothesis": "The student treats rhyming as sharing the same initial sound rather than the same ending sound, consistently selecting words with matching onsets.",
+          "otherFrom": "sound-swap-position-confusion",
+          "supported": {
+            "own": 0.92,
+            "other": 0.21,
+            "leaked": 0.89
+          },
+          "leaks": {
+            "own": 0.37,
+            "other": 0.07,
+            "leaked": 0.96
+          }
+        },
+        {
+          "id": "sound-swap-position-confusion",
+          "family": "ELA-G1-PHON-MANIP",
+          "ms": 159,
+          "tokens": 1017,
+          "hypothesis": "The student interprets any phoneme substitution task as an instruction to modify the initial sound of the word regardless of which position was specified.",
+          "otherFrom": "di-math-facts-successor-for-subtraction",
+          "supported": {
+            "own": 0.92,
+            "other": 0.02,
+            "leaked": 0.89
+          },
+          "leaks": {
+            "own": 0.06,
+            "other": 0.04,
+            "leaked": 0.94
+          }
+        },
+        {
+          "id": "di-math-facts-successor-for-subtraction",
+          "family": "MATH-GK-OPS-SUB-01",
+          "ms": 195,
+          "tokens": 1264,
+          "hypothesis": "The student interprets the minus sign as an addition sign, adding the numbers together instead of taking away.",
+          "otherFrom": "di-math-facts-echoes-last-number",
+          "supported": {
+            "own": 0.78,
+            "other": 0.06,
+            "leaked": 0.67
+          },
+          "leaks": {
+            "own": 0.13,
+            "other": 0.06,
+            "leaked": 0.95
+          }
+        },
+        {
+          "id": "di-math-facts-echoes-last-number",
+          "family": "MATH-GK-OPS-ADD-01",
+          "ms": 163,
+          "tokens": 1157,
+          "hypothesis": "The student interprets an addition expression by simply repeating the second addend instead of combining the two quantities.",
+          "otherFrom": "di-letter-sounds-name-for-sound",
+          "supported": {
+            "own": 0.56,
+            "other": 0.02,
+            "leaked": 0.52
+          },
+          "leaks": {
+            "own": 0.09,
+            "other": 0.04,
+            "leaked": 0.96
+          }
+        },
+        {
+          "id": "di-letter-sounds-name-for-sound",
+          "family": "ELA-GK-PHON-LSC-01",
+          "ms": 155,
+          "tokens": 1146,
+          "hypothesis": "The student says the alphabetical name of the letter instead of producing its phonemic sound.",
+          "otherFrom": "counting-board-take-away-states-start",
+          "supported": {
+            "own": 0.97,
+            "other": 0.02,
+            "leaked": 0.96
+          },
+          "leaks": {
+            "own": 0.17,
+            "other": 0.07,
+            "leaked": 0.95
+          }
+        },
+        {
+          "id": "counting-board-take-away-states-start",
+          "family": "COUNT001-02-E",
+          "ms": 140,
+          "tokens": 1409,
+          "hypothesis": "The student interprets the question asking how many are left as asking for the starting quantity on the board, so they report the initial total rather than the remaining subset.",
+          "otherFrom": "counting-board-count-on-says-start-back",
+          "supported": {
+            "own": 0.96,
+            "other": 0.27,
+            "leaked": 0.95
+          },
+          "leaks": {
+            "own": 0.09,
+            "other": 0.07,
+            "leaked": 0.93
+          }
+        },
+        {
+          "id": "counting-board-take-away-states-change",
+          "family": "COUNT001-02-E",
+          "ms": 164,
+          "tokens": 1380,
+          "hypothesis": "The student interprets the prompt asking how many are left as asking for the quantity of items that were taken away.",
+          "otherFrom": "counting-board-recount-moved-conservation",
+          "supported": {
+            "own": 0.97,
+            "other": 0.03,
+            "leaked": 0.96
+          },
+          "leaks": {
+            "own": 0.04,
+            "other": 0.04,
+            "leaked": 0.93
+          }
+        },
+        {
+          "id": "counting-board-count-on-says-start-back",
+          "family": "COUNT001-02-G",
+          "ms": 162,
+          "tokens": 1467,
+          "hypothesis": "The student interprets the question asking how many altogether as a request to name the initial group, so they repeat the starting number given by the tutor rather than counting on the additional objects.",
+          "otherFrom": "counting-board-recount-moved-conservation",
+          "supported": {
+            "own": 0.96,
+            "other": 0.03,
+            "leaked": 0.95
+          },
+          "leaks": {
+            "own": 0.1,
+            "other": 0.05,
+            "leaked": 0.9
+          }
+        },
+        {
+          "id": "counting-board-recount-moved-conservation",
+          "family": "COUNT001-02-C",
+          "ms": 144,
+          "tokens": 1417,
+          "hypothesis": "The student assumes that moving or rearranging a counted set of objects increases the total by one, so they respond with the next number in the counting sequence.",
+          "otherFrom": "fraction-bar-role-swap",
+          "supported": {
+            "own": 0.96,
+            "other": 0.01,
+            "leaked": 0.96
+          },
+          "leaks": {
+            "own": 0.06,
+            "other": 0.04,
+            "leaked": 0.93
+          }
+        },
+        {
+          "id": "fraction-bar-role-swap",
+          "family": "fraction-bar",
+          "ms": 162,
+          "tokens": 2100,
+          "hypothesis": "The student swaps the positions of fraction terms, identifying the bottom number as the numerator and the top number as the denominator, and consequently shades the quantity indicated by the bottom value.",
+          "otherFrom": "fraction-circles-bigger-denominator",
+          "supported": {
+            "own": 0.96,
+            "other": 0.07,
+            "leaked": 0.95
+          },
+          "leaks": {
+            "own": 0.06,
+            "other": 0.04,
+            "leaked": 0.92
+          }
+        },
+        {
+          "id": "fraction-circles-bigger-denominator",
+          "family": "fraction-circles",
+          "ms": 167,
+          "tokens": 1669,
+          "hypothesis": "The student treats the fraction with the larger denominator as the larger amount, assuming that having more total parts means a greater overall value.",
+          "otherFrom": "bar-model-icon-count-for-total",
+          "supported": {
+            "own": 0.94,
+            "other": 0.03,
+            "leaked": 0.92
+          },
+          "leaks": {
+            "own": 0.05,
+            "other": 0.06,
+            "leaked": 0.92
+          }
+        },
+        {
+          "id": "bar-model-icon-count-for-total",
+          "family": "bar-model",
+          "ms": 156,
+          "tokens": 1608,
+          "hypothesis": "The student treats each icon as representing one item, counting the displayed symbols directly rather than applying the graph key's scale value.",
+          "otherFrom": "number-line-start-tick-as-hop",
+          "supported": {
+            "own": 0.94,
+            "other": 0.04,
+            "leaked": 0.84
+          },
+          "leaks": {
+            "own": 0.22,
+            "other": 0.07,
+            "leaked": 0.91
+          }
+        },
+        {
+          "id": "number-line-start-tick-as-hop",
+          "family": "number-line",
+          "ms": 142,
+          "tokens": 1521,
+          "hypothesis": "The student counts the starting tick mark as the first hop, so they stop one space short of the specified distance.",
+          "otherFrom": "place-value-chart-bare-digit-4",
+          "supported": {
+            "own": 0.88,
+            "other": 0.04,
+            "leaked": 0.78
+          },
+          "leaks": {
+            "own": 0.13,
+            "other": 0.06,
+            "leaked": 0.96
+          }
+        }
+      ]
+    },
+    "C": {
+      "summary": {
+        "n": 55,
+        "positives": 26,
+        "negatives": 29,
+        "planner": {
+          "accuracy": 1,
+          "moveRecall": 1,
+          "abstainRecall": 1,
+          "msMean": 9956.018181818183
+        },
+        "typesafe": {
+          "accuracy": 0.9090909090909091,
+          "moveRecall": 1,
+          "abstainRecall": 0.8275862068965517,
+          "msMean": 235.1090909090909,
+          "tokensMean": 936.8
+        },
+        "agree": 0.9090909090909091,
+        "agreePrecision": 1,
+        "plannerActed": 26,
+        "gateCurves": {
+          "typesafeConfidence": {
+            "50%": 1,
+            "70%": 1,
+            "80%": 1,
+            "90%": 1,
+            "100%": 1
+          },
+          "typesafePApplies": {
+            "50%": 1,
+            "70%": 1,
+            "80%": 1,
+            "90%": 1,
+            "100%": 1
+          },
+          "typesafePMovePlanner": {
+            "50%": 1,
+            "70%": 1,
+            "80%": 1,
+            "90%": 1,
+            "100%": 1
+          }
+        },
+        "agreementGate": {
+          "coverage": 1,
+          "precision": 1
+        },
+        "plannerFailedWarns": 2,
+        "plannerRetried": 30
+      },
+      "rows": [
+        {
+          "source": "fraction-bar",
+          "name": "distilled",
+          "activity": "fraction-bar",
+          "task": {
+            "grade": "3",
+            "mode": "build",
+            "tier": "medium",
+            "topic": "Build fractions a/b by shading parts of a bar"
+          },
+          "observation": "The student identifies the bottom number of a fraction as the numerator, choosing it during selection and shading that many parts of the bar.",
+          "expected": "contrast_shared_digit_roles",
+          "moves": [
+            "contrast_shared_digit_roles"
+          ],
+          "planner": {
+            "move": "contrast_shared_digit_roles",
+            "retried": false,
+            "ms": 1501
+          },
+          "typesafe": {
+            "move": "contrast_shared_digit_roles",
+            "pMove": {
+              "abstain": 0.03,
+              "contrast_shared_digit_roles": 0.97
+            },
+            "confidence": 0.94,
+            "pApplies": 0.57,
+            "pReliable": 0.25,
+            "ms": 234,
+            "tokens": 829
+          }
+        },
+        {
+          "source": "fraction-bar",
+          "name": "paraphrase-a",
+          "activity": "fraction-bar",
+          "task": {
+            "grade": "3",
+            "mode": "build",
+            "tier": "medium",
+            "topic": "Build fractions a/b by shading parts of a bar"
+          },
+          "observation": "When asked how many parts are shaded, the learner reports how many equal parts the whole is cut into.",
+          "expected": "contrast_shared_digit_roles",
+          "moves": [
+            "contrast_shared_digit_roles"
+          ],
+          "planner": {
+            "move": "contrast_shared_digit_roles",
+            "retried": false,
+            "ms": 10514
+          },
+          "typesafe": {
+            "move": "contrast_shared_digit_roles",
+            "pMove": {
+              "contrast_shared_digit_roles": 0.97,
+              "abstain": 0.03
+            },
+            "confidence": 0.95,
+            "pApplies": 0.55,
+            "pReliable": 0.2,
+            "ms": 332,
+            "tokens": 824
+          }
+        },
+        {
+          "source": "fraction-bar",
+          "name": "paraphrase-b",
+          "activity": "fraction-bar",
+          "task": {
+            "grade": "3",
+            "mode": "build",
+            "tier": "medium",
+            "topic": "Build fractions a/b by shading parts of a bar"
+          },
+          "observation": "Says the bottom number is how many are shaded.",
+          "expected": "contrast_shared_digit_roles",
+          "moves": [
+            "contrast_shared_digit_roles"
+          ],
+          "planner": {
+            "move": "contrast_shared_digit_roles",
+            "retried": false,
+            "ms": 4321
+          },
+          "typesafe": {
+            "move": "contrast_shared_digit_roles",
+            "pMove": {
+              "contrast_shared_digit_roles": 0.97,
+              "abstain": 0.03
+            },
+            "confidence": 0.93,
+            "pApplies": 0.55,
+            "pReliable": 0.15,
+            "ms": 147,
+            "tokens": 814
+          }
+        },
+        {
+          "source": "fraction-bar",
+          "name": "unrelated",
+          "activity": "fraction-bar",
+          "task": {
+            "grade": "3",
+            "mode": "build",
+            "tier": "medium",
+            "topic": "Build fractions a/b by shading parts of a bar"
+          },
+          "observation": "Adds the denominators together when adding two fractions.",
+          "expected": null,
+          "moves": [
+            "contrast_shared_digit_roles"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 10622
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "contrast_shared_digit_roles": 0.03,
+              "abstain": 0.97
+            },
+            "confidence": 0.94,
+            "pApplies": 0.08,
+            "pReliable": 0.14,
+            "ms": 144,
+            "tokens": 814
+          }
+        },
+        {
+          "source": "fraction-bar",
+          "name": "nearby",
+          "activity": "fraction-bar",
+          "task": {
+            "grade": "3",
+            "mode": "build",
+            "tier": "medium",
+            "topic": "Build fractions a/b by shading parts of a bar"
+          },
+          "observation": "Believes a fraction with a larger denominator is always the larger fraction when comparing two fractions.",
+          "expected": null,
+          "moves": [
+            "contrast_shared_digit_roles"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 11746
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 0.94,
+              "contrast_shared_digit_roles": 0.06
+            },
+            "confidence": 0.87,
+            "pApplies": 0.12,
+            "pReliable": 0.12,
+            "ms": 171,
+            "tokens": 821
+          }
+        },
+        {
+          "source": "fraction-bar",
+          "name": "contradictory",
+          "activity": "fraction-bar",
+          "task": {
+            "grade": "3",
+            "mode": "build",
+            "tier": "medium",
+            "topic": "Build fractions a/b by shading parts of a bar"
+          },
+          "observation": "The selection records are unreliable and contradict each other; no consistent pattern about which number of a fraction plays which role can be inferred.",
+          "expected": null,
+          "moves": [
+            "contrast_shared_digit_roles"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 8210
+          },
+          "typesafe": {
+            "move": "contrast_shared_digit_roles",
+            "pMove": {
+              "abstain": 0.18,
+              "contrast_shared_digit_roles": 0.82
+            },
+            "confidence": 0.64,
+            "pApplies": 0.47,
+            "pReliable": 0.02,
+            "ms": 147,
+            "tokens": 829
+          }
+        },
+        {
+          "source": "fraction-bar",
+          "name": "other-representation",
+          "activity": "fraction-bar",
+          "task": {
+            "grade": "3",
+            "mode": "build",
+            "tier": "medium",
+            "topic": "Build fractions a/b by shading parts of a bar"
+          },
+          "observation": "The student gives the bare digit for its worth regardless of its position in a whole number.",
+          "expected": null,
+          "moves": [
+            "contrast_shared_digit_roles"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 3017
+          },
+          "typesafe": {
+            "move": "contrast_shared_digit_roles",
+            "pMove": {
+              "contrast_shared_digit_roles": 0.66,
+              "abstain": 0.34
+            },
+            "confidence": 0.32,
+            "pApplies": 0.19,
+            "pReliable": 0.2,
+            "ms": 158,
+            "tokens": 821
+          }
+        },
+        {
+          "source": "bar-model",
+          "name": "distilled",
+          "activity": "bar-model",
+          "task": {
+            "grade": "3",
+            "mode": "picture_graph",
+            "tier": "medium",
+            "topic": "Reading picture graphs",
+            "intent": "Read a picture graph using its key"
+          },
+          "observation": "The student reads each icon in a picture graph as a single item, reporting the number of icons in a row as its total instead of applying the key value per icon.",
+          "expected": "contrast_icon_count_and_row_value",
+          "moves": [
+            "contrast_icon_count_and_row_value"
+          ],
+          "planner": {
+            "move": "contrast_icon_count_and_row_value",
+            "retried": false,
+            "ms": 2357
+          },
+          "typesafe": {
+            "move": "contrast_icon_count_and_row_value",
+            "pMove": {
+              "abstain": 0.01,
+              "contrast_icon_count_and_row_value": 0.99
+            },
+            "confidence": 0.99,
+            "pApplies": 0.71,
+            "pReliable": 0.36,
+            "ms": 331,
+            "tokens": 859
+          }
+        },
+        {
+          "source": "bar-model",
+          "name": "paraphrase-says-three",
+          "activity": "bar-model",
+          "task": {
+            "grade": "3",
+            "mode": "picture_graph",
+            "tier": "medium",
+            "topic": "Reading picture graphs",
+            "intent": "Read a picture graph using its key"
+          },
+          "observation": "Says three when three pictures are shown next to a key where each picture means five.",
+          "expected": "contrast_icon_count_and_row_value",
+          "moves": [
+            "contrast_icon_count_and_row_value"
+          ],
+          "planner": {
+            "move": "contrast_icon_count_and_row_value",
+            "retried": false,
+            "ms": 1507
+          },
+          "typesafe": {
+            "move": "contrast_icon_count_and_row_value",
+            "pMove": {
+              "abstain": 0.01,
+              "contrast_icon_count_and_row_value": 0.99
+            },
+            "confidence": 0.98,
+            "pApplies": 0.72,
+            "pReliable": 0.21,
+            "ms": 148,
+            "tokens": 843
+          }
+        },
+        {
+          "source": "bar-model",
+          "name": "paraphrase-legend",
+          "activity": "bar-model",
+          "task": {
+            "grade": "3",
+            "mode": "picture_graph",
+            "tier": "medium",
+            "topic": "Reading picture graphs",
+            "intent": "Read a picture graph using its key"
+          },
+          "observation": "Answers with how many symbols they counted and ignores the legend that says what one symbol is worth.",
+          "expected": "contrast_icon_count_and_row_value",
+          "moves": [
+            "contrast_icon_count_and_row_value"
+          ],
+          "planner": {
+            "move": "contrast_icon_count_and_row_value",
+            "retried": false,
+            "ms": 2050
+          },
+          "typesafe": {
+            "move": "contrast_icon_count_and_row_value",
+            "pMove": {
+              "abstain": 0.01,
+              "contrast_icon_count_and_row_value": 0.99
+            },
+            "confidence": 0.99,
+            "pApplies": 0.65,
+            "pReliable": 0.28,
+            "ms": 147,
+            "tokens": 844
+          }
+        },
+        {
+          "source": "bar-model",
+          "name": "unrelated-more-fewer",
+          "activity": "bar-model",
+          "task": {
+            "grade": "3",
+            "mode": "picture_graph",
+            "tier": "medium",
+            "topic": "Reading picture graphs",
+            "intent": "Read a picture graph using its key"
+          },
+          "observation": "Mixes up the words more and fewer when comparing two groups.",
+          "expected": null,
+          "moves": [
+            "contrast_icon_count_and_row_value"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 12066
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 0.98,
+              "contrast_icon_count_and_row_value": 0.02
+            },
+            "confidence": 0.95,
+            "pApplies": 0.16,
+            "pReliable": 0.15,
+            "ms": 343,
+            "tokens": 838
+          }
+        },
+        {
+          "source": "bar-model",
+          "name": "nearby-axis-step",
+          "activity": "bar-model",
+          "task": {
+            "grade": "3",
+            "mode": "picture_graph",
+            "tier": "medium",
+            "topic": "Reading picture graphs",
+            "intent": "Read a picture graph using its key"
+          },
+          "observation": "Reads a bar graph by counting grid lines to the top of the bar, ignoring that the axis counts by twos.",
+          "expected": null,
+          "moves": [
+            "contrast_icon_count_and_row_value"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 16172
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "contrast_icon_count_and_row_value": 0.14,
+              "abstain": 0.86
+            },
+            "confidence": 0.72,
+            "pApplies": 0.22,
+            "pReliable": 0.25,
+            "ms": 324,
+            "tokens": 850
+          }
+        },
+        {
+          "source": "bar-model",
+          "name": "contradictory",
+          "activity": "bar-model",
+          "task": {
+            "grade": "3",
+            "mode": "picture_graph",
+            "tier": "medium",
+            "topic": "Reading picture graphs",
+            "intent": "Read a picture graph using its key"
+          },
+          "observation": "Evidence is contradictory: the learner applied the picture key correctly on most graphs and the one wrong choice was a tap next to the answer; no pattern about icon values can be inferred.",
+          "expected": null,
+          "moves": [
+            "contrast_icon_count_and_row_value"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 16936
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 0.5,
+              "contrast_icon_count_and_row_value": 0.5
+            },
+            "confidence": 0.01,
+            "pApplies": 0.52,
+            "pReliable": 0.04,
+            "ms": 147,
+            "tokens": 861
+          }
+        },
+        {
+          "source": "bar-model",
+          "name": "cross-digit-worth",
+          "activity": "bar-model",
+          "task": {
+            "grade": "3",
+            "mode": "picture_graph",
+            "tier": "medium",
+            "topic": "Reading picture graphs",
+            "intent": "Read a picture graph using its key"
+          },
+          "observation": "The student gives the bare digit for its worth regardless of position.",
+          "expected": null,
+          "moves": [
+            "contrast_icon_count_and_row_value"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 19376
+          },
+          "typesafe": {
+            "move": "contrast_icon_count_and_row_value",
+            "pMove": {
+              "abstain": 0.14,
+              "contrast_icon_count_and_row_value": 0.86
+            },
+            "confidence": 0.73,
+            "pApplies": 0.47,
+            "pReliable": 0.25,
+            "ms": 155,
+            "tokens": 838
+          }
+        },
+        {
+          "source": "counting-board",
+          "name": "take-distilled",
+          "activity": "counting-board",
+          "task": {
+            "grade": "K",
+            "mode": "take_away",
+            "tier": "medium"
+          },
+          "observation": "On take-away boards the student answers with how many objects were on the board before any were taken away.",
+          "expected": "contrast_same_start_different_change",
+          "moves": [
+            "contrast_same_start_different_change"
+          ],
+          "planner": {
+            "move": "contrast_same_start_different_change",
+            "retried": false,
+            "ms": 4026
+          },
+          "typesafe": {
+            "move": "contrast_same_start_different_change",
+            "pMove": {
+              "contrast_same_start_different_change": 0.98,
+              "abstain": 0.02
+            },
+            "confidence": 0.96,
+            "pApplies": 0.4,
+            "pReliable": 0.22,
+            "ms": 151,
+            "tokens": 1055
+          }
+        },
+        {
+          "source": "counting-board",
+          "name": "take-paraphrase-a",
+          "activity": "counting-board",
+          "task": {
+            "grade": "K",
+            "mode": "take_away",
+            "tier": "medium"
+          },
+          "observation": "After some counters are removed, the child still gives the size of the whole starting group instead of what remains.",
+          "expected": "contrast_same_start_different_change",
+          "moves": [
+            "contrast_same_start_different_change"
+          ],
+          "planner": {
+            "move": "contrast_same_start_different_change",
+            "retried": false,
+            "ms": 3051
+          },
+          "typesafe": {
+            "move": "contrast_same_start_different_change",
+            "pMove": {
+              "abstain": 0.02,
+              "contrast_same_start_different_change": 0.98
+            },
+            "confidence": 0.95,
+            "pApplies": 0.57,
+            "pReliable": 0.22,
+            "ms": 160,
+            "tokens": 1056
+          }
+        },
+        {
+          "source": "counting-board",
+          "name": "take-paraphrase-b",
+          "activity": "counting-board",
+          "task": {
+            "grade": "K",
+            "mode": "take_away",
+            "tier": "medium"
+          },
+          "observation": "Answers \"how many are left\" with the number that was there at the start, as if nothing had been taken off.",
+          "expected": "contrast_same_start_different_change",
+          "moves": [
+            "contrast_same_start_different_change"
+          ],
+          "planner": {
+            "move": "contrast_same_start_different_change",
+            "retried": false,
+            "ms": 3594
+          },
+          "typesafe": {
+            "move": "contrast_same_start_different_change",
+            "pMove": {
+              "abstain": 0.02,
+              "contrast_same_start_different_change": 0.98
+            },
+            "confidence": 0.96,
+            "pApplies": 0.52,
+            "pReliable": 0.22,
+            "ms": 147,
+            "tokens": 1059
+          }
+        },
+        {
+          "source": "counting-board",
+          "name": "add-distilled",
+          "activity": "counting-board",
+          "task": {
+            "grade": "K",
+            "mode": "add_more",
+            "tier": "medium"
+          },
+          "observation": "On add-more boards the student answers with how many objects were on the board before more were put on.",
+          "expected": "contrast_same_start_different_change",
+          "moves": [
+            "contrast_same_start_different_change"
+          ],
+          "planner": {
+            "move": "contrast_same_start_different_change",
+            "retried": false,
+            "ms": 7317
+          },
+          "typesafe": {
+            "move": "contrast_same_start_different_change",
+            "pMove": {
+              "abstain": 0.02,
+              "contrast_same_start_different_change": 0.98
+            },
+            "confidence": 0.97,
+            "pApplies": 0.41,
+            "pReliable": 0.24,
+            "ms": 339,
+            "tokens": 1054
+          }
+        },
+        {
+          "source": "counting-board",
+          "name": "on-start-back",
+          "activity": "counting-board",
+          "task": {
+            "grade": "K",
+            "mode": "count_on",
+            "tier": "medium"
+          },
+          "observation": "Told how many are already in the group, the student says that starting number back instead of counting on.",
+          "expected": "count_on_exactly_one_more",
+          "moves": [
+            "count_on_exactly_one_more"
+          ],
+          "planner": {
+            "move": "count_on_exactly_one_more",
+            "retried": false,
+            "ms": 15993
+          },
+          "typesafe": {
+            "move": "count_on_exactly_one_more",
+            "pMove": {
+              "count_on_exactly_one_more": 0.99,
+              "abstain": 0.01
+            },
+            "confidence": 0.98,
+            "pApplies": 0.58,
+            "pReliable": 0.18,
+            "ms": 349,
+            "tokens": 967
+          }
+        },
+        {
+          "source": "counting-board",
+          "name": "on-start-twice",
+          "activity": "counting-board",
+          "task": {
+            "grade": "K",
+            "mode": "count_on",
+            "tier": "medium"
+          },
+          "observation": "When counting on, the student says the starting number while touching the first extra object and ends one short.",
+          "expected": "count_on_exactly_one_more",
+          "moves": [
+            "count_on_exactly_one_more"
+          ],
+          "planner": {
+            "move": "count_on_exactly_one_more",
+            "retried": true,
+            "ms": 31841
+          },
+          "typesafe": {
+            "move": "count_on_exactly_one_more",
+            "pMove": {
+              "abstain": 0.01,
+              "count_on_exactly_one_more": 0.99
+            },
+            "confidence": 0.98,
+            "pApplies": 0.58,
+            "pReliable": 0.27,
+            "ms": 397,
+            "tokens": 966
+          }
+        },
+        {
+          "source": "counting-board",
+          "name": "unrelated",
+          "activity": "counting-board",
+          "task": {
+            "grade": "K",
+            "mode": "take_away",
+            "tier": "medium"
+          },
+          "observation": "The learner reverses the numerator and denominator when naming a fraction.",
+          "expected": null,
+          "moves": [
+            "contrast_same_start_different_change"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 12648
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 1,
+              "contrast_same_start_different_change": 0
+            },
+            "confidence": 1,
+            "pApplies": 0.03,
+            "pReliable": 0.07,
+            "ms": 170,
+            "tokens": 1047
+          }
+        },
+        {
+          "source": "counting-board",
+          "name": "nearby-tracking",
+          "activity": "counting-board",
+          "task": {
+            "grade": "K",
+            "mode": "take_away",
+            "tier": "medium"
+          },
+          "observation": "When counting a set of objects the student skips one and says one less than there are.",
+          "expected": null,
+          "moves": [
+            "contrast_same_start_different_change"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 8756
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 0.94,
+              "contrast_same_start_different_change": 0.06
+            },
+            "confidence": 0.88,
+            "pApplies": 0.4,
+            "pReliable": 0.19,
+            "ms": 357,
+            "tokens": 1052
+          }
+        },
+        {
+          "source": "counting-board",
+          "name": "nearby-tracking-on",
+          "activity": "counting-board",
+          "task": {
+            "grade": "K",
+            "mode": "count_on",
+            "tier": "medium"
+          },
+          "observation": "When counting a set of objects the student skips one and says one less than there are.",
+          "expected": null,
+          "moves": [
+            "count_on_exactly_one_more"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 9331
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "count_on_exactly_one_more": 0.27,
+              "abstain": 0.73
+            },
+            "confidence": 0.47,
+            "pApplies": 0.55,
+            "pReliable": 0.2,
+            "ms": 174,
+            "tokens": 963
+          }
+        },
+        {
+          "source": "counting-board",
+          "name": "nearby-conservation",
+          "activity": "counting-board",
+          "task": {
+            "grade": "K",
+            "mode": "take_away",
+            "tier": "medium"
+          },
+          "observation": "After a counted set is spread out, the student thinks there are more objects than before.",
+          "expected": null,
+          "moves": [
+            "contrast_same_start_different_change"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 4409
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 0.59,
+              "contrast_same_start_different_change": 0.41
+            },
+            "confidence": 0.18,
+            "pApplies": 0.41,
+            "pReliable": 0.11,
+            "ms": 161,
+            "tokens": 1052
+          }
+        },
+        {
+          "source": "counting-board",
+          "name": "contradictory",
+          "activity": "counting-board",
+          "task": {
+            "grade": "K",
+            "mode": "take_away",
+            "tier": "medium"
+          },
+          "observation": "The take-away answers contradict each other and the record is unreliable; no consistent pattern can be inferred.",
+          "expected": null,
+          "moves": [
+            "contrast_same_start_different_change"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 8894
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 0.52,
+              "contrast_same_start_different_change": 0.48
+            },
+            "confidence": 0.04,
+            "pApplies": 0.35,
+            "pReliable": 0.02,
+            "ms": 160,
+            "tokens": 1054
+          }
+        },
+        {
+          "source": "number-line",
+          "name": "distilled",
+          "activity": "number-line",
+          "task": {
+            "grade": "1",
+            "mode": "jump",
+            "tier": "medium",
+            "topic": "Adding and subtracting on a number line"
+          },
+          "observation": "The student counts the starting tick mark as the first count rather than counting the jumps between numbers, causing them to advance one fewer space than requested.",
+          "expected": "contrast_start_positions",
+          "moves": [
+            "contrast_start_positions"
+          ],
+          "planner": {
+            "move": "contrast_start_positions",
+            "retried": false,
+            "ms": 8813
+          },
+          "typesafe": {
+            "move": "contrast_start_positions",
+            "pMove": {
+              "contrast_start_positions": 0.98,
+              "abstain": 0.02
+            },
+            "confidence": 0.95,
+            "pApplies": 0.52,
+            "pReliable": 0.26,
+            "ms": 158,
+            "tokens": 833
+          }
+        },
+        {
+          "source": "number-line",
+          "name": "paraphrase-a",
+          "activity": "number-line",
+          "task": {
+            "grade": "1",
+            "mode": "jump",
+            "tier": "medium",
+            "topic": "Adding and subtracting on a number line"
+          },
+          "observation": "The learner treats the tick mark they begin on as the first step of the jump, so each landing falls one step short.",
+          "expected": "contrast_start_positions",
+          "moves": [
+            "contrast_start_positions"
+          ],
+          "planner": {
+            "move": "contrast_start_positions",
+            "retried": false,
+            "ms": 3580
+          },
+          "typesafe": {
+            "move": "contrast_start_positions",
+            "pMove": {
+              "abstain": 0.01,
+              "contrast_start_positions": 0.99
+            },
+            "confidence": 0.98,
+            "pApplies": 0.55,
+            "pReliable": 0.34,
+            "ms": 163,
+            "tokens": 829
+          }
+        },
+        {
+          "source": "number-line",
+          "name": "paraphrase-b",
+          "activity": "number-line",
+          "task": {
+            "grade": "1",
+            "mode": "jump",
+            "tier": "medium",
+            "topic": "Adding and subtracting on a number line"
+          },
+          "observation": "Counts the tick they start on when hopping along the line.",
+          "expected": "contrast_start_positions",
+          "moves": [
+            "contrast_start_positions"
+          ],
+          "planner": {
+            "move": "contrast_start_positions",
+            "retried": false,
+            "ms": 4995
+          },
+          "typesafe": {
+            "move": "contrast_start_positions",
+            "pMove": {
+              "abstain": 0.04,
+              "contrast_start_positions": 0.96
+            },
+            "confidence": 0.92,
+            "pApplies": 0.51,
+            "pReliable": 0.21,
+            "ms": 164,
+            "tokens": 816
+          }
+        },
+        {
+          "source": "number-line",
+          "name": "unrelated",
+          "activity": "number-line",
+          "task": {
+            "grade": "1",
+            "mode": "jump",
+            "tier": "medium",
+            "topic": "Adding and subtracting on a number line"
+          },
+          "observation": "The learner reverses the numerator and denominator when naming a fraction.",
+          "expected": null,
+          "moves": [
+            "contrast_start_positions"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 9715
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 1,
+              "contrast_start_positions": 0
+            },
+            "confidence": 1,
+            "pApplies": 0.05,
+            "pReliable": 0.09,
+            "ms": 368,
+            "tokens": 817
+          }
+        },
+        {
+          "source": "number-line",
+          "name": "nearby-far",
+          "activity": "number-line",
+          "task": {
+            "grade": "1",
+            "mode": "jump",
+            "tier": "medium",
+            "topic": "Adding and subtracting on a number line"
+          },
+          "observation": "When plotting a number, the learner places the point far from its target, apparently guessing the location.",
+          "expected": null,
+          "moves": [
+            "contrast_start_positions"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 18776
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 0.69,
+              "contrast_start_positions": 0.31
+            },
+            "confidence": 0.38,
+            "pApplies": 0.47,
+            "pReliable": 0.14,
+            "ms": 156,
+            "tokens": 824
+          }
+        },
+        {
+          "source": "number-line",
+          "name": "direction",
+          "activity": "number-line",
+          "task": {
+            "grade": "1",
+            "mode": "jump",
+            "tier": "medium",
+            "topic": "Adding and subtracting on a number line"
+          },
+          "observation": "The learner hops right when asked to subtract and left when asked to add.",
+          "expected": null,
+          "moves": [
+            "contrast_start_positions"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 12602
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 0.78,
+              "contrast_start_positions": 0.22
+            },
+            "confidence": 0.55,
+            "pApplies": 0.65,
+            "pReliable": 0.38,
+            "ms": 382,
+            "tokens": 819
+          }
+        },
+        {
+          "source": "number-line",
+          "name": "contradictory",
+          "activity": "number-line",
+          "task": {
+            "grade": "1",
+            "mode": "jump",
+            "tier": "medium",
+            "topic": "Adding and subtracting on a number line"
+          },
+          "observation": "The recorded landings conflict with one another and the transcription is unreliable; no counting pattern can be inferred.",
+          "expected": null,
+          "moves": [
+            "contrast_start_positions"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 23452
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 0.83,
+              "contrast_start_positions": 0.17
+            },
+            "confidence": 0.66,
+            "pApplies": 0.43,
+            "pReliable": 0.02,
+            "ms": 157,
+            "tokens": 825
+          }
+        },
+        {
+          "source": "number-tracer",
+          "name": "distilled",
+          "activity": "number-tracer",
+          "task": {
+            "grade": "K",
+            "mode": "sequence",
+            "tier": "medium",
+            "topic": "Missing numbers to 10",
+            "intent": "Find the missing number in a counting sequence"
+          },
+          "observation": "In counting runs the student writes the number that follows the last number shown instead of the hidden number.",
+          "expected": "contrast_gap_positions_in_one_run",
+          "moves": [
+            "contrast_gap_positions_in_one_run"
+          ],
+          "planner": {
+            "move": "contrast_gap_positions_in_one_run",
+            "retried": false,
+            "ms": 829
+          },
+          "typesafe": {
+            "move": "contrast_gap_positions_in_one_run",
+            "pMove": {
+              "abstain": 0.01,
+              "contrast_gap_positions_in_one_run": 0.99
+            },
+            "confidence": 0.98,
+            "pApplies": 0.43,
+            "pReliable": 0.31,
+            "ms": 160,
+            "tokens": 1035
+          }
+        },
+        {
+          "source": "number-tracer",
+          "name": "paraphrase-a",
+          "activity": "number-tracer",
+          "task": {
+            "grade": "K",
+            "mode": "sequence",
+            "tier": "medium",
+            "topic": "Missing numbers to 10",
+            "intent": "Find the missing number in a counting sequence"
+          },
+          "observation": "Instead of filling the blank inside a counting run, the child writes the next number after the end of the run.",
+          "expected": "contrast_gap_positions_in_one_run",
+          "moves": [
+            "contrast_gap_positions_in_one_run"
+          ],
+          "planner": {
+            "move": "contrast_gap_positions_in_one_run",
+            "retried": false,
+            "ms": 3012
+          },
+          "typesafe": {
+            "move": "contrast_gap_positions_in_one_run",
+            "pMove": {
+              "abstain": 0.01,
+              "contrast_gap_positions_in_one_run": 0.99
+            },
+            "confidence": 0.97,
+            "pApplies": 0.45,
+            "pReliable": 0.23,
+            "ms": 183,
+            "tokens": 1038
+          }
+        },
+        {
+          "source": "number-tracer",
+          "name": "paraphrase-b",
+          "activity": "number-tracer",
+          "task": {
+            "grade": "K",
+            "mode": "sequence",
+            "tier": "medium",
+            "topic": "Missing numbers to 10",
+            "intent": "Find the missing number in a counting sequence"
+          },
+          "observation": "Counts on past the last number shown rather than working out the number that belongs in the gap.",
+          "expected": "contrast_gap_positions_in_one_run",
+          "moves": [
+            "contrast_gap_positions_in_one_run"
+          ],
+          "planner": {
+            "move": "contrast_gap_positions_in_one_run",
+            "retried": false,
+            "ms": 2448
+          },
+          "typesafe": {
+            "move": "contrast_gap_positions_in_one_run",
+            "pMove": {
+              "contrast_gap_positions_in_one_run": 0.99,
+              "abstain": 0.01
+            },
+            "confidence": 0.97,
+            "pApplies": 0.53,
+            "pReliable": 0.18,
+            "ms": 179,
+            "tokens": 1034
+          }
+        },
+        {
+          "source": "number-tracer",
+          "name": "neighbour",
+          "activity": "number-tracer",
+          "task": {
+            "grade": "K",
+            "mode": "sequence",
+            "tier": "medium",
+            "topic": "Missing numbers to 10",
+            "intent": "Find the missing number in a counting sequence"
+          },
+          "observation": "Writes the number just before the gap again instead of the next number.",
+          "expected": "contrast_gap_positions_in_one_run",
+          "moves": [
+            "contrast_gap_positions_in_one_run"
+          ],
+          "planner": {
+            "move": "contrast_gap_positions_in_one_run",
+            "retried": false,
+            "ms": 9530
+          },
+          "typesafe": {
+            "move": "contrast_gap_positions_in_one_run",
+            "pMove": {
+              "contrast_gap_positions_in_one_run": 0.97,
+              "abstain": 0.03
+            },
+            "confidence": 0.94,
+            "pApplies": 0.51,
+            "pReliable": 0.25,
+            "ms": 155,
+            "tokens": 1029
+          }
+        },
+        {
+          "source": "number-tracer",
+          "name": "unrelated",
+          "activity": "number-tracer",
+          "task": {
+            "grade": "K",
+            "mode": "sequence",
+            "tier": "medium",
+            "topic": "Missing numbers to 10",
+            "intent": "Find the missing number in a counting sequence"
+          },
+          "observation": "The learner reverses the numerator and denominator when naming a fraction.",
+          "expected": null,
+          "moves": [
+            "contrast_gap_positions_in_one_run"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 5286
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 1,
+              "contrast_gap_positions_in_one_run": 0
+            },
+            "confidence": 0.99,
+            "pApplies": 0.04,
+            "pReliable": 0.1,
+            "ms": 347,
+            "tokens": 1028
+          }
+        },
+        {
+          "source": "number-tracer",
+          "name": "nearby-orientation",
+          "activity": "number-tracer",
+          "task": {
+            "grade": "K",
+            "mode": "sequence",
+            "tier": "medium",
+            "topic": "Missing numbers to 10",
+            "intent": "Find the missing number in a counting sequence"
+          },
+          "observation": "The student confuses numerals of similar shape, writing 9 for 6 and 6 for 9.",
+          "expected": null,
+          "moves": [
+            "contrast_gap_positions_in_one_run"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 20888
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "contrast_gap_positions_in_one_run": 0.03,
+              "abstain": 0.97
+            },
+            "confidence": 0.93,
+            "pApplies": 0.26,
+            "pReliable": 0.29,
+            "ms": 163,
+            "tokens": 1039
+          }
+        },
+        {
+          "source": "number-tracer",
+          "name": "nearby-teen-order",
+          "activity": "number-tracer",
+          "task": {
+            "grade": "1",
+            "mode": "sequence",
+            "tier": "medium",
+            "topic": "Missing numbers to 20",
+            "intent": "Find the missing number in a counting sequence"
+          },
+          "observation": "Writes teen numbers with the digits in the wrong order, 41 for 14, because the ones are said first.",
+          "expected": null,
+          "moves": [
+            "contrast_gap_positions_in_one_run"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 4106
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 0.97,
+              "contrast_gap_positions_in_one_run": 0.03
+            },
+            "confidence": 0.94,
+            "pApplies": 0.22,
+            "pReliable": 0.16,
+            "ms": 157,
+            "tokens": 1041
+          }
+        },
+        {
+          "source": "number-tracer",
+          "name": "nearby-counting-back",
+          "activity": "number-tracer",
+          "task": {
+            "grade": "K",
+            "mode": "sequence",
+            "tier": "medium",
+            "topic": "Missing numbers to 10",
+            "intent": "Find the missing number in a counting sequence"
+          },
+          "observation": "Asked for the number that comes before a given number, the child gives the number after it; they cannot count back.",
+          "expected": null,
+          "moves": [
+            "contrast_gap_positions_in_one_run"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 22271
+          },
+          "typesafe": {
+            "move": "contrast_gap_positions_in_one_run",
+            "pMove": {
+              "abstain": 0.28,
+              "contrast_gap_positions_in_one_run": 0.72
+            },
+            "confidence": 0.43,
+            "pApplies": 0.39,
+            "pReliable": 0.24,
+            "ms": 176,
+            "tokens": 1039
+          }
+        },
+        {
+          "source": "number-tracer",
+          "name": "contradictory",
+          "activity": "number-tracer",
+          "task": {
+            "grade": "K",
+            "mode": "sequence",
+            "tier": "medium",
+            "topic": "Missing numbers to 10",
+            "intent": "Find the missing number in a counting sequence"
+          },
+          "observation": "The missing-number answers contradict each other and the record is unreliable; no consistent pattern can be inferred.",
+          "expected": null,
+          "moves": [
+            "contrast_gap_positions_in_one_run"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 6345
+          },
+          "typesafe": {
+            "move": "contrast_gap_positions_in_one_run",
+            "pMove": {
+              "abstain": 0.49,
+              "contrast_gap_positions_in_one_run": 0.51
+            },
+            "confidence": 0.02,
+            "pApplies": 0.42,
+            "pReliable": 0.02,
+            "ms": 344,
+            "tokens": 1035
+          }
+        },
+        {
+          "source": "ten-frame",
+          "name": "ksub-distilled",
+          "activity": "ten-frame",
+          "task": {
+            "grade": "K",
+            "mode": "operate",
+            "tier": "medium"
+          },
+          "observation": "On take-away items the student answers with the starting number instead of how many are left.",
+          "expected": "contrast_same_first_number_different_second",
+          "moves": [
+            "contrast_same_first_number_different_second"
+          ],
+          "planner": {
+            "move": "contrast_same_first_number_different_second",
+            "retried": false,
+            "ms": 4818
+          },
+          "typesafe": {
+            "move": "contrast_same_first_number_different_second",
+            "pMove": {
+              "abstain": 0.02,
+              "contrast_same_first_number_different_second": 0.98
+            },
+            "confidence": 0.96,
+            "pApplies": 0.45,
+            "pReliable": 0.24,
+            "ms": 360,
+            "tokens": 1132
+          }
+        },
+        {
+          "source": "ten-frame",
+          "name": "ksub-paraphrase-a",
+          "activity": "ten-frame",
+          "task": {
+            "grade": "K",
+            "mode": "operate",
+            "tier": "medium"
+          },
+          "observation": "After counters are taken off the frame, the child still reports the size of the group before anything was removed.",
+          "expected": "contrast_same_first_number_different_second",
+          "moves": [
+            "contrast_same_first_number_different_second"
+          ],
+          "planner": {
+            "move": "contrast_same_first_number_different_second",
+            "retried": false,
+            "ms": 1078
+          },
+          "typesafe": {
+            "move": "contrast_same_first_number_different_second",
+            "pMove": {
+              "abstain": 0.05,
+              "contrast_same_first_number_different_second": 0.95
+            },
+            "confidence": 0.91,
+            "pApplies": 0.46,
+            "pReliable": 0.2,
+            "ms": 175,
+            "tokens": 1136
+          }
+        },
+        {
+          "source": "ten-frame",
+          "name": "ksub-paraphrase-b",
+          "activity": "ten-frame",
+          "task": {
+            "grade": "K",
+            "mode": "operate",
+            "tier": "medium"
+          },
+          "observation": "Asked how many are left, says the number the frame started with, as if nothing had been taken away.",
+          "expected": "contrast_same_first_number_different_second",
+          "moves": [
+            "contrast_same_first_number_different_second"
+          ],
+          "planner": {
+            "move": "contrast_same_first_number_different_second",
+            "retried": false,
+            "ms": 18032
+          },
+          "typesafe": {
+            "move": "contrast_same_first_number_different_second",
+            "pMove": {
+              "contrast_same_first_number_different_second": 0.99,
+              "abstain": 0.01
+            },
+            "confidence": 0.97,
+            "pApplies": 0.53,
+            "pReliable": 0.2,
+            "ms": 351,
+            "tokens": 1136
+          }
+        },
+        {
+          "source": "ten-frame",
+          "name": "kadd-distilled",
+          "activity": "ten-frame",
+          "task": {
+            "grade": "K",
+            "mode": "operate",
+            "tier": "medium"
+          },
+          "observation": "On addition items the student answers with the first number said instead of how many altogether.",
+          "expected": "contrast_same_first_number_different_second",
+          "moves": [
+            "contrast_same_first_number_different_second"
+          ],
+          "planner": {
+            "move": "contrast_same_first_number_different_second",
+            "retried": false,
+            "ms": 4142
+          },
+          "typesafe": {
+            "move": "contrast_same_first_number_different_second",
+            "pMove": {
+              "abstain": 0.02,
+              "contrast_same_first_number_different_second": 0.98
+            },
+            "confidence": 0.97,
+            "pApplies": 0.46,
+            "pReliable": 0.24,
+            "ms": 376,
+            "tokens": 1131
+          }
+        },
+        {
+          "source": "ten-frame",
+          "name": "unrelated",
+          "activity": "ten-frame",
+          "task": {
+            "grade": "K",
+            "mode": "operate",
+            "tier": "medium"
+          },
+          "observation": "The learner reverses the numerator and denominator when naming a fraction.",
+          "expected": null,
+          "moves": [
+            "contrast_same_first_number_different_second"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 7801
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "contrast_same_first_number_different_second": 0,
+              "abstain": 1
+            },
+            "confidence": 1,
+            "pApplies": 0.03,
+            "pReliable": 0.08,
+            "ms": 365,
+            "tokens": 1127
+          }
+        },
+        {
+          "source": "ten-frame",
+          "name": "nearby-removed",
+          "activity": "ten-frame",
+          "task": {
+            "grade": "K",
+            "mode": "operate",
+            "tier": "medium"
+          },
+          "observation": "On take-away items the student answers with the number taken away instead of how many are left.",
+          "expected": null,
+          "moves": [
+            "contrast_same_first_number_different_second"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 20549
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 0.89,
+              "contrast_same_first_number_different_second": 0.11
+            },
+            "confidence": 0.78,
+            "pApplies": 0.44,
+            "pReliable": 0.2,
+            "ms": 359,
+            "tokens": 1133
+          }
+        },
+        {
+          "source": "ten-frame",
+          "name": "nearby-one-less",
+          "activity": "ten-frame",
+          "task": {
+            "grade": "K",
+            "mode": "operate",
+            "tier": "medium"
+          },
+          "observation": "On take-away items the student ends one short, answering one less than how many are left.",
+          "expected": null,
+          "moves": [
+            "contrast_same_first_number_different_second"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 24220
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "contrast_same_first_number_different_second": 0.27,
+              "abstain": 0.73
+            },
+            "confidence": 0.45,
+            "pApplies": 0.35,
+            "pReliable": 0.2,
+            "ms": 427,
+            "tokens": 1133
+          }
+        },
+        {
+          "source": "ten-frame",
+          "name": "contradictory",
+          "activity": "ten-frame",
+          "task": {
+            "grade": "K",
+            "mode": "operate",
+            "tier": "medium"
+          },
+          "observation": "The take-away answers contradict each other and the record is unreliable; no consistent pattern can be inferred.",
+          "expected": null,
+          "moves": [
+            "contrast_same_first_number_different_second"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 13116
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 0.76,
+              "contrast_same_first_number_different_second": 0.24
+            },
+            "confidence": 0.51,
+            "pApplies": 0.33,
+            "pReliable": 0.02,
+            "ms": 163,
+            "tokens": 1134
+          }
+        },
+        {
+          "source": "place-value*",
+          "name": "bare-digit-worth",
+          "activity": "place-value-chart",
+          "task": {
+            "grade": "3",
+            "mode": "compare",
+            "tier": "medium",
+            "topic": "Place value to hundreds"
+          },
+          "observation": "The student gives the bare digit as its value regardless of which column it sits in, saying four for a 4 in the tens place.",
+          "expected": "contrast_digit_worth",
+          "moves": [
+            "contrast_digit_worth",
+            "contrast_place_name_and_value"
+          ],
+          "planner": {
+            "move": "contrast_digit_worth",
+            "retried": false,
+            "ms": 9891
+          },
+          "typesafe": {
+            "move": "contrast_digit_worth",
+            "pMove": {
+              "contrast_place_name_and_value": 0.06,
+              "contrast_digit_worth": 0.94,
+              "abstain": 0
+            },
+            "confidence": 0.91,
+            "pApplies": 0.64,
+            "pReliable": 0.33,
+            "ms": 353,
+            "tokens": 728
+          }
+        },
+        {
+          "source": "place-value*",
+          "name": "name-for-value",
+          "activity": "place-value-chart",
+          "task": {
+            "grade": "3",
+            "mode": "compare",
+            "tier": "medium",
+            "topic": "Place value to hundreds"
+          },
+          "observation": "Asked what a highlighted digit is worth, the student names its place (\"tens\") instead of saying a number.",
+          "expected": "contrast_place_name_and_value",
+          "moves": [
+            "contrast_digit_worth",
+            "contrast_place_name_and_value"
+          ],
+          "planner": {
+            "move": "contrast_place_name_and_value",
+            "retried": false,
+            "ms": 1578
+          },
+          "typesafe": {
+            "move": "contrast_place_name_and_value",
+            "pMove": {
+              "contrast_digit_worth": 0.01,
+              "abstain": 0,
+              "contrast_place_name_and_value": 0.99
+            },
+            "confidence": 0.98,
+            "pApplies": 0.65,
+            "pReliable": 0.18,
+            "ms": 153,
+            "tokens": 723
+          }
+        },
+        {
+          "source": "place-value*",
+          "name": "unrelated",
+          "activity": "place-value-chart",
+          "task": {
+            "grade": "3",
+            "mode": "compare",
+            "tier": "medium",
+            "topic": "Place value to hundreds"
+          },
+          "observation": "The learner reverses the numerator and denominator when naming a fraction.",
+          "expected": null,
+          "moves": [
+            "contrast_digit_worth",
+            "contrast_place_name_and_value"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 17005
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 1,
+              "contrast_digit_worth": 0,
+              "contrast_place_name_and_value": 0
+            },
+            "confidence": 0.99,
+            "pApplies": 0.08,
+            "pReliable": 0.1,
+            "ms": 319,
+            "tokens": 713
+          }
+        },
+        {
+          "source": "place-value*",
+          "name": "uncertain",
+          "activity": "place-value-chart",
+          "task": {
+            "grade": "3",
+            "mode": "compare",
+            "tier": "medium",
+            "topic": "Place value to hundreds"
+          },
+          "observation": "The transcripts are missing for two of three items and the remaining answer conflicts with the judge; no pattern about digit worth can be inferred.",
+          "expected": null,
+          "moves": [
+            "contrast_digit_worth",
+            "contrast_place_name_and_value"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 15386
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "contrast_place_name_and_value": 0.09,
+              "abstain": 0.86,
+              "contrast_digit_worth": 0.05
+            },
+            "confidence": 0.79,
+            "pApplies": 0.41,
+            "pReliable": 0.03,
+            "ms": 142,
+            "tokens": 727
+          }
+        },
+        {
+          "source": "base-ten*",
+          "name": "count-for-worth",
+          "activity": "base-ten-blocks",
+          "task": {
+            "grade": "4",
+            "mode": "read_blocks",
+            "tier": "medium",
+            "topic": "Reading base-ten block mats"
+          },
+          "observation": "Asked what a column of blocks is worth altogether, the student says how many blocks there are instead of their total value.",
+          "expected": "contrast_block_count_and_worth",
+          "moves": [
+            "contrast_block_count_and_worth"
+          ],
+          "planner": {
+            "move": "contrast_block_count_and_worth",
+            "retried": false,
+            "ms": 3110
+          },
+          "typesafe": {
+            "move": "contrast_block_count_and_worth",
+            "pMove": {
+              "abstain": 0,
+              "contrast_block_count_and_worth": 1
+            },
+            "confidence": 1,
+            "pApplies": 0.64,
+            "pReliable": 0.21,
+            "ms": 153,
+            "tokens": 744
+          }
+        },
+        {
+          "source": "base-ten*",
+          "name": "place-name",
+          "activity": "base-ten-blocks",
+          "task": {
+            "grade": "4",
+            "mode": "read_blocks",
+            "tier": "medium",
+            "topic": "Reading base-ten block mats"
+          },
+          "observation": "The student names the wrong position when asked which place a highlighted digit is in.",
+          "expected": null,
+          "moves": [
+            "contrast_block_count_and_worth"
+          ],
+          "planner": {
+            "move": null,
+            "retried": true,
+            "ms": 19952
+          },
+          "typesafe": {
+            "move": null,
+            "pMove": {
+              "abstain": 0.98,
+              "contrast_block_count_and_worth": 0.02
+            },
+            "confidence": 0.96,
+            "pApplies": 0.35,
+            "pReliable": 0.19,
+            "ms": 330,
+            "tokens": 736
+          }
+        }
+      ]
+    },
+    "D": {
+      "summary": {
+        "n": 20,
+        "pRule": {
+          "yes": 0.8235714285714285,
+          "defensibleAbstain": 0.61,
+          "captureGap": 0.535
+        },
+        "pComplete": {
+          "yes": 0.8571428571428571,
+          "defensibleAbstain": 0.68,
+          "captureGap": 0.41500000000000004
+        },
+        "ruleAgreesWithDistiller": 0.85,
+        "supportedOwn": 0.8764285714285714,
+        "supportedOther": 0.032857142857142856,
+        "supportedOwnAbove": 1,
+        "leaksOwn": 0.09142857142857144,
+        "msMean": 1024.6
+      },
+      "rows": [
+        {
+          "id": "3d-shape-explorer",
+          "evalMode": "identify_3d",
+          "human": "capture-gap",
+          "distillerAbstain": true,
+          "distillerConfidence": null,
+          "hypothesis": null,
+          "signature": [
+            "cube → said \"square\"",
+            "sphere → said \"circle\"",
+            "cylinder → said \"cone\""
+          ],
+          "typesafe": {
+            "ms": 4441,
+            "tokens": 965,
+            "pRule": 0.46,
+            "pComplete": 0.12,
+            "supportedOwn": null,
+            "supportedOther": null,
+            "leaksOwn": null,
+            "otherFrom": "base-ten-blocks"
+          }
+        },
+        {
+          "id": "base-ten-blocks",
+          "evalMode": "read_blocks",
+          "human": "yes",
+          "distillerAbstain": false,
+          "distillerConfidence": "high",
+          "hypothesis": "The student swaps the count of base-ten blocks with their collective numerical value, reporting the total worth when asked how many pieces are shown and the piece count when asked what they are worth altogether.",
+          "signature": [
+            "four → said \"forty\"",
+            "forty → said \"four\"",
+            "three → said \"three hundred\"",
+            "three hundred → said \"three\"",
+            "one → said \"ten\"",
+            "ten → said \"one\""
+          ],
+          "typesafe": {
+            "ms": 4465,
+            "tokens": 1798,
+            "pRule": 0.9,
+            "pComplete": 0.94,
+            "supportedOwn": 0.94,
+            "supportedOther": 0.04,
+            "leaksOwn": 0.12,
+            "otherFrom": "di-spoken-practice"
+          }
+        },
+        {
+          "id": "compare-objects",
+          "evalMode": "identify_attribute",
+          "human": "abstain-defensible",
+          "distillerAbstain": true,
+          "distillerConfidence": null,
+          "hypothesis": null,
+          "signature": [
+            "how long they are → said \"how heavy they are\"",
+            "how heavy they are → said \"how much they hold\"",
+            "how tall they are → said \"how heavy they are\"",
+            "how much they hold → said \"how heavy they are\""
+          ],
+          "typesafe": {
+            "ms": 4418,
+            "tokens": 1152,
+            "pRule": 0.76,
+            "pComplete": 0.45,
+            "supportedOwn": null,
+            "supportedOther": null,
+            "leaksOwn": null,
+            "otherFrom": "di-spoken-practice"
+          }
+        },
+        {
+          "id": "decodable-reader",
+          "evalMode": "read_along",
+          "human": "capture-gap",
+          "distillerAbstain": true,
+          "distillerConfidence": null,
+          "hypothesis": null,
+          "signature": [
+            "cat → said \"fat\"",
+            "mat → said \"fat\""
+          ],
+          "typesafe": {
+            "ms": 4423,
+            "tokens": 839,
+            "pRule": 0.66,
+            "pComplete": 0.9,
+            "supportedOwn": null,
+            "supportedOther": null,
+            "leaksOwn": null,
+            "otherFrom": "di-word-problem-setup"
+          }
+        },
+        {
+          "id": "di-deduction",
+          "evalMode": "conclude",
+          "human": "yes",
+          "distillerAbstain": false,
+          "distillerConfidence": "high",
+          "hypothesis": "The student treats a prompt to conclude what follows about a specific member as an instruction to repeat the general rule verbatim.",
+          "signature": [
+            "an ant has six legs → said \"all insects have six legs\"",
+            "a bee has six legs → said \"all insects have six legs\"",
+            "a robin has feathers → said \"all birds have feathers\"",
+            "an eagle has feathers → said \"all birds have feathers\""
+          ],
+          "typesafe": {
+            "ms": 375,
+            "tokens": 1764,
+            "pRule": 0.89,
+            "pComplete": 0.83,
+            "supportedOwn": 0.95,
+            "supportedOther": 0.02,
+            "leaksOwn": 0.07,
+            "otherFrom": "letter-sound-link"
+          }
+        },
+        {
+          "id": "di-spoken-practice",
+          "evalMode": "count_and_say",
+          "human": "yes",
+          "distillerAbstain": false,
+          "distillerConfidence": "high",
+          "hypothesis": "The student continues the verbal counting sequence for one extra number word after tagging the final object in the group.",
+          "signature": [
+            "eight → said \"one, two, three, four, five, six, seven, eight, nine\"",
+            "six → said \"one, two, three, four, five, six, seven\"",
+            "seven → said \"one, two, three, four, five, six, seven, eight\""
+          ],
+          "typesafe": {
+            "ms": 142,
+            "tokens": 1513,
+            "pRule": 0.76,
+            "pComplete": 0.55,
+            "supportedOwn": 0.82,
+            "supportedOther": 0.02,
+            "leaksOwn": 0.12,
+            "otherFrom": "letter-spotter"
+          }
+        },
+        {
+          "id": "di-word-problem-setup",
+          "evalMode": "find_big_number",
+          "human": "yes",
+          "distillerAbstain": false,
+          "distillerConfidence": "high",
+          "hypothesis": "The student applies the opposite arithmetic operation to the quantities in the story, subtracting the smaller value from the larger value when finding a total and adding the values together when finding a difference.",
+          "signature": [
+            "eight → said \"two\"",
+            "eighteen → said \"two\"",
+            "four → said \"thirty-four\""
+          ],
+          "typesafe": {
+            "ms": 166,
+            "tokens": 1631,
+            "pRule": 0.6,
+            "pComplete": 0.92,
+            "supportedOwn": 0.64,
+            "supportedOther": 0.03,
+            "leaksOwn": 0.21,
+            "otherFrom": "oral-sentence-studio"
+          }
+        },
+        {
+          "id": "di-worked-procedure",
+          "evalMode": "subtract_no_regroup",
+          "human": "yes",
+          "distillerAbstain": false,
+          "distillerConfidence": "high",
+          "hypothesis": "The student believes that every column in multi-digit subtraction requires regrouping, so they always add ten to the top digit before subtracting.",
+          "signature": [
+            "no regrouping, nine minus two is seven → said \"I regroup: nineteen minus two is seventeen\"",
+            "no regrouping, nine minus two is seven → said \"I regroup: nineteen minus two is seventeen\"",
+            "no regrouping, seven minus four is three → said \"I regroup: seventeen minus four is thirteen\"",
+            "no regrouping, six minus three is three → said \"I regroup: sixteen minus three is thirteen\""
+          ],
+          "typesafe": {
+            "ms": 150,
+            "tokens": 1948,
+            "pRule": 0.9,
+            "pComplete": 0.88,
+            "supportedOwn": 0.89,
+            "supportedOther": 0.01,
+            "leaksOwn": 0.04,
+            "otherFrom": "phoneme-explorer"
+          }
+        },
+        {
+          "id": "letter-sound-link",
+          "evalMode": "see_hear",
+          "human": "yes",
+          "distillerAbstain": false,
+          "distillerConfidence": "high",
+          "hypothesis": "The student recites the letter name whenever prompted to produce the sound a letter makes.",
+          "signature": [
+            "sss → said \"ess\"",
+            "aaa → said \"ay\""
+          ],
+          "typesafe": {
+            "ms": 147,
+            "tokens": 1107,
+            "pRule": 0.68,
+            "pComplete": 0.87,
+            "supportedOwn": 0.75,
+            "supportedOther": 0.02,
+            "leaksOwn": 0.06,
+            "otherFrom": "place-value-chart"
+          }
+        },
+        {
+          "id": "letter-spotter",
+          "evalMode": "name_it",
+          "human": "yes",
+          "distillerAbstain": false,
+          "distillerConfidence": "high",
+          "hypothesis": "The student interprets the prompt asking what letter a word starts with as an instruction to repeat the spoken target word itself.",
+          "signature": [
+            "S → said \"sun\"",
+            "A → said \"ant\"",
+            "T → said \"tap\"",
+            "I → said \"ink\""
+          ],
+          "typesafe": {
+            "ms": 154,
+            "tokens": 1488,
+            "pRule": 0.91,
+            "pComplete": 0.94,
+            "supportedOwn": 0.96,
+            "supportedOther": 0.04,
+            "leaksOwn": 0.07,
+            "otherFrom": "rhyme-studio"
+          }
+        },
+        {
+          "id": "oral-sentence-studio",
+          "human": "yes",
+          "distillerAbstain": false,
+          "distillerConfidence": "high",
+          "hypothesis": "The student believes that chaining the two target adjectives directly in front of a noun phrase satisfies the requirement of forming a complete sentence.",
+          "signature": [
+            "A gentle caterpillar is looking at the bright pink flower in the garden. → said \"bright gentle pink flower\"",
+            "The quiet boy reads a smart story in the library. → said \"quiet smart story book\""
+          ],
+          "typesafe": {
+            "ms": 143,
+            "tokens": 1370,
+            "pRule": 0.81,
+            "pComplete": 0.87,
+            "supportedOwn": 0.91,
+            "supportedOther": 0.05,
+            "leaksOwn": 0.07,
+            "otherFrom": "sorting-station"
+          }
+        },
+        {
+          "id": "ordinal-line",
+          "evalMode": "identify",
+          "human": "capture-gap",
+          "distillerAbstain": true,
+          "distillerConfidence": null,
+          "hypothesis": null,
+          "signature": [
+            "Elephant → said \"Zebra\"",
+            "Giraffe → said \"Zebra\"",
+            "Lion → said \"Monkey\""
+          ],
+          "typesafe": {
+            "ms": 152,
+            "tokens": 963,
+            "pRule": 0.28,
+            "pComplete": 0.35,
+            "supportedOwn": null,
+            "supportedOther": null,
+            "leaksOwn": null,
+            "otherFrom": "sorting-station"
+          }
+        },
+        {
+          "id": "phoneme-explorer",
+          "evalMode": "isolate",
+          "human": "yes",
+          "distillerAbstain": false,
+          "distillerConfidence": "high",
+          "hypothesis": "The student treats the task of identifying a word starting with a target phoneme as an open-ended prompt to name a familiar animal that begins with that sound rather than selecting from the provided choices.",
+          "signature": [
+            "Mop → said \"Mouse\"",
+            "Sun → said \"Snake\"",
+            "Bus → said \"Bear\""
+          ],
+          "typesafe": {
+            "ms": 185,
+            "tokens": 1247,
+            "pRule": 0.72,
+            "pComplete": 0.81,
+            "supportedOwn": 0.83,
+            "supportedOther": 0.05,
+            "leaksOwn": 0.09,
+            "otherFrom": "word-builder"
+          }
+        },
+        {
+          "id": "picture-vocabulary",
+          "evalMode": "naming",
+          "human": "capture-gap",
+          "distillerAbstain": true,
+          "distillerConfidence": null,
+          "hypothesis": null,
+          "signature": [
+            "bird → said \"a thing\"",
+            "cat → said \"a thing\"",
+            "cow → said \"a thing\""
+          ],
+          "typesafe": {
+            "ms": 162,
+            "tokens": 939,
+            "pRule": 0.74,
+            "pComplete": 0.29,
+            "supportedOwn": null,
+            "supportedOther": null,
+            "leaksOwn": null,
+            "otherFrom": "base-ten-blocks"
+          }
+        },
+        {
+          "id": "place-value-chart",
+          "evalMode": "identify",
+          "human": "yes",
+          "distillerAbstain": false,
+          "distillerConfidence": "high",
+          "hypothesis": "The student interprets a question asking for the place of a digit as asking for the total value represented by that digit.",
+          "signature": [
+            "tens → said \"sixty\"",
+            "sixty → said \"six\"",
+            "tens → said \"fifty\""
+          ],
+          "typesafe": {
+            "ms": 177,
+            "tokens": 1231,
+            "pRule": 0.84,
+            "pComplete": 0.81,
+            "supportedOwn": 0.91,
+            "supportedOther": 0.06,
+            "leaksOwn": 0.08,
+            "otherFrom": "di-deduction"
+          }
+        },
+        {
+          "id": "rhyme-studio",
+          "evalMode": "recognition",
+          "human": "yes",
+          "distillerAbstain": false,
+          "distillerConfidence": "high",
+          "hypothesis": "The student interprets a question asking if two words rhyme as an instruction to repeat the first word of the pair.",
+          "signature": [
+            "yes → said \"cat\"",
+            "no → said \"dog\"",
+            "yes → said \"pig\"",
+            "no → said \"sun\"",
+            "yes → said \"pot\"",
+            "no → said \"bug\""
+          ],
+          "typesafe": {
+            "ms": 160,
+            "tokens": 1681,
+            "pRule": 0.9,
+            "pComplete": 0.89,
+            "supportedOwn": 0.94,
+            "supportedOther": 0.02,
+            "leaksOwn": 0.06,
+            "otherFrom": "di-spoken-practice"
+          }
+        },
+        {
+          "id": "sentence-analyzer",
+          "evalMode": "identify_pos",
+          "human": "abstain-defensible",
+          "distillerAbstain": true,
+          "distillerConfidence": null,
+          "hypothesis": null,
+          "signature": [
+            "Determiner → said \"Noun\"",
+            "Adjective → said \"Adverb\"",
+            "Noun → said \"Pronoun\"",
+            "Verb → said \"Noun\""
+          ],
+          "typesafe": {
+            "ms": 145,
+            "tokens": 1114,
+            "pRule": 0.46,
+            "pComplete": 0.91,
+            "supportedOwn": null,
+            "supportedOther": null,
+            "leaksOwn": null,
+            "otherFrom": "di-word-problem-setup"
+          }
+        },
+        {
+          "id": "sorting-station",
+          "evalMode": "sort_one",
+          "human": "yes",
+          "distillerAbstain": false,
+          "distillerConfidence": "high",
+          "hypothesis": "The student interprets a prompt to sort an object as a request to repeat the object's full descriptive label rather than naming the category group it belongs to.",
+          "signature": [
+            "Circle → said \"Red Circle\"",
+            "Circle → said \"Blue Circle\"",
+            "Square → said \"Green Square\"",
+            "Square → said \"Yellow Square\"",
+            "Circle → said \"Purple Circle\"",
+            "Circle → said \"Orange Circle\"",
+            "Square → said \"Red Square\"",
+            "Square → said \"Blue Square\""
+          ],
+          "typesafe": {
+            "ms": 153,
+            "tokens": 2028,
+            "pRule": 0.89,
+            "pComplete": 0.9,
+            "supportedOwn": 0.93,
+            "supportedOther": 0.01,
+            "leaksOwn": 0.08,
+            "otherFrom": "di-worked-procedure"
+          }
+        },
+        {
+          "id": "syllable-clapper",
+          "evalMode": "blend_syllables",
+          "human": "yes",
+          "distillerAbstain": false,
+          "distillerConfidence": "high",
+          "hypothesis": "When prompted to blend word parts into a single word, the student echoes the separate parts with a pause between them rather than joining them into a continuous word.",
+          "signature": [
+            "cupcake → said \"cup, cake\"",
+            "rainbow → said \"rain, bow\"",
+            "sandbox → said \"sand, box\"",
+            "popcorn → said \"pop, corn\"",
+            "football → said \"foot, ball\""
+          ],
+          "typesafe": {
+            "ms": 151,
+            "tokens": 1581,
+            "pRule": 0.86,
+            "pComplete": 0.87,
+            "supportedOwn": 0.88,
+            "supportedOther": 0.03,
+            "leaksOwn": 0.07,
+            "otherFrom": "letter-sound-link"
+          }
+        },
+        {
+          "id": "word-builder",
+          "evalMode": "simple_affix",
+          "human": "yes",
+          "distillerAbstain": false,
+          "distillerConfidence": "high",
+          "hypothesis": "The student identifies only the base word associated with the definition, omitting the required prefix or suffix.",
+          "signature": [
+            "helper → said \"help\"",
+            "playful → said \"play\"",
+            "unpack → said \"pack\""
+          ],
+          "typesafe": {
+            "ms": 183,
+            "tokens": 1329,
+            "pRule": 0.87,
+            "pComplete": 0.92,
+            "supportedOwn": 0.92,
+            "supportedOther": 0.06,
+            "leaksOwn": 0.14,
+            "otherFrom": "letter-spotter"
+          }
+        }
+      ]
+    }
+  },
+  "startedAt": "2026-09-16T13:26:12.848Z"
+}

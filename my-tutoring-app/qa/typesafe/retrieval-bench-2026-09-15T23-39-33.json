@@ -1,0 +1,3826 @@
+{
+  "source": "C:\\Users\\xbox3\\claude web tutor\\my-tutoring-app\\qa\\typesafe\\bench-2026-09-16T03-00-59.json",
+  "k": 20,
+  "summary": {
+    "E1": {
+      "n": 74,
+      "sub": 0.7162162162162162,
+      "skill": 0.8783783783783784,
+      "unit": 0.9054054054054054,
+      "truthRankMean": 1.8108108108108107
+    },
+    "EP": {
+      "n": 74,
+      "sub": 0.5,
+      "skill": 0.6486486486486487,
+      "unit": 0.7567567567567568,
+      "abstain": 0.20270270270270271,
+      "subWhenMatched": 0.6271186440677966,
+      "skillWhenMatched": 0.8135593220338984
+    },
+    "TF": {
+      "n": 74,
+      "sub": 0.7162162162162162,
+      "skill": 0.8243243243243243,
+      "unit": 0.918918918918919
+    },
+    "TR": {
+      "n": 74,
+      "sub": 0.6756756756756757,
+      "skill": 0.7972972972972973,
+      "unit": 0.8783783783783784,
+      "abstain": 0.05405405405405406,
+      "truthInTopK": 1.0
+    },
+    "TH": {
+      "n": 74,
+      "sub": 0.5675675675675675,
+      "skill": 0.6756756756756757,
+      "unit": 0.8243243243243243
+    },
+    "latency_ms": {
+      "E1_embed": 192.72972972972974,
+      "EP_probe": 196.8918918918919,
+      "T1_shared_request": 491.64864864864865,
+      "T2_hier_step2": 369.2432432432432
+    },
+    "T1_input_tokens_mean": 8019.2972972972975,
+    "errors": 0
+  },
+  "rows": [
+    {
+      "subskillId": "OPS002-01-a",
+      "truthSkill": "OPS002-01",
+      "truthUnit": "OPS002",
+      "grade": "2",
+      "subject": "Mathematics",
+      "objective": "Model two-digit numbers using tens rods and ones units on the workbench",
+      "candidates": 61,
+      "skills": 21,
+      "E1_ms": 220,
+      "E1": {
+        "sub": "OPS002-01-a",
+        "skill": "OPS002-01",
+        "unit": "OPS002",
+        "cosine": 0.8041,
+        "truthRank": 1
+      },
+      "EP_ms": 243,
+      "EP": {
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "sub": null,
+        "skill": null,
+        "unit": null
+      },
+      "T1_ms": 502,
+      "T1_tokens": 7733,
+      "TF": {
+        "sub": "NBT002-01-a",
+        "skill": "NBT002-01",
+        "unit": "NBT002",
+        "p": 0.63,
+        "confidence": 0.62,
+        "truthP": 0.02
+      },
+      "TR": {
+        "sub": null,
+        "abstain": true,
+        "skill": null,
+        "unit": null,
+        "confidence": 0.75,
+        "truthInTopK": true
+      },
+      "T2_ms": 385,
+      "TH": {
+        "sub": "NBT002-02-b",
+        "skill": "NBT002-02",
+        "unit": "NBT002",
+        "skillConfidence": 0.84
+      }
+    },
+    {
+      "subskillId": "OPS002-01-a",
+      "truthSkill": "OPS002-01",
+      "truthUnit": "OPS002",
+      "grade": "2",
+      "subject": "Mathematics",
+      "objective": "Combine tens with tens and ones with ones to find the total sum",
+      "candidates": 61,
+      "skills": 21,
+      "E1_ms": 217,
+      "E1": {
+        "sub": "OPS002-01-a",
+        "skill": "OPS002-01",
+        "unit": "OPS002",
+        "cosine": 0.7946,
+        "truthRank": 1
+      },
+      "EP_ms": 204,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "OPS002-01-a",
+        "skill": "OPS002-01",
+        "unit": "OPS002"
+      },
+      "T1_ms": 486,
+      "T1_tokens": 7783,
+      "TF": {
+        "sub": "OPS002-01-a",
+        "skill": "OPS002-01",
+        "unit": "OPS002",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "OPS002-01-a",
+        "abstain": false,
+        "skill": "OPS002-01",
+        "unit": "OPS002",
+        "confidence": 0.99,
+        "truthInTopK": true
+      },
+      "T2_ms": 363,
+      "TH": {
+        "sub": "OPS002-01-a",
+        "skill": "OPS002-01",
+        "unit": "OPS002",
+        "skillConfidence": 0.93
+      }
+    },
+    {
+      "subskillId": "OPS002-01-a",
+      "truthSkill": "OPS002-01",
+      "truthUnit": "OPS002",
+      "grade": "2",
+      "subject": "Mathematics",
+      "objective": "Explain how separating tens and ones makes addition easier",
+      "candidates": 61,
+      "skills": 21,
+      "E1_ms": 189,
+      "E1": {
+        "sub": "NBT002-02-c",
+        "skill": "NBT002-02",
+        "unit": "NBT002",
+        "cosine": 0.747,
+        "truthRank": 4
+      },
+      "EP_ms": 201,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "NBT002-05-a",
+        "skill": "NBT002-05",
+        "unit": "NBT002"
+      },
+      "T1_ms": 526,
+      "T1_tokens": 7734,
+      "TF": {
+        "sub": "OPS002-01-a",
+        "skill": "OPS002-01",
+        "unit": "OPS002",
+        "p": 0.99,
+        "confidence": 0.98,
+        "truthP": 0.99
+      },
+      "TR": {
+        "sub": "OPS002-01-a",
+        "abstain": false,
+        "skill": "OPS002-01",
+        "unit": "OPS002",
+        "confidence": 0.93,
+        "truthInTopK": true
+      },
+      "T2_ms": 375,
+      "TH": {
+        "sub": "OPS002-01-a",
+        "skill": "OPS002-01",
+        "unit": "OPS002",
+        "skillConfidence": 0.92
+      }
+    },
+    {
+      "subskillId": "LA004-01-a",
+      "truthSkill": "LA004-01",
+      "truthUnit": "LA004",
+      "grade": "1",
+      "subject": "Language Arts",
+      "objective": "Identify real-world objects and pictures as people, places, or things.",
+      "candidates": 65,
+      "skills": 43,
+      "E1_ms": 184,
+      "E1": {
+        "sub": "LA004-01-a",
+        "skill": "LA004-01",
+        "unit": "LA004",
+        "cosine": 0.8204,
+        "truthRank": 1
+      },
+      "EP_ms": 186,
+      "EP": {
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "sub": null,
+        "skill": null,
+        "unit": null
+      },
+      "T1_ms": 503,
+      "T1_tokens": 7004,
+      "TF": {
+        "sub": "LA004-01-a",
+        "skill": "LA004-01",
+        "unit": "LA004",
+        "p": 0.78,
+        "confidence": 0.77,
+        "truthP": 0.78
+      },
+      "TR": {
+        "sub": "LA004-01-a",
+        "abstain": false,
+        "skill": "LA004-01",
+        "unit": "LA004",
+        "confidence": 0.65,
+        "truthInTopK": true
+      },
+      "T2_ms": 402,
+      "TH": {
+        "sub": "LA005-04-a",
+        "skill": "LA005-04",
+        "unit": "LA005",
+        "skillConfidence": 0.51
+      }
+    },
+    {
+      "subskillId": "LA004-01-a",
+      "truthSkill": "LA004-01",
+      "truthUnit": "LA004",
+      "grade": "1",
+      "subject": "Language Arts",
+      "objective": "Categorize highlighted words in simple sentences into person, place, or thing.",
+      "candidates": 65,
+      "skills": 43,
+      "E1_ms": 182,
+      "E1": {
+        "sub": "LA004-01-a",
+        "skill": "LA004-01",
+        "unit": "LA004",
+        "cosine": 0.8357,
+        "truthRank": 1
+      },
+      "EP_ms": 200,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "LA004-01-a",
+        "skill": "LA004-01",
+        "unit": "LA004"
+      },
+      "T1_ms": 497,
+      "T1_tokens": 7009,
+      "TF": {
+        "sub": "LA004-01-a",
+        "skill": "LA004-01",
+        "unit": "LA004",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "LA004-01-a",
+        "abstain": false,
+        "skill": "LA004-01",
+        "unit": "LA004",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 381,
+      "TH": {
+        "sub": "LA005-04-a",
+        "skill": "LA005-04",
+        "unit": "LA005",
+        "skillConfidence": 0.73
+      }
+    },
+    {
+      "subskillId": "LA004-01-a",
+      "truthSkill": "LA004-01",
+      "truthUnit": "LA004",
+      "grade": "1",
+      "subject": "Language Arts",
+      "objective": "Explain why a selected word belongs to a specific noun category.",
+      "candidates": 65,
+      "skills": 43,
+      "E1_ms": 191,
+      "E1": {
+        "sub": "LA004-01-a",
+        "skill": "LA004-01",
+        "unit": "LA004",
+        "cosine": 0.7156,
+        "truthRank": 1
+      },
+      "EP_ms": 199,
+      "EP": {
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "sub": null,
+        "skill": null,
+        "unit": null
+      },
+      "T1_ms": 550,
+      "T1_tokens": 7003,
+      "TF": {
+        "sub": "LA005-07-a",
+        "skill": "LA005-07",
+        "unit": "LA005",
+        "p": 0.67,
+        "confidence": 0.66,
+        "truthP": 0.27
+      },
+      "TR": {
+        "sub": "LA005-07-a",
+        "abstain": false,
+        "skill": "LA005-07",
+        "unit": "LA005",
+        "confidence": 0.53,
+        "truthInTopK": true
+      },
+      "T2_ms": 382,
+      "TH": {
+        "sub": "LA005-04-a",
+        "skill": "LA005-04",
+        "unit": "LA005",
+        "skillConfidence": 0.96
+      }
+    },
+    {
+      "subskillId": "MEAS001-08-B",
+      "truthSkill": "MEAS001-08",
+      "truthUnit": "MEAS001",
+      "grade": "K",
+      "subject": "Mathematics",
+      "objective": "Demonstrate the difference between filled and empty spaces using two identical containers.",
+      "candidates": 166,
+      "skills": 25,
+      "E1_ms": 182,
+      "E1": {
+        "sub": "MEAS001-08-A",
+        "skill": "MEAS001-08",
+        "unit": "MEAS001",
+        "cosine": 0.8138,
+        "truthRank": 2
+      },
+      "EP_ms": 211,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "MEAS001-08-A",
+        "skill": "MEAS001-08",
+        "unit": "MEAS001"
+      },
+      "T1_ms": 537,
+      "T1_tokens": 7620,
+      "TF": {
+        "sub": "MEAS001-08-A",
+        "skill": "MEAS001-08",
+        "unit": "MEAS001",
+        "p": 0.8,
+        "confidence": 0.78,
+        "truthP": 0.13
+      },
+      "TR": {
+        "sub": "MEAS001-08-A",
+        "abstain": false,
+        "skill": "MEAS001-08",
+        "unit": "MEAS001",
+        "confidence": 0.7,
+        "truthInTopK": true
+      },
+      "T2_ms": 389,
+      "TH": {
+        "sub": "MEAS001-08-A",
+        "skill": "MEAS001-08",
+        "unit": "MEAS001",
+        "skillConfidence": 0.96
+      }
+    },
+    {
+      "subskillId": "MEAS001-08-B",
+      "truthSkill": "MEAS001-08",
+      "truthUnit": "MEAS001",
+      "grade": "K",
+      "subject": "Mathematics",
+      "objective": "Compare two identical containers with different amounts using the words 'more' and 'less'.",
+      "candidates": 166,
+      "skills": 25,
+      "E1_ms": 201,
+      "E1": {
+        "sub": "MEAS001-08-B",
+        "skill": "MEAS001-08",
+        "unit": "MEAS001",
+        "cosine": 0.8897,
+        "truthRank": 1
+      },
+      "EP_ms": 169,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "MEAS001-08-B",
+        "skill": "MEAS001-08",
+        "unit": "MEAS001"
+      },
+      "T1_ms": 510,
+      "T1_tokens": 7657,
+      "TF": {
+        "sub": "MEAS001-08-B",
+        "skill": "MEAS001-08",
+        "unit": "MEAS001",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "MEAS001-08-B",
+        "abstain": false,
+        "skill": "MEAS001-08",
+        "unit": "MEAS001",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 368,
+      "TH": {
+        "sub": "MEAS001-08-B",
+        "skill": "MEAS001-08",
+        "unit": "MEAS001",
+        "skillConfidence": 0.79
+      }
+    },
+    {
+      "subskillId": "MEAS001-08-B",
+      "truthSkill": "MEAS001-08",
+      "truthUnit": "MEAS001",
+      "grade": "K",
+      "subject": "Mathematics",
+      "objective": "Explain which container has more and which has less to a friend.",
+      "candidates": 166,
+      "skills": 25,
+      "E1_ms": 208,
+      "E1": {
+        "sub": "MEAS001-08-B",
+        "skill": "MEAS001-08",
+        "unit": "MEAS001",
+        "cosine": 0.8275,
+        "truthRank": 1
+      },
+      "EP_ms": 193,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "MEAS001-08-B",
+        "skill": "MEAS001-08",
+        "unit": "MEAS001"
+      },
+      "T1_ms": 527,
+      "T1_tokens": 7648,
+      "TF": {
+        "sub": "MEAS001-08-B",
+        "skill": "MEAS001-08",
+        "unit": "MEAS001",
+        "p": 0.87,
+        "confidence": 0.86,
+        "truthP": 0.87
+      },
+      "TR": {
+        "sub": "MEAS001-08-B",
+        "abstain": false,
+        "skill": "MEAS001-08",
+        "unit": "MEAS001",
+        "confidence": 0.87,
+        "truthInTopK": true
+      },
+      "T2_ms": 384,
+      "TH": {
+        "sub": "MEAS001-08-B",
+        "skill": "MEAS001-08",
+        "unit": "MEAS001",
+        "skillConfidence": 0.92
+      }
+    },
+    {
+      "subskillId": "SS004-04-C",
+      "truthSkill": "SS004-04",
+      "truthUnit": "SS004",
+      "grade": "K",
+      "subject": "Social Studies",
+      "objective": "Sort picture cards of everyday items into groups for 'past' and 'present'",
+      "candidates": 159,
+      "skills": 18,
+      "E1_ms": 198,
+      "E1": {
+        "sub": "SS004-04-C",
+        "skill": "SS004-04",
+        "unit": "SS004",
+        "cosine": 0.9211,
+        "truthRank": 1
+      },
+      "EP_ms": 183,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SS004-04-C",
+        "skill": "SS004-04",
+        "unit": "SS004"
+      },
+      "T1_ms": 523,
+      "T1_tokens": 6716,
+      "TF": {
+        "sub": "SS004-04-C",
+        "skill": "SS004-04",
+        "unit": "SS004",
+        "p": 0.91,
+        "confidence": 0.91,
+        "truthP": 0.91
+      },
+      "TR": {
+        "sub": "SS004-04-C",
+        "abstain": false,
+        "skill": "SS004-04",
+        "unit": "SS004",
+        "confidence": 0.96,
+        "truthInTopK": true
+      },
+      "T2_ms": 373,
+      "TH": {
+        "sub": "SS004-04-C",
+        "skill": "SS004-04",
+        "unit": "SS004",
+        "skillConfidence": 0.99
+      }
+    },
+    {
+      "subskillId": "SS004-04-C",
+      "truthSkill": "SS004-04",
+      "truthUnit": "SS004",
+      "grade": "K",
+      "subject": "Social Studies",
+      "objective": "Identify clues in pictures that show if an object is old or new",
+      "candidates": 159,
+      "skills": 18,
+      "E1_ms": 196,
+      "E1": {
+        "sub": "SS004-04-A",
+        "skill": "SS004-04",
+        "unit": "SS004",
+        "cosine": 0.8147,
+        "truthRank": 5
+      },
+      "EP_ms": 207,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SS004-04-A",
+        "skill": "SS004-04",
+        "unit": "SS004"
+      },
+      "T1_ms": 494,
+      "T1_tokens": 6737,
+      "TF": {
+        "sub": "SS004-04-A",
+        "skill": "SS004-04",
+        "unit": "SS004",
+        "p": 0.88,
+        "confidence": 0.87,
+        "truthP": 0.03
+      },
+      "TR": {
+        "sub": "SS004-04-A",
+        "abstain": false,
+        "skill": "SS004-04",
+        "unit": "SS004",
+        "confidence": 0.93,
+        "truthInTopK": true
+      },
+      "T2_ms": 374,
+      "TH": {
+        "sub": "SS004-04-A",
+        "skill": "SS004-04",
+        "unit": "SS004",
+        "skillConfidence": 0.93
+      }
+    },
+    {
+      "subskillId": "SS004-04-C",
+      "truthSkill": "SS004-04",
+      "truthUnit": "SS004",
+      "grade": "K",
+      "subject": "Social Studies",
+      "objective": "Explain why certain objects belong in the past or present",
+      "candidates": 159,
+      "skills": 18,
+      "E1_ms": 166,
+      "E1": {
+        "sub": "SS004-04-A",
+        "skill": "SS004-04",
+        "unit": "SS004",
+        "cosine": 0.8384,
+        "truthRank": 4
+      },
+      "EP_ms": 178,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SS004-04-A",
+        "skill": "SS004-04",
+        "unit": "SS004"
+      },
+      "T1_ms": 496,
+      "T1_tokens": 6711,
+      "TF": {
+        "sub": "SS004-02-A",
+        "skill": "SS004-02",
+        "unit": "SS004",
+        "p": 0.47,
+        "confidence": 0.46,
+        "truthP": 0.11
+      },
+      "TR": {
+        "sub": "SS004-04-D",
+        "abstain": false,
+        "skill": "SS004-04",
+        "unit": "SS004",
+        "confidence": 0.63,
+        "truthInTopK": true
+      },
+      "T2_ms": 390,
+      "TH": {
+        "sub": "SS004-04-D",
+        "skill": "SS004-04",
+        "unit": "SS004",
+        "skillConfidence": 0.99
+      }
+    },
+    {
+      "subskillId": "SCI004-02-a",
+      "truthSkill": "SCI004-02",
+      "truthUnit": "SCI004",
+      "grade": "2",
+      "subject": "Science",
+      "objective": "Identify different geometric shapes and structures like squares, triangles, and arches in everyday objects",
+      "candidates": 31,
+      "skills": 14,
+      "E1_ms": 204,
+      "E1": {
+        "sub": "SCI004-02-a",
+        "skill": "SCI004-02",
+        "unit": "SCI004",
+        "cosine": 0.8066,
+        "truthRank": 1
+      },
+      "EP_ms": 196,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SCI004-01-a",
+        "skill": "SCI004-01",
+        "unit": "SCI004"
+      },
+      "T1_ms": 375,
+      "T1_tokens": 3725,
+      "TF": {
+        "sub": "SCI004-02-a",
+        "skill": "SCI004-02",
+        "unit": "SCI004",
+        "p": 0.79,
+        "confidence": 0.77,
+        "truthP": 0.79
+      },
+      "TR": {
+        "sub": null,
+        "abstain": true,
+        "skill": null,
+        "unit": null,
+        "confidence": 0.91,
+        "truthInTopK": true
+      },
+      "T2_ms": 374,
+      "TH": {
+        "sub": "SCI004-01-a",
+        "skill": "SCI004-01",
+        "unit": "SCI004",
+        "skillConfidence": 0.51
+      }
+    },
+    {
+      "subskillId": "SCI004-02-a",
+      "truthSkill": "SCI004-02",
+      "truthUnit": "SCI004",
+      "grade": "2",
+      "subject": "Science",
+      "objective": "Apply virtual weight to various geometric structures to discover which ones hold the most weight",
+      "candidates": 31,
+      "skills": 14,
+      "E1_ms": 193,
+      "E1": {
+        "sub": "SCI004-02-a",
+        "skill": "SCI004-02",
+        "unit": "SCI004",
+        "cosine": 0.8624,
+        "truthRank": 1
+      },
+      "EP_ms": 186,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SCI004-02-a",
+        "skill": "SCI004-02",
+        "unit": "SCI004"
+      },
+      "T1_ms": 386,
+      "T1_tokens": 3706,
+      "TF": {
+        "sub": "SCI004-02-a",
+        "skill": "SCI004-02",
+        "unit": "SCI004",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "SCI004-02-a",
+        "abstain": false,
+        "skill": "SCI004-02",
+        "unit": "SCI004",
+        "confidence": 0.99,
+        "truthInTopK": true
+      },
+      "T2_ms": 414,
+      "TH": {
+        "sub": "SCI004-02-a",
+        "skill": "SCI004-02",
+        "unit": "SCI004",
+        "skillConfidence": 0.87
+      }
+    },
+    {
+      "subskillId": "SCI004-02-a",
+      "truthSkill": "SCI004-02",
+      "truthUnit": "SCI004",
+      "grade": "2",
+      "subject": "Science",
+      "objective": "Explain how triangle bracing and arches improve structural strength and prevent shapes from collapsing",
+      "candidates": 31,
+      "skills": 14,
+      "E1_ms": 218,
+      "E1": {
+        "sub": "SCI004-02-a",
+        "skill": "SCI004-02",
+        "unit": "SCI004",
+        "cosine": 0.7933,
+        "truthRank": 1
+      },
+      "EP_ms": 201,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SCI004-02-a",
+        "skill": "SCI004-02",
+        "unit": "SCI004"
+      },
+      "T1_ms": 359,
+      "T1_tokens": 3717,
+      "TF": {
+        "sub": "SCI004-02-a",
+        "skill": "SCI004-02",
+        "unit": "SCI004",
+        "p": 0.99,
+        "confidence": 0.99,
+        "truthP": 0.99
+      },
+      "TR": {
+        "sub": "SCI004-02-a",
+        "abstain": false,
+        "skill": "SCI004-02",
+        "unit": "SCI004",
+        "confidence": 0.98,
+        "truthInTopK": true
+      },
+      "T2_ms": 363,
+      "TH": {
+        "sub": "SCI004-01-c",
+        "skill": "SCI004-01",
+        "unit": "SCI004",
+        "skillConfidence": 0.78
+      }
+    },
+    {
+      "subskillId": "SCI001-06-d",
+      "truthSkill": "SCI001-06",
+      "truthUnit": "SCI001",
+      "grade": "1",
+      "subject": "Science",
+      "objective": "Observe how moving a light source changes the position of a shadow on a grid.",
+      "candidates": 93,
+      "skills": 26,
+      "E1_ms": 186,
+      "E1": {
+        "sub": "SCI001-06-d",
+        "skill": "SCI001-06",
+        "unit": "SCI001",
+        "cosine": 0.7816,
+        "truthRank": 1
+      },
+      "EP_ms": 195,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SCI001-06-d",
+        "skill": "SCI001-06",
+        "unit": "SCI001"
+      },
+      "T1_ms": 523,
+      "T1_tokens": 7975,
+      "TF": {
+        "sub": "SCI001-06-d",
+        "skill": "SCI001-06",
+        "unit": "SCI001",
+        "p": 1.0,
+        "confidence": 0.99,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "SCI001-06-d",
+        "abstain": false,
+        "skill": "SCI001-06",
+        "unit": "SCI001",
+        "confidence": 0.94,
+        "truthInTopK": true
+      },
+      "T2_ms": 382,
+      "TH": {
+        "sub": "SCI001-06-d",
+        "skill": "SCI001-06",
+        "unit": "SCI001",
+        "skillConfidence": 0.99
+      }
+    },
+    {
+      "subskillId": "SCI001-06-d",
+      "truthSkill": "SCI001-06",
+      "truthUnit": "SCI001",
+      "grade": "1",
+      "subject": "Science",
+      "objective": "Predict the direction a shadow will point when the light is placed at the top, side, below, or diagonally.",
+      "candidates": 93,
+      "skills": 26,
+      "E1_ms": 180,
+      "E1": {
+        "sub": "SCI001-06-d",
+        "skill": "SCI001-06",
+        "unit": "SCI001",
+        "cosine": 0.9016,
+        "truthRank": 1
+      },
+      "EP_ms": 198,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SCI001-06-d",
+        "skill": "SCI001-06",
+        "unit": "SCI001"
+      },
+      "T1_ms": 509,
+      "T1_tokens": 7964,
+      "TF": {
+        "sub": "SCI001-06-d",
+        "skill": "SCI001-06",
+        "unit": "SCI001",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "SCI001-06-d",
+        "abstain": false,
+        "skill": "SCI001-06",
+        "unit": "SCI001",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 375,
+      "TH": {
+        "sub": "SCI001-06-d",
+        "skill": "SCI001-06",
+        "unit": "SCI001",
+        "skillConfidence": 0.99
+      }
+    },
+    {
+      "subskillId": "SCI001-06-d",
+      "truthSkill": "SCI001-06",
+      "truthUnit": "SCI001",
+      "grade": "1",
+      "subject": "Science",
+      "objective": "Explain the rule that shadows always point away from the light source.",
+      "candidates": 93,
+      "skills": 26,
+      "E1_ms": 209,
+      "E1": {
+        "sub": "SCI001-06-d",
+        "skill": "SCI001-06",
+        "unit": "SCI001",
+        "cosine": 0.7615,
+        "truthRank": 1
+      },
+      "EP_ms": 193,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SCI001-06-d",
+        "skill": "SCI001-06",
+        "unit": "SCI001"
+      },
+      "T1_ms": 583,
+      "T1_tokens": 7958,
+      "TF": {
+        "sub": "SCI001-06-d",
+        "skill": "SCI001-06",
+        "unit": "SCI001",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "SCI001-06-d",
+        "abstain": false,
+        "skill": "SCI001-06",
+        "unit": "SCI001",
+        "confidence": 0.99,
+        "truthInTopK": true
+      },
+      "T2_ms": 394,
+      "TH": {
+        "sub": "SCI001-06-d",
+        "skill": "SCI001-06",
+        "unit": "SCI001",
+        "skillConfidence": 0.99
+      }
+    },
+    {
+      "subskillId": "GEOM004-03-a",
+      "truthSkill": "GEOM004-03",
+      "truthUnit": "GEOM004",
+      "grade": "4",
+      "subject": "Mathematics",
+      "objective": "Explore different physical triangles by rotating them and examining their corners with visual angle arcs",
+      "candidates": 128,
+      "skills": 30,
+      "E1_ms": 202,
+      "E1": {
+        "sub": "GEOM004-03-a",
+        "skill": "GEOM004-03",
+        "unit": "GEOM004",
+        "cosine": 0.836,
+        "truthRank": 1
+      },
+      "EP_ms": 213,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "GEOM004-03-a",
+        "skill": "GEOM004-03",
+        "unit": "GEOM004"
+      },
+      "T1_ms": 559,
+      "T1_tokens": 14316,
+      "TF": {
+        "sub": "GEOM004-03-a",
+        "skill": "GEOM004-03",
+        "unit": "GEOM004",
+        "p": 0.5,
+        "confidence": 0.49,
+        "truthP": 0.5
+      },
+      "TR": {
+        "sub": "GEOM004-01-b",
+        "abstain": false,
+        "skill": "GEOM004-01",
+        "unit": "GEOM004",
+        "confidence": 0.4,
+        "truthInTopK": true
+      },
+      "T2_ms": 382,
+      "TH": {
+        "sub": "MEAS004-06-e",
+        "skill": "MEAS004-06",
+        "unit": "MEAS004",
+        "skillConfidence": 0.37
+      }
+    },
+    {
+      "subskillId": "GEOM004-03-a",
+      "truthSkill": "GEOM004-03",
+      "truthUnit": "GEOM004",
+      "grade": "4",
+      "subject": "Mathematics",
+      "objective": "Identify right, acute, and obtuse triangles based on their internal angle measurements",
+      "candidates": 128,
+      "skills": 30,
+      "E1_ms": 188,
+      "E1": {
+        "sub": "GEOM004-03-a",
+        "skill": "GEOM004-03",
+        "unit": "GEOM004",
+        "cosine": 0.8504,
+        "truthRank": 1
+      },
+      "EP_ms": 192,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "GEOM004-03-a",
+        "skill": "GEOM004-03",
+        "unit": "GEOM004"
+      },
+      "T1_ms": 556,
+      "T1_tokens": 14329,
+      "TF": {
+        "sub": "GEOM004-03-a",
+        "skill": "GEOM004-03",
+        "unit": "GEOM004",
+        "p": 0.99,
+        "confidence": 0.99,
+        "truthP": 0.99
+      },
+      "TR": {
+        "sub": "GEOM004-03-a",
+        "abstain": false,
+        "skill": "GEOM004-03",
+        "unit": "GEOM004",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 422,
+      "TH": {
+        "sub": "GEOM004-03-a",
+        "skill": "GEOM004-03",
+        "unit": "GEOM004",
+        "skillConfidence": 0.54
+      }
+    },
+    {
+      "subskillId": "GEOM004-03-a",
+      "truthSkill": "GEOM004-03",
+      "truthUnit": "GEOM004",
+      "grade": "4",
+      "subject": "Mathematics",
+      "objective": "Sort various triangles into the correct bins according to their angle types",
+      "candidates": 128,
+      "skills": 30,
+      "E1_ms": 223,
+      "E1": {
+        "sub": "GEOM004-03-a",
+        "skill": "GEOM004-03",
+        "unit": "GEOM004",
+        "cosine": 0.8348,
+        "truthRank": 1
+      },
+      "EP_ms": 210,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "GEOM004-03-a",
+        "skill": "GEOM004-03",
+        "unit": "GEOM004"
+      },
+      "T1_ms": 537,
+      "T1_tokens": 14284,
+      "TF": {
+        "sub": "GEOM004-03-a",
+        "skill": "GEOM004-03",
+        "unit": "GEOM004",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "GEOM004-03-a",
+        "abstain": false,
+        "skill": "GEOM004-03",
+        "unit": "GEOM004",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 377,
+      "TH": {
+        "sub": "GEOM004-03-a",
+        "skill": "GEOM004-03",
+        "unit": "GEOM004",
+        "skillConfidence": 0.84
+      }
+    },
+    {
+      "subskillId": "LA006-02-c",
+      "truthSkill": "LA006-02",
+      "truthUnit": "LA006",
+      "grade": "3",
+      "subject": "Language Arts",
+      "objective": "Identify the base root word inside everyday word families",
+      "candidates": 64,
+      "skills": 27,
+      "E1_ms": 178,
+      "E1": {
+        "sub": "LA006-02-c",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "cosine": 0.7911,
+        "truthRank": 1
+      },
+      "EP_ms": 239,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "LA006-02-c",
+        "skill": "LA006-02",
+        "unit": "LA006"
+      },
+      "T1_ms": 503,
+      "T1_tokens": 6147,
+      "TF": {
+        "sub": "LA006-02-c",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "LA006-02-c",
+        "abstain": false,
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 365,
+      "TH": {
+        "sub": "LA006-02-c",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "skillConfidence": 1.0
+      }
+    },
+    {
+      "subskillId": "LA006-02-c",
+      "truthSkill": "LA006-02",
+      "truthUnit": "LA006",
+      "grade": "3",
+      "subject": "Language Arts",
+      "objective": "Explain how adding different word parts changes a word's meaning while keeping the root",
+      "candidates": 64,
+      "skills": 27,
+      "E1_ms": 281,
+      "E1": {
+        "sub": "LA006-02-b",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "cosine": 0.8084,
+        "truthRank": 2
+      },
+      "EP_ms": 188,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "LA006-02-b",
+        "skill": "LA006-02",
+        "unit": "LA006"
+      },
+      "T1_ms": 529,
+      "T1_tokens": 6154,
+      "TF": {
+        "sub": "LA006-02-c",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "p": 0.64,
+        "confidence": 0.62,
+        "truthP": 0.64
+      },
+      "TR": {
+        "sub": "LA006-02-c",
+        "abstain": false,
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "confidence": 0.55,
+        "truthInTopK": true
+      },
+      "T2_ms": 384,
+      "TH": {
+        "sub": "LA006-02-c",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "skillConfidence": 1.0
+      }
+    },
+    {
+      "subskillId": "LA006-02-c",
+      "truthSkill": "LA006-02",
+      "truthUnit": "LA006",
+      "grade": "3",
+      "subject": "Language Arts",
+      "objective": "Connect related words built from the same root to show their shared meaning",
+      "candidates": 64,
+      "skills": 27,
+      "E1_ms": 322,
+      "E1": {
+        "sub": "LA006-02-c",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "cosine": 0.8105,
+        "truthRank": 1
+      },
+      "EP_ms": 251,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "LA006-02-c",
+        "skill": "LA006-02",
+        "unit": "LA006"
+      },
+      "T1_ms": 500,
+      "T1_tokens": 6119,
+      "TF": {
+        "sub": "LA006-02-c",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "LA006-02-c",
+        "abstain": false,
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 394,
+      "TH": {
+        "sub": "LA006-02-c",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "skillConfidence": 1.0
+      }
+    },
+    {
+      "subskillId": "SS001-04-a",
+      "truthSkill": "SS001-04",
+      "truthUnit": "SS001",
+      "grade": "3",
+      "subject": "Social Studies",
+      "objective": "Compare everyday situations to determine where specific rules apply versus where general laws apply",
+      "candidates": 60,
+      "skills": 20,
+      "E1_ms": 182,
+      "E1": {
+        "sub": "SS001-04-a",
+        "skill": "SS001-04",
+        "unit": "SS001",
+        "cosine": 0.8185,
+        "truthRank": 1
+      },
+      "EP_ms": 193,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SS001-04-a",
+        "skill": "SS001-04",
+        "unit": "SS001"
+      },
+      "T1_ms": 495,
+      "T1_tokens": 5532,
+      "TF": {
+        "sub": "SS001-04-a",
+        "skill": "SS001-04",
+        "unit": "SS001",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "SS001-04-a",
+        "abstain": false,
+        "skill": "SS001-04",
+        "unit": "SS001",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 384,
+      "TH": {
+        "sub": "SS001-04-a",
+        "skill": "SS001-04",
+        "unit": "SS001",
+        "skillConfidence": 1.0
+      }
+    },
+    {
+      "subskillId": "SS001-04-a",
+      "truthSkill": "SS001-04",
+      "truthUnit": "SS001",
+      "grade": "3",
+      "subject": "Social Studies",
+      "objective": "Identify the authority figures and purposes behind different rules and laws",
+      "candidates": 60,
+      "skills": 20,
+      "E1_ms": 348,
+      "E1": {
+        "sub": "SS001-04-b",
+        "skill": "SS001-04",
+        "unit": "SS001",
+        "cosine": 0.8596,
+        "truthRank": 2
+      },
+      "EP_ms": 318,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SS001-04-b",
+        "skill": "SS001-04",
+        "unit": "SS001"
+      },
+      "T1_ms": 486,
+      "T1_tokens": 5514,
+      "TF": {
+        "sub": "SS001-04-a",
+        "skill": "SS001-04",
+        "unit": "SS001",
+        "p": 0.53,
+        "confidence": 0.51,
+        "truthP": 0.53
+      },
+      "TR": {
+        "sub": "SS001-04-a",
+        "abstain": false,
+        "skill": "SS001-04",
+        "unit": "SS001",
+        "confidence": 0.84,
+        "truthInTopK": true
+      },
+      "T2_ms": 392,
+      "TH": {
+        "sub": "SS001-04-a",
+        "skill": "SS001-04",
+        "unit": "SS001",
+        "skillConfidence": 1.0
+      }
+    },
+    {
+      "subskillId": "SS001-04-a",
+      "truthSkill": "SS001-04",
+      "truthUnit": "SS001",
+      "grade": "3",
+      "subject": "Social Studies",
+      "objective": "Apply sorting criteria to categorize various guidelines into classroom rules or city and national laws",
+      "candidates": 60,
+      "skills": 20,
+      "E1_ms": 182,
+      "E1": {
+        "sub": "SS001-04-a",
+        "skill": "SS001-04",
+        "unit": "SS001",
+        "cosine": 0.8508,
+        "truthRank": 1
+      },
+      "EP_ms": 206,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SS001-04-a",
+        "skill": "SS001-04",
+        "unit": "SS001"
+      },
+      "T1_ms": 486,
+      "T1_tokens": 5543,
+      "TF": {
+        "sub": "SS001-04-a",
+        "skill": "SS001-04",
+        "unit": "SS001",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "SS001-04-a",
+        "abstain": false,
+        "skill": "SS001-04",
+        "unit": "SS001",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 377,
+      "TH": {
+        "sub": "SS001-04-a",
+        "skill": "SS001-04",
+        "unit": "SS001",
+        "skillConfidence": 1.0
+      }
+    },
+    {
+      "subskillId": "LA004-02-G",
+      "truthSkill": "LA004-02",
+      "truthUnit": "LA004",
+      "grade": "K",
+      "subject": "Language Arts",
+      "objective": "Identify action words and naming words in a simple sentence",
+      "candidates": 191,
+      "skills": 33,
+      "E1_ms": 192,
+      "E1": {
+        "sub": "LA004-02-A",
+        "skill": "LA004-02",
+        "unit": "LA004",
+        "cosine": 0.8355,
+        "truthRank": 7
+      },
+      "EP_ms": 177,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "LA004-06-I",
+        "skill": "LA004-06",
+        "unit": "LA004"
+      },
+      "T1_ms": 562,
+      "T1_tokens": 12764,
+      "TF": {
+        "sub": "LA004-01-A",
+        "skill": "LA004-01",
+        "unit": "LA004",
+        "p": 0.59,
+        "confidence": 0.58,
+        "truthP": 0.0
+      },
+      "TR": {
+        "sub": "LA004-01-A",
+        "abstain": false,
+        "skill": "LA004-01",
+        "unit": "LA004",
+        "confidence": 0.79,
+        "truthInTopK": true
+      },
+      "T2_ms": 345,
+      "TH": {
+        "sub": "LA004-01-A",
+        "skill": "LA004-01",
+        "unit": "LA004",
+        "skillConfidence": 0.99
+      }
+    },
+    {
+      "subskillId": "LA004-02-G",
+      "truthSkill": "LA004-02",
+      "truthUnit": "LA004",
+      "grade": "K",
+      "subject": "Language Arts",
+      "objective": "Apply descriptive words to expand a basic sentence",
+      "candidates": 191,
+      "skills": 33,
+      "E1_ms": 178,
+      "E1": {
+        "sub": "LA004-02-G",
+        "skill": "LA004-02",
+        "unit": "LA004",
+        "cosine": 0.9007,
+        "truthRank": 1
+      },
+      "EP_ms": 181,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "LA004-02-G",
+        "skill": "LA004-02",
+        "unit": "LA004"
+      },
+      "T1_ms": 515,
+      "T1_tokens": 12753,
+      "TF": {
+        "sub": "LA004-02-G",
+        "skill": "LA004-02",
+        "unit": "LA004",
+        "p": 0.99,
+        "confidence": 0.99,
+        "truthP": 0.99
+      },
+      "TR": {
+        "sub": "LA004-02-G",
+        "abstain": false,
+        "skill": "LA004-02",
+        "unit": "LA004",
+        "confidence": 0.99,
+        "truthInTopK": true
+      },
+      "T2_ms": 364,
+      "TH": {
+        "sub": "LA004-02-G",
+        "skill": "LA004-02",
+        "unit": "LA004",
+        "skillConfidence": 0.53
+      }
+    },
+    {
+      "subskillId": "MEAS001-05-b",
+      "truthSkill": "MEAS001-05",
+      "truthUnit": "MEAS001",
+      "grade": "1",
+      "subject": "Mathematics",
+      "objective": "Count the objects in each of three pre-sorted groups of items to find the total for each category",
+      "candidates": 111,
+      "skills": 36,
+      "E1_ms": 169,
+      "E1": {
+        "sub": "MEAS001-05-b",
+        "skill": "MEAS001-05",
+        "unit": "MEAS001",
+        "cosine": 0.8627,
+        "truthRank": 1
+      },
+      "EP_ms": 187,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "MEAS001-05-b",
+        "skill": "MEAS001-05",
+        "unit": "MEAS001"
+      },
+      "T1_ms": 519,
+      "T1_tokens": 11921,
+      "TF": {
+        "sub": "MEAS001-05-b",
+        "skill": "MEAS001-05",
+        "unit": "MEAS001",
+        "p": 0.98,
+        "confidence": 0.98,
+        "truthP": 0.98
+      },
+      "TR": {
+        "sub": "MEAS001-05-b",
+        "abstain": false,
+        "skill": "MEAS001-05",
+        "unit": "MEAS001",
+        "confidence": 0.87,
+        "truthInTopK": true
+      },
+      "T2_ms": 367,
+      "TH": {
+        "sub": "MEAS001-05-b",
+        "skill": "MEAS001-05",
+        "unit": "MEAS001",
+        "skillConfidence": 0.85
+      }
+    },
+    {
+      "subskillId": "MEAS001-05-b",
+      "truthSkill": "MEAS001-05",
+      "truthUnit": "MEAS001",
+      "grade": "1",
+      "subject": "Mathematics",
+      "objective": "Compare the counts of the three categories to see which group has the most or least",
+      "candidates": 111,
+      "skills": 36,
+      "E1_ms": 205,
+      "E1": {
+        "sub": "MEAS001-05-b",
+        "skill": "MEAS001-05",
+        "unit": "MEAS001",
+        "cosine": 0.7555,
+        "truthRank": 1
+      },
+      "EP_ms": 194,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "MEAS001-06-b",
+        "skill": "MEAS001-06",
+        "unit": "MEAS001"
+      },
+      "T1_ms": 493,
+      "T1_tokens": 11928,
+      "TF": {
+        "sub": "MEAS001-06-c",
+        "skill": "MEAS001-06",
+        "unit": "MEAS001",
+        "p": 0.59,
+        "confidence": 0.58,
+        "truthP": 0.19
+      },
+      "TR": {
+        "sub": "MEAS001-06-c",
+        "abstain": false,
+        "skill": "MEAS001-06",
+        "unit": "MEAS001",
+        "confidence": 0.53,
+        "truthInTopK": true
+      },
+      "T2_ms": 333,
+      "TH": {
+        "sub": "MEAS001-06-b",
+        "skill": "MEAS001-06",
+        "unit": "MEAS001",
+        "skillConfidence": 0.44
+      }
+    },
+    {
+      "subskillId": "MEAS001-05-b",
+      "truthSkill": "MEAS001-05",
+      "truthUnit": "MEAS001",
+      "grade": "1",
+      "subject": "Mathematics",
+      "objective": "Explain what each category count tells us about the sorted collection",
+      "candidates": 111,
+      "skills": 36,
+      "E1_ms": 170,
+      "E1": {
+        "sub": "MEAS001-05-b",
+        "skill": "MEAS001-05",
+        "unit": "MEAS001",
+        "cosine": 0.7773,
+        "truthRank": 1
+      },
+      "EP_ms": 176,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "MEAS001-05-b",
+        "skill": "MEAS001-05",
+        "unit": "MEAS001"
+      },
+      "T1_ms": 460,
+      "T1_tokens": 11877,
+      "TF": {
+        "sub": "MEAS001-06-a",
+        "skill": "MEAS001-06",
+        "unit": "MEAS001",
+        "p": 0.73,
+        "confidence": 0.71,
+        "truthP": 0.09
+      },
+      "TR": {
+        "sub": "MEAS001-06-a",
+        "abstain": false,
+        "skill": "MEAS001-06",
+        "unit": "MEAS001",
+        "confidence": 0.82,
+        "truthInTopK": true
+      },
+      "T2_ms": 322,
+      "TH": {
+        "sub": "MEAS001-06-a",
+        "skill": "MEAS001-06",
+        "unit": "MEAS001",
+        "skillConfidence": 0.74
+      }
+    },
+    {
+      "subskillId": "SCI002-02-A",
+      "truthSkill": "SCI002-02",
+      "truthUnit": "SCI002",
+      "grade": "K",
+      "subject": "Science",
+      "objective": "Sort real objects and pictures into groups of living and non-living things",
+      "candidates": 88,
+      "skills": 11,
+      "E1_ms": 170,
+      "E1": {
+        "sub": "SCI001-02-A",
+        "skill": "SCI001-02",
+        "unit": "SCI001",
+        "cosine": 0.8484,
+        "truthRank": 8
+      },
+      "EP_ms": 165,
+      "EP": {
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "sub": null,
+        "skill": null,
+        "unit": null
+      },
+      "T1_ms": 361,
+      "T1_tokens": 4502,
+      "TF": {
+        "sub": "SCI002-02-A",
+        "skill": "SCI002-02",
+        "unit": "SCI002",
+        "p": 1.0,
+        "confidence": 0.99,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "SCI002-02-A",
+        "abstain": false,
+        "skill": "SCI002-02",
+        "unit": "SCI002",
+        "confidence": 0.97,
+        "truthInTopK": true
+      },
+      "T2_ms": 369,
+      "TH": {
+        "sub": "SCI002-01-G",
+        "skill": "SCI002-01",
+        "unit": "SCI002",
+        "skillConfidence": 0.94
+      }
+    },
+    {
+      "subskillId": "SCI002-02-A",
+      "truthSkill": "SCI002-02",
+      "truthUnit": "SCI002",
+      "grade": "K",
+      "subject": "Science",
+      "objective": "Identify what living things need to grow and stay healthy",
+      "candidates": 88,
+      "skills": 11,
+      "E1_ms": 174,
+      "E1": {
+        "sub": "SCI002-01-B",
+        "skill": "SCI002-01",
+        "unit": "SCI002",
+        "cosine": 0.8415,
+        "truthRank": 11
+      },
+      "EP_ms": 221,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SCI002-01-B",
+        "skill": "SCI002-01",
+        "unit": "SCI002"
+      },
+      "T1_ms": 358,
+      "T1_tokens": 4462,
+      "TF": {
+        "sub": "SCI002-01-B",
+        "skill": "SCI002-01",
+        "unit": "SCI002",
+        "p": 0.72,
+        "confidence": 0.71,
+        "truthP": 0.0
+      },
+      "TR": {
+        "sub": "SCI002-01-B",
+        "abstain": false,
+        "skill": "SCI002-01",
+        "unit": "SCI002",
+        "confidence": 0.88,
+        "truthInTopK": true
+      },
+      "T2_ms": 360,
+      "TH": {
+        "sub": "SCI002-01-B",
+        "skill": "SCI002-01",
+        "unit": "SCI002",
+        "skillConfidence": 0.97
+      }
+    },
+    {
+      "subskillId": "SCI002-02-A",
+      "truthSkill": "SCI002-02",
+      "truthUnit": "SCI002",
+      "grade": "K",
+      "subject": "Science",
+      "objective": "Explain why certain items in our classroom are non-living",
+      "candidates": 88,
+      "skills": 11,
+      "E1_ms": 180,
+      "E1": {
+        "sub": "SCI002-02-A",
+        "skill": "SCI002-02",
+        "unit": "SCI002",
+        "cosine": 0.7899,
+        "truthRank": 1
+      },
+      "EP_ms": 188,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SCI002-01-B",
+        "skill": "SCI002-01",
+        "unit": "SCI002"
+      },
+      "T1_ms": 369,
+      "T1_tokens": 4461,
+      "TF": {
+        "sub": "SCI002-02-A",
+        "skill": "SCI002-02",
+        "unit": "SCI002",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "SCI002-02-A",
+        "abstain": false,
+        "skill": "SCI002-02",
+        "unit": "SCI002",
+        "confidence": 0.73,
+        "truthInTopK": true
+      },
+      "T2_ms": 352,
+      "TH": {
+        "sub": "SCI002-01-B",
+        "skill": "SCI002-01",
+        "unit": "SCI002",
+        "skillConfidence": 0.91
+      }
+    },
+    {
+      "subskillId": "LA006-02-a",
+      "truthSkill": "LA006-02",
+      "truthUnit": "LA006",
+      "grade": "4",
+      "subject": "Language Arts",
+      "objective": "Identify the base word within complex words that have prefixes and suffixes [identify]",
+      "candidates": 56,
+      "skills": 28,
+      "E1_ms": 188,
+      "E1": {
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "cosine": 0.7675,
+        "truthRank": 1
+      },
+      "EP_ms": 208,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006"
+      },
+      "T1_ms": 461,
+      "T1_tokens": 5582,
+      "TF": {
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "LA006-02-a",
+        "abstain": false,
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "confidence": 0.99,
+        "truthInTopK": true
+      },
+      "T2_ms": 323,
+      "TH": {
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "skillConfidence": 0.92
+      }
+    },
+    {
+      "subskillId": "LA006-02-a",
+      "truthSkill": "LA006-02",
+      "truthUnit": "LA006",
+      "grade": "4",
+      "subject": "Language Arts",
+      "objective": "Explain how prefixes change the meaning of a base word [explain]",
+      "candidates": 56,
+      "skills": 28,
+      "E1_ms": 208,
+      "E1": {
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "cosine": 0.7423,
+        "truthRank": 1
+      },
+      "EP_ms": 201,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006"
+      },
+      "T1_ms": 479,
+      "T1_tokens": 5557,
+      "TF": {
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "LA006-02-a",
+        "abstain": false,
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "confidence": 0.99,
+        "truthInTopK": true
+      },
+      "T2_ms": 345,
+      "TH": {
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "skillConfidence": 0.87
+      }
+    },
+    {
+      "subskillId": "LA006-02-a",
+      "truthSkill": "LA006-02",
+      "truthUnit": "LA006",
+      "grade": "4",
+      "subject": "Language Arts",
+      "objective": "Explain how suffixes change the meaning or function of a base word [explain]",
+      "candidates": 56,
+      "skills": 28,
+      "E1_ms": 171,
+      "E1": {
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "cosine": 0.75,
+        "truthRank": 1
+      },
+      "EP_ms": 235,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006"
+      },
+      "T1_ms": 473,
+      "T1_tokens": 5564,
+      "TF": {
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "LA006-02-a",
+        "abstain": false,
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "confidence": 0.99,
+        "truthInTopK": true
+      },
+      "T2_ms": 340,
+      "TH": {
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "skillConfidence": 0.92
+      }
+    },
+    {
+      "subskillId": "LA006-02-a",
+      "truthSkill": "LA006-02",
+      "truthUnit": "LA006",
+      "grade": "4",
+      "subject": "Language Arts",
+      "objective": "Construct new words by combining base words with high-grade prefixes and suffixes [create]",
+      "candidates": 56,
+      "skills": 28,
+      "E1_ms": 172,
+      "E1": {
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "cosine": 0.7646,
+        "truthRank": 1
+      },
+      "EP_ms": 175,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006"
+      },
+      "T1_ms": 501,
+      "T1_tokens": 5592,
+      "TF": {
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "p": 0.99,
+        "confidence": 0.99,
+        "truthP": 0.99
+      },
+      "TR": {
+        "sub": "LA006-02-a",
+        "abstain": false,
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "confidence": 0.89,
+        "truthInTopK": true
+      },
+      "T2_ms": 355,
+      "TH": {
+        "sub": "LA006-02-a",
+        "skill": "LA006-02",
+        "unit": "LA006",
+        "skillConfidence": 0.94
+      }
+    },
+    {
+      "subskillId": "LA002-03-a",
+      "truthSkill": "LA002-03",
+      "truthUnit": "LA002",
+      "grade": "2",
+      "subject": "Language Arts",
+      "objective": "Identify the characters and setting in a simple story scenario",
+      "candidates": 62,
+      "skills": 28,
+      "E1_ms": 166,
+      "E1": {
+        "sub": "LA002-03-a",
+        "skill": "LA002-03",
+        "unit": "LA002",
+        "cosine": 0.7558,
+        "truthRank": 1
+      },
+      "EP_ms": 172,
+      "EP": {
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "sub": null,
+        "skill": null,
+        "unit": null
+      },
+      "T1_ms": 462,
+      "T1_tokens": 6125,
+      "TF": {
+        "sub": "LA002-03-a",
+        "skill": "LA002-03",
+        "unit": "LA002",
+        "p": 0.77,
+        "confidence": 0.75,
+        "truthP": 0.77
+      },
+      "TR": {
+        "sub": "LA002-03-a",
+        "abstain": false,
+        "skill": "LA002-03",
+        "unit": "LA002",
+        "confidence": 0.88,
+        "truthInTopK": true
+      },
+      "T2_ms": 331,
+      "TH": {
+        "sub": "LA006-04-a",
+        "skill": "LA006-04",
+        "unit": "LA006",
+        "skillConfidence": 0.5
+      }
+    },
+    {
+      "subskillId": "LA002-03-a",
+      "truthSkill": "LA002-03",
+      "truthUnit": "LA002",
+      "grade": "2",
+      "subject": "Language Arts",
+      "objective": "Explain the key events of a story in chronological order",
+      "candidates": 62,
+      "skills": 28,
+      "E1_ms": 211,
+      "E1": {
+        "sub": "LA006-01-a",
+        "skill": "LA006-01",
+        "unit": "LA006",
+        "cosine": 0.7864,
+        "truthRank": 2
+      },
+      "EP_ms": 164,
+      "EP": {
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "sub": null,
+        "skill": null,
+        "unit": null
+      },
+      "T1_ms": 481,
+      "T1_tokens": 6110,
+      "TF": {
+        "sub": "LA006-01-a",
+        "skill": "LA006-01",
+        "unit": "LA006",
+        "p": 0.81,
+        "confidence": 0.8,
+        "truthP": 0.14
+      },
+      "TR": {
+        "sub": "LA006-01-a",
+        "abstain": false,
+        "skill": "LA006-01",
+        "unit": "LA006",
+        "confidence": 0.73,
+        "truthInTopK": true
+      },
+      "T2_ms": 335,
+      "TH": {
+        "sub": "LA006-01-a",
+        "skill": "LA006-01",
+        "unit": "LA006",
+        "skillConfidence": 0.59
+      }
+    },
+    {
+      "subskillId": "LA002-03-a",
+      "truthSkill": "LA002-03",
+      "truthUnit": "LA002",
+      "grade": "2",
+      "subject": "Language Arts",
+      "objective": "Create an interactive storyboard to outline a new story",
+      "candidates": 62,
+      "skills": 28,
+      "E1_ms": 164,
+      "E1": {
+        "sub": "LA002-03-a",
+        "skill": "LA002-03",
+        "unit": "LA002",
+        "cosine": 0.7674,
+        "truthRank": 1
+      },
+      "EP_ms": 172,
+      "EP": {
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "sub": null,
+        "skill": null,
+        "unit": null
+      },
+      "T1_ms": 489,
+      "T1_tokens": 6140,
+      "TF": {
+        "sub": "LA002-03-a",
+        "skill": "LA002-03",
+        "unit": "LA002",
+        "p": 0.98,
+        "confidence": 0.98,
+        "truthP": 0.98
+      },
+      "TR": {
+        "sub": "LA002-03-a",
+        "abstain": false,
+        "skill": "LA002-03",
+        "unit": "LA002",
+        "confidence": 0.92,
+        "truthInTopK": true
+      },
+      "T2_ms": 340,
+      "TH": {
+        "sub": "LA002-03-a",
+        "skill": "LA002-03",
+        "unit": "LA002",
+        "skillConfidence": 0.67
+      }
+    },
+    {
+      "subskillId": "NBT003-02-d",
+      "truthSkill": "NBT003-02",
+      "truthUnit": "NBT003",
+      "grade": "3",
+      "subject": "Mathematics",
+      "objective": "Compare base-ten blocks or place value charts to see which quantity is larger before looking at written numbers.",
+      "candidates": 142,
+      "skills": 30,
+      "E1_ms": 201,
+      "E1": {
+        "sub": "NBT003-02-d",
+        "skill": "NBT003-02",
+        "unit": "NBT003",
+        "cosine": 0.7886,
+        "truthRank": 1
+      },
+      "EP_ms": 173,
+      "EP": {
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "sub": null,
+        "skill": null,
+        "unit": null
+      },
+      "T1_ms": 567,
+      "T1_tokens": 15742,
+      "TF": {
+        "sub": "NBT003-02-d",
+        "skill": "NBT003-02",
+        "unit": "NBT003",
+        "p": 0.83,
+        "confidence": 0.82,
+        "truthP": 0.83
+      },
+      "TR": {
+        "sub": null,
+        "abstain": true,
+        "skill": null,
+        "unit": null,
+        "confidence": 0.48,
+        "truthInTopK": true
+      },
+      "T2_ms": 331,
+      "TH": {
+        "sub": "NBT003-02-d",
+        "skill": "NBT003-02",
+        "unit": "NBT003",
+        "skillConfidence": 0.99
+      }
+    },
+    {
+      "subskillId": "NBT003-02-d",
+      "truthSkill": "NBT003-02",
+      "truthUnit": "NBT003",
+      "grade": "3",
+      "subject": "Mathematics",
+      "objective": "Identify the hundreds, tens, and ones digits in two different three-digit numbers.",
+      "candidates": 142,
+      "skills": 30,
+      "E1_ms": 168,
+      "E1": {
+        "sub": "NBT003-02-a",
+        "skill": "NBT003-02",
+        "unit": "NBT003",
+        "cosine": 0.7892,
+        "truthRank": 2
+      },
+      "EP_ms": 183,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "NBT003-02-a",
+        "skill": "NBT003-02",
+        "unit": "NBT003"
+      },
+      "T1_ms": 509,
+      "T1_tokens": 15929,
+      "TF": {
+        "sub": "NBT003-02-a",
+        "skill": "NBT003-02",
+        "unit": "NBT003",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 0.0
+      },
+      "TR": {
+        "sub": "NBT003-02-a",
+        "abstain": false,
+        "skill": "NBT003-02",
+        "unit": "NBT003",
+        "confidence": 0.87,
+        "truthInTopK": true
+      },
+      "T2_ms": 346,
+      "TH": {
+        "sub": "NBT003-02-a",
+        "skill": "NBT003-02",
+        "unit": "NBT003",
+        "skillConfidence": 1.0
+      }
+    },
+    {
+      "subskillId": "NBT003-02-d",
+      "truthSkill": "NBT003-02",
+      "truthUnit": "NBT003",
+      "grade": "3",
+      "subject": "Mathematics",
+      "objective": "Explain why a number with a larger hundreds digit is always greater than one with a smaller hundreds digit.",
+      "candidates": 142,
+      "skills": 30,
+      "E1_ms": 214,
+      "E1": {
+        "sub": "NBT003-02-d",
+        "skill": "NBT003-02",
+        "unit": "NBT003",
+        "cosine": 0.7546,
+        "truthRank": 1
+      },
+      "EP_ms": 200,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "NBT003-02-d",
+        "skill": "NBT003-02",
+        "unit": "NBT003"
+      },
+      "T1_ms": 510,
+      "T1_tokens": 15837,
+      "TF": {
+        "sub": "NBT003-02-d",
+        "skill": "NBT003-02",
+        "unit": "NBT003",
+        "p": 0.74,
+        "confidence": 0.72,
+        "truthP": 0.74
+      },
+      "TR": {
+        "sub": "NBT003-02-d",
+        "abstain": false,
+        "skill": "NBT003-02",
+        "unit": "NBT003",
+        "confidence": 0.66,
+        "truthInTopK": true
+      },
+      "T2_ms": 342,
+      "TH": {
+        "sub": "NBT003-02-d",
+        "skill": "NBT003-02",
+        "unit": "NBT003",
+        "skillConfidence": 1.0
+      }
+    },
+    {
+      "subskillId": "NBT003-02-d",
+      "truthSkill": "NBT003-02",
+      "truthUnit": "NBT003",
+      "grade": "3",
+      "subject": "Mathematics",
+      "objective": "Apply the greater than (>), less than (<), and equal to (=) symbols correctly between two three-digit numbers.",
+      "candidates": 142,
+      "skills": 30,
+      "E1_ms": 174,
+      "E1": {
+        "sub": "NBT003-02-d",
+        "skill": "NBT003-02",
+        "unit": "NBT003",
+        "cosine": 0.8583,
+        "truthRank": 1
+      },
+      "EP_ms": 183,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "NBT003-02-d",
+        "skill": "NBT003-02",
+        "unit": "NBT003"
+      },
+      "T1_ms": 512,
+      "T1_tokens": 15992,
+      "TF": {
+        "sub": "NBT003-02-d",
+        "skill": "NBT003-02",
+        "unit": "NBT003",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "NBT003-02-d",
+        "abstain": false,
+        "skill": "NBT003-02",
+        "unit": "NBT003",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 348,
+      "TH": {
+        "sub": "NBT003-02-d",
+        "skill": "NBT003-02",
+        "unit": "NBT003",
+        "skillConfidence": 0.98
+      }
+    },
+    {
+      "subskillId": "NBT005-06-d",
+      "truthSkill": "NBT005-06",
+      "truthUnit": "NBT005",
+      "grade": "5",
+      "subject": "Mathematics",
+      "objective": "Model division word problems using groups of objects or drawings to understand fair sharing.",
+      "candidates": 118,
+      "skills": 28,
+      "E1_ms": 210,
+      "E1": {
+        "sub": "NF003-03-b",
+        "skill": "NF003-03",
+        "unit": "NF003",
+        "cosine": 0.8258,
+        "truthRank": 8
+      },
+      "EP_ms": 224,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "NF003-03-b",
+        "skill": "NF003-03",
+        "unit": "NF003"
+      },
+      "T1_ms": 528,
+      "T1_tokens": 12607,
+      "TF": {
+        "sub": "NF003-03-a",
+        "skill": "NF003-03",
+        "unit": "NF003",
+        "p": 0.48,
+        "confidence": 0.46,
+        "truthP": 0.02
+      },
+      "TR": {
+        "sub": "NF003-03-a",
+        "abstain": false,
+        "skill": "NF003-03",
+        "unit": "NF003",
+        "confidence": 0.42,
+        "truthInTopK": true
+      },
+      "T2_ms": 376,
+      "TH": {
+        "sub": "NBT005-06-d",
+        "skill": "NBT005-06",
+        "unit": "NBT005",
+        "skillConfidence": 0.52
+      }
+    },
+    {
+      "subskillId": "NBT005-06-d",
+      "truthSkill": "NBT005-06",
+      "truthUnit": "NBT005",
+      "grade": "5",
+      "subject": "Mathematics",
+      "objective": "Explain the steps needed to solve multi-step division word problems.",
+      "candidates": 118,
+      "skills": 28,
+      "E1_ms": 186,
+      "E1": {
+        "sub": "NBT005-06-d",
+        "skill": "NBT005-06",
+        "unit": "NBT005",
+        "cosine": 0.7754,
+        "truthRank": 1
+      },
+      "EP_ms": 178,
+      "EP": {
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "sub": null,
+        "skill": null,
+        "unit": null
+      },
+      "T1_ms": 558,
+      "T1_tokens": 12455,
+      "TF": {
+        "sub": "NBT005-06-d",
+        "skill": "NBT005-06",
+        "unit": "NBT005",
+        "p": 0.98,
+        "confidence": 0.97,
+        "truthP": 0.98
+      },
+      "TR": {
+        "sub": "NBT005-06-d",
+        "abstain": false,
+        "skill": "NBT005-06",
+        "unit": "NBT005",
+        "confidence": 0.97,
+        "truthInTopK": true
+      },
+      "T2_ms": 379,
+      "TH": {
+        "sub": "NBT005-06-d",
+        "skill": "NBT005-06",
+        "unit": "NBT005",
+        "skillConfidence": 0.74
+      }
+    },
+    {
+      "subskillId": "NBT005-06-d",
+      "truthSkill": "NBT005-06",
+      "truthUnit": "NBT005",
+      "grade": "5",
+      "subject": "Mathematics",
+      "objective": "Solve multi-step division word problems accurately.",
+      "candidates": 118,
+      "skills": 28,
+      "E1_ms": 194,
+      "E1": {
+        "sub": "NBT005-06-d",
+        "skill": "NBT005-06",
+        "unit": "NBT005",
+        "cosine": 0.833,
+        "truthRank": 1
+      },
+      "EP_ms": 176,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "NBT005-06-d",
+        "skill": "NBT005-06",
+        "unit": "NBT005"
+      },
+      "T1_ms": 532,
+      "T1_tokens": 12499,
+      "TF": {
+        "sub": "NBT005-06-d",
+        "skill": "NBT005-06",
+        "unit": "NBT005",
+        "p": 1.0,
+        "confidence": 0.99,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "NBT005-06-d",
+        "abstain": false,
+        "skill": "NBT005-06",
+        "unit": "NBT005",
+        "confidence": 0.99,
+        "truthInTopK": true
+      },
+      "T2_ms": 365,
+      "TH": {
+        "sub": "NBT005-06-d",
+        "skill": "NBT005-06",
+        "unit": "NBT005",
+        "skillConfidence": 0.79
+      }
+    },
+    {
+      "subskillId": "NBT005-06-d",
+      "truthSkill": "NBT005-06",
+      "truthUnit": "NBT005",
+      "grade": "5",
+      "subject": "Mathematics",
+      "objective": "Verify division results by multiplying the quotient and the divisor.",
+      "candidates": 118,
+      "skills": 28,
+      "E1_ms": 168,
+      "E1": {
+        "sub": "NF003-07-d",
+        "skill": "NF003-07",
+        "unit": "NF003",
+        "cosine": 0.7763,
+        "truthRank": 3
+      },
+      "EP_ms": 217,
+      "EP": {
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "sub": null,
+        "skill": null,
+        "unit": null
+      },
+      "T1_ms": 540,
+      "T1_tokens": 12772,
+      "TF": {
+        "sub": "NBT005-06-d",
+        "skill": "NBT005-06",
+        "unit": "NBT005",
+        "p": 0.74,
+        "confidence": 0.72,
+        "truthP": 0.74
+      },
+      "TR": {
+        "sub": "NBT005-06-d",
+        "abstain": false,
+        "skill": "NBT005-06",
+        "unit": "NBT005",
+        "confidence": 0.32,
+        "truthInTopK": true
+      },
+      "T2_ms": 368,
+      "TH": {
+        "sub": "NBT005-06-d",
+        "skill": "NBT005-06",
+        "unit": "NBT005",
+        "skillConfidence": 0.8
+      }
+    },
+    {
+      "subskillId": "SCI002-05-b",
+      "truthSkill": "SCI002-05",
+      "truthUnit": "SCI002",
+      "grade": "3",
+      "subject": "Science",
+      "objective": "Identify different environmental changes like drought, cold weather, and habitat loss using pictures and stories.",
+      "candidates": 78,
+      "skills": 26,
+      "E1_ms": 246,
+      "E1": {
+        "sub": "SCI002-05-b",
+        "skill": "SCI002-05",
+        "unit": "SCI002",
+        "cosine": 0.7841,
+        "truthRank": 1
+      },
+      "EP_ms": 195,
+      "EP": {
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "sub": null,
+        "skill": null,
+        "unit": null
+      },
+      "T1_ms": 505,
+      "T1_tokens": 6951,
+      "TF": {
+        "sub": "SCI003-03-b",
+        "skill": "SCI003-03",
+        "unit": "SCI003",
+        "p": 0.59,
+        "confidence": 0.57,
+        "truthP": 0.07
+      },
+      "TR": {
+        "sub": "SCI003-03-b",
+        "abstain": false,
+        "skill": "SCI003-03",
+        "unit": "SCI003",
+        "confidence": 0.54,
+        "truthInTopK": true
+      },
+      "T2_ms": 362,
+      "TH": {
+        "sub": "SCI003-03-b",
+        "skill": "SCI003-03",
+        "unit": "SCI003",
+        "skillConfidence": 0.99
+      }
+    },
+    {
+      "subskillId": "SCI002-05-b",
+      "truthSkill": "SCI002-05",
+      "truthUnit": "SCI002",
+      "grade": "3",
+      "subject": "Science",
+      "objective": "Explain how specific environmental shifts affect the daily lives and needs of plants and animals.",
+      "candidates": 78,
+      "skills": 26,
+      "E1_ms": 185,
+      "E1": {
+        "sub": "SCI002-05-b",
+        "skill": "SCI002-05",
+        "unit": "SCI002",
+        "cosine": 0.805,
+        "truthRank": 1
+      },
+      "EP_ms": 208,
+      "EP": {
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "sub": null,
+        "skill": null,
+        "unit": null
+      },
+      "T1_ms": 509,
+      "T1_tokens": 6949,
+      "TF": {
+        "sub": "SCI002-05-b",
+        "skill": "SCI002-05",
+        "unit": "SCI002",
+        "p": 0.48,
+        "confidence": 0.46,
+        "truthP": 0.48
+      },
+      "TR": {
+        "sub": "SCI002-05-b",
+        "abstain": false,
+        "skill": "SCI002-05",
+        "unit": "SCI002",
+        "confidence": 0.71,
+        "truthInTopK": true
+      },
+      "T2_ms": 389,
+      "TH": {
+        "sub": "SCI003-03-a",
+        "skill": "SCI003-03",
+        "unit": "SCI003",
+        "skillConfidence": 0.87
+      }
+    },
+    {
+      "subskillId": "SCI002-05-b",
+      "truthSkill": "SCI002-05",
+      "truthUnit": "SCI002",
+      "grade": "3",
+      "subject": "Science",
+      "objective": "Predict the most likely biological result or trait adaptation for an organism facing a 'what-if' environmental scenario.",
+      "candidates": 78,
+      "skills": 26,
+      "E1_ms": 201,
+      "E1": {
+        "sub": "SCI002-05-b",
+        "skill": "SCI002-05",
+        "unit": "SCI002",
+        "cosine": 0.8485,
+        "truthRank": 1
+      },
+      "EP_ms": 170,
+      "EP": {
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "sub": null,
+        "skill": null,
+        "unit": null
+      },
+      "T1_ms": 531,
+      "T1_tokens": 6946,
+      "TF": {
+        "sub": "SCI002-05-b",
+        "skill": "SCI002-05",
+        "unit": "SCI002",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "SCI002-05-b",
+        "abstain": false,
+        "skill": "SCI002-05",
+        "unit": "SCI002",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 393,
+      "TH": {
+        "sub": "SCI003-04-c",
+        "skill": "SCI003-04",
+        "unit": "SCI003",
+        "skillConfidence": 0.66
+      }
+    },
+    {
+      "subskillId": "SS001-03-a",
+      "truthSkill": "SS001-03",
+      "truthUnit": "SS001",
+      "grade": "2",
+      "subject": "Social Studies",
+      "objective": "Identify everyday community services like fire stations, public schools, and trash collection from pictures and descriptions.",
+      "candidates": 33,
+      "skills": 15,
+      "E1_ms": 183,
+      "E1": {
+        "sub": "SS001-03-a",
+        "skill": "SS001-03",
+        "unit": "SS001",
+        "cosine": 0.8064,
+        "truthRank": 1
+      },
+      "EP_ms": 192,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SS001-03-a",
+        "skill": "SS001-03",
+        "unit": "SS001"
+      },
+      "T1_ms": 385,
+      "T1_tokens": 3792,
+      "TF": {
+        "sub": "SS001-03-a",
+        "skill": "SS001-03",
+        "unit": "SS001",
+        "p": 0.58,
+        "confidence": 0.55,
+        "truthP": 0.58
+      },
+      "TR": {
+        "sub": "SS001-03-a",
+        "abstain": false,
+        "skill": "SS001-03",
+        "unit": "SS001",
+        "confidence": 0.46,
+        "truthInTopK": true
+      },
+      "T2_ms": 374,
+      "TH": {
+        "sub": "SS001-03-a",
+        "skill": "SS001-03",
+        "unit": "SS001",
+        "skillConfidence": 0.46
+      }
+    },
+    {
+      "subskillId": "SS001-03-a",
+      "truthSkill": "SS001-03",
+      "truthUnit": "SS001",
+      "grade": "2",
+      "subject": "Social Studies",
+      "objective": "Categorize different public services into the community needs of Safety, Learning, and Health.",
+      "candidates": 33,
+      "skills": 15,
+      "E1_ms": 180,
+      "E1": {
+        "sub": "SS001-03-a",
+        "skill": "SS001-03",
+        "unit": "SS001",
+        "cosine": 0.8968,
+        "truthRank": 1
+      },
+      "EP_ms": 162,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SS001-03-a",
+        "skill": "SS001-03",
+        "unit": "SS001"
+      },
+      "T1_ms": 408,
+      "T1_tokens": 3785,
+      "TF": {
+        "sub": "SS001-03-a",
+        "skill": "SS001-03",
+        "unit": "SS001",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "SS001-03-a",
+        "abstain": false,
+        "skill": "SS001-03",
+        "unit": "SS001",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 373,
+      "TH": {
+        "sub": "SS001-03-a",
+        "skill": "SS001-03",
+        "unit": "SS001",
+        "skillConfidence": 0.83
+      }
+    },
+    {
+      "subskillId": "SS001-03-a",
+      "truthSkill": "SS001-03",
+      "truthUnit": "SS001",
+      "grade": "2",
+      "subject": "Social Studies",
+      "objective": "Explain how a specific public service helps keep our neighborhood safe, healthy, or smart.",
+      "candidates": 33,
+      "skills": 15,
+      "E1_ms": 174,
+      "E1": {
+        "sub": "SS001-03-a",
+        "skill": "SS001-03",
+        "unit": "SS001",
+        "cosine": 0.7759,
+        "truthRank": 1
+      },
+      "EP_ms": 189,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SS001-03-a",
+        "skill": "SS001-03",
+        "unit": "SS001"
+      },
+      "T1_ms": 424,
+      "T1_tokens": 3784,
+      "TF": {
+        "sub": "SS001-03-a",
+        "skill": "SS001-03",
+        "unit": "SS001",
+        "p": 0.56,
+        "confidence": 0.53,
+        "truthP": 0.56
+      },
+      "TR": {
+        "sub": "SS001-03-a",
+        "abstain": false,
+        "skill": "SS001-03",
+        "unit": "SS001",
+        "confidence": 0.47,
+        "truthInTopK": true
+      },
+      "T2_ms": 377,
+      "TH": {
+        "sub": "SS001-03-a",
+        "skill": "SS001-03",
+        "unit": "SS001",
+        "skillConfidence": 0.96
+      }
+    },
+    {
+      "subskillId": "SS003-03-e",
+      "truthSkill": "SS003-03",
+      "truthUnit": "SS003",
+      "grade": "4",
+      "subject": "Social Studies",
+      "objective": "Identify different types of local climate conditions like hot, cold, rainy, and dry.",
+      "candidates": 115,
+      "skills": 23,
+      "E1_ms": 186,
+      "E1": {
+        "sub": "SS003-03-a",
+        "skill": "SS003-03",
+        "unit": "SS003",
+        "cosine": 0.8181,
+        "truthRank": 2
+      },
+      "EP_ms": 208,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SS003-03-a",
+        "skill": "SS003-03",
+        "unit": "SS003"
+      },
+      "T1_ms": 509,
+      "T1_tokens": 8860,
+      "TF": {
+        "sub": "SS003-03-a",
+        "skill": "SS003-03",
+        "unit": "SS003",
+        "p": 0.63,
+        "confidence": 0.61,
+        "truthP": 0.1
+      },
+      "TR": {
+        "sub": "SS003-03-a",
+        "abstain": false,
+        "skill": "SS003-03",
+        "unit": "SS003",
+        "confidence": 0.43,
+        "truthInTopK": true
+      },
+      "T2_ms": 413,
+      "TH": {
+        "sub": "SS003-03-b",
+        "skill": "SS003-03",
+        "unit": "SS003",
+        "skillConfidence": 0.98
+      }
+    },
+    {
+      "subskillId": "SS003-03-e",
+      "truthSkill": "SS003-03",
+      "truthUnit": "SS003",
+      "grade": "4",
+      "subject": "Social Studies",
+      "objective": "Explain how weather and climate shape daily human choices such as clothing and building design.",
+      "candidates": 115,
+      "skills": 23,
+      "E1_ms": 187,
+      "E1": {
+        "sub": "SS003-03-e",
+        "skill": "SS003-03",
+        "unit": "SS003",
+        "cosine": 0.7633,
+        "truthRank": 1
+      },
+      "EP_ms": 218,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SS003-03-e",
+        "skill": "SS003-03",
+        "unit": "SS003"
+      },
+      "T1_ms": 508,
+      "T1_tokens": 8843,
+      "TF": {
+        "sub": "SS003-03-e",
+        "skill": "SS003-03",
+        "unit": "SS003",
+        "p": 0.99,
+        "confidence": 0.99,
+        "truthP": 0.99
+      },
+      "TR": {
+        "sub": "SS003-03-e",
+        "abstain": false,
+        "skill": "SS003-03",
+        "unit": "SS003",
+        "confidence": 0.98,
+        "truthInTopK": true
+      },
+      "T2_ms": 352,
+      "TH": {
+        "sub": "SS003-03-e",
+        "skill": "SS003-03",
+        "unit": "SS003",
+        "skillConfidence": 0.99
+      }
+    },
+    {
+      "subskillId": "SS003-03-e",
+      "truthSkill": "SS003-03",
+      "truthUnit": "SS003",
+      "grade": "4",
+      "subject": "Social Studies",
+      "objective": "Apply problem-solving skills to match different climate regions with the right economic and farming activities.",
+      "candidates": 115,
+      "skills": 23,
+      "E1_ms": 165,
+      "E1": {
+        "sub": "SS003-03-e",
+        "skill": "SS003-03",
+        "unit": "SS003",
+        "cosine": 0.7982,
+        "truthRank": 1
+      },
+      "EP_ms": 192,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SS003-03-e",
+        "skill": "SS003-03",
+        "unit": "SS003"
+      },
+      "T1_ms": 497,
+      "T1_tokens": 8851,
+      "TF": {
+        "sub": "SS003-03-e",
+        "skill": "SS003-03",
+        "unit": "SS003",
+        "p": 0.71,
+        "confidence": 0.7,
+        "truthP": 0.71
+      },
+      "TR": {
+        "sub": "SS003-03-e",
+        "abstain": false,
+        "skill": "SS003-03",
+        "unit": "SS003",
+        "confidence": 0.67,
+        "truthInTopK": true
+      },
+      "T2_ms": 354,
+      "TH": {
+        "sub": "SS003-03-e",
+        "skill": "SS003-03",
+        "unit": "SS003",
+        "skillConfidence": 0.97
+      }
+    },
+    {
+      "subskillId": "SS004-05-b",
+      "truthSkill": "SS004-05",
+      "truthUnit": "SS004",
+      "grade": "1",
+      "subject": "Social Studies",
+      "objective": "Distinguish between historical tools and modern technologies by sorting them into categories.",
+      "candidates": 96,
+      "skills": 26,
+      "E1_ms": 187,
+      "E1": {
+        "sub": "SS004-05-b",
+        "skill": "SS004-05",
+        "unit": "SS004",
+        "cosine": 0.8112,
+        "truthRank": 1
+      },
+      "EP_ms": 156,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SS004-01-b",
+        "skill": "SS004-01",
+        "unit": "SS004"
+      },
+      "T1_ms": 539,
+      "T1_tokens": 8075,
+      "TF": {
+        "sub": "SS004-05-b",
+        "skill": "SS004-05",
+        "unit": "SS004",
+        "p": 0.92,
+        "confidence": 0.92,
+        "truthP": 0.92
+      },
+      "TR": {
+        "sub": "SS004-05-b",
+        "abstain": false,
+        "skill": "SS004-05",
+        "unit": "SS004",
+        "confidence": 0.97,
+        "truthInTopK": true
+      },
+      "T2_ms": 358,
+      "TH": {
+        "sub": "SS004-01-b",
+        "skill": "SS004-01",
+        "unit": "SS004",
+        "skillConfidence": 0.71
+      }
+    },
+    {
+      "subskillId": "SS004-05-b",
+      "truthSkill": "SS004-05",
+      "truthUnit": "SS004",
+      "grade": "1",
+      "subject": "Social Studies",
+      "objective": "Identify specific examples of older and newer inventions such as candles versus LED lights.",
+      "candidates": 96,
+      "skills": 26,
+      "E1_ms": 180,
+      "E1": {
+        "sub": "SS004-05-b",
+        "skill": "SS004-05",
+        "unit": "SS004",
+        "cosine": 0.7785,
+        "truthRank": 1
+      },
+      "EP_ms": 156,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SS004-01-a",
+        "skill": "SS004-01",
+        "unit": "SS004"
+      },
+      "T1_ms": 535,
+      "T1_tokens": 8046,
+      "TF": {
+        "sub": "SS004-05-b",
+        "skill": "SS004-05",
+        "unit": "SS004",
+        "p": 0.96,
+        "confidence": 0.96,
+        "truthP": 0.96
+      },
+      "TR": {
+        "sub": "SS004-05-b",
+        "abstain": false,
+        "skill": "SS004-05",
+        "unit": "SS004",
+        "confidence": 0.94,
+        "truthInTopK": true
+      },
+      "T2_ms": 394,
+      "TH": {
+        "sub": "SS004-05-b",
+        "skill": "SS004-05",
+        "unit": "SS004",
+        "skillConfidence": 0.63
+      }
+    },
+    {
+      "subskillId": "SS004-05-b",
+      "truthSkill": "SS004-05",
+      "truthUnit": "SS004",
+      "grade": "1",
+      "subject": "Social Studies",
+      "objective": "Explain how everyday tasks like sending messages or traveling were done long ago versus today.",
+      "candidates": 96,
+      "skills": 26,
+      "E1_ms": 176,
+      "E1": {
+        "sub": "SS004-01-a",
+        "skill": "SS004-01",
+        "unit": "SS004",
+        "cosine": 0.7528,
+        "truthRank": 3
+      },
+      "EP_ms": 174,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SS004-01-a",
+        "skill": "SS004-01",
+        "unit": "SS004"
+      },
+      "T1_ms": 503,
+      "T1_tokens": 8048,
+      "TF": {
+        "sub": "SS004-01-a",
+        "skill": "SS004-01",
+        "unit": "SS004",
+        "p": 0.79,
+        "confidence": 0.78,
+        "truthP": 0.0
+      },
+      "TR": {
+        "sub": "SS004-01-a",
+        "abstain": false,
+        "skill": "SS004-01",
+        "unit": "SS004",
+        "confidence": 0.55,
+        "truthInTopK": true
+      },
+      "T2_ms": 370,
+      "TH": {
+        "sub": "SS004-01-a",
+        "skill": "SS004-01",
+        "unit": "SS004",
+        "skillConfidence": 0.51
+      }
+    },
+    {
+      "subskillId": "SCI002-03-a",
+      "truthSkill": "SCI002-03",
+      "truthUnit": "SCI002",
+      "grade": "4",
+      "subject": "Science",
+      "objective": "Observe how objects block a light beam to form a shadow on a surface",
+      "candidates": 84,
+      "skills": 28,
+      "E1_ms": 171,
+      "E1": {
+        "sub": "SCI002-03-a",
+        "skill": "SCI002-03",
+        "unit": "SCI002",
+        "cosine": 0.8809,
+        "truthRank": 1
+      },
+      "EP_ms": 180,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SCI002-03-a",
+        "skill": "SCI002-03",
+        "unit": "SCI002"
+      },
+      "T1_ms": 545,
+      "T1_tokens": 7387,
+      "TF": {
+        "sub": "SCI002-03-a",
+        "skill": "SCI002-03",
+        "unit": "SCI002",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "SCI002-03-a",
+        "abstain": false,
+        "skill": "SCI002-03",
+        "unit": "SCI002",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 373,
+      "TH": {
+        "sub": "SCI002-03-a",
+        "skill": "SCI002-03",
+        "unit": "SCI002",
+        "skillConfidence": 0.97
+      }
+    },
+    {
+      "subskillId": "SCI002-03-a",
+      "truthSkill": "SCI002-03",
+      "truthUnit": "SCI002",
+      "grade": "4",
+      "subject": "Science",
+      "objective": "Describe how light travels in straight paths rather than bending around corners",
+      "candidates": 84,
+      "skills": 28,
+      "E1_ms": 173,
+      "E1": {
+        "sub": "SCI002-03-a",
+        "skill": "SCI002-03",
+        "unit": "SCI002",
+        "cosine": 0.8092,
+        "truthRank": 1
+      },
+      "EP_ms": 169,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "SCI002-03-a",
+        "skill": "SCI002-03",
+        "unit": "SCI002"
+      },
+      "T1_ms": 502,
+      "T1_tokens": 7384,
+      "TF": {
+        "sub": "SCI002-03-a",
+        "skill": "SCI002-03",
+        "unit": "SCI002",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "SCI002-03-a",
+        "abstain": false,
+        "skill": "SCI002-03",
+        "unit": "SCI002",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 361,
+      "TH": {
+        "sub": "SCI002-03-a",
+        "skill": "SCI002-03",
+        "unit": "SCI002",
+        "skillConfidence": 0.87
+      }
+    },
+    {
+      "subskillId": "SCI002-03-a",
+      "truthSkill": "SCI002-03",
+      "truthUnit": "SCI002",
+      "grade": "4",
+      "subject": "Science",
+      "objective": "Create shadows of different sizes by moving an object closer to or further from a light source",
+      "candidates": 84,
+      "skills": 28,
+      "E1_ms": 176,
+      "E1": {
+        "sub": "SCI002-03-a",
+        "skill": "SCI002-03",
+        "unit": "SCI002",
+        "cosine": 0.8487,
+        "truthRank": 1
+      },
+      "EP_ms": 164,
+      "EP": {
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "sub": null,
+        "skill": null,
+        "unit": null
+      },
+      "T1_ms": 455,
+      "T1_tokens": 7372,
+      "TF": {
+        "sub": "SCI002-03-a",
+        "skill": "SCI002-03",
+        "unit": "SCI002",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "SCI002-03-a",
+        "abstain": false,
+        "skill": "SCI002-03",
+        "unit": "SCI002",
+        "confidence": 0.66,
+        "truthInTopK": true
+      },
+      "T2_ms": 389,
+      "TH": {
+        "sub": "SCI002-03-a",
+        "skill": "SCI002-03",
+        "unit": "SCI002",
+        "skillConfidence": 0.98
+      }
+    },
+    {
+      "subskillId": "LA002-05-b",
+      "truthSkill": "LA002-05",
+      "truthUnit": "LA002",
+      "grade": "5",
+      "subject": "Language Arts",
+      "objective": "Identify the main claim or point an author is trying to make in a text.",
+      "candidates": 52,
+      "skills": 29,
+      "E1_ms": 166,
+      "E1": {
+        "sub": "LA002-05-a",
+        "skill": "LA002-05",
+        "unit": "LA002",
+        "cosine": 0.7573,
+        "truthRank": 3
+      },
+      "EP_ms": 160,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "LA002-05-a",
+        "skill": "LA002-05",
+        "unit": "LA002"
+      },
+      "T1_ms": 479,
+      "T1_tokens": 5314,
+      "TF": {
+        "sub": "LA002-01-a",
+        "skill": "LA002-01",
+        "unit": "LA002",
+        "p": 0.5,
+        "confidence": 0.48,
+        "truthP": 0.0
+      },
+      "TR": {
+        "sub": null,
+        "abstain": true,
+        "skill": null,
+        "unit": null,
+        "confidence": 0.36,
+        "truthInTopK": true
+      },
+      "T2_ms": 397,
+      "TH": {
+        "sub": "LA002-01-a",
+        "skill": "LA002-01",
+        "unit": "LA002",
+        "skillConfidence": 1.0
+      }
+    },
+    {
+      "subskillId": "LA002-05-b",
+      "truthSkill": "LA002-05",
+      "truthUnit": "LA002",
+      "grade": "5",
+      "subject": "Language Arts",
+      "objective": "Match specific pieces of evidence, such as study findings or expert quotes, to the claims they support.",
+      "candidates": 52,
+      "skills": 29,
+      "E1_ms": 216,
+      "E1": {
+        "sub": "LA002-05-b",
+        "skill": "LA002-05",
+        "unit": "LA002",
+        "cosine": 0.828,
+        "truthRank": 1
+      },
+      "EP_ms": 203,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "LA002-05-b",
+        "skill": "LA002-05",
+        "unit": "LA002"
+      },
+      "T1_ms": 464,
+      "T1_tokens": 5307,
+      "TF": {
+        "sub": "LA002-05-b",
+        "skill": "LA002-05",
+        "unit": "LA002",
+        "p": 0.91,
+        "confidence": 0.9,
+        "truthP": 0.91
+      },
+      "TR": {
+        "sub": "LA002-05-b",
+        "abstain": false,
+        "skill": "LA002-05",
+        "unit": "LA002",
+        "confidence": 0.66,
+        "truthInTopK": true
+      },
+      "T2_ms": 392,
+      "TH": {
+        "sub": "LA002-05-b",
+        "skill": "LA002-05",
+        "unit": "LA002",
+        "skillConfidence": 0.85
+      }
+    },
+    {
+      "subskillId": "LA002-05-b",
+      "truthSkill": "LA002-05",
+      "truthUnit": "LA002",
+      "grade": "5",
+      "subject": "Language Arts",
+      "objective": "Explain how a specific piece of evidence proves or strengthens an author's argument.",
+      "candidates": 52,
+      "skills": 29,
+      "E1_ms": 195,
+      "E1": {
+        "sub": "LA002-05-a",
+        "skill": "LA002-05",
+        "unit": "LA002",
+        "cosine": 0.7777,
+        "truthRank": 2
+      },
+      "EP_ms": 487,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "LA002-05-a",
+        "skill": "LA002-05",
+        "unit": "LA002"
+      },
+      "T1_ms": 447,
+      "T1_tokens": 5307,
+      "TF": {
+        "sub": "LA002-05-a",
+        "skill": "LA002-05",
+        "unit": "LA002",
+        "p": 0.99,
+        "confidence": 0.99,
+        "truthP": 0.01
+      },
+      "TR": {
+        "sub": "LA002-05-a",
+        "abstain": false,
+        "skill": "LA002-05",
+        "unit": "LA002",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 372,
+      "TH": {
+        "sub": "LA002-05-a",
+        "skill": "LA002-05",
+        "unit": "LA002",
+        "skillConfidence": 0.88
+      }
+    },
+    {
+      "subskillId": "GEOM002-01-b",
+      "truthSkill": "GEOM002-01",
+      "truthUnit": "GEOM002",
+      "grade": "2",
+      "subject": "Mathematics",
+      "objective": "Identify the number of sides and corners on physical or pictured polygon shapes",
+      "candidates": 61,
+      "skills": 21,
+      "E1_ms": 206,
+      "E1": {
+        "sub": "GEOM002-01-a",
+        "skill": "GEOM002-01",
+        "unit": "GEOM002",
+        "cosine": 0.8453,
+        "truthRank": 2
+      },
+      "EP_ms": 192,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "GEOM002-01-a",
+        "skill": "GEOM002-01",
+        "unit": "GEOM002"
+      },
+      "T1_ms": 465,
+      "T1_tokens": 7365,
+      "TF": {
+        "sub": "GEOM002-01-a",
+        "skill": "GEOM002-01",
+        "unit": "GEOM002",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 0.0
+      },
+      "TR": {
+        "sub": "GEOM002-01-a",
+        "abstain": false,
+        "skill": "GEOM002-01",
+        "unit": "GEOM002",
+        "confidence": 1.0,
+        "truthInTopK": true
+      },
+      "T2_ms": 352,
+      "TH": {
+        "sub": "GEOM002-01-a",
+        "skill": "GEOM002-01",
+        "unit": "GEOM002",
+        "skillConfidence": 1.0
+      }
+    },
+    {
+      "subskillId": "GEOM002-01-b",
+      "truthSkill": "GEOM002-01",
+      "truthUnit": "GEOM002",
+      "grade": "2",
+      "subject": "Mathematics",
+      "objective": "Explain the rules that make a shape a closed polygon with straight lines",
+      "candidates": 61,
+      "skills": 21,
+      "E1_ms": 169,
+      "E1": {
+        "sub": "GEOM002-01-a",
+        "skill": "GEOM002-01",
+        "unit": "GEOM002",
+        "cosine": 0.7115,
+        "truthRank": 2
+      },
+      "EP_ms": 164,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "GEOM002-01-a",
+        "skill": "GEOM002-01",
+        "unit": "GEOM002"
+      },
+      "T1_ms": 479,
+      "T1_tokens": 7291,
+      "TF": {
+        "sub": "GEOM002-01-a",
+        "skill": "GEOM002-01",
+        "unit": "GEOM002",
+        "p": 0.99,
+        "confidence": 0.99,
+        "truthP": 0.01
+      },
+      "TR": {
+        "sub": "GEOM002-01-a",
+        "abstain": false,
+        "skill": "GEOM002-01",
+        "unit": "GEOM002",
+        "confidence": 0.67,
+        "truthInTopK": true
+      },
+      "T2_ms": 401,
+      "TH": {
+        "sub": "GEOM002-01-a",
+        "skill": "GEOM002-01",
+        "unit": "GEOM002",
+        "skillConfidence": 1.0
+      }
+    },
+    {
+      "subskillId": "GEOM002-01-b",
+      "truthSkill": "GEOM002-01",
+      "truthUnit": "GEOM002",
+      "grade": "2",
+      "subject": "Mathematics",
+      "objective": "Apply shape prompts to draw accurate closed polygons on a digital canvas using snapping tools",
+      "candidates": 61,
+      "skills": 21,
+      "E1_ms": 193,
+      "E1": {
+        "sub": "GEOM002-01-b",
+        "skill": "GEOM002-01",
+        "unit": "GEOM002",
+        "cosine": 0.8268,
+        "truthRank": 1
+      },
+      "EP_ms": 192,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "GEOM002-01-b",
+        "skill": "GEOM002-01",
+        "unit": "GEOM002"
+      },
+      "T1_ms": 458,
+      "T1_tokens": 7414,
+      "TF": {
+        "sub": "GEOM002-01-b",
+        "skill": "GEOM002-01",
+        "unit": "GEOM002",
+        "p": 1.0,
+        "confidence": 1.0,
+        "truthP": 1.0
+      },
+      "TR": {
+        "sub": "GEOM002-01-b",
+        "abstain": false,
+        "skill": "GEOM002-01",
+        "unit": "GEOM002",
+        "confidence": 0.98,
+        "truthInTopK": true
+      },
+      "T2_ms": 321,
+      "TH": {
+        "sub": "GEOM002-01-b",
+        "skill": "GEOM002-01",
+        "unit": "GEOM002",
+        "skillConfidence": 0.99
+      }
+    },
+    {
+      "subskillId": "LA002-05-b",
+      "truthSkill": "LA002-05",
+      "truthUnit": "LA002",
+      "grade": "1",
+      "subject": "Language Arts",
+      "objective": "Sequence three pictures to show the order of a personal story",
+      "candidates": 65,
+      "skills": 43,
+      "E1_ms": 158,
+      "E1": {
+        "sub": "LA003-05-a",
+        "skill": "LA003-05",
+        "unit": "LA003",
+        "cosine": 0.8285,
+        "truthRank": 4
+      },
+      "EP_ms": 181,
+      "EP": {
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "sub": null,
+        "skill": null,
+        "unit": null
+      },
+      "T1_ms": 501,
+      "T1_tokens": 6963,
+      "TF": {
+        "sub": "LA002-05-a",
+        "skill": "LA002-05",
+        "unit": "LA002",
+        "p": 0.53,
+        "confidence": 0.51,
+        "truthP": 0.0
+      },
+      "TR": {
+        "sub": "LA002-05-a",
+        "abstain": false,
+        "skill": "LA002-05",
+        "unit": "LA002",
+        "confidence": 0.86,
+        "truthInTopK": true
+      },
+      "T2_ms": 339,
+      "TH": {
+        "sub": "LA003-05-a",
+        "skill": "LA003-05",
+        "unit": "LA003",
+        "skillConfidence": 0.99
+      }
+    },
+    {
+      "subskillId": "LA002-05-b",
+      "truthSkill": "LA002-05",
+      "truthUnit": "LA002",
+      "grade": "1",
+      "subject": "Language Arts",
+      "objective": "Explain what is happening in each part of a story picture",
+      "candidates": 65,
+      "skills": 43,
+      "E1_ms": 164,
+      "E1": {
+        "sub": "LA003-05-a",
+        "skill": "LA003-05",
+        "unit": "LA003",
+        "cosine": 0.7408,
+        "truthRank": 3
+      },
+      "EP_ms": 163,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "LA003-05-a",
+        "skill": "LA003-05",
+        "unit": "LA003"
+      },
+      "T1_ms": 460,
+      "T1_tokens": 6944,
+      "TF": {
+        "sub": "LA007-03-a",
+        "skill": "LA007-03",
+        "unit": "LA007",
+        "p": 0.55,
+        "confidence": 0.54,
+        "truthP": 0.01
+      },
+      "TR": {
+        "sub": "LA007-03-a",
+        "abstain": false,
+        "skill": "LA007-03",
+        "unit": "LA007",
+        "confidence": 0.77,
+        "truthInTopK": true
+      },
+      "T2_ms": 355,
+      "TH": {
+        "sub": "LA003-05-a",
+        "skill": "LA003-05",
+        "unit": "LA003",
+        "skillConfidence": 0.63
+      }
+    },
+    {
+      "subskillId": "LA002-05-b",
+      "truthSkill": "LA002-05",
+      "truthUnit": "LA002",
+      "grade": "1",
+      "subject": "Language Arts",
+      "objective": "Create one sentence per picture to tell a complete narrative",
+      "candidates": 65,
+      "skills": 43,
+      "E1_ms": 162,
+      "E1": {
+        "sub": "LA002-05-b",
+        "skill": "LA002-05",
+        "unit": "LA002",
+        "cosine": 0.7894,
+        "truthRank": 1
+      },
+      "EP_ms": 192,
+      "EP": {
+        "verdict": "match",
+        "reason": null,
+        "sub": "LA002-05-b",
+        "skill": "LA002-05",
+        "unit": "LA002"
+      },
+      "T1_ms": 498,
+      "T1_tokens": 6941,
+      "TF": {
+        "sub": "LA002-05-b",
+        "skill": "LA002-05",
+        "unit": "LA002",
+        "p": 0.99,
+        "confidence": 0.99,
+        "truthP": 0.99
+      },
+      "TR": {
+        "sub": "LA002-05-b",
+        "abstain": false,
+        "skill": "LA002-05",
+        "unit": "LA002",
+        "confidence": 0.99,
+        "truthInTopK": true
+      },
+      "T2_ms": 382,
+      "TH": {
+        "sub": "LA006-06-a",
+        "skill": "LA006-06",
+        "unit": "LA006",
+        "skillConfidence": 0.43
+      }
+    }
+  ]
+}

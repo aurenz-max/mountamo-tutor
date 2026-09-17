@@ -2,6 +2,7 @@ import 'server-only';
 import { Type } from '@google/genai';
 import { ai } from '../../service/geminiClient';
 import { eligibleLearningResponses, type LearningObservationDraft } from '../learningResponseEvidence';
+import { OBSERVATION_CHECKS, verify } from '../../service/typesafe/verify';
 
 /** Frontend review slice: no store write or mastery/diagnosis transition. */
 export async function distillLearningObservation(evidence: unknown): Promise<LearningObservationDraft> {
@@ -44,8 +45,20 @@ ${JSON.stringify(rows)}` }] }],
       new Set(affirmed.map(r => r.phase)).size === 1 &&
       (raw.kind !== 'support' || affirmed.every(r => r.priorCorrections > 0));
     if (!valid) return { abstain: true, reason: 'The proposed observation did not cite sufficient matching response evidence.' };
-    return { abstain: false, kind: raw.kind, summary: raw.summary.trim().slice(0, 600),
+    const draft: LearningObservationDraft = { abstain: false, kind: raw.kind, summary: raw.summary.trim().slice(0, 600),
       teachingImplication: raw.teachingImplication.trim().slice(0, 600), checkNext: raw.checkNext.trim().slice(0, 600), evidenceItemIds: ids };
+    // Optional TypeSafe verification (LUMINA_TYPESAFE_VERIFY): shadow attaches,
+    // gate turns an unsupported or answer-leaking draft into an abstain.
+    const verification = await verify(
+      { evidence: cited, observation: { kind: draft.kind, summary: draft.summary, teachingImplication: draft.teachingImplication, checkNext: draft.checkNext } },
+      OBSERVATION_CHECKS,
+      { name: 'distillLearningObservation' },
+    );
+    if (!verification.ran) return draft;
+    if (verification.mode === 'gate' && !verification.pass) {
+      return { abstain: true, reason: `Verifier rejected the observation (${verification.failed.join(', ')}); nothing recorded.`, verification };
+    }
+    return { ...draft, verification };
   } catch {
     return { abstain: true, reason: 'Observation distillation failed; no inference was made.' };
   }

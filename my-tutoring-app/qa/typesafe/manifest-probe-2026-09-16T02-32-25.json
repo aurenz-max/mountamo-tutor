@@ -1,0 +1,612 @@
+{
+  "topic": "Comparing fractions with unlike denominators",
+  "grade": "4",
+  "objectives": [
+    "Explain why fractions need a common denominator to be compared",
+    "Compare two fractions with unlike denominators using a visual model",
+    "Order three fractions with unlike denominators from least to greatest"
+  ],
+  "model": "jev-1.13.0",
+  "catalogSize": 211,
+  "subject": {
+    "choice": "MATHEMATICS",
+    "confidence": 1,
+    "probabilities": {
+      "SCIENCE": 0,
+      "MATHEMATICS": 1,
+      "SOCIAL_STUDIES": 0,
+      "LANGUAGE_ARTS": 0
+    }
+  },
+  "informational": 0.06,
+  "overall": [
+    {
+      "id": "fraction-bar",
+      "p": 0.53,
+      "rank": 1
+    },
+    {
+      "id": "number-line",
+      "p": 0.21000000000000002,
+      "rank": 2
+    },
+    {
+      "id": "fraction-circles",
+      "p": 0.17,
+      "rank": 3
+    },
+    {
+      "id": "comparison-builder",
+      "p": 0.04,
+      "rank": 4
+    },
+    {
+      "id": "annotated-example",
+      "p": 0.01,
+      "rank": 5
+    },
+    {
+      "id": "tape-diagram",
+      "p": 0.01,
+      "rank": 6
+    },
+    {
+      "id": "area-model",
+      "p": 0.01,
+      "rank": 7
+    },
+    {
+      "id": "comparison-panel",
+      "p": 0.01,
+      "rank": 8
+    },
+    {
+      "id": "text-structure-analyzer",
+      "p": 0,
+      "rank": 9
+    },
+    {
+      "id": "skip-counting-runner",
+      "p": 0,
+      "rank": 10
+    },
+    {
+      "id": "ph-explorer",
+      "p": 0,
+      "rank": 11
+    },
+    {
+      "id": "construction-sequence-planner",
+      "p": 0,
+      "rank": 12
+    },
+    {
+      "id": "ten-frame",
+      "p": 0,
+      "rank": 13
+    },
+    {
+      "id": "transport-challenge",
+      "p": 0,
+      "rank": 14
+    },
+    {
+      "id": "push-pull-arena",
+      "p": 0,
+      "rank": 15
+    },
+    {
+      "id": "foundation-explorer",
+      "p": 0,
+      "rank": 16
+    },
+    {
+      "id": "orbit-mechanics-lab",
+      "p": 0,
+      "rank": 17
+    },
+    {
+      "id": "shape-strength-tester",
+      "p": 0,
+      "rank": 18
+    },
+    {
+      "id": "scale-spectrum",
+      "p": 0,
+      "rank": 19
+    },
+    {
+      "id": "paragraph-architect",
+      "p": 0,
+      "rank": 20
+    },
+    {
+      "id": "matter-explorer",
+      "p": 0,
+      "rank": 21
+    },
+    {
+      "id": "word-flip",
+      "p": 0,
+      "rank": 22
+    },
+    {
+      "id": "flight-forces-explorer",
+      "p": 0,
+      "rank": 23
+    },
+    {
+      "id": "gas-laws-simulator",
+      "p": 0,
+      "rank": 24
+    },
+    {
+      "id": "letter-workshop",
+      "p": 0,
+      "rank": 25
+    },
+    {
+      "id": "scale-comparator",
+      "p": 0,
+      "rank": 26
+    },
+    {
+      "id": "multiplication-explorer",
+      "p": 0,
+      "rank": 27
+    },
+    {
+      "id": "di-spoken-practice",
+      "p": 0,
+      "rank": 28
+    },
+    {
+      "id": "feature-exhibit",
+      "p": 0,
+      "rank": 29
+    },
+    {
+      "id": "era-explorer",
+      "p": 0,
+      "rank": 30
+    }
+  ],
+  "roles": [
+    {
+      "role": "introduce",
+      "id": "foundation-explorer",
+      "p": 0.44,
+      "confidence": 0.43,
+      "runnersUp": [
+        {
+          "id": "deep-dive",
+          "p": 0.2,
+          "rank": 2
+        },
+        {
+          "id": "concept-card-grid",
+          "p": 0.18000000000000002,
+          "rank": 3
+        },
+        {
+          "id": "annotated-example",
+          "p": 0.08,
+          "rank": 4
+        }
+      ]
+    },
+    {
+      "role": "visualize",
+      "id": "fraction-bar",
+      "p": 0.59,
+      "confidence": 0.58,
+      "runnersUp": [
+        {
+          "id": "fraction-circles",
+          "p": 0.27,
+          "rank": 2
+        },
+        {
+          "id": "number-line",
+          "p": 0.09999999999999999,
+          "rank": 3
+        },
+        {
+          "id": "tape-diagram",
+          "p": 0.02,
+          "rank": 4
+        }
+      ]
+    },
+    {
+      "role": "apply",
+      "id": "practice-problem",
+      "p": 0.39,
+      "confidence": 0.38,
+      "runnersUp": [
+        {
+          "id": "fraction-bar",
+          "p": 0.23,
+          "rank": 2
+        },
+        {
+          "id": "number-line",
+          "p": 0.14,
+          "rank": 3
+        },
+        {
+          "id": "fraction-circles",
+          "p": 0.09999999999999999,
+          "rank": 4
+        }
+      ]
+    },
+    {
+      "role": "assess",
+      "id": "knowledge-check",
+      "p": 0.77,
+      "confidence": 0.76,
+      "runnersUp": [
+        {
+          "id": "fraction-bar",
+          "p": 0.09999999999999999,
+          "rank": 2
+        },
+        {
+          "id": "comparison-builder",
+          "p": 0.06999999999999999,
+          "rank": 3
+        },
+        {
+          "id": "practice-problem",
+          "p": 0.03,
+          "rank": 4
+        }
+      ]
+    }
+  ],
+  "shortlist": [
+    {
+      "id": "number-line",
+      "skimRank": 2,
+      "skimP": 0.21000000000000002,
+      "fit": 2.28,
+      "fitConfidence": 0.65,
+      "fitLevels": {
+        "0": 0,
+        "1": 0.04,
+        "2": 0.64,
+        "3": 0.32
+      },
+      "role": "visualize",
+      "roleConfidence": 0.89,
+      "mode": "order",
+      "modeConfidence": 0.99,
+      "modeProbabilities": {
+        "jump": 0,
+        "between": 0,
+        "order": 0.99,
+        "identify": 0,
+        "plot": 0.01
+      },
+      "modeCandidates": 5
+    },
+    {
+      "id": "fraction-circles",
+      "skimRank": 3,
+      "skimP": 0.17,
+      "fit": 2.08,
+      "fitConfidence": 0.77,
+      "fitLevels": {
+        "0": 0,
+        "1": 0.08,
+        "2": 0.77,
+        "3": 0.15
+      },
+      "role": "apply",
+      "roleConfidence": 0.41,
+      "mode": "compare",
+      "modeConfidence": 0.96,
+      "modeProbabilities": {
+        "equivalent": 0.03,
+        "touch_fraction": 0,
+        "identify": 0,
+        "build": 0,
+        "compare": 0.97
+      },
+      "modeCandidates": 5
+    },
+    {
+      "id": "fraction-bar",
+      "skimRank": 1,
+      "skimP": 0.53,
+      "fit": 2.04,
+      "fitConfidence": 0.7,
+      "fitLevels": {
+        "0": 0,
+        "1": 0.13,
+        "2": 0.7,
+        "3": 0.17
+      },
+      "role": "apply",
+      "roleConfidence": 0.75,
+      "mode": "compare",
+      "modeConfidence": 1,
+      "modeProbabilities": {
+        "add_subtract": 0,
+        "identify": 0,
+        "build": 0,
+        "compare": 1
+      },
+      "modeCandidates": 4
+    },
+    {
+      "id": "annotated-example",
+      "skimRank": 5,
+      "skimP": 0.01,
+      "fit": 1.76,
+      "fitConfidence": 0.67,
+      "fitLevels": {
+        "0": 0.03,
+        "1": 0.22,
+        "2": 0.7,
+        "3": 0.05
+      },
+      "role": "introduce",
+      "roleConfidence": 1,
+      "mode": null,
+      "modeConfidence": null,
+      "modeProbabilities": null,
+      "modeCandidates": 0
+    },
+    {
+      "id": "knowledge-check",
+      "skimRank": 43,
+      "skimP": 0,
+      "fit": 1.64,
+      "fitConfidence": 0.54,
+      "fitLevels": {
+        "0": 0.06,
+        "1": 0.29,
+        "2": 0.6,
+        "3": 0.05
+      },
+      "role": "assess",
+      "roleConfidence": 1,
+      "mode": "apply",
+      "modeConfidence": 0.75,
+      "modeProbabilities": {
+        "analyze": 0.18,
+        "recall": 0,
+        "apply": 0.8200000000000001,
+        "evaluate": 0
+      },
+      "modeCandidates": 4
+    },
+    {
+      "id": "foundation-explorer",
+      "skimRank": 16,
+      "skimP": 0,
+      "fit": 1.16,
+      "fitConfidence": 0.75,
+      "fitLevels": {
+        "0": 0.05,
+        "1": 0.75,
+        "2": 0.19,
+        "3": 0.01
+      },
+      "role": "introduce",
+      "roleConfidence": 1,
+      "mode": null,
+      "modeConfidence": null,
+      "modeProbabilities": null,
+      "modeCandidates": 0
+    },
+    {
+      "id": "comparison-panel",
+      "skimRank": 8,
+      "skimP": 0.01,
+      "fit": 1.08,
+      "fitConfidence": 0.62,
+      "fitLevels": {
+        "0": 0.15,
+        "1": 0.64,
+        "2": 0.2,
+        "3": 0.01
+      },
+      "role": "introduce",
+      "roleConfidence": 0.46,
+      "mode": null,
+      "modeConfidence": null,
+      "modeProbabilities": null,
+      "modeCandidates": 0
+    },
+    {
+      "id": "tape-diagram",
+      "skimRank": 6,
+      "skimP": 0.01,
+      "fit": 1.04,
+      "fitConfidence": 0.82,
+      "fitLevels": {
+        "0": 0.07,
+        "1": 0.84,
+        "2": 0.08,
+        "3": 0.01
+      },
+      "role": "apply",
+      "roleConfidence": 0.77,
+      "mode": "solve_comparison",
+      "modeConfidence": 0.94,
+      "modeProbabilities": {
+        "solve_part_whole": 0,
+        "multi_step": 0,
+        "represent": 0.04,
+        "solve_comparison": 0.96
+      },
+      "modeCandidates": 4
+    },
+    {
+      "id": "area-model",
+      "skimRank": 7,
+      "skimP": 0.01,
+      "fit": 0.62,
+      "fitConfidence": 0.6,
+      "fitLevels": {
+        "0": 0.39,
+        "1": 0.61,
+        "2": 0,
+        "3": 0
+      },
+      "role": "apply",
+      "roleConfidence": 0.43,
+      "mode": "build_model",
+      "modeConfidence": 0.53,
+      "modeProbabilities": {
+        "factor": 0.02,
+        "multiply": 0.33,
+        "find_area": 0.02,
+        "perimeter": 0.01,
+        "build_model": 0.62
+      },
+      "modeCandidates": 5
+    },
+    {
+      "id": "comparison-builder",
+      "skimRank": 4,
+      "skimP": 0.04,
+      "fit": 0.45,
+      "fitConfidence": 0.55,
+      "fitLevels": {
+        "0": 0.55,
+        "1": 0.45,
+        "2": 0,
+        "3": 0
+      },
+      "role": "apply",
+      "roleConfidence": 0.72,
+      "mode": "order",
+      "modeConfidence": 0.42,
+      "modeProbabilities": {
+        "compare_numbers": 0.4,
+        "one_more_less": 0,
+        "compare_groups": 0.03,
+        "order": 0.57
+      },
+      "modeCandidates": 4
+    },
+    {
+      "id": "practice-problem",
+      "skimRank": 209,
+      "skimP": 0,
+      "fit": 0.15,
+      "fitConfidence": 0.85,
+      "fitLevels": {
+        "0": 0.86,
+        "1": 0.14,
+        "2": 0,
+        "3": 0
+      },
+      "role": "apply",
+      "roleConfidence": 0.99,
+      "mode": "derive_medium",
+      "modeConfidence": 0.48,
+      "modeProbabilities": {
+        "derive_hard": 0.01,
+        "derive_easy": 0.34,
+        "derive_medium": 0.65
+      },
+      "modeCandidates": 3
+    }
+  ],
+  "skim": {
+    "ms": 1203,
+    "usage": {
+      "input_tokens": 61995,
+      "output_tokens": 10756
+    }
+  },
+  "verify": {
+    "ms": 487,
+    "usage": {
+      "input_tokens": 8261,
+      "output_tokens": 1168
+    }
+  },
+  "gemini": {
+    "ms": 6861,
+    "picks": [
+      {
+        "objectiveId": "obj1",
+        "componentId": "comparison-panel",
+        "targetEvalMode": null,
+        "typesafeRank": 8,
+        "typesafeRole": null,
+        "inRoleWinners": false
+      },
+      {
+        "objectiveId": "obj1",
+        "componentId": "foundation-explorer",
+        "targetEvalMode": null,
+        "typesafeRank": 16,
+        "typesafeRole": "introduce",
+        "inRoleWinners": true
+      },
+      {
+        "objectiveId": "obj1",
+        "componentId": "di-spoken-practice",
+        "targetEvalMode": "explain_concept",
+        "typesafeRank": 28,
+        "typesafeRole": null,
+        "inRoleWinners": false
+      },
+      {
+        "objectiveId": "obj2",
+        "componentId": "fraction-circles",
+        "targetEvalMode": "compare",
+        "typesafeRank": 3,
+        "typesafeRole": null,
+        "inRoleWinners": false
+      },
+      {
+        "objectiveId": "obj2",
+        "componentId": "fraction-bar",
+        "targetEvalMode": "compare",
+        "typesafeRank": 1,
+        "typesafeRole": "visualize",
+        "inRoleWinners": true
+      },
+      {
+        "objectiveId": "obj2",
+        "componentId": "annotated-example",
+        "targetEvalMode": null,
+        "typesafeRank": 5,
+        "typesafeRole": null,
+        "inRoleWinners": false
+      },
+      {
+        "objectiveId": "obj3",
+        "componentId": "number-line",
+        "targetEvalMode": "order",
+        "typesafeRank": 2,
+        "typesafeRole": null,
+        "inRoleWinners": false
+      },
+      {
+        "objectiveId": "obj3",
+        "componentId": "fraction-circles",
+        "targetEvalMode": "compare",
+        "typesafeRank": 3,
+        "typesafeRole": null,
+        "inRoleWinners": false
+      },
+      {
+        "objectiveId": "final",
+        "componentId": "knowledge-check",
+        "targetEvalMode": null,
+        "typesafeRank": null,
+        "typesafeRole": "assess",
+        "inRoleWinners": true
+      }
+    ]
+  }
+}

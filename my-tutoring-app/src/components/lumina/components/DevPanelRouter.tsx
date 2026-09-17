@@ -39,6 +39,7 @@ import { PlannerDashboard } from './PlannerDashboard';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { VisualPrimitivesGallery } from './VisualPrimitivesGallery';
 import { ScratchPad } from './scratch-pad';
+import TypeSafeSelectTester from './TypeSafeSelectTester';
 import { PulseAdaptiveSession } from '../pulse/PulseAdaptiveSession';
 
 interface DevPanelProps {
@@ -78,6 +79,7 @@ const PANELS: Record<string, ComponentType<DevPanelProps>> = {
   'planner-dashboard': PlannerDashboard,
   'analytics-dashboard': AnalyticsDashboard,
   'visual-tester': VisualPrimitivesGallery,
+  'typesafe-select-tester': TypeSafeSelectTester,
 };
 
 interface DevPanelRouterProps {

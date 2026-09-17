@@ -1,0 +1,1852 @@
+{
+  "probes": {
+    "A": {
+      "summary": {
+        "n": 48,
+        "generative": 30,
+        "abstain": 18,
+        "distiller": {
+          "accuracy": 0.9791666666666666,
+          "generativeRecall": 0.9666666666666667,
+          "abstainRecall": 1,
+          "msMean": 10992.208333333334
+        },
+        "typesafe": {
+          "accuracy": 0.9791666666666666,
+          "generativeRecall": 0.9666666666666667,
+          "abstainRecall": 1,
+          "msMean": 293.0625,
+          "tokensMean": 785.6875,
+          "pRuleGen": 0.8206666666666665,
+          "pRuleAbs": 0.14777777777777776
+        },
+        "agree": 1,
+        "agreePrecision": 0.9791666666666666,
+        "gateCurves": {
+          "distillerConfidence": {
+            "50%": 1,
+            "70%": 1,
+            "80%": 1,
+            "90%": 1,
+            "100%": 1
+          },
+          "typesafePRule": {
+            "50%": 1,
+            "70%": 1,
+            "80%": 1,
+            "90%": 1,
+            "100%": 1
+          },
+          "typesafeStrength": {
+            "50%": 1,
+            "70%": 1,
+            "80%": 1,
+            "90%": 1,
+            "100%": 1
+          }
+        },
+        "generativeVerdicts": 29,
+        "productionVerifier": {
+          "mode": "shadow",
+          "written": 29,
+          "wouldReject": 0,
+          "wrongReject": 0,
+          "msMean": 316.55172413793105
+        }
+      },
+      "rows": [
+        {
+          "id": "place-value-chart-bare-digit-4",
+          "family": "NBT003-02-a",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 4247,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "judge",
+            "text": "The student identifies the value of a digit by its face value rather than accounting for its place in the number.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.96,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.08,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 416,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 360,
+            "tokens": 681,
+            "pRule": 0.9,
+            "strength": 2.99,
+            "strengthConf": 0.99,
+            "pReliable": 0.85
+          }
+        },
+        {
+          "id": "place-value-chart-bare-digit-7",
+          "family": "NBT003-02-a",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 7487,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "judge",
+            "text": "The student interprets the value of a digit as asking for the name of the digit itself, disregarding its place value position.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.94,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.07,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 254,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 202,
+            "tokens": 681,
+            "pRule": 0.9,
+            "strength": 2.99,
+            "strengthConf": 0.99,
+            "pReliable": 0.85
+          }
+        },
+        {
+          "id": "place-value-chart-missing-transcript",
+          "family": "NBT003-02-a",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 4190,
+            "abstain": true,
+            "confidence": null,
+            "tier": "judge",
+            "text": "",
+            "reason": "There is no reliable audio transcription of the student's response and no prior history to identify a consistent error pattern.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 431,
+            "tokens": 651,
+            "pRule": 0.14,
+            "strength": 0.99,
+            "strengthConf": 0.95,
+            "pReliable": 0.13
+          }
+        },
+        {
+          "id": "maya-comparison",
+          "family": "MATH-G2-OA-COMP-02",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 5683,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student interprets the question asking how many fewer one person has as a request for the smaller given quantity itself rather than the difference between the two quantities.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.88,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.16,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 171,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 162,
+            "tokens": 691,
+            "pRule": 0.87,
+            "strength": 2.85,
+            "strengthConf": 0.85,
+            "pReliable": 0.55
+          }
+        },
+        {
+          "id": "fraction-bigger-denominator",
+          "family": "MATH-G3-NF-COMP-01",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 4045,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student treats the denominator as an ordinary whole number, concluding that a fraction is larger whenever its denominator is larger.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.93,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.05,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 190,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 194,
+            "tokens": 684,
+            "pRule": 0.92,
+            "strength": 2.99,
+            "strengthConf": 0.99,
+            "pReliable": 0.49
+          }
+        },
+        {
+          "id": "subtraction-smaller-from-larger",
+          "family": "MATH-G2-NBT-SUB-03",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 3530,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "When subtracting multi-digit numbers where the top digit in a column is smaller than the bottom digit, the student subtracts the smaller digit from the larger digit within that column instead of regrouping.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.84,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.23,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 175,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 258,
+            "tokens": 701,
+            "pRule": 0.74,
+            "strength": 2.8,
+            "strengthConf": 0.8,
+            "pReliable": 0.56
+          }
+        },
+        {
+          "id": "area-perimeter-confusion",
+          "family": "MATH-G4-MD-AREA-01",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 9821,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student confuses area with perimeter, calculating the sum of all four side lengths whenever asked to find the area of a rectangle.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.95,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.06,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 162,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 152,
+            "tokens": 654,
+            "pRule": 0.93,
+            "strength": 2.99,
+            "strengthConf": 0.99,
+            "pReliable": 0.53
+          }
+        },
+        {
+          "id": "reading-main-idea-judge",
+          "family": "ELA-G3-RI-MAIN-02",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 35280,
+            "abstain": false,
+            "confidence": "medium",
+            "tier": "judge",
+            "text": "The student identifies the first concrete factual detail mentioned in an opening sentence as the main idea of the passage.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.94,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.05,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 163,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 185,
+            "tokens": 685,
+            "pRule": 0.83,
+            "strength": 2.84,
+            "strengthConf": 0.84,
+            "pReliable": 0.59
+          }
+        },
+        {
+          "id": "spoken-blend-first-sound-only",
+          "family": "ELA-GK-PHON-BLEND-01",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 5960,
+            "abstain": false,
+            "confidence": "medium",
+            "tier": "judge",
+            "text": "The student interprets blending tasks as an instruction to isolate and pronounce only the initial sound heard.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.91,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.04,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 399,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 375,
+            "tokens": 667,
+            "pRule": 0.87,
+            "strength": 2.87,
+            "strengthConf": 0.87,
+            "pReliable": 0.56
+          }
+        },
+        {
+          "id": "picture-vocabulary-animal-overgeneralization",
+          "family": "ELA-GK-VOCAB-NAMING",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 8624,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "judge",
+            "text": "The student overextends the familiar category label 'dog' to identify any four-legged animal.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.95,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.06,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 468,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 408,
+            "tokens": 685,
+            "pRule": 0.94,
+            "strength": 3,
+            "strengthConf": 1,
+            "pReliable": 0.85
+          }
+        },
+        {
+          "id": "picture-vocabulary-repeats-prompt-object",
+          "family": "ELA-GK-VOCAB-ASSOCIATION",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 24747,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student interprets the prompt to name what goes with an item as an instruction to echo or label the named item itself.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.95,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.05,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 359,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 401,
+            "tokens": 676,
+            "pRule": 0.93,
+            "strength": 3,
+            "strengthConf": 1,
+            "pReliable": 0.63
+          }
+        },
+        {
+          "id": "picture-vocabulary-single-naming-slip",
+          "family": "ELA-GK-VOCAB-NAMING",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 22596,
+            "abstain": true,
+            "confidence": null,
+            "tier": "judge",
+            "text": "",
+            "reason": "The error was an isolated slip followed by an immediate self-correction with no persistent wrong rule observed.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 368,
+            "tokens": 637,
+            "pRule": 0.05,
+            "strength": 0.01,
+            "strengthConf": 0.99,
+            "pReliable": 0.71
+          }
+        },
+        {
+          "id": "phoneme-explorer-final-sound-omission",
+          "family": "ELA-GK-PHON-SEGMENT",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 7090,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student segments three-sound words by identifying only the initial and medial sounds, systematically dropping the final phoneme.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.9,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.06,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 371,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 160,
+            "tokens": 656,
+            "pRule": 0.85,
+            "strength": 2.89,
+            "strengthConf": 0.89,
+            "pReliable": 0.52
+          }
+        },
+        {
+          "id": "phoneme-explorer-blend-first-sound",
+          "family": "ELA-GK-PHON-BLEND",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 7453,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student listens only to the initial sound of the segmented sequence and selects any word that begins with that first phoneme, ignoring the remaining sounds.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.92,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.05,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 172,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 167,
+            "tokens": 640,
+            "pRule": 0.84,
+            "strength": 2.96,
+            "strengthConf": 0.96,
+            "pReliable": 0.54
+          }
+        },
+        {
+          "id": "phoneme-explorer-single-slip",
+          "family": "ELA-GK-PHON-ISOLATE",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 7131,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "A single isolated error followed by immediately correct matches indicates an accidental slip or guess rather than a systematic misconception.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 169,
+            "tokens": 599,
+            "pRule": 0.1,
+            "strength": 0.1,
+            "strengthConf": 0.9,
+            "pReliable": 0.22
+          }
+        },
+        {
+          "id": "cvc-speller-vowel-substitution",
+          "family": "ELA-GK-PHON-CVC-ENCODE",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 15887,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student perceives the short-i vowel sound as the short-e phoneme, consistently encoding it with the letter e.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.93,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.08,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 210,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 204,
+            "tokens": 676,
+            "pRule": 0.87,
+            "strength": 2.97,
+            "strengthConf": 0.97,
+            "pReliable": 0.57
+          }
+        },
+        {
+          "id": "cvc-speller-spoken-final-omission",
+          "family": "ELA-GK-PHON-CVC-ENCODE",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 9478,
+            "abstain": false,
+            "confidence": "medium",
+            "tier": "judge",
+            "text": "The student blends only the onset and vowel of a three-phoneme word, omitting the final consonant sound.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.91,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.07,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 502,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 190,
+            "tokens": 636,
+            "pRule": 0.63,
+            "strength": 2.51,
+            "strengthConf": 0.51,
+            "pReliable": 0.29
+          }
+        },
+        {
+          "id": "cvc-speller-single-vowel-slip",
+          "family": "ELA-GK-PHON-CVC-ENCODE",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 2399,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "The single error was immediately self-corrected without prior error patterns, suggesting an isolated slip rather than a systematic misconception.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 314,
+            "tokens": 610,
+            "pRule": 0.1,
+            "strength": 0.17,
+            "strengthConf": 0.83,
+            "pReliable": 0.26
+          }
+        },
+        {
+          "id": "letter-sound-voicing-confusion",
+          "family": "ELA-GK-PHON-LETTER-SOUND",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 12925,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student associates the letter T and the sound /t/ with the letter D and the sound /d/.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.92,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.22,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 370,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 373,
+            "tokens": 654,
+            "pRule": 0.81,
+            "strength": 2.98,
+            "strengthConf": 0.98,
+            "pReliable": 0.44
+          }
+        },
+        {
+          "id": "letter-sound-spoken-onset-omission",
+          "family": "ELA-GK-PHON-LETTER-SOUND",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 15254,
+            "abstain": false,
+            "confidence": "medium",
+            "tier": "judge",
+            "text": "The student believes the keyword prompt requires pronouncing only the rime of the anchor word, omitting the initial onset consonant.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.76,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.08,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 175,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 200,
+            "tokens": 622,
+            "pRule": 0.71,
+            "strength": 2.3,
+            "strengthConf": 0.3,
+            "pReliable": 0.49
+          }
+        },
+        {
+          "id": "letter-sound-single-mistap",
+          "family": "ELA-GK-PHON-LETTER-SOUND",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 13898,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "The single error was immediately corrected on retry with no prior pattern to distinguish a systematic misconception from an isolated slip.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 170,
+            "tokens": 600,
+            "pRule": 0.12,
+            "strength": 0.41,
+            "strengthConf": 0.59,
+            "pReliable": 0.47
+          }
+        },
+        {
+          "id": "rhyme-studio-onset-matching",
+          "family": "ELA-GK-PHON-RHYME",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 4485,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student believes that words rhyme when they share the same initial sound rather than the same ending sound.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.96,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.06,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 384,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 390,
+            "tokens": 668,
+            "pRule": 0.92,
+            "strength": 2.99,
+            "strengthConf": 0.99,
+            "pReliable": 0.55
+          }
+        },
+        {
+          "id": "rhyme-studio-spoken-rime-change",
+          "family": "ELA-GK-PHON-RHYME",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 31572,
+            "abstain": true,
+            "confidence": null,
+            "tier": "judge",
+            "text": "",
+            "reason": "There is only a single attempt with no prior history, making it impossible to distinguish an alliteration-rhyme confusion from a random phonological slip without inventing an unverified rule.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 150,
+            "tokens": 632,
+            "pRule": 0.19,
+            "strength": 0.67,
+            "strengthConf": 0.33,
+            "pReliable": 0.57
+          }
+        },
+        {
+          "id": "rhyme-studio-single-slip",
+          "family": "ELA-GK-PHON-RHYME",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 11021,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "The student corrected themselves immediately upon replay with no prior pattern of error, indicating a momentary slip rather than a systematic misconception.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 282,
+            "tokens": 595,
+            "pRule": 0.08,
+            "strength": 0.2,
+            "strengthConf": 0.8,
+            "pReliable": 0.47
+          }
+        },
+        {
+          "id": "sound-swap-position-confusion",
+          "family": "ELA-G1-PHON-MANIP",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 6261,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student always substitutes the initial sound of the word regardless of which sound position the prompt specifies.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.88,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.04,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 464,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 730,
+            "tokens": 646,
+            "pRule": 0.74,
+            "strength": 2.73,
+            "strengthConf": 0.73,
+            "pReliable": 0.54
+          }
+        },
+        {
+          "id": "sound-swap-single-slip",
+          "family": "ELA-G1-PHON-MANIP",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 14405,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "The initial tap on the second sound was immediately self-corrected, indicating a transient slip rather than a consistent wrong rule.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 374,
+            "tokens": 600,
+            "pRule": 0.15,
+            "strength": 0.67,
+            "strengthConf": 0.59,
+            "pReliable": 0.27
+          }
+        },
+        {
+          "id": "di-math-facts-successor-for-subtraction",
+          "family": "MATH-GK-OPS-SUB-01",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 37823,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "judge",
+            "text": "The student reads the minus sign as an addition sign, adding the second number to the first instead of taking it away.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.86,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.18,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 346,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 378,
+            "tokens": 931,
+            "pRule": 0.78,
+            "strength": 2.89,
+            "strengthConf": 0.89,
+            "pReliable": 0.9
+          }
+        },
+        {
+          "id": "di-math-facts-echoes-last-number",
+          "family": "MATH-GK-OPS-ADD-01",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 5755,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "judge",
+            "text": "The student interprets an addition problem as asking for the last number heard or seen, reciting only the second addend rather than combining the quantities.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.52,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.07,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 381,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 349,
+            "tokens": 828,
+            "pRule": 0.5,
+            "strength": 2.64,
+            "strengthConf": 0.64,
+            "pReliable": 0.89
+          }
+        },
+        {
+          "id": "di-letter-sounds-name-for-sound",
+          "family": "ELA-GK-PHON-LSC-01",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 4302,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "judge",
+            "text": "The student retrieves the letter's alphabetical name rather than articulating its corresponding phoneme when shown an isolated grapheme.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.97,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.11,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 437,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 200,
+            "tokens": 800,
+            "pRule": 0.94,
+            "strength": 3,
+            "strengthConf": 1,
+            "pReliable": 0.89
+          }
+        },
+        {
+          "id": "di-math-facts-single-fact-slip",
+          "family": "MATH-GK-OPS-ADD-01",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 6820,
+            "abstain": true,
+            "confidence": null,
+            "tier": "judge",
+            "text": "",
+            "reason": "A single isolated error without prior attempts is insufficient to distinguish a systematic misconception from a counting slip or guess.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 294,
+            "tokens": 663,
+            "pRule": 0.1,
+            "strength": 0.13,
+            "strengthConf": 0.87,
+            "pReliable": 0.83
+          }
+        },
+        {
+          "id": "di-sentence-reading-mixed-misreads",
+          "family": "ELA-G1-READ-ACC-01",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 8906,
+            "abstain": true,
+            "confidence": null,
+            "tier": "judge",
+            "text": "",
+            "reason": "The student previously read the article correctly in an earlier sentence, indicating this substitution was an isolated slip rather than a systematic misconception.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 349,
+            "tokens": 793,
+            "pRule": 0.21,
+            "strength": 0.82,
+            "strengthConf": 0.18,
+            "pReliable": 0.82
+          }
+        },
+        {
+          "id": "single-arithmetic-slip",
+          "family": "MATH-G2-OA-COMP-02",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 2093,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "A single off-by-one error without prior attempts cannot be distinguished from a routine counting slip.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 149,
+            "tokens": 612,
+            "pRule": 0.11,
+            "strength": 0.11,
+            "strengthConf": 0.89,
+            "pReliable": 0.28
+          }
+        },
+        {
+          "id": "inconsistent-errors",
+          "family": "MATH-G3-OA-MUL-04",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 3448,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "The observed errors do not follow a consistent mathematical rule and likely reflect isolated recall or counting slips.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 255,
+            "tokens": 671,
+            "pRule": 0.41,
+            "strength": 1.8,
+            "strengthConf": 0,
+            "pReliable": 0.51
+          }
+        },
+        {
+          "id": "guess-then-quit",
+          "family": "SCI-G4-PS-MATTER-02",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 10681,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "A single two-second response provides insufficient evidence to distinguish an impulsive guess from a genuine conceptual misunderstanding.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 244,
+            "tokens": 599,
+            "pRule": 0.12,
+            "strength": 0.39,
+            "strengthConf": 0.61,
+            "pReliable": 0.37
+          }
+        },
+        {
+          "id": "tier-c-no-evidence",
+          "family": "MATH-G1-OA-ADD-01",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 9,
+            "abstain": true,
+            "confidence": null,
+            "tier": "none",
+            "text": "",
+            "reason": "No diagnosable evidence (Tier C): needs judge feedback or expected+observed.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 188,
+            "tokens": 581,
+            "pRule": 0.05,
+            "strength": 0.93,
+            "strengthConf": 0.93,
+            "pReliable": 0.07
+          }
+        },
+        {
+          "id": "counting-board-take-away-states-start",
+          "family": "COUNT001-02-E",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 7033,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student interprets the question about how many are left as asking for the initial quantity, so they state the starting total rather than the remaining amount after removal.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.96,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.06,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 152,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 264,
+            "tokens": 1009,
+            "pRule": 0.89,
+            "strength": 2.99,
+            "strengthConf": 0.99,
+            "pReliable": 0.5
+          }
+        },
+        {
+          "id": "counting-board-take-away-states-change",
+          "family": "COUNT001-02-E",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 17242,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student interprets the prompt asking how many are left as asking to state the quantity that was removed.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.96,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.04,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 373,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 366,
+            "tokens": 1006,
+            "pRule": 0.9,
+            "strength": 2.98,
+            "strengthConf": 0.98,
+            "pReliable": 0.52
+          }
+        },
+        {
+          "id": "counting-board-count-on-says-start-back",
+          "family": "COUNT001-02-G",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 17649,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student interprets a prompt to find the total as asking to restate the initial group's quantity rather than counting on the additional objects.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.96,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.1,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 431,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 223,
+            "tokens": 1068,
+            "pRule": 0.93,
+            "strength": 3,
+            "strengthConf": 1,
+            "pReliable": 0.57
+          }
+        },
+        {
+          "id": "counting-board-recount-moved-conservation",
+          "family": "COUNT001-02-C",
+          "label": "generative",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 11574,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student treats the prompt to state the quantity after rearrangement as an instruction to continue counting by saying the next number in sequence.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.92,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.06,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 406,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 366,
+            "tokens": 1028,
+            "pRule": 0.89,
+            "strength": 2.98,
+            "strengthConf": 0.98,
+            "pReliable": 0.5
+          }
+        },
+        {
+          "id": "counting-board-add-more-inconsistent",
+          "family": "COUNT001-02-F",
+          "label": "abstain",
+          "source": "scenarios.ts",
+          "distiller": {
+            "ms": 8675,
+            "abstain": true,
+            "confidence": null,
+            "tier": "judge",
+            "text": "",
+            "reason": "The student's responses do not follow a consistent wrong rule across items, and one item lacks a reliable transcript.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 246,
+            "tokens": 1055,
+            "pRule": 0.2,
+            "strength": 1.47,
+            "strengthConf": 0.5,
+            "pReliable": 0.15
+          }
+        },
+        {
+          "id": "fraction-bar-role-swap",
+          "family": "fraction-bar",
+          "label": "generative",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 6144,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student identifies the bottom number of a fraction as the numerator and the top number as the denominator, subsequently shading the number of parts matching their chosen numerator.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.87,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.05,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 200,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 211,
+            "tokens": 1812,
+            "pRule": 0.93,
+            "strength": 2.99,
+            "strengthConf": 0.99,
+            "pReliable": 0.74
+          }
+        },
+        {
+          "id": "fraction-bar-single-build-slip",
+          "family": "fraction-bar",
+          "label": "abstain",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 4387,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "A single instance of shading two parts instead of three provides insufficient evidence to distinguish a systematic wrong rule from an accidental slip or misclick.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 222,
+            "tokens": 778,
+            "pRule": 0.13,
+            "strength": 0.83,
+            "strengthConf": 0.57,
+            "pReliable": 0.57
+          }
+        },
+        {
+          "id": "fraction-circles-bigger-denominator",
+          "family": "fraction-circles",
+          "label": "generative",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 14580,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student applies whole-number comparison rules to the denominator, believing that having more total slices makes the fraction larger.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.92,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.05,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 439,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 431,
+            "tokens": 1271,
+            "pRule": 0.91,
+            "strength": 3,
+            "strengthConf": 1,
+            "pReliable": 0.57
+          }
+        },
+        {
+          "id": "fraction-circles-mixed-slip",
+          "family": "fraction-circles",
+          "label": "abstain",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 5284,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "The single error contradicts earlier correct performance on visually similar fraction comparisons with identical denominators, suggesting an isolated slip rather than a consistent rule.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 195,
+            "tokens": 1084,
+            "pRule": 0.3,
+            "strength": 1.16,
+            "strengthConf": 0.12,
+            "pReliable": 0.56
+          }
+        },
+        {
+          "id": "bar-model-icon-count-for-total",
+          "family": "bar-model",
+          "label": "generative",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 20657,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student treats each icon as representing a single item, reading the total directly as the number of visible symbols without applying the key.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.87,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.17,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 419,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 623,
+            "tokens": 1206,
+            "pRule": 0.84,
+            "strength": 2.94,
+            "strengthConf": 0.94,
+            "pReliable": 0.69
+          }
+        },
+        {
+          "id": "bar-model-single-slip",
+          "family": "bar-model",
+          "label": "abstain",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 18003,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "The student answered two out of three scaled graph items correctly on the first attempt, suggesting this single error of counting icons directly was an isolated lapse rather than a consistent rule.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 390,
+            "tokens": 806,
+            "pRule": 0.15,
+            "strength": 0.36,
+            "strengthConf": 0.64,
+            "pReliable": 0.58
+          }
+        },
+        {
+          "id": "number-line-start-tick-as-hop",
+          "family": "number-line",
+          "label": "generative",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 9260,
+            "abstain": false,
+            "confidence": "high",
+            "tier": "structured",
+            "text": "The student includes the starting tick mark as the first count of the hop sequence rather than counting the intervals moved, consistently landing one space short of the destination.",
+            "reason": "",
+            "verification": {
+              "mode": "shadow",
+              "ran": true,
+              "pass": true,
+              "checks": [
+                {
+                  "id": "supported",
+                  "p": 0.89,
+                  "expect": "true",
+                  "threshold": 0.5,
+                  "pass": true
+                },
+                {
+                  "id": "leaks",
+                  "p": 0.1,
+                  "expect": "false",
+                  "threshold": 0.5,
+                  "pass": true
+                }
+              ],
+              "ms": 191,
+              "failed": []
+            },
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 248,
+            "tokens": 1158,
+            "pRule": 0.72,
+            "strength": 2.82,
+            "strengthConf": 0.82,
+            "pReliable": 0.52
+          }
+        },
+        {
+          "id": "number-line-scattered-misses",
+          "family": "number-line",
+          "label": "abstain",
+          "source": "probe-d-all.json",
+          "distiller": {
+            "ms": 11832,
+            "abstain": true,
+            "confidence": null,
+            "tier": "structured",
+            "text": "",
+            "reason": "The error occurs on a single subtraction trial and could simply be an off-by-one counting slip rather than a systematic wrong rule.",
+            "verification": null,
+            "rejectedText": null
+          },
+          "typesafe": {
+            "ms": 507,
+            "tokens": 1027,
+            "pRule": 0.14,
+            "strength": 0.5,
+            "strengthConf": 0.5,
+            "pReliable": 0.65
+          }
+        }
+      ]
+    }
+  },
+  "startedAt": "2026-09-16T13:46:26.848Z"
+}

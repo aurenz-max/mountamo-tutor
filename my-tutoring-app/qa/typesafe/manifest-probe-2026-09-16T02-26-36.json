@@ -1,0 +1,307 @@
+{
+  "topic": "Comparing fractions with unlike denominators",
+  "grade": "4",
+  "objectives": null,
+  "model": "jev-1.13.0",
+  "k": 8,
+  "skim": {
+    "ms": 637,
+    "usage": {
+      "input_tokens": 12714,
+      "output_tokens": 2213
+    },
+    "subject": {
+      "type": "choice",
+      "choice": "MATHEMATICS",
+      "confidence": 1,
+      "probabilities": {
+        "MATHEMATICS": 1,
+        "SOCIAL_STUDIES": 0,
+        "LANGUAGE_ARTS": 0,
+        "SCIENCE": 0
+      }
+    },
+    "informational": 0.05,
+    "ranked": [
+      {
+        "rank": 1,
+        "id": "fraction-bar",
+        "p": 0.49
+      },
+      {
+        "rank": 2,
+        "id": "number-line",
+        "p": 0.23
+      },
+      {
+        "rank": 3,
+        "id": "fraction-circles",
+        "p": 0.11
+      },
+      {
+        "rank": 4,
+        "id": "comparison-builder",
+        "p": 0.04
+      },
+      {
+        "rank": 5,
+        "id": "comparison-panel",
+        "p": 0.03
+      },
+      {
+        "rank": 6,
+        "id": "annotated-example",
+        "p": 0.03
+      },
+      {
+        "rank": 7,
+        "id": "tape-diagram",
+        "p": 0.02
+      },
+      {
+        "rank": 8,
+        "id": "ratio-table",
+        "p": 0.01
+      },
+      {
+        "rank": 9,
+        "id": "inheritance-lab",
+        "p": 0.01
+      },
+      {
+        "rank": 10,
+        "id": "practice-problem",
+        "p": 0.01
+      },
+      {
+        "rank": 11,
+        "id": "area-model",
+        "p": 0.01
+      },
+      {
+        "rank": 12,
+        "id": "custom-visual",
+        "p": 0.01
+      },
+      {
+        "rank": 13,
+        "id": "tower-stacker",
+        "p": 0
+      },
+      {
+        "rank": 14,
+        "id": "timeline-explorer",
+        "p": 0
+      },
+      {
+        "rank": 15,
+        "id": "scale-comparator",
+        "p": 0
+      },
+      {
+        "rank": 16,
+        "id": "coordinate-graph",
+        "p": 0
+      },
+      {
+        "rank": 17,
+        "id": "molecule-viewer",
+        "p": 0
+      },
+      {
+        "rank": 18,
+        "id": "planetary-explorer",
+        "p": 0
+      },
+      {
+        "rank": 19,
+        "id": "balance-scale",
+        "p": 0
+      },
+      {
+        "rank": 20,
+        "id": "angle-workshop",
+        "p": 0
+      },
+      {
+        "rank": 21,
+        "id": "bridge-builder",
+        "p": 0
+      },
+      {
+        "rank": 22,
+        "id": "array-grid",
+        "p": 0
+      },
+      {
+        "rank": 23,
+        "id": "di-shapes",
+        "p": 0
+      },
+      {
+        "rank": 24,
+        "id": "pulley-system-builder",
+        "p": 0
+      },
+      {
+        "rank": 25,
+        "id": "ph-explorer",
+        "p": 0
+      }
+    ]
+  },
+  "verify": {
+    "ms": 485,
+    "usage": {
+      "input_tokens": 5819,
+      "output_tokens": 863
+    },
+    "shortlist": [
+      {
+        "id": "number-line",
+        "skimRank": 2,
+        "skimP": 0.23,
+        "fit": 2.17,
+        "fitConfidence": 0.69,
+        "fitTop": {
+          "0": 0,
+          "1": 0.07,
+          "2": 0.69,
+          "3": 0.24
+        },
+        "role": "visualize",
+        "roleConfidence": 0.94,
+        "mode": "order",
+        "modeConfidence": 0.98,
+        "modeCandidates": 5
+      },
+      {
+        "id": "fraction-bar",
+        "skimRank": 1,
+        "skimP": 0.49,
+        "fit": 2.12,
+        "fitConfidence": 0.73,
+        "fitTop": {
+          "0": 0,
+          "1": 0.07,
+          "2": 0.74,
+          "3": 0.19
+        },
+        "role": "apply",
+        "roleConfidence": 0.88,
+        "mode": "compare",
+        "modeConfidence": 1,
+        "modeCandidates": 4
+      },
+      {
+        "id": "fraction-circles",
+        "skimRank": 3,
+        "skimP": 0.11,
+        "fit": 1.98,
+        "fitConfidence": 0.75,
+        "fitTop": {
+          "0": 0,
+          "1": 0.13,
+          "2": 0.75,
+          "3": 0.12
+        },
+        "role": "apply",
+        "roleConfidence": 0.58,
+        "mode": "compare",
+        "modeConfidence": 0.88,
+        "modeCandidates": 5
+      },
+      {
+        "id": "annotated-example",
+        "skimRank": 6,
+        "skimP": 0.03,
+        "fit": 1.73,
+        "fitConfidence": 0.67,
+        "fitTop": {
+          "0": 0.03,
+          "1": 0.25,
+          "2": 0.69,
+          "3": 0.03
+        },
+        "role": "introduce",
+        "roleConfidence": 1,
+        "mode": null,
+        "modeConfidence": null,
+        "modeCandidates": 0
+      },
+      {
+        "id": "tape-diagram",
+        "skimRank": 7,
+        "skimP": 0.02,
+        "fit": 1.04,
+        "fitConfidence": 0.77,
+        "fitTop": {
+          "0": 0.1,
+          "1": 0.78,
+          "2": 0.1,
+          "3": 0.02
+        },
+        "role": "apply",
+        "roleConfidence": 0.84,
+        "mode": "solve_comparison",
+        "modeConfidence": 0.85,
+        "modeCandidates": 4
+      },
+      {
+        "id": "comparison-panel",
+        "skimRank": 5,
+        "skimP": 0.03,
+        "fit": 1.01,
+        "fitConfidence": 0.64,
+        "fitTop": {
+          "0": 0.18,
+          "1": 0.64,
+          "2": 0.17,
+          "3": 0.01
+        },
+        "role": "introduce",
+        "roleConfidence": 0.45,
+        "mode": null,
+        "modeConfidence": null,
+        "modeCandidates": 0
+      },
+      {
+        "id": "ratio-table",
+        "skimRank": 8,
+        "skimP": 0.01,
+        "fit": 0.44,
+        "fitConfidence": 0.56,
+        "fitTop": {
+          "0": 0.57,
+          "1": 0.42,
+          "2": 0.01,
+          "3": 0
+        },
+        "role": "apply",
+        "roleConfidence": 0.92,
+        "mode": "find_multiplier",
+        "modeConfidence": 0.07,
+        "modeCandidates": 4
+      },
+      {
+        "id": "comparison-builder",
+        "skimRank": 4,
+        "skimP": 0.04,
+        "fit": 0.42,
+        "fitConfidence": 0.58,
+        "fitTop": {
+          "0": 0.58,
+          "1": 0.42,
+          "2": 0,
+          "3": 0
+        },
+        "role": "apply",
+        "roleConfidence": 0.6,
+        "mode": "compare_numbers",
+        "modeConfidence": 0.94,
+        "modeCandidates": 4
+      }
+    ]
+  },
+  "gemini": null
+}

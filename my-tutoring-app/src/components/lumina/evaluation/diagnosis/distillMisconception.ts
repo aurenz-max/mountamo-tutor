@@ -1,6 +1,7 @@
 import 'server-only';
 import { Type, Schema } from '@google/genai';
 import { ai } from '../../service/geminiClient';
+import { HYPOTHESIS_CHECKS, verify } from '../../service/typesafe/verify';
 import {
   type DiagnosisEvidence,
   type MisconceptionResult,
@@ -256,7 +257,7 @@ export async function distillMisconception(
     };
   }
 
-  return {
+  const diagnosis: MisconceptionResult = {
     abstain: false,
     misconceptionText: raw.misconceptionText,
     teachingImplication: raw.teachingImplication,
@@ -264,4 +265,37 @@ export async function distillMisconception(
     confidence: raw.confidence,
     evidenceTier: tier,
   };
+
+  // Optional TypeSafe verification of what the LLM wrote (LUMINA_TYPESAFE_VERIFY).
+  // shadow: attach the verdict, deliver the hypothesis as written.
+  // gate:   a hypothesis that is unsupported by the evidence or leaks the answer
+  //         becomes an honest abstain — abstain is the loop's success condition,
+  //         so the gate can only make the distiller MORE conservative.
+  // off / not run: identical to before the flag existed.
+  const verification = await verify(
+    {
+      evidence: {
+        challenge: evidence.challengeSummary,
+        correctOutcome: evidence.expected,
+        studentDid: evidence.observed,
+        judgeFeedback: evidence.judgeFeedback ?? null,
+        earlierAttempts: evidence.priorAttempts ?? [],
+        phaseObservations: (evidence.phases ?? []).slice(0, 12),
+      },
+      hypothesis: raw.misconceptionText,
+    },
+    HYPOTHESIS_CHECKS,
+    { name: `distillMisconception${opts.evalMode ? `/${opts.evalMode}` : ''}` },
+  );
+  if (!verification.ran) return diagnosis;
+  if (verification.mode === 'gate' && !verification.pass) {
+    return {
+      abstain: true,
+      reason: `Verifier rejected the hypothesis (${verification.failed.join(', ')}) — abstained rather than deliver it.`,
+      evidenceTier: tier,
+      verification,
+      rejectedText: raw.misconceptionText,
+    };
+  }
+  return { ...diagnosis, verification };
 }

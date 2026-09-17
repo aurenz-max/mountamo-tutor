@@ -1,0 +1,307 @@
+{
+  "topic": "Causes of the American Revolution",
+  "grade": "5",
+  "objectives": null,
+  "model": "jev-1.13.0",
+  "k": 8,
+  "skim": {
+    "ms": 601,
+    "usage": {
+      "input_tokens": 12711,
+      "output_tokens": 2215
+    },
+    "subject": {
+      "type": "choice",
+      "choice": "SOCIAL_STUDIES",
+      "confidence": 1,
+      "probabilities": {
+        "SCIENCE": 0,
+        "MATHEMATICS": 0,
+        "SOCIAL_STUDIES": 1,
+        "LANGUAGE_ARTS": 0
+      }
+    },
+    "informational": 0.82,
+    "ranked": [
+      {
+        "rank": 1,
+        "id": "cause-effect-chain",
+        "p": 0.92
+      },
+      {
+        "rank": 2,
+        "id": "timeline-explorer",
+        "p": 0.060000000000000005
+      },
+      {
+        "rank": 3,
+        "id": "era-explorer",
+        "p": 0.01
+      },
+      {
+        "rank": 4,
+        "id": "timeline-builder",
+        "p": 0.01
+      },
+      {
+        "rank": 5,
+        "id": "ph-explorer",
+        "p": 0
+      },
+      {
+        "rank": 6,
+        "id": "skip-counting-runner",
+        "p": 0
+      },
+      {
+        "rank": 7,
+        "id": "text-structure-analyzer",
+        "p": 0
+      },
+      {
+        "rank": 8,
+        "id": "fraction-circles",
+        "p": 0
+      },
+      {
+        "rank": 9,
+        "id": "construction-sequence-planner",
+        "p": 0
+      },
+      {
+        "rank": 10,
+        "id": "ten-frame",
+        "p": 0
+      },
+      {
+        "rank": 11,
+        "id": "transport-challenge",
+        "p": 0
+      },
+      {
+        "rank": 12,
+        "id": "push-pull-arena",
+        "p": 0
+      },
+      {
+        "rank": 13,
+        "id": "foundation-explorer",
+        "p": 0
+      },
+      {
+        "rank": 14,
+        "id": "orbit-mechanics-lab",
+        "p": 0
+      },
+      {
+        "rank": 15,
+        "id": "shape-strength-tester",
+        "p": 0
+      },
+      {
+        "rank": 16,
+        "id": "scale-spectrum",
+        "p": 0
+      },
+      {
+        "rank": 17,
+        "id": "matter-explorer",
+        "p": 0
+      },
+      {
+        "rank": 18,
+        "id": "paragraph-architect",
+        "p": 0
+      },
+      {
+        "rank": 19,
+        "id": "flight-forces-explorer",
+        "p": 0
+      },
+      {
+        "rank": 20,
+        "id": "word-flip",
+        "p": 0
+      },
+      {
+        "rank": 21,
+        "id": "gas-laws-simulator",
+        "p": 0
+      },
+      {
+        "rank": 22,
+        "id": "letter-workshop",
+        "p": 0
+      },
+      {
+        "rank": 23,
+        "id": "scale-comparator",
+        "p": 0
+      },
+      {
+        "rank": 24,
+        "id": "multiplication-explorer",
+        "p": 0
+      },
+      {
+        "rank": 25,
+        "id": "feature-exhibit",
+        "p": 0
+      }
+    ]
+  },
+  "verify": {
+    "ms": 469,
+    "usage": {
+      "input_tokens": 8099,
+      "output_tokens": 994
+    },
+    "shortlist": [
+      {
+        "id": "cause-effect-chain",
+        "skimRank": 1,
+        "skimP": 0.92,
+        "fit": 2.95,
+        "fitConfidence": 0.95,
+        "fitTop": {
+          "0": 0,
+          "1": 0,
+          "2": 0.04,
+          "3": 0.96
+        },
+        "role": "apply",
+        "roleConfidence": 0.94,
+        "mode": "build_chain",
+        "modeConfidence": 0.46,
+        "modeCandidates": 3
+      },
+      {
+        "id": "timeline-explorer",
+        "skimRank": 2,
+        "skimP": 0.060000000000000005,
+        "fit": 1.58,
+        "fitConfidence": 0.5,
+        "fitTop": {
+          "0": 0,
+          "1": 0.46,
+          "2": 0.5,
+          "3": 0.04
+        },
+        "role": "introduce",
+        "roleConfidence": 0.82,
+        "mode": "connect",
+        "modeConfidence": 1,
+        "modeCandidates": 3
+      },
+      {
+        "id": "era-explorer",
+        "skimRank": 3,
+        "skimP": 0.01,
+        "fit": 1.17,
+        "fitConfidence": 0.81,
+        "fitTop": {
+          "0": 0.01,
+          "1": 0.81,
+          "2": 0.17,
+          "3": 0.01
+        },
+        "role": "apply",
+        "roleConfidence": 0.68,
+        "mode": "cause_of_change",
+        "modeConfidence": 1,
+        "modeCandidates": 4
+      },
+      {
+        "id": "text-structure-analyzer",
+        "skimRank": 7,
+        "skimP": 0,
+        "fit": 1.04,
+        "fitConfidence": 0.78,
+        "fitTop": {
+          "0": 0.09,
+          "1": 0.78,
+          "2": 0.12,
+          "3": 0.01
+        },
+        "role": "apply",
+        "roleConfidence": 0.99,
+        "mode": "cause_effect",
+        "modeConfidence": 1,
+        "modeCandidates": 4
+      },
+      {
+        "id": "timeline-builder",
+        "skimRank": 4,
+        "skimP": 0.01,
+        "fit": 1.03,
+        "fitConfidence": 0.96,
+        "fitTop": {
+          "0": 0.01,
+          "1": 0.96,
+          "2": 0.02,
+          "3": 0.01
+        },
+        "role": "visualize",
+        "roleConfidence": 0.93,
+        "mode": "place-historical",
+        "modeConfidence": 0.99,
+        "modeCandidates": 3
+      },
+      {
+        "id": "ph-explorer",
+        "skimRank": 5,
+        "skimP": 0,
+        "fit": 0,
+        "fitConfidence": 1,
+        "fitTop": {
+          "0": 1,
+          "1": 0,
+          "2": 0,
+          "3": 0
+        },
+        "role": "visualize",
+        "roleConfidence": 0.75,
+        "mode": "test",
+        "modeConfidence": 0.58,
+        "modeCandidates": 3
+      },
+      {
+        "id": "skip-counting-runner",
+        "skimRank": 6,
+        "skimP": 0,
+        "fit": 0,
+        "fitConfidence": 1,
+        "fitTop": {
+          "0": 1,
+          "1": 0,
+          "2": 0,
+          "3": 0
+        },
+        "role": "apply",
+        "roleConfidence": 0.62,
+        "mode": "connect_multiplication",
+        "modeConfidence": 0.71,
+        "modeCandidates": 5
+      },
+      {
+        "id": "fraction-circles",
+        "skimRank": 8,
+        "skimP": 0,
+        "fit": 0,
+        "fitConfidence": 1,
+        "fitTop": {
+          "0": 1,
+          "1": 0,
+          "2": 0,
+          "3": 0
+        },
+        "role": "apply",
+        "roleConfidence": 0.87,
+        "mode": "identify",
+        "modeConfidence": 0.27,
+        "modeCandidates": 5
+      }
+    ]
+  },
+  "gemini": null
+}

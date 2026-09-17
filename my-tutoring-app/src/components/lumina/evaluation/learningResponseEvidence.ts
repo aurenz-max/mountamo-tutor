@@ -29,11 +29,15 @@ export function eligibleLearningResponses(value: unknown): LearningResponseEvide
   return rows.slice(-40);
 }
 
-export type LearningObservationDraft = { abstain: true; reason: string } | {
+/** Optional TypeSafe verification of the draft (service/typesafe/verify.ts); see LUMINA_TYPESAFE_VERIFY. */
+export type LearningObservationVerification = import('../service/typesafe/verify').Verification;
+
+export type LearningObservationDraft = { abstain: true; reason: string; verification?: LearningObservationVerification } | {
   abstain: false;
   kind: 'strength' | 'support';
   summary: string;
   teachingImplication: string;
   checkNext: string;
   evidenceItemIds: string[];
+  verification?: LearningObservationVerification;
 };

@@ -1,0 +1,353 @@
+{
+  "topic": "Adding two-digit numbers with regrouping",
+  "grade": "2",
+  "objectives": null,
+  "model": "jev-1.13.0",
+  "k": 8,
+  "skim": {
+    "ms": 609,
+    "usage": {
+      "input_tokens": 12713,
+      "output_tokens": 2218
+    },
+    "subject": {
+      "type": "choice",
+      "choice": "MATHEMATICS",
+      "confidence": 1,
+      "probabilities": {
+        "MATHEMATICS": 1,
+        "SOCIAL_STUDIES": 0,
+        "SCIENCE": 0,
+        "LANGUAGE_ARTS": 0
+      }
+    },
+    "informational": 0.04,
+    "ranked": [
+      {
+        "rank": 1,
+        "id": "regrouping-workbench",
+        "p": 0.98
+      },
+      {
+        "rank": 2,
+        "id": "base-ten-blocks",
+        "p": 0.02
+      },
+      {
+        "rank": 3,
+        "id": "machine-profile",
+        "p": 0
+      },
+      {
+        "rank": 4,
+        "id": "wheel-axle-explorer",
+        "p": 0
+      },
+      {
+        "rank": 5,
+        "id": "calendar-explorer",
+        "p": 0
+      },
+      {
+        "rank": 6,
+        "id": "digital-skills-sim",
+        "p": 0
+      },
+      {
+        "rank": 7,
+        "id": "organism-card",
+        "p": 0
+      },
+      {
+        "rank": 8,
+        "id": "time-sequencer",
+        "p": 0
+      },
+      {
+        "rank": 9,
+        "id": "ramp-lab",
+        "p": 0
+      },
+      {
+        "rank": 10,
+        "id": "custom-visual",
+        "p": 0
+      },
+      {
+        "rank": 11,
+        "id": "transport-challenge",
+        "p": 0
+      },
+      {
+        "rank": 12,
+        "id": "story-talk",
+        "p": 0
+      },
+      {
+        "rank": 13,
+        "id": "number-bond",
+        "p": 0
+      },
+      {
+        "rank": 14,
+        "id": "sentence-analyzer",
+        "p": 0
+      },
+      {
+        "rank": 15,
+        "id": "math-fact-fluency",
+        "p": 0
+      },
+      {
+        "rank": 16,
+        "id": "propulsion-lab",
+        "p": 0
+      },
+      {
+        "rank": 17,
+        "id": "flight-forces-explorer",
+        "p": 0
+      },
+      {
+        "rank": 18,
+        "id": "syllable-clapper",
+        "p": 0
+      },
+      {
+        "rank": 19,
+        "id": "fraction-bar",
+        "p": 0
+      },
+      {
+        "rank": 20,
+        "id": "circle-explorer",
+        "p": 0
+      },
+      {
+        "rank": 21,
+        "id": "blueprint-canvas",
+        "p": 0
+      },
+      {
+        "rank": 22,
+        "id": "di-word-problem-setup",
+        "p": 0
+      },
+      {
+        "rank": 23,
+        "id": "take-home-activity",
+        "p": 0
+      },
+      {
+        "rank": 24,
+        "id": "net-folder",
+        "p": 0
+      },
+      {
+        "rank": 25,
+        "id": "solar-system-explorer",
+        "p": 0
+      }
+    ]
+  },
+  "verify": {
+    "ms": 494,
+    "usage": {
+      "input_tokens": 7190,
+      "output_tokens": 902
+    },
+    "shortlist": [
+      {
+        "id": "regrouping-workbench",
+        "skimRank": 1,
+        "skimP": 0.98,
+        "fit": 2.98,
+        "fitConfidence": 0.98,
+        "fitTop": {
+          "0": 0,
+          "1": 0,
+          "2": 0.02,
+          "3": 0.98
+        },
+        "role": "apply",
+        "roleConfidence": 0.6,
+        "mode": "add_regroup",
+        "modeConfidence": 1,
+        "modeCandidates": 4
+      },
+      {
+        "id": "base-ten-blocks",
+        "skimRank": 2,
+        "skimP": 0.02,
+        "fit": 2.7,
+        "fitConfidence": 0.7,
+        "fitTop": {
+          "0": 0,
+          "1": 0,
+          "2": 0.29,
+          "3": 0.71
+        },
+        "role": "visualize",
+        "roleConfidence": 0.98,
+        "mode": "operate",
+        "modeConfidence": 0.99,
+        "modeCandidates": 4
+      },
+      {
+        "id": "calendar-explorer",
+        "skimRank": 5,
+        "skimP": 0,
+        "fit": 0.06,
+        "fitConfidence": 0.94,
+        "fitTop": {
+          "0": 0.94,
+          "1": 0.06,
+          "2": 0,
+          "3": 0
+        },
+        "role": "apply",
+        "roleConfidence": 0.85,
+        "mode": "identify",
+        "modeConfidence": 0.37,
+        "modeCandidates": 8
+      },
+      {
+        "id": "time-sequencer",
+        "skimRank": 8,
+        "skimP": 0,
+        "fit": 0.04,
+        "fitConfidence": 0.96,
+        "fitTop": {
+          "0": 0.96,
+          "1": 0.04,
+          "2": 0,
+          "3": 0
+        },
+        "role": "apply",
+        "roleConfidence": 0.8,
+        "mode": "read-schedule",
+        "modeConfidence": 0.71,
+        "modeCandidates": 7
+      },
+      {
+        "id": "machine-profile",
+        "skimRank": 3,
+        "skimP": 0,
+        "fit": 0,
+        "fitConfidence": 1,
+        "fitTop": {
+          "0": 1,
+          "1": 0,
+          "2": 0,
+          "3": 0
+        },
+        "role": "introduce",
+        "roleConfidence": 1,
+        "mode": null,
+        "modeConfidence": null,
+        "modeCandidates": 0
+      },
+      {
+        "id": "wheel-axle-explorer",
+        "skimRank": 4,
+        "skimP": 0,
+        "fit": 0,
+        "fitConfidence": 1,
+        "fitTop": {
+          "0": 1,
+          "1": 0,
+          "2": 0,
+          "3": 0
+        },
+        "role": "visualize",
+        "roleConfidence": 0.9,
+        "mode": null,
+        "modeConfidence": null,
+        "modeCandidates": 0
+      },
+      {
+        "id": "digital-skills-sim",
+        "skimRank": 6,
+        "skimP": 0,
+        "fit": 0,
+        "fitConfidence": 1,
+        "fitTop": {
+          "0": 1,
+          "1": 0,
+          "2": 0,
+          "3": 0
+        },
+        "role": "introduce",
+        "roleConfidence": 0.82,
+        "mode": "type",
+        "modeConfidence": 0.25,
+        "modeCandidates": 3
+      },
+      {
+        "id": "organism-card",
+        "skimRank": 7,
+        "skimP": 0,
+        "fit": 0,
+        "fitConfidence": 1,
+        "fitTop": {
+          "0": 1,
+          "1": 0,
+          "2": 0,
+          "3": 0
+        },
+        "role": "introduce",
+        "roleConfidence": 1,
+        "mode": null,
+        "modeConfidence": null,
+        "modeCandidates": 0
+      }
+    ]
+  },
+  "gemini": {
+    "ms": 7523,
+    "picks": [
+      {
+        "objectiveId": "obj1",
+        "componentId": "concept-card-grid",
+        "targetEvalMode": null,
+        "typesafeRank": 104
+      },
+      {
+        "objectiveId": "obj1",
+        "componentId": "base-ten-blocks",
+        "targetEvalMode": "regroup",
+        "typesafeRank": 2
+      },
+      {
+        "objectiveId": "obj2",
+        "componentId": "annotated-example",
+        "targetEvalMode": null,
+        "typesafeRank": 98
+      },
+      {
+        "objectiveId": "obj2",
+        "componentId": "regrouping-workbench",
+        "targetEvalMode": "add_regroup",
+        "typesafeRank": 1
+      },
+      {
+        "objectiveId": "obj3",
+        "componentId": "tape-diagram",
+        "targetEvalMode": "represent|solve_part_whole",
+        "typesafeRank": 155
+      },
+      {
+        "objectiveId": "obj3",
+        "componentId": "regrouping-workbench",
+        "targetEvalMode": "add_regroup",
+        "typesafeRank": 1
+      },
+      {
+        "objectiveId": "final",
+        "componentId": "knowledge-check",
+        "targetEvalMode": null,
+        "typesafeRank": 204
+      }
+    ]
+  }
+}

@@ -98,11 +98,21 @@ export function isDiagnosableFailure(
 // S2 — Distiller output contract
 // =============================================================================
 
+/**
+ * Optional TypeSafe verification of the distiller's output (service/typesafe/
+ * verify.ts). Present only when LUMINA_TYPESAFE_VERIFY is shadow or gate;
+ * `ran: false` means the verifier was skipped and the result is as the LLM
+ * wrote it. Observability for the bench and the Diagnosis Lab; never
+ * student-visible.
+ */
+export type DiagnosisVerification = import('../../service/typesafe/verify').Verification;
+
 /** A usable, generative diagnosis: one sentence in student-model form. */
 export interface MisconceptionDiagnosis {
   teachingImplication?: string;
   checkNext?: string;
   abstain: false;
+  verification?: DiagnosisVerification;
   /**
    * One sentence, student-model form ("The student reads X as Y, so she …").
    * This text is a design spec for the NEXT problem — never feedback for the
@@ -122,6 +132,10 @@ export interface MisconceptionAbstain {
   reason: string;
   /** Echo of the evidence tier examined (or 'none' when Tier C gated it out). */
   evidenceTier: EvidenceTier;
+  /** Set when a verifier in gate mode turned a written hypothesis into this abstain. */
+  verification?: DiagnosisVerification;
+  /** The hypothesis the gate rejected — kept for the bench, never delivered. */
+  rejectedText?: string;
 }
 
 /** The distiller always resolves to exactly one of these — never throws. */

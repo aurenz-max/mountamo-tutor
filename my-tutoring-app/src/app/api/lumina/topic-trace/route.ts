@@ -5,6 +5,11 @@ import {
   buildStudentVoiceBlock,
 } from '@/components/lumina/service/manifest/gemini-manifest';
 import {
+  fetchSpecialistSuggestions,
+  type SuggestionArm,
+  type SuggestionRun,
+} from '@/components/lumina/service/manifest/typesafe/specialistSuggestions';
+import {
   generateComponentContent,
   generateIntroBriefing,
 } from '@/components/lumina/service/geminiService';
@@ -157,6 +162,10 @@ function projectObjectives(manifest: ExhibitManifest) {
   }));
 }
 
+// `strict` | `loose`; the first A/B's names `typesafe-strict` | `typesafe` still map.
+const parseSuggestions = (v: unknown): SuggestionArm | undefined =>
+  v === 'strict' || v === 'typesafe-strict' ? 'strict' : v === 'loose' || v === 'typesafe' ? 'loose' : undefined;
+
 interface TraceParams {
   topic: string;
   gradeLevel: string;
@@ -169,6 +178,14 @@ interface TraceParams {
   emitPackage: boolean;
   /** Fixed objectives — when provided, the brief is skipped entirely */
   fixedObjectives: Array<{ id: string; text: string; verb: string; icon: string; grade?: string }> | null;
+  /**
+   * Feed the curator per-objective specialist candidates from the TypeSafe
+   * ranker (one suggestion block in the manifest prompt; see
+   * ManifestPromptOptions.specialistSuggestions). Experiment arm only —
+   * scripts/typesafe-suggest-ab.mjs measures it against a control run on the
+   * same fixed objectives. Undefined = production prompt.
+   */
+  suggestions?: SuggestionArm;
   /** Frozen brief for a controlled full-package rerun with fixed objectives. */
   fixedBrief?: IntroBriefingData | null;
   studentContext: StudentGenerationContext | null;
@@ -207,6 +224,14 @@ async function runTrace(params: TraceParams) {
     }
   }
 
+  // ── Step 1b (experiment arm): TypeSafe specialist candidates per objective ──
+  // Same code path as the production env flag (specialistSuggestions.ts: timeout,
+  // breaker, never throws) but with the arm chosen per request, so the A/B is
+  // independent of LUMINA_TYPESAFE_SUGGESTIONS. Control passes [] explicitly.
+  const suggestions: SuggestionRun | null = params.suggestions
+    ? await fetchSpecialistSuggestions(topic, gradeLevel, objectives, params.suggestions)
+    : null;
+
   // ── Step 2: manifest, seeded with the objectives (± student context) ──
   const manifest: ExhibitManifest = await generateExhibitManifestStreaming(
     topic,
@@ -214,7 +239,7 @@ async function runTrace(params: TraceParams) {
     objectives,
     studentContext,
     undefined,
-    { affordanceTags },
+    { affordanceTags, specialistSuggestions: suggestions?.perObjective ?? [] },
   );
 
   // What the curator actually saw — '' when no usable context was provided.
@@ -275,6 +300,9 @@ async function runTrace(params: TraceParams) {
     themeColor: manifest.themeColor,
     affordanceTags: affordanceTags ?? AFFORDANCE_TAGS_DEFAULT,
     selection,
+    // What the curator was handed in the SPECIALIST SUGGESTIONS block (null on
+    // the production prompt) — lets the A/B score "was a suggestion taken".
+    suggestions,
     personalization,
     // Where the voice greeting lands — needed to assess persona framing.
     curatorBrief: manifest.curatorBrief
@@ -447,6 +475,7 @@ export async function GET(request: NextRequest) {
       manifestOnly: searchParams.get('manifestOnly') === 'true',
       emitPackage: searchParams.get('package') === 'true',
       affordanceTags: parseAffordances(searchParams.get('affordances')),
+      suggestions: parseSuggestions(searchParams.get('suggestions')),
       fixedObjectives: null,
       studentContext: null,
     });
@@ -497,6 +526,7 @@ export async function POST(request: NextRequest) {
       emitPackage: body.package === true,
       fixedBrief: body.curatorBrief as IntroBriefingData | undefined,
       affordanceTags: parseAffordances(body.affordances),
+      suggestions: parseSuggestions(body.suggestions),
       fixedObjectives: Array.isArray(body.objectives)
         ? (body.objectives as TraceParams['fixedObjectives'])
         : null,

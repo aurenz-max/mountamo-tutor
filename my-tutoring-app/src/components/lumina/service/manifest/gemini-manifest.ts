@@ -16,6 +16,10 @@ import { AFFORDANCE_LEGEND, AFFORDANCE_TAGS_DEFAULT, hasAffordanceTags, renderAf
 // inline curator pin is now a fallback). See resolveLessonEvalModes.ts.
 import { resolveLessonEvalModes } from './resolveLessonEvalModes';
 
+// Optional TypeSafe specialist suggestions (env flag LUMINA_TYPESAFE_SUGGESTIONS,
+// default off). Failsafe lives in that module: timeout, breaker, never throws.
+import { fetchSpecialistSuggestions, suggestionArmFromEnv } from './typesafe/specialistSuggestions';
+
 // Type-only import — keeps the client-side auth stack out of this
 // server-rendered module (the fetch lives in studentContext/fetchGenerationContext)
 import type { StudentGenerationContext } from '../studentContext/types';
@@ -304,7 +308,50 @@ export interface ManifestPromptOptions {
   /** Render each tagged catalog line's affordance tag + the legend.
    *  Default `AFFORDANCE_TAGS_DEFAULT` (catalog/affordances.ts). */
   affordanceTags?: boolean;
+  /**
+   * Per-objective specialist candidates from a fast typed ranker (TypeSafe,
+   * service/manifest/typesafe/). Rendered as ONE suggestion block under the
+   * objectives — candidates the curator may take or ignore, never a rule; the
+   * phase ladder and scaffold choices stay the curator's. Off by default and
+   * NOT on the production path: `/api/lumina/topic-trace ?suggestions=typesafe`
+   * and scripts/typesafe-suggest-ab.mjs measure it. Pattern:
+   * docs.typesafe.ai/cookbooks/skill_suggestion.md (agent keeps its judgment;
+   * one extra line names what to look at first).
+   */
+  specialistSuggestions?: SpecialistSuggestion[];
 }
+
+export interface SpecialistSuggestion {
+  /** Matches `objectives[i].id` — the block is numbered like the objectives list. */
+  objectiveId: string;
+  objectiveText: string;
+  /** Top fits, highest first. `fit` is the ranker's 0–3 score. */
+  candidates: Array<{ id: string; fit: number }>;
+}
+
+/**
+ * The suggestion block. Empty string when nothing has candidates, so the prompt
+ * is byte-identical to the control arm.
+ */
+export const buildSpecialistSuggestionsBlock = (
+  objectives: Array<{ id: string }> | undefined,
+  suggestions: SpecialistSuggestion[] | undefined,
+): string => {
+  if (!objectives?.length || !suggestions?.length) return '';
+  const byId = new Map(suggestions.map((s) => [s.objectiveId, s] as const));
+  const lines = objectives
+    .map((o, i) => {
+      const s = byId.get(o.id);
+      if (!s?.candidates.length) return null;
+      return `${i + 1}. ${s.candidates.map((c) => `${c.id} (${c.fit.toFixed(1)})`).join(', ')}`;
+    })
+    .filter((l): l is string => l !== null);
+  if (!lines.length) return '';
+  return `
+
+SPECIALIST SUGGESTIONS (a fast typed ranker read the whole catalog against each objective and scored fit 0-3; these are its top fits, numbered like the objectives above). They are CANDIDATES, not instructions: take one only when it does exactly what that objective asks, ignore any that fits the topic but not the objective, and still choose introduce and assess scaffolds by the phase ladder as usual.
+${lines.join('\n')}`;
+};
 
 export const generateExhibitManifestStreaming = async (
   topic: string,
@@ -361,11 +408,25 @@ export const generateExhibitManifestStreaming = async (
       ? `\n\nLEARNING OBJECTIVES (Use these to guide component selection${objectives.some(o => o.grade) ? '; each objective\'s Grade governs its age-appropriateness and primitive choice' : ''}):
 ${objectives.map((obj, i) => `${i + 1}. ${obj.text} [${obj.verb}]${obj.grade ? ` (Grade ${obj.grade})` : ''}`).join('\n')}`
       : '';
+    // Explicit promptOptions win (topic-trace passes [] for its control arm so the
+    // A/B is env-independent); otherwise the env flag decides, and 'off' costs
+    // nothing — no call, no block, prompt byte-identical to before the flag.
+    let specialistSuggestions = promptOptions?.specialistSuggestions;
+    if (specialistSuggestions === undefined) {
+      const arm = suggestionArmFromEnv();
+      if (arm) {
+        callbacks?.onProgress?.('🔎 Ranking specialists per objective…');
+        const run = await fetchSpecialistSuggestions(topic, gradeLevel, objectives, arm);
+        if (run.error) console.warn(`[manifest] specialist suggestions skipped: ${run.error}`);
+        specialistSuggestions = run.perObjective;
+      }
+    }
+    const suggestionsBlock = buildSpecialistSuggestionsBlock(objectives, specialistSuggestions);
 
     const prompt = `You are the Lead Curator designing an educational exhibit using an OBJECTIVE-CENTRIC approach.
 
 ASSIGNMENT: Create a manifest (blueprint) for: "${topic}"
-TARGET AUDIENCE: ${gradeLevelContext}${objectivesContext}${studentContextBlock}${studentVoiceBlock}
+TARGET AUDIENCE: ${gradeLevelContext}${objectivesContext}${suggestionsBlock}${studentContextBlock}${studentVoiceBlock}
 
 AVAILABLE COMPONENT TOOLS:
 ${catalogContext}${affordanceLegend}

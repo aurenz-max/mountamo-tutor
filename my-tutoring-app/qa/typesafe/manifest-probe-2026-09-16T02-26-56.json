@@ -1,0 +1,307 @@
+{
+  "topic": "Identifying beginning sounds in words",
+  "grade": "K",
+  "objectives": null,
+  "model": "jev-1.13.0",
+  "k": 8,
+  "skim": {
+    "ms": 603,
+    "usage": {
+      "input_tokens": 12713,
+      "output_tokens": 2218
+    },
+    "subject": {
+      "type": "choice",
+      "choice": "LANGUAGE_ARTS",
+      "confidence": 1,
+      "probabilities": {
+        "MATHEMATICS": 0,
+        "LANGUAGE_ARTS": 1,
+        "SCIENCE": 0,
+        "SOCIAL_STUDIES": 0
+      }
+    },
+    "informational": 0.06,
+    "ranked": [
+      {
+        "rank": 1,
+        "id": "phoneme-explorer",
+        "p": 0.98
+      },
+      {
+        "rank": 2,
+        "id": "letter-sound-link",
+        "p": 0.01
+      },
+      {
+        "rank": 3,
+        "id": "di-letter-sounds",
+        "p": 0.01
+      },
+      {
+        "rank": 4,
+        "id": "slope-triangle",
+        "p": 0
+      },
+      {
+        "rank": 5,
+        "id": "vehicle-comparison-lab",
+        "p": 0
+      },
+      {
+        "rank": 6,
+        "id": "habitat-diorama",
+        "p": 0
+      },
+      {
+        "rank": 7,
+        "id": "lever-lab",
+        "p": 0
+      },
+      {
+        "rank": 8,
+        "id": "sound-wave-explorer",
+        "p": 0
+      },
+      {
+        "rank": 9,
+        "id": "cause-effect-chain",
+        "p": 0
+      },
+      {
+        "rank": 10,
+        "id": "comparison-builder",
+        "p": 0
+      },
+      {
+        "rank": 11,
+        "id": "context-clues-detective",
+        "p": 0
+      },
+      {
+        "rank": 12,
+        "id": "text-structure-analyzer",
+        "p": 0
+      },
+      {
+        "rank": 13,
+        "id": "image-comparison",
+        "p": 0
+      },
+      {
+        "rank": 14,
+        "id": "passage-studio",
+        "p": 0
+      },
+      {
+        "rank": 15,
+        "id": "spelling-pattern-explorer",
+        "p": 0
+      },
+      {
+        "rank": 16,
+        "id": "microscope-viewer",
+        "p": 0
+      },
+      {
+        "rank": 17,
+        "id": "telescope-simulator",
+        "p": 0
+      },
+      {
+        "rank": 18,
+        "id": "di-spoken-practice",
+        "p": 0
+      },
+      {
+        "rank": 19,
+        "id": "di-word-reading",
+        "p": 0
+      },
+      {
+        "rank": 20,
+        "id": "molecule-constructor",
+        "p": 0
+      },
+      {
+        "rank": 21,
+        "id": "media-player",
+        "p": 0
+      },
+      {
+        "rank": 22,
+        "id": "excavator-arm-simulator",
+        "p": 0
+      },
+      {
+        "rank": 23,
+        "id": "matter-explorer",
+        "p": 0
+      },
+      {
+        "rank": 24,
+        "id": "body-system-explorer",
+        "p": 0
+      },
+      {
+        "rank": 25,
+        "id": "compare-objects",
+        "p": 0
+      }
+    ]
+  },
+  "verify": {
+    "ms": 470,
+    "usage": {
+      "input_tokens": 8063,
+      "output_tokens": 949
+    },
+    "shortlist": [
+      {
+        "id": "phoneme-explorer",
+        "skimRank": 1,
+        "skimP": 0.98,
+        "fit": 2.93,
+        "fitConfidence": 0.93,
+        "fitTop": {
+          "0": 0,
+          "1": 0,
+          "2": 0.07,
+          "3": 0.93
+        },
+        "role": "apply",
+        "roleConfidence": 0.96,
+        "mode": "isolate",
+        "modeConfidence": 1,
+        "modeCandidates": 6
+      },
+      {
+        "id": "di-letter-sounds",
+        "skimRank": 3,
+        "skimP": 0.01,
+        "fit": 1.81,
+        "fitConfidence": 0.57,
+        "fitTop": {
+          "0": 0,
+          "1": 0.31,
+          "2": 0.57,
+          "3": 0.12
+        },
+        "role": "apply",
+        "roleConfidence": 0.86,
+        "mode": "first_sound_in_word",
+        "modeConfidence": 0.99,
+        "modeCandidates": 3
+      },
+      {
+        "id": "letter-sound-link",
+        "skimRank": 2,
+        "skimP": 0.01,
+        "fit": 1.73,
+        "fitConfidence": 0.53,
+        "fitTop": {
+          "0": 0,
+          "1": 0.36,
+          "2": 0.54,
+          "3": 0.1
+        },
+        "role": "apply",
+        "roleConfidence": 0.98,
+        "mode": "keyword_match",
+        "modeConfidence": 0.77,
+        "modeCandidates": 3
+      },
+      {
+        "id": "sound-wave-explorer",
+        "skimRank": 8,
+        "skimP": 0,
+        "fit": 0.13,
+        "fitConfidence": 0.87,
+        "fitTop": {
+          "0": 0.87,
+          "1": 0.13,
+          "2": 0,
+          "3": 0
+        },
+        "role": "visualize",
+        "roleConfidence": 0.86,
+        "mode": "observe",
+        "modeConfidence": 0.49,
+        "modeCandidates": 4
+      },
+      {
+        "id": "slope-triangle",
+        "skimRank": 4,
+        "skimP": 0,
+        "fit": 0,
+        "fitConfidence": 1,
+        "fitTop": {
+          "0": 1,
+          "1": 0,
+          "2": 0,
+          "3": 0
+        },
+        "role": "apply",
+        "roleConfidence": 0.79,
+        "mode": "identify_slope",
+        "modeConfidence": 0.43,
+        "modeCandidates": 3
+      },
+      {
+        "id": "vehicle-comparison-lab",
+        "skimRank": 5,
+        "skimP": 0,
+        "fit": 0,
+        "fitConfidence": 1,
+        "fitTop": {
+          "0": 1,
+          "1": 0,
+          "2": 0,
+          "3": 0
+        },
+        "role": "visualize",
+        "roleConfidence": 0.83,
+        "mode": "metric_leader",
+        "modeConfidence": 0.35,
+        "modeCandidates": 3
+      },
+      {
+        "id": "habitat-diorama",
+        "skimRank": 6,
+        "skimP": 0,
+        "fit": 0,
+        "fitConfidence": 1,
+        "fitTop": {
+          "0": 1,
+          "1": 0,
+          "2": 0,
+          "3": 0
+        },
+        "role": "visualize",
+        "roleConfidence": 0.71,
+        "mode": "observe",
+        "modeConfidence": 0.75,
+        "modeCandidates": 5
+      },
+      {
+        "id": "lever-lab",
+        "skimRank": 7,
+        "skimP": 0,
+        "fit": 0,
+        "fitConfidence": 1,
+        "fitTop": {
+          "0": 1,
+          "1": 0,
+          "2": 0,
+          "3": 0
+        },
+        "role": "visualize",
+        "roleConfidence": 0.94,
+        "mode": null,
+        "modeConfidence": null,
+        "modeCandidates": 0
+      }
+    ]
+  },
+  "gemini": null
+}
