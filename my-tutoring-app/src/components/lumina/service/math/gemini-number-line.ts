@@ -721,15 +721,20 @@ function buildRangeSchema(): Schema {
         type: Type.BOOLEAN,
         description: 'True only for one-hidden-number work in a consecutive by-ones sequence',
       },
+      jumpOperation: {
+        type: Type.STRING, enum: ['add', 'subtract', 'both'],
+        description: 'Operation for jumps: subtract for subtraction-only intent, add for addition-only intent, both for mixed or unspecified. Specific intent takes precedence over the broad topic.',
+      },
     },
     required: [
       "hasExplicitRange", "min", "max", "hasFocusWindow", "focusMin", "focusMax",
-      "requiresExactMissingNumber",
+      "requiresExactMissingNumber", "jumpOperation",
     ],
   };
 }
 
 interface ResolvedNumberLineScope {
+  jumpOperation?: 'add' | 'subtract' | 'both';
   range: { min: number; max: number };
   focusRange?: { min: number; max: number };
   hasExplicitRange: boolean;
@@ -737,6 +742,7 @@ interface ResolvedNumberLineScope {
 }
 
 const RANGE_SCOPE_INSTRUCTIONS = `
+- Resolve jumpOperation from the specific intent first, then topic: subtraction/backward hops = subtract; addition/forward hops = add; explicitly mixed or unspecified = both. Never add a second operation for variety when one is requested.
 - Also report whether topic/intent explicitly names or clearly implies the bound; generic number practice is not explicit.
 - Keep the full min/max domain separate from a smaller requested work interval. For example, "values around 90 through 110" means hasFocusWindow=true, focusMin=90, focusMax=110 while the full domain may remain 0..120.
 - requiresExactMissingNumber is true only when the student must identify ONE hidden value in a consecutive by-ones sequence. Generic "find a number between" is false.
@@ -783,6 +789,7 @@ Return the integer range the student actually works with in THIS lesson.
       : undefined;
     return {
       range: { min, max },
+      jumpOperation: ['add', 'subtract', 'both'].includes(parsed?.jumpOperation) ? parsed.jumpOperation : 'both',
       focusRange,
       hasExplicitRange: parsed?.hasExplicitRange === true,
       requiresExactMissingNumber: parsed?.requiresExactMissingNumber === true,
@@ -824,6 +831,7 @@ interface ResolvedRange {
 }
 
 interface NumberLineSubConfig {
+  jumpOperation?: 'add' | 'subtract' | 'both';
   targetEvalMode?: string;
   numberRange?: { min: number; max: number };
   focusRange?: { min: number; max: number };
@@ -860,6 +868,7 @@ function selectShowJumpTuples(
   range: { min: number; max: number },
   gradeBand: 'K-2' | '3-5',
   count: number,
+  operation: 'add' | 'subtract' | 'both' = 'both',
 ): ShowJumpTuple[] {
   const jumpChoices = gradeBand === 'K-2' ? [1, 2, 3, 4, 5] : [2, 3, 5, 7, 10];
   const tuples: ShowJumpTuple[] = [];
@@ -870,6 +879,7 @@ function selectShowJumpTuples(
   for (let start = Math.ceil(range.min); start <= Math.floor(range.max); start++) {
     for (const change of jumpChoices) {
       for (const opType of ['add', 'subtract'] as const) {
+        if (operation !== 'both' && opType !== operation) continue;
         const target = opType === 'add' ? start + change : start - change;
         if (target < range.min || target > range.max) continue;
         candidates.push({ startValue: start, opType, change, targetValue: target });
@@ -1136,7 +1146,7 @@ async function generateShowJumpChallenges(
     ? buildTierPromptSection('show_jump', tier, 'scaffolding + jump-step depth')
     : '';
 
-  const baselineTuples = selectShowJumpTuples(range, gradeBand, resolveCount('show_jump'));
+  const baselineTuples = selectShowJumpTuples(range, gradeBand, resolveCount('show_jump'), config?.jumpOperation);
   if (baselineTuples.length === 0) return emptySubResult('jump');
 
   // STRUCTURAL lever: at the hard tier each challenge is TWO chained jumps — the
@@ -1158,6 +1168,7 @@ async function generateShowJumpChallenges(
     const opts: { opType: 'add' | 'subtract'; change: number; landing: number }[] = [];
     for (const change of jumpChoices) {
       for (const opType of ['add', 'subtract'] as const) {
+        if (config?.jumpOperation && config.jumpOperation !== 'both' && opType !== config.jumpOperation) continue;
         const landing = opType === 'add' ? from + change : from - change;
         if (landing < range.min || landing > range.max) continue;
         opts.push({ opType, change, landing });
@@ -1580,6 +1591,7 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
     && (config.numberRange != null || resolvedScope?.hasExplicitRange === true);
 
   const subConfig = {
+    jumpOperation: resolvedScope?.jumpOperation,
     targetEvalMode: config?.targetEvalMode,
     numberRange: resolvedRange,
     focusRange: resolvedScope?.focusRange,
