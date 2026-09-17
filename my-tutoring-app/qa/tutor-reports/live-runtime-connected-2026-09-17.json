@@ -1,0 +1,3233 @@
+{
+  "method": "real Gemini Live/backend/TypeScript runtime; simulated browser paint; no microphone",
+  "runs": [
+    {
+      "checks": {
+        "scaffold": true,
+        "fade": true,
+        "support": true,
+        "return": true,
+        "same_item_after_return": true,
+        "assistance_retained": true,
+        "visible_receipts": true,
+        "completed": true,
+        "no_protocol_leak": true
+      },
+      "events": [
+        {
+          "t": 0.81,
+          "type": "session_ready",
+          "config": {
+            "type": "session_ready",
+            "message": "Lumina AI is ready to help you learn!"
+          }
+        },
+        {
+          "t": 0.81,
+          "type": "learner",
+          "text": "[RUNTIME_START] Begin with the visible task. Ask its question briefly without its answer."
+        },
+        {
+          "t": 4.47,
+          "type": "tutor",
+          "phase": 0,
+          "text": "What is 8 minus 3?"
+        },
+        {
+          "t": 4.47,
+          "type": "learner",
+          "text": "I don't know where to start. Please show the direction hint on my task."
+        },
+        {
+          "t": 5.72,
+          "type": "runtime_command",
+          "command": {
+            "itemId": "reference-item-1",
+            "instanceId": "reference-instance",
+            "expectedRevision": 1,
+            "sessionEpoch": "511dedc8-b4ec-4d08-9035-fd266b66968b",
+            "commandId": "call_846157",
+            "action": {
+              "type": "scaffold",
+              "strategyId": "direction",
+              "direction": 1
+            }
+          }
+        },
+        {
+          "t": 5.72,
+          "type": "runtime_result",
+          "commandId": "call_846157",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "511dedc8-b4ec-4d08-9035-fd266b66968b",
+            "revision": 2,
+            "visibleRevision": 2,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-1",
+              "phase": "answer",
+              "task": "Find 8 minus 3.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 3,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "description": "Fade direction hint",
+                "assistance": {
+                  "level": 0,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",-1]"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "description": "A different subtraction example",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "full"
+                },
+                "actionId": "[\"request_support\",\"seven-take-two\"]"
+              }
+            ]
+          },
+          "elapsedMs": 0.3589000000001761
+        },
+        {
+          "t": 8.92,
+          "type": "tutor",
+          "phase": 1,
+          "text": "I've shown the direction hint to help you start."
+        },
+        {
+          "t": 8.92,
+          "type": "learner",
+          "text": "I understand the direction now. Please hide that hint."
+        },
+        {
+          "t": 10.0,
+          "type": "runtime_command",
+          "command": {
+            "itemId": "reference-item-1",
+            "instanceId": "reference-instance",
+            "expectedRevision": 2,
+            "sessionEpoch": "511dedc8-b4ec-4d08-9035-fd266b66968b",
+            "commandId": "call_846197",
+            "action": {
+              "type": "scaffold",
+              "strategyId": "direction",
+              "direction": -1
+            }
+          }
+        },
+        {
+          "t": 10.0,
+          "type": "runtime_result",
+          "commandId": "call_846197",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "511dedc8-b4ec-4d08-9035-fd266b66968b",
+            "revision": 3,
+            "visibleRevision": 3,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-1",
+              "phase": "answer",
+              "task": "Find 8 minus 3.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "description": "Show direction hint",
+                "assistance": {
+                  "level": 3,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",1]"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "description": "A different subtraction example",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "full"
+                },
+                "actionId": "[\"request_support\",\"seven-take-two\"]"
+              }
+            ]
+          },
+          "elapsedMs": 0.10829999999987194
+        },
+        {
+          "t": 14.17,
+          "type": "tutor",
+          "phase": 2,
+          "text": "I've hidden the hint. What do you get when you subtract 3 from 8?"
+        },
+        {
+          "t": 14.17,
+          "type": "learner",
+          "text": "Please show the worked counter example."
+        },
+        {
+          "t": 15.38,
+          "type": "runtime_command",
+          "command": {
+            "itemId": "reference-item-1",
+            "instanceId": "reference-instance",
+            "expectedRevision": 3,
+            "sessionEpoch": "511dedc8-b4ec-4d08-9035-fd266b66968b",
+            "commandId": "call_846288",
+            "action": {
+              "type": "request_support",
+              "artifactId": "seven-take-two"
+            }
+          }
+        },
+        {
+          "t": 15.39,
+          "type": "runtime_result",
+          "commandId": "call_846288",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "511dedc8-b4ec-4d08-9035-fd266b66968b",
+            "revision": 4,
+            "visibleRevision": 4,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "support",
+            "status": "support",
+            "task": {
+              "itemId": "reference-item-1",
+              "phase": "answer",
+              "task": "Find 8 minus 3.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": {
+              "id": "seven-take-two",
+              "kind": "counter-example",
+              "title": "A different subtraction example",
+              "total": 7,
+              "removed": 2,
+              "altText": "Seven counters with two crossed out, leaving five.",
+              "answerExposure": "full",
+              "provenance": "prepared"
+            },
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "return"
+                },
+                "description": "Return to the same unfinished task",
+                "actionId": "return"
+              }
+            ]
+          },
+          "elapsedMs": 0.07760000000052969
+        },
+        {
+          "t": 19.47,
+          "type": "tutor",
+          "phase": 3,
+          "text": "Here is an example: 7 minus 2 leaves 5."
+        },
+        {
+          "t": 19.47,
+          "type": "learner",
+          "text": "I'm ready to return to my original task. Please close the example."
+        },
+        {
+          "t": 20.72,
+          "type": "runtime_command",
+          "command": {
+            "itemId": "reference-item-1",
+            "instanceId": "reference-instance",
+            "expectedRevision": 4,
+            "sessionEpoch": "511dedc8-b4ec-4d08-9035-fd266b66968b",
+            "commandId": "call_846367",
+            "action": {
+              "type": "return"
+            }
+          }
+        },
+        {
+          "t": 20.72,
+          "type": "runtime_result",
+          "commandId": "call_846367",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "511dedc8-b4ec-4d08-9035-fd266b66968b",
+            "revision": 5,
+            "visibleRevision": 5,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-1",
+              "phase": "answer",
+              "task": "Find 8 minus 3.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "description": "Show direction hint",
+                "assistance": {
+                  "level": 3,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",1]"
+              }
+            ]
+          },
+          "elapsedMs": 0.08300000000235741
+        },
+        {
+          "t": 24.67,
+          "type": "tutor",
+          "phase": 4,
+          "text": "Welcome back. Now, what is 8 minus 3?"
+        },
+        {
+          "t": 24.67,
+          "type": "after_return",
+          "state": {
+            "sessionEpoch": "511dedc8-b4ec-4d08-9035-fd266b66968b",
+            "revision": 5,
+            "visibleRevision": 5,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-1",
+              "phase": "answer",
+              "task": "Find 8 minus 3.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "description": "Show direction hint",
+                "assistance": {
+                  "level": 3,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",1]"
+              }
+            ]
+          }
+        },
+        {
+          "t": 24.67,
+          "type": "learner",
+          "text": "[CHECKED_RESPONSE] I entered 2 and pressed Check answer. Use the current checked evidence."
+        },
+        {
+          "t": 30.14,
+          "type": "tutor",
+          "phase": 5,
+          "text": "That's not quite right. Can you try subtracting 3 from 8 again?"
+        },
+        {
+          "t": 30.14,
+          "type": "learner",
+          "text": "[CHECKED_RESPONSE] I entered 5 and pressed Check answer. Use the current checked evidence and advance if offered."
+        },
+        {
+          "t": 31.64,
+          "type": "runtime_command",
+          "command": {
+            "itemId": "reference-item-1",
+            "instanceId": "reference-instance",
+            "expectedRevision": 7,
+            "sessionEpoch": "511dedc8-b4ec-4d08-9035-fd266b66968b",
+            "commandId": "call_846512",
+            "action": {
+              "type": "advance"
+            }
+          }
+        },
+        {
+          "t": 31.64,
+          "type": "runtime_result",
+          "commandId": "call_846512",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "511dedc8-b4ec-4d08-9035-fd266b66968b",
+            "revision": 8,
+            "visibleRevision": 8,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-2",
+              "phase": "answer",
+              "task": "Find 9 minus 2.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "description": "Show direction hint",
+                "assistance": {
+                  "level": 3,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",1]"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "description": "A different subtraction example",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "full"
+                },
+                "actionId": "[\"request_support\",\"seven-take-two\"]"
+              }
+            ]
+          },
+          "elapsedMs": 0.10689999999885913
+        },
+        {
+          "t": 35.55,
+          "type": "tutor",
+          "phase": 6,
+          "text": "That's correct! Now, what is 9 minus 2?"
+        },
+        {
+          "t": 35.55,
+          "type": "transfer",
+          "state": {
+            "sessionEpoch": "511dedc8-b4ec-4d08-9035-fd266b66968b",
+            "revision": 8,
+            "visibleRevision": 8,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-2",
+              "phase": "answer",
+              "task": "Find 9 minus 2.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "description": "Show direction hint",
+                "assistance": {
+                  "level": 3,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",1]"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "description": "A different subtraction example",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "full"
+                },
+                "actionId": "[\"request_support\",\"seven-take-two\"]"
+              }
+            ]
+          }
+        },
+        {
+          "t": 35.55,
+          "type": "learner",
+          "text": "[CHECKED_RESPONSE] I entered 7 and pressed Check answer. Use the current checked evidence."
+        },
+        {
+          "t": 38.84,
+          "type": "tutor",
+          "phase": 7,
+          "text": "That is absolutely correct!"
+        },
+        {
+          "t": 38.84,
+          "type": "finished",
+          "state": {
+            "sessionEpoch": "511dedc8-b4ec-4d08-9035-fd266b66968b",
+            "revision": 11,
+            "visibleRevision": 11,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "none",
+            "status": "completed",
+            "task": {
+              "itemId": "reference-item-2",
+              "phase": "answer",
+              "task": "Find 9 minus 2.",
+              "completed": true,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "correct",
+                "recentResponses": [
+                  {
+                    "response": "7",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": "Activity is completed",
+            "canStartNext": true,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": []
+          }
+        }
+      ]
+    },
+    {
+      "checks": {
+        "scaffold": true,
+        "fade": true,
+        "support": true,
+        "return": true,
+        "same_item_after_return": true,
+        "assistance_retained": true,
+        "visible_receipts": true,
+        "completed": true,
+        "no_protocol_leak": true
+      },
+      "events": [
+        {
+          "t": 0.45,
+          "type": "session_ready",
+          "config": {
+            "type": "session_ready",
+            "message": "Lumina AI is ready to help you learn!"
+          }
+        },
+        {
+          "t": 0.45,
+          "type": "learner",
+          "text": "[RUNTIME_START] Begin with the visible task. Ask its question briefly without its answer."
+        },
+        {
+          "t": 6.8,
+          "type": "tutor",
+          "phase": 0,
+          "text": "Hello! Let's work on some math. What is 8 minus 3?"
+        },
+        {
+          "t": 6.8,
+          "type": "learner",
+          "text": "I don't know where to start. Please show the direction hint on my task."
+        },
+        {
+          "t": 8.28,
+          "type": "runtime_command",
+          "command": {
+            "itemId": "reference-item-1",
+            "instanceId": "reference-instance",
+            "expectedRevision": 1,
+            "sessionEpoch": "776b2e7d-66d5-4853-bb37-80d8279a9664",
+            "commandId": "call_683957",
+            "action": {
+              "type": "scaffold",
+              "strategyId": "direction",
+              "direction": 1
+            }
+          }
+        },
+        {
+          "t": 8.3,
+          "type": "runtime_result",
+          "commandId": "call_683957",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "776b2e7d-66d5-4853-bb37-80d8279a9664",
+            "revision": 2,
+            "visibleRevision": 2,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-1",
+              "phase": "answer",
+              "task": "Find 8 minus 3.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 3,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "description": "Fade direction hint",
+                "assistance": {
+                  "level": 0,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",-1]"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "description": "A different subtraction example",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "full"
+                },
+                "actionId": "[\"request_support\",\"seven-take-two\"]"
+              }
+            ]
+          },
+          "elapsedMs": 0.24639999999999418
+        },
+        {
+          "t": 13.78,
+          "type": "tutor",
+          "phase": 1,
+          "text": "I've shown the direction hint. Please enter your answer and press check answer."
+        },
+        {
+          "t": 13.78,
+          "type": "learner",
+          "text": "I understand the direction now. Please hide that hint."
+        },
+        {
+          "t": 15.06,
+          "type": "runtime_command",
+          "command": {
+            "itemId": "reference-item-1",
+            "instanceId": "reference-instance",
+            "expectedRevision": 2,
+            "sessionEpoch": "776b2e7d-66d5-4853-bb37-80d8279a9664",
+            "commandId": "call_684040",
+            "action": {
+              "type": "scaffold",
+              "strategyId": "direction",
+              "direction": -1
+            }
+          }
+        },
+        {
+          "t": 15.08,
+          "type": "runtime_result",
+          "commandId": "call_684040",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "776b2e7d-66d5-4853-bb37-80d8279a9664",
+            "revision": 3,
+            "visibleRevision": 3,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-1",
+              "phase": "answer",
+              "task": "Find 8 minus 3.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "description": "Show direction hint",
+                "assistance": {
+                  "level": 3,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",1]"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "description": "A different subtraction example",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "full"
+                },
+                "actionId": "[\"request_support\",\"seven-take-two\"]"
+              }
+            ]
+          },
+          "elapsedMs": 0.1003999999993539
+        },
+        {
+          "t": 20.36,
+          "type": "tutor",
+          "phase": 2,
+          "text": "The hint is now hidden. Whenever you're ready, go ahead and enter your answer."
+        },
+        {
+          "t": 20.36,
+          "type": "learner",
+          "text": "Please show the worked counter example."
+        },
+        {
+          "t": 21.7,
+          "type": "runtime_command",
+          "command": {
+            "itemId": "reference-item-1",
+            "instanceId": "reference-instance",
+            "expectedRevision": 3,
+            "sessionEpoch": "776b2e7d-66d5-4853-bb37-80d8279a9664",
+            "commandId": "call_684140",
+            "action": {
+              "type": "request_support",
+              "artifactId": "seven-take-two"
+            }
+          }
+        },
+        {
+          "t": 21.7,
+          "type": "runtime_result",
+          "commandId": "call_684140",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "776b2e7d-66d5-4853-bb37-80d8279a9664",
+            "revision": 4,
+            "visibleRevision": 4,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "support",
+            "status": "support",
+            "task": {
+              "itemId": "reference-item-1",
+              "phase": "answer",
+              "task": "Find 8 minus 3.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": {
+              "id": "seven-take-two",
+              "kind": "counter-example",
+              "title": "A different subtraction example",
+              "total": 7,
+              "removed": 2,
+              "altText": "Seven counters with two crossed out, leaving five.",
+              "answerExposure": "full",
+              "provenance": "prepared"
+            },
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "return"
+                },
+                "description": "Return to the same unfinished task",
+                "actionId": "return"
+              }
+            ]
+          },
+          "elapsedMs": 0.14419999999881838
+        },
+        {
+          "t": 31.42,
+          "type": "tutor",
+          "phase": 3,
+          "text": "In this example, we start with seven counters and take away two, leaving five. Are you ready to return to the eight minus three problem now?"
+        },
+        {
+          "t": 31.42,
+          "type": "learner",
+          "text": "I'm ready to return to my original task. Please close the example."
+        },
+        {
+          "t": 32.5,
+          "type": "runtime_command",
+          "command": {
+            "itemId": "reference-item-1",
+            "instanceId": "reference-instance",
+            "expectedRevision": 4,
+            "sessionEpoch": "776b2e7d-66d5-4853-bb37-80d8279a9664",
+            "commandId": "call_684302",
+            "action": {
+              "type": "return"
+            }
+          }
+        },
+        {
+          "t": 32.5,
+          "type": "runtime_result",
+          "commandId": "call_684302",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "776b2e7d-66d5-4853-bb37-80d8279a9664",
+            "revision": 5,
+            "visibleRevision": 5,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-1",
+              "phase": "answer",
+              "task": "Find 8 minus 3.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "description": "Show direction hint",
+                "assistance": {
+                  "level": 3,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",1]"
+              }
+            ]
+          },
+          "elapsedMs": 0.18170000000100117
+        },
+        {
+          "t": 36.44,
+          "type": "tutor",
+          "phase": 4,
+          "text": "Great. Now, what is 8 minus 3?"
+        },
+        {
+          "t": 36.44,
+          "type": "after_return",
+          "state": {
+            "sessionEpoch": "776b2e7d-66d5-4853-bb37-80d8279a9664",
+            "revision": 5,
+            "visibleRevision": 5,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-1",
+              "phase": "answer",
+              "task": "Find 8 minus 3.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "description": "Show direction hint",
+                "assistance": {
+                  "level": 3,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",1]"
+              }
+            ]
+          }
+        },
+        {
+          "t": 36.44,
+          "type": "learner",
+          "text": "[CHECKED_RESPONSE] I entered 2 and pressed Check answer. Use the current checked evidence."
+        },
+        {
+          "t": 43.7,
+          "type": "tutor",
+          "phase": 5,
+          "text": "That's not quite right. Let's try counting back from 8 three times. What do you get?"
+        },
+        {
+          "t": 43.7,
+          "type": "learner",
+          "text": "[CHECKED_RESPONSE] I entered 5 and pressed Check answer. Use the current checked evidence and advance if offered."
+        },
+        {
+          "t": 45.33,
+          "type": "runtime_command",
+          "command": {
+            "itemId": "reference-item-1",
+            "instanceId": "reference-instance",
+            "expectedRevision": 7,
+            "sessionEpoch": "776b2e7d-66d5-4853-bb37-80d8279a9664",
+            "commandId": "call_684518",
+            "action": {
+              "type": "advance"
+            }
+          }
+        },
+        {
+          "t": 45.33,
+          "type": "runtime_result",
+          "commandId": "call_684518",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "776b2e7d-66d5-4853-bb37-80d8279a9664",
+            "revision": 8,
+            "visibleRevision": 8,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-2",
+              "phase": "answer",
+              "task": "Find 9 minus 2.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "description": "Show direction hint",
+                "assistance": {
+                  "level": 3,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",1]"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "description": "A different subtraction example",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "full"
+                },
+                "actionId": "[\"request_support\",\"seven-take-two\"]"
+              }
+            ]
+          },
+          "elapsedMs": 0.10440000000380678
+        },
+        {
+          "t": 49.5,
+          "type": "tutor",
+          "phase": 6,
+          "text": "That's correct! Now, what is 9 minus 2?"
+        },
+        {
+          "t": 49.5,
+          "type": "transfer",
+          "state": {
+            "sessionEpoch": "776b2e7d-66d5-4853-bb37-80d8279a9664",
+            "revision": 8,
+            "visibleRevision": 8,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-2",
+              "phase": "answer",
+              "task": "Find 9 minus 2.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "description": "Show direction hint",
+                "assistance": {
+                  "level": 3,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",1]"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "description": "A different subtraction example",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "full"
+                },
+                "actionId": "[\"request_support\",\"seven-take-two\"]"
+              }
+            ]
+          }
+        },
+        {
+          "t": 49.5,
+          "type": "learner",
+          "text": "[CHECKED_RESPONSE] I entered 7 and pressed Check answer. Use the current checked evidence."
+        },
+        {
+          "t": 53.81,
+          "type": "tutor",
+          "phase": 7,
+          "text": "That is exactly right! Excellent work."
+        },
+        {
+          "t": 53.81,
+          "type": "finished",
+          "state": {
+            "sessionEpoch": "776b2e7d-66d5-4853-bb37-80d8279a9664",
+            "revision": 11,
+            "visibleRevision": 11,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "none",
+            "status": "completed",
+            "task": {
+              "itemId": "reference-item-2",
+              "phase": "answer",
+              "task": "Find 9 minus 2.",
+              "completed": true,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "correct",
+                "recentResponses": [
+                  {
+                    "response": "7",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": "Activity is completed",
+            "canStartNext": true,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": []
+          }
+        }
+      ]
+    },
+    {
+      "checks": {
+        "scaffold": true,
+        "fade": true,
+        "support": true,
+        "return": true,
+        "same_item_after_return": true,
+        "assistance_retained": true,
+        "visible_receipts": true,
+        "completed": true,
+        "no_protocol_leak": true
+      },
+      "events": [
+        {
+          "t": 0.45,
+          "type": "session_ready",
+          "config": {
+            "type": "session_ready",
+            "message": "Lumina AI is ready to help you learn!"
+          }
+        },
+        {
+          "t": 0.45,
+          "type": "learner",
+          "text": "[RUNTIME_START] Begin with the visible task. Ask its question briefly without its answer."
+        },
+        {
+          "t": 4.28,
+          "type": "tutor",
+          "phase": 0,
+          "text": "Can you find 8 minus 3?"
+        },
+        {
+          "t": 4.28,
+          "type": "learner",
+          "text": "I don't know where to start. Please show the direction hint on my task."
+        },
+        {
+          "t": 5.72,
+          "type": "runtime_command",
+          "command": {
+            "itemId": "reference-item-1",
+            "instanceId": "reference-instance",
+            "expectedRevision": 1,
+            "sessionEpoch": "d22488e9-a079-4554-9504-1fed7edff38a",
+            "commandId": "call_481781",
+            "action": {
+              "type": "scaffold",
+              "strategyId": "direction",
+              "direction": 1
+            }
+          }
+        },
+        {
+          "t": 5.72,
+          "type": "runtime_result",
+          "commandId": "call_481781",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "d22488e9-a079-4554-9504-1fed7edff38a",
+            "revision": 2,
+            "visibleRevision": 2,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-1",
+              "phase": "answer",
+              "task": "Find 8 minus 3.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 3,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "description": "Fade direction hint",
+                "assistance": {
+                  "level": 0,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",-1]"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "description": "A different subtraction example",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "full"
+                },
+                "actionId": "[\"request_support\",\"seven-take-two\"]"
+              }
+            ]
+          },
+          "elapsedMs": 0.2440999999998894
+        },
+        {
+          "t": 10.05,
+          "type": "tutor",
+          "phase": 1,
+          "text": "The direction hint is now shown to guide your subtraction."
+        },
+        {
+          "t": 10.05,
+          "type": "learner",
+          "text": "I understand the direction now. Please hide that hint."
+        },
+        {
+          "t": 11.16,
+          "type": "runtime_command",
+          "command": {
+            "itemId": "reference-item-1",
+            "instanceId": "reference-instance",
+            "expectedRevision": 2,
+            "sessionEpoch": "d22488e9-a079-4554-9504-1fed7edff38a",
+            "commandId": "call_481832",
+            "action": {
+              "type": "scaffold",
+              "strategyId": "direction",
+              "direction": -1
+            }
+          }
+        },
+        {
+          "t": 11.16,
+          "type": "runtime_result",
+          "commandId": "call_481832",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "d22488e9-a079-4554-9504-1fed7edff38a",
+            "revision": 3,
+            "visibleRevision": 3,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-1",
+              "phase": "answer",
+              "task": "Find 8 minus 3.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "description": "Show direction hint",
+                "assistance": {
+                  "level": 3,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",1]"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "description": "A different subtraction example",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "full"
+                },
+                "actionId": "[\"request_support\",\"seven-take-two\"]"
+              }
+            ]
+          },
+          "elapsedMs": 0.10239999999976135
+        },
+        {
+          "t": 15.8,
+          "type": "tutor",
+          "phase": 2,
+          "text": "The hint is now hidden. Please enter your answer and press Check answer."
+        },
+        {
+          "t": 15.8,
+          "type": "learner",
+          "text": "Please show the worked counter example."
+        },
+        {
+          "t": 16.89,
+          "type": "runtime_command",
+          "command": {
+            "itemId": "reference-item-1",
+            "instanceId": "reference-instance",
+            "expectedRevision": 3,
+            "sessionEpoch": "d22488e9-a079-4554-9504-1fed7edff38a",
+            "commandId": "call_481880",
+            "action": {
+              "type": "request_support",
+              "artifactId": "seven-take-two"
+            }
+          }
+        },
+        {
+          "t": 16.89,
+          "type": "runtime_result",
+          "commandId": "call_481880",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "d22488e9-a079-4554-9504-1fed7edff38a",
+            "revision": 4,
+            "visibleRevision": 4,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "support",
+            "status": "support",
+            "task": {
+              "itemId": "reference-item-1",
+              "phase": "answer",
+              "task": "Find 8 minus 3.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": {
+              "id": "seven-take-two",
+              "kind": "counter-example",
+              "title": "A different subtraction example",
+              "total": 7,
+              "removed": 2,
+              "altText": "Seven counters with two crossed out, leaving five.",
+              "answerExposure": "full",
+              "provenance": "prepared"
+            },
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "return"
+                },
+                "description": "Return to the same unfinished task",
+                "actionId": "return"
+              }
+            ]
+          },
+          "elapsedMs": 0.1496999999981199
+        },
+        {
+          "t": 22.77,
+          "type": "tutor",
+          "phase": 3,
+          "text": "Here, you can see seven counters. When we take away two, we have five left."
+        },
+        {
+          "t": 22.77,
+          "type": "learner",
+          "text": "I'm ready to return to my original task. Please close the example."
+        },
+        {
+          "t": 23.89,
+          "type": "runtime_command",
+          "command": {
+            "itemId": "reference-item-1",
+            "instanceId": "reference-instance",
+            "expectedRevision": 4,
+            "sessionEpoch": "d22488e9-a079-4554-9504-1fed7edff38a",
+            "commandId": "call_481921",
+            "action": {
+              "type": "return"
+            }
+          }
+        },
+        {
+          "t": 23.89,
+          "type": "runtime_result",
+          "commandId": "call_481921",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "d22488e9-a079-4554-9504-1fed7edff38a",
+            "revision": 5,
+            "visibleRevision": 5,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-1",
+              "phase": "answer",
+              "task": "Find 8 minus 3.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "description": "Show direction hint",
+                "assistance": {
+                  "level": 3,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",1]"
+              }
+            ]
+          },
+          "elapsedMs": 0.15710000000035507
+        },
+        {
+          "t": 29.36,
+          "type": "tutor",
+          "phase": 4,
+          "text": "Welcome back. Please enter your answer for 8 minus 3 and press Check answer."
+        },
+        {
+          "t": 29.36,
+          "type": "after_return",
+          "state": {
+            "sessionEpoch": "d22488e9-a079-4554-9504-1fed7edff38a",
+            "revision": 5,
+            "visibleRevision": 5,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-1",
+              "phase": "answer",
+              "task": "Find 8 minus 3.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "description": "Show direction hint",
+                "assistance": {
+                  "level": 3,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",1]"
+              }
+            ]
+          }
+        },
+        {
+          "t": 29.36,
+          "type": "learner",
+          "text": "[CHECKED_RESPONSE] I entered 2 and pressed Check answer. Use the current checked evidence."
+        },
+        {
+          "t": 33.7,
+          "type": "tutor",
+          "phase": 5,
+          "text": "That is not correct. Please try again."
+        },
+        {
+          "t": 33.7,
+          "type": "learner",
+          "text": "[CHECKED_RESPONSE] I entered 5 and pressed Check answer. Use the current checked evidence and advance if offered."
+        },
+        {
+          "t": 35.03,
+          "type": "runtime_command",
+          "command": {
+            "itemId": "reference-item-1",
+            "instanceId": "reference-instance",
+            "expectedRevision": 7,
+            "sessionEpoch": "d22488e9-a079-4554-9504-1fed7edff38a",
+            "commandId": "call_481989",
+            "action": {
+              "type": "advance"
+            }
+          }
+        },
+        {
+          "t": 35.03,
+          "type": "runtime_result",
+          "commandId": "call_481989",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "d22488e9-a079-4554-9504-1fed7edff38a",
+            "revision": 8,
+            "visibleRevision": 8,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-2",
+              "phase": "answer",
+              "task": "Find 9 minus 2.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "description": "Show direction hint",
+                "assistance": {
+                  "level": 3,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",1]"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "description": "A different subtraction example",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "full"
+                },
+                "actionId": "[\"request_support\",\"seven-take-two\"]"
+              }
+            ]
+          },
+          "elapsedMs": 0.11330000000452856
+        },
+        {
+          "t": 39.22,
+          "type": "tutor",
+          "phase": 6,
+          "text": "That is correct! Now, can you find 9 minus 2?"
+        },
+        {
+          "t": 39.22,
+          "type": "transfer",
+          "state": {
+            "sessionEpoch": "d22488e9-a079-4554-9504-1fed7edff38a",
+            "revision": 8,
+            "visibleRevision": 8,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "reference-item-2",
+              "phase": "answer",
+              "task": "Find 9 minus 2.",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat the task",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "replay"
+              },
+              {
+                "action": {
+                  "type": "point",
+                  "targetId": "start"
+                },
+                "description": "Point to the starting quantity",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"point\",\"start\"]"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "description": "Show direction hint",
+                "assistance": {
+                  "level": 3,
+                  "answerExposure": "none"
+                },
+                "actionId": "[\"scaffold\",\"direction\",1]"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "description": "A different subtraction example",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "full"
+                },
+                "actionId": "[\"request_support\",\"seven-take-two\"]"
+              }
+            ]
+          }
+        },
+        {
+          "t": 39.22,
+          "type": "learner",
+          "text": "[CHECKED_RESPONSE] I entered 7 and pressed Check answer. Use the current checked evidence."
+        },
+        {
+          "t": 44.66,
+          "type": "tutor",
+          "phase": 7,
+          "text": "That is correct, and you have successfully completed this activity."
+        },
+        {
+          "t": 44.67,
+          "type": "finished",
+          "state": {
+            "sessionEpoch": "d22488e9-a079-4554-9504-1fed7edff38a",
+            "revision": 11,
+            "visibleRevision": 11,
+            "instanceId": "reference-instance",
+            "planItemId": "reference-plan-item",
+            "primitiveId": "runtime-reference",
+            "objectiveId": "subtract-within-10",
+            "evalMode": "reference-only",
+            "owner": "none",
+            "status": "completed",
+            "task": {
+              "itemId": "reference-item-2",
+              "phase": "answer",
+              "task": "Find 9 minus 2.",
+              "completed": true,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "correct",
+                "recentResponses": [
+                  {
+                    "response": "7",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "operation": "subtraction",
+                "steps": 1
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": "Activity is completed",
+            "canStartNext": true,
+            "assistance": [
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 2,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": 1
+                },
+                "level": 3,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 3,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "direction",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "reference-instance",
+                "itemId": "reference-item-1",
+                "revision": 4,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "seven-take-two"
+                },
+                "level": 6,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": []
+          }
+        }
+      ]
+    }
+  ],
+  "configuration": {
+    "models_from_server_ledger": [
+      {
+        "ledger": "2026-09-17-130003-lumina-tutor-43419f2f93b9.jsonl",
+        "model": "gemini-3.8-live",
+        "fresh": true
+      },
+      {
+        "ledger": "2026-09-17-125909-lumina-tutor-3732e040d7c5.jsonl",
+        "model": "gemini-3.8-live",
+        "fresh": true
+      },
+      {
+        "ledger": "2026-09-17-125830-lumina-tutor-072748b7a011.jsonl",
+        "model": "gemini-3.8-live",
+        "fresh": true
+      }
+    ],
+    "voice": "Leda",
+    "responseModality": "AUDIO",
+    "input": "synthetic text; no microphone",
+    "backend": "127.0.0.1:8011",
+    "frontend_page_http_status": 200
+  }
+}

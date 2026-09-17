@@ -1,0 +1,16 @@
+[
+  {
+    "passed": false,
+    "events": [
+      {
+        "type": "ready",
+        "t": 4.83
+      },
+      {
+        "type": "failure",
+        "t": 4.84,
+        "reason": "received 1012 (service restart); then sent 1012 (service restart)"
+      }
+    ]
+  }
+]

@@ -1,0 +1,397 @@
+{
+  "checks": [
+    {
+      "name": "package projects to 2 live activities in the real bundle",
+      "ok": true,
+      "detail": "Add-to and take-from word problems within 20 · Grade 1 · 2 live activities"
+    },
+    {
+      "name": "ten-frame lesson selectors hidden in plan mode",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "connect sends identities only",
+      "ok": true,
+      "detail": "[\"item-1:ten-frame:operate\",\"item-2:number-line:jump\"]"
+    },
+    {
+      "name": "tutor starts item-1 first",
+      "ok": true,
+      "detail": "{\"planItemId\":\"item-1\"}"
+    },
+    {
+      "name": "real TenFrame mounted and receipted with planItem",
+      "ok": true,
+      "detail": "{\"itemId\":\"item-1\",\"title\":\"Model Stories with Double Ten-Frames\",\"intent\":\"Provide double ten-frames up to 20 where students place counters to represent adding more items to a group or remove counters when items are taken away from a story scenario.\",\"evalMode\":\"operate\",\"objective\":\"Act out addition and subtraction stories using physical objects or drawings\"}"
+    },
+    {
+      "name": "no generation request for prepared content",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "server hands the frame to its DI runner",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "DI runner sends its first production cue after mic",
+      "ok": true,
+      "detail": "[TF_ITEM] Say exactly: \"Hi! Time to work with the ten frame! Put the counters on the frame"
+    },
+    {
+      "name": "tutor speaks the scripted opening",
+      "ok": true,
+      "detail": "Hi! Time to work with the ten frame! Put the counters on the frame, then say how many there are altogether. Eight plus three. Your turn. How many altogether?"
+    },
+    {
+      "name": "no tutor speech before the DI opening",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "plan progress shows item 1 current",
+      "ok": true,
+      "detail": "[\"current:1. Model Stories with Double Ten-Frames\",\"upcoming:2. Hopping Along the Number Line\"]"
+    },
+    {
+      "name": "objective filter projects the number-line block alone",
+      "ok": true,
+      "detail": "Add-to and take-from word problems within 20 · Grade 1 · 1 live activity"
+    },
+    {
+      "name": "tutor starts the number line",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "real NumberLine mounted with jump mode",
+      "ok": true,
+      "detail": "{\"itemId\":\"item-1\",\"title\":\"Hopping Along the Number Line\",\"intent\":\"Show movement along an interactive number line from 0 to 20, hopping forward to explain addition sentences and hopping backward to explain subtraction sentences.\",\"evalMode\":\"jump\",\"objective\":\"Explain how to solve an add-to or take-from problem using a number sentence\"}"
+    },
+    {
+      "name": "tutor introduces the actual first challenge",
+      "ok": true,
+      "detail": "Let's go on a frog jump adventure by starting at the number 3 on your number line and hopping forward 4 spaces."
+    },
+    {
+      "name": "intro does not state the landing number",
+      "ok": true,
+      "detail": "first challenge lands on 7"
+    },
+    {
+      "name": "number line visible",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no page errors",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "frames": [
+    {
+      "t": 10.855,
+      "dir": "out",
+      "type": "authenticate",
+      "activity_sandbox": {
+        "enabledPrimitives": [
+          "ten-frame",
+          "number-line"
+        ],
+        "plan": {
+          "topic": "Add-to and take-from word problems within 20",
+          "items": [
+            {
+              "itemId": "item-1",
+              "primitiveId": "ten-frame",
+              "title": "Model Stories with Double Ten-Frames",
+              "evalMode": "operate",
+              "objective": "Act out addition and subtraction stories using physical objects or drawings"
+            },
+            {
+              "itemId": "item-2",
+              "primitiveId": "number-line",
+              "title": "Hopping Along the Number Line",
+              "evalMode": "jump",
+              "objective": "Explain how to solve an add-to or take-from problem using a number sentence"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "t": 10.858,
+      "dir": "in",
+      "type": "auth_success"
+    },
+    {
+      "t": 10.859,
+      "dir": "in",
+      "type": "session_ready"
+    },
+    {
+      "t": 10.859,
+      "dir": "out",
+      "type": "text",
+      "content": "[LESSON_START] Begin the planned lesson now. Call start_plan_item with itemId item-1. Do not greet first or describe the activity before it is mounted."
+    },
+    {
+      "t": 11.156,
+      "dir": "in",
+      "type": "resumption_handle"
+    },
+    {
+      "t": 12.202,
+      "dir": "in",
+      "type": "activity_request",
+      "callId": "call_530674",
+      "args": {
+        "planItemId": "item-1"
+      }
+    },
+    {
+      "t": 12.227,
+      "dir": "in",
+      "type": "ai_turn_end"
+    },
+    {
+      "t": 12.229,
+      "dir": "in",
+      "type": "ai_turn_end"
+    },
+    {
+      "t": 12.229,
+      "dir": "out",
+      "type": "activity_result",
+      "callId": "call_530674",
+      "instanceId": "live-plan-item-1-4bebb487-b44e-453f-9c51-ccaa0d53bc12",
+      "status": "mounted",
+      "primitiveId": "ten-frame",
+      "planItem": {
+        "itemId": "item-1",
+        "title": "Model Stories with Double Ten-Frames",
+        "intent": "Provide double ten-frames up to 20 where students place counters to represent adding more items to a group or remove counters when items are taken away from a story scenario.",
+        "evalMode": "operate",
+        "objective": "Act out addition and subtraction stories using physical objects or drawings"
+      },
+      "dataKeys": 12
+    },
+    {
+      "t": 12.232,
+      "dir": "out",
+      "type": "update_context"
+    },
+    {
+      "t": 12.232,
+      "dir": "in",
+      "type": "activity_ready",
+      "callId": "call_530674",
+      "instanceId": "live-plan-item-1-4bebb487-b44e-453f-9c51-ccaa0d53bc12",
+      "primitiveId": "ten-frame"
+    },
+    {
+      "t": 12.235,
+      "dir": "out",
+      "type": "text",
+      "content": "[TF_ITEM] Say exactly: \"Hi! Time to work with the ten frame! Put the counters on the frame, then say how many there are altogether. Eight plus three. Your turn."
+    },
+    {
+      "t": 13.666,
+      "dir": "in",
+      "type": "ai_transcription",
+      "content": "Hi! Time to work "
+    },
+    {
+      "t": 13.83,
+      "dir": "in",
+      "type": "ai_transcription",
+      "content": "with the ten"
+    },
+    {
+      "t": 14.15,
+      "dir": "in",
+      "type": "ai_transcription",
+      "content": " frame! Put the counters"
+    },
+    {
+      "t": 14.356,
+      "dir": "in",
+      "type": "ai_transcription",
+      "content": " on the frame,"
+    },
+    {
+      "t": 14.609,
+      "dir": "in",
+      "type": "ai_transcription",
+      "content": " then say how many there are"
+    },
+    {
+      "t": 14.86,
+      "dir": "in",
+      "type": "ai_transcription",
+      "content": " altogether. Eight"
+    },
+    {
+      "t": 15.063,
+      "dir": "in",
+      "type": "ai_transcription",
+      "content": " plus three."
+    },
+    {
+      "t": 15.399,
+      "dir": "in",
+      "type": "ai_transcription",
+      "content": " Your turn. How many"
+    },
+    {
+      "t": 15.567,
+      "dir": "in",
+      "type": "ai_transcription",
+      "content": " altogether?"
+    },
+    {
+      "t": 23.457,
+      "dir": "in",
+      "type": "ai_turn_end"
+    },
+    {
+      "t": 23.457,
+      "dir": "in",
+      "type": "ai_turn_end"
+    },
+    {
+      "t": 26.842,
+      "dir": "out",
+      "type": "authenticate",
+      "activity_sandbox": {
+        "enabledPrimitives": [
+          "number-line"
+        ],
+        "plan": {
+          "topic": "Add-to and take-from word problems within 20",
+          "items": [
+            {
+              "itemId": "item-1",
+              "primitiveId": "number-line",
+              "title": "Hopping Along the Number Line",
+              "evalMode": "jump",
+              "objective": "Explain how to solve an add-to or take-from problem using a number sentence"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "t": 26.844,
+      "dir": "in",
+      "type": "auth_success"
+    },
+    {
+      "t": 26.847,
+      "dir": "in",
+      "type": "session_ready"
+    },
+    {
+      "t": 26.847,
+      "dir": "out",
+      "type": "text",
+      "content": "[LESSON_START] Begin the planned lesson now. Call start_plan_item with itemId item-1. Do not greet first or describe the activity before it is mounted."
+    },
+    {
+      "t": 27.125,
+      "dir": "in",
+      "type": "resumption_handle"
+    },
+    {
+      "t": 28,
+      "dir": "in",
+      "type": "activity_request",
+      "callId": "call_280987",
+      "args": {
+        "planItemId": "item-1"
+      }
+    },
+    {
+      "t": 28.005,
+      "dir": "out",
+      "type": "text",
+      "content": "[ACTIVITY_START] Number line activity for K-2. Range: 0 to 20. Mode: jump, number type: integer. 4 challenges. First: \"Let us go on a frog jump adventure! Start"
+    },
+    {
+      "t": 28.015,
+      "dir": "out",
+      "type": "activity_result",
+      "callId": "call_280987",
+      "instanceId": "live-plan-item-1-8ca06e8c-8872-4ed3-8de7-de9d74536ad8",
+      "status": "mounted",
+      "primitiveId": "number-line",
+      "planItem": {
+        "itemId": "item-1",
+        "title": "Hopping Along the Number Line",
+        "intent": "Show movement along an interactive number line from 0 to 20, hopping forward to explain addition sentences and hopping backward to explain subtraction sentences.",
+        "evalMode": "jump",
+        "objective": "Explain how to solve an add-to or take-from problem using a number sentence"
+      },
+      "dataKeys": 25
+    },
+    {
+      "t": 28.017,
+      "dir": "in",
+      "type": "ai_turn_end"
+    },
+    {
+      "t": 28.017,
+      "dir": "in",
+      "type": "ai_turn_end"
+    },
+    {
+      "t": 29.224,
+      "dir": "in",
+      "type": "ai_transcription",
+      "content": "Let's go on a "
+    },
+    {
+      "t": 29.516,
+      "dir": "in",
+      "type": "ai_transcription",
+      "content": "frog jump adventure"
+    },
+    {
+      "t": 29.937,
+      "dir": "in",
+      "type": "ai_transcription",
+      "content": " by starting at the number"
+    },
+    {
+      "t": 30.202,
+      "dir": "in",
+      "type": "ai_transcription",
+      "content": " 3 on your number line"
+    },
+    {
+      "t": 30.616,
+      "dir": "in",
+      "type": "ai_transcription",
+      "content": " and hopping forward"
+    },
+    {
+      "t": 30.946,
+      "dir": "in",
+      "type": "ai_transcription",
+      "content": " 4 spaces."
+    },
+    {
+      "t": 35.965,
+      "dir": "in",
+      "type": "ai_turn_end"
+    },
+    {
+      "t": 35.965,
+      "dir": "in",
+      "type": "ai_turn_end"
+    }
+  ]
+}

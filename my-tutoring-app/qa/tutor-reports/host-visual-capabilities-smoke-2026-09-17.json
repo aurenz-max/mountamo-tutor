@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "scope": "Real model accepts frontend visual schemas and selects parameters; rendering covered separately by host tests.",
+  "request": {
+    "type": "activity_visual",
+    "callId": "call_111687",
+    "toolName": "show_fraction",
+    "args": {
+      "denominator": 4,
+      "instruction": "Look at three quarters.",
+      "numerator": 3
+    },
+    "instanceId": "visual-e51987af-8429-4aaa-afb8-5ce7a0d24aca"
+  }
+}

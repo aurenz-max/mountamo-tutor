@@ -1,0 +1,363 @@
+[
+  [
+    {
+      "t": 2.187,
+      "kind": "auth_success",
+      "phase": "opening",
+      "message": "Lumina AI connected and ready to help!"
+    },
+    {
+      "t": 2.187,
+      "kind": "session_ready",
+      "phase": "opening",
+      "message": "Lumina AI is ready to help you learn!"
+    },
+    {
+      "t": 2.5,
+      "kind": "resumption_handle",
+      "phase": "opening",
+      "handle": "68c57601-197e-42e8-9add-0170e24c7cdc"
+    },
+    {
+      "t": 3.765,
+      "kind": "activity_request",
+      "phase": "opening",
+      "callId": "call_267402",
+      "args": {
+        "primitiveId": "number-line",
+        "topic": "Subtraction within 10",
+        "intent": "Practice subtraction problems with numbers up to 10 using a number line.",
+        "mode": "jump"
+      }
+    },
+    {
+      "t": 4.656,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": "Subtracting on a "
+    },
+    {
+      "t": 4.937,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": "number line"
+    },
+    {
+      "t": 5.265,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": " means moving to the left."
+    },
+    {
+      "t": 8.687,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": "Let's try one "
+    },
+    {
+      "t": 8.89,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": "together: start"
+    },
+    {
+      "t": 9.203,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": " at 8"
+    },
+    {
+      "t": 9.468,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": " and jump back 3."
+    },
+    {
+      "t": 9.703,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": " What number"
+    },
+    {
+      "t": 9.968,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": " do you land on?"
+    },
+    {
+      "t": 15.781,
+      "kind": "simulated_checked_correct"
+    },
+    {
+      "t": 16.968,
+      "kind": "ai_transcription",
+      "phase": "correct",
+      "content": "That's correct! "
+    },
+    {
+      "t": 17.218,
+      "kind": "ai_transcription",
+      "phase": "correct",
+      "content": "You landed"
+    },
+    {
+      "t": 17.515,
+      "kind": "ai_transcription",
+      "phase": "correct",
+      "content": " perfectly on 5."
+    },
+    {
+      "t": 17.843,
+      "kind": "activity_command",
+      "phase": "correct",
+      "callId": "call_267533",
+      "instanceId": "advance-probe",
+      "challengeIndex": 0
+    },
+    {
+      "t": 17.843,
+      "kind": "simulated_advance_receipt"
+    },
+    {
+      "t": 21.109,
+      "kind": "ai_transcription",
+      "phase": "advanced",
+      "content": "Now, let's start "
+    },
+    {
+      "t": 21.422,
+      "kind": "ai_transcription",
+      "phase": "advanced",
+      "content": "at 7"
+    },
+    {
+      "t": 21.718,
+      "kind": "ai_transcription",
+      "phase": "advanced",
+      "content": " and jump back"
+    },
+    {
+      "t": 21.922,
+      "kind": "ai_transcription",
+      "phase": "advanced",
+      "content": " 2. Where do you"
+    },
+    {
+      "t": 22.187,
+      "kind": "ai_transcription",
+      "phase": "advanced",
+      "content": " land?"
+    },
+    {
+      "t": 27.015,
+      "kind": "ai_transcription",
+      "phase": "language",
+      "content": "Looking at the number "
+    },
+    {
+      "t": 27.172,
+      "kind": "ai_transcription",
+      "phase": "language",
+      "content": "line, let's start"
+    },
+    {
+      "t": 27.437,
+      "kind": "ai_transcription",
+      "phase": "language",
+      "content": " at 7 and jump"
+    },
+    {
+      "t": 27.718,
+      "kind": "ai_transcription",
+      "phase": "language",
+      "content": " back 2 spaces."
+    },
+    {
+      "t": 31.234,
+      "kind": "completed"
+    }
+  ],
+  [
+    {
+      "t": 2.047,
+      "kind": "auth_success",
+      "phase": "opening",
+      "message": "Lumina AI connected and ready to help!"
+    },
+    {
+      "t": 2.047,
+      "kind": "session_ready",
+      "phase": "opening",
+      "message": "Lumina AI is ready to help you learn!"
+    },
+    {
+      "t": 2.359,
+      "kind": "resumption_handle",
+      "phase": "opening",
+      "handle": "a1302769-203b-4aa2-9099-d110f50d0df1"
+    },
+    {
+      "t": 3.609,
+      "kind": "activity_request",
+      "phase": "opening",
+      "callId": "call_231741",
+      "args": {
+        "primitiveId": "number-line",
+        "topic": "Subtraction within 10",
+        "intent": "Practice subtraction problems with numbers up to 10.",
+        "mode": "jump"
+      }
+    },
+    {
+      "t": 4.563,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": "Subtracting on a "
+    },
+    {
+      "t": 4.875,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": "number line"
+    },
+    {
+      "t": 5.172,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": " means moving"
+    },
+    {
+      "t": 5.406,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": " to the left toward zero."
+    },
+    {
+      "t": 9.5,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": "Great, let's try "
+    },
+    {
+      "t": 9.703,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": "it. Start"
+    },
+    {
+      "t": 10.047,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": " at eight on the number"
+    },
+    {
+      "t": 10.25,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": " line and jump back"
+    },
+    {
+      "t": 10.547,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": " three spaces."
+    },
+    {
+      "t": 10.813,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": " What number do you land"
+    },
+    {
+      "t": 11.047,
+      "kind": "ai_transcription",
+      "phase": "opening",
+      "content": " on?"
+    },
+    {
+      "t": 15.609,
+      "kind": "simulated_checked_correct"
+    },
+    {
+      "t": 16.156,
+      "kind": "ai_interrupted",
+      "phase": "correct"
+    },
+    {
+      "t": 17.234,
+      "kind": "activity_command",
+      "phase": "correct",
+      "callId": "call_231888",
+      "instanceId": "advance-probe",
+      "challengeIndex": 0
+    },
+    {
+      "t": 17.234,
+      "kind": "simulated_advance_receipt"
+    },
+    {
+      "t": 18.922,
+      "kind": "ai_transcription",
+      "phase": "advanced",
+      "content": "Spot on! Now, "
+    },
+    {
+      "t": 18.953,
+      "kind": "ai_transcription",
+      "phase": "advanced",
+      "content": "if you start"
+    },
+    {
+      "t": 18.969,
+      "kind": "ai_transcription",
+      "phase": "advanced",
+      "content": " at seven and jump"
+    },
+    {
+      "t": 18.984,
+      "kind": "ai_transcription",
+      "phase": "advanced",
+      "content": " back two spaces,"
+    },
+    {
+      "t": 19.172,
+      "kind": "ai_transcription",
+      "phase": "advanced",
+      "content": " where do you land?"
+    },
+    {
+      "t": 26.219,
+      "kind": "ai_transcription",
+      "phase": "language",
+      "content": "I was asking where you "
+    },
+    {
+      "t": 26.219,
+      "kind": "ai_transcription",
+      "phase": "language",
+      "content": "land if you start"
+    },
+    {
+      "t": 26.219,
+      "kind": "ai_transcription",
+      "phase": "language",
+      "content": " at seven and jump"
+    },
+    {
+      "t": 26.453,
+      "kind": "ai_transcription",
+      "phase": "language",
+      "content": " back two spaces"
+    },
+    {
+      "t": 26.719,
+      "kind": "ai_transcription",
+      "phase": "language",
+      "content": " on the number line?"
+    },
+    {
+      "t": 31.531,
+      "kind": "completed"
+    }
+  ]
+]

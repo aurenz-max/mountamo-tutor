@@ -1,0 +1,1537 @@
+{
+  "package": "qa/lesson-bench/packages/1st-grade-add-to-and-take-from-word-problems-within-20-20260906013555-xr3w.json",
+  "order": "reversed (synthetic)",
+  "plan": {
+    "topic": "Add-to and take-from word problems within 20",
+    "items": [
+      {
+        "primitiveId": "number-line",
+        "itemId": "item-1",
+        "title": "Hopping Along the Number Line",
+        "evalMode": "jump",
+        "objective": "Explain how to solve an add-to or take-from problem using a number sentence"
+      },
+      {
+        "primitiveId": "ten-frame",
+        "itemId": "item-2",
+        "title": "Model Stories with Double Ten-Frames",
+        "evalMode": "operate",
+        "objective": "Act out addition and subtraction stories using physical objects or drawings"
+      }
+    ]
+  },
+  "unavailable": [
+    {
+      "manifestInstanceId": "obj1-act-out-scene",
+      "componentId": "addition-subtraction-scene",
+      "objectiveId": "obj1",
+      "reason": "no live adapter"
+    },
+    {
+      "manifestInstanceId": "obj1-home-story-manipulatives",
+      "componentId": "take-home-activity",
+      "objectiveId": "obj1",
+      "reason": "no live adapter"
+    },
+    {
+      "manifestInstanceId": "obj2-story-clues-grid",
+      "componentId": "concept-card-grid",
+      "objectiveId": "obj2",
+      "reason": "no live adapter"
+    },
+    {
+      "manifestInstanceId": "obj2-joining-vs-separating",
+      "componentId": "comparison-panel",
+      "objectiveId": "obj2",
+      "reason": "no live adapter"
+    },
+    {
+      "manifestInstanceId": "obj2-tape-diagram-id",
+      "componentId": "tape-diagram",
+      "objectiveId": "obj2",
+      "reason": "no live adapter"
+    },
+    {
+      "manifestInstanceId": "obj3-walkthrough-example",
+      "componentId": "annotated-example",
+      "objectiveId": "obj3",
+      "reason": "no live adapter"
+    },
+    {
+      "manifestInstanceId": "obj3-build-story-equation",
+      "componentId": "equation-builder",
+      "objectiveId": "obj3",
+      "reason": "no live adapter"
+    }
+  ],
+  "simulated": [
+    "browser mount receipts",
+    "DI runner cues (production strings)",
+    "NumberLine check cues",
+    "completion reports",
+    "text student answers"
+  ],
+  "runs": [
+    [
+      {
+        "t": 0.0,
+        "type": "auth_success",
+        "message": "Lumina AI connected and ready to help!"
+      },
+      {
+        "t": 0.0,
+        "type": "session_ready",
+        "message": "Lumina AI is ready to help you learn!"
+      },
+      {
+        "t": 0.0,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "[LESSON_START] Begin the planned lesson now. Call start_plan_item with itemId item-1. Do not greet first or describe the activity before it is mounted.",
+          "interrupt": false,
+          "scripted": false
+        }
+      },
+      {
+        "t": 0.36,
+        "type": "resumption_handle",
+        "handle": "f36d48f6-9bd1-49d6-bccc-7ed983cf6e94"
+      },
+      {
+        "t": 1.52,
+        "type": "activity_request",
+        "callId": "call_89919",
+        "args": {
+          "planItemId": "item-1"
+        }
+      },
+      {
+        "t": 1.52,
+        "type": "sent",
+        "message": {
+          "type": "activity_result",
+          "callId": "call_89919",
+          "status": "mounted",
+          "instanceId": "live-plan-item-1-b151cf71-79d5-4eb9-9f98-c9b0e1d3cf7b",
+          "primitiveId": "number-line",
+          "guidance": "The number line is now visible. Use the first challenge instruction. Targets and operations are tutor reference: do not reveal answers. Let the student place points or make jumps and use component feedback as correctness evidence.",
+          "planItem": {
+            "itemId": "item-1",
+            "title": "Hopping Along the Number Line",
+            "intent": "Show movement along an interactive number line from 0 to 20, hopping forward to explain addition sentences and hopping backward to explain subtraction sentences.",
+            "evalMode": "jump",
+            "objective": "Explain how to solve an add-to or take-from problem using a number sentence"
+          }
+        }
+      },
+      {
+        "t": 1.52,
+        "type": "simulated_mount",
+        "itemId": "item-1",
+        "primitiveId": "number-line",
+        "instanceId": "live-plan-item-1-b151cf71-79d5-4eb9-9f98-c9b0e1d3cf7b"
+      },
+      {
+        "t": 1.53,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 1.53,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-1",
+          "phase": "intro",
+          "index": 0
+        }
+      },
+      {
+        "t": 1.53,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 1.53,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-1",
+          "phase": "intro",
+          "index": 0
+        }
+      },
+      {
+        "t": 7.86,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 7.86,
+        "type": "turn",
+        "text": "If you start at 3 and hop forward 4 spaces, what number do you land on?",
+        "counted": true,
+        "active": {
+          "itemId": "item-1",
+          "phase": "intro",
+          "index": 0
+        }
+      },
+      {
+        "t": 7.86,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "[ANSWER_INCORRECT] Challenge: \"Let us go on a frog jump adventure! Start at the number 3 on your number line. Now, hop forward 4 spaces to see where you land.\". Student placed: []. Target: [7]. Attempt 1. Give a hint without revealing the answer."
+        }
+      },
+      {
+        "t": 7.86,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 7.86,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-1",
+          "phase": "intro",
+          "index": 0
+        }
+      },
+      {
+        "t": 13.64,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 13.64,
+        "type": "turn",
+        "text": "Let us try counting the hops again, one by one, starting from 3.",
+        "counted": true,
+        "active": {
+          "itemId": "item-1",
+          "phase": "intro",
+          "index": 0
+        }
+      },
+      {
+        "t": 13.64,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "[ANSWER_CORRECT] Student correctly completed \"Let us go on a frog jump adventure! Start at the number 3 on your number line. Now, hop forward 4 spaces to see where you land.\". Attempts: 2. Congratulate briefly."
+        }
+      },
+      {
+        "t": 13.64,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 13.64,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-1",
+          "phase": "await_advance",
+          "index": 0
+        }
+      },
+      {
+        "t": 15.83,
+        "type": "activity_command",
+        "callId": "call_90072",
+        "instanceId": "live-plan-item-1-b151cf71-79d5-4eb9-9f98-c9b0e1d3cf7b",
+        "challengeIndex": 0
+      },
+      {
+        "t": 15.84,
+        "type": "sent",
+        "message": {
+          "type": "activity_command_result",
+          "callId": "call_90072",
+          "instanceId": "live-plan-item-1-b151cf71-79d5-4eb9-9f98-c9b0e1d3cf7b",
+          "status": "advanced",
+          "state": {
+            "title": "Hop Along the Number Line",
+            "description": "Learn how to solve addition and subtraction word problems by taking big jumps on the number line.",
+            "range": {
+              "min": 0,
+              "max": 20
+            },
+            "gradeBand": "K-2",
+            "numberType": "integer",
+            "interactionMode": "jump",
+            "challenges": [
+              {
+                "id": "show_jump-0",
+                "type": "show_jump",
+                "instruction": "Let us go on a frog jump adventure! Start at the number 3 on your number line. Now, hop forward 4 spaces to see where you land.",
+                "targetValues": [
+                  7
+                ],
+                "hint": "Put your finger on 3, and count forward 4 individual hops one by one to find your spot.",
+                "startValue": 3,
+                "operations": [
+                  {
+                    "type": "add",
+                    "startValue": 3,
+                    "changeValue": 4,
+                    "showJumpArc": false
+                  }
+                ],
+                "highlights": []
+              },
+              {
+                "id": "show_jump-1",
+                "type": "show_jump",
+                "instruction": "Put your finger on the number 16. Hop back 1 space to the left to see where you land!",
+                "targetValues": [
+                  15
+                ],
+                "hint": "Count one single hop to the left, moving toward smaller numbers.",
+                "startValue": 16,
+                "operations": [
+                  {
+                    "type": "subtract",
+                    "startValue": 16,
+                    "changeValue": 1,
+                    "showJumpArc": false
+                  }
+                ],
+                "highlights": []
+              },
+              {
+                "id": "show_jump-2",
+                "type": "show_jump",
+                "instruction": "Put your finger on 7, and then hop backward 2 spaces to see where you land!",
+                "targetValues": [
+                  5
+                ],
+                "hint": "Try counting backward one step at a time: start at 7 and take 2 hops to the left.",
+                "startValue": 7,
+                "operations": [
+                  {
+                    "type": "subtract",
+                    "startValue": 7,
+                    "changeValue": 2,
+                    "showJumpArc": false
+                  }
+                ],
+                "highlights": []
+              },
+              {
+                "id": "show_jump-3",
+                "type": "show_jump",
+                "instruction": "Put your finger on 13 and hop backwards 4 spaces to see where you land!",
+                "targetValues": [
+                  9
+                ],
+                "hint": "Count each hop carefully as you move your finger to the left.",
+                "startValue": 13,
+                "operations": [
+                  {
+                    "type": "subtract",
+                    "startValue": 13,
+                    "changeValue": 4,
+                    "showJumpArc": false
+                  }
+                ],
+                "highlights": []
+              }
+            ],
+            "highlights": [],
+            "operations": [
+              {
+                "type": "add",
+                "startValue": 3,
+                "changeValue": 4,
+                "showJumpArc": false
+              }
+            ],
+            "supportTier": "medium",
+            "rangeMin": 0,
+            "rangeMax": 20,
+            "visibleMin": 0,
+            "visibleMax": 20,
+            "totalChallenges": 4,
+            "currentChallengeIndex": 1,
+            "instruction": "Put your finger on the number 16. Hop back 1 space to the left to see where you land!",
+            "challengeType": "show_jump",
+            "targetValues": [
+              15
+            ],
+            "placedPoints": [],
+            "jumpEndPoints": [],
+            "orderedPlacements": [],
+            "attemptNumber": 1,
+            "zoomLevel": 1,
+            "currentPhase": "operate"
+          }
+        }
+      },
+      {
+        "t": 17.62,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 17.62,
+        "type": "turn",
+        "text": "Great job landing right on the 7!",
+        "counted": false,
+        "active": {
+          "itemId": "item-1",
+          "phase": "intro",
+          "index": 1
+        }
+      },
+      {
+        "t": 17.62,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 17.62,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-1",
+          "phase": "intro",
+          "index": 1
+        }
+      },
+      {
+        "t": 23.38,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 23.38,
+        "type": "turn",
+        "text": "Now, if you start at 16 and hop back 1 space, where do you land?",
+        "counted": true,
+        "active": {
+          "itemId": "item-1",
+          "phase": "intro",
+          "index": 1
+        }
+      },
+      {
+        "t": 23.38,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "[ANSWER_CORRECT] Student correctly completed \"Put your finger on the number 16. Hop back 1 space to the left to see where you land!\". Attempts: 1. Congratulate briefly."
+        }
+      },
+      {
+        "t": 23.38,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 23.38,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-1",
+          "phase": "await_advance",
+          "index": 1
+        }
+      },
+      {
+        "t": 24.8,
+        "type": "activity_command",
+        "callId": "call_90145",
+        "instanceId": "live-plan-item-1-b151cf71-79d5-4eb9-9f98-c9b0e1d3cf7b",
+        "challengeIndex": 1
+      },
+      {
+        "t": 24.8,
+        "type": "sent",
+        "message": {
+          "type": "activity_command_result",
+          "callId": "call_90145",
+          "instanceId": "live-plan-item-1-b151cf71-79d5-4eb9-9f98-c9b0e1d3cf7b",
+          "status": "advanced",
+          "state": {
+            "title": "Hop Along the Number Line",
+            "description": "Learn how to solve addition and subtraction word problems by taking big jumps on the number line.",
+            "range": {
+              "min": 0,
+              "max": 20
+            },
+            "gradeBand": "K-2",
+            "numberType": "integer",
+            "interactionMode": "jump",
+            "challenges": [
+              {
+                "id": "show_jump-0",
+                "type": "show_jump",
+                "instruction": "Let us go on a frog jump adventure! Start at the number 3 on your number line. Now, hop forward 4 spaces to see where you land.",
+                "targetValues": [
+                  7
+                ],
+                "hint": "Put your finger on 3, and count forward 4 individual hops one by one to find your spot.",
+                "startValue": 3,
+                "operations": [
+                  {
+                    "type": "add",
+                    "startValue": 3,
+                    "changeValue": 4,
+                    "showJumpArc": false
+                  }
+                ],
+                "highlights": []
+              },
+              {
+                "id": "show_jump-1",
+                "type": "show_jump",
+                "instruction": "Put your finger on the number 16. Hop back 1 space to the left to see where you land!",
+                "targetValues": [
+                  15
+                ],
+                "hint": "Count one single hop to the left, moving toward smaller numbers.",
+                "startValue": 16,
+                "operations": [
+                  {
+                    "type": "subtract",
+                    "startValue": 16,
+                    "changeValue": 1,
+                    "showJumpArc": false
+                  }
+                ],
+                "highlights": []
+              },
+              {
+                "id": "show_jump-2",
+                "type": "show_jump",
+                "instruction": "Put your finger on 7, and then hop backward 2 spaces to see where you land!",
+                "targetValues": [
+                  5
+                ],
+                "hint": "Try counting backward one step at a time: start at 7 and take 2 hops to the left.",
+                "startValue": 7,
+                "operations": [
+                  {
+                    "type": "subtract",
+                    "startValue": 7,
+                    "changeValue": 2,
+                    "showJumpArc": false
+                  }
+                ],
+                "highlights": []
+              },
+              {
+                "id": "show_jump-3",
+                "type": "show_jump",
+                "instruction": "Put your finger on 13 and hop backwards 4 spaces to see where you land!",
+                "targetValues": [
+                  9
+                ],
+                "hint": "Count each hop carefully as you move your finger to the left.",
+                "startValue": 13,
+                "operations": [
+                  {
+                    "type": "subtract",
+                    "startValue": 13,
+                    "changeValue": 4,
+                    "showJumpArc": false
+                  }
+                ],
+                "highlights": []
+              }
+            ],
+            "highlights": [],
+            "operations": [
+              {
+                "type": "add",
+                "startValue": 3,
+                "changeValue": 4,
+                "showJumpArc": false
+              }
+            ],
+            "supportTier": "medium",
+            "rangeMin": 0,
+            "rangeMax": 20,
+            "visibleMin": 0,
+            "visibleMax": 20,
+            "totalChallenges": 4,
+            "currentChallengeIndex": 2,
+            "instruction": "Put your finger on 7, and then hop backward 2 spaces to see where you land!",
+            "challengeType": "show_jump",
+            "targetValues": [
+              5
+            ],
+            "placedPoints": [],
+            "jumpEndPoints": [],
+            "orderedPlacements": [],
+            "attemptNumber": 1,
+            "zoomLevel": 1,
+            "currentPhase": "operate"
+          }
+        }
+      },
+      {
+        "t": 25.31,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 25.31,
+        "type": "turn",
+        "text": "You found the right spot!",
+        "counted": false,
+        "active": {
+          "itemId": "item-1",
+          "phase": "intro",
+          "index": 2
+        }
+      },
+      {
+        "t": 25.31,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 25.31,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-1",
+          "phase": "intro",
+          "index": 2
+        }
+      },
+      {
+        "t": 29.49,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 29.49,
+        "type": "turn",
+        "text": "Next, start at 7 and hop backward 2 spaces.",
+        "counted": true,
+        "active": {
+          "itemId": "item-1",
+          "phase": "intro",
+          "index": 2
+        }
+      },
+      {
+        "t": 29.49,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "[ANSWER_CORRECT] Student correctly completed \"Put your finger on 7, and then hop backward 2 spaces to see where you land!\". Attempts: 1. Congratulate briefly."
+        }
+      },
+      {
+        "t": 29.49,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 29.49,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-1",
+          "phase": "await_advance",
+          "index": 2
+        }
+      },
+      {
+        "t": 31.3,
+        "type": "activity_command",
+        "callId": "call_90205",
+        "instanceId": "live-plan-item-1-b151cf71-79d5-4eb9-9f98-c9b0e1d3cf7b",
+        "challengeIndex": 2
+      },
+      {
+        "t": 31.3,
+        "type": "sent",
+        "message": {
+          "type": "activity_command_result",
+          "callId": "call_90205",
+          "instanceId": "live-plan-item-1-b151cf71-79d5-4eb9-9f98-c9b0e1d3cf7b",
+          "status": "advanced",
+          "state": {
+            "title": "Hop Along the Number Line",
+            "description": "Learn how to solve addition and subtraction word problems by taking big jumps on the number line.",
+            "range": {
+              "min": 0,
+              "max": 20
+            },
+            "gradeBand": "K-2",
+            "numberType": "integer",
+            "interactionMode": "jump",
+            "challenges": [
+              {
+                "id": "show_jump-0",
+                "type": "show_jump",
+                "instruction": "Let us go on a frog jump adventure! Start at the number 3 on your number line. Now, hop forward 4 spaces to see where you land.",
+                "targetValues": [
+                  7
+                ],
+                "hint": "Put your finger on 3, and count forward 4 individual hops one by one to find your spot.",
+                "startValue": 3,
+                "operations": [
+                  {
+                    "type": "add",
+                    "startValue": 3,
+                    "changeValue": 4,
+                    "showJumpArc": false
+                  }
+                ],
+                "highlights": []
+              },
+              {
+                "id": "show_jump-1",
+                "type": "show_jump",
+                "instruction": "Put your finger on the number 16. Hop back 1 space to the left to see where you land!",
+                "targetValues": [
+                  15
+                ],
+                "hint": "Count one single hop to the left, moving toward smaller numbers.",
+                "startValue": 16,
+                "operations": [
+                  {
+                    "type": "subtract",
+                    "startValue": 16,
+                    "changeValue": 1,
+                    "showJumpArc": false
+                  }
+                ],
+                "highlights": []
+              },
+              {
+                "id": "show_jump-2",
+                "type": "show_jump",
+                "instruction": "Put your finger on 7, and then hop backward 2 spaces to see where you land!",
+                "targetValues": [
+                  5
+                ],
+                "hint": "Try counting backward one step at a time: start at 7 and take 2 hops to the left.",
+                "startValue": 7,
+                "operations": [
+                  {
+                    "type": "subtract",
+                    "startValue": 7,
+                    "changeValue": 2,
+                    "showJumpArc": false
+                  }
+                ],
+                "highlights": []
+              },
+              {
+                "id": "show_jump-3",
+                "type": "show_jump",
+                "instruction": "Put your finger on 13 and hop backwards 4 spaces to see where you land!",
+                "targetValues": [
+                  9
+                ],
+                "hint": "Count each hop carefully as you move your finger to the left.",
+                "startValue": 13,
+                "operations": [
+                  {
+                    "type": "subtract",
+                    "startValue": 13,
+                    "changeValue": 4,
+                    "showJumpArc": false
+                  }
+                ],
+                "highlights": []
+              }
+            ],
+            "highlights": [],
+            "operations": [
+              {
+                "type": "add",
+                "startValue": 3,
+                "changeValue": 4,
+                "showJumpArc": false
+              }
+            ],
+            "supportTier": "medium",
+            "rangeMin": 0,
+            "rangeMax": 20,
+            "visibleMin": 0,
+            "visibleMax": 20,
+            "totalChallenges": 4,
+            "currentChallengeIndex": 3,
+            "instruction": "Put your finger on 13 and hop backwards 4 spaces to see where you land!",
+            "challengeType": "show_jump",
+            "targetValues": [
+              9
+            ],
+            "placedPoints": [],
+            "jumpEndPoints": [],
+            "orderedPlacements": [],
+            "attemptNumber": 1,
+            "zoomLevel": 1,
+            "currentPhase": "operate"
+          }
+        }
+      },
+      {
+        "t": 32.52,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 32.52,
+        "type": "turn",
+        "text": "Excellent, you landed right on the 5!",
+        "counted": false,
+        "active": {
+          "itemId": "item-1",
+          "phase": "intro",
+          "index": 3
+        }
+      },
+      {
+        "t": 32.52,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 32.52,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-1",
+          "phase": "intro",
+          "index": 3
+        }
+      },
+      {
+        "t": 38.12,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 38.12,
+        "type": "turn",
+        "text": "For our last hop on this line, start at 13 and hop back 4 spaces.",
+        "counted": true,
+        "active": {
+          "itemId": "item-1",
+          "phase": "intro",
+          "index": 3
+        }
+      },
+      {
+        "t": 38.12,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "[ANSWER_CORRECT] Student correctly completed \"Put your finger on 13 and hop backwards 4 spaces to see where you land!\". Attempts: 1. Congratulate briefly."
+        }
+      },
+      {
+        "t": 38.12,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "[ALL_COMPLETE] Phase scores: Jump 100%. Overall: 100%. 4 challenges completed. Give encouraging phase-specific feedback."
+        }
+      },
+      {
+        "t": 38.12,
+        "type": "sent",
+        "message": {
+          "type": "plan_item_complete",
+          "callId": "call_89919",
+          "instanceId": "live-plan-item-1-b151cf71-79d5-4eb9-9f98-c9b0e1d3cf7b",
+          "itemId": "item-1",
+          "nextItemId": "item-2",
+          "outcome": {
+            "itemId": "item-1",
+            "disposition": "completed",
+            "allCorrect": true,
+            "score": 100
+          }
+        }
+      },
+      {
+        "t": 38.12,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 38.12,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-1",
+          "phase": "await_advance",
+          "index": 3
+        }
+      },
+      {
+        "t": 43.11,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 43.11,
+        "type": "turn",
+        "text": "That is perfect, you are doing wonderful!",
+        "counted": true,
+        "active": {
+          "itemId": "item-1",
+          "phase": "await_advance",
+          "index": 3
+        }
+      },
+      {
+        "t": 43.11,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 43.11,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-1",
+          "phase": "await_advance",
+          "index": 3
+        }
+      },
+      {
+        "t": 45.06,
+        "type": "activity_request",
+        "callId": "call_90373",
+        "args": {
+          "planItemId": "item-2"
+        }
+      },
+      {
+        "t": 45.06,
+        "type": "sent",
+        "message": {
+          "type": "activity_result",
+          "callId": "call_90373",
+          "status": "mounted",
+          "instanceId": "live-plan-item-2-b866ae38-05fc-4aa9-b03b-0ff50fcc39b7",
+          "primitiveId": "ten-frame",
+          "guidance": "The number line is now visible. Use the first challenge instruction. Targets and operations are tutor reference: do not reveal answers. Let the student place points or make jumps and use component feedback as correctness evidence.",
+          "planItem": {
+            "itemId": "item-2",
+            "title": "Model Stories with Double Ten-Frames",
+            "intent": "Provide double ten-frames up to 20 where students place counters to represent adding more items to a group or remove counters when items are taken away from a story scenario.",
+            "evalMode": "operate",
+            "objective": "Act out addition and subtraction stories using physical objects or drawings"
+          }
+        }
+      },
+      {
+        "t": 45.06,
+        "type": "simulated_mount",
+        "itemId": "item-2",
+        "primitiveId": "ten-frame",
+        "instanceId": "live-plan-item-2-b866ae38-05fc-4aa9-b03b-0ff50fcc39b7"
+      },
+      {
+        "t": 45.06,
+        "type": "activity_ready",
+        "callId": "call_90373",
+        "instanceId": "live-plan-item-2-b866ae38-05fc-4aa9-b03b-0ff50fcc39b7",
+        "primitiveId": "ten-frame"
+      },
+      {
+        "t": 45.08,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "[TF_ITEM] Say exactly: \"Hi! Time to work with the ten frame! Put the counters on the frame, then say how many there are altogether. Eight plus three. Your turn. How many altogether?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"eleven\". Either addend said back (\"eight\" or \"three\") is NOT the answer. Counting aloud that ENDS on \"eleven\" counts as that answer \u2014 the last number said tells the total. If the answer is right, say exactly: \"Yes, eleven altogether.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: eight plus three makes eleven. Fill the first frame to ten, then count on. Your turn. How many altogether?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+          "scripted": true
+        }
+      },
+      {
+        "t": 45.66,
+        "type": "ai_interrupted"
+      },
+      {
+        "t": 45.67,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 45.67,
+        "type": "turn",
+        "text": "Now we are going to model stories with double ten-frames.",
+        "counted": false,
+        "active": {
+          "itemId": "item-2",
+          "phase": "ask",
+          "index": 0
+        }
+      },
+      {
+        "t": 45.67,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 45.67,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-2",
+          "phase": "ask",
+          "index": 0
+        }
+      },
+      {
+        "t": 56.5,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 56.5,
+        "type": "turn",
+        "text": "Hi! Time to work with the ten frame! Put the counters on the frame, then say how many there are altogether. Eight plus three. Your turn. How many altogether?",
+        "counted": true,
+        "active": {
+          "itemId": "item-2",
+          "phase": "ask",
+          "index": 0
+        }
+      },
+      {
+        "t": 56.5,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "twelve"
+        }
+      },
+      {
+        "t": 56.5,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 56.5,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-2",
+          "phase": "verdict",
+          "index": 0
+        }
+      },
+      {
+        "t": 65.45,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 65.45,
+        "type": "turn",
+        "text": "My turn: eight plus three makes eleven. Fill the first frame to ten, then count on. Your turn. How many altogether?",
+        "counted": true,
+        "active": {
+          "itemId": "item-2",
+          "phase": "verdict",
+          "index": 0
+        }
+      },
+      {
+        "t": 65.45,
+        "type": "di_verdict",
+        "item": "c1",
+        "answered": "wrong",
+        "verdict": "correct",
+        "text": "My turn: eight plus three makes eleven. Fill the first frame to ten, then count on. Your turn. How many altogether?"
+      },
+      {
+        "t": 65.45,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "eleven"
+        }
+      },
+      {
+        "t": 65.45,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 65.45,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-2",
+          "phase": "verdict",
+          "index": 0
+        }
+      },
+      {
+        "t": 68.95,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 68.95,
+        "type": "turn",
+        "text": "Yes, eleven altogether.",
+        "counted": true,
+        "active": {
+          "itemId": "item-2",
+          "phase": "verdict",
+          "index": 0
+        }
+      },
+      {
+        "t": 68.95,
+        "type": "di_verdict",
+        "item": "c1",
+        "answered": "right",
+        "verdict": "affirm",
+        "text": "Yes, eleven altogether."
+      },
+      {
+        "t": 68.95,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "[TF_ITEM] Say exactly: \"Seven plus six. Your turn. How many altogether?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"thirteen\". Either addend said back (\"seven\" or \"six\") is NOT the answer. Counting aloud that ENDS on \"thirteen\" counts as that answer \u2014 the last number said tells the total. If the answer is right, say exactly: \"Yes, thirteen altogether.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: seven plus six makes thirteen. Fill the first frame to ten, then count on. Your turn. How many altogether?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+          "scripted": true
+        }
+      },
+      {
+        "t": 68.95,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 68.95,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-2",
+          "phase": "ask",
+          "index": 1
+        }
+      },
+      {
+        "t": 74.08,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 74.08,
+        "type": "turn",
+        "text": "Seven plus six. Your turn. How many altogether?",
+        "counted": true,
+        "active": {
+          "itemId": "item-2",
+          "phase": "ask",
+          "index": 1
+        }
+      },
+      {
+        "t": 74.08,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "thirteen"
+        }
+      },
+      {
+        "t": 74.08,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 74.08,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-2",
+          "phase": "verdict",
+          "index": 1
+        }
+      },
+      {
+        "t": 77.72,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 77.72,
+        "type": "turn",
+        "text": "Yes, thirteen altogether.",
+        "counted": true,
+        "active": {
+          "itemId": "item-2",
+          "phase": "verdict",
+          "index": 1
+        }
+      },
+      {
+        "t": 77.72,
+        "type": "di_verdict",
+        "item": "c2",
+        "answered": "right",
+        "verdict": "affirm",
+        "text": "Yes, thirteen altogether."
+      },
+      {
+        "t": 77.72,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "[TF_ITEM] Say exactly: \"Eight plus seven. Your turn. How many altogether?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"fifteen\". Either addend said back (\"eight\" or \"seven\") is NOT the answer. Counting aloud that ENDS on \"fifteen\" counts as that answer \u2014 the last number said tells the total. If the answer is right, say exactly: \"Yes, fifteen altogether.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: eight plus seven makes fifteen. Fill the first frame to ten, then count on. Your turn. How many altogether?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+          "scripted": true
+        }
+      },
+      {
+        "t": 77.72,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 77.72,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-2",
+          "phase": "ask",
+          "index": 2
+        }
+      },
+      {
+        "t": 83.19,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 83.19,
+        "type": "turn",
+        "text": "Eight plus seven. Your turn. How many altogether?",
+        "counted": true,
+        "active": {
+          "itemId": "item-2",
+          "phase": "ask",
+          "index": 2
+        }
+      },
+      {
+        "t": 83.19,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "fifteen"
+        }
+      },
+      {
+        "t": 83.19,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 83.19,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-2",
+          "phase": "verdict",
+          "index": 2
+        }
+      },
+      {
+        "t": 86.69,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 86.69,
+        "type": "turn",
+        "text": "Yes, fifteen altogether.",
+        "counted": true,
+        "active": {
+          "itemId": "item-2",
+          "phase": "verdict",
+          "index": 2
+        }
+      },
+      {
+        "t": 86.69,
+        "type": "di_verdict",
+        "item": "c3",
+        "answered": "right",
+        "verdict": "affirm",
+        "text": "Yes, fifteen altogether."
+      },
+      {
+        "t": 86.69,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "[TF_ITEM] Say exactly: \"Fourteen counters. Take away five. Your turn. How many are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"nine\". The starting number \"fourteen\" and the number taken away \"five\" are NOT the answer. Counting aloud that ENDS on \"nine\" counts as that answer \u2014 the last number said tells how many are left. If the answer is right, say exactly: \"Yes, nine left.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: fourteen take away five leaves nine. Nine are left. Your turn. How many are left?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+          "scripted": true
+        }
+      },
+      {
+        "t": 86.69,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 86.69,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-2",
+          "phase": "ask",
+          "index": 3
+        }
+      },
+      {
+        "t": 92.99,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 92.99,
+        "type": "turn",
+        "text": "Fourteen counters. Take away five. Your turn. How many are left?",
+        "counted": true,
+        "active": {
+          "itemId": "item-2",
+          "phase": "ask",
+          "index": 3
+        }
+      },
+      {
+        "t": 92.99,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "nine"
+        }
+      },
+      {
+        "t": 92.99,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 92.99,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-2",
+          "phase": "verdict",
+          "index": 3
+        }
+      },
+      {
+        "t": 96.05,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 96.05,
+        "type": "turn",
+        "text": "Yes, nine left.",
+        "counted": true,
+        "active": {
+          "itemId": "item-2",
+          "phase": "verdict",
+          "index": 3
+        }
+      },
+      {
+        "t": 96.05,
+        "type": "di_verdict",
+        "item": "c4",
+        "answered": "right",
+        "verdict": "affirm",
+        "text": "Yes, nine left."
+      },
+      {
+        "t": 96.05,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "[TF_ITEM] Say exactly: \"Sixteen counters. Take away eight. Your turn. How many are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"eight\". The starting number \"sixteen\" is NOT the answer. Here the number taken away is also \"eight\", so \"eight\" is correct. Counting aloud that ENDS on \"eight\" counts as that answer \u2014 the last number said tells how many are left. If the answer is right, say exactly: \"Yes, eight left.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: sixteen take away eight leaves eight. Eight are left. Your turn. How many are left?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+          "scripted": true
+        }
+      },
+      {
+        "t": 96.05,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 96.05,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-2",
+          "phase": "ask",
+          "index": 4
+        }
+      },
+      {
+        "t": 102.22,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 102.22,
+        "type": "turn",
+        "text": "Sixteen counters. Take away eight. Your turn. How many are left?",
+        "counted": true,
+        "active": {
+          "itemId": "item-2",
+          "phase": "ask",
+          "index": 4
+        }
+      },
+      {
+        "t": 102.22,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "eight"
+        }
+      },
+      {
+        "t": 102.22,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 102.22,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-2",
+          "phase": "verdict",
+          "index": 4
+        }
+      },
+      {
+        "t": 103.61,
+        "type": "sent",
+        "message": {
+          "type": "plan_item_complete",
+          "callId": "call_90373",
+          "instanceId": "live-plan-item-2-b866ae38-05fc-4aa9-b03b-0ff50fcc39b7",
+          "itemId": "item-2",
+          "nextItemId": "",
+          "outcome": {
+            "itemId": "item-2",
+            "disposition": "completed",
+            "allCorrect": true,
+            "score": 100
+          }
+        }
+      },
+      {
+        "t": 105.45,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 105.45,
+        "type": "turn",
+        "text": "Yes, eight left.",
+        "counted": true,
+        "active": {
+          "itemId": "item-2",
+          "phase": "verdict",
+          "index": 4
+        }
+      },
+      {
+        "t": 105.45,
+        "type": "di_verdict",
+        "item": "c5",
+        "answered": "right",
+        "verdict": "affirm",
+        "text": "Yes, eight left."
+      },
+      {
+        "t": 105.45,
+        "type": "sent",
+        "message": {
+          "type": "text",
+          "content": "[TF_COMPLETE] Say exactly: \"What great number work today! Your eyes and your hands did hard thinking. See you next time!\" Then stop \u2014 the activity is over.",
+          "scripted": true
+        }
+      },
+      {
+        "t": 105.45,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 105.45,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-2",
+          "phase": "closing",
+          "index": 5
+        }
+      },
+      {
+        "t": 112.92,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 112.92,
+        "type": "turn",
+        "text": "What great number work today! Your eyes and your hands did hard thinking. See you next time!",
+        "counted": true,
+        "active": {
+          "itemId": "item-2",
+          "phase": "closing",
+          "index": 5
+        }
+      },
+      {
+        "t": 112.92,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 112.92,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-2",
+          "phase": "await_next",
+          "index": 5
+        }
+      },
+      {
+        "t": 116.24,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 116.24,
+        "type": "turn",
+        "text": "The lesson is now complete.",
+        "counted": true,
+        "active": {
+          "itemId": "item-2",
+          "phase": "await_next",
+          "index": 5
+        }
+      },
+      {
+        "t": 116.24,
+        "type": "ai_turn_end"
+      },
+      {
+        "t": 116.24,
+        "type": "turn",
+        "text": "",
+        "counted": false,
+        "active": {
+          "itemId": "item-2",
+          "phase": "await_next",
+          "index": 5
+        }
+      },
+      {
+        "t": 128.61,
+        "type": "completed"
+      }
+    ]
+  ]
+}

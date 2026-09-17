@@ -1,0 +1,2203 @@
+[
+  [
+    {
+      "seconds": 2.19,
+      "type": "auth_success",
+      "message": "Lumina AI connected and ready to help!"
+    },
+    {
+      "seconds": 2.2,
+      "type": "session_ready",
+      "message": "Lumina AI is ready to help you learn!"
+    },
+    {
+      "seconds": 2.51,
+      "type": "resumption_handle",
+      "handle": "4e23d9f5-df57-4936-b102-303380c80314"
+    },
+    {
+      "seconds": 3.62,
+      "type": "activity_request",
+      "callId": "call_283832",
+      "args": {
+        "primitiveId": "number-line",
+        "topic": "Subtraction within 10",
+        "intent": "Practice single-digit subtraction problems within 10 using a number line to show jumps backward.",
+        "mode": "jump"
+      }
+    },
+    {
+      "seconds": 3.64,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 3.64,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 6.19,
+      "type": "generated",
+      "callId": "call_283832",
+      "activity": {
+        "instanceId": "live-5fe3a6ef-103e-4928-aae0-b777aed9b19e",
+        "data": {
+          "title": "Hop Back on the Number Line",
+          "description": "Learn how to subtract numbers by hopping backward on the number line.",
+          "range": {
+            "min": 0,
+            "max": 10
+          },
+          "gradeBand": "K-2",
+          "numberType": "integer",
+          "interactionMode": "jump",
+          "challenges": [
+            {
+              "id": "show_jump-0",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 9. Now, hop backward 5 spaces to the left to see where you land!",
+              "targetValues": [
+                4
+              ],
+              "hint": "Try placing your finger on 9 and count 5 individual hops to the left.",
+              "startValue": 9,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 9,
+                  "changeValue": 5,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-1",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 5, and then hop backward 2 spaces to the left!",
+              "targetValues": [
+                3
+              ],
+              "hint": "Count the hops as you move backward one by one.",
+              "startValue": 5,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 5,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-2",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 3. Now hop backward 2 spaces to the left!",
+              "targetValues": [
+                1
+              ],
+              "hint": "Count each hop as you move your finger 2 spaces to the left.",
+              "startValue": 3,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 3,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-3",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 9. Now, hop backward 3 spaces to see where you land!",
+              "targetValues": [
+                6
+              ],
+              "hint": "Count each hop backward one by one as you move your finger 3 spaces to the left.",
+              "startValue": 9,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 9,
+                  "changeValue": 3,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            }
+          ],
+          "highlights": [],
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 9,
+              "changeValue": 5,
+              "showJumpArc": true
+            }
+          ],
+          "supportTier": "easy",
+          "instanceId": "live-5fe3a6ef-103e-4928-aae0-b777aed9b19e"
+        },
+        "initialState": {
+          "title": "Hop Back on the Number Line",
+          "description": "Learn how to subtract numbers by hopping backward on the number line.",
+          "range": {
+            "min": 0,
+            "max": 10
+          },
+          "gradeBand": "K-2",
+          "numberType": "integer",
+          "interactionMode": "jump",
+          "challenges": [
+            {
+              "id": "show_jump-0",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 9. Now, hop backward 5 spaces to the left to see where you land!",
+              "targetValues": [
+                4
+              ],
+              "hint": "Try placing your finger on 9 and count 5 individual hops to the left.",
+              "startValue": 9,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 9,
+                  "changeValue": 5,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-1",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 5, and then hop backward 2 spaces to the left!",
+              "targetValues": [
+                3
+              ],
+              "hint": "Count the hops as you move backward one by one.",
+              "startValue": 5,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 5,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-2",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 3. Now hop backward 2 spaces to the left!",
+              "targetValues": [
+                1
+              ],
+              "hint": "Count each hop as you move your finger 2 spaces to the left.",
+              "startValue": 3,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 3,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-3",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 9. Now, hop backward 3 spaces to see where you land!",
+              "targetValues": [
+                6
+              ],
+              "hint": "Count each hop backward one by one as you move your finger 3 spaces to the left.",
+              "startValue": 9,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 9,
+                  "changeValue": 3,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            }
+          ],
+          "highlights": [],
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 9,
+              "changeValue": 5,
+              "showJumpArc": true
+            }
+          ],
+          "supportTier": "easy",
+          "rangeMin": 0,
+          "rangeMax": 10,
+          "visibleMin": 0,
+          "visibleMax": 10,
+          "totalChallenges": 4,
+          "currentChallengeIndex": 0,
+          "instruction": "Put your finger on the number 9. Now, hop backward 5 spaces to the left to see where you land!",
+          "challengeType": "show_jump",
+          "targetValues": [
+            4
+          ],
+          "placedPoints": [],
+          "jumpEndPoints": [],
+          "orderedPlacements": [],
+          "attemptNumber": 1,
+          "zoomLevel": 1,
+          "currentPhase": "operate"
+        },
+        "tutoring": {
+          "taskDescription": "Work with a number line from {{rangeMin}} to {{rangeMax}} using {{numberType}} numbers in {{interactionMode}} mode.",
+          "contextKeys": [
+            "rangeMin",
+            "rangeMax",
+            "visibleMin",
+            "visibleMax",
+            "numberType",
+            "interactionMode",
+            "gradeBand",
+            "instruction",
+            "challengeType",
+            "targetValues",
+            "exactTargetValue",
+            "placedPoints",
+            "attemptNumber",
+            "currentPhase"
+          ],
+          "scaffoldingLevels": {
+            "level1": "\"Look carefully at the number line. Where do you think that value belongs?\"",
+            "level2": "\"Find the labeled number just to the left of your target. Count the nearby tick marks one step at a time.\"",
+            "level3": "\"Use the labels in the visible window. Start at the closest labeled number on screen and count one tick at a time toward the target.\""
+          },
+          "commonStruggles": [
+            {
+              "pattern": "Placing point far from target value",
+              "response": "\"Look at the numbers under the tick marks. Find the two numbers your target is between, then place your point between them.\""
+            },
+            {
+              "pattern": "Confusing addition direction with subtraction",
+              "response": "\"Remember: adding moves RIGHT on the number line (numbers get bigger), subtracting moves LEFT (numbers get smaller).\""
+            },
+            {
+              "pattern": "Ordering fractions incorrectly",
+              "response": "\"Try zooming in to see the fraction marks. Compare each fraction to 1/2 first \u2014 is it more or less than half?\""
+            },
+            {
+              "pattern": "Difficulty reading a large range",
+              "response": "\"Use the labels in the zoomed window on screen. Start from the closest visible label instead of counting from the beginning of the whole range.\""
+            }
+          ],
+          "aiDirectives": [
+            {
+              "title": "INTERACTION MODE COACHING",
+              "instruction": "Adapt your coaching to the interaction mode. In PLOT mode: guide placement \u2014 \"Find the spot between the tick marks.\" In JUMP mode: narrate movement \u2014 \"You jumped 3 to the right, that is adding 3!\" In ORDER mode: guide comparison \u2014 \"Which number is further left? That one is smaller.\" Always reference the number line visually \u2014 point to specific tick marks and positions."
+            },
+            {
+              "title": "GRADE-BAND ADAPTATION",
+              "instruction": "For K-2: use counting language \u2014 \"Let's count the hops: 1, 2, 3...\" Keep to whole numbers. Kindergarten stays on small fully labeled ranges; when an explicit Grade-1 objective extends through 120, coach only the readable auto-zoomed window and never redirect the child back to 0-20. For grades 3-5: introduce fraction/decimal language \u2014 \"Is 3/4 closer to 1/2 or to 1?\" Use benchmark fractions (1/4, 1/2, 3/4) as reference points. For negative numbers: \"Numbers left of zero are negative \u2014 they are less than zero.\""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "seconds": 6.19,
+      "type": "simulated_mount_ack",
+      "instanceId": "live-5fe3a6ef-103e-4928-aae0-b777aed9b19e"
+    },
+    {
+      "seconds": 6.8,
+      "type": "ai_transcription",
+      "content": "I've got the number "
+    },
+    {
+      "seconds": 7.16,
+      "type": "ai_transcription",
+      "content": "line ready for you!"
+    },
+    {
+      "seconds": 7.41,
+      "type": "ai_transcription",
+      "content": " Let's start on the number"
+    },
+    {
+      "seconds": 7.64,
+      "type": "ai_transcription",
+      "content": " 9. Can you"
+    },
+    {
+      "seconds": 7.91,
+      "type": "ai_transcription",
+      "content": " hop backward"
+    },
+    {
+      "seconds": 8.11,
+      "type": "ai_transcription",
+      "content": " 5 spaces to the left"
+    },
+    {
+      "seconds": 8.31,
+      "type": "ai_transcription",
+      "content": " and see where you land?"
+    },
+    {
+      "seconds": 14.83,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 14.83,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 16.06,
+      "type": "ai_transcription",
+      "content": "You placed your jump "
+    },
+    {
+      "seconds": 16.39,
+      "type": "ai_transcription",
+      "content": "endpoint at the number"
+    },
+    {
+      "seconds": 16.58,
+      "type": "ai_transcription",
+      "content": " 2."
+    },
+    {
+      "seconds": 18.86,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 18.86,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 20.03,
+      "type": "activity_request",
+      "callId": "call_284077",
+      "args": {
+        "primitiveId": "number-line",
+        "topic": "Subtraction within 10",
+        "intent": "Practice single-digit subtraction problems within 10 using a number line to show jumps backward.",
+        "mode": "jump"
+      }
+    },
+    {
+      "seconds": 20.05,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 20.05,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 21.81,
+      "type": "generated",
+      "callId": "call_284077",
+      "activity": {
+        "instanceId": "live-28f57253-81ab-4329-a2ba-ab45257b3ee3",
+        "data": {
+          "title": "Hop Back on the Number Line",
+          "description": "Learn how to subtract numbers by hopping backward on the number line from 0 to 10.",
+          "range": {
+            "min": 0,
+            "max": 10
+          },
+          "gradeBand": "K-2",
+          "numberType": "integer",
+          "interactionMode": "jump",
+          "challenges": [
+            {
+              "id": "show_jump-0",
+              "type": "show_jump",
+              "instruction": "Let us start at the number 8 on our number line. Now, hop backward by 3 steps to see where you land!",
+              "targetValues": [
+                5
+              ],
+              "hint": "Put your finger on 8 and count 3 hops to the left.",
+              "startValue": 8,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 8,
+                  "changeValue": 3,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-1",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 8, and hop backward 2 spaces to the left!",
+              "targetValues": [
+                6
+              ],
+              "hint": "Count the hops carefully as you jump back 2 steps on the line.",
+              "startValue": 8,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 8,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-2",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 5. Now, make a big jump backwards of 2 spaces to the left!",
+              "targetValues": [
+                3
+              ],
+              "hint": "Count 2 hops to the left from 5.",
+              "startValue": 5,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 5,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-3",
+              "type": "show_jump",
+              "instruction": "Let's practice taking away! Put your finger on the number 9, and hop backward 3 spaces to the left.",
+              "targetValues": [
+                6
+              ],
+              "hint": "Start at 9 and carefully count 3 hops to the left.",
+              "startValue": 9,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 9,
+                  "changeValue": 3,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            }
+          ],
+          "highlights": [],
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 8,
+              "changeValue": 3,
+              "showJumpArc": true
+            }
+          ],
+          "supportTier": "easy",
+          "instanceId": "live-28f57253-81ab-4329-a2ba-ab45257b3ee3"
+        },
+        "initialState": {
+          "title": "Hop Back on the Number Line",
+          "description": "Learn how to subtract numbers by hopping backward on the number line from 0 to 10.",
+          "range": {
+            "min": 0,
+            "max": 10
+          },
+          "gradeBand": "K-2",
+          "numberType": "integer",
+          "interactionMode": "jump",
+          "challenges": [
+            {
+              "id": "show_jump-0",
+              "type": "show_jump",
+              "instruction": "Let us start at the number 8 on our number line. Now, hop backward by 3 steps to see where you land!",
+              "targetValues": [
+                5
+              ],
+              "hint": "Put your finger on 8 and count 3 hops to the left.",
+              "startValue": 8,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 8,
+                  "changeValue": 3,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-1",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 8, and hop backward 2 spaces to the left!",
+              "targetValues": [
+                6
+              ],
+              "hint": "Count the hops carefully as you jump back 2 steps on the line.",
+              "startValue": 8,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 8,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-2",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 5. Now, make a big jump backwards of 2 spaces to the left!",
+              "targetValues": [
+                3
+              ],
+              "hint": "Count 2 hops to the left from 5.",
+              "startValue": 5,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 5,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-3",
+              "type": "show_jump",
+              "instruction": "Let's practice taking away! Put your finger on the number 9, and hop backward 3 spaces to the left.",
+              "targetValues": [
+                6
+              ],
+              "hint": "Start at 9 and carefully count 3 hops to the left.",
+              "startValue": 9,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 9,
+                  "changeValue": 3,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            }
+          ],
+          "highlights": [],
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 8,
+              "changeValue": 3,
+              "showJumpArc": true
+            }
+          ],
+          "supportTier": "easy",
+          "rangeMin": 0,
+          "rangeMax": 10,
+          "visibleMin": 0,
+          "visibleMax": 10,
+          "totalChallenges": 4,
+          "currentChallengeIndex": 0,
+          "instruction": "Let us start at the number 8 on our number line. Now, hop backward by 3 steps to see where you land!",
+          "challengeType": "show_jump",
+          "targetValues": [
+            5
+          ],
+          "placedPoints": [],
+          "jumpEndPoints": [],
+          "orderedPlacements": [],
+          "attemptNumber": 1,
+          "zoomLevel": 1,
+          "currentPhase": "operate"
+        },
+        "tutoring": {
+          "taskDescription": "Work with a number line from {{rangeMin}} to {{rangeMax}} using {{numberType}} numbers in {{interactionMode}} mode.",
+          "contextKeys": [
+            "rangeMin",
+            "rangeMax",
+            "visibleMin",
+            "visibleMax",
+            "numberType",
+            "interactionMode",
+            "gradeBand",
+            "instruction",
+            "challengeType",
+            "targetValues",
+            "exactTargetValue",
+            "placedPoints",
+            "attemptNumber",
+            "currentPhase"
+          ],
+          "scaffoldingLevels": {
+            "level1": "\"Look carefully at the number line. Where do you think that value belongs?\"",
+            "level2": "\"Find the labeled number just to the left of your target. Count the nearby tick marks one step at a time.\"",
+            "level3": "\"Use the labels in the visible window. Start at the closest labeled number on screen and count one tick at a time toward the target.\""
+          },
+          "commonStruggles": [
+            {
+              "pattern": "Placing point far from target value",
+              "response": "\"Look at the numbers under the tick marks. Find the two numbers your target is between, then place your point between them.\""
+            },
+            {
+              "pattern": "Confusing addition direction with subtraction",
+              "response": "\"Remember: adding moves RIGHT on the number line (numbers get bigger), subtracting moves LEFT (numbers get smaller).\""
+            },
+            {
+              "pattern": "Ordering fractions incorrectly",
+              "response": "\"Try zooming in to see the fraction marks. Compare each fraction to 1/2 first \u2014 is it more or less than half?\""
+            },
+            {
+              "pattern": "Difficulty reading a large range",
+              "response": "\"Use the labels in the zoomed window on screen. Start from the closest visible label instead of counting from the beginning of the whole range.\""
+            }
+          ],
+          "aiDirectives": [
+            {
+              "title": "INTERACTION MODE COACHING",
+              "instruction": "Adapt your coaching to the interaction mode. In PLOT mode: guide placement \u2014 \"Find the spot between the tick marks.\" In JUMP mode: narrate movement \u2014 \"You jumped 3 to the right, that is adding 3!\" In ORDER mode: guide comparison \u2014 \"Which number is further left? That one is smaller.\" Always reference the number line visually \u2014 point to specific tick marks and positions."
+            },
+            {
+              "title": "GRADE-BAND ADAPTATION",
+              "instruction": "For K-2: use counting language \u2014 \"Let's count the hops: 1, 2, 3...\" Keep to whole numbers. Kindergarten stays on small fully labeled ranges; when an explicit Grade-1 objective extends through 120, coach only the readable auto-zoomed window and never redirect the child back to 0-20. For grades 3-5: introduce fraction/decimal language \u2014 \"Is 3/4 closer to 1/2 or to 1?\" Use benchmark fractions (1/4, 1/2, 3/4) as reference points. For negative numbers: \"Numbers left of zero are negative \u2014 they are less than zero.\""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "seconds": 21.81,
+      "type": "simulated_mount_ack",
+      "instanceId": "live-28f57253-81ab-4329-a2ba-ab45257b3ee3"
+    },
+    {
+      "seconds": 22.59,
+      "type": "ai_transcription",
+      "content": "Here is a "
+    },
+    {
+      "seconds": 22.73,
+      "type": "ai_transcription",
+      "content": "new example! Let's"
+    },
+    {
+      "seconds": 23.0,
+      "type": "ai_transcription",
+      "content": " start at the number 8"
+    },
+    {
+      "seconds": 23.3,
+      "type": "ai_transcription",
+      "content": " and hop backward"
+    },
+    {
+      "seconds": 23.47,
+      "type": "ai_transcription",
+      "content": " 3 steps to see where"
+    },
+    {
+      "seconds": 23.67,
+      "type": "ai_transcription",
+      "content": " you land."
+    },
+    {
+      "seconds": 28.61,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 28.61,
+      "type": "completed",
+      "mounts": 2
+    }
+  ],
+  [
+    {
+      "seconds": 2.05,
+      "type": "auth_success",
+      "message": "Lumina AI connected and ready to help!"
+    },
+    {
+      "seconds": 2.06,
+      "type": "session_ready",
+      "message": "Lumina AI is ready to help you learn!"
+    },
+    {
+      "seconds": 2.34,
+      "type": "resumption_handle",
+      "handle": "50be0bd4-a264-4c26-a5e3-2c297f81fc46"
+    },
+    {
+      "seconds": 3.41,
+      "type": "activity_request",
+      "callId": "call_247337",
+      "args": {
+        "primitiveId": "number-line",
+        "topic": "Subtraction within 10",
+        "intent": "Practice subtraction within 10 using a number line.",
+        "mode": "jump"
+      }
+    },
+    {
+      "seconds": 3.44,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 3.44,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 5.26,
+      "type": "generated",
+      "callId": "call_247337",
+      "activity": {
+        "instanceId": "live-c19dafde-9b62-43c8-a16d-b707fe7d999b",
+        "data": {
+          "title": "Hop Back on the Number Line",
+          "description": "Learn how to subtract numbers by hopping backward on a number line from 10.",
+          "range": {
+            "min": 0,
+            "max": 10
+          },
+          "gradeBand": "K-2",
+          "numberType": "integer",
+          "interactionMode": "jump",
+          "challenges": [
+            {
+              "id": "show_jump-0",
+              "type": "show_jump",
+              "instruction": "Put your frog on the number 10, then hop backward 2 spaces to the left to see where you land!",
+              "targetValues": [
+                8
+              ],
+              "hint": "Start at 10 and count 2 hops backward to the left.",
+              "startValue": 10,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 10,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-1",
+              "type": "show_jump",
+              "instruction": "Our friendly frog starts at number 9. Help him hop backward 3 spaces to the left!",
+              "targetValues": [
+                6
+              ],
+              "hint": "Count the hops one by one as the frog jumps backward 3 times.",
+              "startValue": 9,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 9,
+                  "changeValue": 3,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-2",
+              "type": "show_jump",
+              "instruction": "Let's hop backward! Start at the number 7 on the number line and jump back 4 spaces to see where you land.",
+              "targetValues": [
+                3
+              ],
+              "hint": "Put your finger on 7 and count 4 hops to the left.",
+              "startValue": 7,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 7,
+                  "changeValue": 4,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-3",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 6, and hop backward 4 spaces to see where you land!",
+              "targetValues": [
+                2
+              ],
+              "hint": "Count the hops one by one as you jump backward 4 times.",
+              "startValue": 6,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 6,
+                  "changeValue": 4,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            }
+          ],
+          "highlights": [],
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 10,
+              "changeValue": 2,
+              "showJumpArc": true
+            }
+          ],
+          "supportTier": "easy",
+          "instanceId": "live-c19dafde-9b62-43c8-a16d-b707fe7d999b"
+        },
+        "initialState": {
+          "title": "Hop Back on the Number Line",
+          "description": "Learn how to subtract numbers by hopping backward on a number line from 10.",
+          "range": {
+            "min": 0,
+            "max": 10
+          },
+          "gradeBand": "K-2",
+          "numberType": "integer",
+          "interactionMode": "jump",
+          "challenges": [
+            {
+              "id": "show_jump-0",
+              "type": "show_jump",
+              "instruction": "Put your frog on the number 10, then hop backward 2 spaces to the left to see where you land!",
+              "targetValues": [
+                8
+              ],
+              "hint": "Start at 10 and count 2 hops backward to the left.",
+              "startValue": 10,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 10,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-1",
+              "type": "show_jump",
+              "instruction": "Our friendly frog starts at number 9. Help him hop backward 3 spaces to the left!",
+              "targetValues": [
+                6
+              ],
+              "hint": "Count the hops one by one as the frog jumps backward 3 times.",
+              "startValue": 9,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 9,
+                  "changeValue": 3,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-2",
+              "type": "show_jump",
+              "instruction": "Let's hop backward! Start at the number 7 on the number line and jump back 4 spaces to see where you land.",
+              "targetValues": [
+                3
+              ],
+              "hint": "Put your finger on 7 and count 4 hops to the left.",
+              "startValue": 7,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 7,
+                  "changeValue": 4,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-3",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 6, and hop backward 4 spaces to see where you land!",
+              "targetValues": [
+                2
+              ],
+              "hint": "Count the hops one by one as you jump backward 4 times.",
+              "startValue": 6,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 6,
+                  "changeValue": 4,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            }
+          ],
+          "highlights": [],
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 10,
+              "changeValue": 2,
+              "showJumpArc": true
+            }
+          ],
+          "supportTier": "easy",
+          "rangeMin": 0,
+          "rangeMax": 10,
+          "visibleMin": 0,
+          "visibleMax": 10,
+          "totalChallenges": 4,
+          "currentChallengeIndex": 0,
+          "instruction": "Put your frog on the number 10, then hop backward 2 spaces to the left to see where you land!",
+          "challengeType": "show_jump",
+          "targetValues": [
+            8
+          ],
+          "placedPoints": [],
+          "jumpEndPoints": [],
+          "orderedPlacements": [],
+          "attemptNumber": 1,
+          "zoomLevel": 1,
+          "currentPhase": "operate"
+        },
+        "tutoring": {
+          "taskDescription": "Work with a number line from {{rangeMin}} to {{rangeMax}} using {{numberType}} numbers in {{interactionMode}} mode.",
+          "contextKeys": [
+            "rangeMin",
+            "rangeMax",
+            "visibleMin",
+            "visibleMax",
+            "numberType",
+            "interactionMode",
+            "gradeBand",
+            "instruction",
+            "challengeType",
+            "targetValues",
+            "exactTargetValue",
+            "placedPoints",
+            "attemptNumber",
+            "currentPhase"
+          ],
+          "scaffoldingLevels": {
+            "level1": "\"Look carefully at the number line. Where do you think that value belongs?\"",
+            "level2": "\"Find the labeled number just to the left of your target. Count the nearby tick marks one step at a time.\"",
+            "level3": "\"Use the labels in the visible window. Start at the closest labeled number on screen and count one tick at a time toward the target.\""
+          },
+          "commonStruggles": [
+            {
+              "pattern": "Placing point far from target value",
+              "response": "\"Look at the numbers under the tick marks. Find the two numbers your target is between, then place your point between them.\""
+            },
+            {
+              "pattern": "Confusing addition direction with subtraction",
+              "response": "\"Remember: adding moves RIGHT on the number line (numbers get bigger), subtracting moves LEFT (numbers get smaller).\""
+            },
+            {
+              "pattern": "Ordering fractions incorrectly",
+              "response": "\"Try zooming in to see the fraction marks. Compare each fraction to 1/2 first \u2014 is it more or less than half?\""
+            },
+            {
+              "pattern": "Difficulty reading a large range",
+              "response": "\"Use the labels in the zoomed window on screen. Start from the closest visible label instead of counting from the beginning of the whole range.\""
+            }
+          ],
+          "aiDirectives": [
+            {
+              "title": "INTERACTION MODE COACHING",
+              "instruction": "Adapt your coaching to the interaction mode. In PLOT mode: guide placement \u2014 \"Find the spot between the tick marks.\" In JUMP mode: narrate movement \u2014 \"You jumped 3 to the right, that is adding 3!\" In ORDER mode: guide comparison \u2014 \"Which number is further left? That one is smaller.\" Always reference the number line visually \u2014 point to specific tick marks and positions."
+            },
+            {
+              "title": "GRADE-BAND ADAPTATION",
+              "instruction": "For K-2: use counting language \u2014 \"Let's count the hops: 1, 2, 3...\" Keep to whole numbers. Kindergarten stays on small fully labeled ranges; when an explicit Grade-1 objective extends through 120, coach only the readable auto-zoomed window and never redirect the child back to 0-20. For grades 3-5: introduce fraction/decimal language \u2014 \"Is 3/4 closer to 1/2 or to 1?\" Use benchmark fractions (1/4, 1/2, 3/4) as reference points. For negative numbers: \"Numbers left of zero are negative \u2014 they are less than zero.\""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "seconds": 5.26,
+      "type": "simulated_mount_ack",
+      "instanceId": "live-c19dafde-9b62-43c8-a16d-b707fe7d999b"
+    },
+    {
+      "seconds": 5.8,
+      "type": "ai_transcription",
+      "content": "I've pulled up your "
+    },
+    {
+      "seconds": 6.2,
+      "type": "ai_transcription",
+      "content": "number line activity!"
+    },
+    {
+      "seconds": 6.41,
+      "type": "ai_transcription",
+      "content": " Let's start with our frog"
+    },
+    {
+      "seconds": 6.61,
+      "type": "ai_transcription",
+      "content": " on the number 10,"
+    },
+    {
+      "seconds": 6.86,
+      "type": "ai_transcription",
+      "content": " and then hop"
+    },
+    {
+      "seconds": 7.08,
+      "type": "ai_transcription",
+      "content": " backward two spaces"
+    },
+    {
+      "seconds": 7.38,
+      "type": "ai_transcription",
+      "content": " to the left."
+    },
+    {
+      "seconds": 7.62,
+      "type": "ai_transcription",
+      "content": " Where do you land?"
+    },
+    {
+      "seconds": 14.45,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 14.45,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 15.86,
+      "type": "ai_transcription",
+      "content": "You placed your jump "
+    },
+    {
+      "seconds": 16.09,
+      "type": "ai_transcription",
+      "content": "endpoint at the number"
+    },
+    {
+      "seconds": 16.39,
+      "type": "ai_transcription",
+      "content": " 2."
+    },
+    {
+      "seconds": 18.81,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 18.81,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 20.01,
+      "type": "activity_request",
+      "callId": "call_247631",
+      "args": {
+        "primitiveId": "number-line",
+        "topic": "Subtraction within 10",
+        "intent": "Generate a new subtraction within 10 example using a number line.",
+        "mode": "jump"
+      }
+    },
+    {
+      "seconds": 20.03,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 20.03,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 21.8,
+      "type": "generated",
+      "callId": "call_247631",
+      "activity": {
+        "instanceId": "live-75e6047a-fdb6-4672-8259-b0b5e6e55d3e",
+        "data": {
+          "title": "Hop Back on the Number Line",
+          "description": "Learn how to subtract numbers by hopping backward on the number line.",
+          "range": {
+            "min": 0,
+            "max": 10
+          },
+          "gradeBand": "K-2",
+          "numberType": "integer",
+          "interactionMode": "jump",
+          "challenges": [
+            {
+              "id": "show_jump-0",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 5. Ready, set, jump back 1 space to the left!",
+              "targetValues": [
+                4
+              ],
+              "hint": "Count 1 hop backward to the left.",
+              "startValue": 5,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 5,
+                  "changeValue": 1,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-1",
+              "type": "show_jump",
+              "instruction": "Put your finger on 10, and hop back 4 spaces to the left!",
+              "targetValues": [
+                6
+              ],
+              "hint": "Count the hops one by one as you move your finger left 4 spaces.",
+              "startValue": 10,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 10,
+                  "changeValue": 4,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-2",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 10, and take 1 hop backward to the left!",
+              "targetValues": [
+                9
+              ],
+              "hint": "Count 1 hop to the left to find your new spot.",
+              "startValue": 10,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 10,
+                  "changeValue": 1,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-3",
+              "type": "show_jump",
+              "instruction": "Our little frog friend is sitting at the number 7. Help him jump back 5 spaces to the left!",
+              "targetValues": [
+                2
+              ],
+              "hint": "Put your finger on 7 and count 5 hops backwards to the left.",
+              "startValue": 7,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 7,
+                  "changeValue": 5,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            }
+          ],
+          "highlights": [],
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 5,
+              "changeValue": 1,
+              "showJumpArc": true
+            }
+          ],
+          "supportTier": "easy",
+          "instanceId": "live-75e6047a-fdb6-4672-8259-b0b5e6e55d3e"
+        },
+        "initialState": {
+          "title": "Hop Back on the Number Line",
+          "description": "Learn how to subtract numbers by hopping backward on the number line.",
+          "range": {
+            "min": 0,
+            "max": 10
+          },
+          "gradeBand": "K-2",
+          "numberType": "integer",
+          "interactionMode": "jump",
+          "challenges": [
+            {
+              "id": "show_jump-0",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 5. Ready, set, jump back 1 space to the left!",
+              "targetValues": [
+                4
+              ],
+              "hint": "Count 1 hop backward to the left.",
+              "startValue": 5,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 5,
+                  "changeValue": 1,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-1",
+              "type": "show_jump",
+              "instruction": "Put your finger on 10, and hop back 4 spaces to the left!",
+              "targetValues": [
+                6
+              ],
+              "hint": "Count the hops one by one as you move your finger left 4 spaces.",
+              "startValue": 10,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 10,
+                  "changeValue": 4,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-2",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 10, and take 1 hop backward to the left!",
+              "targetValues": [
+                9
+              ],
+              "hint": "Count 1 hop to the left to find your new spot.",
+              "startValue": 10,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 10,
+                  "changeValue": 1,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-3",
+              "type": "show_jump",
+              "instruction": "Our little frog friend is sitting at the number 7. Help him jump back 5 spaces to the left!",
+              "targetValues": [
+                2
+              ],
+              "hint": "Put your finger on 7 and count 5 hops backwards to the left.",
+              "startValue": 7,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 7,
+                  "changeValue": 5,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            }
+          ],
+          "highlights": [],
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 5,
+              "changeValue": 1,
+              "showJumpArc": true
+            }
+          ],
+          "supportTier": "easy",
+          "rangeMin": 0,
+          "rangeMax": 10,
+          "visibleMin": 0,
+          "visibleMax": 10,
+          "totalChallenges": 4,
+          "currentChallengeIndex": 0,
+          "instruction": "Put your finger on the number 5. Ready, set, jump back 1 space to the left!",
+          "challengeType": "show_jump",
+          "targetValues": [
+            4
+          ],
+          "placedPoints": [],
+          "jumpEndPoints": [],
+          "orderedPlacements": [],
+          "attemptNumber": 1,
+          "zoomLevel": 1,
+          "currentPhase": "operate"
+        },
+        "tutoring": {
+          "taskDescription": "Work with a number line from {{rangeMin}} to {{rangeMax}} using {{numberType}} numbers in {{interactionMode}} mode.",
+          "contextKeys": [
+            "rangeMin",
+            "rangeMax",
+            "visibleMin",
+            "visibleMax",
+            "numberType",
+            "interactionMode",
+            "gradeBand",
+            "instruction",
+            "challengeType",
+            "targetValues",
+            "exactTargetValue",
+            "placedPoints",
+            "attemptNumber",
+            "currentPhase"
+          ],
+          "scaffoldingLevels": {
+            "level1": "\"Look carefully at the number line. Where do you think that value belongs?\"",
+            "level2": "\"Find the labeled number just to the left of your target. Count the nearby tick marks one step at a time.\"",
+            "level3": "\"Use the labels in the visible window. Start at the closest labeled number on screen and count one tick at a time toward the target.\""
+          },
+          "commonStruggles": [
+            {
+              "pattern": "Placing point far from target value",
+              "response": "\"Look at the numbers under the tick marks. Find the two numbers your target is between, then place your point between them.\""
+            },
+            {
+              "pattern": "Confusing addition direction with subtraction",
+              "response": "\"Remember: adding moves RIGHT on the number line (numbers get bigger), subtracting moves LEFT (numbers get smaller).\""
+            },
+            {
+              "pattern": "Ordering fractions incorrectly",
+              "response": "\"Try zooming in to see the fraction marks. Compare each fraction to 1/2 first \u2014 is it more or less than half?\""
+            },
+            {
+              "pattern": "Difficulty reading a large range",
+              "response": "\"Use the labels in the zoomed window on screen. Start from the closest visible label instead of counting from the beginning of the whole range.\""
+            }
+          ],
+          "aiDirectives": [
+            {
+              "title": "INTERACTION MODE COACHING",
+              "instruction": "Adapt your coaching to the interaction mode. In PLOT mode: guide placement \u2014 \"Find the spot between the tick marks.\" In JUMP mode: narrate movement \u2014 \"You jumped 3 to the right, that is adding 3!\" In ORDER mode: guide comparison \u2014 \"Which number is further left? That one is smaller.\" Always reference the number line visually \u2014 point to specific tick marks and positions."
+            },
+            {
+              "title": "GRADE-BAND ADAPTATION",
+              "instruction": "For K-2: use counting language \u2014 \"Let's count the hops: 1, 2, 3...\" Keep to whole numbers. Kindergarten stays on small fully labeled ranges; when an explicit Grade-1 objective extends through 120, coach only the readable auto-zoomed window and never redirect the child back to 0-20. For grades 3-5: introduce fraction/decimal language \u2014 \"Is 3/4 closer to 1/2 or to 1?\" Use benchmark fractions (1/4, 1/2, 3/4) as reference points. For negative numbers: \"Numbers left of zero are negative \u2014 they are less than zero.\""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "seconds": 21.8,
+      "type": "simulated_mount_ack",
+      "instanceId": "live-75e6047a-fdb6-4672-8259-b0b5e6e55d3e"
+    },
+    {
+      "seconds": 22.5,
+      "type": "ai_transcription",
+      "content": "Here is another example "
+    },
+    {
+      "seconds": 22.8,
+      "type": "ai_transcription",
+      "content": "for you. Start"
+    },
+    {
+      "seconds": 23.09,
+      "type": "ai_transcription",
+      "content": " at the number 5"
+    },
+    {
+      "seconds": 23.26,
+      "type": "ai_transcription",
+      "content": " and jump back"
+    },
+    {
+      "seconds": 23.5,
+      "type": "ai_transcription",
+      "content": " 1 space to the"
+    },
+    {
+      "seconds": 23.8,
+      "type": "ai_transcription",
+      "content": " left. Where do"
+    },
+    {
+      "seconds": 24.0,
+      "type": "ai_transcription",
+      "content": " you land?"
+    },
+    {
+      "seconds": 29.86,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 29.86,
+      "type": "completed",
+      "mounts": 2
+    }
+  ],
+  [
+    {
+      "seconds": 2.03,
+      "type": "auth_success",
+      "message": "Lumina AI connected and ready to help!"
+    },
+    {
+      "seconds": 2.03,
+      "type": "session_ready",
+      "message": "Lumina AI is ready to help you learn!"
+    },
+    {
+      "seconds": 2.33,
+      "type": "resumption_handle",
+      "handle": "63ae2473-e698-4111-9b2f-9f29bcda3d57"
+    },
+    {
+      "seconds": 3.45,
+      "type": "activity_request",
+      "callId": "call_292808",
+      "args": {
+        "primitiveId": "number-line",
+        "topic": "Subtraction within 10",
+        "intent": "Practice subtraction problems within 10 using a number line.",
+        "mode": "jump"
+      }
+    },
+    {
+      "seconds": 3.47,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 3.47,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 5.25,
+      "type": "generated",
+      "callId": "call_292808",
+      "activity": {
+        "instanceId": "live-b43ac79b-7eca-417b-aa88-ec3a57e3d6b7",
+        "data": {
+          "title": "Hop Back on the Number Line",
+          "description": "Practice subtraction within 10 by hopping backward on the number line.",
+          "range": {
+            "min": 0,
+            "max": 10
+          },
+          "gradeBand": "K-2",
+          "numberType": "integer",
+          "interactionMode": "jump",
+          "challenges": [
+            {
+              "id": "show_jump-0",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 2. Now, jump backward 2 hops to the left!",
+              "targetValues": [
+                0
+              ],
+              "hint": "Count 2 hops backward starting from 2.",
+              "startValue": 2,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 2,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-1",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 9. Now, hop backward 4 spaces to the left!",
+              "targetValues": [
+                5
+              ],
+              "hint": "Count each hop backward one by one as you move your finger 4 spaces to the left.",
+              "startValue": 9,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 9,
+                  "changeValue": 4,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-2",
+              "type": "show_jump",
+              "instruction": "Let's practice hopping backward! Find the number 3 on your number line, and hop backward 2 spaces to the left.",
+              "targetValues": [
+                1
+              ],
+              "hint": "Start your finger on 3, and count 2 hops backward to the left.",
+              "startValue": 3,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 3,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-3",
+              "type": "show_jump",
+              "instruction": "Look at the number line! Start your hop at 7 and jump back 2 steps to the left.",
+              "targetValues": [
+                5
+              ],
+              "hint": "Put your finger on 7 and count 2 hops backward to the left.",
+              "startValue": 7,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 7,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            }
+          ],
+          "highlights": [],
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 2,
+              "changeValue": 2,
+              "showJumpArc": true
+            }
+          ],
+          "supportTier": "easy",
+          "instanceId": "live-b43ac79b-7eca-417b-aa88-ec3a57e3d6b7"
+        },
+        "initialState": {
+          "title": "Hop Back on the Number Line",
+          "description": "Practice subtraction within 10 by hopping backward on the number line.",
+          "range": {
+            "min": 0,
+            "max": 10
+          },
+          "gradeBand": "K-2",
+          "numberType": "integer",
+          "interactionMode": "jump",
+          "challenges": [
+            {
+              "id": "show_jump-0",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 2. Now, jump backward 2 hops to the left!",
+              "targetValues": [
+                0
+              ],
+              "hint": "Count 2 hops backward starting from 2.",
+              "startValue": 2,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 2,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-1",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 9. Now, hop backward 4 spaces to the left!",
+              "targetValues": [
+                5
+              ],
+              "hint": "Count each hop backward one by one as you move your finger 4 spaces to the left.",
+              "startValue": 9,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 9,
+                  "changeValue": 4,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-2",
+              "type": "show_jump",
+              "instruction": "Let's practice hopping backward! Find the number 3 on your number line, and hop backward 2 spaces to the left.",
+              "targetValues": [
+                1
+              ],
+              "hint": "Start your finger on 3, and count 2 hops backward to the left.",
+              "startValue": 3,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 3,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-3",
+              "type": "show_jump",
+              "instruction": "Look at the number line! Start your hop at 7 and jump back 2 steps to the left.",
+              "targetValues": [
+                5
+              ],
+              "hint": "Put your finger on 7 and count 2 hops backward to the left.",
+              "startValue": 7,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 7,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            }
+          ],
+          "highlights": [],
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 2,
+              "changeValue": 2,
+              "showJumpArc": true
+            }
+          ],
+          "supportTier": "easy",
+          "rangeMin": 0,
+          "rangeMax": 10,
+          "visibleMin": 0,
+          "visibleMax": 10,
+          "totalChallenges": 4,
+          "currentChallengeIndex": 0,
+          "instruction": "Put your finger on the number 2. Now, jump backward 2 hops to the left!",
+          "challengeType": "show_jump",
+          "targetValues": [
+            0
+          ],
+          "placedPoints": [],
+          "jumpEndPoints": [],
+          "orderedPlacements": [],
+          "attemptNumber": 1,
+          "zoomLevel": 1,
+          "currentPhase": "operate"
+        },
+        "tutoring": {
+          "taskDescription": "Work with a number line from {{rangeMin}} to {{rangeMax}} using {{numberType}} numbers in {{interactionMode}} mode.",
+          "contextKeys": [
+            "rangeMin",
+            "rangeMax",
+            "visibleMin",
+            "visibleMax",
+            "numberType",
+            "interactionMode",
+            "gradeBand",
+            "instruction",
+            "challengeType",
+            "targetValues",
+            "exactTargetValue",
+            "placedPoints",
+            "attemptNumber",
+            "currentPhase"
+          ],
+          "scaffoldingLevels": {
+            "level1": "\"Look carefully at the number line. Where do you think that value belongs?\"",
+            "level2": "\"Find the labeled number just to the left of your target. Count the nearby tick marks one step at a time.\"",
+            "level3": "\"Use the labels in the visible window. Start at the closest labeled number on screen and count one tick at a time toward the target.\""
+          },
+          "commonStruggles": [
+            {
+              "pattern": "Placing point far from target value",
+              "response": "\"Look at the numbers under the tick marks. Find the two numbers your target is between, then place your point between them.\""
+            },
+            {
+              "pattern": "Confusing addition direction with subtraction",
+              "response": "\"Remember: adding moves RIGHT on the number line (numbers get bigger), subtracting moves LEFT (numbers get smaller).\""
+            },
+            {
+              "pattern": "Ordering fractions incorrectly",
+              "response": "\"Try zooming in to see the fraction marks. Compare each fraction to 1/2 first \u2014 is it more or less than half?\""
+            },
+            {
+              "pattern": "Difficulty reading a large range",
+              "response": "\"Use the labels in the zoomed window on screen. Start from the closest visible label instead of counting from the beginning of the whole range.\""
+            }
+          ],
+          "aiDirectives": [
+            {
+              "title": "INTERACTION MODE COACHING",
+              "instruction": "Adapt your coaching to the interaction mode. In PLOT mode: guide placement \u2014 \"Find the spot between the tick marks.\" In JUMP mode: narrate movement \u2014 \"You jumped 3 to the right, that is adding 3!\" In ORDER mode: guide comparison \u2014 \"Which number is further left? That one is smaller.\" Always reference the number line visually \u2014 point to specific tick marks and positions."
+            },
+            {
+              "title": "GRADE-BAND ADAPTATION",
+              "instruction": "For K-2: use counting language \u2014 \"Let's count the hops: 1, 2, 3...\" Keep to whole numbers. Kindergarten stays on small fully labeled ranges; when an explicit Grade-1 objective extends through 120, coach only the readable auto-zoomed window and never redirect the child back to 0-20. For grades 3-5: introduce fraction/decimal language \u2014 \"Is 3/4 closer to 1/2 or to 1?\" Use benchmark fractions (1/4, 1/2, 3/4) as reference points. For negative numbers: \"Numbers left of zero are negative \u2014 they are less than zero.\""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "seconds": 5.25,
+      "type": "simulated_mount_ack",
+      "instanceId": "live-b43ac79b-7eca-417b-aa88-ec3a57e3d6b7"
+    },
+    {
+      "seconds": 6.36,
+      "type": "ai_transcription",
+      "content": "Great! Let's use "
+    },
+    {
+      "seconds": 6.56,
+      "type": "ai_transcription",
+      "content": "the number line"
+    },
+    {
+      "seconds": 6.76,
+      "type": "ai_transcription",
+      "content": " to help with subtraction."
+    },
+    {
+      "seconds": 7.03,
+      "type": "ai_transcription",
+      "content": " Put"
+    },
+    {
+      "seconds": 7.3,
+      "type": "ai_transcription",
+      "content": " your finger on the number"
+    },
+    {
+      "seconds": 7.53,
+      "type": "ai_transcription",
+      "content": " 2. Now,"
+    },
+    {
+      "seconds": 7.8,
+      "type": "ai_transcription",
+      "content": " jump backward"
+    },
+    {
+      "seconds": 8.03,
+      "type": "ai_transcription",
+      "content": " 2 hops to the left!"
+    },
+    {
+      "seconds": 8.34,
+      "type": "ai_transcription",
+      "content": " What number"
+    },
+    {
+      "seconds": 8.59,
+      "type": "ai_transcription",
+      "content": " do you land on?"
+    },
+    {
+      "seconds": 16.41,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 16.41,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 17.53,
+      "type": "ai_transcription",
+      "content": "You placed your jump "
+    },
+    {
+      "seconds": 17.8,
+      "type": "ai_transcription",
+      "content": "endpoint at the number"
+    },
+    {
+      "seconds": 18.11,
+      "type": "ai_transcription",
+      "content": " 2."
+    },
+    {
+      "seconds": 20.47,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 20.47,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 21.62,
+      "type": "activity_request",
+      "callId": "call_293031",
+      "args": {
+        "primitiveId": "number-line",
+        "topic": "Subtraction within 10",
+        "intent": "Generate a new subtraction problem within 10 using a number line.",
+        "mode": "jump"
+      }
+    },
+    {
+      "seconds": 21.66,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 21.66,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 23.41,
+      "type": "generated",
+      "callId": "call_293031",
+      "activity": {
+        "instanceId": "live-0d4801eb-2663-43f9-b4eb-3e9fd64108ea",
+        "data": {
+          "title": "Number Line Adventure",
+          "description": "Learn how to use a number line to subtract numbers within 10 by making friendly jumps to the left.",
+          "range": {
+            "min": 0,
+            "max": 10
+          },
+          "gradeBand": "K-2",
+          "numberType": "integer",
+          "interactionMode": "jump",
+          "challenges": [
+            {
+              "id": "show_jump-0",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 9. Now, make a big jump left by hopping back 5 spaces to see where you land!",
+              "targetValues": [
+                4
+              ],
+              "hint": "Start at 9 and count 5 hops backwards to the left.",
+              "startValue": 9,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 9,
+                  "changeValue": 5,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-1",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 10. Get ready to hop backwards to the left by 5 steps!",
+              "targetValues": [
+                5
+              ],
+              "hint": "Count 5 hops to the left one by one to see where you land.",
+              "startValue": 10,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 10,
+                  "changeValue": 5,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-2",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 10, and hop backward by 1.",
+              "targetValues": [
+                9
+              ],
+              "hint": "Count 1 hop to the left.",
+              "startValue": 10,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 10,
+                  "changeValue": 1,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-3",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 4. Now, hop backward 4 spaces to the left!",
+              "targetValues": [
+                0
+              ],
+              "hint": "Count each hop backward one by one as you move away from 4.",
+              "startValue": 4,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 4,
+                  "changeValue": 4,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            }
+          ],
+          "highlights": [],
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 9,
+              "changeValue": 5,
+              "showJumpArc": true
+            }
+          ],
+          "supportTier": "easy",
+          "instanceId": "live-0d4801eb-2663-43f9-b4eb-3e9fd64108ea"
+        },
+        "initialState": {
+          "title": "Number Line Adventure",
+          "description": "Learn how to use a number line to subtract numbers within 10 by making friendly jumps to the left.",
+          "range": {
+            "min": 0,
+            "max": 10
+          },
+          "gradeBand": "K-2",
+          "numberType": "integer",
+          "interactionMode": "jump",
+          "challenges": [
+            {
+              "id": "show_jump-0",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 9. Now, make a big jump left by hopping back 5 spaces to see where you land!",
+              "targetValues": [
+                4
+              ],
+              "hint": "Start at 9 and count 5 hops backwards to the left.",
+              "startValue": 9,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 9,
+                  "changeValue": 5,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-1",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 10. Get ready to hop backwards to the left by 5 steps!",
+              "targetValues": [
+                5
+              ],
+              "hint": "Count 5 hops to the left one by one to see where you land.",
+              "startValue": 10,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 10,
+                  "changeValue": 5,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-2",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 10, and hop backward by 1.",
+              "targetValues": [
+                9
+              ],
+              "hint": "Count 1 hop to the left.",
+              "startValue": 10,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 10,
+                  "changeValue": 1,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-3",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 4. Now, hop backward 4 spaces to the left!",
+              "targetValues": [
+                0
+              ],
+              "hint": "Count each hop backward one by one as you move away from 4.",
+              "startValue": 4,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 4,
+                  "changeValue": 4,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            }
+          ],
+          "highlights": [],
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 9,
+              "changeValue": 5,
+              "showJumpArc": true
+            }
+          ],
+          "supportTier": "easy",
+          "rangeMin": 0,
+          "rangeMax": 10,
+          "visibleMin": 0,
+          "visibleMax": 10,
+          "totalChallenges": 4,
+          "currentChallengeIndex": 0,
+          "instruction": "Put your finger on the number 9. Now, make a big jump left by hopping back 5 spaces to see where you land!",
+          "challengeType": "show_jump",
+          "targetValues": [
+            4
+          ],
+          "placedPoints": [],
+          "jumpEndPoints": [],
+          "orderedPlacements": [],
+          "attemptNumber": 1,
+          "zoomLevel": 1,
+          "currentPhase": "operate"
+        },
+        "tutoring": {
+          "taskDescription": "Work with a number line from {{rangeMin}} to {{rangeMax}} using {{numberType}} numbers in {{interactionMode}} mode.",
+          "contextKeys": [
+            "rangeMin",
+            "rangeMax",
+            "visibleMin",
+            "visibleMax",
+            "numberType",
+            "interactionMode",
+            "gradeBand",
+            "instruction",
+            "challengeType",
+            "targetValues",
+            "exactTargetValue",
+            "placedPoints",
+            "attemptNumber",
+            "currentPhase"
+          ],
+          "scaffoldingLevels": {
+            "level1": "\"Look carefully at the number line. Where do you think that value belongs?\"",
+            "level2": "\"Find the labeled number just to the left of your target. Count the nearby tick marks one step at a time.\"",
+            "level3": "\"Use the labels in the visible window. Start at the closest labeled number on screen and count one tick at a time toward the target.\""
+          },
+          "commonStruggles": [
+            {
+              "pattern": "Placing point far from target value",
+              "response": "\"Look at the numbers under the tick marks. Find the two numbers your target is between, then place your point between them.\""
+            },
+            {
+              "pattern": "Confusing addition direction with subtraction",
+              "response": "\"Remember: adding moves RIGHT on the number line (numbers get bigger), subtracting moves LEFT (numbers get smaller).\""
+            },
+            {
+              "pattern": "Ordering fractions incorrectly",
+              "response": "\"Try zooming in to see the fraction marks. Compare each fraction to 1/2 first \u2014 is it more or less than half?\""
+            },
+            {
+              "pattern": "Difficulty reading a large range",
+              "response": "\"Use the labels in the zoomed window on screen. Start from the closest visible label instead of counting from the beginning of the whole range.\""
+            }
+          ],
+          "aiDirectives": [
+            {
+              "title": "INTERACTION MODE COACHING",
+              "instruction": "Adapt your coaching to the interaction mode. In PLOT mode: guide placement \u2014 \"Find the spot between the tick marks.\" In JUMP mode: narrate movement \u2014 \"You jumped 3 to the right, that is adding 3!\" In ORDER mode: guide comparison \u2014 \"Which number is further left? That one is smaller.\" Always reference the number line visually \u2014 point to specific tick marks and positions."
+            },
+            {
+              "title": "GRADE-BAND ADAPTATION",
+              "instruction": "For K-2: use counting language \u2014 \"Let's count the hops: 1, 2, 3...\" Keep to whole numbers. Kindergarten stays on small fully labeled ranges; when an explicit Grade-1 objective extends through 120, coach only the readable auto-zoomed window and never redirect the child back to 0-20. For grades 3-5: introduce fraction/decimal language \u2014 \"Is 3/4 closer to 1/2 or to 1?\" Use benchmark fractions (1/4, 1/2, 3/4) as reference points. For negative numbers: \"Numbers left of zero are negative \u2014 they are less than zero.\""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "seconds": 23.41,
+      "type": "simulated_mount_ack",
+      "instanceId": "live-0d4801eb-2663-43f9-b4eb-3e9fd64108ea"
+    },
+    {
+      "seconds": 23.86,
+      "type": "ai_transcription",
+      "content": "Here is a new "
+    },
+    {
+      "seconds": 24.14,
+      "type": "ai_transcription",
+      "content": "one for you! Put"
+    },
+    {
+      "seconds": 24.34,
+      "type": "ai_transcription",
+      "content": " your finger on the number"
+    },
+    {
+      "seconds": 24.7,
+      "type": "ai_transcription",
+      "content": " 9. Now,"
+    },
+    {
+      "seconds": 24.94,
+      "type": "ai_transcription",
+      "content": " make a big jump left"
+    },
+    {
+      "seconds": 25.16,
+      "type": "ai_transcription",
+      "content": " by hopping back 5"
+    },
+    {
+      "seconds": 25.41,
+      "type": "ai_transcription",
+      "content": " spaces to see where you"
+    },
+    {
+      "seconds": 25.7,
+      "type": "ai_transcription",
+      "content": " land."
+    },
+    {
+      "seconds": 32.38,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 32.38,
+      "type": "completed",
+      "mounts": 2
+    }
+  ]
+]

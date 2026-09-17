@@ -1,0 +1,444 @@
+[
+  [
+    {
+      "t": 2.078,
+      "kind": "auth_success",
+      "stage": 0,
+      "message": "Lumina AI connected and ready to help!"
+    },
+    {
+      "t": 2.078,
+      "kind": "session_ready",
+      "stage": 0,
+      "message": "Lumina AI is ready to help you learn!"
+    },
+    {
+      "t": 3.421,
+      "kind": "activity_visual",
+      "stage": 0,
+      "callId": "call_143546",
+      "instanceId": "visual-9f0ca818-e4c6-44ff-bdc5-2c6c1273443c",
+      "data": {
+        "instruction": "We have six counters. Tap two to take them away.",
+        "highlightedIndices": [],
+        "kind": "counters",
+        "count": 6,
+        "layout": "ten_frame",
+        "removedIndices": []
+      }
+    },
+    {
+      "t": 4.156,
+      "kind": "ai_transcription",
+      "stage": 0,
+      "content": "I have set up six "
+    },
+    {
+      "t": 4.359,
+      "kind": "ai_transcription",
+      "stage": 0,
+      "content": "counters on the ten"
+    },
+    {
+      "t": 4.671,
+      "kind": "ai_transcription",
+      "stage": 0,
+      "content": " frame. Go ahead"
+    },
+    {
+      "t": 4.843,
+      "kind": "ai_transcription",
+      "stage": 0,
+      "content": " and tap two of them"
+    },
+    {
+      "t": 5.078,
+      "kind": "ai_transcription",
+      "stage": 0,
+      "content": " to take them away."
+    },
+    {
+      "t": 9.593,
+      "kind": "simulated_student_removal",
+      "state": {
+        "instruction": "We have six counters. Tap two to take them away.",
+        "highlightedIndices": [],
+        "kind": "counters",
+        "count": 6,
+        "layout": "ten_frame",
+        "removedIndices": [
+          0,
+          1
+        ],
+        "remainingCount": 4
+      }
+    },
+    {
+      "t": 10.828,
+      "kind": "ai_transcription",
+      "stage": 1,
+      "content": "4"
+    },
+    {
+      "t": 12.734,
+      "kind": "activity_highlight",
+      "stage": 2,
+      "callId": "call_143612",
+      "instanceId": "visual-9f0ca818-e4c6-44ff-bdc5-2c6c1273443c",
+      "indices": [
+        2
+      ]
+    },
+    {
+      "t": 13.421,
+      "kind": "ai_transcription",
+      "stage": 2,
+      "content": "I have highlighted the "
+    },
+    {
+      "t": 13.687,
+      "kind": "ai_transcription",
+      "stage": 2,
+      "content": "third counter for you."
+    },
+    {
+      "t": 16.812,
+      "kind": "activity_visual",
+      "stage": 3,
+      "callId": "call_143651",
+      "instanceId": "visual-0e4f2af4-86bf-4831-aa2c-1c7484d4c34d",
+      "data": {
+        "instruction": "Look at the fraction bar showing three quarters.",
+        "highlightedIndices": [],
+        "kind": "fraction",
+        "denominator": 4,
+        "shadedIndices": [
+          0,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "t": 17.718,
+      "kind": "ai_transcription",
+      "stage": 3,
+      "content": "Here is the fraction "
+    },
+    {
+      "t": 18.031,
+      "kind": "ai_transcription",
+      "stage": 3,
+      "content": "bar showing three"
+    },
+    {
+      "t": 18.265,
+      "kind": "ai_transcription",
+      "stage": 3,
+      "content": " quarters."
+    },
+    {
+      "t": 21.984,
+      "kind": "activity_visual",
+      "stage": 4,
+      "callId": "call_143709",
+      "instanceId": "visual-802d048b-da64-47a1-a826-87d3d47d2144",
+      "data": {
+        "instruction": "Sound out each tile, then blend them together to read the word.",
+        "highlightedIndices": [],
+        "kind": "letters",
+        "tiles": [
+          "sh",
+          "i",
+          "p"
+        ],
+        "selectedIndices": []
+      }
+    },
+    {
+      "t": 22.906,
+      "kind": "ai_transcription",
+      "stage": 4,
+      "content": "Here are the tiles for "
+    },
+    {
+      "t": 23.109,
+      "kind": "ai_transcription",
+      "stage": 4,
+      "content": "you to sound out"
+    },
+    {
+      "t": 23.343,
+      "kind": "ai_transcription",
+      "stage": 4,
+      "content": " and blend together."
+    },
+    {
+      "t": 27.343,
+      "kind": "activity_highlight",
+      "stage": 5,
+      "callId": "call_143763",
+      "instanceId": "visual-802d048b-da64-47a1-a826-87d3d47d2144",
+      "indices": [
+        0
+      ]
+    },
+    {
+      "t": 27.968,
+      "kind": "ai_transcription",
+      "stage": 5,
+      "content": "I have highlighted "
+    },
+    {
+      "t": 28.187,
+      "kind": "ai_transcription",
+      "stage": 5,
+      "content": "the \"sh\" tile"
+    },
+    {
+      "t": 28.515,
+      "kind": "ai_transcription",
+      "stage": 5,
+      "content": " for you."
+    },
+    {
+      "t": 30.609,
+      "kind": "completed",
+      "visual_types": 3,
+      "highlights": 2
+    }
+  ],
+  [
+    {
+      "t": 2.031,
+      "kind": "auth_success",
+      "stage": 0,
+      "message": "Lumina AI connected and ready to help!"
+    },
+    {
+      "t": 2.031,
+      "kind": "session_ready",
+      "stage": 0,
+      "message": "Lumina AI is ready to help you learn!"
+    },
+    {
+      "t": 3.625,
+      "kind": "activity_visual",
+      "stage": 0,
+      "callId": "call_206669",
+      "instanceId": "visual-8f31d64a-867a-4dc4-bf5c-58d40d4ff523",
+      "data": {
+        "instruction": "We have six counters. Tap two to take them away.",
+        "highlightedIndices": [],
+        "kind": "counters",
+        "count": 6,
+        "layout": "ten_frame",
+        "removedIndices": []
+      }
+    },
+    {
+      "t": 4.359,
+      "kind": "ai_transcription",
+      "stage": 0,
+      "content": "I've set up six "
+    },
+    {
+      "t": 4.64,
+      "kind": "ai_transcription",
+      "stage": 0,
+      "content": "counters on the ten"
+    },
+    {
+      "t": 4.859,
+      "kind": "ai_transcription",
+      "stage": 0,
+      "content": " frame for you. Go"
+    },
+    {
+      "t": 5.125,
+      "kind": "ai_transcription",
+      "stage": 0,
+      "content": " ahead and tap"
+    },
+    {
+      "t": 5.39,
+      "kind": "ai_transcription",
+      "stage": 0,
+      "content": " two of them to take them away."
+    },
+    {
+      "t": 10.031,
+      "kind": "simulated_student_removal",
+      "state": {
+        "instruction": "We have six counters. Tap two to take them away.",
+        "highlightedIndices": [],
+        "kind": "counters",
+        "count": 6,
+        "layout": "ten_frame",
+        "removedIndices": [
+          0,
+          1
+        ],
+        "remainingCount": 4
+      }
+    },
+    {
+      "t": 11.25,
+      "kind": "ai_transcription",
+      "stage": 1,
+      "content": "Four."
+    },
+    {
+      "t": 13.453,
+      "kind": "activity_highlight",
+      "stage": 2,
+      "callId": "call_206767",
+      "instanceId": "visual-8f31d64a-867a-4dc4-bf5c-58d40d4ff523",
+      "indices": [
+        2
+      ]
+    },
+    {
+      "t": 14.125,
+      "kind": "ai_transcription",
+      "stage": 2,
+      "content": "I've highlighted the third "
+    },
+    {
+      "t": 14.421,
+      "kind": "ai_transcription",
+      "stage": 2,
+      "content": "counter for you."
+    },
+    {
+      "t": 17.687,
+      "kind": "activity_visual",
+      "stage": 3,
+      "callId": "call_206809",
+      "instanceId": "visual-f412e0ce-79fa-4ba6-95f8-ab5a84a28469",
+      "data": {
+        "instruction": "Here is a fraction bar showing three quarters.",
+        "highlightedIndices": [],
+        "kind": "fraction",
+        "denominator": 4,
+        "shadedIndices": [
+          0,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "t": 18.406,
+      "kind": "ai_transcription",
+      "stage": 3,
+      "content": "Here is a fraction "
+    },
+    {
+      "t": 18.64,
+      "kind": "ai_transcription",
+      "stage": 3,
+      "content": "bar showing three"
+    },
+    {
+      "t": 19.031,
+      "kind": "ai_transcription",
+      "stage": 3,
+      "content": " out of four equal parts"
+    },
+    {
+      "t": 19.171,
+      "kind": "ai_transcription",
+      "stage": 3,
+      "content": " shaded."
+    },
+    {
+      "t": 23.781,
+      "kind": "activity_visual",
+      "stage": 4,
+      "callId": "call_206872",
+      "instanceId": "visual-330d5261-a5a9-4856-b789-3c13669fa256",
+      "data": {
+        "instruction": "Let's blend these tiles together to make the word \"ship\".",
+        "highlightedIndices": [],
+        "kind": "letters",
+        "tiles": [
+          "sh",
+          "i",
+          "p"
+        ],
+        "selectedIndices": []
+      }
+    },
+    {
+      "t": 24.437,
+      "kind": "ai_transcription",
+      "stage": 4,
+      "content": "I've set up "
+    },
+    {
+      "t": 24.671,
+      "kind": "ai_transcription",
+      "stage": 4,
+      "content": "the tiles 'sh',"
+    },
+    {
+      "t": 24.937,
+      "kind": "ai_transcription",
+      "stage": 4,
+      "content": " 'i', and"
+    },
+    {
+      "t": 25.281,
+      "kind": "ai_transcription",
+      "stage": 4,
+      "content": " 'p' for you. Can you"
+    },
+    {
+      "t": 25.515,
+      "kind": "ai_transcription",
+      "stage": 4,
+      "content": " blend them together"
+    },
+    {
+      "t": 25.718,
+      "kind": "ai_transcription",
+      "stage": 4,
+      "content": " to read the word?"
+    },
+    {
+      "t": 32.0,
+      "kind": "activity_highlight",
+      "stage": 5,
+      "callId": "call_206945",
+      "instanceId": "visual-330d5261-a5a9-4856-b789-3c13669fa256",
+      "indices": [
+        0
+      ]
+    },
+    {
+      "t": 32.671,
+      "kind": "ai_transcription",
+      "stage": 5,
+      "content": "I have highlighted "
+    },
+    {
+      "t": 32.875,
+      "kind": "ai_transcription",
+      "stage": 5,
+      "content": "the 'sh' tile"
+    },
+    {
+      "t": 33.171,
+      "kind": "ai_transcription",
+      "stage": 5,
+      "content": " for you."
+    },
+    {
+      "t": 35.421,
+      "kind": "completed",
+      "visual_types": 3,
+      "highlights": 2
+    }
+  ]
+]
