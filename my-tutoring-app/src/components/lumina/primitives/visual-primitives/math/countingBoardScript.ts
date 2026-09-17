@@ -73,6 +73,11 @@ export interface CountingItem extends JudgedScriptItem {
   kind: CountingItemKind;
   /** Plural object word as shown on the board ("bears"). */
   objectWord: string;
+  /** The singular of `objectWord` when the board's noun is themed and so
+   *  cannot be in the SINGULAR map ("dump trucks" → "dump truck"). Supplied by
+   *  the generator alongside the custom emoji; absent for enum objects, whose
+   *  singulars the map already owns. */
+  objectSingular?: string;
   /** Objects on the board. */
   count: number;
   /** The spoken answer (== count except compare: the larger group). */
@@ -130,19 +135,27 @@ const cap = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
  *
  * The board's vocabulary is plural everywhere else, and this line read "Touch
  * each butterflies one time" to a five-year-old until the first `--di` plan
- * printed it (19h-i-b, port 1). The generator's object list is closed and
- * short, so the map is exact rather than a stemmer; anything outside it falls
- * back to the plural, which is the wording that shipped.
+ * printed it (19h-i-b, port 1). The map covers the generators' enum nouns;
+ * anything outside it falls back to the plural, which is the wording that
+ * shipped.
  */
 /**
  * ⚠️ AN EXACT MAP, NOT A STEMMER, AND THAT IS THE POINT. English cannot
  * singularise these by rule: `bunnies` → bunny and `cookies` → cookie are the
  * same three letters with different answers, and `fish` must not move at all.
- * Both consumers draw their nouns from a CLOSED, schema-enforced enum
+ * Both consumers' ENUM nouns are closed and short
  * (`gemini-counting-board`'s object list and `gemini-addition-subtraction-scene`'s
- * `VALID_OBJECT_TYPES`), so an exhaustive map is achievable and a rule is not.
- * The di-script suites assert this covers both enums, so adding an object type
- * to either generator fails a gate rather than reaching a child as "one bunnies".
+ * `VALID_OBJECT_TYPES`), so an exhaustive map is achievable there and a rule is
+ * not. The di-script suites assert this covers both enums, so adding an object
+ * type to either generator fails a gate rather than reaching a child as "one
+ * bunnies".
+ *
+ * A THEMED board's noun is open ("dump trucks", "excavators"), so it cannot be
+ * in this map by construction. That is why the counting-board generator emits
+ * `objects.wordSingular` next to the custom word and validates both: the
+ * singular arrives WITH the plural rather than being derived from it. The
+ * `singular` override below is that value; a themed board missing one is
+ * rejected back to the enum in the generator, never stemmed here.
  */
 const SINGULAR: Record<string, string> = {
   // counting-board's board objects
@@ -167,14 +180,14 @@ const SINGULAR: Record<string, string> = {
   bunnies: 'bunny',
 };
 
-export const objectSingularFor = (objectWord: string): string =>
-  SINGULAR[objectWord] ?? objectWord;
+export const objectSingularFor = (objectWord: string, singular?: string): string =>
+  (singular && singular.trim()) || SINGULAR[objectWord] || objectWord;
 
 /** "five bears" / "one bear" — the noun as the VERDICT lines say it. A board
  *  of one is reachable on every counted mode, and "Yes, one bears." is the
  *  same defect as the how-to-play's, one turn later. */
-export const countedNoun = (n: number, objectWord: string): string =>
-  `${numberWordFor(n)} ${n === 1 ? objectSingularFor(objectWord) : objectWord}`;
+export const countedNoun = (n: number, objectWord: string, singular?: string): string =>
+  `${numberWordFor(n)} ${n === 1 ? objectSingularFor(objectWord, singular) : objectWord}`;
 
 // ── How-to-play — spoken on the opener AND whenever the ACTION changes ──────
 // (cvc-speller rule: a blended session interleaves counting, quick-look and
@@ -190,7 +203,7 @@ export const howToPlayFor = (item: CountingItem): string => {
       return `Look at the ${item.objectWord} — then tap the hand that shows that many fingers. `;
     case 'count_all':
     case 'group_count':
-      return `Touch each ${objectSingularFor(item.objectWord)} one time as you count. Then say how many! `;
+      return `Touch each ${objectSingularFor(item.objectWord, item.objectSingular)} one time as you count. Then say how many! `;
     case 'count_on':
       return 'Some are already counted for you. Keep counting from there, then say how many altogether. ';
     case 'compare':
@@ -198,13 +211,13 @@ export const howToPlayFor = (item: CountingItem): string => {
     case 'give_me_n':
       return `Touch the ${item.objectWord} you want to give me. Touch one again to put it back. `;
     case 'recount_moved':
-      return `Touch each ${objectSingularFor(item.objectWord)} as you count. Then they will move — but do not count again. `;
+      return `Touch each ${objectSingularFor(item.objectWord, item.objectSingular)} as you count. Then they will move — but do not count again. `;
     case 'take_away':
       return `Touch the ${item.objectWord} to take away. Then say how many are left. `;
     case 'add_more':
       return `Touch the faded ${item.objectWord} to put them on the board. Then say how many altogether. `;
     default:
-      return `Touch each ${objectSingularFor(item.objectWord)} one time as you count. Then say how many! `;
+      return `Touch each ${objectSingularFor(item.objectWord, item.objectSingular)} one time as you count. Then say how many! `;
   }
 };
 
@@ -224,16 +237,16 @@ const askFor = (item: CountingItem): string => {
       return `Count the groups of ${item.objectWord}. Your turn. How many altogether?`;
     case 'give_me_n':
       // The number is the ASK here, not the answer — the child hands back a set.
-      return `Here are lots of ${item.objectWord}. Your turn. Give me ${countedNoun(item.target, item.objectWord)}.`;
+      return `Here are lots of ${item.objectWord}. Your turn. Give me ${countedNoun(item.target, item.objectWord, item.objectSingular)}.`;
     case 'recount_moved':
       // Spoken BEFORE the move, and deliberately short: every item in a
       // conservation session asks the same thing, and the repeated-ask gate
       // caps what a child listens through to reach an identical question.
       return `Count the ${item.objectWord}. They will move. Your turn. How many then?`;
     case 'take_away':
-      return `Take away ${countedNoun(item.changeBy ?? 1, item.objectWord)}. Your turn. How many ${item.objectWord} are left?`;
+      return `Take away ${countedNoun(item.changeBy ?? 1, item.objectWord, item.objectSingular)}. Your turn. How many ${item.objectWord} are left?`;
     case 'add_more':
-      return `Put ${countedNoun(item.changeBy ?? 1, item.objectWord)} more on the board. Your turn. How many ${item.objectWord} altogether?`;
+      return `Put ${countedNoun(item.changeBy ?? 1, item.objectWord, item.objectSingular)} more on the board. Your turn. How many ${item.objectWord} altogether?`;
     default:
       return `Count the ${item.objectWord}. Your turn. How many ${item.objectWord}?`;
   }
@@ -250,27 +263,27 @@ const correctionFor = (item: CountingItem): string => {
     case 'subitize':
       return `My turn: it was ${word}. Watch for the flash. Your turn is next time — keep those eyes quick!`;
     case 'count_on':
-      return `My turn: start at ${numberWordFor(item.startFrom ?? 0)} and count on — ${cap(countedNoun(item.target, item.objectWord))} altogether. Your turn. How many ${item.objectWord} altogether?`;
+      return `My turn: start at ${numberWordFor(item.startFrom ?? 0)} and count on — ${cap(countedNoun(item.target, item.objectWord, item.objectSingular))} altogether. Your turn. How many ${item.objectWord} altogether?`;
     case 'compare':
       return `My turn: the bigger group has ${word}. Your turn. How many in the group with more?`;
     case 'recount_moved':
       // The conservation miss is a NEW number after the move, so the correction
       // names the invariance before it re-models the count.
       return item.target <= 10
-        ? `My turn: moving them does not change how many. ${countWalk(item.target)}. ${cap(countedNoun(item.target, item.objectWord))}, before and after. Your turn. How many ${item.objectWord} now?`
-        : `My turn: moving them does not change how many — there are still ${countedNoun(item.target, item.objectWord)}. Your turn. How many ${item.objectWord} now?`;
+        ? `My turn: moving them does not change how many. ${countWalk(item.target)}. ${cap(countedNoun(item.target, item.objectWord, item.objectSingular))}, before and after. Your turn. How many ${item.objectWord} now?`
+        : `My turn: moving them does not change how many — there are still ${countedNoun(item.target, item.objectWord, item.objectSingular)}. Your turn. How many ${item.objectWord} now?`;
     case 'take_away':
       return item.target <= 10
-        ? `My turn: count what is left. ${countWalk(item.target)}. ${cap(countedNoun(item.target, item.objectWord))} left. Your turn. How many ${item.objectWord} are left?`
-        : `My turn: there are ${countedNoun(item.target, item.objectWord)} left — count only the ones still on the board. Your turn. How many ${item.objectWord} are left?`;
+        ? `My turn: count what is left. ${countWalk(item.target)}. ${cap(countedNoun(item.target, item.objectWord, item.objectSingular))} left. Your turn. How many ${item.objectWord} are left?`
+        : `My turn: there are ${countedNoun(item.target, item.objectWord, item.objectSingular)} left — count only the ones still on the board. Your turn. How many ${item.objectWord} are left?`;
     case 'add_more':
       return item.target <= 10
-        ? `My turn: count them all now. ${countWalk(item.target)}. ${cap(countedNoun(item.target, item.objectWord))} altogether. Your turn. How many ${item.objectWord} altogether?`
-        : `My turn: there are ${countedNoun(item.target, item.objectWord)} altogether — count the new ones on from the ones already there. Your turn. How many ${item.objectWord} altogether?`;
+        ? `My turn: count them all now. ${countWalk(item.target)}. ${cap(countedNoun(item.target, item.objectWord, item.objectSingular))} altogether. Your turn. How many ${item.objectWord} altogether?`
+        : `My turn: there are ${countedNoun(item.target, item.objectWord, item.objectSingular)} altogether — count the new ones on from the ones already there. Your turn. How many ${item.objectWord} altogether?`;
     default:
       return item.target <= 10
-        ? `My turn: watch me count. ${countWalk(item.target)}. ${cap(countedNoun(item.target, item.objectWord))}. Your turn. How many ${item.objectWord}?`
-        : `My turn: there are ${countedNoun(item.target, item.objectWord)} — count each one just once and say the last number. Your turn. How many ${item.objectWord}?`;
+        ? `My turn: watch me count. ${countWalk(item.target)}. ${cap(countedNoun(item.target, item.objectWord, item.objectSingular))}. Your turn. How many ${item.objectWord}?`
+        : `My turn: there are ${countedNoun(item.target, item.objectWord, item.objectSingular)} — count each one just once and say the last number. Your turn. How many ${item.objectWord}?`;
   }
 };
 
@@ -317,7 +330,7 @@ const judgingContract = (item: CountingItem): string => {
     + `The correct answer is "${word}". Counting aloud that ENDS on "${word}" counts as that answer — the last number said tells the total. `
     + `A final number other than "${word}" is wrong. ${wrongAnswers}`
     + TWO_BRANCH_LAW
-    + `If the answer is right, say exactly: "Yes, ${countedNoun(item.target, item.objectWord)}." `
+    + `If the answer is right, say exactly: "Yes, ${countedNoun(item.target, item.objectWord, item.objectSingular)}." `
     + `If it is wrong, say exactly: "${correctionFor(item)}" — the same line on every wrong answer for this item, never swapped for a different wording.`
   );
 };
@@ -405,7 +418,7 @@ export const handVerdictCue = (
  */
 export const giveVerdictCue = (item: CountingItem, given: number): string => {
   const matches = given === item.target;
-  const asked = countedNoun(item.target, item.objectWord);
+  const asked = countedNoun(item.target, item.objectWord, item.objectSingular);
   return (
     `[COUNT_GIVE] The learner handed over ${given} ${item.objectWord}; you asked for ${item.target} — `
     + `that is ${matches ? 'RIGHT' : 'WRONG'}. `
@@ -502,7 +515,7 @@ export const objectWordFor = (objectType: string): string =>
  */
 export const itemFromChallenge = (
   ch: CountingChallengeLike,
-  opts: { objectWord: string },
+  opts: { objectWord: string; objectSingular?: string },
 ): CountingItem | null => {
   const target = ch.targetAnswer;
   if (!Number.isFinite(target) || target < 1) return null;
@@ -541,6 +554,7 @@ export const itemFromChallenge = (
     responseClass: responseClassFor({ kind: ch.type, target }),
     action: ACTION_FOR_KIND[ch.type],
     objectWord: opts.objectWord,
+    objectSingular: opts.objectSingular,
     count: ch.count,
     target,
     startFrom,
@@ -552,7 +566,7 @@ export const itemFromChallenge = (
 
 export const itemsFromChallenges = (
   challenges: CountingChallengeLike[],
-  opts: { objectWord: string },
+  opts: { objectWord: string; objectSingular?: string },
 ): CountingItem[] =>
   challenges
     .map((ch) => itemFromChallenge(ch, opts))

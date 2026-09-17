@@ -2,6 +2,7 @@ import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { clampGradeToK2 } from "../scopeContext";
+import { themedFocusLine } from './themeFocus';
 import {
   WordSorterData,
   WordSorterChallenge,
@@ -604,6 +605,20 @@ function reconstructMatchPairsChallenge(
 // Per-mode sub-generators
 // ---------------------------------------------------------------------------
 
+/**
+ * The focus line for a sort (student-interests rollout row 0). The groups are
+ * what a sort teaches, so they come from the objective and never from a
+ * theme: a themed intent replaced "Animals / Food" in 8 of 12 challenges
+ * (Big / Small, Toys / Tools), and theme words are often in two groups at once
+ * ("nut" went to Tools).
+ */
+const sortFocusLine = (topic: string, intent: string | undefined, pairs = false): string => intent
+  ? themedFocusLine(topic, intent, { targets: pairs ? 'pairs' : 'groups and the words to sort', carrier: 'the title and the instruction' })
+    + (pairs
+      ? `- If the focus names the relationship (opposites, rhymes, plurals), every challenge uses it.\n`
+      : `- If the focus names the groups or the sorting rule, EVERY challenge sorts by exactly those groups; vary the words, not the groups.\n`)
+  : '';
+
 async function generateBinarySortChallenges(
   topic: string,
   gradeKey: string,
@@ -612,7 +627,7 @@ async function generateBinarySortChallenges(
 ): Promise<{ title: string; sortingTopic: string; challenges: WordSorterChallenge[] }> {
   const wordingRule = scaffold ? `\n${instructionWordingRule(scaffold.namesSortCriterion)}` : '';
   const prompt = `Create an interactive 2-BUCKET word sorting activity for "${topic}" (Grade ${gradeKey}).
-${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean the words and sorting categories toward "${intent}" when possible — but always keep the sort age-appropriate and the categories unambiguous. Never reveal the sort answer in the focus.\n` : ''}
+${sortFocusLine(topic, intent)}
 ${GRADE_GUIDELINES[gradeKey] || GRADE_GUIDELINES['K']}
 
 For each challenge:
@@ -632,7 +647,7 @@ RULES:
 - Do NOT reveal answers in the instruction${wordingRule}
 - All words must be age-appropriate for grade ${gradeKey}
 
-Generate 3-4 challenges with different sorting criteria.`;
+Generate 3-4 challenges. Use different sorting criteria only when the focus names none.`;
 
   const result = await ai.models.generateContent({
     model: 'gemini-flash-lite-latest',
@@ -671,7 +686,7 @@ async function generateTernarySortChallenges(
 ): Promise<{ title: string; sortingTopic: string; challenges: WordSorterChallenge[] }> {
   const wordingRule = scaffold ? `\n${instructionWordingRule(scaffold.namesSortCriterion)}` : '';
   const prompt = `Create an interactive 3-BUCKET word sorting activity for "${topic}" (Grade ${gradeKey}).
-${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean the words and sorting categories toward "${intent}" when possible — but always keep the sort age-appropriate and the categories unambiguous. Never reveal the sort answer in the focus.\n` : ''}
+${sortFocusLine(topic, intent)}
 ${GRADE_GUIDELINES[gradeKey] || GRADE_GUIDELINES['K']}
 
 For each challenge:
@@ -691,7 +706,7 @@ RULES:
 - Do NOT reveal answers in the instruction${wordingRule}
 - All words must be age-appropriate for grade ${gradeKey}
 
-Generate 3-4 challenges with different sorting criteria.`;
+Generate 3-4 challenges. Use different sorting criteria only when the focus names none.`;
 
   const result = await ai.models.generateContent({
     model: 'gemini-flash-lite-latest',
@@ -730,7 +745,7 @@ async function generateMatchPairsChallenges(
 ): Promise<{ title: string; sortingTopic: string; challenges: WordSorterChallenge[] }> {
   const wordingRule = scaffold ? `\n${instructionWordingRule(scaffold.namesSortCriterion)}` : '';
   const prompt = `Create an interactive word PAIR MATCHING activity for "${topic}" (Grade ${gradeKey}).
-${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean the terms and matches toward "${intent}" when possible — but always keep the pairing age-appropriate and unambiguous. Never reveal the match answer in the focus.\n` : ''}
+${sortFocusLine(topic, intent, true)}
 ${GRADE_GUIDELINES[gradeKey] || GRADE_GUIDELINES['K']}
 
 For each challenge:

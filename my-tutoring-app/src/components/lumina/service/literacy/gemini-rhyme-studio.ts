@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { themedFocusLine } from './themeFocus';
 import type { GenerationContext } from "../generation/generationContext";
 import { clampGradeToK2 } from "../scopeContext";
 import { RhymeStudioData } from "../../primitives/visual-primitives/literacy/RhymeStudio";
@@ -501,7 +502,7 @@ GRADE 2 GUIDELINES:
   const remediationSection = buildRemediationPrompt(ctx.remediationFocus);
 
   const generationPrompt = `Create a rhyming practice activity for the topic: "${topic}".
-${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word choices toward "${intent}" when possible — but ALWAYS prioritize the phonological/syllable/phoneme accuracy rules below over this focus.\n` : ''}
+${themedFocusLine(topic, intent, { targets: 'words', carrier: 'the title', themeWords: true })}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 ${gradeGuidelines[gradeLevelKey] || gradeGuidelines["K"]}

@@ -1,0 +1,1122 @@
+{
+  "startedAt": "2026-09-16T20:29:31.243Z",
+  "theme": "Theme it around his favorite dump trucks and excavators at the construction work site.",
+  "draws": [
+    {
+      "label": "phoneme-explorer/isolate control #1",
+      "key": "phoneme-explorer/isolate",
+      "themed": false,
+      "title": "Sound Safari: Phonological awareness",
+      "targets": [
+        "mouse",
+        "pig",
+        "cup",
+        "hat",
+        "frog",
+        "bear",
+        "pen",
+        "net",
+        "log",
+        "map",
+        "fish",
+        "top",
+        "sun",
+        "dog"
+      ],
+      "bad": [
+        "mouse",
+        "frog",
+        "bear",
+        "fish"
+      ],
+      "total": 14,
+      "keys": [
+        "phoneme",
+        "phonemeSound",
+        "exampleWord",
+        "exampleEmoji",
+        "choices",
+        "mode",
+        "id"
+      ]
+    },
+    {
+      "label": "phoneme-explorer/isolate control #2",
+      "key": "phoneme-explorer/isolate",
+      "themed": false,
+      "title": "Sound Safari: Phonological awareness",
+      "targets": [
+        "cat",
+        "bus",
+        "pig",
+        "soap",
+        "mouse",
+        "dog",
+        "cup",
+        "hat",
+        "duck",
+        "sun",
+        "pen",
+        "bed",
+        "box",
+        "net"
+      ],
+      "bad": [
+        "soap",
+        "mouse",
+        "duck"
+      ],
+      "total": 14,
+      "keys": [
+        "phoneme",
+        "phonemeSound",
+        "exampleWord",
+        "exampleEmoji",
+        "choices",
+        "mode",
+        "id"
+      ]
+    },
+    {
+      "label": "phoneme-explorer/isolate themed #1",
+      "key": "phoneme-explorer/isolate",
+      "themed": true,
+      "title": "Sound Safari: Phonological awareness",
+      "targets": [
+        "dog",
+        "dig",
+        "cat",
+        "sun",
+        "bus",
+        "hat",
+        "pen",
+        "pig",
+        "cup",
+        "mop",
+        "hammer",
+        "bed",
+        "crane",
+        "rat",
+        "log",
+        "van",
+        "net",
+        "wrench",
+        "fox",
+        "jig"
+      ],
+      "bad": [
+        "hammer",
+        "crane",
+        "wrench"
+      ],
+      "total": 20,
+      "keys": [
+        "phoneme",
+        "phonemeSound",
+        "exampleWord",
+        "exampleEmoji",
+        "choices",
+        "mode",
+        "id"
+      ]
+    },
+    {
+      "label": "phoneme-explorer/isolate themed #2",
+      "key": "phoneme-explorer/isolate",
+      "themed": true,
+      "title": "Sound Safari: Phonological awareness",
+      "targets": [
+        "dog",
+        "dig",
+        "cat",
+        "sun",
+        "bus",
+        "hat",
+        "pig",
+        "pen",
+        "mop",
+        "cup",
+        "hardhat",
+        "net",
+        "cone",
+        "bed",
+        "frog",
+        "leaf",
+        "water",
+        "star",
+        "door",
+        "apple"
+      ],
+      "bad": [
+        "hardhat",
+        "cone",
+        "frog",
+        "leaf",
+        "water",
+        "star",
+        "door",
+        "apple"
+      ],
+      "total": 20,
+      "keys": [
+        "phoneme",
+        "phonemeSound",
+        "exampleWord",
+        "exampleEmoji",
+        "choices",
+        "mode",
+        "id"
+      ]
+    },
+    {
+      "label": "phoneme-explorer/isolate themed #3",
+      "key": "phoneme-explorer/isolate",
+      "themed": true,
+      "title": "Sound Safari: Phonological awareness",
+      "targets": [
+        "dog",
+        "dig",
+        "sun",
+        "cat",
+        "hat",
+        "pen",
+        "box",
+        "pig",
+        "hard",
+        "bus",
+        "cone",
+        "truck",
+        "mud"
+      ],
+      "bad": [
+        "hard",
+        "cone",
+        "truck"
+      ],
+      "total": 13,
+      "keys": [
+        "phoneme",
+        "phonemeSound",
+        "exampleWord",
+        "exampleEmoji",
+        "choices",
+        "mode",
+        "id"
+      ]
+    },
+    {
+      "label": "phoneme-explorer/isolate themed #4",
+      "key": "phoneme-explorer/isolate",
+      "themed": true,
+      "title": "Sound Safari: Phonological awareness",
+      "targets": [
+        "dog",
+        "dig",
+        "cat",
+        "sun",
+        "bus",
+        "pig",
+        "hat",
+        "box",
+        "hammer",
+        "pen",
+        "cup",
+        "net",
+        "car",
+        "map",
+        "bed",
+        "fox",
+        "tub",
+        "wagon",
+        "top"
+      ],
+      "bad": [
+        "hammer",
+        "wagon"
+      ],
+      "total": 19,
+      "keys": [
+        "phoneme",
+        "phonemeSound",
+        "exampleWord",
+        "exampleEmoji",
+        "choices",
+        "mode",
+        "id"
+      ]
+    },
+    {
+      "label": "phoneme-explorer/segment control #1",
+      "key": "phoneme-explorer/segment",
+      "themed": false,
+      "title": "Sound Safari: Phonological awareness",
+      "targets": [
+        "sun",
+        "dog",
+        "bus",
+        "pen",
+        "hat"
+      ],
+      "bad": [],
+      "total": 5,
+      "keys": [
+        "targetWord",
+        "targetEmoji",
+        "segments",
+        "mode",
+        "id"
+      ]
+    },
+    {
+      "label": "phoneme-explorer/segment control #2",
+      "key": "phoneme-explorer/segment",
+      "themed": false,
+      "title": "Sound Safari: Phonological awareness",
+      "targets": [
+        "sun",
+        "dog",
+        "pig",
+        "bus",
+        "pen"
+      ],
+      "bad": [],
+      "total": 5,
+      "keys": [
+        "targetWord",
+        "targetEmoji",
+        "segments",
+        "mode",
+        "id"
+      ]
+    },
+    {
+      "label": "phoneme-explorer/segment themed #1",
+      "key": "phoneme-explorer/segment",
+      "themed": true,
+      "title": "Sound Safari: Phonological awareness",
+      "targets": [
+        "sun",
+        "bus",
+        "dog",
+        "pig",
+        "cup"
+      ],
+      "bad": [],
+      "total": 5,
+      "keys": [
+        "targetWord",
+        "targetEmoji",
+        "segments",
+        "mode",
+        "id"
+      ]
+    },
+    {
+      "label": "phoneme-explorer/segment themed #2",
+      "key": "phoneme-explorer/segment",
+      "themed": true,
+      "title": "Sound Safari: Phonological awareness",
+      "targets": [
+        "sun",
+        "bus",
+        "cat",
+        "pig",
+        "dog"
+      ],
+      "bad": [],
+      "total": 5,
+      "keys": [
+        "targetWord",
+        "targetEmoji",
+        "segments",
+        "mode",
+        "id"
+      ]
+    },
+    {
+      "label": "phoneme-explorer/segment themed #3",
+      "key": "phoneme-explorer/segment",
+      "themed": true,
+      "title": "Sound Safari: Phonological awareness",
+      "targets": [
+        "bus",
+        "dig",
+        "mop",
+        "cup",
+        "net"
+      ],
+      "bad": [],
+      "total": 5,
+      "keys": [
+        "targetWord",
+        "targetEmoji",
+        "segments",
+        "mode",
+        "id"
+      ]
+    },
+    {
+      "label": "phoneme-explorer/segment themed #4",
+      "key": "phoneme-explorer/segment",
+      "themed": true,
+      "title": "Sound Safari: Phonological awareness",
+      "targets": [
+        "dog",
+        "sun",
+        "bus",
+        "pen",
+        "cat"
+      ],
+      "bad": [],
+      "total": 5,
+      "keys": [
+        "targetWord",
+        "targetEmoji",
+        "segments",
+        "mode",
+        "id"
+      ]
+    },
+    {
+      "label": "rhyme-studio/recognition control #1",
+      "key": "rhyme-studio/recognition",
+      "themed": false,
+      "title": "Rhyme Time: Kindergarten Fun",
+      "targets": [
+        "cat",
+        "hat",
+        "dog",
+        "pig",
+        "sun",
+        "run",
+        "pen",
+        "box",
+        "bug",
+        "rug",
+        "top",
+        "cup",
+        "bed",
+        "red",
+        "pot",
+        "lip",
+        "pan",
+        "fan"
+      ],
+      "bad": [],
+      "total": 18,
+      "keys": [
+        "id",
+        "mode",
+        "targetWord",
+        "targetWordImage",
+        "rhymeFamily",
+        "comparisonWord",
+        "comparisonWordImage",
+        "doesRhyme",
+        "targetWordEmoji",
+        "comparisonWordEmoji"
+      ]
+    },
+    {
+      "label": "rhyme-studio/recognition control #2",
+      "key": "rhyme-studio/recognition",
+      "themed": false,
+      "title": "Rhyme Time: Kindergarten Fun",
+      "targets": [
+        "cat",
+        "hat",
+        "dog",
+        "frog",
+        "sun",
+        "pig",
+        "pen",
+        "hen",
+        "top",
+        "cup",
+        "bug",
+        "rug",
+        "pot",
+        "box",
+        "bed",
+        "red",
+        "wig"
+      ],
+      "bad": [
+        "frog"
+      ],
+      "total": 17,
+      "keys": [
+        "id",
+        "mode",
+        "targetWord",
+        "targetWordImage",
+        "rhymeFamily",
+        "comparisonWord",
+        "comparisonWordImage",
+        "doesRhyme",
+        "targetWordEmoji",
+        "comparisonWordEmoji"
+      ]
+    },
+    {
+      "label": "rhyme-studio/recognition themed #1",
+      "key": "rhyme-studio/recognition",
+      "themed": true,
+      "title": "Alex's Construction Rhyme Time",
+      "targets": [
+        "cat",
+        "hat",
+        "dog",
+        "log",
+        "sun",
+        "pig",
+        "dig",
+        "top",
+        "mop",
+        "bed",
+        "cup",
+        "pot",
+        "hot",
+        "pan",
+        "bug",
+        "rug"
+      ],
+      "bad": [],
+      "total": 16,
+      "keys": [
+        "id",
+        "mode",
+        "targetWord",
+        "targetWordImage",
+        "rhymeFamily",
+        "comparisonWord",
+        "comparisonWordImage",
+        "doesRhyme",
+        "targetWordEmoji",
+        "comparisonWordEmoji"
+      ]
+    },
+    {
+      "label": "rhyme-studio/recognition themed #2",
+      "key": "rhyme-studio/recognition",
+      "themed": true,
+      "title": "Alex's Construction Rhyme Time",
+      "targets": [
+        "cat",
+        "hat",
+        "pig",
+        "dig",
+        "dog",
+        "sun",
+        "run",
+        "top",
+        "bed",
+        "red",
+        "pot",
+        "hot",
+        "bug",
+        "pan",
+        "pen",
+        "hen"
+      ],
+      "bad": [],
+      "total": 16,
+      "keys": [
+        "id",
+        "mode",
+        "targetWord",
+        "targetWordImage",
+        "rhymeFamily",
+        "comparisonWord",
+        "comparisonWordImage",
+        "doesRhyme",
+        "targetWordEmoji",
+        "comparisonWordEmoji"
+      ]
+    },
+    {
+      "label": "rhyme-studio/recognition themed #3",
+      "key": "rhyme-studio/recognition",
+      "themed": true,
+      "title": "Alex's Construction Site Rhymes",
+      "targets": [
+        "cat",
+        "bat",
+        "dog",
+        "log",
+        "sun",
+        "pig",
+        "pot",
+        "hot",
+        "top",
+        "bug",
+        "pen",
+        "hen",
+        "bed",
+        "box",
+        "fox",
+        "run",
+        "bun"
+      ],
+      "bad": [],
+      "total": 17,
+      "keys": [
+        "id",
+        "mode",
+        "targetWord",
+        "targetWordImage",
+        "rhymeFamily",
+        "comparisonWord",
+        "comparisonWordImage",
+        "doesRhyme",
+        "targetWordEmoji",
+        "comparisonWordEmoji"
+      ]
+    },
+    {
+      "label": "rhyme-studio/recognition themed #4",
+      "key": "rhyme-studio/recognition",
+      "themed": true,
+      "title": "Alex's Construction Rhyme Time",
+      "targets": [
+        "cat",
+        "hat",
+        "pig",
+        "dog",
+        "sun",
+        "run",
+        "top",
+        "pot",
+        "bed",
+        "red",
+        "box",
+        "fox",
+        "bug",
+        "pen",
+        "hot",
+        "log",
+        "frog"
+      ],
+      "bad": [
+        "frog"
+      ],
+      "total": 17,
+      "keys": [
+        "id",
+        "mode",
+        "targetWord",
+        "targetWordImage",
+        "rhymeFamily",
+        "comparisonWord",
+        "comparisonWordImage",
+        "doesRhyme",
+        "targetWordEmoji",
+        "comparisonWordEmoji"
+      ]
+    },
+    {
+      "label": "sound-swap/substitution control #1",
+      "key": "sound-swap/substitution",
+      "themed": false,
+      "title": "Alex's Sound Swap Adventure",
+      "targets": [
+        "cat",
+        "bat",
+        "hat",
+        "mat",
+        "sun",
+        "run",
+        "pig",
+        "big",
+        "sit",
+        "hit",
+        "pen",
+        "hen",
+        "dog",
+        "log",
+        "hop",
+        "mop",
+        "cup",
+        "pup"
+      ],
+      "bad": [],
+      "total": 18,
+      "keys": [
+        "id",
+        "operation",
+        "originalWord",
+        "originalPhonemes",
+        "originalImage",
+        "resultWord",
+        "resultPhonemes",
+        "resultImage",
+        "oldPhoneme",
+        "newPhoneme",
+        "substitutePosition"
+      ]
+    },
+    {
+      "label": "sound-swap/substitution control #2",
+      "key": "sound-swap/substitution",
+      "themed": false,
+      "title": "Sound Swap: Kindergarten Phonics Fun",
+      "targets": [
+        "cat",
+        "bat",
+        "hat",
+        "mat",
+        "sun",
+        "run",
+        "pig",
+        "big",
+        "sit",
+        "hit",
+        "can",
+        "pan",
+        "dog",
+        "log",
+        "pen",
+        "hen",
+        "hop",
+        "mop"
+      ],
+      "bad": [],
+      "total": 18,
+      "keys": [
+        "id",
+        "operation",
+        "originalWord",
+        "originalPhonemes",
+        "originalImage",
+        "resultWord",
+        "resultPhonemes",
+        "resultImage",
+        "oldPhoneme",
+        "newPhoneme",
+        "substitutePosition"
+      ]
+    },
+    {
+      "label": "sound-swap/substitution themed #1",
+      "key": "sound-swap/substitution",
+      "themed": true,
+      "title": "Alex's Construction Sound Swap",
+      "targets": [
+        "cat",
+        "bat",
+        "hat",
+        "rat",
+        "mat",
+        "sat",
+        "can",
+        "fan",
+        "man",
+        "pan",
+        "run",
+        "sun",
+        "big",
+        "pig",
+        "hit",
+        "sit",
+        "pin",
+        "win"
+      ],
+      "bad": [],
+      "total": 18,
+      "keys": [
+        "id",
+        "operation",
+        "originalWord",
+        "originalPhonemes",
+        "originalImage",
+        "resultWord",
+        "resultPhonemes",
+        "resultImage",
+        "oldPhoneme",
+        "newPhoneme",
+        "substitutePosition"
+      ]
+    },
+    {
+      "label": "sound-swap/substitution themed #2",
+      "key": "sound-swap/substitution",
+      "themed": true,
+      "title": "Alex's Construction Sound Swap",
+      "targets": [
+        "cat",
+        "bat",
+        "hat",
+        "mat",
+        "pig",
+        "big",
+        "sun",
+        "run",
+        "sit",
+        "hit",
+        "can",
+        "van",
+        "hop",
+        "mop",
+        "pan",
+        "man"
+      ],
+      "bad": [],
+      "total": 16,
+      "keys": [
+        "id",
+        "operation",
+        "originalWord",
+        "originalPhonemes",
+        "originalImage",
+        "resultWord",
+        "resultPhonemes",
+        "resultImage",
+        "oldPhoneme",
+        "newPhoneme",
+        "substitutePosition"
+      ]
+    },
+    {
+      "label": "sound-swap/substitution themed #3",
+      "key": "sound-swap/substitution",
+      "themed": true,
+      "title": "Alex's Construction Sound Swap",
+      "targets": [
+        "cat",
+        "bat",
+        "hat",
+        "mat",
+        "sun",
+        "run",
+        "pig",
+        "big",
+        "sit",
+        "hit",
+        "can",
+        "fan",
+        "pen",
+        "hen",
+        "hop",
+        "mop",
+        "dog",
+        "log"
+      ],
+      "bad": [],
+      "total": 18,
+      "keys": [
+        "id",
+        "operation",
+        "originalWord",
+        "originalPhonemes",
+        "originalImage",
+        "resultWord",
+        "resultPhonemes",
+        "resultImage",
+        "oldPhoneme",
+        "newPhoneme",
+        "substitutePosition"
+      ]
+    },
+    {
+      "label": "sound-swap/substitution themed #4",
+      "key": "sound-swap/substitution",
+      "themed": true,
+      "title": "Alex's Construction Sound Swap",
+      "targets": [
+        "cat",
+        "bat",
+        "hat",
+        "mat",
+        "sun",
+        "run",
+        "pig",
+        "big",
+        "sit",
+        "hit",
+        "can",
+        "fan",
+        "pan",
+        "man",
+        "fit",
+        "kit",
+        "rat",
+        "sat"
+      ],
+      "bad": [],
+      "total": 18,
+      "keys": [
+        "id",
+        "operation",
+        "originalWord",
+        "originalPhonemes",
+        "originalImage",
+        "resultWord",
+        "resultPhonemes",
+        "resultImage",
+        "oldPhoneme",
+        "newPhoneme",
+        "substitutePosition"
+      ]
+    },
+    {
+      "label": "word-workout/picture_match control #1",
+      "key": "word-workout/picture_match",
+      "themed": false,
+      "title": "Word Workout: Phonological awareness",
+      "targets": [
+        "cat",
+        "dog",
+        "pig",
+        "sun",
+        "cup",
+        "hat",
+        "pen",
+        "bed",
+        "box",
+        "bug",
+        "net",
+        "mop",
+        "pan",
+        "bus"
+      ],
+      "bad": [],
+      "total": 14,
+      "keys": [
+        "id",
+        "targetWord",
+        "targetImage",
+        "distractorImages",
+        "mode"
+      ]
+    },
+    {
+      "label": "word-workout/picture_match control #2",
+      "key": "word-workout/picture_match",
+      "themed": false,
+      "title": "Word Workout: Phonological awareness",
+      "targets": [
+        "cat",
+        "dog",
+        "pig",
+        "sun",
+        "cup",
+        "pen",
+        "hat",
+        "bag",
+        "box",
+        "bug",
+        "fox",
+        "pot",
+        "net"
+      ],
+      "bad": [],
+      "total": 13,
+      "keys": [
+        "id",
+        "targetWord",
+        "targetImage",
+        "distractorImages",
+        "mode"
+      ]
+    },
+    {
+      "label": "word-workout/picture_match themed #1",
+      "key": "word-workout/picture_match",
+      "themed": true,
+      "title": "Word Workout: Phonological awareness",
+      "targets": [
+        "dig",
+        "cup",
+        "mop",
+        "box",
+        "pen",
+        "hat",
+        "log",
+        "pig",
+        "sun",
+        "nut",
+        "cat",
+        "net",
+        "map",
+        "bug",
+        "tub"
+      ],
+      "bad": [],
+      "total": 15,
+      "keys": [
+        "id",
+        "targetWord",
+        "targetImage",
+        "distractorImages",
+        "mode"
+      ]
+    },
+    {
+      "label": "word-workout/picture_match themed #2",
+      "key": "word-workout/picture_match",
+      "themed": true,
+      "title": "Word Workout: Phonological awareness",
+      "targets": [
+        "dig",
+        "mop",
+        "cup",
+        "cat",
+        "sun",
+        "net",
+        "log",
+        "hat",
+        "pig",
+        "pan",
+        "bed",
+        "box",
+        "hut",
+        "bus"
+      ],
+      "bad": [],
+      "total": 14,
+      "keys": [
+        "id",
+        "targetWord",
+        "targetImage",
+        "distractorImages",
+        "mode"
+      ]
+    },
+    {
+      "label": "word-workout/picture_match themed #3",
+      "key": "word-workout/picture_match",
+      "themed": true,
+      "title": "Word Workout: Phonological awareness",
+      "targets": [
+        "dig",
+        "mop",
+        "cup",
+        "nut",
+        "hat",
+        "pen",
+        "map",
+        "dog",
+        "sun",
+        "box",
+        "pig",
+        "net",
+        "log",
+        "cat",
+        "bus"
+      ],
+      "bad": [],
+      "total": 15,
+      "keys": [
+        "id",
+        "targetWord",
+        "targetImage",
+        "distractorImages",
+        "mode"
+      ]
+    },
+    {
+      "label": "word-workout/picture_match themed #4",
+      "key": "word-workout/picture_match",
+      "themed": true,
+      "title": "Word Workout: Phonological awareness",
+      "targets": [
+        "dig",
+        "mop",
+        "cup",
+        "log",
+        "cat",
+        "pen",
+        "mat",
+        "pig",
+        "sun",
+        "box",
+        "hat",
+        "net",
+        "van",
+        "bug",
+        "map"
+      ],
+      "bad": [],
+      "total": 15,
+      "keys": [
+        "id",
+        "targetWord",
+        "targetImage",
+        "distractorImages",
+        "mode"
+      ]
+    }
+  ],
+  "summary": {
+    "phoneme-explorer/segment control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 10
+    },
+    "phoneme-explorer/segment themed": {
+      "draws": 4,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 20
+    },
+    "word-workout/picture_match control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 27
+    },
+    "word-workout/picture_match themed": {
+      "draws": 4,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 59
+    },
+    "phoneme-explorer/isolate control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 2,
+      "unusable": 7,
+      "total": 28
+    },
+    "phoneme-explorer/isolate themed": {
+      "draws": 4,
+      "errors": 0,
+      "drawsWithLeak": 4,
+      "unusable": 16,
+      "total": 72
+    },
+    "rhyme-studio/recognition control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 1,
+      "unusable": 1,
+      "total": 35
+    },
+    "rhyme-studio/recognition themed": {
+      "draws": 4,
+      "errors": 0,
+      "drawsWithLeak": 1,
+      "unusable": 1,
+      "total": 66
+    },
+    "sound-swap/substitution themed": {
+      "draws": 4,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 70
+    },
+    "sound-swap/substitution control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 36
+    }
+  }
+}

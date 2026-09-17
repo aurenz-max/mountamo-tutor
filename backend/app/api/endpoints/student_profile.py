@@ -345,9 +345,18 @@ async def _build_student_persona(
         preferences = user_context.get("preferences") or {}
         onboarding = preferences.get("onboarding") or {}
 
-        # Free-form interests (forward-compatible — not yet collected by
-        # onboarding; honored from preferences as soon as something writes it).
-        interests = preferences.get("interests") or onboarding.get("interests") or []
+        # Free-form interests. The Firestore student doc is the store new code
+        # writes (set_student_interests / scripts/set_student_interests.py);
+        # the Cosmos preferences copy is the legacy fallback and stays until
+        # the user_profiles migration. Onboarding collects neither — interests
+        # are set per-student by script today.
+        try:
+            interests = await firestore.get_student_interests(student_id)
+        except Exception as e:
+            logger.warning(f"[GENERATION_CONTEXT] Interests fetch failed: {e}")
+            interests = []
+        if not interests:
+            interests = preferences.get("interests") or onboarding.get("interests") or []
         interests = [i for i in interests if isinstance(i, str)][:8]
 
         learning_goals = [g for g in onboarding.get("learningGoals") or [] if isinstance(g, str)]

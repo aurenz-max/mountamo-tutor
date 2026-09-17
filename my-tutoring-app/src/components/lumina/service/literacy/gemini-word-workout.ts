@@ -11,6 +11,7 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { buildScopePromptSection, type PedagogicalScope } from "../scopeContext";
+import { themedFocusLine } from './themeFocus';
 import {
   challengeAskable,
   MAX_SENTENCE_WORDS,
@@ -473,9 +474,7 @@ function getModePrompt(
   includeMeaning = false,
 ): string {
   const vowelStr = masteredVowels.join(", ");
-  const focusLine = intent
-    ? `SPECIFIC FOCUS: Beyond the topic "${topic}", lean word choices toward "${intent}" when possible — but ALWAYS prioritize the CVC/phonics accuracy rules below over this focus.\n`
-    : "";
+  const focusLine = themedFocusLine(topic, intent, { targets: 'words', carrier: 'the title', themeWords: true });
   const vowelScopeLine = scopedVowels && scopedVowels.length > 0
     ? `HARD VOWEL SCOPE: every REAL word MUST use ONLY the short vowel(s) "${scopedVowels.join(', ')}". Change the first or last consonant to make new words, but NEVER change the vowel — a word with any other vowel is out of scope and will be rejected.\n`
     : "";

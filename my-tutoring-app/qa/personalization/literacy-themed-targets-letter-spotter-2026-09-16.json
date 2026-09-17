@@ -1,0 +1,152 @@
+{
+  "startedAt": "2026-09-16T20:37:04.333Z",
+  "theme": "Theme it around his favorite dump trucks and excavators at the construction work site.",
+  "draws": [
+    {
+      "label": "letter-spotter/name_it control #1",
+      "key": "letter-spotter/name_it",
+      "themed": false,
+      "title": "Alex's Beginning Letters Spotter",
+      "targets": [
+        "s ← sun: The sun is hot today.",
+        "a ← ant: An ant crawls on the rug.",
+        "t ← top: Pat has a red top.",
+        "i ← ink: Ink spills on the desk.",
+        "p ← Pip: Pip likes to hop fast.",
+        "n ← Nan: Nan naps on the bed."
+      ],
+      "bad": [],
+      "total": 6
+    },
+    {
+      "label": "letter-spotter/name_it control #2",
+      "key": "letter-spotter/name_it",
+      "themed": false,
+      "title": "Alex's Beginning Letters Practice",
+      "targets": [
+        "s ← sun: The sun is hot today.",
+        "a ← ant: An ant crawls on the rug.",
+        "t ← top: Pat has a red top.",
+        "i ← ink: Look at the ink drop.",
+        "p ← pig: A pig plays in mud.",
+        "n ← naps: Min naps on the bed."
+      ],
+      "bad": [],
+      "total": 6
+    },
+    {
+      "label": "letter-spotter/name_it themed #1",
+      "key": "letter-spotter/name_it",
+      "themed": true,
+      "title": "Alex's Construction Site Letter Spotter",
+      "targets": [
+        "s ← sand: The big dump truck is in the sand.",
+        "a ← an: An excavator rolls past the gate.",
+        "t ← truck: Drive the big truck to the road.",
+        "i ← in: The loader is in the yard.",
+        "p ← push: Push a heavy rock with the plow.",
+        "n ← now: Now the crane can lift the beam."
+      ],
+      "bad": [],
+      "total": 6
+    },
+    {
+      "label": "letter-spotter/name_it themed #2",
+      "key": "letter-spotter/name_it",
+      "themed": true,
+      "title": "Alex's Construction Site Letter Spotter",
+      "targets": [
+        "s ← sand: The big dump truck has sand.",
+        "a ← ant: An ant crawls on the hard road.",
+        "t ← tall: That tall crane lifts a big box.",
+        "i ← in: In the pit works a red loader.",
+        "p ← pins: Pins hold up the steel beams.",
+        "n ← nine: Nine workers roll the heavy paving."
+      ],
+      "bad": [],
+      "total": 6
+    },
+    {
+      "label": "letter-spotter/name_it themed #3",
+      "key": "letter-spotter/name_it",
+      "themed": true,
+      "title": "Alex's Construction Site Letter Hunt",
+      "targets": [
+        "s ← sits: The big dump truck sits on the road.",
+        "a ← ant: An ant crawls on the hard asphalt.",
+        "t ← ten: Ten tall yellow cranes lift the beams.",
+        "i ← in: In the heavy loader sits a worker.",
+        "p ← pit: The red pit has soft dirt today.",
+        "n ← nine: Nine shiny trucks roll past the site."
+      ],
+      "bad": [],
+      "total": 6
+    },
+    {
+      "label": "letter-spotter/name_it themed #4",
+      "key": "letter-spotter/name_it",
+      "themed": true,
+      "title": "Alex's Construction Site Letter Spotter",
+      "targets": [
+        "s ← sun: The big sun shines on the crane.",
+        "a ← ant: An ant crawls on the dump truck.",
+        "t ← tall: Look at the tall red tower.",
+        "i ← in: In the pit sits a loader.",
+        "p ← paving: The paving tool rolls away.",
+        "n ← nine: Nine workers build the road."
+      ],
+      "bad": [
+        "paving"
+      ],
+      "total": 6
+    },
+    {
+      "label": "letter-spotter/name_it themed #5",
+      "key": "letter-spotter/name_it",
+      "themed": true,
+      "title": "Alex's Construction Site Letter Spotter",
+      "targets": [
+        "s ← sand: The big dump truck has sand.",
+        "a ← ants: Ants crawl on the big yellow excavator.",
+        "t ← tool: This heavy tool is very loud.",
+        "i ← iron: An iron beam is lifted up high.",
+        "p ← pipes: Pipes roll off the flatbed truck.",
+        "n ← new: New bricks are stacked by the road."
+      ],
+      "bad": [],
+      "total": 6
+    },
+    {
+      "label": "letter-spotter/name_it themed #6",
+      "key": "letter-spotter/name_it",
+      "themed": true,
+      "title": "Alex's Construction Site Letter Hunt",
+      "targets": [
+        "s ← sand: The big truck dumps a load of sand.",
+        "a ← ant: An ant crawls on the yellow bulldozer.",
+        "t ← truck: Park the big red truck in the shed.",
+        "i ← in: In the pit, the excavator digs deep.",
+        "p ← paved: The heavy paved road is very smooth.",
+        "n ← nine: Nine workers build the tall metal bridge."
+      ],
+      "bad": [],
+      "total": 6
+    }
+  ],
+  "summary": {
+    "letter-spotter/name_it control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 12
+    },
+    "letter-spotter/name_it themed": {
+      "draws": 6,
+      "errors": 0,
+      "drawsWithLeak": 1,
+      "unusable": 1,
+      "total": 36
+    }
+  }
+}

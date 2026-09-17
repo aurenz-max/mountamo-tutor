@@ -1,0 +1,533 @@
+{
+  "startedAt": "2026-09-16T20:28:22.031Z",
+  "theme": "Theme it around his favorite dump trucks and excavators at the construction work site.",
+  "draws": [
+    {
+      "label": "di-letter-sounds/auto control #1",
+      "key": "di-letter-sounds/auto",
+      "themed": false,
+      "title": "Super Sound Safari",
+      "targets": [
+        "m",
+        "s",
+        "f",
+        "a"
+      ],
+      "bad": [],
+      "total": 4
+    },
+    {
+      "label": "di-letter-sounds/auto control #2",
+      "key": "di-letter-sounds/auto",
+      "themed": false,
+      "title": "Sound Time with Alex!",
+      "targets": [
+        "m",
+        "s",
+        "f",
+        "a"
+      ],
+      "bad": [],
+      "total": 4
+    },
+    {
+      "label": "di-letter-sounds/auto themed #1",
+      "key": "di-letter-sounds/auto",
+      "themed": true,
+      "title": "Construction Sound Site!",
+      "targets": [
+        "m",
+        "s",
+        "f",
+        "a"
+      ],
+      "bad": [],
+      "total": 4
+    },
+    {
+      "label": "di-letter-sounds/auto themed #2",
+      "key": "di-letter-sounds/auto",
+      "themed": true,
+      "title": "Construction Sound Site!",
+      "targets": [
+        "m",
+        "s",
+        "f",
+        "a"
+      ],
+      "bad": [],
+      "total": 4
+    },
+    {
+      "label": "di-letter-sounds/auto themed #3",
+      "key": "di-letter-sounds/auto",
+      "themed": true,
+      "title": "Construction Site Sounds",
+      "targets": [
+        "m",
+        "s",
+        "f",
+        "a"
+      ],
+      "bad": [],
+      "total": 4
+    },
+    {
+      "label": "di-letter-sounds/auto themed #4",
+      "key": "di-letter-sounds/auto",
+      "themed": true,
+      "title": "Construction Site Sound Crew!",
+      "targets": [
+        "m",
+        "s",
+        "f",
+        "a"
+      ],
+      "bad": [],
+      "total": 4
+    },
+    {
+      "label": "letter-sound-link/see_hear control #1",
+      "key": "letter-sound-link/see_hear",
+      "themed": false,
+      "title": "Letter Sounds - Group 1!",
+      "targets": [
+        "s",
+        "a",
+        "t",
+        "p",
+        "n"
+      ],
+      "bad": [
+        "t"
+      ],
+      "total": 5,
+      "letterGroup": 1
+    },
+    {
+      "label": "letter-sound-link/see_hear control #2",
+      "key": "letter-sound-link/see_hear",
+      "themed": false,
+      "title": "Letter Sounds - Group 1!",
+      "targets": [
+        "s",
+        "a",
+        "t",
+        "p",
+        "n"
+      ],
+      "bad": [
+        "t"
+      ],
+      "total": 5,
+      "letterGroup": 1
+    },
+    {
+      "label": "letter-sound-link/see_hear themed #1",
+      "key": "letter-sound-link/see_hear",
+      "themed": true,
+      "title": "Alex's Construction Site Letter Sounds",
+      "targets": [
+        "s",
+        "a",
+        "t",
+        "p",
+        "n",
+        "i"
+      ],
+      "bad": [
+        "t"
+      ],
+      "total": 6,
+      "letterGroup": 1
+    },
+    {
+      "label": "letter-sound-link/see_hear themed #2",
+      "key": "letter-sound-link/see_hear",
+      "themed": true,
+      "title": "Alex's Construction Site Letter Sounds",
+      "targets": [
+        "s",
+        "a",
+        "t",
+        "p",
+        "n",
+        "i"
+      ],
+      "bad": [
+        "t"
+      ],
+      "total": 6,
+      "letterGroup": 1
+    },
+    {
+      "label": "letter-sound-link/see_hear themed #3",
+      "key": "letter-sound-link/see_hear",
+      "themed": true,
+      "title": "Alex's Construction Site Letter Sounds - Group 1",
+      "targets": [
+        "s",
+        "a",
+        "t",
+        "p",
+        "n"
+      ],
+      "bad": [
+        "t"
+      ],
+      "total": 5,
+      "letterGroup": 1
+    },
+    {
+      "label": "letter-sound-link/see_hear themed #4",
+      "key": "letter-sound-link/see_hear",
+      "themed": true,
+      "title": "Alex's Construction Site Letter Sounds - Group 1",
+      "targets": [
+        "s",
+        "a",
+        "t",
+        "i",
+        "p",
+        "n"
+      ],
+      "bad": [
+        "t"
+      ],
+      "total": 6,
+      "letterGroup": 1
+    },
+    {
+      "label": "letter-spotter/name_it control #1",
+      "key": "letter-spotter/name_it",
+      "themed": false,
+      "title": "Spot the First Letter - Group 1",
+      "targets": [
+        "s ← sun: The sun is hot today.",
+        "a ← ant: Look at an ant go.",
+        "t ← top: Put the top on it.",
+        "i ← is: Is it in the box?",
+        "p ← plum: Pick a plum to eat.",
+        "n ← net: Net the fish for fun."
+      ],
+      "bad": [
+        "plum"
+      ],
+      "total": 6
+    },
+    {
+      "label": "letter-spotter/name_it control #2",
+      "key": "letter-spotter/name_it",
+      "themed": false,
+      "title": "Spot the Beginning Sounds",
+      "targets": [
+        "s ← sun: The sun is hot today.",
+        "a ← ant: An ant is on the rug.",
+        "t ← top: Here is the top.",
+        "i ← ink: Look at the ink pen.",
+        "p ← pat: Pat the little dog.",
+        "n ← Ned: Ned has a red cap."
+      ],
+      "bad": [],
+      "total": 6
+    },
+    {
+      "label": "letter-spotter/name_it themed #1",
+      "key": "letter-spotter/name_it",
+      "themed": true,
+      "title": "Alex at the Construction Site",
+      "targets": [
+        "s ← steam: See the big steam roller.",
+        "a ← asphalt: An asphalt truck rolls past.",
+        "t ← tractor: The tractor lifts dirt high.",
+        "i ← in: In to the pit goes sand.",
+        "p ← park: Park the big red pump.",
+        "n ← now: Now the new crane lifts."
+      ],
+      "bad": [
+        "steam",
+        "tractor"
+      ],
+      "total": 6
+    },
+    {
+      "label": "letter-spotter/name_it themed #2",
+      "key": "letter-spotter/name_it",
+      "themed": true,
+      "title": "Alex's Construction Site Letters",
+      "targets": [
+        "s ← sand: See the big sand truck move.",
+        "a ← ax: An ax cuts a wood log.",
+        "t ← tall: The tall crane lifts rocks.",
+        "i ← in: In the pit works a digger.",
+        "p ← pave: Pave the road with stones.",
+        "n ← nine: Nine drills spin so fast."
+      ],
+      "bad": [],
+      "total": 6
+    },
+    {
+      "label": "letter-spotter/name_it themed #3",
+      "key": "letter-spotter/name_it",
+      "themed": true,
+      "title": "Alex at the Construction Site",
+      "targets": [
+        "s ← steamroller: The big steamroller flattens the mud.",
+        "a ← asphalt: An asphalt truck dumps a heavy load.",
+        "t ← tower: The tall tower crane lifts iron beams.",
+        "i ← iron: Iron pipes roll off the back trailer.",
+        "p ← pavement: The yellow pavement roller smooths the road.",
+        "n ← new: New orange cones block the work zone."
+      ],
+      "bad": [
+        "steamroller"
+      ],
+      "total": 6
+    },
+    {
+      "label": "letter-spotter/name_it themed #4",
+      "key": "letter-spotter/name_it",
+      "themed": true,
+      "title": "Alex at the Construction Site",
+      "targets": [
+        "s ← steam: See the big steam roller.",
+        "a ← asphalt: An asphalt truck is here.",
+        "t ← tractor: The tractor digs deep dirt.",
+        "i ← iron: Iron pipes roll off.",
+        "p ← pick: Pick up heavy rocks.",
+        "n ← new: New nails drop down."
+      ],
+      "bad": [
+        "steam",
+        "tractor"
+      ],
+      "total": 6
+    },
+    {
+      "label": "phonics-blender/auto control #1",
+      "key": "phonics-blender/auto",
+      "themed": false,
+      "title": "Blend CVC Words with Alex!",
+      "targets": [
+        "cat",
+        "dog",
+        "sun",
+        "bus"
+      ],
+      "bad": [],
+      "total": 4,
+      "patternType": "cvc"
+    },
+    {
+      "label": "phonics-blender/auto control #2",
+      "key": "phonics-blender/auto",
+      "themed": false,
+      "title": "Blend CVC Words with Alex!",
+      "targets": [
+        "cat",
+        "dog",
+        "sun",
+        "bus",
+        "hat"
+      ],
+      "bad": [],
+      "total": 5,
+      "patternType": "cvc"
+    },
+    {
+      "label": "phonics-blender/auto themed #1",
+      "key": "phonics-blender/auto",
+      "themed": true,
+      "title": "Alex's Construction Site CVC Blending",
+      "targets": [
+        "dig",
+        "bus",
+        "mop",
+        "cup"
+      ],
+      "bad": [],
+      "total": 4,
+      "patternType": "cvc"
+    },
+    {
+      "label": "phonics-blender/auto themed #2",
+      "key": "phonics-blender/auto",
+      "themed": true,
+      "title": "Alex's Construction Site CVC Blending",
+      "targets": [
+        "dig",
+        "map",
+        "sun",
+        "mop",
+        "cup"
+      ],
+      "bad": [],
+      "total": 5,
+      "patternType": "cvc"
+    },
+    {
+      "label": "phonics-blender/auto themed #3",
+      "key": "phonics-blender/auto",
+      "themed": true,
+      "title": "Alex's Construction Site: Blend CVC Words!",
+      "targets": [
+        "dig",
+        "bus",
+        "mop",
+        "cup",
+        "sun"
+      ],
+      "bad": [],
+      "total": 5,
+      "patternType": "cvc"
+    },
+    {
+      "label": "phonics-blender/auto themed #4",
+      "key": "phonics-blender/auto",
+      "themed": true,
+      "title": "Alex's Construction Site: Blend CVC Words!",
+      "targets": [
+        "dig",
+        "bus",
+        "sun",
+        "mop",
+        "cup"
+      ],
+      "bad": [],
+      "total": 5,
+      "patternType": "cvc"
+    },
+    {
+      "label": "resolve:rhyme-studio/auto control #1",
+      "key": "resolve:rhyme-studio/auto",
+      "themed": false,
+      "targets": [
+        "recognition"
+      ],
+      "bad": [],
+      "total": 1
+    },
+    {
+      "label": "resolve:rhyme-studio/auto control #2",
+      "key": "resolve:rhyme-studio/auto",
+      "themed": false,
+      "targets": [
+        "recognition"
+      ],
+      "bad": [],
+      "total": 1
+    },
+    {
+      "label": "resolve:rhyme-studio/auto themed #1",
+      "key": "resolve:rhyme-studio/auto",
+      "themed": true,
+      "targets": [
+        "recognition"
+      ],
+      "bad": [],
+      "total": 1
+    },
+    {
+      "label": "resolve:rhyme-studio/auto themed #2",
+      "key": "resolve:rhyme-studio/auto",
+      "themed": true,
+      "targets": [
+        "recognition"
+      ],
+      "bad": [],
+      "total": 1
+    },
+    {
+      "label": "resolve:rhyme-studio/auto themed #3",
+      "key": "resolve:rhyme-studio/auto",
+      "themed": true,
+      "targets": [
+        "recognition"
+      ],
+      "bad": [],
+      "total": 1
+    },
+    {
+      "label": "resolve:rhyme-studio/auto themed #4",
+      "key": "resolve:rhyme-studio/auto",
+      "themed": true,
+      "targets": [
+        "recognition"
+      ],
+      "bad": [],
+      "total": 1
+    }
+  ],
+  "summary": {
+    "resolve:rhyme-studio/auto themed": {
+      "draws": 4,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 4
+    },
+    "resolve:rhyme-studio/auto control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 2
+    },
+    "di-letter-sounds/auto control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 8
+    },
+    "di-letter-sounds/auto themed": {
+      "draws": 4,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 16
+    },
+    "letter-sound-link/see_hear themed": {
+      "draws": 4,
+      "errors": 0,
+      "drawsWithLeak": 4,
+      "unusable": 4,
+      "total": 23
+    },
+    "letter-sound-link/see_hear control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 2,
+      "unusable": 2,
+      "total": 10
+    },
+    "phonics-blender/auto control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 9
+    },
+    "phonics-blender/auto themed": {
+      "draws": 4,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 19
+    },
+    "letter-spotter/name_it control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 1,
+      "unusable": 1,
+      "total": 12
+    },
+    "letter-spotter/name_it themed": {
+      "draws": 4,
+      "errors": 0,
+      "drawsWithLeak": 3,
+      "unusable": 5,
+      "total": 24
+    }
+  }
+}

@@ -1,0 +1,159 @@
+{
+  "startedAt": "2026-09-16T13:52:21.448Z",
+  "grade": "Kindergarten",
+  "draws": [
+    {
+      "label": "dump trucks / give_me_n draw 1",
+      "objects": {
+        "type": "custom",
+        "emoji": "🚛",
+        "word": "dump trucks",
+        "wordSingular": "dump truck"
+      },
+      "challengeCount": 5,
+      "baselineViolations": [],
+      "sampleAsk": "Hi! Time to count some dump trucks! Touch the dump trucks you want to give me. Touch one again to put it back. Here are lots of dump trucks. Your turn. Give me three dump trucks.",
+      "failures": []
+    },
+    {
+      "label": "dump trucks / give_me_n draw 2",
+      "objects": {
+        "type": "custom",
+        "emoji": "🚚",
+        "word": "dump trucks",
+        "wordSingular": "dump truck"
+      },
+      "challengeCount": 5,
+      "baselineViolations": [
+        "oracle clustering @challenges[]: identical board \"give_me_n:8:scattered:::\" appears 2× — a duplicated card"
+      ],
+      "sampleAsk": "Hi! Time to count some dump trucks! Touch the dump trucks you want to give me. Touch one again to put it back. Here are lots of dump trucks. Your turn. Give me six dump trucks.",
+      "failures": []
+    },
+    {
+      "label": "dump trucks / give_me_n draw 3",
+      "objects": {
+        "type": "custom",
+        "emoji": "🚚",
+        "word": "dump trucks",
+        "wordSingular": "dump truck"
+      },
+      "challengeCount": 5,
+      "baselineViolations": [],
+      "sampleAsk": "Hi! Time to count some dump trucks! Touch the dump trucks you want to give me. Touch one again to put it back. Here are lots of dump trucks. Your turn. Give me two dump trucks.",
+      "failures": []
+    },
+    {
+      "label": "dump trucks / count_all draw 1",
+      "objects": {
+        "type": "custom",
+        "emoji": "🚜",
+        "word": "dump trucks",
+        "wordSingular": "dump truck"
+      },
+      "challengeCount": 7,
+      "baselineViolations": [
+        "oracle clustering @challenges[]: identical board \"count_all:5:line:::\" appears 2× — a duplicated card"
+      ],
+      "sampleAsk": "Hi! Time to count some dump trucks! Touch each dump truck one time as you count. Then say how many! Count the dump trucks. Your turn. How many dump trucks?",
+      "failures": []
+    },
+    {
+      "label": "dump trucks / count_all draw 2",
+      "objects": {
+        "type": "custom",
+        "emoji": "🚛",
+        "word": "dump trucks",
+        "wordSingular": "dump truck"
+      },
+      "challengeCount": 7,
+      "baselineViolations": [
+        "oracle clustering @challenges[]: identical board \"count_all:5:line:::\" appears 2× — a duplicated card"
+      ],
+      "sampleAsk": "Hi! Time to count some dump trucks! Touch each dump truck one time as you count. Then say how many! Count the dump trucks. Your turn. How many dump trucks?",
+      "failures": []
+    },
+    {
+      "label": "dump trucks / count_all draw 3",
+      "objects": {
+        "type": "custom",
+        "emoji": "🚜",
+        "word": "dump trucks",
+        "wordSingular": "dump truck"
+      },
+      "challengeCount": 7,
+      "baselineViolations": [],
+      "sampleAsk": "Hi! Time to count some dump trucks! Touch each dump truck one time as you count. Then say how many! Count the dump trucks. Your turn. How many dump trucks?",
+      "failures": []
+    },
+    {
+      "label": "diggers / count_all draw 1",
+      "objects": {
+        "type": "custom",
+        "emoji": "🚜",
+        "word": "diggers",
+        "wordSingular": "digger"
+      },
+      "challengeCount": 7,
+      "baselineViolations": [],
+      "sampleAsk": "Hi! Time to count some diggers! Touch each digger one time as you count. Then say how many! Count the diggers. Your turn. How many diggers?",
+      "failures": []
+    },
+    {
+      "label": "diggers / count_all draw 2",
+      "objects": {
+        "type": "custom",
+        "emoji": "🚜",
+        "word": "diggers",
+        "wordSingular": "digger"
+      },
+      "challengeCount": 7,
+      "baselineViolations": [],
+      "sampleAsk": "Hi! Time to count some diggers! Touch each digger one time as you count. Then say how many! Count the diggers. Your turn. How many diggers?",
+      "failures": []
+    },
+    {
+      "label": "diggers / count_all draw 3",
+      "objects": {
+        "type": "custom",
+        "emoji": "🚜",
+        "word": "diggers",
+        "wordSingular": "digger"
+      },
+      "challengeCount": 7,
+      "baselineViolations": [],
+      "sampleAsk": "Hi! Time to count some diggers! Touch each digger one time as you count. Then say how many! Count the diggers. Your turn. How many diggers?",
+      "failures": []
+    },
+    {
+      "label": "unthemed / count_all (fallback intact) draw 1",
+      "objects": {
+        "type": "bears"
+      },
+      "challengeCount": 7,
+      "baselineViolations": [],
+      "sampleAsk": "Hi! Time to count some bears! Touch each bear one time as you count. Then say how many! Count the bears. Your turn. How many bears?",
+      "failures": []
+    },
+    {
+      "label": "unthemed / count_all (fallback intact) draw 2",
+      "objects": {
+        "type": "apples"
+      },
+      "challengeCount": 7,
+      "baselineViolations": [],
+      "sampleAsk": "Hi! Time to count some apples! Touch each apple one time as you count. Then say how many! Count the apples. Your turn. How many apples?",
+      "failures": []
+    },
+    {
+      "label": "unthemed / count_all (fallback intact) draw 3",
+      "objects": {
+        "type": "butterflies"
+      },
+      "challengeCount": 7,
+      "baselineViolations": [],
+      "sampleAsk": "Hi! Time to count some butterflies! Touch each butterfly one time as you count. Then say how many! Count the butterflies. Your turn. How many butterflies?",
+      "failures": []
+    }
+  ]
+}

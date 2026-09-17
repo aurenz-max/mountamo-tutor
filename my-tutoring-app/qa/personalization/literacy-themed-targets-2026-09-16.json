@@ -1,0 +1,578 @@
+{
+  "startedAt": "2026-09-16T20:25:48.010Z",
+  "theme": "Theme it around his favorite dump trucks and excavators at the construction work site.",
+  "draws": [
+    {
+      "label": "cvc-speller/fill_vowel control #1",
+      "generator": "cvc-speller",
+      "mode": "fill_vowel",
+      "themed": false,
+      "title": "Hear and Say the Middle Sound",
+      "targets": [
+        "cat",
+        "pen",
+        "pig",
+        "dog",
+        "sun"
+      ],
+      "bad": [],
+      "total": 5,
+      "letterGroup": 3
+    },
+    {
+      "label": "cvc-speller/fill_vowel control #2",
+      "generator": "cvc-speller",
+      "mode": "fill_vowel",
+      "themed": false,
+      "title": "Hear and Say Middle Sounds",
+      "targets": [
+        "cat",
+        "hen",
+        "pig",
+        "dog",
+        "sun"
+      ],
+      "bad": [],
+      "total": 5,
+      "letterGroup": 3
+    },
+    {
+      "label": "cvc-speller/fill_vowel themed #1",
+      "generator": "cvc-speller",
+      "mode": "fill_vowel",
+      "themed": true,
+      "title": "Alex's Construction Site Middle Sounds",
+      "targets": [
+        "cat",
+        "dog",
+        "pig",
+        "cup",
+        "hen"
+      ],
+      "bad": [],
+      "total": 5,
+      "letterGroup": 3
+    },
+    {
+      "label": "cvc-speller/fill_vowel themed #2",
+      "generator": "cvc-speller",
+      "mode": "fill_vowel",
+      "themed": true,
+      "title": "Alex's Construction Site Vowel Builders",
+      "targets": [
+        "cat",
+        "dog",
+        "sun",
+        "pig",
+        "bed"
+      ],
+      "bad": [],
+      "total": 5,
+      "letterGroup": 3
+    },
+    {
+      "label": "cvc-speller/fill_vowel themed #3",
+      "generator": "cvc-speller",
+      "mode": "fill_vowel",
+      "themed": true,
+      "title": "Alex's Construction Site Vowel Dig",
+      "targets": [
+        "cat",
+        "dog",
+        "pig",
+        "cup",
+        "hen"
+      ],
+      "bad": [],
+      "total": 5,
+      "letterGroup": 3
+    },
+    {
+      "label": "cvc-speller/fill_vowel themed #4",
+      "generator": "cvc-speller",
+      "mode": "fill_vowel",
+      "themed": true,
+      "title": "Alex's Construction Vowel Dig",
+      "targets": [
+        "cat",
+        "hen",
+        "pig",
+        "mop",
+        "bug"
+      ],
+      "bad": [],
+      "total": 5,
+      "letterGroup": 3
+    },
+    {
+      "label": "cvc-speller/spell_word control #1",
+      "generator": "cvc-speller",
+      "mode": "spell_word",
+      "themed": false,
+      "title": "Spell Short Vowel Words",
+      "targets": [
+        "cat",
+        "hen",
+        "pig",
+        "mop",
+        "bug"
+      ],
+      "bad": [],
+      "total": 5,
+      "letterGroup": 3
+    },
+    {
+      "label": "cvc-speller/spell_word control #2",
+      "generator": "cvc-speller",
+      "mode": "spell_word",
+      "themed": false,
+      "title": "Spell Short Vowel Words",
+      "targets": [
+        "cat",
+        "hen",
+        "pig",
+        "dog",
+        "bug"
+      ],
+      "bad": [],
+      "total": 5,
+      "letterGroup": 3
+    },
+    {
+      "label": "cvc-speller/spell_word themed #1",
+      "generator": "cvc-speller",
+      "mode": "spell_word",
+      "themed": true,
+      "title": "Build Construction Words with Alex!",
+      "targets": [
+        "cat",
+        "hen",
+        "pig",
+        "dog",
+        "bug"
+      ],
+      "bad": [],
+      "total": 5,
+      "letterGroup": 3
+    },
+    {
+      "label": "cvc-speller/spell_word themed #2",
+      "generator": "cvc-speller",
+      "mode": "spell_word",
+      "themed": true,
+      "title": "Build Construction CVC Words with Alex",
+      "targets": [
+        "cat",
+        "hen",
+        "pig",
+        "mop",
+        "bug"
+      ],
+      "bad": [],
+      "total": 5,
+      "letterGroup": 3
+    },
+    {
+      "label": "cvc-speller/spell_word themed #3",
+      "generator": "cvc-speller",
+      "mode": "spell_word",
+      "themed": true,
+      "title": "Build Construction Words with Alex!",
+      "targets": [
+        "cat",
+        "hen",
+        "pig",
+        "mop",
+        "bug"
+      ],
+      "bad": [],
+      "total": 5,
+      "letterGroup": 3
+    },
+    {
+      "label": "cvc-speller/spell_word themed #4",
+      "generator": "cvc-speller",
+      "mode": "spell_word",
+      "themed": true,
+      "title": "Build Construction Words with Alex!",
+      "targets": [
+        "cat",
+        "dig",
+        "mop",
+        "sun",
+        "bed"
+      ],
+      "bad": [],
+      "total": 5,
+      "letterGroup": 3
+    },
+    {
+      "label": "decodable-reader/literal control #1",
+      "generator": "decodable-reader",
+      "mode": "literal",
+      "themed": false,
+      "title": "Alex and the Cat",
+      "targets": [
+        "Alex can see a fat cat.",
+        "The cat sat on a mat."
+      ],
+      "bad": [
+        "alex(other)"
+      ],
+      "total": 12,
+      "readingMode": "decode"
+    },
+    {
+      "label": "decodable-reader/literal control #2",
+      "generator": "decodable-reader",
+      "mode": "literal",
+      "themed": false,
+      "title": "Alex and the Cat",
+      "targets": [
+        "Alex can see a fat cat.",
+        "The cat can sit on a mat."
+      ],
+      "bad": [
+        "alex(blend)"
+      ],
+      "total": 13,
+      "readingMode": "decode"
+    },
+    {
+      "label": "decodable-reader/literal themed #1",
+      "generator": "decodable-reader",
+      "mode": "literal",
+      "themed": true,
+      "title": "Alex At The Site",
+      "targets": [
+        "I see a big truck.",
+        "The red rig can dig."
+      ],
+      "bad": [
+        "truck(cvc)"
+      ],
+      "total": 10,
+      "readingMode": "decode"
+    },
+    {
+      "label": "decodable-reader/literal themed #2",
+      "generator": "decodable-reader",
+      "mode": "literal",
+      "themed": true,
+      "title": "Alex and the Big Truck",
+      "targets": [
+        "I see a big red truck.",
+        "The dig is fun at work."
+      ],
+      "bad": [
+        "truck(blend)",
+        "work(r-controlled)"
+      ],
+      "total": 12,
+      "readingMode": "decode"
+    },
+    {
+      "label": "decodable-reader/literal themed #3",
+      "generator": "decodable-reader",
+      "mode": "literal",
+      "themed": true,
+      "title": "Alex at the Site",
+      "targets": [
+        "The big truck can dig.",
+        "Alex sees a red rig."
+      ],
+      "bad": [
+        "truck(blend)",
+        "alex(other)",
+        "sees(sight)"
+      ],
+      "total": 10,
+      "readingMode": "decode"
+    },
+    {
+      "label": "decodable-reader/literal themed #4",
+      "generator": "decodable-reader",
+      "mode": "literal",
+      "themed": true,
+      "title": "Alex and the Big Rig",
+      "targets": [
+        "Alex sees a big truck.",
+        "The red rig can dig."
+      ],
+      "bad": [
+        "alex(other)",
+        "sees(sight)",
+        "truck(blend)"
+      ],
+      "total": 10,
+      "readingMode": "decode"
+    },
+    {
+      "label": "phonics-blender/cvc control #1",
+      "generator": "phonics-blender",
+      "mode": "cvc",
+      "themed": false,
+      "title": "Blend Sounds to Read CVC Words!",
+      "targets": [
+        "cat",
+        "dog",
+        "sun",
+        "bus",
+        "hat"
+      ],
+      "bad": [],
+      "total": 5,
+      "patternType": "cvc"
+    },
+    {
+      "label": "phonics-blender/cvc control #2",
+      "generator": "phonics-blender",
+      "mode": "cvc",
+      "themed": false,
+      "title": "Blend CVC Words with Alex!",
+      "targets": [
+        "cat",
+        "dog",
+        "sun",
+        "bus",
+        "hat"
+      ],
+      "bad": [],
+      "total": 5,
+      "patternType": "cvc"
+    },
+    {
+      "label": "phonics-blender/cvc themed #1",
+      "generator": "phonics-blender",
+      "mode": "cvc",
+      "themed": true,
+      "title": "Alex's Construction Site CVC Blending",
+      "targets": [
+        "dig",
+        "bus",
+        "cop",
+        "hat",
+        "rug"
+      ],
+      "bad": [],
+      "total": 5,
+      "patternType": "cvc"
+    },
+    {
+      "label": "phonics-blender/cvc themed #2",
+      "generator": "phonics-blender",
+      "mode": "cvc",
+      "themed": true,
+      "title": "Alex's Construction Site CVC Blending",
+      "targets": [
+        "dig",
+        "nut",
+        "rig",
+        "bus"
+      ],
+      "bad": [],
+      "total": 4,
+      "patternType": "cvc"
+    },
+    {
+      "label": "phonics-blender/cvc themed #3",
+      "generator": "phonics-blender",
+      "mode": "cvc",
+      "themed": true,
+      "title": "Alex's Construction Site: Blend CVC Words!",
+      "targets": [
+        "dig",
+        "map",
+        "nut",
+        "bus"
+      ],
+      "bad": [],
+      "total": 4,
+      "patternType": "cvc"
+    },
+    {
+      "label": "phonics-blender/cvc themed #4",
+      "generator": "phonics-blender",
+      "mode": "cvc",
+      "themed": true,
+      "title": "Alex's Construction Site CVC Blending",
+      "targets": [
+        "dig",
+        "nut",
+        "rig",
+        "bus"
+      ],
+      "bad": [],
+      "total": 4,
+      "patternType": "cvc"
+    },
+    {
+      "label": "word-sorter/binary_sort control #1",
+      "generator": "word-sorter",
+      "mode": "binary_sort",
+      "themed": false,
+      "title": "Alex's Fun Word Sort",
+      "targets": [
+        "[Animals / Food] apple→Food, pig→Animals, milk→Food, cat→Animals, dog→Animals, bread→Food",
+        "[Animals / Food] pizza→Food, fish→Animals, duck→Animals, banana→Food, cheese→Food, frog→Animals",
+        "[Animals / Food] soup→Food, cow→Animals, cake→Food, bird→Animals, bear→Animals, egg→Food"
+      ],
+      "bad": [],
+      "total": 3
+    },
+    {
+      "label": "word-sorter/binary_sort control #2",
+      "generator": "word-sorter",
+      "mode": "binary_sort",
+      "themed": false,
+      "title": "Alex's Fun Word Sort",
+      "targets": [
+        "[Animals / Food] cat→Animals, pig→Animals, dog→Animals, bread→Food, apple→Food, milk→Food",
+        "[Animals / Food] fish→Animals, cake→Food, cow→Animals, rice→Food, duck→Animals, soup→Food",
+        "[Animals / Food] egg→Food, pear→Food, bird→Animals, corn→Food, frog→Animals, sheep→Animals"
+      ],
+      "bad": [],
+      "total": 3
+    },
+    {
+      "label": "word-sorter/binary_sort themed #1",
+      "generator": "word-sorter",
+      "mode": "binary_sort",
+      "themed": true,
+      "title": "Alex's Construction Word Sort",
+      "targets": [
+        "[Animals / Food] cat→Animals, pear→Food, pig→Animals, dog→Animals, cake→Food, milk→Food",
+        "[Big / Small] bug→Small, house→Big, train→Big, ant→Small, truck→Big, bee→Small",
+        "[Red / Blue] rose→Red, berry→Red, apple→Red, ocean→Blue, water→Blue, sky→Blue"
+      ],
+      "bad": [
+        "Big / Small",
+        "Red / Blue"
+      ],
+      "total": 3
+    },
+    {
+      "label": "word-sorter/binary_sort themed #2",
+      "generator": "word-sorter",
+      "mode": "binary_sort",
+      "themed": true,
+      "title": "Alex's Construction Site Word Sort",
+      "targets": [
+        "[Animals / Food] pear→Food, pig→Animals, dog→Animals, cat→Animals, nut→Food, milk→Food",
+        "[Big / Small] whale→Big, train→Big, truck→Big, bee→Small, bug→Small, ant→Small",
+        "[Move / Rest] jump→Move, dig→Move, nap→Rest, sleep→Rest, sit→Rest, run→Move"
+      ],
+      "bad": [
+        "Big / Small",
+        "Move / Rest"
+      ],
+      "total": 3
+    },
+    {
+      "label": "word-sorter/binary_sort themed #3",
+      "generator": "word-sorter",
+      "mode": "binary_sort",
+      "themed": true,
+      "title": "Alex's Construction Site Word Sort",
+      "targets": [
+        "[Animals / Food] pear→Food, dog→Animals, cat→Animals, pig→Animals, cake→Food, milk→Food",
+        "[Big / Small] whale→Big, bug→Small, truck→Big, bee→Small, ant→Small, house→Big",
+        "[Action / Toys] doll→Toys, ball→Toys, block→Toys, run→Action, jump→Action, hop→Action"
+      ],
+      "bad": [
+        "Big / Small",
+        "Action / Toys"
+      ],
+      "total": 3
+    },
+    {
+      "label": "word-sorter/binary_sort themed #4",
+      "generator": "word-sorter",
+      "mode": "binary_sort",
+      "themed": true,
+      "title": "Alex's Construction Site Word Sort",
+      "targets": [
+        "[Animals / Food] dog→Animals, pig→Animals, plum→Food, cat→Animals, milk→Food, pear→Food",
+        "[Big / Small] ant→Small, whale→Big, truck→Big, bus→Big, bee→Small, bug→Small",
+        "[Toys / Tools] ball→Toys, saw→Tools, doll→Toys, drill→Tools, kite→Toys, nut→Tools"
+      ],
+      "bad": [
+        "Big / Small",
+        "Toys / Tools"
+      ],
+      "total": 3
+    }
+  ],
+  "summary": {
+    "phonics-blender/cvc themed": {
+      "draws": 4,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 17
+    },
+    "cvc-speller/fill_vowel control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 10
+    },
+    "cvc-speller/fill_vowel themed": {
+      "draws": 4,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 20
+    },
+    "phonics-blender/cvc control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 10
+    },
+    "decodable-reader/literal themed": {
+      "draws": 4,
+      "errors": 0,
+      "drawsWithLeak": 4,
+      "unusable": 9,
+      "total": 42
+    },
+    "decodable-reader/literal control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 2,
+      "unusable": 2,
+      "total": 25
+    },
+    "word-sorter/binary_sort themed": {
+      "draws": 4,
+      "errors": 0,
+      "drawsWithLeak": 4,
+      "unusable": 8,
+      "total": 12
+    },
+    "cvc-speller/spell_word control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 10
+    },
+    "cvc-speller/spell_word themed": {
+      "draws": 4,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 20
+    },
+    "word-sorter/binary_sort control": {
+      "draws": 2,
+      "errors": 0,
+      "drawsWithLeak": 0,
+      "unusable": 0,
+      "total": 6
+    }
+  }
+}

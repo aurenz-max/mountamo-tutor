@@ -168,7 +168,7 @@ interface TraceParams {
    *  block, images kept, componentId filter ignored. Replayable as-is. */
   emitPackage: boolean;
   /** Fixed objectives — when provided, the brief is skipped entirely */
-  fixedObjectives: Array<{ id: string; text: string; verb: string; icon: string }> | null;
+  fixedObjectives: Array<{ id: string; text: string; verb: string; icon: string; grade?: string }> | null;
   /** Frozen brief for a controlled full-package rerun with fixed objectives. */
   fixedBrief?: IntroBriefingData | null;
   studentContext: StudentGenerationContext | null;
@@ -219,7 +219,7 @@ async function runTrace(params: TraceParams) {
 
   // What the curator actually saw — '' when no usable context was provided.
   const promptBlock = buildStudentContextBlock(studentContext);
-  const voiceBlock = buildStudentVoiceBlock(studentContext);
+  const voiceBlock = buildStudentVoiceBlock(studentContext, objectives?.length);
   const personalization = {
     applied: promptBlock.length > 0 || voiceBlock.length > 0,
     studentId: studentContext?.studentId ?? null,

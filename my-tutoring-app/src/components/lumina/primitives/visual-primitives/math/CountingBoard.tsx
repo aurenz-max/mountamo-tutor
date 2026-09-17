@@ -77,6 +77,7 @@ import {
   itemsFromChallenges,
   numberWordFor,
   objectWordFor,
+  objectSingularFor,
   type CountingItem,
 } from './countingBoardScript';
 import { countingBoardEvidenceSummary, countingObservation } from './countingBoardEvidence';
@@ -121,6 +122,15 @@ export interface CountingBoardData {
   description?: string;
   objects: {
     type: 'bears' | 'apples' | 'stars' | 'blocks' | 'fish' | 'butterflies' | 'custom';
+    /** A themed board's glyph, plural noun and singular noun — the three that
+     *  travel together. The generator emits them only for `type: 'custom'` and
+     *  only when all three validate; anything short of that falls back to the
+     *  enum, so the enum is the FLOOR, never the ceiling. The emoji is what the
+     *  board draws and the two words are what the tutor says, so a board that
+     *  shows trucks and asks about "objects" is not reachable. */
+    emoji?: string;
+    word?: string;
+    wordSingular?: string;
   };
   challenges: CountingBoardChallenge[];
   showOptions?: {
@@ -396,8 +406,12 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     showLastNumber = true,
   } = showOptions;
 
-  const emoji = OBJECT_EMOJI[objects.type] || OBJECT_EMOJI.custom;
-  const objectWord = objectWordFor(objects.type);
+  // A themed board carries its own glyph and nouns (slice 2 of the interests
+  // work); everything else resolves from the enum exactly as before. `custom`
+  // without a themed triple still lands on ⬤ / "objects".
+  const emoji = objects.emoji || OBJECT_EMOJI[objects.type] || OBJECT_EMOJI.custom;
+  const objectWord = objects.word || objectWordFor(objects.type);
+  const objectSingularWord = objectSingularFor(objectWord, objects.wordSingular);
   const isPreReader = gradeBand === 'K';
 
   // ── Stage-payload state (the runner owns progression; this is the board) ──
@@ -448,8 +462,8 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   // rebuilds the same items from the same payload, so an item the harness can
   // ask is an item the child gets and vice versa.
   const items = useMemo<CountingItem[]>(
-    () => itemsFromChallenges(challenges, { objectWord }),
-    [challenges, objectWord],
+    () => itemsFromChallenges(challenges, { objectWord, objectSingular: objects.wordSingular }),
+    [challenges, objectWord, objects.wordSingular],
   );
 
   /** Item id → the challenge it was built from. The runner's index counts
@@ -1153,7 +1167,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
 
             {alreadyCountedNote && (
               <p className="text-center text-xs text-amber-300">
-                You already counted that one — try a different {objectWord.replace(/s$/, '')}!
+                You already counted that one — try a different {objectSingularWord}!
               </p>
             )}
 

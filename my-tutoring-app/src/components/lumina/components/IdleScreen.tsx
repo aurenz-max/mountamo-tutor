@@ -9,6 +9,7 @@ import { SoundManager } from '../utils/SoundManager';
 import { useStudent } from '../contexts/StudentContext';
 import { analyticsApi } from '@/lib/studentAnalyticsAPI';
 import type { GenerateOptions } from '../hooks/useExhibitSession';
+import { maxObjectivesForGrade } from '../service/curator-brief/objectiveBudget';
 
 // ── Cycling word animator ──────────────────────────────────────────────
 // Learn mode shows topics to explore; Practice mode shows skills to drill.
@@ -197,12 +198,15 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
     setRecLoading(true);
     setRecError(null);
     try {
+      // The band's objective budget (1 PreK / 2 K / 3 above) is also the fill's
+      // size, and a one-objective fill is a whole lesson at PreK, not too little data.
+      const maxObjectives = maxObjectivesForGrade(browsedSubject.grade);
       const result = await analyticsApi.getSessionTargets(Number(studentId), {
         subject: browsedSubject.name,
         grade: browsedSubject.grade,
-        count: 4,
+        count: maxObjectives,
       });
-      if (result.objectives.length < 2) {
+      if (result.objectives.length < Math.min(2, maxObjectives)) {
         setRecError('Not enough progress data yet — pick subskills by hand.');
         return;
       }

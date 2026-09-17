@@ -3,6 +3,8 @@ import { ai } from "../geminiClient";
 import type { GenerationContext, SupportTier } from "../generation/generationContext";
 import { buildRemediationPrompt } from "../generation/remediationPrompt";
 import { clampGradeToK2 } from "../scopeContext";
+import { themedFocusLine } from './themeFocus';
+import { isCvcSpelling } from './letterGroups';
 import { PhonicsBlenderData } from "../../primitives/visual-primitives/literacy/PhonicsBlender";
 import {
   resolveEvalModeConstraint,
@@ -244,7 +246,7 @@ KINDERGARTEN GUIDELINES:
 - Choose concrete, familiar words kids can picture: cat, dog, sun, bus, map, hat, pin, mop, cup, bed
 - Each phoneme should map to exactly one letter
 - Phoneme sounds use simple slash notation: /k/, /a/, /t/
-- Keep it fun and use words from the topic theme when possible
+- Choose words a five-year-old already says; a word may fit the topic theme only if it is one of those
 - Example: "cat" -> phonemes: [{ sound: "/k/", letters: "c" }, { sound: "/a/", letters: "a" }, { sound: "/t/", letters: "t" }]
 `,
     '1': `
@@ -300,7 +302,7 @@ GRADE 2 GUIDELINES:
   ) + phonicsRemediationSection;
 
   const generationPrompt = `Create a phonics blending activity for the topic: "${topic}".
-${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word/letter choices toward "${intent}" when possible — but ALWAYS prioritize the phonics/decoding accuracy rules below over this focus.\n` : ''}
+${themedFocusLine(topic, intent, { targets: 'target words', carrier: 'the title', themeWords: true })}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 ${!evalConstraint ? (gradeContext[gradeLevelKey] || gradeContext['K']) : ''}
@@ -395,6 +397,27 @@ Now generate a phonics blending activity for "${topic}" at grade level ${gradeLe
       finalData.patternType = (evalConstraint?.allowedTypes[0]
         ?? config?.patternType
         ?? defaultPatternType) as PhonicsBlenderData['patternType'];
+    }
+
+    // ── CVC gate (contract R6 in code) ──────────────────────────────────
+    // The prompt alone held under a themed intent in the 2026-09-16 probe, but
+    // a theme pulls toward its own nouns and "truck" is not CVC. A cvc word must
+    // be spelled C-V-C, carry 3 phonemes, and have phoneme letters that spell
+    // it. Keep the whole set if fewer than 3 would remain (the cvc-speller
+    // floor), and say so.
+    if (finalData.patternType === 'cvc' && Array.isArray(finalData.words)) {
+      const isUsable = (w: PhonicsBlenderData['words'][number]) =>
+        isCvcSpelling(w.targetWord ?? '')
+        && (w.phonemes ?? []).length === 3
+        && (w.phonemes ?? []).map((p) => p.letters).join('').toLowerCase() === w.targetWord.toLowerCase();
+      const usable = finalData.words.filter(isUsable);
+      const dropped = finalData.words.filter((w) => !isUsable(w)).map((w) => w.targetWord);
+      if (dropped.length && usable.length >= 3) {
+        finalData.words = usable;
+        console.log(`[PhonicsBlender] dropped ${dropped.length} non-CVC word(s): ${dropped.join(', ')}`);
+      } else if (dropped.length) {
+        console.warn(`[PhonicsBlender] ${dropped.length} non-CVC word(s) but too few would remain; KEEPING ALL: ${dropped.join(', ')}`);
+      }
     }
 
     // ── Within-mode support tier: withdraw scaffolding ONLY ────────────

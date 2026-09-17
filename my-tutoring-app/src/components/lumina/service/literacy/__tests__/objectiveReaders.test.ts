@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   asksIndependentProduction,
+  isCvcSpelling,
   letterGroupFromText,
   lettersNamedIn,
   resolveObjectiveLetterGroup,
@@ -58,5 +59,17 @@ describe('asksIndependentProduction', () => {
     expect(asksIndependentProduction('Assess without saying its sound')).toBe(true);
     expect(asksIndependentProduction(GROUP_1)).toBe(false);
     expect(asksIndependentProduction(undefined)).toBe(false);
+  });
+});
+
+describe('isCvcSpelling', () => {
+  it('accepts consonant-vowel-consonant words', () => {
+    for (const w of ['cat', 'dig', 'mud', 'fox', 'web', 'yes', 'Jet']) expect(isCvcSpelling(w)).toBe(true);
+  });
+
+  it('rejects theme nouns and vowel teams that only look short', () => {
+    for (const w of ['truck', 'dump', 'saw', 'cow', 'bay', 'bah', 'quiz', 'ox', 'an', '']) {
+      expect(isCvcSpelling(w)).toBe(false);
+    }
   });
 });

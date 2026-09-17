@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { themedFocusLine } from './themeFocus';
 import type { GenerationContext, SupportTier } from "../generation/generationContext";
 import { clampGradeToK2 } from "../scopeContext";
 import { PhonemeExplorerData } from "../../primitives/visual-primitives/literacy/PhonemeExplorer";
@@ -791,7 +792,7 @@ async function generateModeAttempt(
   const remediationSection = buildRemediationPrompt(remediationFocus);
   const remediationMove = phonemeRemediationMoveFor(mode, remediationFocus);
   const prompt = `Create exactly ${count} "${mode}" phoneme awareness challenge(s) for the topic: "${topic}".
-${intent ? `\nSPECIFIC FOCUS: Lean word choices toward "${intent}" when natural — but ALWAYS prioritize phonological/phoneme accuracy over this focus.\n` : ''}
+${themedFocusLine(topic, intent, { targets: 'words', carrier: 'nothing in this call (the title is written elsewhere)', themeWords: true })}
 TARGET GRADE LEVEL: ${gradeKey}
 
 ${gradeGuidelines[gradeKey] || gradeGuidelines.K}
@@ -804,7 +805,7 @@ CRITICAL RULES:
 - Every emoji MUST visually depict the word it's paired with. Only standard, widely-recognized emojis.
 - Every field must be fully, concretely populated — NEVER use placeholder text like "word" or "???".
 ${mode === 'isolate' ? '- Use a DIFFERENT target phoneme for each challenge (do not repeat the same letter).\n' : ''}${mode === 'isolate' ? '- The correct choice MUST start with the same sound as the phoneme; distractors start with DIFFERENT sounds. The exampleWord must NOT appear among the choices.\n' : ''}${mode === 'medial' ? '- Use a DIFFERENT middle vowel across the challenges where the topic allows it (do not make every item short a).\n- The correct choice has the SAME middle vowel as targetWord; ALL THREE distractors have a DIFFERENT middle vowel. targetWord must NOT appear among the choices.\n- ALL FOUR cards must be REAL words a five-year-old knows. Never invent a word to complete a rhyming set — change the onset and keep the word real ("sun" -> run, ran, hen, pin), because each card is shown with a picture and an invented word has no picture.\n' : ''}${mode === 'blend' ? '- phonemeSequence must be accurate phonemes and word must be EXACTLY the word they blend into.\n' : ''}${mode === 'segment' ? '- segments must be the word\'s true SOUNDS in order, not its letters ("sheep" → ["sh","ee","p"], 3 sounds).\n' : ''}${mode === 'manipulate' ? '- operationDescription must be clear and must NEVER contain resultWord (it is spoken with the microphone open); resultWord is the true result of the operation.\n' : ''}
-Relate words to the topic "${topic}" when possible, but prioritize phonological accuracy and emoji availability.`;
+Prioritize phonological accuracy and emoji availability. A word may fit the topic "${topic}" only if it is an everyday word that obeys every rule above.`;
 
   const response = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",

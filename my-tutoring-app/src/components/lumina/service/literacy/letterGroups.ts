@@ -68,6 +68,16 @@ export const normalizeLetterGroup = (value: unknown): LetterGroup | null => {
   return Number.isInteger(n) && n >= 1 && n <= 4 ? (n as LetterGroup) : null;
 };
 
+/**
+ * Is this word spelled consonant-vowel-consonant with one letter per sound?
+ * The opening consonant is never q or x, the closing one never h, j, q, w or y
+ * (those do not close a short-vowel syllable: "saw", "cow" and "bay" are not
+ * CVC). Used as a code gate wherever a K band promises CVC words, because a
+ * themed intent pulls the model toward the theme's own nouns ("truck").
+ */
+export const isCvcSpelling = (word: string): boolean =>
+  /^[bcdfghjklmnprstvwyz][aeiou][bcdfgklmnprstvxz]$/.test(word.toLowerCase());
+
 export const cumulativeLetters = (group: LetterGroup): string[] => [...LETTER_GROUPS[group]];
 
 /**

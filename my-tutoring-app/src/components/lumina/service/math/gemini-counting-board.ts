@@ -288,7 +288,19 @@ function buildCountingBoardSchema(count: number): Schema {
       properties: {
         type: {
           type: Type.STRING,
-          description: "Object type (theme for all challenges): 'bears', 'apples', 'stars', 'blocks', 'fish', 'butterflies'"
+          description: "Object type (theme for all challenges): 'bears', 'apples', 'stars', 'blocks', 'fish', 'butterflies' — or 'custom' when the lesson intent names a theme these six cannot show"
+        },
+        emoji: {
+          type: Type.STRING,
+          description: "REQUIRED when type is 'custom': ONE emoji that shows the themed object (e.g. a lorry for dump trucks). Exactly one character-cluster, no text."
+        },
+        word: {
+          type: Type.STRING,
+          description: "REQUIRED when type is 'custom': the PLURAL noun for the object, lowercase, 1-2 words (e.g. 'dump trucks'). The tutor says this out loud."
+        },
+        wordSingular: {
+          type: Type.STRING,
+          description: "REQUIRED when type is 'custom': the SINGULAR of `word`, lowercase (e.g. 'dump truck'). Not derived — English cannot be singularised by rule."
         }
       },
       required: ["type"]
@@ -586,7 +598,7 @@ ${(() => {
 REQUIREMENTS:
 1. Generate exactly ${targetCount} challenges that progress in difficulty
 2. IMPORTANT: Each challenge has its own count and arrangement — vary them!
-3. Use ${randomObject} as the object theme and a ${randomArrangement} arrangement for the first challenge. For variety, vary the counts across challenges — you may start near ${randomStartCount} and build upward ONLY when the TOPIC SCOPE allows; if the topic's bound is small, keep every count at or below that bound instead of progressing past it
+3. Use ${randomObject} as the object theme (UNLESS the OBJECT THEME rule below applies) and a ${randomArrangement} arrangement for the first challenge. For variety, vary the counts across challenges — you may start near ${randomStartCount} and build upward ONLY when the TOPIC SCOPE allows; if the topic's bound is small, keep every count at or below that bound instead of progressing past it
 4. Use warm, encouraging instruction text for young children
 5. For each challenge, targetAnswer MUST equal that challenge's count
 6. Include meaningful hints that guide without giving the answer
@@ -598,6 +610,18 @@ REQUIREMENTS:
    - showLastNumber: true (emphasizes cardinality)
 9. Choose kid-friendly objects that match the topic context
 10. objects.type defines the emoji theme for ALL challenges (e.g., 'stars')
+
+OBJECT THEME — when the lesson intent names something to count:
+If the lesson intent above names a concrete thing the child is counting (e.g. "count the dump trucks",
+"how many excavators"), set objects.type to 'custom' and fill ALL THREE of:
+  - objects.emoji: one emoji that shows it. Pick the closest real emoji — there is no emoji for
+    every object, and the nearest recognisable vehicle/animal/thing is better than a generic shape.
+  - objects.word: the plural noun, lowercase, 1-2 words ("dump trucks").
+  - objects.wordSingular: its singular, lowercase ("dump truck").
+The tutor SPEAKS these two words on every turn, so they must be the ordinary words a five-year-old
+uses, never a brand or a long phrase. If the intent names nothing to count, or you cannot find an
+emoji that actually shows it, use one of the six enum types instead and omit all three fields —
+a board of stars is better than a board of circles.
 
 Return the complete counting board configuration.
 `;
@@ -639,6 +663,61 @@ Return the complete counting board configuration.
   const validTypes = ['bears', 'apples', 'stars', 'blocks', 'fish', 'butterflies', 'custom'];
   if (!validTypes.includes(data.objects?.type)) {
     data.objects = { type: 'stars' };
+  }
+
+  // ── The themed object triple (emoji + plural + singular) ──
+  //
+  // The six enum types are the FLOOR, not the ceiling: a lesson themed on dump
+  // trucks reaches this generator as an intent string and used to die here,
+  // because anything outside the enum was forced to stars. A themed board is
+  // allowed, but only as a complete triple — the emoji is what the board draws
+  // and the two words are what the TUTOR SAYS on every ask, so a partial one
+  // ships a board of trucks that asks about "objects". Code decides, not the
+  // prompt: `emoji` must be exactly one grapheme cluster (a two-emoji string or
+  // a word would render as garbage in a 40px object), and both nouns must be
+  // short lowercase words a five-year-old hears as a thing.
+  //
+  // Anything short of all three drops the whole triple and falls back to a
+  // random enum type — never `custom` alone, which renders ⬤ and says
+  // "objects", the exact board this change exists to stop shipping.
+  const graphemeCount = (value: string): number => {
+    try {
+      const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+      return Array.from(seg.segment(value)).length;
+    } catch {
+      return Array.from(value).length; // no Segmenter → code points; conservative, rejects ZWJ pairs
+    }
+  };
+  const themedNoun = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+    const word = value.trim().toLowerCase();
+    // 1-2 words, letters/hyphens only. Rejects digits (a count must never ride
+    // in on the noun), punctuation, and the long descriptive phrases flash-lite
+    // reaches for when the intent is wordy.
+    return /^[a-z]+(?:[- ][a-z]+)?$/.test(word) && word.length <= 24 ? word : null;
+  };
+
+  if (data.objects?.type === 'custom') {
+    const emoji = typeof data.objects.emoji === 'string' ? data.objects.emoji.trim() : '';
+    const word = themedNoun(data.objects.word);
+    const wordSingular = themedNoun(data.objects.wordSingular);
+    const emojiOk = emoji.length > 0 && graphemeCount(emoji) === 1 && !/[A-Za-z0-9]/.test(emoji);
+
+    if (emojiOk && word && wordSingular) {
+      data.objects = { type: 'custom', emoji, word, wordSingular };
+      console.log(`[CountingBoard] Themed objects: ${emoji} "${word}" / "${wordSingular}"`);
+    } else {
+      const enumTypes = validTypes.filter((t) => t !== 'custom');
+      const fallback = enumTypes[Math.floor(Math.random() * enumTypes.length)];
+      console.log(
+        `[CountingBoard] Themed objects rejected (emoji=${emoji || 'none'} ok=${emojiOk}, ` +
+        `word=${data.objects.word ?? 'none'}, singular=${data.objects.wordSingular ?? 'none'}) → ${fallback}`
+      );
+      data.objects = { type: fallback };
+    }
+  } else if (data.objects) {
+    // An enum board never carries the themed fields, even if the model sent them.
+    data.objects = { type: data.objects.type };
   }
 
   // Filter to valid challenge types (safety net — schema enum handles the eval mode case)
@@ -969,7 +1048,13 @@ Return the complete counting board configuration.
 
   // Apply explicit config overrides
   if (config) {
-    if (config.objectType !== undefined) data.objects.type = config.objectType;
+    // An explicit objectType replaces the whole objects block: carrying a
+    // themed emoji/word over onto a different type would draw trucks and say
+    // "bears". `custom` from config has no triple to validate, so it is refused
+    // rather than rendered as ⬤ / "objects".
+    if (config.objectType !== undefined && config.objectType !== 'custom') {
+      data.objects = { type: config.objectType };
+    }
     if (config.gradeBand !== undefined) data.gradeBand = config.gradeBand;
     // arrangement/groupSize overrides apply per-challenge as defaults.
     //

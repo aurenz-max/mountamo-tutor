@@ -4,6 +4,7 @@ import { ai } from "../geminiClient";
 import { HOOK_VISUAL_THEMES, emojiForHookTheme } from "../../utils/hookVisual";
 // Type-only — keeps the client-side auth stack out of this server module.
 import type { StudentPersona } from "../studentContext/types";
+import { capObjectivesForGrade, maxObjectivesForGrade } from "./objectiveBudget";
 
 /**
  * Build the personal-framing block for the brief prompt — WORDS ONLY.
@@ -96,6 +97,10 @@ export const generateIntroBriefing = async (
 ): Promise<IntroBriefingData> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
   const voiceBlock = buildBriefVoiceBlock(persona, sessionHandoff);
+  const maxObjectives = maxObjectivesForGrade(gradeLevel);
+  const objectiveCountText = maxObjectives === 1
+    ? 'exactly ONE learning objective'
+    : `at most ${maxObjectives} learning objectives`;
 
   const schema: Schema = {
     type: Type.OBJECT,
@@ -170,7 +175,7 @@ export const generateIntroBriefing = async (
           },
           required: ['id', 'text', 'verb', 'icon']
         },
-        description: '3-4 specific, achievable learning objectives'
+        description: `${objectiveCountText} — specific and achievable`
       },
 
       prerequisites: {
@@ -298,6 +303,7 @@ Younger students often respond better to scenarios and stories; older students e
 For **visualTheme**, pick the single menu value closest to what the hook is ABOUT (a hook about counting marbles is \`counting\`, not \`game\`). It is a category label, not student-facing text — the interface renders an icon for it.
 
 ### Objective Writing
+- Write ${objectiveCountText} for this grade level. Each objective becomes its own block of activities, so this number sets how long the lesson is.
 - Start each objective with a measurable action verb
 - Keep objectives achievable within the estimated time
 - Use age-appropriate language
@@ -378,21 +384,21 @@ have not yet been given a meaning for, you have ordered it wrong — apply rule 
 **K-2:**
 - Hooks: Simple scenarios, familiar situations (home, playground, family)
 - Language: Short sentences, concrete words, avoid abstractions
-- Objectives: 2-3 max. Lead with the one where the child DOES something with real or
-  pictured things ("apply" is fine and often correct first at this age); symbol
-  recognition follows it, never opens.
+- Objectives: the count given under Objective Writing. Lead with the one where the child
+  DOES something with real or pictured things ("apply" is fine and often correct first at
+  this age); symbol recognition follows it, never opens.
 - Time: 10-15 minutes typical
 
 **3-5:**
 - Hooks: Can include surprising facts, more complex scenarios
 - Language: Can introduce some academic vocabulary with context
-- Objectives: 3-4, include some create/apply
+- Objectives: include some create/apply
 - Time: 15-25 minutes typical
 
 **6-8:**
 - Hooks: Questions, real-world problems, connections to current interests
 - Language: Academic vocabulary expected, more sophisticated reasoning
-- Objectives: 3-4, include analyze/evaluate
+- Objectives: include analyze/evaluate
 - Time: 20-30 minutes typical
 
 Create an engaging, age-appropriate Intro Briefing that will excite students about learning this topic!`;
@@ -412,6 +418,16 @@ Create an engaging, age-appropriate Intro Briefing that will excite students abo
 
     if (!result) {
       throw new Error('No data returned from Gemini API');
+    }
+
+    // Band load cap, in code: the prompt asks for the count, but a prompt
+    // count is a request, and every extra objective adds 2-4 components.
+    if (Array.isArray(result.objectives)) {
+      const kept = capObjectivesForGrade(result.objectives, gradeLevel);
+      if (kept.length < result.objectives.length) {
+        console.log(`[CuratorBrief] ${gradeLevel}: kept ${kept.length} of ${result.objectives.length} objectives`);
+        result.objectives = kept;
+      }
     }
 
     // Attach the hook's emoji code-side from the theme the model picked. The

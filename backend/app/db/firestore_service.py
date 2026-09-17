@@ -2278,6 +2278,47 @@ class FirestoreService:
             logger.error(f"Error setting grade_level for student {student_id}: {e}")
             return False
 
+    async def set_student_interests(
+        self, student_id: int, interests: List[str]
+    ) -> bool:
+        """
+        Set the learner's free-form interests on the student document.
+
+        Read by the generation-context persona block, which themes the curator
+        brief's hook and up to two manifest component intents. The Cosmos user
+        profile carries an older copy under `preferences.interests`, but Cosmos
+        is deprecated (2026-07-08) and its profile PUT REPLACES the whole
+        preferences dict — this Firestore field is the one new code writes.
+        Settable via scripts/set_student_interests.py.
+        """
+        try:
+            cleaned = [
+                i.strip() for i in interests
+                if isinstance(i, str) and i.strip()
+            ][:8]
+            await self._ensure_student_document(student_id)
+            self._student_doc(student_id).set(
+                {"interests": cleaned}, merge=True
+            )
+            logger.info(f"Set interests={cleaned!r} on student {student_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error setting interests for student {student_id}: {e}")
+            return False
+
+    async def get_student_interests(self, student_id: int) -> List[str]:
+        """The learner's interests, or [] when unset. Fail-soft: the persona
+        block is optional decoration, never a reason to fail a lesson launch."""
+        try:
+            doc = self._student_doc(student_id).get()
+            if not doc.exists:
+                return []
+            interests = (doc.to_dict() or {}).get("interests") or []
+            return [i for i in interests if isinstance(i, str)][:8]
+        except Exception as e:
+            logger.error(f"Error getting interests for student {student_id}: {e}")
+            return []
+
     async def update_student_planning_fields(
         self,
         student_id: int,

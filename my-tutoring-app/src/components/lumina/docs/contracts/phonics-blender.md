@@ -97,11 +97,11 @@ C3 there) are the same two conflicts, resolved the same two ways (band gate + sc
 - **Evidence:** generator `resolveEvalModeConstraint` + `constrainChallengeTypeEnum` (`:164–176`) + post-process patternType injection (`:335–339`, PB2-4); EVAL_TRACKER 4/4 pass.
 - **Probe:** pin each of the 4 eval modes ×2 → `patternType` and every word's phoneme structure match that mode's challenge types.
 
-### R10 — intent leans word choice but never overrides phonics accuracy · OBSERVED
-- **Property:** `ctx.intent` (specific focus under a broad topic) biases the WORD/theme selection but the prompt explicitly subordinates it to the phonics/decoding accuracy rules — the sort of "always prioritize the phonics rules over this focus" guard that keeps a themed request from producing linguistically wrong phoneme breakdowns.
-- **Demanded by:** topic/intent consumers (topic-fidelity discipline).
-- **Evidence:** generator SPECIFIC FOCUS clause "ALWAYS prioritize the phonics/decoding accuracy rules below over this focus" (`gemini-phonics-blender.ts:246`).
-- **Probe:** fixed grade + pattern, vary intent ×2 → the word theme shifts toward intent, but R6/R7 phoneme accuracy holds on every word.
+### R10 — intent sets scope; a theme decorates, it never picks the words · OBSERVED · ⚠ NARROWED 2026-09-16
+- **Property:** `ctx.intent` supplies the skill and scope (a named pattern or sound is binding). A theme or interest in it (student interests, live since 2026-09-16; every intent is themed at PreK) goes to the title. The words are chosen as with no theme, plus at most 2 everyday theme words that obey every rule (dig, mud), never a rarer word to fit the theme (rig, truck). The shared line is `themedFocusLine` (`service/literacy/themeFocus.ts`).
+- **Demanded by:** topic/intent consumers; student-interests rollout row 0 (`qa/personalization/ROLLOUT.md`).
+- **Evidence:** before the change a themed K intent drew rig 2/4 and cop 1/4 (controls: cat dog sun bus hat); after, dig + mud only, 0/35 non-CVC words across pinned and unpinned draws.
+- **Probe:** `node scripts/probe-literacy-themed-targets.mjs --only=phonics-blender` — themed and control draws, 0 non-CVC words; R6 holds on every word.
 
 ## Conflicts
 
@@ -191,6 +191,14 @@ scope per the handoff; only the sorting-station rider was authorized). Queue the
 
 ## Changelog
 
+- 2026-09-16 — **Student-interests rollout row 0. R10 NARROWED; R6 now also enforced in code.
+  All other requirements hold.** The intent line is now the shared `themedFocusLine` (theme →
+  title; ≤2 everyday theme words), and the K guideline "use words from the topic theme" became
+  "words a five-year-old already says". New post-parse gate: a `cvc` word must be spelled C-V-C
+  (`isCvcSpelling`, `letterGroups.ts`), carry 3 phonemes and have phoneme letters that spell it;
+  failures drop, and the whole set is kept (with a warning) if fewer than 3 would remain.
+  Probe: 8 themed + 4 control live draws at K (cvc pinned and unpinned), 0/35 non-CVC after;
+  `typecheck:lumina` 0, full tsc 770 = baseline. Not browser-driven (generator-only change).
 - 2026-08-09 — **DI MODALITY PORT, and then the task went PURELY VERBAL after one live run.
   R4 RE-BASED (C3), R8 SCOPED to post-answer (C4), R3's notation clause dormant (C4).
   R1/R2/R5–R7/R9/R10 hold.** phonics-blender is the pilot for `qa/di/BACKLOG.md` item 16.

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { themedFocusLine } from './themeFocus';
 import type { GenerationContext } from "../generation/generationContext";
 import { CvcSpellerData } from "../../primitives/visual-primitives/literacy/CvcSpeller";
 import {
@@ -651,7 +652,7 @@ export const generateCvcSpeller = async (
   const remediationSection = buildRemediationPrompt(ctx.remediationFocus);
 
   const generationPrompt = `Create a CVC word spelling activity for the topic: "${topic}".
-${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word/letter choices toward "${intent}" when possible — but ALWAYS prioritize the phonics/decoding accuracy rules below over this focus.\n` : ''}
+${themedFocusLine(topic, intent, { targets: 'target words', carrier: 'the title', themeWords: true })}
 TARGET GRADE LEVEL: ${gradeLevel}
 
 LETTER SCOPE — cumulative letter group ${letterGroup}. EVERY letter of EVERY word must come from this list, with no exceptions:

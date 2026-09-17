@@ -1,5 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { themedFocusLine } from './themeFocus';
+import { isCvcSpelling } from './letterGroups';
 import type { GenerationContext } from "../generation/generationContext";
 import { DecodableReaderData } from "../../primitives/visual-primitives/literacy/DecodableReader";
 import {
@@ -260,6 +262,29 @@ const contentIssues = (data: DecodableReaderData, wantsSpokenAnswer: boolean): s
 };
 
 /**
+ * Kindergarten decode band: every word the child reads is a CVC word or a
+ * sight word. The tag is not trusted alone: a "cvc" tag on a word not spelled
+ * C-V-C is an issue too. A capitalized word the intent itself uses (the
+ * child's name, "Alex") is exempt, since a child's own name is the first
+ * word they learn to recognize. Added 2026-09-16 when a themed intent put
+ * "truck" into 4/4 K passages (rollout row 0).
+ */
+const K_DECODABLE_TAGS = new Set(['cvc', 'sight']);
+const kDecodeIssues = (data: DecodableReaderData, intentNames: Set<string>): string[] => {
+  const issues: string[] = [];
+  for (const sentence of data.passage?.sentences ?? []) {
+    for (const w of sentence.words ?? []) {
+      const bare = (w.text ?? '').toLowerCase().replace(/[^a-z']/g, '');
+      if (!bare || intentNames.has(bare)) continue;
+      const tag = String(w.phonicsPattern ?? '');
+      if (!K_DECODABLE_TAGS.has(tag)) issues.push(`K word "${bare}" is tagged ${tag}, not cvc or sight`);
+      else if (tag === 'cvc' && !isCvcSpelling(bare)) issues.push(`K word "${bare}" is tagged cvc but is not spelled C-V-C`);
+    }
+  }
+  return issues;
+};
+
+/**
  * Generate decodable reader data using Gemini AI
  *
  * Creates controlled-vocabulary reading passages the child reads ALOUD, one
@@ -311,7 +336,8 @@ export const generateDecodableReader = async (
     'K': `
 KINDERGARTEN GUIDELINES:
 - 2-3 SHORT sentences (3-5 words each)
-- Use mostly CVC words (cat, dog, sun, hat, big, red, sit, run, hop)
+- Use ONLY CVC words (cat, dog, sun, hat, big, red, sit, run, hop) and sight words
+- If the topic or theme's own nouns are not CVC (truck, excavator, digger), leave them out and tell the story with CVC words a five-year-old knows (dig, mud, big, hot, sun, run)
 - Include 5-10 high-frequency sight words (the, a, is, it, I, and, to, can, see, my, like, we, go)
 - EVERY word must have a phonicsPattern tag
 - Tag sight words as "sight"
@@ -405,7 +431,7 @@ GRADE 2 GUIDELINES:
       + `carelessly.\n`;
 
   const generationPrompt = `Create a decodable reading passage about: "${topic}".
-${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (passages, target words, sentences, evidence, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
+${themedFocusLine(topic, intent, { targets: 'words', carrier: 'the title and what happens in the story', themeWords: true })}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 ${readAlongSection}${answerSection}
 THIS TEXT IS SPOKEN ALOUD BY A LIVE TUTOR, AND THREE RULES ARE ABSOLUTE:
@@ -530,6 +556,13 @@ Now generate a decodable reading passage about "${topic}" at grade level ${grade
   // The retry now covers CONTENT, not just JSON: a passage sentence outside the
   // benched window or opening with a verdict sentinel is a spoken-ask defect,
   // and re-drawing costs one call where dropping costs the child the sentence.
+  // K decode band: a word outside CVC + sight is a content issue, so it
+  // re-draws once like a sentence-window miss does. Read-along is exempt (the
+  // tutor reads it). Names the lesson gave are exempt (see kDecodeIssues).
+  const kDecode = gradeLevelKey === 'K' && !isReadAlong;
+  const intentNames = new Set(
+    Array.from((intent ?? '').matchAll(/\b[A-Z][a-z]+\b/g), (m) => m[0].toLowerCase()),
+  );
   let result: DecodableReaderData | null = null;
   let lastErr: unknown = null;
   for (let attempt = 1; attempt <= 2; attempt++) {
@@ -547,7 +580,10 @@ Now generate a decodable reading passage about "${topic}" at grade level ${grade
       const text = response.text;
       if (!text) throw new Error("No data returned from Gemini API");
       const parsed = JSON.parse(text) as DecodableReaderData;
-      const issues = contentIssues(parsed, wantsSpokenAnswer);
+      const issues = [
+        ...contentIssues(parsed, wantsSpokenAnswer),
+        ...(kDecode ? kDecodeIssues(parsed, intentNames) : []),
+      ];
       result = parsed;
       if (issues.length === 0) break;
       console.warn(

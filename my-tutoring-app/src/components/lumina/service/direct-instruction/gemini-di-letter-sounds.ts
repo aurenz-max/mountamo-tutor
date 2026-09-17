@@ -612,7 +612,7 @@ You may ONLY choose from these letters (a held continuant, a short vowel, or a c
 ${MENU_LETTERS.join(', ')}
 
 RULES:
-- Choose the ${count} letters whose SOUNDS best match the topic/objective. If the objective names specific letters, use those (only if they are in the allowed set). If it is generic ("letter sounds", "phonics"), pick a spread of the easiest continuous sounds (m, s, f, and a short vowel like a).${sessionShape ? `\n- ${sessionShape.promptLine}` : ''}
+- Choose the ${count} letters whose SOUNDS best match the topic/objective. A theme or interest in it (a child's favorite toys, vehicles or animals) names no letters: ignore it when choosing. If the objective names specific letters, use those (only if they are in the allowed set). If it is generic ("letter sounds", "phonics"), pick a spread of the easiest continuous sounds (m, s, f, and a short vowel like a).${sessionShape ? `\n- ${sessionShape.promptLine}` : ''}
 - These are letter SOUNDS, never letter NAMES. Never choose a letter outside the allowed set.
 - Write a warm, short kid title and a one-sentence description. Never reveal or spell out the sounds in the title or description.
 

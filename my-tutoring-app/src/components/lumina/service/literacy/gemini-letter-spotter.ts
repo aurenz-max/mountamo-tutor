@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { themedFocusLine } from './themeFocus';
 import type { GenerationContext } from "../generation/generationContext";
 import { LetterSpotterData } from "../../primitives/visual-primitives/literacy/LetterSpotter";
 import {
@@ -687,7 +688,7 @@ export const generateLetterSpotter = async (
     : '';
 
   const generationPrompt = `Create an interactive letter recognition activity for the topic: "${topic}".
-${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word/letter choices toward "${intent}" when possible — but ALWAYS prioritize the phonics/decoding accuracy rules below over this focus.\n` : ''}
+${themedFocusLine(topic, intent, { targets: 'target letters and hidden target words', carrier: 'the title and the rest of each sentence', themeWords: true })}
 TARGET GRADE LEVEL: ${gradeLevel}
 LETTER GROUP: ${letterGroup}
 CUMULATIVE LETTERS (all available): ${cumulativeLetters.join(', ')}
@@ -879,7 +880,7 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
             const fallbackWords: Record<string, string> = {
               s: 'sun', a: 'ant', t: 'top', i: 'ink', p: 'pan', n: 'net',
               c: 'cat', k: 'kit', e: 'egg', h: 'hat', r: 'run', m: 'map', d: 'dog',
-              g: 'gum', o: 'owl', u: 'up', l: 'log', f: 'fan', b: 'bat',
+              g: 'gum', o: 'octopus', u: 'up', l: 'log', f: 'fan', b: 'bat',
               // 'x-ray' not 'fox': x-initial words are rare, but this mode needs one.
               j: 'jam', z: 'zip', w: 'wet', v: 'van', y: 'yam', x: 'x-ray', q: 'quilt',
             };

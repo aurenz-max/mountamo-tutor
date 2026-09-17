@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { themedFocusLine } from './themeFocus';
 import type { GenerationContext } from "../generation/generationContext";
 import {
   LetterSoundLinkData,
@@ -586,7 +587,7 @@ export const generateLetterSoundLink = async (
     : `${minChallenges}-${maxChallenges} challenges`;
 
   const generationPrompt = `Create an interactive letter-sound correspondence activity for the topic: "${topic}".
-${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word/letter choices toward "${intent}" when possible — but ALWAYS prioritize the phonics/decoding accuracy rules below over this focus.\n` : ''}
+${themedFocusLine(topic, intent, { targets: 'target letters', carrier: 'the title' })}
 TARGET GRADE LEVEL: ${gradeLevel}
 LETTER GROUP: ${letterGroup}
 CUMULATIVE LETTERS (all available): ${cumulativeLetters.join(', ')}

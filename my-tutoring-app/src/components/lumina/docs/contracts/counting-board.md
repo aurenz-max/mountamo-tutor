@@ -89,6 +89,13 @@
 - **Evidence:** `service/math/countingBoardRemediation.ts`; `gemini-counting-board.ts` selector block; catalog `learningObservations`.
 - **Probe:** `countingBoardRemediation.test.ts`, `gemini-counting-board.adaptation.test.ts` (fails with the selector removed), `scripts/probe-counting-board-applicability.mjs`.
 
+### R12 — the board's object vocabulary is a complete triple, and the enum is its floor · OBSERVED
+- **Property:** the six enum types are the FALLBACK, never the ceiling. When the lesson intent names a concrete thing to count, `objects.type` is `'custom'` carrying ALL THREE of `emoji` (exactly one grapheme cluster, no ASCII), `word` (1-2 lowercase words, plural) and `wordSingular`. The three travel together or not at all: the emoji is what the board DRAWS and the two words are what the tutor SAYS on every ask, so a partial triple is refused back to a random enum type rather than shipped as ⬤ / "objects". An enum board never carries the themed fields. The singular ARRIVES with the plural and is never derived — `SINGULAR` in `countingBoardScript.ts` is an exact map over closed enums, and a themed noun is open by construction.
+- **Demanded by:** the student-interests path (`qa/HANDOFF-student-interests-themed-lessons-2026-09-16.md` slice 2) — interests reach this generator only as an intent string, and a board that ignores it is the one place the whole personalization chain dies. Pedagogy rule: the manipulative a four-year-old will stay for.
+- **Evidence:** generator schema `objects.emoji/word/wordSingular` + the themed-triple validation block; `CountingBoard.tsx` `objects.emoji ?? OBJECT_EMOJI[type]` and `objectSingularFor(objectWord, objects.wordSingular)`; `countingBoardScript.ts` `CountingItem.objectSingular` and the `singular` override on `objectSingularFor`/`countedNoun`.
+- **Probe:** `scripts/probe-counting-board-themed-objects.mjs` — 12/12 live draws clean 2026-09-16 (themed → complete triple, tutor says the themed noun and its singular, never "objects"; an unthemed intent still lands on the enum). Full pipeline: `qa/topic-traces/counting-board-student-interests-2026-09-16.json` (interests → persona → manifest intent → 🚛 "dump trucks" / "dump truck").
+- **Interaction with R2/R6/R9:** none of them read an object field — counts, answer identities and the scope ceiling are all numeric — so theming is orthogonal by construction, and the probe re-runs the oracle and the pack gates on every themed draw to keep it that way.
+
 ## Conflicts
 
 _None open._ Item 13 (R4) is **COMPATIBLE / fork-by-band+mode**. It changes only the K `subitize` display lifecycle. R2/R3 keep `count_all` tap-to-count and the `count`↔`targetAnswer` identity; R5 keeps Pre-K perceptual untouched; the reader-grade branch of R4 preserves Grade-1 subitize. No generator schema or catalog change is justified — `count`/`targetAnswer` already carry everything the flash needs, and display timing is a component concern.
@@ -115,6 +122,8 @@ _None open._ Item 13 (R4) is **COMPATIBLE / fork-by-band+mode**. It changes only
 - **evalModes:** faithful. `subitize` remains "quickly recognize quantity without counting"; the K flash lifecycle enacts exactly that recognition. `subitize_perceptual` description already says "Flash 1-3 objects" (see G2 — the component owes that behavior at Pre-K).
 
 ## Changelog
+
+- 2026-09-16 — R12 (themed object triple) added; the object vocabulary widens from a closed six-emoji enum to enum-or-complete-triple. A fork by VALUE, not an edit in place: every enum board renders and speaks exactly as before (the themed fields are absent, and the component falls back to `OBJECT_EMOJI` / `objectWordFor`), and no other requirement reads an object field. `objectSingularFor`/`countedNoun` gained an optional override; without it they behave identically, so the di-script suite's "unknown word keeps what shipped" assertion still holds. Occasion: student-interests handoff slice 2.
 
 - 2026-09-14 — R2 amended (compare's drawn order is `compareGroups`, larger group on either side) and R8 amended (submitted `evalMode` is the catalog mode). Compatible: boards without `compareGroups` render as before, group_count layouts identical (300/300), no other mode's fields changed. Occasion: `/eval-fix` CNB-2/CNB-3.
 

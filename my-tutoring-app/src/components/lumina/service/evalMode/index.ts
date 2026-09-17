@@ -351,7 +351,8 @@ ${modes.map(m => `- ${m.evalMode}: ${m.label} — ${m.description}`).join('\n')}
 Return the subset of mode keys whose skill the intent calls for:
 - One key if the intent is a single skill.
 - Several keys if the intent genuinely spans more than one of these skills.
-- All keys if the intent is broad / mixed practice with no single skill emphasized.`;
+- All keys if the intent is broad / mixed practice with no single skill emphasized.
+- Ignore any theme or interest wording (a child's favorite toys, vehicles or animals); it names no skill.`;
 
   try {
     const result = await ai.models.generateContent({

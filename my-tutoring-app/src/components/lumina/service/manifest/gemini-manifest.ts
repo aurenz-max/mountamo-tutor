@@ -98,7 +98,11 @@ PERSONALIZATION RULES:
  * Returns '' when no persona exists so the prompt is unchanged.
  */
 export const buildStudentVoiceBlock = (
-  studentContext?: StudentGenerationContext | null
+  studentContext?: StudentGenerationContext | null,
+  /** Objectives in this lesson. At one objective (a PreK lesson) the 2-4
+   *  components ARE the lesson, so "at most 2 themed" would read as a limit
+   *  that is not there — code picks the line, the prompt does not count. */
+  lessonObjectiveCount?: number,
 ): string => {
   const persona = studentContext?.studentProfile;
   if (!persona) return '';
@@ -120,7 +124,9 @@ HOW TO USE THE VOICE:
 - Component intents: where an interest fits the content NATURALLY, instruct the generator to theme word problems, examples, or story contexts around it.
 
 VOICE RULES (hard constraints):
-- Theme AT MOST 2 component intents with the student's interests. Every other component intent must stay interest-neutral — count your themed intents before finalizing. A lesson where everything is themed reads as gimmicky and dilutes the content.
+${lessonObjectiveCount === 1
+  ? "- This lesson has ONE objective, so its components are the whole lesson: theme EVERY component intent with the same interest where it fits the content, so the child meets one consistent world."
+  : "- Theme AT MOST 2 component intents with the student's interests. Every other component intent must stay interest-neutral — count your themed intents before finalizing. A lesson where everything is themed reads as gimmicky and dilutes the content."}
 - The voice changes WORDING ONLY. It must NEVER change component selection, phase weighting, difficulty, counts, number ranges, or scope — those are owned by the STUDENT PROFILE calibration and the pedagogical scope.
 - Only use the facts listed above. NEVER invent details about the student.
 - NEVER weaken pedagogy for the sake of a theme; if an interest does not fit the content, skip it.
@@ -312,7 +318,7 @@ export const generateExhibitManifestStreaming = async (
     const affordanceTags = promptOptions?.affordanceTags ?? AFFORDANCE_TAGS_DEFAULT;
     const gradeLevelContext = getGradeLevelContext(gradeLevel);
     const studentContextBlock = buildStudentContextBlock(studentContext);
-    const studentVoiceBlock = buildStudentVoiceBlock(studentContext);
+    const studentVoiceBlock = buildStudentVoiceBlock(studentContext, objectives?.length);
     // Eval-mode selection is no longer the curator's job — resolveLessonEvalModes
     // resolves it downstream, reading the catalog directly. The manifest only needs
     // each primitive's identity, so mode lists are NOT surfaced here (reclaims the

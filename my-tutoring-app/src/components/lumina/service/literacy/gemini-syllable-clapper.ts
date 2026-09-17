@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { themedFocusLine } from './themeFocus';
 import type { GenerationContext } from "../generation/generationContext";
 import { clampGradeToK2 } from "../scopeContext";
 import { SyllableClapperData } from "../../primitives/visual-primitives/literacy/SyllableClapper";
@@ -371,7 +372,7 @@ export const generateSyllableClapper = async (
   const bannedSample = Array.from(DIALECT_VARIABLE_WORDS).slice(0, 24).join(', ');
 
   const generationPrompt = `Create a syllable activity for the topic: "${topic}".
-${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word choices toward "${intent}" when possible — but ALWAYS prioritize the phonological/syllable accuracy rules below over this focus.\n` : ''}
+${themedFocusLine(topic, intent, { targets: 'words', carrier: 'the title', themeWords: true })}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 HOW THIS ACTIVITY IS PLAYED — read this before choosing a single word.

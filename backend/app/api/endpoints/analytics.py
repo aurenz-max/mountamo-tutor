@@ -1224,7 +1224,7 @@ async def get_session_targets(
     student_id: int,
     subject: str = Query(..., description="Subject to select targets in (e.g. 'Mathematics')"),
     grade: Optional[str] = Query(None, description="Grade filter — pass it whenever known (bare subject resolves ambiguously)"),
-    count: int = Query(4, ge=2, le=5, description="How many target subskills to pick"),
+    count: int = Query(4, ge=1, le=5, description="How many target subskills to pick (1 is a whole PreK lesson)"),
     user_context: dict = Depends(get_user_context),
     analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
 ):
