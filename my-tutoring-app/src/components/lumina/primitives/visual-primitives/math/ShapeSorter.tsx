@@ -1,9 +1,12 @@
 'use client';
 
 /**
- * ShapeSorter — the judged-loop stage (fifth math DI port; qa/di/BACKLOG.md
+ * ShapeSorter — standalone judged-loop stage (fifth math DI port; qa/di/BACKLOG.md
  * item 18). The tutor asks, the child answers OUT LOUD, the tutor's verdict
  * moves the lesson, and this file only draws what she is talking about.
+ * The development live host's identify mode instead mounts ShapeSorterTeaching:
+ * shared tutor/JEV lifecycle, same geometry. The drill notes below describe the
+ * standalone controller and the other, not-yet-adopted modes.
  *
  * NOTHING ON THIS SURFACE IS TAPPABLE except the mic and tap-to-hear. Deleted
  * with the click era: the select-all identify grid with its per-tap green/red
@@ -86,6 +89,11 @@ import RealWorldShapeObject from '../shared/RealWorldShapeObject';
 import type { RealWorldShapeObjectId } from '../shared/realWorldShapeObjects';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { shapeSorterPipPose } from '../../../pip/shapeSorterPipPose';
+import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
+import { useShapeSorterRuntime } from './useShapeSorterRuntime';
+import { renderShapeSVG } from './shapeSorterDrawing';
+import ShapeSorterTeaching from './ShapeSorterTeaching';
 
 // Re-exported: the geometry table used to live here and the generator kept a
 // hand-synced copy of it. It has one home now (the script module, which is not
@@ -161,11 +169,6 @@ const MODE_META: Record<ShapeSorterMode, { label: string; icon: string; accent: 
   sort: { label: 'Sort', icon: '📦', accent: 'cyan' },
 };
 
-const SHAPE_COLORS: Record<string, string> = {
-  red: '#ef4444', blue: '#3b82f6', green: '#22c55e', yellow: '#eab308',
-  purple: '#a855f7', orange: '#f97316', pink: '#ec4899', cyan: '#06b6d4',
-};
-
 const SIZE_SCALE: Record<string, number> = { small: 0.6, medium: 1.0, large: 1.4 };
 
 const MAT_COLORS = ['text-cyan-300', 'text-purple-300', 'text-amber-300', 'text-emerald-300'];
@@ -174,137 +177,22 @@ const MAT_COLORS = ['text-cyan-300', 'text-purple-300', 'text-amber-300', 'text-
 // SVG Shape Rendering — drawing only; it decides nothing
 // ============================================================================
 
-function renderShapeSVG(
-  shape: string, cx: number, cy: number, baseSize: number,
-  color: string, rotation: number,
-  opts?: { dimmed?: boolean; showCorners?: boolean; emoji?: string },
-): React.ReactNode {
-  // A real-world stimulus is drawn AS the object: the child has to see the
-  // shape in the clock face, which is the whole task. Drawing the outline too
-  // would hand them the answer.
-  if (opts?.emoji) {
-    return (
-      <text
-        x={cx} y={cy}
-        textAnchor="middle" dominantBaseline="central"
-        fontSize={baseSize}
-        opacity={opts.dimmed ? 0.25 : 1}
-        className="select-none"
-      >
-        {opts.emoji}
-      </text>
-    );
-  }
-  const fill = SHAPE_COLORS[color] || color || '#94a3b8';
-  const opacity = opts?.dimmed ? 0.25 : 1;
-  const stroke = 'rgba(255,255,255,0.3)';
-  const s = baseSize;
-  const transform = `rotate(${rotation} ${cx} ${cy})`;
-
-  let shapeEl: React.ReactNode = null;
-  const cornerDots: React.ReactNode[] = [];
-
-  /** Corner dots mark WHERE to count, never HOW MANY — no number is printed,
-   *  and the child still has to enumerate them out loud. */
-  const addCornerDots = (corners: number[][]) => {
-    if (!opts?.showCorners) return;
-    corners.forEach(([x, y], i) => {
-      cornerDots.push(
-        <circle key={`corner-${i}`} cx={x} cy={y} r={4} fill="#fbbf24"
-          stroke="#000" strokeWidth={1} transform={transform} />
-      );
-    });
-  };
-
-  switch (shape) {
-    case 'circle': {
-      shapeEl = <circle cx={cx} cy={cy} r={s / 2} fill={fill} stroke={stroke}
-        strokeWidth={1.5} opacity={opacity} transform={transform} />;
-      break;
-    }
-    case 'oval': {
-      shapeEl = <ellipse cx={cx} cy={cy} rx={s * 0.65} ry={s * 0.4} fill={fill}
-        stroke={stroke} strokeWidth={1.5} opacity={opacity} transform={transform} />;
-      break;
-    }
-    case 'square': {
-      const half = s / 2;
-      const c = [[cx - half, cy - half], [cx + half, cy - half], [cx + half, cy + half], [cx - half, cy + half]];
-      shapeEl = <polygon points={c.map(p => p.join(',')).join(' ')} fill={fill} stroke={stroke}
-        strokeWidth={1.5} opacity={opacity} transform={transform} />;
-      addCornerDots(c);
-      break;
-    }
-    case 'triangle': {
-      const h = s * 0.866;
-      const c = [[cx, cy - h / 2], [cx - s / 2, cy + h / 2], [cx + s / 2, cy + h / 2]];
-      shapeEl = <polygon points={c.map(p => p.join(',')).join(' ')} fill={fill} stroke={stroke}
-        strokeWidth={1.5} opacity={opacity} transform={transform} />;
-      addCornerDots(c);
-      break;
-    }
-    case 'rectangle': {
-      // Drawn 2:1 on purpose — a rectangle and a square must never both be
-      // defensible names for one drawing (the K convention di-shapes states).
-      const w = s * 1.4, h = s * 0.7;
-      const c = [[cx - w / 2, cy - h / 2], [cx + w / 2, cy - h / 2], [cx + w / 2, cy + h / 2], [cx - w / 2, cy + h / 2]];
-      shapeEl = <polygon points={c.map(p => p.join(',')).join(' ')} fill={fill} stroke={stroke}
-        strokeWidth={1.5} opacity={opacity} transform={transform} />;
-      addCornerDots(c);
-      break;
-    }
-    case 'diamond':
-    case 'rhombus': {
-      // ONE branch, so these are the SAME drawing — which is why the script
-      // accepts either name for either item rather than judging one wrong.
-      const half = s / 2;
-      const c = [[cx, cy - half * 1.2], [cx + half, cy], [cx, cy + half * 1.2], [cx - half, cy]];
-      shapeEl = <polygon points={c.map(p => p.join(',')).join(' ')} fill={fill} stroke={stroke}
-        strokeWidth={1.5} opacity={opacity} transform={transform} />;
-      addCornerDots(c);
-      break;
-    }
-    case 'hexagon': {
-      const r = s / 2;
-      const c = Array.from({ length: 6 }, (_, i) => {
-        const a = (Math.PI / 3) * i - Math.PI / 2;
-        return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
-      });
-      shapeEl = <polygon points={c.map(p => p.join(',')).join(' ')} fill={fill} stroke={stroke}
-        strokeWidth={1.5} opacity={opacity} transform={transform} />;
-      addCornerDots(c);
-      break;
-    }
-    case 'pentagon': {
-      const r = s / 2;
-      const c = Array.from({ length: 5 }, (_, i) => {
-        const a = (2 * Math.PI / 5) * i - Math.PI / 2;
-        return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
-      });
-      shapeEl = <polygon points={c.map(p => p.join(',')).join(' ')} fill={fill} stroke={stroke}
-        strokeWidth={1.5} opacity={opacity} transform={transform} />;
-      addCornerDots(c);
-      break;
-    }
-    default: {
-      shapeEl = <circle cx={cx} cy={cy} r={s / 2} fill={fill} stroke={stroke}
-        strokeWidth={1.5} opacity={opacity} transform={transform} />;
-    }
-  }
-
-  return <g>{shapeEl}{cornerDots}</g>;
-}
-
 // ============================================================================
 // Main Component
 // ============================================================================
 
-interface ShapeSorterProps {
+export interface ShapeSorterProps {
   data: ShapeSorterData;
   className?: string;
+  /** The live host opts in only after its correlated mount handoff. */
+  autoStart?: boolean;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
+const ScriptedShapeSorter: React.FC<ShapeSorterProps> = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode }) => {
+  const liveRuntime = useLiveRuntime();
   const {
     title,
     challenges = [],
@@ -413,6 +301,10 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
   }), [items, challenges]);
 
   const runner = useJudgedScriptRunner<ShapeSorterItem>({
+    // Load-bearing for the live host: without it the runner's `resume()` early-returns,
+    // its speech holds never settle, and the completion handoff has nothing to read.
+    runtime: liveRuntime,
+    ...(runtimePlanItemId ? { completionCue: '[SH_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
     pack,
     instanceId: resolvedInstanceId,
     gradeLevel,
@@ -493,6 +385,16 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
   // ============================================================================
   // Render
   // ============================================================================
+
+  const runtimeHint = useShapeSorterRuntime({ runner, instanceId: resolvedInstanceId, objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the first item — never `runner.currentItem`. A
+    // mount's identity must not change while the runner owns it.
+    evalMode: runtimeEvalMode || items[0]?.mode || 'default' });
+  // AFTER the runtime mount is registered, never before: `start()` waits for
+  // `grantOwnership('runner')`, which cannot be granted until this primitive's
+  // mount exists. Declared earlier, its effect runs first and the runner spins.
+  useLiveAutoStart(autoStart, resolvedInstanceId, runner.start);
 
   if (items.length === 0) {
     return (
@@ -708,4 +610,11 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
   );
 };
 
+/** The live pilot shares the actual drawing code; its lifecycle never mounts the drill runner. */
+const ShapeSorter: React.FC<ShapeSorterProps> = props => {
+  const runtime = useLiveRuntime();
+  return runtime && props.runtimeEvalMode === 'identify'
+    ? <ShapeSorterTeaching {...props} />
+    : <ScriptedShapeSorter {...props} />;
+};
 export default ShapeSorter;

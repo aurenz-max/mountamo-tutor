@@ -3,8 +3,10 @@ import {
   DEFAULT_JUDGED_LOOP_CONFIG,
   DI_SENTINELS,
   IDLE_JUDGED_LOOP,
+  isLearnerVerdict,
   reduceJudgedLoop,
   scanForSentinel,
+  withHelpBranch,
   type JudgedLoopState,
   type LoopEmission,
   type LoopEvent,
@@ -331,5 +333,84 @@ describe('reduceJudgedLoop', () => {
       { type: 'tutor-text', text: 'Yes, sss.', at: 3000 },
     ]);
     expect(emissions).toEqual([{ kind: 'unanchored-verdict', judgment: 'affirmed' }]);
+  });
+});
+
+// ── THE THIRD BRANCH (2026-09-19) ───────────────────────────────────────────
+// The failure these cover, from a live counting-board session: a child said
+// "can you help me" and received the wrong-answer correction line, twice,
+// verbatim. A help turn must resolve the attempt WITHOUT scoring the child and
+// WITHOUT counting toward the resync that exists to catch a drifting tutor.
+
+describe('the help branch', () => {
+  const helped = withHelpBranch();
+  const helpConfig = { ...DEFAULT_JUDGED_LOOP_CONFIG, sentinels: helped };
+
+  const driveHelp = (events: LoopEvent[]) => {
+    let state: JudgedLoopState = IDLE_JUDGED_LOOP;
+    const emissions: LoopEmission[] = [];
+    for (const event of events) {
+      const step = reduceJudgedLoop(state, event, helpConfig);
+      state = step.state;
+      emissions.push(...step.emissions);
+    }
+    return { state, emissions };
+  };
+
+  it('is off by default, so a shipped two-branch pack is unaffected', () => {
+    expect(DI_SENTINELS.help).toBeUndefined();
+    expect(scanForSentinel('Good question. A star is a shape.', DI_SENTINELS)).toBe('none');
+  });
+
+  it('classifies the help opener only when the pack opted in', () => {
+    expect(scanForSentinel('Good question. Stars are shiny. How many stars?', helped)).toBe('helped');
+    expect(scanForSentinel('Goo', helped)).toBe('pending');
+    // Still the two branches it always was.
+    expect(scanForSentinel('Yes, three stars.', helped)).toBe('affirmed');
+    expect(scanForSentinel('My turn: count with me.', helped)).toBe('corrected');
+  });
+
+  it('resolves the attempt as helped, and does not count it as a miss', () => {
+    const { state, emissions } = driveHelp([
+      { type: 'arm' },
+      { type: 'voice-close', turn: turn() },
+      { type: 'tutor-text', text: 'Good question. Stars are shiny. Give me three stars.', at: 2500 },
+    ]);
+    const verdict = emissions.find((e) => e.kind === 'verdict');
+    expect(verdict).toMatchObject({ judgment: 'helped', misses: 0 });
+    expect(state.attempt).toBeNull();
+    expect(state.consecutiveMisses).toBe(0);
+  });
+
+  it('clears a miss streak instead of driving it to a resync', () => {
+    // Two off-script replies would resync on the next miss. A help turn is the
+    // tutor doing the right thing, so the streak resets rather than advancing.
+    const { state, emissions } = driveHelp([
+      { type: 'arm' },
+      { type: 'voice-close', turn: turn() },
+      { type: 'tutor-text', text: 'Hmm, let me think.', at: 2400 },
+      { type: 'tutor-quiet', at: 2600 },
+      { type: 'voice-close', turn: turn({ openedAt: 3000, closedAt: 3500 }) },
+      { type: 'tutor-text', text: 'Good question. They are stars. Give me three stars.', at: 3800 },
+    ]);
+    expect(state.consecutiveMisses).toBe(0);
+    expect(emissions.some((e) => e.kind === 'resync')).toBe(false);
+  });
+
+  it('keeps the tutor’s own sentence, so a run log shows what she answered', () => {
+    const { emissions } = driveHelp([
+      { type: 'arm' },
+      { type: 'voice-close', turn: turn() },
+      { type: 'tutor-text', text: 'Good question.  They are   stars. Give me three stars.', at: 2500 },
+    ]);
+    const verdict = emissions.find((e) => e.kind === 'verdict' && e.judgment === 'helped');
+    expect(verdict && 'verdictText' in verdict && verdict.verdictText)
+      .toBe('Good question. They are stars. Give me three stars.');
+  });
+
+  it('is not a verdict about the learner', () => {
+    expect(isLearnerVerdict('affirmed')).toBe(true);
+    expect(isLearnerVerdict('corrected')).toBe(true);
+    expect(isLearnerVerdict('helped')).toBe(false);
   });
 });

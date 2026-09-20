@@ -1,0 +1,202 @@
+{
+  "audit": {
+    "componentId": "comparison-builder",
+    "status": "pass",
+    "componentFiles": [
+      "src/components/lumina/primitives/visual-primitives/math/ComparisonBuilder.tsx"
+    ],
+    "dataBagKeys": [
+      "challengeType",
+      "leftCount",
+      "rightCount",
+      "leftNumber",
+      "rightNumber",
+      "correctAnswer",
+      "targetNumber",
+      "askFor",
+      "gradeBand",
+      "useAlligatorMnemonic",
+      "supportTier",
+      "instruction",
+      "totalChallenges",
+      "currentChallengeIndex",
+      "attemptNumber"
+    ],
+    "dataBagDynamic": false,
+    "contextKeys": [
+      "challengeType",
+      "leftCount",
+      "rightCount",
+      "leftNumber",
+      "rightNumber",
+      "correctAnswer",
+      "targetNumber",
+      "askFor",
+      "gradeBand",
+      "useAlligatorMnemonic",
+      "instruction",
+      "attemptNumber"
+    ],
+    "templateVars": [
+      "challengeType",
+      "instruction",
+      "attemptNumber",
+      "leftNumber",
+      "rightNumber",
+      "targetNumber",
+      "askFor"
+    ],
+    "sendTextTags": [
+      "ACTIVITY_START",
+      "ANSWER_CORRECT",
+      "ANSWER_INCORRECT",
+      "DISAMBIGUATE",
+      "ALL_COMPLETE",
+      "NEXT_ITEM"
+    ],
+    "findings": []
+  },
+  "status": "pass",
+  "tutoring": {
+    "taskDescription": "Student is comparing quantities and numbers. Challenge type: {{challengeType}}. Instruction on screen: {{instruction}}. Attempt: {{attemptNumber}}. See RUNTIME STATE for the exact counts, numbers, or target for this challenge.",
+    "contextKeys": [
+      "challengeType",
+      "leftCount",
+      "rightCount",
+      "leftNumber",
+      "rightNumber",
+      "correctAnswer",
+      "targetNumber",
+      "askFor",
+      "gradeBand",
+      "useAlligatorMnemonic",
+      "instruction",
+      "attemptNumber"
+    ],
+    "scaffoldingLevels": {
+      "level1": "\"Which group looks like it has more? Can you tell just by looking?\"",
+      "level2": "\"Count each group carefully, then tell me which side has more. Remember: the alligator always opens its mouth toward the bigger number.\"",
+      "level3": "\"Let's count together. Point to each one on the left and count out loud: 1, 2, 3... now do the same on the right. Whichever side you said a bigger number for is the side with more.\""
+    },
+    "commonStruggles": [
+      {
+        "pattern": "Student confuses < and > symbols",
+        "response": "Use the alligator mnemonic: the alligator mouth always opens toward the bigger number because it wants to eat more!"
+      },
+      {
+        "pattern": "Student cannot compare groups without counting",
+        "response": "Encourage one-to-one matching: \"Try pointing to one on the left and one on the right. Match them up. Which side has leftovers?\""
+      },
+      {
+        "pattern": "Student reverses ascending/descending order",
+        "response": "Clarify the direction: \"Least to greatest means we start with the smallest number. Which is the smallest here?\""
+      },
+      {
+        "pattern": "Student confuses one-more with one-less",
+        "response": "Use the number line: \"If we go forward one step from the target, what do we land on? That is one more.\""
+      }
+    ],
+    "aiDirectives": [
+      {
+        "title": "READ THE QUESTION ALOUD AND ASK THE SPECIFIC COMPARISON \u2014 the student is a K\u20131 child who cannot read",
+        "instruction": "The student CANNOT read the instruction on screen \u2014 you are their voice. Whenever a new challenge begins (a [PRIMITIVE SWITCH], [ACTIVITY_START], or [NEXT_ITEM]), your FIRST action is to say, in one warm child-friendly sentence, exactly what to do \u2014 and NAME the specific choice so the child knows what they are deciding. Match the wording to the challenge type ({{challengeType}}): compare-groups \u2192 \"Which side has MORE \u2014 the left side or the right side? Tap that side. If they are the same, tap the equals in the middle.\"; compare-numbers \u2192 \"Which number is bigger, {{leftNumber}} or {{rightNumber}}? Tap the bigger number. If they are the same, tap the equals sign in the middle.\" (a reader who sees alligator mouths can pick the mouth that eats the bigger number instead); one-more-one-less \u2192 we start at {{targetNumber}}, and you voice EVERY question the screen shows (askFor: {{askFor}}), giving \"one less\" exactly the same attention as \"one more\": if it asks for one more, say \"Find the number that is one MORE than {{targetNumber}} and tap it.\"; if it asks for one less, say \"Find the number that is one LESS than {{targetNumber}} and tap it.\"; if it asks for BOTH, voice both asks equally \u2014 \"Find one MORE than {{targetNumber}}, and also find one LESS than {{targetNumber}} \u2014 tap a number for each.\" Never skip or shortchange the \"one less\" side; order \u2192 \"Let's put these numbers in order. Which one is the smallest? Tap it first.\" Reading and asking the question IS your greeting for this activity \u2014 this overrides any instruction to keep the transition to a single sentence. Never just say \"let's compare!\" and stop, and NEVER say which side or which answer is correct \u2014 only ask the question. Then wait for the child to act."
+      }
+    ]
+  },
+  "generatedData": {
+    "title": "Which Group Has More?",
+    "challenges": [
+      {
+        "id": "c1",
+        "type": "compare-groups",
+        "instruction": "Does the left group have more, fewer, or the same number of stars?",
+        "correctAnswer": "equal",
+        "leftGroup": {
+          "count": 5,
+          "objectType": "stars"
+        },
+        "rightGroup": {
+          "count": 5,
+          "objectType": "stars"
+        }
+      },
+      {
+        "id": "c2",
+        "type": "compare-groups",
+        "instruction": "Does the left group have more, fewer, or the same number of apples?",
+        "correctAnswer": "more",
+        "leftGroup": {
+          "count": 18,
+          "objectType": "apples"
+        },
+        "rightGroup": {
+          "count": 16,
+          "objectType": "apples"
+        }
+      },
+      {
+        "id": "c3",
+        "type": "compare-groups",
+        "instruction": "Does the left group have more, fewer, or the same number of fish?",
+        "correctAnswer": "less",
+        "leftGroup": {
+          "count": 7,
+          "objectType": "fish"
+        },
+        "rightGroup": {
+          "count": 11,
+          "objectType": "fish"
+        }
+      },
+      {
+        "id": "c4",
+        "type": "compare-groups",
+        "instruction": "Does the left group have more, fewer, or the same number of bears?",
+        "correctAnswer": "more",
+        "leftGroup": {
+          "count": 20,
+          "objectType": "bears"
+        },
+        "rightGroup": {
+          "count": 19,
+          "objectType": "bears"
+        }
+      },
+      {
+        "id": "c5",
+        "type": "compare-groups",
+        "instruction": "Does the left group have more, fewer, or the same number of cookies?",
+        "correctAnswer": "more",
+        "leftGroup": {
+          "count": 7,
+          "objectType": "cookies"
+        },
+        "rightGroup": {
+          "count": 4,
+          "objectType": "cookies"
+        }
+      }
+    ],
+    "gradeBand": "1",
+    "showCorrespondenceLines": true,
+    "useAlligatorMnemonic": false,
+    "description": "Practice comparing two visual groups of objects to determine which group has more, fewer, or the same amount."
+  },
+  "mergedBag": {
+    "challengeType": "\u00abruntime:challengeType\u00bb",
+    "leftCount": "\u00abruntime:leftCount\u00bb",
+    "rightCount": "\u00abruntime:rightCount\u00bb",
+    "leftNumber": "\u00abruntime:leftNumber\u00bb",
+    "rightNumber": "\u00abruntime:rightNumber\u00bb",
+    "correctAnswer": "equal",
+    "targetNumber": "\u00abruntime:targetNumber\u00bb",
+    "askFor": "\u00abruntime:askFor\u00bb",
+    "gradeBand": "1",
+    "useAlligatorMnemonic": false,
+    "supportTier": "\u00abruntime:supportTier\u00bb",
+    "instruction": "Does the left group have more, fewer, or the same number of stars?",
+    "totalChallenges": "\u00abruntime:totalChallenges\u00bb",
+    "currentChallengeIndex": "\u00abruntime:currentChallengeIndex\u00bb",
+    "attemptNumber": "\u00abruntime:attemptNumber\u00bb"
+  }
+}

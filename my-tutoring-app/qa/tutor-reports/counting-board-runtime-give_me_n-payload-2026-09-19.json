@@ -1,0 +1,158 @@
+{
+  "audit": {
+    "componentId": "counting-board",
+    "status": "warn",
+    "componentFiles": [
+      "src/components/lumina/primitives/visual-primitives/math/CountingBoard.tsx",
+      "src/components/lumina/primitives/visual-primitives/math/countingBoardScript.ts"
+    ],
+    "dataBagKeys": null,
+    "dataBagDynamic": true,
+    "contextKeys": [
+      "challengeType",
+      "objectType",
+      "stimulus"
+    ],
+    "templateVars": [
+      "challengeType",
+      "objectType",
+      "stimulus"
+    ],
+    "sendTextTags": [],
+    "findings": [
+      {
+        "check": "data-bag-unparsed",
+        "severity": "WARN",
+        "message": "Could not statically parse the primitiveData bag \u2014 contextKeys/{{var}} checks skipped. Run the &probe=1 tier or verify in the Lumina Tutor Tester."
+      },
+      {
+        "check": "no-sendtext-moments",
+        "severity": "WARN",
+        "message": "Component never calls sendText \u2014 the tutor will go silent after the initial greeting (no pedagogical moments are wired)."
+      },
+      {
+        "check": "directive-tag-never-emitted",
+        "severity": "WARN",
+        "message": "aiDirectives reference [BRACKETS] but no source file ever sends that tag \u2014 the directive is dead prompt text (or the trigger was renamed)."
+      }
+    ]
+  },
+  "status": "warn",
+  "tutoring": {
+    "taskDescription": "LIVE-JUDGED counting practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD (or taps a hand on pre-numeric items), you judge what you HEARD, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. Objects on the board: {{objectType}}. What is on the board right now: {{stimulus}}. Every cue you receive carries the answer for that turn \u2014 nothing outside the cue does, and you never state the count on your own.",
+    "contextKeys": [
+      "challengeType",
+      "objectType",
+      "stimulus"
+    ],
+    "scaffoldingLevels": {
+      "level1": "Speak the current item's scripted correction line, exactly as the cue gives it. It already re-models the count and re-asks \u2014 that IS the first scaffold, and it opens with \"My turn:\" so the activity can hear it.",
+      "level2": "Speak the SAME scripted correction line again, a little slower. Do not swap it for a reminder of the method or any other wording: a reply that opens with neither \"Yes\" nor \"My turn:\" reaches the activity as no verdict at all and the lesson stalls.",
+      "level3": "Still the same scripted correction line. If the child is stuck after it, say nothing further \u2014 the activity moves the lesson on by itself and carries the next ask to you."
+    },
+    "commonStruggles": [
+      {
+        "pattern": "Double-counts or skips objects while tapping",
+        "response": "The scripted correction re-models the count AFTER the attempt is judged. Never interrupt a child mid-count."
+      },
+      {
+        "pattern": "Long silence",
+        "response": "Silence is the child counting \u2014 wait. If they truly seem stuck, re-speak the current ask once; never count for them."
+      }
+    ],
+    "aiDirectives": [
+      {
+        "title": "THE OPENING LINE ALREADY SAYS HOW TO PLAY",
+        "instruction": "Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. Never invent a greeting, add instructions, or ask a question of your own before or after it."
+      },
+      {
+        "title": "SENTINEL DISCIPLINE",
+        "instruction": "Every affirmation begins with \"Yes\" and EVERY correction begins with \"My turn:\" exactly as the cue scripts. Never begin any other sentence with either opener."
+      },
+      {
+        "title": "THE CHILD IS COUNTING \u2014 WAIT",
+        "instruction": "Think time is unbounded. Never count along, never prompt mid-count, never fill silence. Counting aloud that ends on the correct number IS a correct answer \u2014 the last number said tells the total."
+      },
+      {
+        "title": "PRE-NUMERIC ITEMS ARE NUMBER-FREE",
+        "instruction": "On subitize_perceptual items say no number word and no digit at any point. The child answers by tapping a hand; you wait in silence and speak only the scripted verdict lines."
+      },
+      {
+        "title": "NEVER READ BRACKET TAGS",
+        "instruction": "Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken."
+      }
+    ]
+  },
+  "generatedData": {
+    "title": "Fluttering Butterflies",
+    "description": "Practice giving a requested number of beautiful butterflies from a larger collection.",
+    "objects": {
+      "type": "butterflies"
+    },
+    "challenges": [
+      {
+        "id": "c1",
+        "type": "give_me_n",
+        "instruction": "Give me three butterflies.",
+        "targetAnswer": 3,
+        "count": 6,
+        "arrangement": "line",
+        "hint": "Try tapping each butterfly one at a time as you count them.",
+        "narration": "Look at these lovely butterflies in a line! Let us count them carefully."
+      },
+      {
+        "id": "c2",
+        "type": "give_me_n",
+        "instruction": "Give me five butterflies.",
+        "targetAnswer": 5,
+        "count": 8,
+        "arrangement": "scattered",
+        "hint": "Take your time and tap each butterfly so you don't miss any.",
+        "narration": "Here are more butterflies flying around. Can you count them?"
+      },
+      {
+        "id": "c3",
+        "type": "give_me_n",
+        "instruction": "Give me two butterflies.",
+        "targetAnswer": 2,
+        "count": 7,
+        "arrangement": "circle",
+        "hint": "Start at the top butterfly and follow them around the circle.",
+        "narration": "These butterflies are flying in a ring! Let us count them together."
+      },
+      {
+        "id": "c4",
+        "type": "give_me_n",
+        "instruction": "Give me four butterflies.",
+        "targetAnswer": 4,
+        "count": 9,
+        "arrangement": "groups",
+        "hint": "Count the butterflies in one group first, then count the next group.",
+        "narration": "Look at these cozy little groups of butterflies. Let us count them all!",
+        "groupSize": 5
+      },
+      {
+        "id": "c5",
+        "type": "give_me_n",
+        "instruction": "Give me six butterflies.",
+        "targetAnswer": 6,
+        "count": 10,
+        "arrangement": "scattered",
+        "hint": "Tap slowly and watch the numbers light up as you count.",
+        "narration": "You are doing amazing! Let us count this final group of butterflies."
+      }
+    ],
+    "showOptions": {
+      "showRunningCount": true,
+      "showGroupCircles": false,
+      "highlightOnTap": true,
+      "showLastNumber": true
+    },
+    "gradeBand": "K"
+  },
+  "mergedBag": {
+    "challengeType": "give_me_n",
+    "objectType": "butterflies",
+    "stimulus": "a big pile of butterflies to take some from"
+  }
+}

@@ -1,0 +1,73 @@
+{
+    "result":  {
+                   "verdict":  "correct",
+                   "transition":  "advance",
+                   "confidence":  0.95,
+                   "verdictConfidence":  1,
+                   "grounded":  1,
+                   "ms":  430,
+                   "model":  "jev-1.13.0",
+                   "accepted":  true,
+                   "reason":  "supported"
+               },
+    "request":  {
+                    "learner":  "1 2 3 4 5",
+                    "scope":  {
+                                  "revision":  1,
+                                  "sessionEpoch":  "session-replay",
+                                  "instanceId":  "board",
+                                  "itemId":  "c1"
+                              },
+                    "activity":  {
+                                     "responseSource":  "speech",
+                                     "objects":  [
+                                                     {
+                                                         "label":  "block",
+                                                         "selected":  true,
+                                                         "id":  "object-0"
+                                                     },
+                                                     {
+                                                         "label":  "block",
+                                                         "selected":  true,
+                                                         "id":  "object-1"
+                                                     },
+                                                     {
+                                                         "label":  "block",
+                                                         "selected":  true,
+                                                         "id":  "object-2"
+                                                     },
+                                                     {
+                                                         "label":  "block",
+                                                         "selected":  true,
+                                                         "id":  "object-3"
+                                                     },
+                                                     {
+                                                         "label":  "block",
+                                                         "selected":  true,
+                                                         "id":  "object-4"
+                                                     }
+                                                 ],
+                                     "attemptNumber":  1,
+                                     "facts":  {
+                                                   "presentation":  "ready",
+                                                   "counted":  5,
+                                                   "response":  "speech"
+                                               },
+                                     "assistance":  {
+                                                        "level":  0,
+                                                        "answerExposure":  "none"
+                                                    },
+                                     "demonstration":  [
+
+                                                       ]
+                                 },
+                    "lastResponse":  {
+                                         "assisted":  false,
+                                         "correct":  true,
+                                         "response":  "1 2 3 4 5"
+                                     },
+                    "phase":  "checked",
+                    "tutor":  "Fantastic job counting all five blocks correctly!",
+                    "task":  "Count the blocks."
+                }
+}

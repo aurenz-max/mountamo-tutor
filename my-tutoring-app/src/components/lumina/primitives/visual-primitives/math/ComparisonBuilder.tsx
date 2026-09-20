@@ -34,6 +34,8 @@ import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import type { PipTarget } from '../../../pip/PipSurfaceStore';
 import { comparisonBuilderPipPose } from '../../../pip/comparisonBuilderPipPose';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
+import { useComparisonBuilderRuntime } from './useComparisonBuilderRuntime';
+import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -289,13 +291,17 @@ function AlligatorSymbol({
 interface ComparisonBuilderProps {
   data: ComparisonBuilderData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }) => {
+const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const {
     title,
     description,
@@ -539,6 +545,17 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
   });
 
+  // Under the live runtime the tutor OWNS progression, and the `[ANSWER_CORRECT]`
+  // text below is a complete instruction on its own ("Congratulate briefly"). Sent
+  // bare, the model did exactly that and waited: 3/3 drives on 2026-09-18 stalled
+  // on a checked-correct item with `advance` the only choice. Same clause as
+  // NumberLine; nothing is sent on the final item, whose completion the runtime owns.
+  const liveRuntime = useLiveRuntime();
+  const runtimeAdvanceClause = liveRuntime && currentChallengeIndex < challenges.length - 1
+    ? ' This challenge is checked complete. Execute the advertised runtime advance action now, '
+      + 'then wait for its visible receipt before introducing the next instruction.'
+    : '';
+
   // Activity introduction
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
@@ -578,7 +595,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
       setShowLines(true);
       sendText(
         `[ANSWER_CORRECT] Student correctly identified that left (${leftCount}) has ${answerWord} right (${rightCount}). `
-        + `Congratulate briefly! ${showCorrespondenceLines ? 'Point out the matching lines.' : ''}`,
+        + `Congratulate briefly! ${showCorrespondenceLines ? 'Point out the matching lines.' : ''}`
+        + runtimeAdvanceClause,
         { silent: true },
       );
     } else {
@@ -603,7 +621,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     return correct;
   }, [
     currentChallenge, selectedAnswer, incrementAttempts, noteWrongAnswer,
-    showCorrespondenceLines, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause,
+    showCorrespondenceLines, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause, runtimeAdvanceClause,
   ]);
 
   // -------------------------------------------------------------------------
@@ -663,7 +681,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
       setFeedbackType('success');
       sendText(
         `[ANSWER_CORRECT] Student correctly chose ${currentChallenge.correctSymbol} `
-        + `for ${currentChallenge.leftNumber} vs ${currentChallenge.rightNumber}. Congratulate!`,
+        + `for ${currentChallenge.leftNumber} vs ${currentChallenge.rightNumber}. Congratulate!`
+        + runtimeAdvanceClause,
         { silent: true },
       );
     } else {
@@ -687,7 +706,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     }
 
     return correct;
-  }, [currentChallenge, selectedAnswer, incrementAttempts, noteWrongAnswer, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause]);
+  }, [currentChallenge, selectedAnswer, incrementAttempts, noteWrongAnswer, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause, runtimeAdvanceClause]);
 
   // -------------------------------------------------------------------------
   // K tap=choose — compare-numbers. The pre-reader taps the BIGGER numeral
@@ -748,7 +767,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
       setFeedbackType('success');
       sendText(
         `[ANSWER_CORRECT] Student correctly ordered numbers ${currentChallenge.direction}: `
-        + `${orderedNumbers.join(', ')}. Celebrate!`,
+        + `${orderedNumbers.join(', ')}. Celebrate!`
+        + runtimeAdvanceClause,
         { silent: true },
       );
     } else {
@@ -770,7 +790,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     }
 
     return correct;
-  }, [currentChallenge, orderedNumbers, incrementAttempts, noteWrongAnswer, currentAttempts, sendText, tutorRevealClause]);
+  }, [currentChallenge, orderedNumbers, incrementAttempts, noteWrongAnswer, currentAttempts, sendText, tutorRevealClause, runtimeAdvanceClause]);
 
   // -------------------------------------------------------------------------
   // Check Answer — one-more-one-less
@@ -802,7 +822,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
       setFeedbackType('success');
       sendText(
         `[ANSWER_CORRECT] Student correctly found one ${askFor} of ${target}. `
-        + `${askFor === 'both' ? `One more: ${target + 1}, one less: ${target - 1}.` : ''} Congratulate!`,
+        + `${askFor === 'both' ? `One more: ${target + 1}, one less: ${target - 1}.` : ''} Congratulate!`
+        + runtimeAdvanceClause,
         { silent: true },
       );
     } else {
@@ -830,7 +851,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     }
 
     return correct;
-  }, [currentChallenge, oneMoreAnswer, oneLessAnswer, incrementAttempts, noteWrongAnswer, currentAttempts, sendText, tutorRevealClause]);
+  }, [currentChallenge, oneMoreAnswer, oneLessAnswer, incrementAttempts, noteWrongAnswer, currentAttempts, sendText, tutorRevealClause, runtimeAdvanceClause]);
 
   // -------------------------------------------------------------------------
   // one-more-one-less DISAMBIGUATE — after the child answers ONE part of a
@@ -1082,6 +1103,49 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     advanceProgress, phaseResults, challenges, challengeResults, sendText,
     hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex,
   ]);
+
+  /**
+   * Clear THIS response and nothing else — attempts, recorded results and any
+   * assistance history all survive. `retry` calls exactly this, so the tutor's
+   * clear and a learner's clear are the same operation.
+   */
+  const clearResponse = useCallback(() => {
+    setSelectedAnswer(null);
+    setOrderedNumbers([]);
+    setOneMoreAnswer(null);
+    setOneLessAnswer(null);
+    setFeedback('');
+    setFeedbackType('');
+    setOrderFlash(null);
+    if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current);
+    setWrongFlash(null);
+    if (wrongFlashTimer.current) clearTimeout(wrongFlashTimer.current);
+  }, []);
+
+  // ── Live tutor runtime ──────────────────────────────────────────────
+  // The tutor drives the learner's OWN handlers; grading and progression are
+  // untouched. `promptRef` exists so `replay` has a real, focusable effect
+  // rather than a claim, and the label matches the shared journey probe.
+  const promptRef = useRef<HTMLDivElement | null>(null);
+  const runtimeHint = useComparisonBuilderRuntime({
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || currentChallenge?.type || 'compare',
+    challenge: currentChallenge, index: currentChallengeIndex, attempts: currentAttempts,
+    correct: isCurrentChallengeComplete,
+    incorrect: !isCurrentChallengeComplete && feedbackType === 'error',
+    completed: allChallengesComplete,
+    selected: selectedAnswer, ordered: orderedNumbers,
+    oneMore: oneMoreAnswer, oneLess: oneLessAnswer,
+    advance: advanceToNextChallenge,
+    clear: clearResponse,
+    replay: () => { promptRef.current?.focus(); return !!promptRef.current && document.activeElement === promptRef.current; },
+    // The two flash timers are the whole of this component's quiescing; a flash
+    // that lands during a detour would paint a verdict nobody is looking at.
+    cancelFlashes: () => {
+      if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current);
+      if (wrongFlashTimer.current) clearTimeout(wrongFlashTimer.current);
+    },
+  });
 
   // Auto-submit when all complete
   const hasAutoSubmittedRef = useRef(false);
@@ -1850,7 +1914,9 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
             eval mode. The button re-voices the instruction + an answer-free ask. */}
         {currentChallenge && !allChallengesComplete && (
           <div className="flex items-start gap-2">
-            <LuminaPrompt className="flex-1">{currentChallenge.instruction}</LuminaPrompt>
+            <div ref={promptRef} tabIndex={-1} aria-label="Current instruction" className="flex-1 outline-none">
+              <LuminaPrompt>{currentChallenge.instruction}</LuminaPrompt>
+            </div>
             {isK && (
               <ReadMeButton
                 instruction={currentChallenge.instruction}

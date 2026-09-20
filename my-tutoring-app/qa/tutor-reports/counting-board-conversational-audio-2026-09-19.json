@@ -1,0 +1,39 @@
+[
+  {
+    "passed": false,
+    "primitiveId": "counting-board",
+    "events": [
+      {
+        "type": "learner",
+        "t": 3.27,
+        "text": "[LESSON_START] Begin a counting-board lesson in count mode. Call request_activity now. Teach from the mounted workspace."
+      },
+      {
+        "type": "failure",
+        "t": 3.28,
+        "reason": "ConnectionClosedError(Close(code=1012, reason=''), Close(code=1012, reason=''), True)",
+        "state": {
+          "sessionEpoch": "7faa730b-44ae-4822-9356-5e91b113cd59",
+          "revision": 0,
+          "visibleRevision": null,
+          "instanceId": null,
+          "planItemId": null,
+          "primitiveId": null,
+          "objectiveId": null,
+          "evalMode": null,
+          "owner": "none",
+          "status": "empty",
+          "task": null,
+          "supportArtifact": null,
+          "blockedReason": "No mounted adapter",
+          "canStartNext": true,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": []
+        }
+      }
+    ]
+  }
+]

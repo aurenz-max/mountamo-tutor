@@ -1,0 +1,1333 @@
+[
+  {
+    "passed": true,
+    "primitiveId": "counting-board",
+    "events": [
+      {
+        "type": "learner",
+        "t": 3.12,
+        "text": "[LESSON_START] Begin a counting-board lesson in give_me_n mode. Call request_activity now. Teach from the mounted workspace."
+      },
+      {
+        "type": "activity_request",
+        "t": 4.59,
+        "request": {
+          "primitiveId": "counting-board",
+          "topic": "counting",
+          "intent": "count and give up to 10 objects",
+          "mode": "give_me_n"
+        }
+      },
+      {
+        "type": "mounted_generated_payload",
+        "t": 4.75,
+        "state": {
+          "sessionEpoch": "88de09c6-7856-4784-a641-7210576f2a5c",
+          "revision": 1,
+          "visibleRevision": 1,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "give_me_n",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "working",
+            "task": "Here are lots of butterflies. Your turn. Give me three butterflies.",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "give_me_n",
+              "objects": "butterflies",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "gesture",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            },
+            "workspace": {
+              "progression": "observer",
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "butterfly 1",
+                  "selected": false
+                },
+                {
+                  "id": "object-1",
+                  "label": "butterfly 2",
+                  "selected": false
+                },
+                {
+                  "id": "object-2",
+                  "label": "butterfly 3",
+                  "selected": false
+                },
+                {
+                  "id": "object-3",
+                  "label": "butterfly 4",
+                  "selected": false
+                },
+                {
+                  "id": "object-4",
+                  "label": "butterfly 5",
+                  "selected": false
+                },
+                {
+                  "id": "object-5",
+                  "label": "butterfly 6",
+                  "selected": false
+                }
+              ],
+              "demonstration": [],
+              "lastResponse": null,
+              "attempts": []
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "88de09c6-7856-4784-a641-7210576f2a5c/1/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate"
+              },
+              "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "actionId": "88de09c6-7856-4784-a641-7210576f2a5c/1/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 9.2,
+        "phase": "startup",
+        "text": "Let's practice counting out just the right number of objects together.",
+        "state": {
+          "sessionEpoch": "88de09c6-7856-4784-a641-7210576f2a5c",
+          "revision": 1,
+          "visibleRevision": 1,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "give_me_n",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "working",
+            "task": "Here are lots of butterflies. Your turn. Give me three butterflies.",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "give_me_n",
+              "objects": "butterflies",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "gesture",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            },
+            "workspace": {
+              "progression": "observer",
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "butterfly 1",
+                  "selected": false
+                },
+                {
+                  "id": "object-1",
+                  "label": "butterfly 2",
+                  "selected": false
+                },
+                {
+                  "id": "object-2",
+                  "label": "butterfly 3",
+                  "selected": false
+                },
+                {
+                  "id": "object-3",
+                  "label": "butterfly 4",
+                  "selected": false
+                },
+                {
+                  "id": "object-4",
+                  "label": "butterfly 5",
+                  "selected": false
+                },
+                {
+                  "id": "object-5",
+                  "label": "butterfly 6",
+                  "selected": false
+                }
+              ],
+              "demonstration": [],
+              "lastResponse": null,
+              "attempts": []
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "88de09c6-7856-4784-a641-7210576f2a5c/1/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate"
+              },
+              "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "actionId": "88de09c6-7856-4784-a641-7210576f2a5c/1/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 9.23,
+        "text": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"4\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace."
+      },
+      {
+        "type": "learner_input",
+        "t": 9.23,
+        "intent": "wrong",
+        "performed": [
+          {
+            "type": "touch",
+            "index": 0
+          },
+          {
+            "type": "touch",
+            "index": 1
+          },
+          {
+            "type": "touch",
+            "index": 2
+          },
+          {
+            "type": "touch",
+            "index": 3
+          },
+          {
+            "type": "give"
+          }
+        ],
+        "demand": {
+          "kind": "give_me_n",
+          "objects": "butterflies",
+          "counted": 4,
+          "takenOff": 0,
+          "putOn": 0,
+          "moved": "no",
+          "startFrom": "",
+          "changeBy": "",
+          "constraints": "",
+          "response": "gesture",
+          "presentation": "ready"
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 15.92,
+        "phase": "wrong",
+        "text": "Let's try that again. How about you count out just three butterflies for me this time?",
+        "state": {
+          "sessionEpoch": "88de09c6-7856-4784-a641-7210576f2a5c",
+          "revision": 6,
+          "visibleRevision": 6,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "give_me_n",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "checked",
+            "task": "Here are lots of butterflies. Your turn. Give me three butterflies.",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "4",
+                  "source": "gesture",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "give_me_n",
+              "objects": "butterflies",
+              "counted": 4,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "gesture",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            },
+            "workspace": {
+              "progression": "observer",
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "butterfly 1",
+                  "selected": true
+                },
+                {
+                  "id": "object-1",
+                  "label": "butterfly 2",
+                  "selected": true
+                },
+                {
+                  "id": "object-2",
+                  "label": "butterfly 3",
+                  "selected": true
+                },
+                {
+                  "id": "object-3",
+                  "label": "butterfly 4",
+                  "selected": true
+                },
+                {
+                  "id": "object-4",
+                  "label": "butterfly 5",
+                  "selected": false
+                },
+                {
+                  "id": "object-5",
+                  "label": "butterfly 6",
+                  "selected": false
+                }
+              ],
+              "demonstration": [],
+              "lastResponse": {
+                "itemId": "c1",
+                "response": "4",
+                "source": "gesture",
+                "correct": false,
+                "assisted": false,
+                "answerExposure": "none"
+              },
+              "attempts": [
+                {
+                  "itemId": "c1",
+                  "response": "4",
+                  "source": "gesture",
+                  "correct": false,
+                  "assisted": false,
+                  "answerExposure": "none"
+                }
+              ]
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "88de09c6-7856-4784-a641-7210576f2a5c/6/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate"
+              },
+              "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "actionId": "88de09c6-7856-4784-a641-7210576f2a5c/6/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "dialogue_observation",
+        "t": 16.28,
+        "result": {
+          "type": "dialogue_observation",
+          "scope": {
+            "sessionEpoch": "88de09c6-7856-4784-a641-7210576f2a5c",
+            "instanceId": "board",
+            "itemId": "c1",
+            "revision": 6
+          },
+          "verdict": "incorrect",
+          "transition": "retry",
+          "confidence": 0.98,
+          "verdictConfidence": 1,
+          "grounded": 1,
+          "ms": 200,
+          "model": "jev-1.13.0",
+          "accepted": true,
+          "reason": "supported",
+          "status": "visible"
+        }
+      },
+      {
+        "type": "checked_wrong",
+        "t": 16.28,
+        "state": {
+          "sessionEpoch": "88de09c6-7856-4784-a641-7210576f2a5c",
+          "revision": 7,
+          "visibleRevision": 7,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "give_me_n",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "working",
+            "task": "Here are lots of butterflies. Your turn. Give me three butterflies.",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "4",
+                  "source": "gesture",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "give_me_n",
+              "objects": "butterflies",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "gesture",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            },
+            "workspace": {
+              "progression": "observer",
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "butterfly 1",
+                  "selected": false
+                },
+                {
+                  "id": "object-1",
+                  "label": "butterfly 2",
+                  "selected": false
+                },
+                {
+                  "id": "object-2",
+                  "label": "butterfly 3",
+                  "selected": false
+                },
+                {
+                  "id": "object-3",
+                  "label": "butterfly 4",
+                  "selected": false
+                },
+                {
+                  "id": "object-4",
+                  "label": "butterfly 5",
+                  "selected": false
+                },
+                {
+                  "id": "object-5",
+                  "label": "butterfly 6",
+                  "selected": false
+                }
+              ],
+              "demonstration": [],
+              "lastResponse": {
+                "itemId": "c1",
+                "response": "4",
+                "source": "gesture",
+                "correct": false,
+                "assisted": false,
+                "answerExposure": "none"
+              },
+              "attempts": [
+                {
+                  "itemId": "c1",
+                  "response": "4",
+                  "source": "gesture",
+                  "correct": false,
+                  "assisted": false,
+                  "answerExposure": "none"
+                }
+              ]
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "88de09c6-7856-4784-a641-7210576f2a5c/7/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate"
+              },
+              "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "actionId": "88de09c6-7856-4784-a641-7210576f2a5c/7/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 16.31,
+        "text": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"3\",\"source\":\"gesture\",\"correct\":true,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace."
+      },
+      {
+        "type": "learner_input",
+        "t": 16.31,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "touch",
+            "index": 0
+          },
+          {
+            "type": "touch",
+            "index": 1
+          },
+          {
+            "type": "touch",
+            "index": 2
+          },
+          {
+            "type": "give"
+          }
+        ],
+        "demand": {
+          "kind": "give_me_n",
+          "objects": "butterflies",
+          "counted": 3,
+          "takenOff": 0,
+          "putOn": 0,
+          "moved": "no",
+          "startFrom": "",
+          "changeBy": "",
+          "constraints": "",
+          "response": "gesture",
+          "presentation": "ready"
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 21.7,
+        "phase": "correct",
+        "text": "Perfect! You counted out exactly three butterflies.",
+        "state": {
+          "sessionEpoch": "88de09c6-7856-4784-a641-7210576f2a5c",
+          "revision": 11,
+          "visibleRevision": 11,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "give_me_n",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "checked",
+            "task": "Here are lots of butterflies. Your turn. Give me three butterflies.",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "3",
+                  "source": "gesture",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "give_me_n",
+              "objects": "butterflies",
+              "counted": 3,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "gesture",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            },
+            "workspace": {
+              "progression": "observer",
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "butterfly 1",
+                  "selected": true
+                },
+                {
+                  "id": "object-1",
+                  "label": "butterfly 2",
+                  "selected": true
+                },
+                {
+                  "id": "object-2",
+                  "label": "butterfly 3",
+                  "selected": true
+                },
+                {
+                  "id": "object-3",
+                  "label": "butterfly 4",
+                  "selected": false
+                },
+                {
+                  "id": "object-4",
+                  "label": "butterfly 5",
+                  "selected": false
+                },
+                {
+                  "id": "object-5",
+                  "label": "butterfly 6",
+                  "selected": false
+                }
+              ],
+              "demonstration": [],
+              "lastResponse": {
+                "itemId": "c1",
+                "response": "3",
+                "source": "gesture",
+                "correct": true,
+                "assisted": false,
+                "answerExposure": "none"
+              },
+              "attempts": [
+                {
+                  "itemId": "c1",
+                  "response": "4",
+                  "source": "gesture",
+                  "correct": false,
+                  "assisted": false,
+                  "answerExposure": "none"
+                },
+                {
+                  "itemId": "c1",
+                  "response": "3",
+                  "source": "gesture",
+                  "correct": true,
+                  "assisted": false,
+                  "answerExposure": "none"
+                }
+              ]
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "88de09c6-7856-4784-a641-7210576f2a5c/11/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate"
+              },
+              "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "actionId": "88de09c6-7856-4784-a641-7210576f2a5c/11/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 22.06,
+        "text": "The next task is now visible in liveRuntime. Introduce that task naturally and wait for the learner."
+      },
+      {
+        "type": "dialogue_observation",
+        "t": 22.06,
+        "result": {
+          "type": "dialogue_observation",
+          "scope": {
+            "sessionEpoch": "88de09c6-7856-4784-a641-7210576f2a5c",
+            "instanceId": "board",
+            "itemId": "c1",
+            "revision": 11
+          },
+          "verdict": "correct",
+          "transition": "advance",
+          "confidence": 0.97,
+          "verdictConfidence": 1,
+          "grounded": 1,
+          "ms": 187,
+          "model": "jev-1.13.0",
+          "accepted": true,
+          "reason": "supported",
+          "status": "visible"
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 26.78,
+        "phase": "correct",
+        "text": "Now, can you count out five butterflies for me?",
+        "state": {
+          "sessionEpoch": "88de09c6-7856-4784-a641-7210576f2a5c",
+          "revision": 12,
+          "visibleRevision": 12,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "give_me_n",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c2",
+            "phase": "working",
+            "task": "Here are lots of butterflies. Your turn. Give me five butterflies.",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "give_me_n",
+              "objects": "butterflies",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "gesture",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            },
+            "workspace": {
+              "progression": "observer",
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "butterfly 1",
+                  "selected": false
+                },
+                {
+                  "id": "object-1",
+                  "label": "butterfly 2",
+                  "selected": false
+                },
+                {
+                  "id": "object-2",
+                  "label": "butterfly 3",
+                  "selected": false
+                },
+                {
+                  "id": "object-3",
+                  "label": "butterfly 4",
+                  "selected": false
+                },
+                {
+                  "id": "object-4",
+                  "label": "butterfly 5",
+                  "selected": false
+                },
+                {
+                  "id": "object-5",
+                  "label": "butterfly 6",
+                  "selected": false
+                },
+                {
+                  "id": "object-6",
+                  "label": "butterfly 7",
+                  "selected": false
+                },
+                {
+                  "id": "object-7",
+                  "label": "butterfly 8",
+                  "selected": false
+                }
+              ],
+              "demonstration": [],
+              "lastResponse": null,
+              "attempts": [
+                {
+                  "itemId": "c1",
+                  "response": "4",
+                  "source": "gesture",
+                  "correct": false,
+                  "assisted": false,
+                  "answerExposure": "none"
+                },
+                {
+                  "itemId": "c1",
+                  "response": "3",
+                  "source": "gesture",
+                  "correct": true,
+                  "assisted": false,
+                  "answerExposure": "none"
+                }
+              ]
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "88de09c6-7856-4784-a641-7210576f2a5c/12/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate"
+              },
+              "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "actionId": "88de09c6-7856-4784-a641-7210576f2a5c/12/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 26.81,
+        "text": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c2\",\"response\":\"5\",\"source\":\"gesture\",\"correct\":true,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace."
+      },
+      {
+        "type": "learner_input",
+        "t": 26.81,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "touch",
+            "index": 0
+          },
+          {
+            "type": "touch",
+            "index": 1
+          },
+          {
+            "type": "touch",
+            "index": 2
+          },
+          {
+            "type": "touch",
+            "index": 3
+          },
+          {
+            "type": "touch",
+            "index": 4
+          },
+          {
+            "type": "give"
+          }
+        ],
+        "demand": {
+          "kind": "give_me_n",
+          "objects": "butterflies",
+          "counted": 5,
+          "takenOff": 0,
+          "putOn": 0,
+          "moved": "no",
+          "startFrom": "",
+          "changeBy": "",
+          "constraints": "",
+          "response": "gesture",
+          "presentation": "ready"
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 32.45,
+        "phase": "transfer",
+        "text": "Wonderful job, you counted out five butterflies perfectly!",
+        "state": {
+          "sessionEpoch": "88de09c6-7856-4784-a641-7210576f2a5c",
+          "revision": 18,
+          "visibleRevision": 18,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "give_me_n",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c2",
+            "phase": "checked",
+            "task": "Here are lots of butterflies. Your turn. Give me five butterflies.",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "5",
+                  "source": "gesture",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "give_me_n",
+              "objects": "butterflies",
+              "counted": 5,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "gesture",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            },
+            "workspace": {
+              "progression": "observer",
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "butterfly 1",
+                  "selected": true
+                },
+                {
+                  "id": "object-1",
+                  "label": "butterfly 2",
+                  "selected": true
+                },
+                {
+                  "id": "object-2",
+                  "label": "butterfly 3",
+                  "selected": true
+                },
+                {
+                  "id": "object-3",
+                  "label": "butterfly 4",
+                  "selected": true
+                },
+                {
+                  "id": "object-4",
+                  "label": "butterfly 5",
+                  "selected": true
+                },
+                {
+                  "id": "object-5",
+                  "label": "butterfly 6",
+                  "selected": false
+                },
+                {
+                  "id": "object-6",
+                  "label": "butterfly 7",
+                  "selected": false
+                },
+                {
+                  "id": "object-7",
+                  "label": "butterfly 8",
+                  "selected": false
+                }
+              ],
+              "demonstration": [],
+              "lastResponse": {
+                "itemId": "c2",
+                "response": "5",
+                "source": "gesture",
+                "correct": true,
+                "assisted": false,
+                "answerExposure": "none"
+              },
+              "attempts": [
+                {
+                  "itemId": "c1",
+                  "response": "4",
+                  "source": "gesture",
+                  "correct": false,
+                  "assisted": false,
+                  "answerExposure": "none"
+                },
+                {
+                  "itemId": "c1",
+                  "response": "3",
+                  "source": "gesture",
+                  "correct": true,
+                  "assisted": false,
+                  "answerExposure": "none"
+                },
+                {
+                  "itemId": "c2",
+                  "response": "5",
+                  "source": "gesture",
+                  "correct": true,
+                  "assisted": false,
+                  "answerExposure": "none"
+                }
+              ]
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "88de09c6-7856-4784-a641-7210576f2a5c/18/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate"
+              },
+              "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "actionId": "88de09c6-7856-4784-a641-7210576f2a5c/18/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "dialogue_observation",
+        "t": 32.98,
+        "result": {
+          "type": "dialogue_observation",
+          "scope": {
+            "sessionEpoch": "88de09c6-7856-4784-a641-7210576f2a5c",
+            "instanceId": "board",
+            "itemId": "c2",
+            "revision": 18
+          },
+          "verdict": "correct",
+          "transition": "advance",
+          "confidence": 0.97,
+          "verdictConfidence": 1,
+          "grounded": 1,
+          "ms": 376,
+          "model": "jev-1.13.0",
+          "accepted": true,
+          "reason": "supported",
+          "status": "visible"
+        }
+      },
+      {
+        "type": "complete",
+        "t": 33.0,
+        "state": {
+          "sessionEpoch": "88de09c6-7856-4784-a641-7210576f2a5c",
+          "revision": 20,
+          "visibleRevision": 20,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "give_me_n",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "c2",
+            "phase": "completed",
+            "task": "Here are lots of butterflies. Your turn. Give me five butterflies.",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "5",
+                  "source": "gesture",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "give_me_n",
+              "objects": "butterflies",
+              "counted": 5,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "gesture",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            },
+            "workspace": {
+              "progression": "observer",
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "butterfly 1",
+                  "selected": true
+                },
+                {
+                  "id": "object-1",
+                  "label": "butterfly 2",
+                  "selected": true
+                },
+                {
+                  "id": "object-2",
+                  "label": "butterfly 3",
+                  "selected": true
+                },
+                {
+                  "id": "object-3",
+                  "label": "butterfly 4",
+                  "selected": true
+                },
+                {
+                  "id": "object-4",
+                  "label": "butterfly 5",
+                  "selected": true
+                },
+                {
+                  "id": "object-5",
+                  "label": "butterfly 6",
+                  "selected": false
+                },
+                {
+                  "id": "object-6",
+                  "label": "butterfly 7",
+                  "selected": false
+                },
+                {
+                  "id": "object-7",
+                  "label": "butterfly 8",
+                  "selected": false
+                }
+              ],
+              "demonstration": [],
+              "lastResponse": {
+                "itemId": "c2",
+                "response": "5",
+                "source": "gesture",
+                "correct": true,
+                "assisted": false,
+                "answerExposure": "none"
+              },
+              "attempts": [
+                {
+                  "itemId": "c1",
+                  "response": "4",
+                  "source": "gesture",
+                  "correct": false,
+                  "assisted": false,
+                  "answerExposure": "none"
+                },
+                {
+                  "itemId": "c1",
+                  "response": "3",
+                  "source": "gesture",
+                  "correct": true,
+                  "assisted": false,
+                  "answerExposure": "none"
+                },
+                {
+                  "itemId": "c2",
+                  "response": "5",
+                  "source": "gesture",
+                  "correct": true,
+                  "assisted": false,
+                  "answerExposure": "none"
+                }
+              ]
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": []
+        },
+        "submissions": 0,
+        "persistence": "session-only"
+      }
+    ]
+  }
+]

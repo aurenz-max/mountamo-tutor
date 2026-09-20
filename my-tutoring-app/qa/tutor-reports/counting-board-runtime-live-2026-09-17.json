@@ -1,0 +1,305 @@
+[
+  {
+    "passed": false,
+    "primitiveId": "counting-board",
+    "events": [
+      {
+        "type": "ready",
+        "t": 5.42
+      },
+      {
+        "type": "learner",
+        "t": 5.42,
+        "text": "[LESSON_START] Begin a counting-board lesson in count mode for Kindergarten. Call request_activity now; the mounted runner will speak the opening. Do not greet first."
+      },
+      {
+        "type": "activity_request",
+        "t": 6.91,
+        "request": {
+          "primitiveId": "counting-board",
+          "topic": "counting objects and saying how many",
+          "intent": "count objects and say how many",
+          "mode": "count"
+        }
+      },
+      {
+        "type": "mounted_generated_payload",
+        "t": 7.06,
+        "state": {
+          "sessionEpoch": "b198de91-7f01-47f0-b9ca-a42b5aee09c6",
+          "revision": 1,
+          "visibleRevision": 1,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "take_away",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "idle",
+            "task": "Take away three apples. Your turn. How many apples are left?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "take_away",
+              "response": "voice",
+              "objects": "apples",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "handPicked": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [],
+          "choices": []
+        }
+      },
+      {
+        "type": "activity_ready",
+        "t": 7.09
+      },
+      {
+        "type": "runner_cue",
+        "t": 7.11,
+        "text": "[COUNT_ITEM] Say exactly: \"Hi! Time to count some apples! Touch the apples to take away. Then say how many are left. Take away three apples. Your turn. How many apples are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"two\". Counting aloud that ENDS on \"two\" counts as that answer \u2014 the last number said tells the total. A final number other than \"two\" is wrong. The number the board showed BEFORE the change is NOT the answer, however confident it sounds. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, two apples.\" If it is wrong, say exactly: \"My turn: count what is left. One, two. Two apples left. Your turn. How many apples are left?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "type": "tutor",
+        "t": 18.19,
+        "phase": "opening",
+        "text": "Hi! Time to count some apples! Touch the apples to take away. Then say how many are left. Take away three apples. Your turn. How many apples are left?",
+        "state": {
+          "sessionEpoch": "b198de91-7f01-47f0-b9ca-a42b5aee09c6",
+          "revision": 3,
+          "visibleRevision": 3,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "take_away",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "Take away three apples. Your turn. How many apples are left?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "take_away",
+              "response": "voice",
+              "objects": "apples",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "handPicked": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same board again; the runner speaks the question. Nothing on the board is cleared or recounted.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b198de91-7f01-47f0-b9ca-a42b5aee09c6/3/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Take them off one at a time. Then touch and count only the ones that stayed.\". This does not touch, move, highlight or count any object.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b198de91-7f01-47f0-b9ca-a42b5aee09c6/3/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "description": "Try taking away with counters",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "b198de91-7f01-47f0-b9ca-a42b5aee09c6/3/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 18.2,
+        "intent": "warmup",
+        "performed": [
+          {
+            "type": "touch",
+            "index": 0
+          },
+          {
+            "type": "touch",
+            "index": 1
+          }
+        ],
+        "demand": {
+          "kind": "take_away",
+          "response": "voice",
+          "objects": "apples",
+          "counted": 0,
+          "takenOff": 2,
+          "putOn": 0,
+          "moved": "no",
+          "handPicked": ""
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 18.22,
+        "intent": "wrong",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "one"
+          }
+        ],
+        "demand": {
+          "kind": "take_away",
+          "response": "voice",
+          "objects": "apples",
+          "counted": 0,
+          "takenOff": 2,
+          "putOn": 0,
+          "moved": "no",
+          "handPicked": ""
+        }
+      },
+      {
+        "type": "failure",
+        "t": 305.44,
+        "reason": "TimeoutError()",
+        "state": {
+          "sessionEpoch": "b198de91-7f01-47f0-b9ca-a42b5aee09c6",
+          "revision": 6,
+          "visibleRevision": 6,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "take_away",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "Take away three apples. Your turn. How many apples are left?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "one",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "take_away",
+              "response": "voice",
+              "objects": "apples",
+              "counted": 0,
+              "takenOff": 2,
+              "putOn": 0,
+              "moved": "no",
+              "handPicked": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same board again; the runner speaks the question. Nothing on the board is cleared or recounted.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b198de91-7f01-47f0-b9ca-a42b5aee09c6/6/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Take them off one at a time. Then touch and count only the ones that stayed.\". This does not touch, move, highlight or count any object.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b198de91-7f01-47f0-b9ca-a42b5aee09c6/6/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "description": "Try taking away with counters",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "b198de91-7f01-47f0-b9ca-a42b5aee09c6/6/2"
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

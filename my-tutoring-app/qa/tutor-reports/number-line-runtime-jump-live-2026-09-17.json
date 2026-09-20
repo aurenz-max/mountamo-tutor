@@ -1,0 +1,2830 @@
+[
+  {
+    "passed": true,
+    "primitiveId": "number-line",
+    "events": [
+      {
+        "type": "learner",
+        "t": 5.03,
+        "text": "Please read my current number-line instruction so I can begin."
+      },
+      {
+        "type": "phase",
+        "t": 5.03,
+        "phase": "opening"
+      },
+      {
+        "type": "runtime_command",
+        "t": 6.44,
+        "phase": "opening",
+        "command": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 1,
+          "commandId": "call_506644",
+          "action": {
+            "type": "replay"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 6.53,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_506644",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+            "revision": 2,
+            "visibleRevision": 2,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Start at 7 and jump back 2. Where do you land?",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Start at 7 and jump back 2. Where do you land?",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/2/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/2/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/2/2"
+              }
+            ]
+          },
+          "elapsedMs": 60.39809999999943
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 11.0,
+        "phase": "opening",
+        "text": "Start at 7 and jump back 2. Where do you land?",
+        "state": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "revision": 2,
+          "visibleRevision": 2,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Start at 7 and jump back 2. Where do you land?",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Start at 7 and jump back 2. Where do you land?",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/2/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/2/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/2/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 11.03,
+        "text": "[ANSWER_INCORRECT] Challenge: \"Start at 7 and jump back 2. Where do you land?\". Student placed: [6]. Target: [5]. Attempt 1. Give a hint without revealing the answer."
+      },
+      {
+        "type": "learner_input",
+        "t": 11.03,
+        "intent": "wrong",
+        "performed": [
+          {
+            "type": "place",
+            "value": 6
+          },
+          {
+            "type": "check"
+          }
+        ],
+        "demand": {
+          "challengeIndex": 0,
+          "kind": "show_jump",
+          "points": "[]",
+          "endpoints": "[6]",
+          "ordered": "[]"
+        }
+      },
+      {
+        "type": "checked_wrong",
+        "t": 11.03,
+        "state": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "revision": 4,
+          "visibleRevision": null,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Start at 7 and jump back 2. Where do you land?",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[6],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[6]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Start at 7 and jump back 2. Where do you land?",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/4/0"
+            },
+            {
+              "action": {
+                "type": "retry"
+              },
+              "description": "Clear this incorrect response for another try; retain attempts and assistance",
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/4/1"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/4/2"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/4/3"
+            }
+          ]
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 20.2,
+        "phase": "wrong",
+        "text": "Remember to jump back two spaces from 7, one at a time. What number do you land on if you count back two spaces from 7?",
+        "state": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "revision": 4,
+          "visibleRevision": 4,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Start at 7 and jump back 2. Where do you land?",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[6],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[6]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Start at 7 and jump back 2. Where do you land?",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/4/0"
+            },
+            {
+              "action": {
+                "type": "retry"
+              },
+              "description": "Clear this incorrect response for another try; retain attempts and assistance",
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/4/1"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/4/2"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/4/3"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 20.2,
+        "text": "Please clear my incorrect response so I can try this same problem again."
+      },
+      {
+        "type": "phase",
+        "t": 20.2,
+        "phase": "retry"
+      },
+      {
+        "type": "runtime_command",
+        "t": 21.53,
+        "phase": "retry",
+        "command": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 4,
+          "commandId": "call_506875",
+          "action": {
+            "type": "retry"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 21.59,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_506875",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+            "revision": 5,
+            "visibleRevision": 5,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Start at 7 and jump back 2. Where do you land?",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Start at 7 and jump back 2. Where do you land?",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/5/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/5/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/5/2"
+              }
+            ]
+          },
+          "elapsedMs": 53.54579999999987
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 27.38,
+        "phase": "retry",
+        "text": "I've cleared your last mark, so go ahead and try jumping back two spaces again from 7.",
+        "state": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "revision": 5,
+          "visibleRevision": 5,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Start at 7 and jump back 2. Where do you land?",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Start at 7 and jump back 2. Where do you land?",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/5/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/5/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/5/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 27.38,
+        "text": "Please repeat this same instruction using the replay action."
+      },
+      {
+        "type": "phase",
+        "t": 27.38,
+        "phase": "replay"
+      },
+      {
+        "type": "runtime_command",
+        "t": 28.48,
+        "phase": "replay",
+        "command": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 5,
+          "commandId": "call_507009",
+          "action": {
+            "type": "replay"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 28.53,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_507009",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+            "revision": 6,
+            "visibleRevision": 6,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Start at 7 and jump back 2. Where do you land?",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Start at 7 and jump back 2. Where do you land?",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/6/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/6/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/6/2"
+              }
+            ]
+          },
+          "elapsedMs": 37.82890000000043
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 33.12,
+        "phase": "replay",
+        "text": "...",
+        "state": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "revision": 6,
+          "visibleRevision": 6,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Start at 7 and jump back 2. Where do you land?",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Start at 7 and jump back 2. Where do you land?",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/6/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/6/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/6/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 33.14,
+        "text": "Please show the spaces reminder on my screen."
+      },
+      {
+        "type": "phase",
+        "t": 33.14,
+        "phase": "hint"
+      },
+      {
+        "type": "runtime_command",
+        "t": 34.38,
+        "phase": "hint",
+        "command": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 6,
+          "commandId": "call_507098",
+          "action": {
+            "type": "scaffold",
+            "strategyId": "count-spaces",
+            "direction": 1
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 34.45,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_507098",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+            "revision": 7,
+            "visibleRevision": 7,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Start at 7 and jump back 2. Where do you land?",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Find the starting mark. Count the spaces you move, one at a time."
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Start at 7 and jump back 2. Where do you land?",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/7/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": -1
+                },
+                "description": "Hide the spaces reminder",
+                "assistance": {
+                  "level": 0,
+                  "answerExposure": "none"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/7/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/7/2"
+              }
+            ]
+          },
+          "elapsedMs": 55.05619999999908
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 39.34,
+        "phase": "hint",
+        "text": "I've put the reminder on your screen to help you count back one space at a time.",
+        "state": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "revision": 7,
+          "visibleRevision": 7,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Start at 7 and jump back 2. Where do you land?",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Find the starting mark. Count the spaces you move, one at a time."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Start at 7 and jump back 2. Where do you land?",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/7/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "description": "Hide the spaces reminder",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/7/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/7/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 39.36,
+        "text": "Please hide the reminder now."
+      },
+      {
+        "type": "phase",
+        "t": 39.36,
+        "phase": "fade"
+      },
+      {
+        "type": "runtime_command",
+        "t": 40.48,
+        "phase": "fade",
+        "command": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 7,
+          "commandId": "call_507163",
+          "action": {
+            "type": "scaffold",
+            "strategyId": "count-spaces",
+            "direction": -1
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 40.55,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_507163",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+            "revision": 8,
+            "visibleRevision": 8,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Start at 7 and jump back 2. Where do you land?",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 8,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Start at 7 and jump back 2. Where do you land?",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/8/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/8/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/8/2"
+              }
+            ]
+          },
+          "elapsedMs": 44.97739999999612
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 42.84,
+        "phase": "fade",
+        "text": "I've hidden the reminder for you.",
+        "state": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "revision": 8,
+          "visibleRevision": 8,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Start at 7 and jump back 2. Where do you land?",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Start at 7 and jump back 2. Where do you land?",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/8/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/8/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/8/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 42.86,
+        "text": "[ANSWER_INCORRECT] Challenge: \"Start at 7 and jump back 2. Where do you land?\". Student placed: [6]. Target: [5]. Attempt 2. Give a hint without revealing the answer."
+      },
+      {
+        "type": "learner_input",
+        "t": 42.86,
+        "intent": "wrong",
+        "performed": [
+          {
+            "type": "place",
+            "value": 6
+          },
+          {
+            "type": "check"
+          }
+        ],
+        "demand": {
+          "challengeIndex": 0,
+          "kind": "show_jump",
+          "points": "[]",
+          "endpoints": "[6]",
+          "ordered": "[]"
+        }
+      },
+      {
+        "type": "learner",
+        "t": 42.86,
+        "text": "Please open the worked example and save my unfinished number line."
+      },
+      {
+        "type": "phase",
+        "t": 42.86,
+        "phase": "example"
+      },
+      {
+        "type": "runtime_command",
+        "t": 43.97,
+        "phase": "example",
+        "command": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 10,
+          "commandId": "call_507240",
+          "action": {
+            "type": "request_support",
+            "artifactId": "example-show_jump-0"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 44.05,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_507240",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+            "revision": 11,
+            "visibleRevision": 11,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "support",
+            "status": "support",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Start at 7 and jump back 2. Where do you land?",
+              "phase": "help",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 3,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[6],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[6]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": {
+              "id": "example-show_jump-0",
+              "kind": "counter-example",
+              "operation": "subtract",
+              "title": "See subtraction with another group",
+              "total": 6,
+              "removed": 2,
+              "altText": "Start with 6 counters. Take away 2, one at a time. 4 remain. On a number line, each counter taken away is one space back.",
+              "answerExposure": "partial",
+              "provenance": "prepared"
+            },
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 8,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 11,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "return"
+                },
+                "description": "Return to the same unfinished task",
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/11/0"
+              }
+            ]
+          },
+          "elapsedMs": 54.523400000005495
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 53.95,
+        "phase": "example",
+        "text": "I've opened an example showing how to take away two, which is just like jumping back two spaces on your number line. When you take away two from 6, you are left with 4.",
+        "state": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "revision": 11,
+          "visibleRevision": 11,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "support",
+          "status": "support",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Start at 7 and jump back 2. Where do you land?",
+            "phase": "help",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 3,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[6],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[6]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": {
+            "id": "example-show_jump-0",
+            "kind": "counter-example",
+            "operation": "subtract",
+            "title": "See subtraction with another group",
+            "total": 6,
+            "removed": 2,
+            "altText": "Start with 6 counters. Take away 2, one at a time. 4 remain. On a number line, each counter taken away is one space back.",
+            "answerExposure": "partial",
+            "provenance": "prepared"
+          },
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 11,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "return"
+              },
+              "description": "Return to the same unfinished task",
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/11/0"
+            }
+          ]
+        }
+      },
+      {
+        "type": "saved",
+        "t": 53.95,
+        "state": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "revision": 11,
+          "visibleRevision": 11,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "support",
+          "status": "support",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Start at 7 and jump back 2. Where do you land?",
+            "phase": "help",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 3,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[6],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[6]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": {
+            "id": "example-show_jump-0",
+            "kind": "counter-example",
+            "operation": "subtract",
+            "title": "See subtraction with another group",
+            "total": 6,
+            "removed": 2,
+            "altText": "Start with 6 counters. Take away 2, one at a time. 4 remain. On a number line, each counter taken away is one space back.",
+            "answerExposure": "partial",
+            "provenance": "prepared"
+          },
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 11,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "return"
+              },
+              "description": "Return to the same unfinished task",
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/11/0"
+            }
+          ]
+        }
+      },
+      {
+        "type": "example_verdict",
+        "t": 53.97,
+        "skipped": true
+      },
+      {
+        "type": "learner",
+        "t": 53.97,
+        "text": "Please close the example and return to my saved number line."
+      },
+      {
+        "type": "phase",
+        "t": 53.97,
+        "phase": "return"
+      },
+      {
+        "type": "runtime_command",
+        "t": 55.17,
+        "phase": "return",
+        "command": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 11,
+          "commandId": "call_507424",
+          "action": {
+            "type": "return"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 55.25,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_507424",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+            "revision": 12,
+            "visibleRevision": 12,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Start at 7 and jump back 2. Where do you land?",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 3,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[6],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[6]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 8,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 11,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Start at 7 and jump back 2. Where do you land?",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/12/0"
+              },
+              {
+                "action": {
+                  "type": "retry"
+                },
+                "description": "Clear this incorrect response for another try; retain attempts and assistance",
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/12/1"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/12/2"
+              }
+            ]
+          },
+          "elapsedMs": 60.21089999999822
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 60.84,
+        "phase": "return",
+        "text": "Welcome back to your number line. Let's try that jump back two spaces from 7 again.",
+        "state": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "revision": 12,
+          "visibleRevision": 12,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Start at 7 and jump back 2. Where do you land?",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 3,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[6],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[6]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 11,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Start at 7 and jump back 2. Where do you land?",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/12/0"
+            },
+            {
+              "action": {
+                "type": "retry"
+              },
+              "description": "Clear this incorrect response for another try; retain attempts and assistance",
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/12/1"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/12/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 60.86,
+        "text": "[ANSWER_CORRECT] Student correctly completed \"Start at 7 and jump back 2. Where do you land?\". Attempts: 3. Congratulate briefly. This challenge is checked complete. Execute the advertised runtime advance action now, then wait for its visible receipt before introducing the next instruction."
+      },
+      {
+        "type": "learner_input",
+        "t": 60.86,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "place",
+            "value": 5
+          },
+          {
+            "type": "check"
+          }
+        ],
+        "demand": {
+          "challengeIndex": 0,
+          "kind": "show_jump",
+          "points": "[]",
+          "endpoints": "[5]",
+          "ordered": "[]"
+        }
+      },
+      {
+        "type": "runtime_command",
+        "t": 62.08,
+        "phase": "advance",
+        "command": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 14,
+          "commandId": "call_507545",
+          "action": {
+            "type": "advance"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 62.16,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_507545",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+            "revision": 15,
+            "visibleRevision": 15,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-1",
+              "task": "Put your froggy feet on 7. Now, hop backward 5 spaces to the left!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 1,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 8,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 11,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Put your froggy feet on 7. Now, hop backward 5 spaces to the left!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/15/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/15/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-1"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/15/2"
+              }
+            ]
+          },
+          "elapsedMs": 57.585800000000745
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 69.55,
+        "phase": "advance",
+        "text": "Fantastic job getting that right! Now, put your froggy feet on 7 and hop backward 5 spaces to the left.",
+        "state": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "revision": 15,
+          "visibleRevision": 15,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-1",
+            "task": "Put your froggy feet on 7. Now, hop backward 5 spaces to the left!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 1,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 11,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Put your froggy feet on 7. Now, hop backward 5 spaces to the left!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/15/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/15/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-1"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b/15/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 69.56,
+        "text": "[ANSWER_CORRECT] Student correctly completed \"Put your froggy feet on 7. Now, hop backward 5 spaces to the left!\". Attempts: 1. Congratulate briefly."
+      },
+      {
+        "type": "learner_input",
+        "t": 69.56,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "place",
+            "value": 2
+          },
+          {
+            "type": "check"
+          }
+        ],
+        "demand": {
+          "challengeIndex": 1,
+          "kind": "show_jump",
+          "points": "[]",
+          "endpoints": "[2]",
+          "ordered": "[]"
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 74.84,
+        "phase": "complete",
+        "text": "You did it! That was a fantastic way to hop through those challenges.",
+        "state": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "revision": 18,
+          "visibleRevision": 18,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "show_jump-1",
+            "task": "Put your froggy feet on 7. Now, hop backward 5 spaces to the left!",
+            "phase": "done",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[2],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 1,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[2]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 11,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        }
+      },
+      {
+        "type": "complete",
+        "t": 74.86,
+        "state": {
+          "sessionEpoch": "b8c7a4df-d11c-4422-a0b4-4b7efbcd078b",
+          "revision": 18,
+          "visibleRevision": 18,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "show_jump-1",
+            "task": "Put your froggy feet on 7. Now, hop backward 5 spaces to the left!",
+            "phase": "done",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[2],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 1,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[2]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 11,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        },
+        "submissions": 1
+      }
+    ]
+  }
+]

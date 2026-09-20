@@ -1,0 +1,424 @@
+{
+  "audit": {
+    "componentId": "counting-board",
+    "status": "warn",
+    "componentFiles": [
+      "src/components/lumina/primitives/visual-primitives/math/CountingBoard.tsx",
+      "src/components/lumina/primitives/visual-primitives/math/countingBoardScript.ts"
+    ],
+    "dataBagKeys": null,
+    "dataBagDynamic": true,
+    "contextKeys": [
+      "challengeType",
+      "objectType",
+      "stimulus"
+    ],
+    "templateVars": [
+      "challengeType",
+      "objectType",
+      "stimulus"
+    ],
+    "sendTextTags": [],
+    "findings": [
+      {
+        "check": "data-bag-unparsed",
+        "severity": "WARN",
+        "message": "Could not statically parse the primitiveData bag \u2014 contextKeys/{{var}} checks skipped. Run the &probe=1 tier or verify in the Lumina Tutor Tester."
+      },
+      {
+        "check": "no-sendtext-moments",
+        "severity": "WARN",
+        "message": "Component never calls sendText \u2014 the tutor will go silent after the initial greeting (no pedagogical moments are wired)."
+      },
+      {
+        "check": "directive-tag-never-emitted",
+        "severity": "WARN",
+        "message": "aiDirectives reference [BRACKETS] but no source file ever sends that tag \u2014 the directive is dead prompt text (or the trigger was renamed)."
+      }
+    ]
+  },
+  "status": "warn",
+  "tutoring": {
+    "taskDescription": "LIVE-JUDGED counting practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD (or taps a hand on pre-numeric items), you judge what you HEARD, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. Objects on the board: {{objectType}}. What is on the board right now: {{stimulus}}. Every cue you receive carries the answer for that turn \u2014 nothing outside the cue does, and you never state the count on your own.",
+    "contextKeys": [
+      "challengeType",
+      "objectType",
+      "stimulus"
+    ],
+    "scaffoldingLevels": {
+      "level1": "Speak the current item's scripted correction line, exactly as the cue gives it. It already re-models the count and re-asks \u2014 that IS the first scaffold, and it opens with \"My turn:\" so the activity can hear it.",
+      "level2": "Speak the SAME scripted correction line again, a little slower. Do not swap it for a reminder of the method or any other wording: a reply that opens with neither \"Yes\" nor \"My turn:\" reaches the activity as no verdict at all and the lesson stalls.",
+      "level3": "Still the same scripted correction line. If the child is stuck after it, say nothing further \u2014 the activity moves the lesson on by itself and carries the next ask to you."
+    },
+    "commonStruggles": [
+      {
+        "pattern": "Double-counts or skips objects while tapping",
+        "response": "The scripted correction re-models the count AFTER the attempt is judged. Never interrupt a child mid-count."
+      },
+      {
+        "pattern": "Long silence",
+        "response": "Silence is the child counting \u2014 wait. If they truly seem stuck, re-speak the current ask once; never count for them."
+      }
+    ],
+    "aiDirectives": [
+      {
+        "title": "THE OPENING LINE ALREADY SAYS HOW TO PLAY",
+        "instruction": "Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. Never invent a greeting, add instructions, or ask a question of your own before or after it."
+      },
+      {
+        "title": "SENTINEL DISCIPLINE",
+        "instruction": "Every affirmation begins with \"Yes\" and EVERY correction begins with \"My turn:\" exactly as the cue scripts. Never begin any other sentence with either opener."
+      },
+      {
+        "title": "THE CHILD IS COUNTING \u2014 WAIT",
+        "instruction": "Think time is unbounded. Never count along, never prompt mid-count, never fill silence. Counting aloud that ends on the correct number IS a correct answer \u2014 the last number said tells the total."
+      },
+      {
+        "title": "PRE-NUMERIC ITEMS ARE NUMBER-FREE",
+        "instruction": "On subitize_perceptual items say no number word and no digit at any point. The child answers by tapping a hand; you wait in silence and speak only the scripted verdict lines."
+      },
+      {
+        "title": "NEVER READ BRACKET TAGS",
+        "instruction": "Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken."
+      }
+    ]
+  },
+  "generatedData": {
+    "title": "Count the Blocks!",
+    "description": "Practice counting objects one by one and saying how many there are in total.",
+    "objects": {
+      "type": "blocks"
+    },
+    "challenges": [
+      {
+        "id": "c1",
+        "type": "count_all",
+        "instruction": "Can you count all the blocks in a row? Touch each one!",
+        "targetAnswer": 5,
+        "count": 5,
+        "arrangement": "line",
+        "hint": "Try touching each block one at a time as you count.",
+        "narration": "Let us count the blocks together in a nice straight line. Tap each one!"
+      },
+      {
+        "id": "c2",
+        "type": "count_all",
+        "instruction": "Look at these blocks scattered around! Can you count them all?",
+        "targetAnswer": 7,
+        "count": 7,
+        "arrangement": "scattered",
+        "hint": "Take your time and tap each block so you do not miss any.",
+        "narration": "These blocks are all mixed up. Can you find and count every single one?"
+      },
+      {
+        "id": "c3",
+        "type": "count_all",
+        "instruction": "Here are more blocks! Touch each one to count them.",
+        "targetAnswer": 8,
+        "count": 8,
+        "arrangement": "groups",
+        "hint": "Count the blocks in the first group, then keep going!",
+        "narration": "Now we have blocks in little groups. Let us count them all up!",
+        "groupSize": 5
+      },
+      {
+        "id": "c4",
+        "type": "count_all",
+        "instruction": "Can you count the blocks arranged in a circle?",
+        "targetAnswer": 10,
+        "count": 10,
+        "arrangement": "circle",
+        "hint": "Pick one block to start with, and follow the circle around.",
+        "narration": "They are making a round circle! Tap each block as you go around."
+      },
+      {
+        "id": "c5",
+        "type": "count_all",
+        "instruction": "Let us count this longer line of blocks!",
+        "targetAnswer": 12,
+        "count": 12,
+        "arrangement": "line",
+        "hint": "Go slowly from the first block to the very last one.",
+        "narration": "That is a long line of blocks. Let us count carefully from start to finish!"
+      },
+      {
+        "id": "c6",
+        "type": "count_all",
+        "instruction": "Here is another fun group of blocks. How many are there?",
+        "targetAnswer": 14,
+        "count": 14,
+        "arrangement": "scattered",
+        "hint": "Tap them one by one and watch the numbers grow.",
+        "narration": "You are doing amazing! Let us count these scattered blocks together."
+      },
+      {
+        "id": "c7",
+        "type": "count_all",
+        "instruction": "This is our last challenge! Count all the blocks to finish strong.",
+        "targetAnswer": 15,
+        "count": 15,
+        "arrangement": "circle",
+        "hint": "Remember to tap every block once. You can do it!",
+        "narration": "One final circle of blocks! Let us count them all and complete the board."
+      }
+    ],
+    "showOptions": {
+      "showRunningCount": true,
+      "showGroupCircles": false,
+      "highlightOnTap": true,
+      "showLastNumber": true
+    },
+    "gradeBand": "K"
+  },
+  "mergedBag": {
+    "challengeType": "count_all",
+    "objectType": "blocks",
+    "stimulus": "a group of blocks to touch and count"
+  },
+  "diPlan": {
+    "componentId": "counting-board",
+    "primitiveType": "counting-board",
+    "activityLine": "live direct instruction counting practice",
+    "gradeLevel": "Kindergarten",
+    "audioInput": {
+      "manual_activity": true
+    },
+    "sentinels": {
+      "affirm": [
+        [
+          "yes"
+        ]
+      ],
+      "correct": [
+        [
+          "my",
+          "turn"
+        ]
+      ]
+    },
+    "maxCorrections": 2,
+    "items": [
+      {
+        "id": "c1",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "count",
+        "cue": "[COUNT_ITEM] Say exactly: \"Hi! Time to count some blocks! Touch each block one time as you count. Then say how many! Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"five\". Counting aloud that ENDS on \"five\" counts as that answer \u2014 the last number said tells the total. A final number other than \"five\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, five blocks.\" If it is wrong, say exactly: \"My turn: watch me count. One, two, three, four, five. Five blocks. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "Hi! Time to count some blocks! Touch each block one time as you count. Then say how many! Count the blocks. Your turn. How many blocks?",
+        "affirmLine": "Yes, five blocks.",
+        "correctionLine": "My turn: watch me count. One, two, three, four, five. Five blocks. Your turn. How many blocks?",
+        "correctionLines": [
+          "My turn: watch me count. One, two, three, four, five. Five blocks. Your turn. How many blocks?"
+        ],
+        "context": {
+          "challengeType": "count_all",
+          "objectType": "blocks",
+          "stimulus": "a group of blocks to touch and count"
+        },
+        "answers": {
+          "correct": "five",
+          "plainWrong": "four",
+          "leakTokens": [
+            "five"
+          ],
+          "signatureWrong": {
+            "text": "One, two, three, four, five, six",
+            "why": "a counted walk that ends one PAST the target \u2014 it contains the answer word but does not land on it"
+          }
+        },
+        "reanchorCue": "[COUNT_ITEM] Say exactly: \"Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"five\". Counting aloud that ENDS on \"five\" counts as that answer \u2014 the last number said tells the total. A final number other than \"five\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, five blocks.\" If it is wrong, say exactly: \"My turn: watch me count. One, two, three, four, five. Five blocks. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[COUNT_MOVE] Say exactly: \"Good try! Here comes the next one. Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"seven\". Counting aloud that ENDS on \"seven\" counts as that answer \u2014 the last number said tells the total. A final number other than \"seven\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, seven blocks.\" If it is wrong, say exactly: \"My turn: watch me count. One, two, three, four, five, six, seven. Seven blocks. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c2",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "count",
+        "cue": "[COUNT_ITEM] Say exactly: \"Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"seven\". Counting aloud that ENDS on \"seven\" counts as that answer \u2014 the last number said tells the total. A final number other than \"seven\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, seven blocks.\" If it is wrong, say exactly: \"My turn: watch me count. One, two, three, four, five, six, seven. Seven blocks. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "Count the blocks. Your turn. How many blocks?",
+        "affirmLine": "Yes, seven blocks.",
+        "correctionLine": "My turn: watch me count. One, two, three, four, five, six, seven. Seven blocks. Your turn. How many blocks?",
+        "correctionLines": [
+          "My turn: watch me count. One, two, three, four, five, six, seven. Seven blocks. Your turn. How many blocks?"
+        ],
+        "context": {
+          "challengeType": "count_all",
+          "objectType": "blocks",
+          "stimulus": "a group of blocks to touch and count"
+        },
+        "answers": {
+          "correct": "seven",
+          "plainWrong": "six",
+          "leakTokens": [
+            "seven"
+          ],
+          "signatureWrong": {
+            "text": "One, two, three, four, five, six, seven, eight",
+            "why": "a counted walk that ends one PAST the target \u2014 it contains the answer word but does not land on it"
+          }
+        },
+        "reanchorCue": "[COUNT_ITEM] Say exactly: \"Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"seven\". Counting aloud that ENDS on \"seven\" counts as that answer \u2014 the last number said tells the total. A final number other than \"seven\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, seven blocks.\" If it is wrong, say exactly: \"My turn: watch me count. One, two, three, four, five, six, seven. Seven blocks. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[COUNT_MOVE] Say exactly: \"Good try! Here comes the next one. Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"eight\". Counting aloud that ENDS on \"eight\" counts as that answer \u2014 the last number said tells the total. A final number other than \"eight\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, eight blocks.\" If it is wrong, say exactly: \"My turn: watch me count. One, two, three, four, five, six, seven, eight. Eight blocks. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c3",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "count",
+        "cue": "[COUNT_ITEM] Say exactly: \"Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"eight\". Counting aloud that ENDS on \"eight\" counts as that answer \u2014 the last number said tells the total. A final number other than \"eight\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, eight blocks.\" If it is wrong, say exactly: \"My turn: watch me count. One, two, three, four, five, six, seven, eight. Eight blocks. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "Count the blocks. Your turn. How many blocks?",
+        "affirmLine": "Yes, eight blocks.",
+        "correctionLine": "My turn: watch me count. One, two, three, four, five, six, seven, eight. Eight blocks. Your turn. How many blocks?",
+        "correctionLines": [
+          "My turn: watch me count. One, two, three, four, five, six, seven, eight. Eight blocks. Your turn. How many blocks?"
+        ],
+        "context": {
+          "challengeType": "count_all",
+          "objectType": "blocks",
+          "stimulus": "a group of blocks to touch and count"
+        },
+        "answers": {
+          "correct": "eight",
+          "plainWrong": "seven",
+          "leakTokens": [
+            "eight"
+          ],
+          "signatureWrong": {
+            "text": "One, two, three, four, five, six, seven, eight, nine",
+            "why": "a counted walk that ends one PAST the target \u2014 it contains the answer word but does not land on it"
+          }
+        },
+        "reanchorCue": "[COUNT_ITEM] Say exactly: \"Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"eight\". Counting aloud that ENDS on \"eight\" counts as that answer \u2014 the last number said tells the total. A final number other than \"eight\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, eight blocks.\" If it is wrong, say exactly: \"My turn: watch me count. One, two, three, four, five, six, seven, eight. Eight blocks. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[COUNT_MOVE] Say exactly: \"Good try! Here comes the next one. Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"ten\". Counting aloud that ENDS on \"ten\" counts as that answer \u2014 the last number said tells the total. A final number other than \"ten\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, ten blocks.\" If it is wrong, say exactly: \"My turn: watch me count. One, two, three, four, five, six, seven, eight, nine, ten. Ten blocks. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c4",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "count",
+        "cue": "[COUNT_ITEM] Say exactly: \"Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"ten\". Counting aloud that ENDS on \"ten\" counts as that answer \u2014 the last number said tells the total. A final number other than \"ten\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, ten blocks.\" If it is wrong, say exactly: \"My turn: watch me count. One, two, three, four, five, six, seven, eight, nine, ten. Ten blocks. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "Count the blocks. Your turn. How many blocks?",
+        "affirmLine": "Yes, ten blocks.",
+        "correctionLine": "My turn: watch me count. One, two, three, four, five, six, seven, eight, nine, ten. Ten blocks. Your turn. How many blocks?",
+        "correctionLines": [
+          "My turn: watch me count. One, two, three, four, five, six, seven, eight, nine, ten. Ten blocks. Your turn. How many blocks?"
+        ],
+        "context": {
+          "challengeType": "count_all",
+          "objectType": "blocks",
+          "stimulus": "a group of blocks to touch and count"
+        },
+        "answers": {
+          "correct": "ten",
+          "plainWrong": "nine",
+          "leakTokens": [
+            "ten"
+          ],
+          "signatureWrong": {
+            "text": "One, two, three, four, five, six, seven, eight, nine, ten, eleven",
+            "why": "a counted walk that ends one PAST the target \u2014 it contains the answer word but does not land on it"
+          }
+        },
+        "reanchorCue": "[COUNT_ITEM] Say exactly: \"Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"ten\". Counting aloud that ENDS on \"ten\" counts as that answer \u2014 the last number said tells the total. A final number other than \"ten\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, ten blocks.\" If it is wrong, say exactly: \"My turn: watch me count. One, two, three, four, five, six, seven, eight, nine, ten. Ten blocks. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[COUNT_MOVE] Say exactly: \"Good try! Here comes the next one. Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"twelve\". Counting aloud that ENDS on \"twelve\" counts as that answer \u2014 the last number said tells the total. A final number other than \"twelve\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, twelve blocks.\" If it is wrong, say exactly: \"My turn: there are twelve blocks \u2014 count each one just once and say the last number. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c5",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "count",
+        "cue": "[COUNT_ITEM] Say exactly: \"Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"twelve\". Counting aloud that ENDS on \"twelve\" counts as that answer \u2014 the last number said tells the total. A final number other than \"twelve\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, twelve blocks.\" If it is wrong, say exactly: \"My turn: there are twelve blocks \u2014 count each one just once and say the last number. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "Count the blocks. Your turn. How many blocks?",
+        "affirmLine": "Yes, twelve blocks.",
+        "correctionLine": "My turn: there are twelve blocks \u2014 count each one just once and say the last number. Your turn. How many blocks?",
+        "correctionLines": [
+          "My turn: there are twelve blocks \u2014 count each one just once and say the last number. Your turn. How many blocks?"
+        ],
+        "context": {
+          "challengeType": "count_all",
+          "objectType": "blocks",
+          "stimulus": "a group of blocks to touch and count"
+        },
+        "answers": {
+          "correct": "twelve",
+          "plainWrong": "eleven",
+          "leakTokens": [
+            "twelve"
+          ],
+          "signatureWrong": {
+            "text": "One, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen",
+            "why": "a counted walk that ends one PAST the target \u2014 it contains the answer word but does not land on it"
+          }
+        },
+        "reanchorCue": "[COUNT_ITEM] Say exactly: \"Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"twelve\". Counting aloud that ENDS on \"twelve\" counts as that answer \u2014 the last number said tells the total. A final number other than \"twelve\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, twelve blocks.\" If it is wrong, say exactly: \"My turn: there are twelve blocks \u2014 count each one just once and say the last number. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[COUNT_MOVE] Say exactly: \"Good try! Here comes the next one. Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"fourteen\". Counting aloud that ENDS on \"fourteen\" counts as that answer \u2014 the last number said tells the total. A final number other than \"fourteen\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, fourteen blocks.\" If it is wrong, say exactly: \"My turn: there are fourteen blocks \u2014 count each one just once and say the last number. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c6",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "count",
+        "cue": "[COUNT_ITEM] Say exactly: \"Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"fourteen\". Counting aloud that ENDS on \"fourteen\" counts as that answer \u2014 the last number said tells the total. A final number other than \"fourteen\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, fourteen blocks.\" If it is wrong, say exactly: \"My turn: there are fourteen blocks \u2014 count each one just once and say the last number. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "Count the blocks. Your turn. How many blocks?",
+        "affirmLine": "Yes, fourteen blocks.",
+        "correctionLine": "My turn: there are fourteen blocks \u2014 count each one just once and say the last number. Your turn. How many blocks?",
+        "correctionLines": [
+          "My turn: there are fourteen blocks \u2014 count each one just once and say the last number. Your turn. How many blocks?"
+        ],
+        "context": {
+          "challengeType": "count_all",
+          "objectType": "blocks",
+          "stimulus": "a group of blocks to touch and count"
+        },
+        "answers": {
+          "correct": "fourteen",
+          "plainWrong": "thirteen",
+          "leakTokens": [
+            "fourteen"
+          ],
+          "signatureWrong": {
+            "text": "One, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen, fourteen, fifteen",
+            "why": "a counted walk that ends one PAST the target \u2014 it contains the answer word but does not land on it"
+          }
+        },
+        "reanchorCue": "[COUNT_ITEM] Say exactly: \"Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"fourteen\". Counting aloud that ENDS on \"fourteen\" counts as that answer \u2014 the last number said tells the total. A final number other than \"fourteen\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, fourteen blocks.\" If it is wrong, say exactly: \"My turn: there are fourteen blocks \u2014 count each one just once and say the last number. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[COUNT_MOVE] Say exactly: \"Good try! Here comes the next one. Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"fifteen\". Counting aloud that ENDS on \"fifteen\" counts as that answer \u2014 the last number said tells the total. A final number other than \"fifteen\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, fifteen blocks.\" If it is wrong, say exactly: \"My turn: there are fifteen blocks \u2014 count each one just once and say the last number. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c7",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "count",
+        "cue": "[COUNT_ITEM] Say exactly: \"Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"fifteen\". Counting aloud that ENDS on \"fifteen\" counts as that answer \u2014 the last number said tells the total. A final number other than \"fifteen\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, fifteen blocks.\" If it is wrong, say exactly: \"My turn: there are fifteen blocks \u2014 count each one just once and say the last number. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "Count the blocks. Your turn. How many blocks?",
+        "affirmLine": "Yes, fifteen blocks.",
+        "correctionLine": "My turn: there are fifteen blocks \u2014 count each one just once and say the last number. Your turn. How many blocks?",
+        "correctionLines": [
+          "My turn: there are fifteen blocks \u2014 count each one just once and say the last number. Your turn. How many blocks?"
+        ],
+        "context": {
+          "challengeType": "count_all",
+          "objectType": "blocks",
+          "stimulus": "a group of blocks to touch and count"
+        },
+        "answers": {
+          "correct": "fifteen",
+          "plainWrong": "fourteen",
+          "leakTokens": [
+            "fifteen"
+          ],
+          "signatureWrong": {
+            "text": "One, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen, fourteen, fifteen, sixteen",
+            "why": "a counted walk that ends one PAST the target \u2014 it contains the answer word but does not land on it"
+          }
+        },
+        "reanchorCue": "[COUNT_ITEM] Say exactly: \"Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"fifteen\". Counting aloud that ENDS on \"fifteen\" counts as that answer \u2014 the last number said tells the total. A final number other than \"fifteen\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, fifteen blocks.\" If it is wrong, say exactly: \"My turn: there are fifteen blocks \u2014 count each one just once and say the last number. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[COUNT_MOVE] Say exactly: \"Good try! Counting takes practice \u2014 we will see that one again another day.\" Then stop."
+      }
+    ],
+    "completeCue": "[COUNT_COMPLETE] Say exactly: \"What great counting today! Your eyes and your ears did hard work. See you next time!\" Then stop \u2014 the activity is over.",
+    "droppedChallenges": 0,
+    "packGateIssues": [],
+    "isBench": false
+  }
+}

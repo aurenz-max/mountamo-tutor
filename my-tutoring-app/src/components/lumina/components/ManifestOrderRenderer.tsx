@@ -6,6 +6,10 @@ import { ObjectiveBadge } from './ObjectiveBadge';
 import { useEvaluationContext } from '../evaluation';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { usePipSurfaceStore } from '../pip/PipSurfaceContext';
+import { useLessonWorkspace } from './live-activity/LessonWorkspace';
+import { lessonPrimitiveContext } from './live-activity/lessonWorkspacePlan';
+import { LiveRuntimeContext, LiveRuntimeActiveContext, LiveRuntimeConnectionContext } from './live-activity/runtime/LiveRuntimeContext';
+import { LiveRuntimeSurface } from './live-activity/runtime/LiveRuntimeSurface';
 import { LuminaPanel, LuminaSectionLabel } from '../ui';
 
 interface ManifestOrderRendererProps {
@@ -54,6 +58,8 @@ export const OrderedSection: React.FC<OrderedSectionProps> = ({
 }) => {
   const { getObjectivesForComponent, manifestItems } = useExhibitContext();
   const evaluationContext = useEvaluationContext();
+  const workspace = useLessonWorkspace();
+  const ai = useLuminaAIContext();
 
   const { componentId, instanceId, data } = item;
 
@@ -175,6 +181,24 @@ export const OrderedSection: React.FC<OrderedSectionProps> = ({
     );
   }
 
+  const binding = workspace?.items.get(instanceId);
+  const active = workspace?.activeId === instanceId && ai.isConnected;
+  const primitive = <Component data={{ ...data, ...additionalProps, ...(binding ? {
+    instanceId, objectiveId: binding.objectiveId,
+    skillId: objectives.find(o => o.id === binding.objectiveId)?.skillId ?? additionalProps.skillId,
+    subskillId: objectives.find(o => o.id === binding.objectiveId)?.subskillId ?? additionalProps.subskillId,
+  } : {}) }} index={index} {...(binding ? { runtimePlanItemId: binding.planItemId,
+    runtimeEvalMode: binding.evalMode, autoStart: true } : {})} />;
+  // Unsupported surfaces cannot register their legacy adapters on the lesson runtime.
+  // Supported inactive surfaces stay on the workspace controller without consuming speech.
+  const body = workspace ? <LiveRuntimeContext.Provider value={binding ? workspace.runtime : null}>
+    <LiveRuntimeActiveContext.Provider value={!!binding && active}>
+      <LiveRuntimeConnectionContext.Provider value={ai.sessionResumeCount ?? 0}>
+      {binding ? <LiveRuntimeSurface runtime={workspace.runtime} active={active}>{primitive}</LiveRuntimeSurface> : primitive}
+      </LiveRuntimeConnectionContext.Provider>
+    </LiveRuntimeActiveContext.Provider>
+  </LiveRuntimeContext.Provider> : primitive;
+
   // Standard component rendering
   return (
     <div
@@ -195,7 +219,7 @@ export const OrderedSection: React.FC<OrderedSectionProps> = ({
       )}
 
       {/* Render the component */}
-      <Component data={{ ...data, ...additionalProps }} index={index} />
+      {body}
     </div>
   );
 };
@@ -224,6 +248,8 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
   onTermClick,
 }) => {
   const aiContext = useLuminaAIContext();
+  const workspace = useLessonWorkspace();
+  const workspaceRef = useRef(workspace); workspaceRef.current = workspace;
 
   // Refs for viewport tracking
   const containerRef = useRef<HTMLDivElement>(null);
@@ -240,7 +266,7 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
 
   // Debounced switch: waits 500ms after a primitive enters the viewport
   // before switching, so fast scrolling doesn't spam the backend
-  const debouncedSwitch = useCallback((componentId: string, instanceId: string, data: any) => {
+  const debouncedSwitch = useCallback((componentId: OrderedComponent['componentId'], instanceId: string, data: any) => {
     const ctx = aiContextRef.current;
     if (instanceId === ctx.activePrimitiveId) {
       clearTimeout(switchTimerRef.current);
@@ -254,13 +280,9 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
     switchTimerRef.current = setTimeout(() => {
       pendingInstanceRef.current = null;
       const ctx = aiContextRef.current;
+      workspaceRef.current?.focus(instanceId);
       if (ctx.sessionMode !== 'lesson' || !ctx.isConnected) return;
-
-      ctx.switchPrimitive({
-        primitive_type: componentId,
-        instance_id: instanceId,
-        primitive_data: data || {},
-      });
+      ctx.switchPrimitive(lessonPrimitiveContext({ componentId, instanceId, data, title: '' }, workspaceRef.current?.items.get(instanceId)));
     }, 500);
   }, []);
 
@@ -304,7 +326,7 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
       pipStoreRef.current?.setActive(instanceId);
 
       const component = orderedComponentsRef.current.find((c) => c.instanceId === instanceId);
-      debouncedSwitch(componentId, instanceId, component?.data);
+      if (component) debouncedSwitch(component.componentId, instanceId, component.data);
     };
 
     // IntersectionObserver catches structural/layout changes (mount, lazy media

@@ -1012,7 +1012,6 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {runtimeHint && <p role="status" className="rounded-lg bg-indigo-950 p-3">{runtimeHint}</p>}
         {/* Phase + Progress */}
         <div className="flex items-center justify-between">
           <LuminaModeTabs tabs={PHASE_TABS} active={currentPhase} accent="orange" />

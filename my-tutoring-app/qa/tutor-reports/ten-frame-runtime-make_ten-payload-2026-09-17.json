@@ -1,0 +1,430 @@
+{
+  "audit": {
+    "componentId": "ten-frame",
+    "status": "warn",
+    "componentFiles": [
+      "src/components/lumina/primitives/visual-primitives/math/TenFrame.tsx",
+      "src/components/lumina/primitives/visual-primitives/math/tenFrameScript.ts"
+    ],
+    "dataBagKeys": null,
+    "dataBagDynamic": true,
+    "contextKeys": [
+      "challengeType",
+      "stimulus"
+    ],
+    "templateVars": [
+      "challengeType",
+      "stimulus"
+    ],
+    "sendTextTags": [],
+    "findings": [
+      {
+        "check": "data-bag-unparsed",
+        "severity": "WARN",
+        "message": "Could not statically parse the primitiveData bag \u2014 contextKeys/{{var}} checks skipped. Run the &probe=1 tier or verify in the Lumina Tutor Tester."
+      },
+      {
+        "check": "no-sendtext-moments",
+        "severity": "WARN",
+        "message": "Component never calls sendText \u2014 the tutor will go silent after the initial greeting (no pedagogical moments are wired)."
+      },
+      {
+        "check": "directive-tag-never-emitted",
+        "severity": "WARN",
+        "message": "aiDirectives reference [BRACKETS] but no source file ever sends that tag \u2014 the directive is dead prompt text (or the trigger was renamed)."
+      }
+    ]
+  },
+  "status": "warn",
+  "tutoring": {
+    "taskDescription": "LIVE-JUDGED ten frame practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the frame (placing counters, or turning some of them yellow to split a group into two), you judge what the cue reports, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.",
+    "contextKeys": [
+      "challengeType",
+      "stimulus"
+    ],
+    "scaffoldingLevels": {
+      "level1": "Repeat the current scripted ask exactly once, a little slower. Never count aloud for the child and never name any part of the answer.",
+      "level2": "Remind the child of the method in one short sentence \u2014 \"Look at the frame and think about how many\" \u2014 without saying any number.",
+      "level3": "Invite one try together: \"Take your time. Look at the frame. Then tell me.\" Still never say the answer."
+    },
+    "commonStruggles": [
+      {
+        "pattern": "Long silence",
+        "response": "Silence is the child thinking \u2014 wait. If they truly seem stuck, re-speak the current ask once; never answer for them."
+      },
+      {
+        "pattern": "Counts the counters aloud on a flash item",
+        "response": "The scripted correction handles this AFTER the attempt is judged: it re-models looking at the whole group, then re-asks. Never interrupt mid-attempt."
+      },
+      {
+        "pattern": "Says the total instead of how many more",
+        "response": "The scripted correction re-models the number bond and re-elicits. Speak only that line."
+      },
+      {
+        "pattern": "Turns every counter yellow, or none of them, on a split item",
+        "response": "One group and an empty one is not two groups. The scripted correction re-models the property \u2014 both colours visible \u2014 without naming a pair. Speak only that line."
+      },
+      {
+        "pattern": "Shows the same split again when asked for a different way",
+        "response": "The cue tells you it is a repeat. Speak the scripted correction, which asks for a different number of yellows and still names no pair."
+      }
+    ],
+    "aiDirectives": [
+      {
+        "title": "THE OPENING LINE ALREADY SAYS HOW TO PLAY",
+        "instruction": "Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. Never invent a greeting, add instructions, or ask a question of your own before or after it."
+      },
+      {
+        "title": "WHAT COUNTS AS AN ANSWER",
+        "instruction": "On spoken items the answer is ONE number word from 1 to 20 and nothing else \u2014 never a digit read as a string of words, never a sentence you supply. The cue for each item names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right. Judge by that cue and nothing else. THE LAW: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction."
+      },
+      {
+        "title": "HAND ITEMS ARE SILENT",
+        "instruction": "When the cue tells you the child answers with their hands on the frame, say nothing at all while they work \u2014 no counting, no narration, no encouragement mid-placement. You will be told what they placed and whether it matches; only then do you speak the line the cue gives you."
+      },
+      {
+        "title": "ON A SPLIT ITEM THE ANSWER IS A PAIR \u2014 AND IT IS NOT YOURS TO OFFER",
+        "instruction": "A split item shows a group of red counters and asks the child to turn some yellow. Any pair of two non-empty groups is a right answer, so there is nothing to hint toward and nothing to check for you: the cue tells you what they did, whether it was right, and whether they have shown that exact pair already in this session. NEVER suggest how many to turn yellow, never name two numbers that make the total, and never count the counters aloud \u2014 one pair spoken out loud answers every remaining split item on that total, not just the one in front of you. You may name the pair in ONE place only: the affirmation the cue hands you after they have built it."
+      },
+      {
+        "title": "THE CHILD IS THINKING \u2014 WAIT",
+        "instruction": "Think time is unbounded. Never fill a silence, never count along, and never prompt while the child is working. The silence is theirs."
+      },
+      {
+        "title": "SENTINEL DISCIPLINE",
+        "instruction": "Every affirmation begins with \"Yes\" and EVERY correction begins with \"My turn:\" exactly as the cue scripts. Never begin any other sentence with either opener."
+      },
+      {
+        "title": "SHOW-AGAIN ON DEMAND",
+        "instruction": "The child can ask to see the flash again. That re-asks the QUESTION only \u2014 speak the scripted line you are given and never describe or count what flashed."
+      },
+      {
+        "title": "NEVER READ BRACKET TAGS",
+        "instruction": "Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken."
+      }
+    ]
+  },
+  "generatedData": {
+    "title": "Making Ten Race",
+    "description": "Practice finding the missing part needed to make ten on the ten frame.",
+    "mode": "single",
+    "counters": {
+      "count": 0,
+      "color": "red",
+      "positions": []
+    },
+    "challenges": [
+      {
+        "id": "c1",
+        "type": "make_ten",
+        "targetCount": 3,
+        "hint": "Count the empty spaces left in the ten frame.",
+        "narration": "I placed three red counters on the board. How many more do we need to make ten?",
+        "instruction": "There are 3 counters on the frame. How many more do you need to make 10?"
+      },
+      {
+        "id": "c2",
+        "type": "make_ten",
+        "targetCount": 4,
+        "hint": "Look at the top row and see how many spots are empty.",
+        "narration": "Here are four counters. How many more empty spots are waiting to be filled?",
+        "instruction": "There are 4 counters on the frame. How many more do you need to make 10?"
+      },
+      {
+        "id": "c3",
+        "type": "make_ten",
+        "targetCount": 5,
+        "hint": "Half the frame is full. How many make a whole frame?",
+        "narration": "Five counters are showing, which fills the top row completely. How many more to make ten?",
+        "instruction": "There are 5 counters on the frame. How many more do you need to make 10?"
+      },
+      {
+        "id": "c4",
+        "type": "make_ten",
+        "targetCount": 6,
+        "hint": "Count the empty spaces on the bottom row.",
+        "narration": "We have six counters on the frame now. How many more do we need to reach ten?",
+        "instruction": "There are 6 counters on the frame. How many more do you need to make 10?"
+      },
+      {
+        "id": "c5",
+        "type": "make_ten",
+        "targetCount": 7,
+        "hint": "Only three spaces are empty now. Can you name the missing amount?",
+        "narration": "Seven counters are in place. How many more counters fit to make ten?",
+        "instruction": "There are 7 counters on the frame. How many more do you need to make 10?"
+      },
+      {
+        "id": "c6",
+        "type": "make_ten",
+        "targetCount": 8,
+        "hint": "Almost full! Count the remaining empty squares.",
+        "narration": "I put eight counters on the board. How many more do we need to finish the ten frame?",
+        "instruction": "There are 8 counters on the frame. How many more do you need to make 10?"
+      },
+      {
+        "id": "c7",
+        "type": "make_ten",
+        "targetCount": 9,
+        "hint": "There is only one space left empty.",
+        "narration": "There are nine counters here. How many more to make ten?",
+        "instruction": "There are 9 counters on the frame. How many more do you need to make 10?"
+      }
+    ],
+    "showOptions": {
+      "showCount": false,
+      "showEquation": false,
+      "showEmptyCount": false,
+      "allowFlip": false
+    },
+    "gradeBand": "1-2"
+  },
+  "mergedBag": {
+    "challengeType": "make_ten",
+    "stimulus": "three counters shown, frame of ten"
+  },
+  "diPlan": {
+    "componentId": "ten-frame",
+    "primitiveType": "ten-frame",
+    "activityLine": "live direct instruction ten frame practice",
+    "gradeLevel": "Grade 1",
+    "audioInput": {
+      "manual_activity": true
+    },
+    "sentinels": {
+      "affirm": [
+        [
+          "yes"
+        ]
+      ],
+      "correct": [
+        [
+          "my",
+          "turn"
+        ]
+      ]
+    },
+    "maxCorrections": 2,
+    "items": [
+      {
+        "id": "c1",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "complement",
+        "cue": "[TF_ITEM] Say exactly: \"Hi! Time to work with the ten frame! Some counters are already there. Then say how many MORE counters fill the frame. There are three counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"seven\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"seven more\" or \"seven counters\" counts as \"seven\". If the answer is right, say exactly: \"Yes, seven more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: three and seven make ten. Seven more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "Hi! Time to work with the ten frame! Some counters are already there. Then say how many MORE counters fill the frame. There are three counters on the frame. Your turn. How many more counters make ten?",
+        "affirmLine": "Yes, seven more.",
+        "correctionLine": "My turn: three and seven make ten. Seven more. Your turn. How many more counters make ten?",
+        "correctionLines": [
+          "My turn: three and seven make ten. Seven more. Your turn. How many more counters make ten?"
+        ],
+        "context": {
+          "challengeType": "make_ten",
+          "stimulus": "three counters shown, frame of ten"
+        },
+        "answers": {
+          "correct": "seven",
+          "plainWrong": "eight",
+          "leakTokens": [
+            "seven"
+          ],
+          "signatureWrong": {
+            "text": "ten",
+            "why": "the total said back instead of how many MORE are needed"
+          }
+        },
+        "pronounceCue": "[TF_HEAR] The learner tapped to hear the question again. Say ONLY this, warmly, then wait: \"There are three counters on the frame. Your turn. How many more counters make ten?\" Do not treat anything you just heard as an answer, add nothing, and never say the answer. Never read bracket tags aloud.",
+        "reanchorCue": "[TF_ITEM] Say exactly: \"There are three counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"seven\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"seven more\" or \"seven counters\" counts as \"seven\". If the answer is right, say exactly: \"Yes, seven more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: three and seven make ten. Seven more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[TF_MOVE] Say exactly: \"Good try! Here comes the next one. There are four counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"six\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"six more\" or \"six counters\" counts as \"six\". If the answer is right, say exactly: \"Yes, six more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: four and six make ten. Six more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c2",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "complement",
+        "cue": "[TF_ITEM] Say exactly: \"There are four counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"six\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"six more\" or \"six counters\" counts as \"six\". If the answer is right, say exactly: \"Yes, six more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: four and six make ten. Six more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "There are four counters on the frame. Your turn. How many more counters make ten?",
+        "affirmLine": "Yes, six more.",
+        "correctionLine": "My turn: four and six make ten. Six more. Your turn. How many more counters make ten?",
+        "correctionLines": [
+          "My turn: four and six make ten. Six more. Your turn. How many more counters make ten?"
+        ],
+        "context": {
+          "challengeType": "make_ten",
+          "stimulus": "four counters shown, frame of ten"
+        },
+        "answers": {
+          "correct": "six",
+          "plainWrong": "seven",
+          "leakTokens": [
+            "six"
+          ],
+          "signatureWrong": {
+            "text": "ten",
+            "why": "the total said back instead of how many MORE are needed"
+          }
+        },
+        "pronounceCue": "[TF_HEAR] The learner tapped to hear the question again. Say ONLY this, warmly, then wait: \"There are four counters on the frame. Your turn. How many more counters make ten?\" Do not treat anything you just heard as an answer, add nothing, and never say the answer. Never read bracket tags aloud.",
+        "reanchorCue": "[TF_ITEM] Say exactly: \"There are four counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"six\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"six more\" or \"six counters\" counts as \"six\". If the answer is right, say exactly: \"Yes, six more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: four and six make ten. Six more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[TF_MOVE] Say exactly: \"Good try! Here comes the next one. There are five counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"five\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"five more\" or \"five counters\" counts as \"five\". If the answer is right, say exactly: \"Yes, five more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: five and five make ten. Five more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c3",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "complement",
+        "cue": "[TF_ITEM] Say exactly: \"There are five counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"five\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"five more\" or \"five counters\" counts as \"five\". If the answer is right, say exactly: \"Yes, five more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: five and five make ten. Five more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "There are five counters on the frame. Your turn. How many more counters make ten?",
+        "affirmLine": "Yes, five more.",
+        "correctionLine": "My turn: five and five make ten. Five more. Your turn. How many more counters make ten?",
+        "correctionLines": [
+          "My turn: five and five make ten. Five more. Your turn. How many more counters make ten?"
+        ],
+        "context": {
+          "challengeType": "make_ten",
+          "stimulus": "five counters shown, frame of ten"
+        },
+        "answers": {
+          "correct": "five",
+          "plainWrong": "six",
+          "leakTokens": [],
+          "signatureWrong": {
+            "text": "ten",
+            "why": "the total said back instead of how many MORE are needed"
+          }
+        },
+        "pronounceCue": "[TF_HEAR] The learner tapped to hear the question again. Say ONLY this, warmly, then wait: \"There are five counters on the frame. Your turn. How many more counters make ten?\" Do not treat anything you just heard as an answer, add nothing, and never say the answer. Never read bracket tags aloud.",
+        "reanchorCue": "[TF_ITEM] Say exactly: \"There are five counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"five\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"five more\" or \"five counters\" counts as \"five\". If the answer is right, say exactly: \"Yes, five more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: five and five make ten. Five more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[TF_MOVE] Say exactly: \"Good try! Here comes the next one. There are six counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"four\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"four more\" or \"four counters\" counts as \"four\". If the answer is right, say exactly: \"Yes, four more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: six and four make ten. Four more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c4",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "complement",
+        "cue": "[TF_ITEM] Say exactly: \"There are six counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"four\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"four more\" or \"four counters\" counts as \"four\". If the answer is right, say exactly: \"Yes, four more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: six and four make ten. Four more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "There are six counters on the frame. Your turn. How many more counters make ten?",
+        "affirmLine": "Yes, four more.",
+        "correctionLine": "My turn: six and four make ten. Four more. Your turn. How many more counters make ten?",
+        "correctionLines": [
+          "My turn: six and four make ten. Four more. Your turn. How many more counters make ten?"
+        ],
+        "context": {
+          "challengeType": "make_ten",
+          "stimulus": "six counters shown, frame of ten"
+        },
+        "answers": {
+          "correct": "four",
+          "plainWrong": "five",
+          "leakTokens": [
+            "four"
+          ],
+          "signatureWrong": {
+            "text": "ten",
+            "why": "the total said back instead of how many MORE are needed"
+          }
+        },
+        "pronounceCue": "[TF_HEAR] The learner tapped to hear the question again. Say ONLY this, warmly, then wait: \"There are six counters on the frame. Your turn. How many more counters make ten?\" Do not treat anything you just heard as an answer, add nothing, and never say the answer. Never read bracket tags aloud.",
+        "reanchorCue": "[TF_ITEM] Say exactly: \"There are six counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"four\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"four more\" or \"four counters\" counts as \"four\". If the answer is right, say exactly: \"Yes, four more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: six and four make ten. Four more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[TF_MOVE] Say exactly: \"Good try! Here comes the next one. There are seven counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"three\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"three more\" or \"three counters\" counts as \"three\". If the answer is right, say exactly: \"Yes, three more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: seven and three make ten. Three more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c5",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "complement",
+        "cue": "[TF_ITEM] Say exactly: \"There are seven counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"three\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"three more\" or \"three counters\" counts as \"three\". If the answer is right, say exactly: \"Yes, three more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: seven and three make ten. Three more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "There are seven counters on the frame. Your turn. How many more counters make ten?",
+        "affirmLine": "Yes, three more.",
+        "correctionLine": "My turn: seven and three make ten. Three more. Your turn. How many more counters make ten?",
+        "correctionLines": [
+          "My turn: seven and three make ten. Three more. Your turn. How many more counters make ten?"
+        ],
+        "context": {
+          "challengeType": "make_ten",
+          "stimulus": "seven counters shown, frame of ten"
+        },
+        "answers": {
+          "correct": "three",
+          "plainWrong": "four",
+          "leakTokens": [
+            "three"
+          ],
+          "signatureWrong": {
+            "text": "ten",
+            "why": "the total said back instead of how many MORE are needed"
+          }
+        },
+        "pronounceCue": "[TF_HEAR] The learner tapped to hear the question again. Say ONLY this, warmly, then wait: \"There are seven counters on the frame. Your turn. How many more counters make ten?\" Do not treat anything you just heard as an answer, add nothing, and never say the answer. Never read bracket tags aloud.",
+        "reanchorCue": "[TF_ITEM] Say exactly: \"There are seven counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"three\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"three more\" or \"three counters\" counts as \"three\". If the answer is right, say exactly: \"Yes, three more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: seven and three make ten. Three more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[TF_MOVE] Say exactly: \"Good try! Here comes the next one. There are eight counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"two more\" or \"two counters\" counts as \"two\". If the answer is right, say exactly: \"Yes, two more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: eight and two make ten. Two more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c6",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "complement",
+        "cue": "[TF_ITEM] Say exactly: \"There are eight counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"two more\" or \"two counters\" counts as \"two\". If the answer is right, say exactly: \"Yes, two more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: eight and two make ten. Two more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+        "affirmLine": "Yes, two more.",
+        "correctionLine": "My turn: eight and two make ten. Two more. Your turn. How many more counters make ten?",
+        "correctionLines": [
+          "My turn: eight and two make ten. Two more. Your turn. How many more counters make ten?"
+        ],
+        "context": {
+          "challengeType": "make_ten",
+          "stimulus": "eight counters shown, frame of ten"
+        },
+        "answers": {
+          "correct": "two",
+          "plainWrong": "three",
+          "leakTokens": [
+            "two"
+          ],
+          "signatureWrong": {
+            "text": "ten",
+            "why": "the total said back instead of how many MORE are needed"
+          }
+        },
+        "pronounceCue": "[TF_HEAR] The learner tapped to hear the question again. Say ONLY this, warmly, then wait: \"There are eight counters on the frame. Your turn. How many more counters make ten?\" Do not treat anything you just heard as an answer, add nothing, and never say the answer. Never read bracket tags aloud.",
+        "reanchorCue": "[TF_ITEM] Say exactly: \"There are eight counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"two more\" or \"two counters\" counts as \"two\". If the answer is right, say exactly: \"Yes, two more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: eight and two make ten. Two more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[TF_MOVE] Say exactly: \"Good try! Here comes the next one. There are nine counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"one\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"one more\" or \"one counters\" counts as \"one\". If the answer is right, say exactly: \"Yes, one more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: nine and one make ten. One more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c7",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "complement",
+        "cue": "[TF_ITEM] Say exactly: \"There are nine counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"one\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"one more\" or \"one counters\" counts as \"one\". If the answer is right, say exactly: \"Yes, one more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: nine and one make ten. One more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+        "affirmLine": "Yes, one more.",
+        "correctionLine": "My turn: nine and one make ten. One more. Your turn. How many more counters make ten?",
+        "correctionLines": [
+          "My turn: nine and one make ten. One more. Your turn. How many more counters make ten?"
+        ],
+        "context": {
+          "challengeType": "make_ten",
+          "stimulus": "nine counters shown, frame of ten"
+        },
+        "answers": {
+          "correct": "one",
+          "plainWrong": "two",
+          "leakTokens": [
+            "one"
+          ],
+          "signatureWrong": {
+            "text": "ten",
+            "why": "the total said back instead of how many MORE are needed"
+          }
+        },
+        "pronounceCue": "[TF_HEAR] The learner tapped to hear the question again. Say ONLY this, warmly, then wait: \"There are nine counters on the frame. Your turn. How many more counters make ten?\" Do not treat anything you just heard as an answer, add nothing, and never say the answer. Never read bracket tags aloud.",
+        "reanchorCue": "[TF_ITEM] Say exactly: \"There are nine counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"one\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"one more\" or \"one counters\" counts as \"one\". If the answer is right, say exactly: \"Yes, one more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: nine and one make ten. One more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[TF_MOVE] Say exactly: \"Good try! The ten frame takes practice \u2014 we will see that one again another day.\" Then stop."
+      }
+    ],
+    "completeCue": "[TF_COMPLETE] Say exactly: \"What great number work today! Your eyes and your hands did hard thinking. See you next time!\" Then stop \u2014 the activity is over.",
+    "droppedChallenges": 0,
+    "packGateIssues": [],
+    "isBench": false
+  }
+}

@@ -14,13 +14,15 @@ import { EvaluationProvider } from '../evaluation';
 import type { CompetencyUpdateSuggestion } from '../evaluation';
 import { EvaluationResultsIndicator } from './EvaluationResultsIndicator';
 import { ExhibitProvider } from '../contexts/ExhibitContext';
-import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { LessonConnectionInfo } from '@/contexts/LuminaAIContext';
 import ExhibitCompleteFooter from './ExhibitCompleteFooter';
 import { LessonSummary } from './LessonSummary';
 import { LessonExitConfirmModal } from './LessonExitConfirmModal';
 import { useLessonExitGuard } from '../hooks/useLessonExitGuard';
 import { getRemediationLabels } from '../service/manifest/remediationTrace';
+
+import { LessonWorkspaceProvider, useLessonWorkspace, workspaceConnectionInfo } from './live-activity/LessonWorkspace';
 
 // Bootstraps the lesson-mode AI session when the exhibit mounts.
 // Must be rendered inside LuminaAIProvider + ExhibitProvider.
@@ -29,6 +31,7 @@ const LessonAIBootstrap: React.FC<{
   gradeLevel: string;
 }> = ({ exhibit, gradeLevel }) => {
   const aiContext = useLuminaAIContext();
+  const workspace = useLessonWorkspace();
   const hasBootstrappedRef = React.useRef(false);
 
   React.useEffect(() => {
@@ -53,7 +56,7 @@ const LessonAIBootstrap: React.FC<{
     };
 
     hasBootstrappedRef.current = true;
-    aiContext.connectLesson(info);
+    aiContext.connectLesson(workspaceConnectionInfo(info, workspace));
 
     return () => {
       aiContext.disconnect();
@@ -145,7 +148,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({
         objectives={exhibit.introBriefing?.objectives || []}
         manifestItems={exhibit.manifest?.layout || []}
       >
-        <LuminaAIProvider>
+        <LessonWorkspaceProvider key={sessionId} exhibit={exhibit}>
           <LessonAIBootstrap exhibit={exhibit} gradeLevel={gradeLevel} />
           <div className="w-full animate-fade-in-up">
             {/* Stage mode drops the title block: it's adult chrome a pre-reader
@@ -272,7 +275,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({
               CuratorCompanion is the K-5-native embodied face (Pip); CuratorConsole
               remains the chat-panel variant for reference/older-grade fallback. */}
           <CuratorCompanion />
-        </LuminaAIProvider>
+        </LessonWorkspaceProvider>
       </ExhibitProvider>
     </EvaluationProvider>
   );

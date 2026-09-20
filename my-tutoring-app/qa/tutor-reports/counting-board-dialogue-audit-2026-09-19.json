@@ -1,0 +1,268 @@
+[
+  {
+    "file": "counting-board-dialogue-audio-disjoint-2026-09-19.json",
+    "run": 1,
+    "progressionPassed": true,
+    "speechQualityPassed": true,
+    "speechQualityFindings": [],
+    "observations": [
+      {
+        "type": "dialogue_observation",
+        "scope": {
+          "sessionEpoch": "1957ec9d-edf8-48c6-97ad-40b3ee6bcba4",
+          "instanceId": "board",
+          "itemId": "c1",
+          "revision": 2
+        },
+        "verdict": "incorrect",
+        "transition": "retry",
+        "confidence": 1,
+        "verdictConfidence": 0.97,
+        "grounded": 1,
+        "ms": 387,
+        "model": "jev-1.13.0",
+        "accepted": true,
+        "reason": "supported",
+        "status": "visible"
+      },
+      {
+        "type": "dialogue_observation",
+        "scope": {
+          "sessionEpoch": "1957ec9d-edf8-48c6-97ad-40b3ee6bcba4",
+          "instanceId": "board",
+          "itemId": "c1",
+          "revision": 4
+        },
+        "verdict": "correct",
+        "transition": "advance",
+        "confidence": 0.97,
+        "verdictConfidence": 1,
+        "grounded": 1,
+        "ms": 401,
+        "model": "jev-1.13.0",
+        "accepted": true,
+        "reason": "supported",
+        "status": "visible"
+      },
+      {
+        "type": "dialogue_observation",
+        "scope": {
+          "sessionEpoch": "1957ec9d-edf8-48c6-97ad-40b3ee6bcba4",
+          "instanceId": "board",
+          "itemId": "c2",
+          "revision": 6
+        },
+        "verdict": "correct",
+        "transition": "advance",
+        "confidence": 0.96,
+        "verdictConfidence": 1,
+        "grounded": 1,
+        "ms": 379,
+        "model": "jev-1.13.0",
+        "accepted": true,
+        "reason": "supported",
+        "status": "visible"
+      }
+    ]
+  },
+  {
+    "file": "counting-board-dialogue-audio-disjoint-2026-09-19.json",
+    "run": 2,
+    "progressionPassed": true,
+    "speechQualityPassed": false,
+    "speechQualityFindings": [
+      "Great job! Let's count this new group of blocks together.     *   *User's message content:* \"1 2 3 4 5\" (Student counted correctly).\n    *   *System's response:* \"That's exactly right, there are 5 blocks!\" (Acknowledged success).\n\nNow, the system output shows:\n    *   `lastResponse` updated with the correct attempt.\n    *   New task `itemId: 'c2'` is active.\n    *   `workspace.objects` now contains 7 blocks (`object-0` to `object-6`).\n\n3.  **Formulate Response Strategy:**\n    *   Acknowledge the transition to the new activity.\n    *   Keep it short and encouraging according to pedagogical guidelines.\n    *   Invite the student to count the new blocks.\n\n4.  **Drafting the text:**\n    \"Great job, let's count a new group of blocks together.\"\n\n5.  **Check Constraints:**\n    *   Short (1-2 sentences).\n    *   No questions.\n    *   English only.\n    *   Wait for student (don't list blocks or give answers).\n\n6.  **Finalize utterance.**Great job, let's count a new group of blocks together."
+    ],
+    "observations": [
+      {
+        "type": "dialogue_observation",
+        "scope": {
+          "sessionEpoch": "22d5e184-63a0-4709-b3c0-cd262bf40dc9",
+          "instanceId": "board",
+          "itemId": "c1",
+          "revision": 2
+        },
+        "verdict": "incorrect",
+        "transition": "retry",
+        "confidence": 1,
+        "verdictConfidence": 1,
+        "grounded": 1,
+        "ms": 426,
+        "model": "jev-1.13.0",
+        "accepted": true,
+        "reason": "supported",
+        "status": "visible"
+      },
+      {
+        "type": "dialogue_observation",
+        "scope": {
+          "sessionEpoch": "22d5e184-63a0-4709-b3c0-cd262bf40dc9",
+          "instanceId": "board",
+          "itemId": "c1",
+          "revision": 4
+        },
+        "verdict": "correct",
+        "transition": "advance",
+        "confidence": 0.93,
+        "verdictConfidence": 1,
+        "grounded": 1,
+        "ms": 471,
+        "model": "jev-1.13.0",
+        "accepted": true,
+        "reason": "supported",
+        "status": "visible"
+      },
+      {
+        "type": "dialogue_observation",
+        "scope": {
+          "sessionEpoch": "22d5e184-63a0-4709-b3c0-cd262bf40dc9",
+          "instanceId": "board",
+          "itemId": "c2",
+          "revision": 6
+        },
+        "verdict": "correct",
+        "transition": "advance",
+        "confidence": 0.93,
+        "verdictConfidence": 1,
+        "grounded": 1,
+        "ms": 393,
+        "model": "jev-1.13.0",
+        "accepted": true,
+        "reason": "supported",
+        "status": "visible"
+      }
+    ]
+  },
+  {
+    "file": "counting-board-dialogue-audio-disjoint-2026-09-19.json",
+    "run": 3,
+    "progressionPassed": true,
+    "speechQualityPassed": true,
+    "speechQualityFindings": [],
+    "observations": [
+      {
+        "type": "dialogue_observation",
+        "scope": {
+          "sessionEpoch": "8b65b9c1-05e7-4a15-8ae6-264a9db394a0",
+          "instanceId": "board",
+          "itemId": "c1",
+          "revision": 2
+        },
+        "verdict": "incorrect",
+        "transition": "retry",
+        "confidence": 1,
+        "verdictConfidence": 0.95,
+        "grounded": 1,
+        "ms": 447,
+        "model": "jev-1.13.0",
+        "accepted": true,
+        "reason": "supported",
+        "status": "visible"
+      },
+      {
+        "type": "dialogue_observation",
+        "scope": {
+          "sessionEpoch": "8b65b9c1-05e7-4a15-8ae6-264a9db394a0",
+          "instanceId": "board",
+          "itemId": "c1",
+          "revision": 4
+        },
+        "verdict": "correct",
+        "transition": "advance",
+        "confidence": 0.95,
+        "verdictConfidence": 1,
+        "grounded": 1,
+        "ms": 208,
+        "model": "jev-1.13.0",
+        "accepted": true,
+        "reason": "supported",
+        "status": "visible"
+      },
+      {
+        "type": "dialogue_observation",
+        "scope": {
+          "sessionEpoch": "8b65b9c1-05e7-4a15-8ae6-264a9db394a0",
+          "instanceId": "board",
+          "itemId": "c2",
+          "revision": 6
+        },
+        "verdict": "correct",
+        "transition": "advance",
+        "confidence": 0.97,
+        "verdictConfidence": 1,
+        "grounded": 1,
+        "ms": 186,
+        "model": "jev-1.13.0",
+        "accepted": true,
+        "reason": "supported",
+        "status": "visible"
+      }
+    ]
+  },
+  {
+    "file": "counting-board-dialogue-selection-2026-09-19.json",
+    "run": 1,
+    "progressionPassed": true,
+    "speechQualityPassed": true,
+    "speechQualityFindings": [],
+    "observations": [
+      {
+        "type": "dialogue_observation",
+        "scope": {
+          "sessionEpoch": "88de09c6-7856-4784-a641-7210576f2a5c",
+          "instanceId": "board",
+          "itemId": "c1",
+          "revision": 6
+        },
+        "verdict": "incorrect",
+        "transition": "retry",
+        "confidence": 0.98,
+        "verdictConfidence": 1,
+        "grounded": 1,
+        "ms": 200,
+        "model": "jev-1.13.0",
+        "accepted": true,
+        "reason": "supported",
+        "status": "visible"
+      },
+      {
+        "type": "dialogue_observation",
+        "scope": {
+          "sessionEpoch": "88de09c6-7856-4784-a641-7210576f2a5c",
+          "instanceId": "board",
+          "itemId": "c1",
+          "revision": 11
+        },
+        "verdict": "correct",
+        "transition": "advance",
+        "confidence": 0.97,
+        "verdictConfidence": 1,
+        "grounded": 1,
+        "ms": 187,
+        "model": "jev-1.13.0",
+        "accepted": true,
+        "reason": "supported",
+        "status": "visible"
+      },
+      {
+        "type": "dialogue_observation",
+        "scope": {
+          "sessionEpoch": "88de09c6-7856-4784-a641-7210576f2a5c",
+          "instanceId": "board",
+          "itemId": "c2",
+          "revision": 18
+        },
+        "verdict": "correct",
+        "transition": "advance",
+        "confidence": 0.97,
+        "verdictConfidence": 1,
+        "grounded": 1,
+        "ms": 376,
+        "model": "jev-1.13.0",
+        "accepted": true,
+        "reason": "supported",
+        "status": "visible"
+      }
+    ]
+  }
+]

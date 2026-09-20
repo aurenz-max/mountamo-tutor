@@ -17,6 +17,7 @@ import type { VoiceTurnEvent } from '@/components/lumina/hooks/voiceTurnMachine'
 import { PipSurfaceStore } from '@/components/lumina/pip/PipSurfaceStore';
 import { PipSurfaceContext } from '@/components/lumina/pip/PipSurfaceContext';
 import { LiveRuntimeContext } from '@/components/lumina/components/live-activity/runtime/LiveRuntimeContext';
+import { runtimePacket } from '@/components/lumina/components/live-activity/runtime/runtimeTransport';
 import type { LiveLessonRuntime } from '@/components/lumina/components/live-activity/runtime/LiveLessonRuntime';
 import {
   resolveLessonAudioInput,
@@ -31,6 +32,8 @@ interface Message {
   isAudio?: boolean;
   /** Presentation grouping only; each transcript delta remains a separate event. */
   streamId?: number;
+  /** Provider completion, distinct from microphone VAD silence. */
+  transcriptFinished?: boolean;
 }
 
 // Primitive context for connection
@@ -114,6 +117,7 @@ export type SessionMode = 'idle' | 'standalone' | 'lesson';
 
 // Info needed to start a lesson-mode session
 export interface LessonConnectionInfo {
+  runtimeLesson?: { sessionEpoch: string; initialState: Record<string, unknown> };
   runtimeSandbox?: { sessionEpoch: string; initialState: Record<string, unknown> };
   /** Reference demo can start with text; established lesson callers still open the mic. */
   microphone?: boolean;
@@ -271,6 +275,7 @@ export const LuminaAIProvider: React.FC<{
   runtimeEnabledRef.current = !!liveLessonRuntime;
   const autoStartMicrophoneRef = useRef(true);
   const transcriptStreamRef = useRef({ id: 0, role: null as Message['role'] | null });
+  const inputTranscriptStreamRef = useRef<number | null>(null);
   const [pipSurfaces] = useState(() => new PipSurfaceStore());
   const socketRef = useRef<WebSocket | null>(null);
   const audioServiceRef = useRef<AudioCaptureService | null>(null);
@@ -301,14 +306,12 @@ export const LuminaAIProvider: React.FC<{
   >(null);
 
   // Use the proven queued audio playback hook
-  const { processAndPlayRawAudio, stopAudioPlayback, resetForNextTurn, isAudioPlaying, hasPendingAudio } = useAudioPlayback({ sampleRate: 24000 });
+  const { processAndPlayRawAudio, stopAudioPlayback, resetForNextTurn, isAudioPlaying, hasPendingAudio } = useAudioPlayback({
+    sampleRate: 24000,
+    onIdle: () => { if (runtimeEnabledRef.current) activityEventRef.current?.({ type: 'runtime_audio_idle' }); },
+  });
   const pendingAudioRef = useRef(hasPendingAudio);
   pendingAudioRef.current = hasPendingAudio;
-  useEffect(() => {
-    if (runtimeEnabledRef.current && !isAudioPlaying && !pendingAudioRef.current()) {
-      activityEventRef.current?.({ type: 'runtime_audio_idle' });
-    }
-  }, [isAudioPlaying]);
 
   // Call hooks at top level (Rules of Hooks) and store in refs for use in callbacks
   const exhibitContext = useExhibitContext();
@@ -376,6 +379,9 @@ export const LuminaAIProvider: React.FC<{
   const [activePrimitiveData, setActivePrimitiveData] = useState<Record<string, any> | null>(null);
 
   const sendActivitySignal = useCallback((kind: 'activity_start' | 'activity_end') => {
+    // VAD is an audio boundary, not a new semantic turn. Background noise may
+    // open it. Recognized input and provider-confirmed interruption invalidate
+    // dialogue decisions; a microphone-start edge alone must not discard one.
     const socket = socketRef.current;
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({ type: kind }));
@@ -506,6 +512,7 @@ export const LuminaAIProvider: React.FC<{
     onOpen: (socket: WebSocket) => void
   ) => {
     socket.onopen = () => {
+      if (socketRef.current === socket) inputTranscriptStreamRef.current = null;
       console.log('Lumina AI WebSocket connected');
       sessionStartTimeRef.current = Date.now();
       onOpen(socket);
@@ -517,9 +524,9 @@ export const LuminaAIProvider: React.FC<{
         const message = JSON.parse(event.data);
         const messageType = message.type;
         if (runtimeEnabledRef.current && ['ai_audio', 'ai_transcription', 'ai_response'].includes(messageType)) {
-          activityEventRef.current?.({ type: 'runtime_turn_output' });
+          activityEventRef.current?.({ type: 'runtime_turn_output', text: messageType === 'ai_audio' ? '' : message.content });
         }
-        if (runtimeEnabledRef.current && ['runtime_command', 'runtime_cancelled', 'session_resuming', 'session_resumed', 'session_ended'].includes(messageType)) {
+        if (runtimeEnabledRef.current && ['runtime_command', 'runtime_compose_move', 'runtime_cancelled', 'session_resuming', 'session_resumed', 'session_ended'].includes(messageType)) {
           activityEventRef.current?.(message);
         }
 
@@ -554,9 +561,11 @@ export const LuminaAIProvider: React.FC<{
             },
           ]);
         } else if (messageType === 'user_transcription') {
-          if (transcriptStreamRef.current.role !== 'user') transcriptStreamRef.current.id++;
+          if (runtimeEnabledRef.current) activityEventRef.current?.({ type: 'runtime_learner_text', text: message.content, finished: message.finished === true });
+          if (inputTranscriptStreamRef.current === null) inputTranscriptStreamRef.current = ++transcriptStreamRef.current.id;
           transcriptStreamRef.current.role = 'user';
-          const streamId = transcriptStreamRef.current.id;
+          const streamId = inputTranscriptStreamRef.current;
+          if (message.finished === true) inputTranscriptStreamRef.current = null;
           setConversation(prev => [
             ...prev,
             {
@@ -565,6 +574,7 @@ export const LuminaAIProvider: React.FC<{
               timestamp: Date.now(),
               isAudio: true,
               streamId,
+              transcriptFinished: message.finished === true,
             },
           ]);
         } else if (messageType === 'ai_turn_end') {
@@ -579,7 +589,7 @@ export const LuminaAIProvider: React.FC<{
           // abandoned — flush it so isAudioPlaying falls with the model.
           stopAudioPlayback();
           setIsAIResponding(false);
-          if (runtimeEnabledRef.current) activityEventRef.current?.({ type: 'runtime_turn_end', audioPending: false });
+          if (runtimeEnabledRef.current) activityEventRef.current?.({ type: 'runtime_interrupted' });
         } else if (messageType === 'primitive_switched') {
           // Rapid navigation can leave older acknowledgements in flight.
           // Never reactivate that old activity with the new activity's data.
@@ -596,6 +606,7 @@ export const LuminaAIProvider: React.FC<{
           // transparent and don't need the client to do anything).
           if (message.handle) latestHandleRef.current = message.handle;
         } else if (messageType === 'session_resuming') {
+          inputTranscriptStreamRef.current = null;
           // Server is transparently reconnecting to Gemini on the SAME socket
           // (GoAway / drop). Not an end — drop any in-flight audio and keep going.
           console.log('Lumina AI resuming:', message.message);
@@ -612,6 +623,7 @@ export const LuminaAIProvider: React.FC<{
           setSessionEndedReason(null);
           setSessionResumeCount((count) => count + 1);
         } else if (messageType === 'session_ended') {
+          inputTranscriptStreamRef.current = null;
           // Server told us the Gemini session ended (usually the Live duration
           // limit). The socket close follows; flag it now so the UI flips to the
           // reconnect state immediately and any in-flight audio stops.
@@ -634,6 +646,7 @@ export const LuminaAIProvider: React.FC<{
       // Ignore a stale socket we've already swapped out (reconnect / re-auth) —
       // its late close must not tear down the freshly opened session.
       if (socketRef.current && socketRef.current !== socket) return;
+      inputTranscriptStreamRef.current = null;
       activityEventRef.current?.({ type: 'activity_session_closed', reason: event.reason,
         intentional: (socket as unknown as { __intentionalClose?: boolean }).__intentionalClose === true });
       socketRef.current = null;
@@ -776,7 +789,7 @@ export const LuminaAIProvider: React.FC<{
               primitive_type: primitiveContext.primitive_type,
               instance_id: primitiveContext.instance_id,
               primitive_data: primitiveContext.primitive_data,
-              tutoring: primitiveContext.tutoring ?? componentDef?.tutoring ?? null,
+              tutoring: primitiveContext.tutoring !== undefined ? primitiveContext.tutoring : componentDef?.tutoring ?? null,
               audio_input: primitiveContext.audio_input ?? resolvePrimitiveAudioInput(componentDef, primitiveContext.primitive_data) ?? null,
               // DI-GREET-1: suppresses the backend's improvised greeting turn so
               // the pack's own scripted cue is the first thing the child hears.
@@ -813,7 +826,7 @@ export const LuminaAIProvider: React.FC<{
       console.error('Error connecting to Lumina AI:', error);
       setIsConnected(false);
     }
-  }, [buildLessonContext, setupSocket, closeExistingSocket, ensureAudioService, getFirebaseToken]);
+  }, [buildLessonContext, setupSocket, closeExistingSocket, ensureAudioService, getFirebaseToken, liveLessonRuntime]);
 
   // Lesson connect — one WebSocket for the entire exhibit
   const connectLesson = useCallback(async (info: LessonConnectionInfo) => {
@@ -883,6 +896,7 @@ export const LuminaAIProvider: React.FC<{
             session_mode: 'lesson',
             activity_sandbox: info.activitySandbox,
             runtime_sandbox: info.runtimeSandbox,
+            runtime_lesson: info.runtimeLesson && liveLessonRuntime ? { sessionEpoch: liveLessonRuntime.sessionEpoch, initialState: runtimePacket(liveLessonRuntime.getSnapshot()) } : undefined,
             token,
             client_run_id: getClientRunId(),
             resumption_handle: resumeHandle,
@@ -890,7 +904,7 @@ export const LuminaAIProvider: React.FC<{
               primitive_type: info.firstPrimitive.primitive_type,
               instance_id: info.firstPrimitive.instance_id,
               primitive_data: info.firstPrimitive.primitive_data,
-              tutoring: info.firstPrimitive.tutoring ?? componentDef?.tutoring ?? null,
+              tutoring: info.firstPrimitive.tutoring !== undefined ? info.firstPrimitive.tutoring : componentDef?.tutoring ?? null,
               audio_input: lessonAudioInput,
               owns_opening: info.firstPrimitive.owns_opening
                 ?? resolvePrimitiveAudioInput(componentDef, info.firstPrimitive.primitive_data)?.manual_activity === true,
@@ -926,7 +940,7 @@ export const LuminaAIProvider: React.FC<{
       console.error('Error connecting to Lumina AI (lesson):', error);
       setIsConnected(false);
     }
-  }, [buildLessonContext, setupSocket, closeExistingSocket, ensureAudioService, getFirebaseToken]);
+  }, [buildLessonContext, setupSocket, closeExistingSocket, ensureAudioService, getFirebaseToken, liveLessonRuntime]);
 
   // Re-establish the most recent session after an unexpected end. Re-runs the
   // exact connect path that was used originally (lesson re-greets; standalone
@@ -969,6 +983,8 @@ export const LuminaAIProvider: React.FC<{
     console.log(`[LuminaAI] switchPrimitive() to ${primitiveContext.primitive_type} (${primitiveContext.instance_id})`);
 
     currentPrimitiveRef.current = primitiveContext;
+    if (lastConnectionRef.current?.mode === 'lesson') lastConnectionRef.current.info = { ...lastConnectionRef.current.info, firstPrimitive: primitiveContext };
+    if (runtimeEnabledRef.current) activityEventRef.current?.({ type: 'runtime_interrupted' });
 
     const componentDef = getComponentById(primitiveContext.primitive_type);
 
@@ -979,7 +995,7 @@ export const LuminaAIProvider: React.FC<{
         primitive_type: primitiveContext.primitive_type,
         instance_id: primitiveContext.instance_id,
         primitive_data: primitiveContext.primitive_data,
-        tutoring: componentDef?.tutoring ?? null,
+        tutoring: primitiveContext.tutoring !== undefined ? primitiveContext.tutoring : componentDef?.tutoring ?? null,
         // Informational carry — Gemini's audio config is fixed at session
         // creation (connectLesson already scanned the manifest and applied it),
         // but the backend sees what the incoming primitive would have asked for.
@@ -1027,6 +1043,7 @@ export const LuminaAIProvider: React.FC<{
     activePrimitiveIdRef.current = null;
     setActivePrimitiveId(null);
     setConversation([]);
+    inputTranscriptStreamRef.current = null;
     lastContextSigRef.current = '';
     // User-initiated end: drop the resumption handles so the next connect starts
     // a fresh conversation rather than resuming this one.
@@ -1138,6 +1155,7 @@ export const LuminaAIProvider: React.FC<{
     lastCueRef.current = { text, at: now };
 
     if (!options?.silent) {
+      if (runtimeEnabledRef.current) activityEventRef.current?.({ type: 'runtime_learner_text', text, finished: true });
       setAIMetrics(prev => ({
         ...prev,
         conversationTurns: prev.conversationTurns + 1,

@@ -1,5 +1,10 @@
 # Live lesson runtime infrastructure
 
+**2026-09-19:** Counting Board now uses `TeachingSession` and `useTeachingWorkspace`
+for tutor-owned teaching on its actual surface. See
+[the ownership boundary and invariants](../../../docs/TEACHING_WORKSPACE.md).
+Its earlier scripted adapter is retired in the live host; standalone DI remains.
+
 Infrastructure and first TenFrame adoption, 2026-09-17. Learner demo:
 `/lumina/live-activity` (Make ten, Grade 1). The shared judged runner now opts into
 runtime ownership, suspension, replay and closing-speech settlement. TenFrame
@@ -58,6 +63,11 @@ also the settlement signal used by the opted-in judged runner.
 
 ## Adapter obligations
 
+Counting board is the second judged-runner adoption (2026-09-17): two owners now exercise
+the shared runner lifecycle. Its adapter scopes the prepared example per challenge kind and
+cancels both of the board's timers on suspension.
+[Evidence](../../../../../../qa/tutor-reports/counting-board-runtime-live-2026-09-17.md).
+
 Number Line now resolves the former queued-setter gap: imperative commands use
 `flushSync`, and the adapter reads refs updated by a layout effect. Its tests assert
 the new task and actual DOM inside dispatch, before the surrounding `act` finishes.
@@ -88,6 +98,45 @@ use adapter gates for non-native controls, and clean up its effects on unmount.
 The real TenFrame tests now exercise pending voice judgment, late verdicts, mid-build
 stillness cancellation, StrictMode replay, stop and closing audio. Subitize does not
 advertise help detours. Other primitives do not inherit these capabilities automatically.
+
+`canYieldForHelp` is NOT a detour switch. While the owner is `runner`, `blockedReason()`
+returns "Runner owns the teaching turn" whenever that predicate is false, and `offers()`
+then returns nothing at all — the re-ask and the reminder disappear with the detour. Use
+it only for "may the tutor act on this item at all"; withhold a detour by returning no
+`supportArtifacts` for that item. Counting board separates the two: the quick-look family
+yields nothing, while `recount_moved`, `compare` and `give_me_n` keep their actions and
+are withheld from the example alone.
+
+`LiveRuntimeSurface` draws three prepared shapes. A `counter-example` is one row with a
+subtract / make-ten / count sentence: it states HOW MANY. A `contrast-pair` is two rows
+of counters stacked so their columns line up, with the unpartnered tail of each row
+ringed: it states a relationship BETWEEN two collections, which one row cannot. A
+`step-sequence` draws the SAME collection two to four times on one column grid, one change
+and one sentence per step (tones: plain, added, empty, marked `+`, crossed `×`): it states a
+PROCESS. Ten-frame prepares one for `make_ten` on a different frame in `useTenFrameRuntime.ts`.
+Every advertised `request_support` choice carries a `purpose` (`SUPPORT_PURPOSE` in
+`contract.ts`: worked example, contrast, step-by-step explanation) so the model picks by
+what the learner is missing, not by title. A fourth kind, `generated-image`, is never prepared:
+the host draws it from the tutor's own description and a vision check verifies it before the
+runtime shows it. Its bytes stay in the runtime (`getSupportImage`), never in the snapshot.
+
+The tutor also composes help the host never prepared, through one tool, `compose_move`
+(`moveContract.ts`). A support is a teaching move: four fields (`obstacle`, `delta`,
+`nextAction`, and the runtime-owned `check`), a delta from a closed list, and the numbers it
+draws. The tutor names the delta; code picks the carrier and builds the whole artifact,
+captions included, so no shape can state a relationship it does not draw. Two refusals do the
+work no prompt wording could: `drawsTask(counts)` rejects numbers belonging to the saved task,
+and non-redundancy rejects a support drawing the representation already on screen unless the
+delta compares, works a process or shrinks the ask. An adapter opts into this open lane by
+declaring `representation`, `alternateRepresentations` and `drawsTask` — no per-primitive
+handler, no misstep inventory — and the runtime publishes what it may compose as
+`moveOptions`. `attend`, `reveal-aid` and `microstep` are each their own piece and stay
+unadvertised until they land (`docs/LIVE_TEACHING_MOVES.md`, M1 / M2 / M4). An adapter
+prepares whichever shape can state its own teaching truthfully, or none. Comparison
+builder prepares a NEARBY contrast pair per item, sharing no number with the item, in
+`comparisonBuilderExample.ts`, and nothing on `order`. A further shape is an additive
+member of `SupportArtifact` in `contract.ts` with its own validator and a renderer
+branch, never a change to the existing ones.
 
 Host policy defaults to no artifact detours and no answer exposure. Artifacts are
 trusted prepared host data; an LLM may choose only an advertised artifact ID. Validate
@@ -156,10 +205,17 @@ npm.cmd run typecheck:lumina
 
 ## Replicate a primitive adoption
 
+A primitive's harness facts are declared in `liveJourneySpec.ts` beside it, and
+`backend/tests/tutor_live/run_live_runtime.py --primitive <id>` is the ONE journey for
+every primitive and both execution families — it picks its phase program from
+`teachingOwner` in the production envelope. Adding a primitive is a row in that spec;
+neither the driver nor the journey is edited.
+
 Invoke `/add-live-tutor-tools` (installed at `.claude/skills/add-live-tutor-tools/`)
 with its [handoff](../../../../../../qa/live-runtime-handoffs/05-primitive-tools.md).
-The shared mounted driver is `scripts/primitive-runtime-driver.mjs`; Number Line
-uses actual SVG placement and Check, while TenFrame retains actual voice reduction.
+The shared mounted driver is `scripts/primitive-runtime-driver.mjs`, which owns a
+fixed learner vocabulary and no primitive names; Number Line's row selects actual SVG
+placement and Check, the judged rows select real voice reduction.
 The tester now has an Activity picker and wraps either family in this support shell.
 The [Number Line report](../../../../../../qa/tutor-reports/number-line-runtime-live-2026-09-17.md)
 distinguishes action execution from narration quality and human acceptance.

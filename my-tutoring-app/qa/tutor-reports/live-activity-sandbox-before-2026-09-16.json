@@ -1,0 +1,395 @@
+[
+  [
+    {
+      "seconds": 2.2,
+      "type": "auth_success",
+      "message": "Lumina AI connected and ready to help!"
+    },
+    {
+      "seconds": 2.2,
+      "type": "session_ready",
+      "message": "Lumina AI is ready to help you learn!"
+    },
+    {
+      "seconds": 2.5,
+      "type": "resumption_handle",
+      "handle": "f0f0155e-b0d5-4c9b-8267-a285b455a280"
+    },
+    {
+      "seconds": 3.73,
+      "type": "activity_request",
+      "callId": "call_245909",
+      "args": {
+        "primitiveId": "number-line",
+        "topic": "Subtraction within 10",
+        "intent": "Practice subtraction within 10 using jumps on a number line.",
+        "mode": "jump"
+      }
+    },
+    {
+      "seconds": 3.75,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 3.75,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 7.42,
+      "type": "generated",
+      "callId": "call_245909",
+      "activity": {
+        "instanceId": "live-b227b773-c1c6-46da-855f-2cd0b1827bcf",
+        "data": {
+          "title": "Hop Along the Number Line!",
+          "description": "Learn how to use a number line to subtract and add numbers up to 10.",
+          "range": {
+            "min": 0,
+            "max": 10
+          },
+          "gradeBand": "K-2",
+          "numberType": "integer",
+          "interactionMode": "jump",
+          "challenges": [
+            {
+              "id": "show_jump-0",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 5. Now, make 5 big hops to the right!",
+              "targetValues": [
+                10
+              ],
+              "hint": "Count 5 hops to the right from your starting spot!",
+              "startValue": 5,
+              "operations": [
+                {
+                  "type": "add",
+                  "startValue": 5,
+                  "changeValue": 5,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-1",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 4, and hop 2 spaces forward to the right!",
+              "targetValues": [
+                6
+              ],
+              "hint": "Count 2 hops to the right from your starting spot!",
+              "startValue": 4,
+              "operations": [
+                {
+                  "type": "add",
+                  "startValue": 4,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-2",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 1. Now, make a big jump 5 steps to the right!",
+              "targetValues": [
+                6
+              ],
+              "hint": "Count 5 hops to the right from 1 to see where you land.",
+              "startValue": 1,
+              "operations": [
+                {
+                  "type": "add",
+                  "startValue": 1,
+                  "changeValue": 5,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-3",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 9. Now, hop back 2 spaces to the left!",
+              "targetValues": [
+                7
+              ],
+              "hint": "Start at 9 and count 2 hops backward to the left.",
+              "startValue": 9,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 9,
+                  "changeValue": 2,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            }
+          ],
+          "highlights": [],
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 5,
+              "changeValue": 5,
+              "showJumpArc": true
+            }
+          ],
+          "supportTier": "easy",
+          "instanceId": "live-b227b773-c1c6-46da-855f-2cd0b1827bcf"
+        }
+      }
+    },
+    {
+      "seconds": 7.42,
+      "type": "simulated_mount_ack",
+      "instanceId": "live-b227b773-c1c6-46da-855f-2cd0b1827bcf"
+    },
+    {
+      "seconds": 8.33,
+      "type": "ai_transcription",
+      "content": "I've got the "
+    },
+    {
+      "seconds": 8.62,
+      "type": "ai_transcription",
+      "content": "number line ready!"
+    },
+    {
+      "seconds": 8.84,
+      "type": "ai_transcription",
+      "content": " For our first step,"
+    },
+    {
+      "seconds": 9.12,
+      "type": "ai_transcription",
+      "content": " put your finger on the number"
+    },
+    {
+      "seconds": 9.36,
+      "type": "ai_transcription",
+      "content": " 5,"
+    },
+    {
+      "seconds": 9.62,
+      "type": "ai_transcription",
+      "content": " and then make 5"
+    },
+    {
+      "seconds": 9.88,
+      "type": "ai_transcription",
+      "content": " big hops to the right."
+    },
+    {
+      "seconds": 15.7,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 15.7,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 17.08,
+      "type": "ai_transcription",
+      "content": "You placed the "
+    },
+    {
+      "seconds": 17.31,
+      "type": "ai_transcription",
+      "content": "number 2."
+    },
+    {
+      "seconds": 17.51,
+      "type": "ai_transcription",
+      "content": " Let's try another"
+    },
+    {
+      "seconds": 17.78,
+      "type": "ai_transcription",
+      "content": " subtraction example"
+    },
+    {
+      "seconds": 18.05,
+      "type": "ai_transcription",
+      "content": " with a new number line."
+    },
+    {
+      "seconds": 18.31,
+      "type": "activity_request",
+      "callId": "call_246115",
+      "args": {
+        "primitiveId": "number-line",
+        "topic": "Subtraction within 10",
+        "intent": "Practice subtraction within 10 using jumps on a number line.",
+        "mode": "jump"
+      }
+    },
+    {
+      "seconds": 20.36,
+      "type": "generated",
+      "callId": "call_246115",
+      "activity": {
+        "instanceId": "live-2ae97fce-67db-419e-afba-7717bac7b36e",
+        "data": {
+          "title": "Hop Along the Number Line",
+          "description": "Learn how to use the number line to move forward and backward.",
+          "range": {
+            "min": 0,
+            "max": 10
+          },
+          "gradeBand": "K-2",
+          "numberType": "integer",
+          "interactionMode": "jump",
+          "challenges": [
+            {
+              "id": "show_jump-0",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 3. Now, make 5 big hops to the right!",
+              "targetValues": [
+                8
+              ],
+              "hint": "Count each hop as you move 5 steps to the right.",
+              "startValue": 3,
+              "operations": [
+                {
+                  "type": "add",
+                  "startValue": 3,
+                  "changeValue": 5,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-1",
+              "type": "show_jump",
+              "instruction": "Let's start our journey at number 0 and hop forward 5 spaces to see where we land!",
+              "targetValues": [
+                5
+              ],
+              "hint": "Count 5 hops to the right from zero, one jump at a time!",
+              "startValue": 0,
+              "operations": [
+                {
+                  "type": "add",
+                  "startValue": 0,
+                  "changeValue": 5,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-2",
+              "type": "show_jump",
+              "instruction": "Put your finger on the number 8, and hop back 1 space to the left!",
+              "targetValues": [
+                7
+              ],
+              "hint": "Count 1 hop backward to the left.",
+              "startValue": 8,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 8,
+                  "changeValue": 1,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            },
+            {
+              "id": "show_jump-3",
+              "type": "show_jump",
+              "instruction": "Little Frog is sitting on the number 5. Help him hop backward 1 space to the left!",
+              "targetValues": [
+                4
+              ],
+              "hint": "Start your finger on 5, then trace 1 hop to the left.",
+              "startValue": 5,
+              "operations": [
+                {
+                  "type": "subtract",
+                  "startValue": 5,
+                  "changeValue": 1,
+                  "showJumpArc": true
+                }
+              ],
+              "highlights": []
+            }
+          ],
+          "highlights": [],
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 3,
+              "changeValue": 5,
+              "showJumpArc": true
+            }
+          ],
+          "supportTier": "easy",
+          "instanceId": "live-2ae97fce-67db-419e-afba-7717bac7b36e"
+        }
+      }
+    },
+    {
+      "seconds": 20.36,
+      "type": "simulated_mount_ack",
+      "instanceId": "live-2ae97fce-67db-419e-afba-7717bac7b36e"
+    },
+    {
+      "seconds": 22.26,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 22.26,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 22.83,
+      "type": "ai_transcription",
+      "content": "Alright, let's look at "
+    },
+    {
+      "seconds": 23.09,
+      "type": "ai_transcription",
+      "content": "this new one."
+    },
+    {
+      "seconds": 23.38,
+      "type": "ai_transcription",
+      "content": " Put your finger"
+    },
+    {
+      "seconds": 23.67,
+      "type": "ai_transcription",
+      "content": " on the number 3,"
+    },
+    {
+      "seconds": 23.94,
+      "type": "ai_transcription",
+      "content": " and then make"
+    },
+    {
+      "seconds": 24.17,
+      "type": "ai_transcription",
+      "content": " 5 big hops to the"
+    },
+    {
+      "seconds": 24.34,
+      "type": "ai_transcription",
+      "content": " right."
+    },
+    {
+      "seconds": 29.58,
+      "type": "ai_turn_end"
+    },
+    {
+      "seconds": 29.58,
+      "type": "completed",
+      "mounts": 2
+    }
+  ]
+]

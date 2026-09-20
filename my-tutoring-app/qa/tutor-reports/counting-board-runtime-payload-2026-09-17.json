@@ -1,0 +1,347 @@
+{
+  "audit": {
+    "componentId": "counting-board",
+    "status": "warn",
+    "componentFiles": [
+      "src/components/lumina/primitives/visual-primitives/math/CountingBoard.tsx",
+      "src/components/lumina/primitives/visual-primitives/math/countingBoardScript.ts"
+    ],
+    "dataBagKeys": null,
+    "dataBagDynamic": true,
+    "contextKeys": [
+      "challengeType",
+      "objectType",
+      "stimulus"
+    ],
+    "templateVars": [
+      "challengeType",
+      "objectType",
+      "stimulus"
+    ],
+    "sendTextTags": [],
+    "findings": [
+      {
+        "check": "data-bag-unparsed",
+        "severity": "WARN",
+        "message": "Could not statically parse the primitiveData bag \u2014 contextKeys/{{var}} checks skipped. Run the &probe=1 tier or verify in the Lumina Tutor Tester."
+      },
+      {
+        "check": "no-sendtext-moments",
+        "severity": "WARN",
+        "message": "Component never calls sendText \u2014 the tutor will go silent after the initial greeting (no pedagogical moments are wired)."
+      },
+      {
+        "check": "directive-tag-never-emitted",
+        "severity": "WARN",
+        "message": "aiDirectives reference [BRACKETS] but no source file ever sends that tag \u2014 the directive is dead prompt text (or the trigger was renamed)."
+      }
+    ]
+  },
+  "status": "warn",
+  "tutoring": {
+    "taskDescription": "LIVE-JUDGED counting practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD (or taps a hand on pre-numeric items), you judge what you HEARD, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. Objects on the board: {{objectType}}. What is on the board right now: {{stimulus}}. Every cue you receive carries the answer for that turn \u2014 nothing outside the cue does, and you never state the count on your own.",
+    "contextKeys": [
+      "challengeType",
+      "objectType",
+      "stimulus"
+    ],
+    "scaffoldingLevels": {
+      "level1": "Speak the current item's scripted correction line, exactly as the cue gives it. It already re-models the count and re-asks \u2014 that IS the first scaffold, and it opens with \"My turn:\" so the activity can hear it.",
+      "level2": "Speak the SAME scripted correction line again, a little slower. Do not swap it for a reminder of the method or any other wording: a reply that opens with neither \"Yes\" nor \"My turn:\" reaches the activity as no verdict at all and the lesson stalls.",
+      "level3": "Still the same scripted correction line. If the child is stuck after it, say nothing further \u2014 the activity moves the lesson on by itself and carries the next ask to you."
+    },
+    "commonStruggles": [
+      {
+        "pattern": "Double-counts or skips objects while tapping",
+        "response": "The scripted correction re-models the count AFTER the attempt is judged. Never interrupt a child mid-count."
+      },
+      {
+        "pattern": "Long silence",
+        "response": "Silence is the child counting \u2014 wait. If they truly seem stuck, re-speak the current ask once; never count for them."
+      }
+    ],
+    "aiDirectives": [
+      {
+        "title": "THE OPENING LINE ALREADY SAYS HOW TO PLAY",
+        "instruction": "Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. Never invent a greeting, add instructions, or ask a question of your own before or after it."
+      },
+      {
+        "title": "SENTINEL DISCIPLINE",
+        "instruction": "Every affirmation begins with \"Yes\" and EVERY correction begins with \"My turn:\" exactly as the cue scripts. Never begin any other sentence with either opener."
+      },
+      {
+        "title": "THE CHILD IS COUNTING \u2014 WAIT",
+        "instruction": "Think time is unbounded. Never count along, never prompt mid-count, never fill silence. Counting aloud that ends on the correct number IS a correct answer \u2014 the last number said tells the total."
+      },
+      {
+        "title": "PRE-NUMERIC ITEMS ARE NUMBER-FREE",
+        "instruction": "On subitize_perceptual items say no number word and no digit at any point. The child answers by tapping a hand; you wait in silence and speak only the scripted verdict lines."
+      },
+      {
+        "title": "NEVER READ BRACKET TAGS",
+        "instruction": "Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken."
+      }
+    ]
+  },
+  "generatedData": {
+    "title": "Apple Take-Away Fun!",
+    "description": "Practice taking objects away and saying how many are left on the board.",
+    "objects": {
+      "type": "apples"
+    },
+    "challenges": [
+      {
+        "id": "c1",
+        "type": "take_away",
+        "instruction": "Take away three apples. How many are left?",
+        "targetAnswer": 2,
+        "count": 5,
+        "arrangement": "scattered",
+        "hint": "Count the apples that are still resting on the board.",
+        "narration": "Look at the apples scattered on the board. Some will go away, and you can count how many are left!",
+        "changeBy": 3
+      },
+      {
+        "id": "c2",
+        "type": "take_away",
+        "instruction": "Take away two apples. How many are left?",
+        "targetAnswer": 4,
+        "count": 6,
+        "arrangement": "line",
+        "hint": "Touch each remaining apple in the line one by one.",
+        "narration": "Here is a nice straight line of apples. After some leave, count the ones staying behind.",
+        "changeBy": 2
+      },
+      {
+        "id": "c3",
+        "type": "take_away",
+        "instruction": "Take away two apples. How many are left?",
+        "targetAnswer": 5,
+        "count": 7,
+        "arrangement": "groups",
+        "hint": "Check each little group to see how many apples are left.",
+        "narration": "Let us count the apples left in the groups after some are taken away.",
+        "changeBy": 2,
+        "groupSize": 5
+      },
+      {
+        "id": "c4",
+        "type": "take_away",
+        "instruction": "Take away one apples. How many are left?",
+        "targetAnswer": 7,
+        "count": 8,
+        "arrangement": "circle",
+        "hint": "Go around the circle and count the apples that did not go away.",
+        "narration": "The apples make a circle! Watch some vanish, then find out how many are left.",
+        "changeBy": 1
+      },
+      {
+        "id": "c5",
+        "type": "take_away",
+        "instruction": "Take away three apples. How many are left?",
+        "targetAnswer": 7,
+        "count": 10,
+        "arrangement": "scattered",
+        "hint": "Take your time and count every single apple that is left on the board.",
+        "narration": "You are doing amazing! Count the final group of apples left after the take-away.",
+        "changeBy": 3
+      }
+    ],
+    "showOptions": {
+      "showRunningCount": true,
+      "showGroupCircles": false,
+      "highlightOnTap": true,
+      "showLastNumber": true
+    },
+    "gradeBand": "K"
+  },
+  "mergedBag": {
+    "challengeType": "take_away",
+    "objectType": "apples",
+    "stimulus": "a group of apples, three of them to take away"
+  },
+  "diPlan": {
+    "componentId": "counting-board",
+    "primitiveType": "counting-board",
+    "activityLine": "live direct instruction counting practice",
+    "gradeLevel": "Kindergarten",
+    "audioInput": {
+      "manual_activity": true
+    },
+    "sentinels": {
+      "affirm": [
+        [
+          "yes"
+        ]
+      ],
+      "correct": [
+        [
+          "my",
+          "turn"
+        ]
+      ]
+    },
+    "maxCorrections": 2,
+    "items": [
+      {
+        "id": "c1",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "take-away",
+        "cue": "[COUNT_ITEM] Say exactly: \"Hi! Time to count some apples! Touch the apples to take away. Then say how many are left. Take away three apples. Your turn. How many apples are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"two\". Counting aloud that ENDS on \"two\" counts as that answer \u2014 the last number said tells the total. A final number other than \"two\" is wrong. The number the board showed BEFORE the change is NOT the answer, however confident it sounds. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, two apples.\" If it is wrong, say exactly: \"My turn: count what is left. One, two. Two apples left. Your turn. How many apples are left?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "Hi! Time to count some apples! Touch the apples to take away. Then say how many are left. Take away three apples. Your turn. How many apples are left?",
+        "affirmLine": "Yes, two apples.",
+        "correctionLine": "My turn: count what is left. One, two. Two apples left. Your turn. How many apples are left?",
+        "correctionLines": [
+          "My turn: count what is left. One, two. Two apples left. Your turn. How many apples are left?"
+        ],
+        "context": {
+          "challengeType": "take_away",
+          "objectType": "apples",
+          "stimulus": "a group of apples, three of them to take away"
+        },
+        "answers": {
+          "correct": "two",
+          "plainWrong": "one",
+          "leakTokens": [
+            "two"
+          ],
+          "signatureWrong": {
+            "text": "five",
+            "why": "the count from BEFORE the change \u2014 fluent, confident, and the contract names it"
+          }
+        },
+        "reanchorCue": "[COUNT_ITEM] Say exactly: \"Take away three apples. Your turn. How many apples are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"two\". Counting aloud that ENDS on \"two\" counts as that answer \u2014 the last number said tells the total. A final number other than \"two\" is wrong. The number the board showed BEFORE the change is NOT the answer, however confident it sounds. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, two apples.\" If it is wrong, say exactly: \"My turn: count what is left. One, two. Two apples left. Your turn. How many apples are left?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[COUNT_MOVE] Say exactly: \"Good try! Here comes the next one. Take away two apples. Your turn. How many apples are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"four\". Counting aloud that ENDS on \"four\" counts as that answer \u2014 the last number said tells the total. A final number other than \"four\" is wrong. The number the board showed BEFORE the change is NOT the answer, however confident it sounds. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, four apples.\" If it is wrong, say exactly: \"My turn: count what is left. One, two, three, four. Four apples left. Your turn. How many apples are left?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c2",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "take-away",
+        "cue": "[COUNT_ITEM] Say exactly: \"Take away two apples. Your turn. How many apples are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"four\". Counting aloud that ENDS on \"four\" counts as that answer \u2014 the last number said tells the total. A final number other than \"four\" is wrong. The number the board showed BEFORE the change is NOT the answer, however confident it sounds. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, four apples.\" If it is wrong, say exactly: \"My turn: count what is left. One, two, three, four. Four apples left. Your turn. How many apples are left?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "Take away two apples. Your turn. How many apples are left?",
+        "affirmLine": "Yes, four apples.",
+        "correctionLine": "My turn: count what is left. One, two, three, four. Four apples left. Your turn. How many apples are left?",
+        "correctionLines": [
+          "My turn: count what is left. One, two, three, four. Four apples left. Your turn. How many apples are left?"
+        ],
+        "context": {
+          "challengeType": "take_away",
+          "objectType": "apples",
+          "stimulus": "a group of apples, two of them to take away"
+        },
+        "answers": {
+          "correct": "four",
+          "plainWrong": "three",
+          "leakTokens": [
+            "four"
+          ],
+          "signatureWrong": {
+            "text": "six",
+            "why": "the count from BEFORE the change \u2014 fluent, confident, and the contract names it"
+          }
+        },
+        "reanchorCue": "[COUNT_ITEM] Say exactly: \"Take away two apples. Your turn. How many apples are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"four\". Counting aloud that ENDS on \"four\" counts as that answer \u2014 the last number said tells the total. A final number other than \"four\" is wrong. The number the board showed BEFORE the change is NOT the answer, however confident it sounds. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, four apples.\" If it is wrong, say exactly: \"My turn: count what is left. One, two, three, four. Four apples left. Your turn. How many apples are left?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[COUNT_MOVE] Say exactly: \"Good try! Here comes the next one. Take away two apples. Your turn. How many apples are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"five\". Counting aloud that ENDS on \"five\" counts as that answer \u2014 the last number said tells the total. A final number other than \"five\" is wrong. The number the board showed BEFORE the change is NOT the answer, however confident it sounds. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, five apples.\" If it is wrong, say exactly: \"My turn: count what is left. One, two, three, four, five. Five apples left. Your turn. How many apples are left?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c3",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "take-away",
+        "cue": "[COUNT_ITEM] Say exactly: \"Take away two apples. Your turn. How many apples are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"five\". Counting aloud that ENDS on \"five\" counts as that answer \u2014 the last number said tells the total. A final number other than \"five\" is wrong. The number the board showed BEFORE the change is NOT the answer, however confident it sounds. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, five apples.\" If it is wrong, say exactly: \"My turn: count what is left. One, two, three, four, five. Five apples left. Your turn. How many apples are left?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "Take away two apples. Your turn. How many apples are left?",
+        "affirmLine": "Yes, five apples.",
+        "correctionLine": "My turn: count what is left. One, two, three, four, five. Five apples left. Your turn. How many apples are left?",
+        "correctionLines": [
+          "My turn: count what is left. One, two, three, four, five. Five apples left. Your turn. How many apples are left?"
+        ],
+        "context": {
+          "challengeType": "take_away",
+          "objectType": "apples",
+          "stimulus": "a group of apples, two of them to take away"
+        },
+        "answers": {
+          "correct": "five",
+          "plainWrong": "four",
+          "leakTokens": [
+            "five"
+          ],
+          "signatureWrong": {
+            "text": "seven",
+            "why": "the count from BEFORE the change \u2014 fluent, confident, and the contract names it"
+          }
+        },
+        "reanchorCue": "[COUNT_ITEM] Say exactly: \"Take away two apples. Your turn. How many apples are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"five\". Counting aloud that ENDS on \"five\" counts as that answer \u2014 the last number said tells the total. A final number other than \"five\" is wrong. The number the board showed BEFORE the change is NOT the answer, however confident it sounds. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, five apples.\" If it is wrong, say exactly: \"My turn: count what is left. One, two, three, four, five. Five apples left. Your turn. How many apples are left?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[COUNT_MOVE] Say exactly: \"Good try! Here comes the next one. Take away one apple. Your turn. How many apples are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"seven\". Counting aloud that ENDS on \"seven\" counts as that answer \u2014 the last number said tells the total. A final number other than \"seven\" is wrong. The number the board showed BEFORE the change is NOT the answer, however confident it sounds. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, seven apples.\" If it is wrong, say exactly: \"My turn: count what is left. One, two, three, four, five, six, seven. Seven apples left. Your turn. How many apples are left?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c4",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "take-away",
+        "cue": "[COUNT_ITEM] Say exactly: \"Take away one apple. Your turn. How many apples are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"seven\". Counting aloud that ENDS on \"seven\" counts as that answer \u2014 the last number said tells the total. A final number other than \"seven\" is wrong. The number the board showed BEFORE the change is NOT the answer, however confident it sounds. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, seven apples.\" If it is wrong, say exactly: \"My turn: count what is left. One, two, three, four, five, six, seven. Seven apples left. Your turn. How many apples are left?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "Take away one apple. Your turn. How many apples are left?",
+        "affirmLine": "Yes, seven apples.",
+        "correctionLine": "My turn: count what is left. One, two, three, four, five, six, seven. Seven apples left. Your turn. How many apples are left?",
+        "correctionLines": [
+          "My turn: count what is left. One, two, three, four, five, six, seven. Seven apples left. Your turn. How many apples are left?"
+        ],
+        "context": {
+          "challengeType": "take_away",
+          "objectType": "apples",
+          "stimulus": "a group of apples, one of them to take away"
+        },
+        "answers": {
+          "correct": "seven",
+          "plainWrong": "six",
+          "leakTokens": [
+            "seven"
+          ],
+          "signatureWrong": {
+            "text": "eight",
+            "why": "the count from BEFORE the change \u2014 fluent, confident, and the contract names it"
+          }
+        },
+        "reanchorCue": "[COUNT_ITEM] Say exactly: \"Take away one apple. Your turn. How many apples are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"seven\". Counting aloud that ENDS on \"seven\" counts as that answer \u2014 the last number said tells the total. A final number other than \"seven\" is wrong. The number the board showed BEFORE the change is NOT the answer, however confident it sounds. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, seven apples.\" If it is wrong, say exactly: \"My turn: count what is left. One, two, three, four, five, six, seven. Seven apples left. Your turn. How many apples are left?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[COUNT_MOVE] Say exactly: \"Good try! Here comes the next one. Take away three apples. Your turn. How many apples are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"seven\". Counting aloud that ENDS on \"seven\" counts as that answer \u2014 the last number said tells the total. A final number other than \"seven\" is wrong. The number the board showed BEFORE the change is NOT the answer, however confident it sounds. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, seven apples.\" If it is wrong, say exactly: \"My turn: count what is left. One, two, three, four, five, six, seven. Seven apples left. Your turn. How many apples are left?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "id": "c5",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "take-away",
+        "cue": "[COUNT_ITEM] Say exactly: \"Take away three apples. Your turn. How many apples are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"seven\". Counting aloud that ENDS on \"seven\" counts as that answer \u2014 the last number said tells the total. A final number other than \"seven\" is wrong. The number the board showed BEFORE the change is NOT the answer, however confident it sounds. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, seven apples.\" If it is wrong, say exactly: \"My turn: count what is left. One, two, three, four, five, six, seven. Seven apples left. Your turn. How many apples are left?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "askLine": "Take away three apples. Your turn. How many apples are left?",
+        "affirmLine": "Yes, seven apples.",
+        "correctionLine": "My turn: count what is left. One, two, three, four, five, six, seven. Seven apples left. Your turn. How many apples are left?",
+        "correctionLines": [
+          "My turn: count what is left. One, two, three, four, five, six, seven. Seven apples left. Your turn. How many apples are left?"
+        ],
+        "context": {
+          "challengeType": "take_away",
+          "objectType": "apples",
+          "stimulus": "a group of apples, three of them to take away"
+        },
+        "answers": {
+          "correct": "seven",
+          "plainWrong": "six",
+          "leakTokens": [
+            "seven"
+          ],
+          "signatureWrong": {
+            "text": "ten",
+            "why": "the count from BEFORE the change \u2014 fluent, confident, and the contract names it"
+          }
+        },
+        "reanchorCue": "[COUNT_ITEM] Say exactly: \"Take away three apples. Your turn. How many apples are left?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"seven\". Counting aloud that ENDS on \"seven\" counts as that answer \u2014 the last number said tells the total. A final number other than \"seven\" is wrong. The number the board showed BEFORE the change is NOT the answer, however confident it sounds. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, seven apples.\" If it is wrong, say exactly: \"My turn: count what is left. One, two, three, four, five, six, seven. Seven apples left. Your turn. How many apples are left?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking.",
+        "moveOnCue": "[COUNT_MOVE] Say exactly: \"Good try! Counting takes practice \u2014 we will see that one again another day.\" Then stop."
+      }
+    ],
+    "completeCue": "[COUNT_COMPLETE] Say exactly: \"What great counting today! Your eyes and your ears did hard work. See you next time!\" Then stop \u2014 the activity is over.",
+    "droppedChallenges": 0,
+    "packGateIssues": [],
+    "isBench": false
+  }
+}

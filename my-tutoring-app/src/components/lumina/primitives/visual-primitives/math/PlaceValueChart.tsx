@@ -112,6 +112,9 @@ export interface PlaceValueChartChallenge {
 }
 
 import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
+import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
+import { usePlaceValueRuntime } from './usePlaceValueRuntime';
 export interface PlaceValueChartData {
   title: string;
   description: string;
@@ -139,6 +142,11 @@ export interface PlaceValueChartData {
 interface PlaceValueChartProps {
   data: PlaceValueChartData;
   className?: string;
+  /** The live host opts in only after its correlated mount handoff. */
+  autoStart?: boolean;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -170,7 +178,8 @@ const multiplierLabel = (place: number): string => `×${Math.pow(10, place).toLo
 // Component
 // ============================================================================
 
-const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) => {
+const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode }) => {
+  const liveRuntime = useLiveRuntime();
   const {
     title,
     description,
@@ -295,6 +304,10 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
   }, [items, challengeType, evaluation, data]);
 
   const runner = useJudgedScriptRunner<PlaceValueItem>({
+    // Load-bearing for the live host: without it the runner's `resume()` early-returns,
+    // its speech holds never settle, and the completion handoff has nothing to read.
+    runtime: liveRuntime,
+    ...(runtimePlanItemId ? { completionCue: '[PV_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
     recordOpportunityEvents: !!data.misconceptionOpportunity,
     pack,
     instanceId: resolvedInstanceId,
@@ -533,6 +546,17 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
   // ============================================================================
   // Render
   // ============================================================================
+
+  const runtimeHint = usePlaceValueRuntime({ runner, instanceId: resolvedInstanceId, objectiveId,
+    // The SESSION's mode, from the first item — never `runner.currentItem`.
+    // A mount's identity must not change while the runner owns it: an item
+    // change would rebuild the mount and re-register into an unreleased owner.
+    planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || items[0]?.kind || 'default',
+    digitsByPlace });
+  // AFTER the runtime mount is registered, never before: `start()` waits for
+  // `grantOwnership('runner')`, which cannot be granted until this primitive's
+  // mount exists. Declared earlier, its effect runs first and the runner spins.
+  useLiveAutoStart(autoStart, resolvedInstanceId, runner.start);
 
   if (items.length === 0) {
     return (

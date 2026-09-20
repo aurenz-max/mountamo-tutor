@@ -1,0 +1,479 @@
+[
+  {
+    "passed": false,
+    "primitiveId": "shape-sorter",
+    "events": [
+      {
+        "type": "learner",
+        "t": 5.51,
+        "text": "[LESSON_START] Begin a shape-sorter lesson in identify mode. Call request_activity now. Teach from the mounted workspace."
+      },
+      {
+        "type": "activity_request",
+        "t": 6.95,
+        "request": {
+          "primitiveId": "shape-sorter",
+          "topic": "triangles and squares",
+          "intent": "Name triangles and squares.",
+          "mode": "identify"
+        }
+      },
+      {
+        "type": "mounted_generated_payload",
+        "t": 7.11,
+        "state": {
+          "sessionEpoch": "81ed1160-5c30-4b0b-a702-db14b6170878",
+          "revision": 1,
+          "visibleRevision": 1,
+          "instanceId": "shapes",
+          "planItemId": "shapes",
+          "primitiveId": "shape-sorter",
+          "objectiveId": "shape-sorter-practice",
+          "evalMode": "identify",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1::name-0",
+            "phase": "idle",
+            "task": "Your turn. What shape is this?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "identify",
+              "response": "voice",
+              "drawnAsObject": "no",
+              "matsNamed": "no"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": []
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 9.73,
+        "phase": "startup",
+        "text": "Let's explore some shapes together!",
+        "state": {
+          "sessionEpoch": "81ed1160-5c30-4b0b-a702-db14b6170878",
+          "revision": 1,
+          "visibleRevision": 1,
+          "instanceId": "shapes",
+          "planItemId": "shapes",
+          "primitiveId": "shape-sorter",
+          "objectiveId": "shape-sorter-practice",
+          "evalMode": "identify",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1::name-0",
+            "phase": "idle",
+            "task": "Your turn. What shape is this?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "identify",
+              "response": "voice",
+              "drawnAsObject": "no",
+              "matsNamed": "no"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": []
+        }
+      },
+      {
+        "type": "failure",
+        "t": 9.94,
+        "reason": "AssertionError('Synthetic speech unavailable')",
+        "state": {
+          "sessionEpoch": "81ed1160-5c30-4b0b-a702-db14b6170878",
+          "revision": 1,
+          "visibleRevision": 1,
+          "instanceId": "shapes",
+          "planItemId": "shapes",
+          "primitiveId": "shape-sorter",
+          "objectiveId": "shape-sorter-practice",
+          "evalMode": "identify",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1::name-0",
+            "phase": "idle",
+            "task": "Your turn. What shape is this?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "identify",
+              "response": "voice",
+              "drawnAsObject": "no",
+              "matsNamed": "no"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": []
+        }
+      }
+    ]
+  },
+  {
+    "passed": false,
+    "primitiveId": "shape-sorter",
+    "events": [
+      {
+        "type": "learner",
+        "t": 5.12,
+        "text": "[LESSON_START] Begin a shape-sorter lesson in identify mode. Call request_activity now. Teach from the mounted workspace."
+      },
+      {
+        "type": "activity_request",
+        "t": 6.52,
+        "request": {
+          "primitiveId": "shape-sorter",
+          "topic": "shapes",
+          "intent": "Name only triangles and squares. Exactly two naming items, one triangle and one square.",
+          "mode": "identify"
+        }
+      },
+      {
+        "type": "mounted_generated_payload",
+        "t": 6.67,
+        "state": {
+          "sessionEpoch": "02254947-1bbe-49c1-b460-375775254108",
+          "revision": 1,
+          "visibleRevision": 1,
+          "instanceId": "shapes",
+          "planItemId": "shapes",
+          "primitiveId": "shape-sorter",
+          "objectiveId": "shape-sorter-practice",
+          "evalMode": "identify",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1::name-0",
+            "phase": "idle",
+            "task": "Your turn. What shape is this?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "identify",
+              "response": "voice",
+              "drawnAsObject": "no",
+              "matsNamed": "no"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": []
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 10.2,
+        "phase": "startup",
+        "text": "Let's explore some wonderful shapes together today.",
+        "state": {
+          "sessionEpoch": "02254947-1bbe-49c1-b460-375775254108",
+          "revision": 1,
+          "visibleRevision": 1,
+          "instanceId": "shapes",
+          "planItemId": "shapes",
+          "primitiveId": "shape-sorter",
+          "objectiveId": "shape-sorter-practice",
+          "evalMode": "identify",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1::name-0",
+            "phase": "idle",
+            "task": "Your turn. What shape is this?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "identify",
+              "response": "voice",
+              "drawnAsObject": "no",
+              "matsNamed": "no"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": []
+        }
+      },
+      {
+        "type": "failure",
+        "t": 10.36,
+        "reason": "AssertionError('Synthetic speech unavailable')",
+        "state": {
+          "sessionEpoch": "02254947-1bbe-49c1-b460-375775254108",
+          "revision": 1,
+          "visibleRevision": 1,
+          "instanceId": "shapes",
+          "planItemId": "shapes",
+          "primitiveId": "shape-sorter",
+          "objectiveId": "shape-sorter-practice",
+          "evalMode": "identify",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1::name-0",
+            "phase": "idle",
+            "task": "Your turn. What shape is this?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "identify",
+              "response": "voice",
+              "drawnAsObject": "no",
+              "matsNamed": "no"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": []
+        }
+      }
+    ]
+  },
+  {
+    "passed": false,
+    "primitiveId": "shape-sorter",
+    "events": [
+      {
+        "type": "learner",
+        "t": 5.11,
+        "text": "[LESSON_START] Begin a shape-sorter lesson in identify mode. Call request_activity now. Teach from the mounted workspace."
+      },
+      {
+        "type": "activity_request",
+        "t": 6.58,
+        "request": {
+          "primitiveId": "shape-sorter",
+          "topic": "triangles and squares",
+          "intent": "Identify one triangle and one square.",
+          "mode": "identify"
+        }
+      },
+      {
+        "type": "mounted_generated_payload",
+        "t": 6.72,
+        "state": {
+          "sessionEpoch": "bdd6ca48-e3e3-43b5-a1e2-04c5c9a96e43",
+          "revision": 1,
+          "visibleRevision": 1,
+          "instanceId": "shapes",
+          "planItemId": "shapes",
+          "primitiveId": "shape-sorter",
+          "objectiveId": "shape-sorter-practice",
+          "evalMode": "identify",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1::name-0",
+            "phase": "idle",
+            "task": "Your turn. What shape is this?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "identify",
+              "response": "voice",
+              "drawnAsObject": "no",
+              "matsNamed": "no"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": []
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 10.95,
+        "phase": "startup",
+        "text": "We're going to have so much fun finding shapes together today!",
+        "state": {
+          "sessionEpoch": "bdd6ca48-e3e3-43b5-a1e2-04c5c9a96e43",
+          "revision": 1,
+          "visibleRevision": 1,
+          "instanceId": "shapes",
+          "planItemId": "shapes",
+          "primitiveId": "shape-sorter",
+          "objectiveId": "shape-sorter-practice",
+          "evalMode": "identify",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1::name-0",
+            "phase": "idle",
+            "task": "Your turn. What shape is this?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "identify",
+              "response": "voice",
+              "drawnAsObject": "no",
+              "matsNamed": "no"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": []
+        }
+      },
+      {
+        "type": "failure",
+        "t": 11.05,
+        "reason": "AssertionError('Synthetic speech unavailable')",
+        "state": {
+          "sessionEpoch": "bdd6ca48-e3e3-43b5-a1e2-04c5c9a96e43",
+          "revision": 1,
+          "visibleRevision": 1,
+          "instanceId": "shapes",
+          "planItemId": "shapes",
+          "primitiveId": "shape-sorter",
+          "objectiveId": "shape-sorter-practice",
+          "evalMode": "identify",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1::name-0",
+            "phase": "idle",
+            "task": "Your turn. What shape is this?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "identify",
+              "response": "voice",
+              "drawnAsObject": "no",
+              "matsNamed": "no"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": []
+        }
+      }
+    ]
+  }
+]

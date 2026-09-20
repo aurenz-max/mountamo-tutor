@@ -1,5 +1,20 @@
 # Live lessons: vision, experiments, and rollout
 
+**Current direction, 2026-09-19:** Counting Board established tutor-owned teaching,
+JEV observation of whole-assignment feedback, and runtime-owned checked progression.
+The user's latest seven-item sitting completed successfully. Shape Sorter `identify`
+is the user-selected second workspace, with fixed assignment focus and separate tutor
+marks. Read [the implementation map and invariant principles](TEACHING_WORKSPACE.md)
+and [second-adopter evidence and remaining gates](../../../../qa/tutor-reports/shape-sorter-teaching-2026-09-19.md)
+before using historical adapter recipes below. The next proof is teaching quality and
+continuity, not a larger adapter count. Standalone DI is unchanged. This remains a
+development bench; ordinary student lessons do not mount this runtime.
+
+**Subsequent user direction, 2026-09-19:** sunset the old highly scripted approach.
+[LA-14 retirement handoff](../../../../qa/live-runtime-handoffs/07-sunset-scripted-tutoring.md)
+defines the staged replacement and deletion gates. “Standalone DI is unchanged”
+above describes today's implementation, not a permanent second architecture.
+
 Status: design revision v0.2, 2026-09-17, incorporating the supplied Aristotle/pedagogical-control/support-visual conversation. User-selected first demonstration remains **a short planned lesson with a help detour and return**. Implementation and evidence were inspected in the working tree, including uncommitted sandbox work. This document proposes future behavior; it does not certify that behavior or authorize a production rollout.
 
 **Latest adoption, 2026-09-17: Number Line and repeatable tutor tools.** The existing
@@ -11,7 +26,7 @@ the transport still waits separately for visibility. Planned completion is held
 until runtime settlement, and objective/resolved mode metadata is retained.
 [Evidence and limits](../../../../qa/tutor-reports/number-line-runtime-live-2026-09-17.md),
 [next-session handoff](../../../../qa/live-runtime-handoffs/05-primitive-tools.md), and
-[add-live-tutor-tools skill](../../../../qa/live-runtime-handoffs/add-live-tutor-tools/SKILL.md)
+[add-live-tutor-tools skill](../../../../../.claude/skills/add-live-tutor-tools/SKILL.md)
 now provide the replication path. The driver supports both actual execution families.
 Both planned orders, human microphone acceptance and teaching-policy quality remain
 separate open gates; a tool receipt does not certify the tutoring experience.
@@ -287,7 +302,7 @@ Next implementation work is split into [four bounded handoffs](../../../../qa/li
 number-line, shared judged-runner lifecycle, ten-frame, then live transport and the
 actual help/return lesson. Do not widen primitive adoption before those gates pass.
 LA-11 currently has deterministic infrastructure scenarios, not model-policy scoring.
-LA-05/LA-10a have a reference shell only; no pilot detour certification is claimed.
+LA-05/LA-10a: the returnable shell draws two structured shapes (`counter-example`, `contrast-pair`), and comparison-builder's contrast-pair detour was driven 3/3 against the real model on 2026-09-18 (open, describe, return with work intact, advance, complete). Browser and microphone sittings remain owed; no pilot certification is claimed.
 
 ## TenFrame adoption update (2026-09-17)
 
@@ -307,6 +322,87 @@ orders, interruption/reconnect live checks and microphone acceptance remain open
 G1/G2 have TenFrame source fixes and deterministic evidence; G1–G3 are not globally
 closed until both owners and their transitions pass the combined experience gate.
 
+## Counting board adoption update (2026-09-17)
+
+Counting board joins TenFrame and Number Line in the existing host — the second
+judged-runner adoption, so the shared runner lifecycle is now exercised by two owners
+rather than one. It advertises `replay`, one `touch-each-one` text reminder with its
+fade, and a prepared example with return on the five kinds the counter surface can
+state truthfully. It advertises no `advance`, no `retry` and no `point`: the runner
+owns progression and correction, and on this board the tap is the answer gesture.
+The quick-look family (K `subitize`, Pre-K `subitize_perceptual`) advertises nothing.
+
+[Evidence](../../../../qa/tutor-reports/counting-board-runtime-live-2026-09-17.md):
+13 real-component runtime cases, 222 tests green across the affected suites,
+`typecheck:lumina` 0, and four real model journeys — `count` 3/3 under the `--runs 3`
+smoke gate plus one `take_away` run — each with the real activity-request and silent
+mount handoff, a wrong spoken answer, the scripted correction, reminder, prepared
+example, return with the child's real taps preserved, and one settled completion.
+
+Two findings the next adoption should carry:
+
+1. **`canYieldForHelp` gates every affordance, not just the detour.** While the runner
+   owns the turn, `blockedReason()` blanks `offers()` whenever that predicate is false.
+   Withhold a detour through `supportArtifacts`; use `canYieldForHelp` only for "may the
+   tutor act here at all". TenFrame does not surface this because its two exclusion sets
+   coincide.
+2. **The model may open and close the example inside one turn.** In 2 of the first 3
+   runs `request_support` and `return` arrived about two seconds apart with no learner
+   turn between. Permitted autonomy, not a wrong grade — but a journey that reads the
+   saved work from the next tutor turn never sees it. Capture it when the support
+   command commits; `run_counting_board_runtime.py` records an `autonomous_return` event.
+
+Not closed: the planned `[CB_COMPLETE]` cue has component-test coverage only (the shared
+driver passes no `runtimePlanItemId`, same gap as TenFrame); 8 of 10 catalog modes have
+no model coverage; no planned counting-board lesson and no three-family activity order
+has been driven; microphone and browser acceptance remain HUMAN-CHECKS #167.
+
+## Harness collapse: one journey for every primitive (2026-09-18)
+
+User ruling, after the counting-board adoption: the verification layer must not need
+a new backend file per primitive, and **the test must replicate prod**.
+
+It did need one, and they had already drifted. `run_ten_frame_runtime.py`,
+`run_number_line_runtime.py` and `run_counting_board_runtime.py` were 61% identical
+line-for-line, and the remaining difference was mostly divergence rather than
+intent: different stderr tails, a missing driver ready-handshake assertion, a
+hardcoded grade and topic in one, one still invoking a per-primitive
+`ten-frame-runtime-driver.mjs`, and the autonomy fix from the counting-board session
+present in exactly one of the three. `primitive-runtime-driver.mjs` carried four
+`primitiveId === '...'` branches and a hardcoded DOM probe block naming three
+primitives.
+
+The production wire never had this problem — `live_runtime_tools.py` and
+`live_activity_tools.py` contain no primitive names — and the DI harness had already
+solved it: 44 ports drive from one `run_tutor_live.py --di` because each registers a
+`DiPortAdapter` in TypeScript. The live-runtime journeys had simply regressed off
+that pattern.
+
+What replaces them:
+
+| Layer | Now |
+|---|---|
+| `liveJourneySpec.ts` | One row per primitive, beside the primitives: component path, instance id, generation defaults, its own bracket tags, its wording for each action request, `inputsFor` (intent → this board's real DOM actions, derived from the mounted challenge) and `exampleTaught` (did the drawn example teach its claim). |
+| `/api/lumina/live-activity/journey` | Dev-only route serving the descriptor. Deliberately NOT folded into the capability envelope — that envelope is what the model is given, and a harness fact has no place in it. |
+| `primitive-runtime-driver.mjs` | No primitive names. A fixed learner vocabulary (`place`, `check`, `touch`, `give`, `answer`), a generic probe reader, and one `learner` opcode that asks the spec what an intent means here. |
+| `run_live_runtime.py --primitive <id>` | The only journey. It selects its phase program from `teachingOwner` in the **production** envelope, so the harness branches on exactly the field the model branches on. |
+
+The invariant: **Python transports and sequences; TypeScript declares and judges.**
+A value computed from generated content — a wrong landing on a number line, the
+spoken answer for a counting board — is never computed in Python. That is how
+`first['targetValues'][0] + 1` had ended up in a backend test file.
+
+Two real defects the collapse surfaced, both now fixed: a spoken answer performed in
+the driver was never sent to the model, so the tutor waited out a 305-second timeout
+for a child it could not hear; and every mode's run wrote the same payload filename,
+so a `take_away` run silently overwrote the `count` payload a later `--input` replay
+then drove. Both had been latent in the per-primitive files.
+
+Re-driven after the collapse, all green, both execution families:
+`counting-board` (judged, `count`), `ten-frame` (judged, `make_ten`) and
+`number-line` (tutor-led, `jump`, exercising all six actions including `advance`).
+Adding the next primitive is now a row in `LIVE_JOURNEYS` and no harness edit at all.
+
 ## Owning queue and next pulls
 
 This document owns live-lesson orchestration work. Existing defect, capability, and human-check queues retain their respective work; link instead of duplicating. The broader Lesson Bench remains paused as recorded in `WORKSTREAMS.md`. These are focused sandbox demonstrations, not a restart of the retired coverage/lesson-journey campaign.
@@ -314,21 +410,25 @@ This document owns live-lesson orchestration work. Existing defect, capability, 
 | Item | State | Executor and concrete completion |
 |---|---|---|
 | LA-01 | NEXT | `$tutor-test` for machine evidence plus user mic/browser acceptance; record today's baseline and its experience failures. |
+| LA-14 | S0/S1 DONE; S2 PILOT WIRED (2026-09-19) | [Owning handoff](../../../../qa/live-runtime-handoffs/07-sunset-scripted-tutoring.md), [census](../../../../qa/live-runtime-handoffs/07-census.md), [S2 evidence](../../../../qa/tutor-reports/lesson-workspace-wiring-2026-09-19.md). Domain extraction is done. Ordinary Kindergarten/scroll lessons now wire Counting Board `count` and Shape Sorter `identify` through the shared runtime and existing evaluation provider. User clarified tutor-completed assignments count normally; no separate practice-only gate. Focus, back navigation, reconnect, single submission and per-objective attribution are covered by mounted tests. Other modes, residual JEV/tool reliability, human #167 and eventual shared-runner deletion remain open. |
+| LA-13 | SECOND WORKSPACE IMPLEMENTED (2026-09-19); experience gate scoped separately | Tutor/JEV paradigm and TW-1–TW-11 live in [TEACHING_WORKSPACE.md](TEACHING_WORKSPACE.md). Counting Board user sitting: seven visible advances and settled completion. User selected Shape Sorter `identify` for reuse beyond counting. Same observer/session, bounded shape scene and demonstration; no new backend domain branch. [Report](../../../../qa/tutor-reports/shape-sorter-teaching-2026-09-19.md). **First slice of the follow-through done 2026-09-19:** both saved completion stalls were one mechanism — JEV choosing `correct` under threshold — with two measured causes: a `correct` criterion that read as requiring the answer to be restated, and Counting Board publishing `counted: 0` (objects marked, always zero for a spoken answer) as a scene fact that contradicted the tutor. Repaired in the shared criteria and the one primitive's facts; a refused observation now reports no score, `feedbackComplete` is published separately, and a settled turn that records nothing says so once per learner turn. Counting Board 54/54 and Shape Sorter 42/42 real JEV, 3/3 + 3/3 connected audio journeys, 6975 frontend tests green. [Report](../../../../qa/tutor-reports/lesson-workspace-completion-repair-2026-09-19.md). Still open: the shape substep family abstains by design, the open-assignment cue has one live observation and is not certified, two teaching-quality notes. Next: [lesson workspace follow-through](../../../../qa/live-runtime-handoffs/08-lesson-workspace-follow-through.md) LA-14 S3 — retire one replaced pilot path. Tutor completion submits normally, including with help. Preserve HUMAN-CHECKS #167 and the separate planned-order gate. Executor `$add-live-tutor-tools`; persistence requires `$student-data-loop`. |
 | LA-02 | STOPPED AT CLEAN SLICE (2026-09-17) | Projection reviewed: objective, resolved mode, intent and provenance survive to the mounted receipt (tests + real-browser drive). Mic acceptance pending. |
 | LA-03 | STOPPED AT CLEAN SLICE (2026-09-17); gaps G1–G3 open | Adapters and prepared mounts work in the real browser. Completion and handoff are not predictable; do not patch them in the bridge loop. G1–G3 move to LA-04. |
-| LA-04 | TENFRAME + NUMBER LINE IMPLEMENTED; combined experience gate pending | Both adapters use the existing host. Number Line adds committed local controls and subtraction help/return. Verify both planned orders before closing G1-G3. Preserve the working judge and use only executable actions. |
+| LA-04 | TWELVE PRIMITIVES IMPLEMENTED (2026-09-18); combined experience gate pending, and SEVEN OF TWELVE ARE UNDRIVEN | The host became a per-family REGISTRY (`adapters/<primitive>Live.ts` composed by `activityContract.ts`, rendered by `liveRenderers.tsx`), so a family no longer edits shared branching and no `primitiveId ===` remains in the route. Nine math adoptions joined the original three: number-sequencer, number-bond, ordinal-line, sorting-station, compare-objects, place-value-chart, shape-sorter (judged-runner) and number-tracer, comparison-builder (tutor-led). 154 new real-component runtime tests. SEVEN OF THE NINE ADVERTISE NO WORKED EXAMPLE, because the counter surface states HOW MANY and none of them teaches how many; number-bond's part-and-part-make-whole modes get a counter example, and comparison-builder now gets a `contrast-pair` (driven 3/3 on 2026-09-18, after its own `[ANSWER_CORRECT]` text was found to stall `advance`). Evidence and the undriven list: `qa/tutor-reports/live-tutor-tools-math-sweep-2026-09-18.md`, `contrast-pair-comparison-builder-2026-09-18.md`. |
 | LA-05–LA-09 | CONDITIONAL | Follow phase gates for suspension/return, demand adjustment, adoption, rollout, and persistence. Use `$add-support-tiers` / `$add-structural-difficulty` for actual primitive gaps, `$eval-fix` for confirmed defects, `$student-data-loop` before persistence changes, and `$ship` only when shipping is requested. |
-| LA-10a / LA-10b | CONDITIONAL: phases 3 / 4 | Define the support request/result contract and a returnable shell; deliver the structured counter lane with LA-05. Trial one image-provider lane only after that works, with independent correctness, latency, cost, and fallback evidence. |
+| LA-10a / LA-10b | LA-10a STRUCTURED LANE HAS THREE SHAPES (2026-09-18); LA-10b TRIAL BUILT 2026-09-18 (user ruling: use Gemini image generation): tutor tool `generate_visual_support`, draw + vision check + one redraw, host-driven on ten-frame and comparison-builder, evidence `qa/tutor-reports/generated-support-picture-2026-09-18.md` | `counter-example`, `contrast-pair` and `step-sequence` (explanation in aligned steps, ten-frame `make_ten` pilot, host-driven once) in the returnable shell, kit-themed; every support choice carries `purpose`; comparison-builder driven 3/3. Item (0) below is DONE. Open on LA-10a, in order: (0) USER REVIEW 2026-09-18: the artifact shell is raw Tailwind and reads as a popup on a static page; rebuild it from the Lumina kit (`LuminaCard surface="elevated"`, tokens for colour, `DirectVisual.tsx` as precedent), keep the `aria-label="Worked example"` role and data probes, re-shoot in the real host — brief: `qa/live-runtime-handoffs/06-support-shapes.md`; (1) `[ANSWER_INCORRECT]` component messages hand the tutor the answer under the runtime on comparison-builder and number-line, gate or strip them (`/add-live-tutor-tools`); (2) a second adopter of `contrast-pair` with no renderer change; (3) tutor-parameterised `request_support { shape, params }` with the runtime sweeping model-supplied numbers against the item's answer. Trial one image-provider lane only after that, with independent correctness, latency, cost, and fallback evidence. **FINDING CLOSED 2026-09-18, `/eval-fix`** (was: the ten-frame live journey fails 3/3 on `exampleTaught`). Two causes, neither the model. (a) `RUNTIME_INSTRUCTION` contradicted itself — a new "one short sentence per step" line six lines above an older "in one short sentence", so the tutor said step 1 and ended its turn; it surfaced on 09-18 because ten-frame's artifact became a three-frame `step-sequence` where a one-sentence `counter-example` had been enough. Rewritten to say it once: teach the example in ONE turn. (b) `judged_runner` overwrote `spoken_at_open` each turn, so a tutor teaching across turns was scored on the last one; now accumulated. Re-driven 3/3 PASS on the same payload. **The regression gate then found a defect class**: 33 literal backspace bytes (0x08) where `` was meant, in `liveJourneySpec.ts` (counting-board's judge), `gemini-length-lab.ts` (all 7 unit regexes — a "measure with your hands" objective drew a RANDOM unit, the 09-09 defect its docblock claims fixed) and the analog-clock oracle's answer-leak check. Invisible to an editor, `grep`, review and `tsc`. All repaired, A/B'd against real generations (length-lab 8/8 vs 1/4 corrupted) and guarded by `service/qa/__tests__/sourceControlBytes.test.ts`. Report: [example-taught-and-dead-regexes-2026-09-18.md](../../../../qa/tutor-reports/example-taught-and-dead-regexes-2026-09-18.md). Residual for `/add-live-tutor-tools`: `tutor_led`'s `turn()` judges one turn the same way. |
+| LA-12 | M0 BUILT 2026-09-18 (machine-verified only); NEXT = M1 shared `attend` overlay | Teaching-moves paradigm: a support must name its `obstacle`, `delta`, `nextAction` and `check`, and the runtime refuses a support that repeats the workspace's own representation. Raised by user review of `generated-picture-ten-frame-host-card-2026-09-18.png` (a ten frame drawn beside a ten frame). User rulings: `reveal-aid` of support-tier aids mid-item ACCEPTED; generated pictures limited to `illustrate` ACCEPTED; prefetch REJECTED (failure modes are not all known in advance), replaced by an open lane where the tutor composes a move over generic rails and recurring obstacles are promoted from the log. Absorbs LA-10a open item (3). Spec and steps M0–M6: [LIVE_TEACHING_MOVES.md](LIVE_TEACHING_MOVES.md). Executor `/add-live-tutor-tools`; M0 `compose_move` contract and M1 shared `attend` overlay on Pip targets are shared work, M2 pilot is ten-frame `make_ten`. The skill is edited only after M2 is driven in the real host. **M0 as built:** `compose_move` replaces `generate_visual_support` end to end (`runtime/moveContract.ts`, `composeMoveRefusal`/`openComposedMove`, `moveOptions` in the snapshot, `RuntimeTransport.composeMove`, backend `compose_move` + `MOVE_INSTRUCTION`, ten-frame publishing `representation`/`alternateRepresentations` and its values as data). The tutor names a delta and code picks the carrier and builds every caption, so a shape cannot state what it does not draw; the picture service's four format purposes collapsed to `illustrate` alone (ruling 2). Gates: the 2026-09-18 request refused in a unit test, composed contrast and process shapes rendered on the real surface, 6875 frontend tests green, `typecheck:lumina` 0, backend `tutor_live` 61 green. **No real-model drive yet** — that is the M2 pilot gate. |
 | LA-11 | BEGINS WITH LA-04; rollout gate in phase 5 | Build intervention-quality scenarios and compare against the existing planned flow. Include non-intervention, scaffold/fade, bounded challenge, artifact fallback, and return. Broaden synthetic sessions only after the contract works. |
 
-Next pulls after Number Line adoption: verify the two planned orders through both
-actual adapters, then complete the LA-01 human sitting. Use the new skill only for
-a requested bounded adoption; do not interpret it as a catalog-wide migration.
+Next pulls after counting-board adoption: drive the planned orders through all three
+mounted adapters — that, not a fourth primitive, is what G1-G3 need — then complete the
+LA-01 human sitting. Use the skill only for a requested bounded adoption; do not
+interpret it as a catalog-wide migration.
 
 Earlier phase guidance (remaining experience gates still apply): (1) record the LA-01 baseline with a mic sitting, including the planned-lesson path; (2) adopt the implemented LA-04 foundation through the focused handoffs, starting with G1–G3, with LA-11 scenarios. Re-drive with `backend/tests/tutor_live/run_live_lesson_plan.py` (both orders) after a confirmed backend restart; (3) prove LA-05 + LA-10a structured help/return before adding generated imagery or more families. Contract design and machine checks can proceed while a human sitting is pending; the experience gate remains open.
 
-Scope health: TenFrame now has shared-runner pause/return and prepared support with
-real-model/mounted-component evidence. New microphone acceptance is outstanding;
+Scope health: TenFrame and counting board both have shared-runner pause/return and
+prepared support with real-model/mounted-component evidence. New microphone acceptance is outstanding;
 both planned activity orders remain open. Number Line now has scoped action adoption
 and its own evidence report. No catalog-wide adoption,
 durable recovery or learning-data persistence is certified. This scoped update does
@@ -348,5 +448,6 @@ Blockers are phase-specific: actual mic acceptance needs a user sitting; general
 | 2026-09-17 | Add semantic learner evidence and a bounded autonomy envelope, including restraint, support fading, and one-step demand changes. | LA-11 scenarios and human sittings must improve responsiveness without objective drift or unnecessary interruption. |
 | 2026-09-17 | User ruling: stop phase 1 at the clean slice. Revert bridge-loop compensations and record G1–G3 as LA-04 inputs. | A drive in both orders where completion and handoff are predictable without bridge guards. |
 | 2026-09-17 | Add temporary support artifacts as a third instructional resource under the current-activity tool. Start with structured early-math support; separately evaluate generated illustrations. | LA-10a return/correctness gate, then LA-10b measured latency, correctness, cost, and comprehension. No assumed provider speed or catalog-wide rollout. |
+| 2026-09-18 | The unit of support-artifact work is a SHAPE (schema, deterministic renderer, leak rule, alt text) reused across primitives, not an artifact per primitive. Second shape shipped: `contrast-pair`, two stacked counter rows with the unpartnered tail ringed, first home comparison-builder. Prepared-by-host stays the wire; tutor-parameterised requests over a fixed shape schema are the intended next step, gated on the runtime sweeping model-supplied numbers against the item's answer. Generated raster remains illustration only. | A second primitive adopting the same shape without a renderer change; a tutor-parameterised request that the runtime rejects when its numbers state the answer. Evidence: `qa/tutor-reports/contrast-pair-comparison-builder-2026-09-18.md`. |
 
 External protocol reference: Google's [Live API tool-use documentation](https://ai.google.dev/gemini-api/docs/live-api/tools) documents response scheduling and model-dependent asynchronous support. Treat that as a transport constraint; it does not prove that the configured model's speech timing feels right. Retest the actual deployed model/configuration at every rollout gate.

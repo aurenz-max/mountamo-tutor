@@ -11,6 +11,26 @@ def packet(revision=1):
 
 
 class RuntimeToolsTest(IsolatedAsyncioTestCase):
+    async def test_workspace_parameters_preserve_ticket_scope_and_are_not_code(self):
+        state = packet()
+        state['choices'][0]['action'] = {'type': 'workspace', 'operation': 'demonstrate'}
+        self.bridge.update(state)
+        await self.bridge.call(self.call(targets=['object-0', 'object-2']))
+        self.assertEqual(self.events[-1]['command']['action'], {
+            'type': 'workspace', 'operation': 'demonstrate', 'input': {'targets': ['object-0', 'object-2']}})
+        self.assertEqual(self.events[-1]['command']['expectedRevision'], 1)
+
+    async def test_non_workspace_action_cannot_receive_parameters(self):
+        await self.bridge.call(self.call(utterance='three'))
+        self.assertEqual(self.replies[-1].response['status'], 'invalid')
+        self.assertFalse(self.events)
+
+    async def test_workspace_rejects_unbounded_or_duplicate_targets(self):
+        for n, targets in enumerate([['same', 'same'], ['x'] * 31, [1], '__proto__']):
+            await self.bridge.call(self.call(str(n), targets=targets))
+            self.assertEqual(self.replies[-1].response['status'], 'invalid')
+        self.assertFalse(self.events)
+
     async def test_ticket_carries_original_scope_and_cannot_retarget_after_state_changes(self):
         call = SimpleNamespace(id='ticket', name='perform_runtime_action', args={'actionId': 'test/1/0'})
         await self.bridge.call(call)
@@ -36,6 +56,7 @@ class RuntimeToolsTest(IsolatedAsyncioTestCase):
 
     async def test_combined_surface_routes_each_call_and_cancels_both(self):
         activity, runtime = AsyncMock(), AsyncMock()
+        runtime.state = {'status': 'empty', 'task': None}
         combined = CombinedLiveTools(activity, runtime)
         runtime_call = self.call(); activity_call = SimpleNamespace(name='request_activity')
         await combined.call(runtime_call); await combined.call(activity_call)
@@ -49,6 +70,18 @@ class RuntimeToolsTest(IsolatedAsyncioTestCase):
     async def test_runtime_prompt_preserves_the_scripted_judge(self):
         self.assertIn('judge owns answers and progression', RUNTIME_INSTRUCTION)
         self.assertNotIn('press Check answer', RUNTIME_INSTRUCTION)
+
+    async def test_generated_start_cannot_replace_an_unfinished_runtime(self):
+        activity = SimpleNamespace(call=AsyncMock())
+        runtime = SimpleNamespace(state={**packet(), 'status': 'active'}, respond=AsyncMock())
+        combined = CombinedLiveTools(activity, runtime)
+        call = SimpleNamespace(id='replacement', name='request_activity', args={})
+        await combined.call(call)
+        activity.call.assert_not_awaited()
+        self.assertEqual(runtime.respond.await_args.args[1], 'blocked')
+        runtime.state = {**runtime.state, 'status': 'completed'}
+        await combined.call(call)
+        activity.call.assert_awaited_once_with(call)
 
     async def test_retired_fixture_connection_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'require an activity sandbox'):
@@ -138,12 +171,48 @@ class RuntimeToolsTest(IsolatedAsyncioTestCase):
     async def test_config_and_nonblocking_declaration(self):
         self.assertEqual(runtime_tool().function_declarations[0].behavior.value, "NON_BLOCKING")
         schema = runtime_tool().function_declarations[0].parameters
-        self.assertEqual(set(schema.properties), {'actionId'})
+        self.assertEqual(set(schema.properties), {'actionId', 'targets'})
         self.assertEqual(schema.required, ['actionId'])
         spec = {"sessionEpoch": "test", "initialState": packet()}
         self.assertEqual(parse_runtime_spec(spec, activity_enabled=True), spec)
         for bad in [None, {}, {**spec, "extra": True}, {**spec, "sessionEpoch": "old"}]:
             with self.assertRaises(ValueError): parse_runtime_spec(bad, activity_enabled=True)
+
+    async def test_move_tool_is_declared_only_when_enabled_and_relays_the_tutors_own_diagnosis(self):
+        self.assertEqual([d.name for d in runtime_tool().function_declarations], ["perform_runtime_action"])
+        options = {"deltas": ["re-represent", "contrast", "model-process", "illustrate"],
+                   "representation": "ten-frame", "alternateRepresentations": ["counters", "fingers"]}
+        spec = {"sessionEpoch": "test", "initialState": {**packet(), "moveOptions": options}, "teachingMoves": True}
+        self.assertIn("compose_move", [d.name for d in runtime_tool(spec).function_declarations])
+        events, replies = [], []
+        async def emit(event): events.append(event)
+        async def reply(response): replies.append(response)
+        bridge = LiveRuntimeTools(emit, reply, parse_runtime_spec(spec, activity_enabled=True), picture_timeout=.02)
+        args = {"obstacle": " does not see the empty spaces as a quantity ", "delta": "re-represent",
+                "representation": "counters", "nextAction": " count the empty spaces out loud ",
+                "values": [6, 4], "operation": "make-ten"}
+        await bridge.call(SimpleNamespace(id="bad", name="compose_move", args={**args, "delta": "anything"}))
+        self.assertEqual(replies[-1].response["status"], "invalid")
+        # A delta the mounted primitive does not currently offer is refused with the ones that are.
+        await bridge.call(SimpleNamespace(id="unavailable", name="compose_move", args={**args, "delta": "attend"}))
+        self.assertEqual(replies[-1].response["status"], "blocked")
+        await bridge.call(SimpleNamespace(id="move", name="compose_move", args=args))
+        self.assertEqual(events[-1]["type"], "runtime_compose_move")
+        # The four fields travel as the tutor wrote them; nothing here knows what a ten frame is.
+        self.assertEqual(events[-1]["move"]["obstacle"], "does not see the empty spaces as a quantity")
+        self.assertEqual(events[-1]["move"]["nextAction"], "count the empty spaces out loud")
+        self.assertEqual(events[-1]["move"]["values"], [6, 4])
+        self.assertEqual(events[-1]["move"]["operation"], "make-ten")
+        self.assertEqual(events[-1]["scope"]["itemId"], "one")
+        shown = {**packet(2), "moveOptions": None}
+        self.assertTrue(await bridge.result({"commandId": "move", "status": "visible", "state": shown}))
+        self.assertEqual(replies[-1].response["status"], "visible")
+        # One detour per item: the host's refreshed state withdraws the lane, and so does the bridge.
+        await bridge.call(SimpleNamespace(id="again", name="compose_move", args=args))
+        self.assertEqual(replies[-1].response["status"], "blocked")
+        # The default bridge never enabled moves.
+        await self.bridge.call(SimpleNamespace(id="off", name="compose_move", args=args))
+        self.assertEqual(self.replies[-1].response["status"], "invalid")
 
     async def test_later_student_state_supersedes_an_older_visible_receipt(self):
         await self.bridge.call(self.call())
@@ -151,3 +220,30 @@ class RuntimeToolsTest(IsolatedAsyncioTestCase):
         self.assertTrue(await self.bridge.result({"commandId": "c", "status": "visible", "state": packet(2)}))
         self.assertEqual(self.replies[-1].response["status"], "superseded")
         self.assertEqual(self.replies[-1].response["liveRuntime"]["revision"], 3)
+
+    async def test_lesson_runtime_has_read_stream_without_activity_generation(self):
+        spec = parse_runtime_spec({"sessionEpoch": "test", "initialState": packet()}, activity_enabled=False, lesson_enabled=True)
+        names = [f.name for f in runtime_tool(spec).function_declarations]
+        self.assertEqual(names, ["observe_runtime", "perform_runtime_action"])
+        bridge = LiveRuntimeTools(AsyncMock(), AsyncMock(), spec)
+        await bridge.call(SimpleNamespace(id="observe", name="observe_runtime", args={}))
+        response = bridge.reply.call_args.args[0]
+        self.assertTrue(response.will_continue)
+        self.assertEqual(response.scheduling.value, "WHEN_IDLE")
+        self.assertEqual(response.response["liveRuntime"], packet())
+        newer = {**packet(2), "instanceId": "second"}
+        self.assertTrue(bridge.update(newer))
+        await bridge.publish_observation()
+        response = bridge.reply.call_args.args[0]
+        self.assertEqual(response.id, "observe")
+        self.assertEqual(response.scheduling.value, "SILENT")
+        self.assertEqual(response.response["liveRuntime"]["instanceId"], "second")
+        bridge.emit.assert_not_called()
+        await bridge.reset()
+        bridge.reply.reset_mock()
+        await bridge.publish_observation()
+        bridge.reply.assert_not_called()
+
+    async def test_legacy_runtime_cannot_start_lesson_observation_stream(self):
+        await self.bridge.call(SimpleNamespace(id="observe", name="observe_runtime", args={}))
+        self.assertEqual(self.replies[-1].response["status"], "invalid")

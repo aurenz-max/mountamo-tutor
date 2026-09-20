@@ -183,6 +183,7 @@ import {
   namesEarSeparable,
   ORDINAL_TOKENS,
 } from './spokenNameGates';
+import { resolveScaffolds, type LiveScaffold } from '../../../components/live-activity/runtime/liveScaffolds';
 
 // ============================================================================
 // Domain vocabulary
@@ -1240,3 +1241,124 @@ export const ordinalLineHarnessAnswers = (
  */
 export const placeCueForPlaced = (item: OrdinalLineItem, placed: number): string =>
   placementVerdictCue(item, placed === 1 ? item.answerOrder : [...item.answerOrder].reverse());
+
+/* ------------------------------------------------------------------ *
+ * Live-tutor misstep inventory (see `/add-live-tutor-tools`).
+ *
+ * Kept beside `correctionFor` above, because the two answer different things.
+ * The correction re-models the count and STATES the answer, and it fires however
+ * the child was wrong. These aids name the misstep and never state the answer —
+ * which here means never a character's name and never an ordinal word, since
+ * both are answers on this primitive depending on the mode.
+ *
+ * Missteps deliberately left to another lane:
+ *   - "cannot read the ordinal card" — `match` is a reading task, and a text
+ *     reminder cannot help a child read the very text it is about. Left to the
+ *     correction, which reads the card aloud.
+ *   - "does not know the ordinal words" — between-item remediation, not an
+ *     in-item aid.
+ *   - "needs the positions labelled on screen" — that is the support tier, a
+ *     difficulty axis, not an error response.
+ * ------------------------------------------------------------------ */
+
+/** What the child has actually done on this item, as the adapter publishes it. */
+export interface OrdinalMisstepEvidence {
+  /** The raw transcript, lower-cased. Null on a gesture item or no transcript. */
+  said: string | null;
+  /** The ordinal the transcript names, or 0. */
+  saidPosition: number;
+  /** build_sequence: the names currently in the line, in the child's order. */
+  placed: readonly string[];
+}
+
+export type OrdinalScaffold = LiveScaffold<OrdinalLineItem, OrdinalMisstepEvidence>;
+
+/** Which position's character the child named, or 0. Routing only, never judging. */
+export const heardPosition = (text: string | null | undefined, item: OrdinalLineItem): number => {
+  if (!text) return 0;
+  const lower = text.toLowerCase();
+  const named = item.lineNames.findIndex(name => name && lower.includes(name.toLowerCase()));
+  return named === -1 ? 0 : named + 1;
+};
+
+/** Which ordinal the child said, or 0. Accepts the word and the symbol. */
+export const saidOrdinal = (text: string | null | undefined): number => {
+  if (!text) return 0;
+  const lower = text.toLowerCase();
+  for (let position = 1; position <= 10; position++) {
+    const word = ordinalWordFor(position), symbol = ordinalSymbolFor(position);
+    if (new RegExp(`\\b${word}\\b`).test(lower) || lower.includes(symbol)) return position;
+  }
+  return 0;
+};
+
+/** The position the child's answer points at, whichever way this mode is asked. */
+const pointedAt = (item: OrdinalLineItem, e: OrdinalMisstepEvidence) =>
+  e.saidPosition || heardPosition(e.said, item);
+
+/**
+ * One method reminder per mode. Deliberately free of both names and ordinal
+ * words, because either one is the answer on some mode of this primitive.
+ */
+const METHOD: Record<OrdinalLineKind, OrdinalScaffold> = {
+  identify: { strategyId: 'count-along-from-the-front', when: 'the child needs the method again',
+    hint: () => 'Start at the front of the line and count along the places until you get there.' },
+  relative_position: { strategyId: 'find-the-anchor-then-look', when: 'the child needs the method again',
+    hint: () => 'Find the one I named, then look to the side of the line I asked about.' },
+  match: { strategyId: 'read-what-the-card-says', when: 'the child needs the method again',
+    hint: () => 'Look at the card and say out loud what it says.' },
+  sequence_story: { strategyId: 'listen-for-who-i-asked-about', when: 'the child needs the method again',
+    hint: () => 'Listen again, and keep hold of where the story put the one I asked about.' },
+  build_sequence: { strategyId: 'one-clue-at-a-time', when: 'the child needs the method again',
+    hint: () => 'Take the clues one at a time. Put that one where it belongs before the next.' },
+};
+
+/**
+ * The error-specific aids, offered only once the published evidence fits. Each
+ * `when` states the CONDITION, because the model routes on that sentence.
+ */
+const AIDS: readonly OrdinalScaffold[] = [
+  // identify — the two errors this line shape actually produces.
+  { strategyId: 'the-other-end-is-the-back', when: 'the child counted from the wrong end of the line',
+    hint: () => 'You counted from the other end. Start where the line starts and count from there.',
+    matches: (i, e) => i.kind === 'identify' && pointedAt(i, e) > 0
+      && pointedAt(i, e) === i.lineNames.length + 1 - i.askPosition && i.lineNames.length > 2 },
+  { strategyId: 'the-front-one-already-counts', when: 'the child was one place out',
+    hint: () => 'The one at the very front already counts as a place. Count it, then keep going.',
+    matches: (i, e) => i.kind === 'identify' && pointedAt(i, e) > 0
+      && Math.abs(pointedAt(i, e) - i.askPosition) === 1 },
+
+  // relative_position — the anchor is named in the ask, so naming it back is
+  // a distinct misstep from looking the wrong way along the line.
+  { strategyId: 'not-the-one-i-named', when: 'the child named the one the question already named',
+    hint: () => 'That is the one I named. I asked about the one standing next to them.',
+    matches: (i, e) => i.kind === 'relative_position' && pointedAt(i, e) === i.askPosition },
+  { strategyId: 'check-which-side-i-asked-for', when: 'the child looked the wrong way along the line',
+    hint: () => 'You looked the other way along the line. Check which side of them I asked about.',
+    matches: (i, e) => i.kind === 'relative_position' && pointedAt(i, e) > 0
+      && pointedAt(i, e) === i.askPosition + (i.relativeQuery === 'before' ? 1 : -1) },
+
+  // sequence_story — the story states everybody's place, so naming the wrong
+  // character's place is the listening error the mode is built to catch.
+  { strategyId: 'thats-someone-elses-place', when: 'the child gave the place belonging to somebody else in the story',
+    hint: () => 'That is where somebody else is standing. Listen again for the one I asked about.',
+    matches: (i, e) => i.kind === 'sequence_story' && e.saidPosition > 0
+      && e.saidPosition !== i.lineNames.indexOf(i.storyName) + 1
+      && e.saidPosition <= i.lineNames.length },
+
+  // build_sequence — the evidence is the line the child has actually made.
+  { strategyId: 'every-clue-has-a-place', when: 'the child left part of the line empty',
+    hint: () => 'There are still places to fill. Every clue tells you where somebody goes.',
+    matches: (i, e) => i.kind === 'build_sequence'
+      && e.placed.length > 0 && e.placed.length < i.answerOrder.length },
+  { strategyId: 'check-the-clues-again', when: 'the child filled the whole line but somebody is in the wrong place',
+    hint: () => 'The line is full, but somebody is not where their clue said. Listen to the clues again.',
+    matches: (i, e) => i.kind === 'build_sequence' && e.placed.length === i.answerOrder.length
+      && e.placed.some((name, index) => name !== i.answerOrder[index]) },
+];
+
+/** The mode's method reminder plus every aid whose evidence currently fits. */
+export function ordinalScaffoldsFor(item: OrdinalLineItem | null | undefined,
+  evidence: OrdinalMisstepEvidence): OrdinalScaffold[] {
+  return resolveScaffolds(item, evidence, item ? METHOD[item.kind] : undefined, AIDS);
+}

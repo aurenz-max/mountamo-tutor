@@ -1,0 +1,237 @@
+{
+  "audit": {
+    "componentId": "number-line",
+    "status": "pass",
+    "componentFiles": [
+      "src/components/lumina/primitives/visual-primitives/math/NumberLine.tsx"
+    ],
+    "dataBagKeys": [
+      "rangeMin",
+      "rangeMax",
+      "visibleMin",
+      "visibleMax",
+      "numberType",
+      "interactionMode",
+      "gradeBand",
+      "totalChallenges",
+      "currentChallengeIndex",
+      "isCurrentChallengeComplete",
+      "allChallengesComplete",
+      "instruction",
+      "challengeType",
+      "targetValues",
+      "exactTargetValue",
+      "placedPoints",
+      "jumpEndPoints",
+      "orderedPlacements",
+      "attemptNumber",
+      "zoomLevel",
+      "currentPhase",
+      "supportTier"
+    ],
+    "dataBagDynamic": false,
+    "contextKeys": [
+      "rangeMin",
+      "rangeMax",
+      "visibleMin",
+      "visibleMax",
+      "numberType",
+      "interactionMode",
+      "gradeBand",
+      "instruction",
+      "challengeType",
+      "targetValues",
+      "exactTargetValue",
+      "placedPoints",
+      "attemptNumber",
+      "currentPhase"
+    ],
+    "templateVars": [
+      "rangeMin",
+      "rangeMax",
+      "numberType",
+      "interactionMode"
+    ],
+    "sendTextTags": [
+      "ACTIVITY_START",
+      "ANSWER_CORRECT",
+      "ANSWER_INCORRECT",
+      "ALL_COMPLETE",
+      "NEXT_ITEM"
+    ],
+    "findings": []
+  },
+  "status": "pass",
+  "tutoring": {
+    "taskDescription": "Work with a number line from {{rangeMin}} to {{rangeMax}} using {{numberType}} numbers in {{interactionMode}} mode.",
+    "contextKeys": [
+      "rangeMin",
+      "rangeMax",
+      "visibleMin",
+      "visibleMax",
+      "numberType",
+      "interactionMode",
+      "gradeBand",
+      "instruction",
+      "challengeType",
+      "targetValues",
+      "exactTargetValue",
+      "placedPoints",
+      "attemptNumber",
+      "currentPhase"
+    ],
+    "scaffoldingLevels": {
+      "level1": "\"Look carefully at the number line. Where do you think that value belongs?\"",
+      "level2": "\"Find the labeled number just to the left of your target. Count the nearby tick marks one step at a time.\"",
+      "level3": "\"Use the labels in the visible window. Start at the closest labeled number on screen and count one tick at a time toward the target.\""
+    },
+    "commonStruggles": [
+      {
+        "pattern": "Placing point far from target value",
+        "response": "\"Look at the numbers under the tick marks. Find the two numbers your target is between, then place your point between them.\""
+      },
+      {
+        "pattern": "Confusing addition direction with subtraction",
+        "response": "\"Remember: adding moves RIGHT on the number line (numbers get bigger), subtracting moves LEFT (numbers get smaller).\""
+      },
+      {
+        "pattern": "Ordering fractions incorrectly",
+        "response": "\"Try zooming in to see the fraction marks. Compare each fraction to 1/2 first \u2014 is it more or less than half?\""
+      },
+      {
+        "pattern": "Difficulty reading a large range",
+        "response": "\"Use the labels in the zoomed window on screen. Start from the closest visible label instead of counting from the beginning of the whole range.\""
+      }
+    ],
+    "aiDirectives": [
+      {
+        "title": "INTERACTION MODE COACHING",
+        "instruction": "Adapt your coaching to the interaction mode. In PLOT mode: guide placement \u2014 \"Find the spot between the tick marks.\" In JUMP mode: narrate movement \u2014 \"You jumped 3 to the right, that is adding 3!\" In ORDER mode: guide comparison \u2014 \"Which number is further left? That one is smaller.\" Always reference the number line visually \u2014 point to specific tick marks and positions."
+      },
+      {
+        "title": "GRADE-BAND ADAPTATION",
+        "instruction": "For K-2: use counting language \u2014 \"Let's count the hops: 1, 2, 3...\" Keep to whole numbers. Kindergarten stays on small fully labeled ranges; when an explicit Grade-1 objective extends through 120, coach only the readable auto-zoomed window and never redirect the child back to 0-20. For grades 3-5: introduce fraction/decimal language \u2014 \"Is 3/4 closer to 1/2 or to 1?\" Use benchmark fractions (1/4, 1/2, 3/4) as reference points. For negative numbers: \"Numbers left of zero are negative \u2014 they are less than zero.\""
+      }
+    ]
+  },
+  "generatedData": {
+    "title": "Hop Back on the Number Line",
+    "description": "Learn how to subtract numbers up to 10 by taking backward jumps on the number line.",
+    "range": {
+      "min": 0,
+      "max": 10
+    },
+    "gradeBand": "K-2",
+    "numberType": "integer",
+    "interactionMode": "jump",
+    "challenges": [
+      {
+        "id": "show_jump-0",
+        "type": "show_jump",
+        "instruction": "Start at 7 and jump back 2. Where do you land?",
+        "targetValues": [
+          5
+        ],
+        "hint": "Count the hops one jump at a time, starting from 7.",
+        "startValue": 7,
+        "operations": [
+          {
+            "type": "subtract",
+            "startValue": 7,
+            "changeValue": 2,
+            "showJumpArc": false
+          }
+        ]
+      },
+      {
+        "id": "show_jump-1",
+        "type": "show_jump",
+        "instruction": "Put your froggy feet on 7. Now, hop backward 5 spaces to the left!",
+        "targetValues": [
+          2
+        ],
+        "hint": "Count the hops one jump at a time, starting from 7.",
+        "startValue": 7,
+        "operations": [
+          {
+            "type": "subtract",
+            "startValue": 7,
+            "changeValue": 5,
+            "showJumpArc": false
+          }
+        ]
+      },
+      {
+        "id": "show_jump-2",
+        "type": "show_jump",
+        "instruction": "Let's help our frog friend hop backward! Start at the number 10 and make 1 big hop to the left.",
+        "targetValues": [
+          9
+        ],
+        "hint": "Put your finger on 10, then hop backward one space to the left and see what number you land on!",
+        "startValue": 10,
+        "operations": [
+          {
+            "type": "subtract",
+            "startValue": 10,
+            "changeValue": 1,
+            "showJumpArc": false
+          }
+        ]
+      },
+      {
+        "id": "show_jump-3",
+        "type": "show_jump",
+        "instruction": "Let's put on our jumping shoes! Start at the number 8 and hop backward 5 spaces to see where you land.",
+        "targetValues": [
+          3
+        ],
+        "hint": "Put your finger on 8, and count backward one hop at a time until you have made 5 hops.",
+        "startValue": 8,
+        "operations": [
+          {
+            "type": "subtract",
+            "startValue": 8,
+            "changeValue": 5,
+            "showJumpArc": false
+          }
+        ]
+      }
+    ],
+    "highlights": [],
+    "operations": [
+      {
+        "type": "subtract",
+        "startValue": 7,
+        "changeValue": 2,
+        "showJumpArc": false
+      }
+    ]
+  },
+  "mergedBag": {
+    "rangeMin": "\u00abruntime:rangeMin\u00bb",
+    "rangeMax": "\u00abruntime:rangeMax\u00bb",
+    "visibleMin": "\u00abruntime:visibleMin\u00bb",
+    "visibleMax": "\u00abruntime:visibleMax\u00bb",
+    "numberType": "integer",
+    "interactionMode": "jump",
+    "gradeBand": "K-2",
+    "totalChallenges": "\u00abruntime:totalChallenges\u00bb",
+    "currentChallengeIndex": "\u00abruntime:currentChallengeIndex\u00bb",
+    "isCurrentChallengeComplete": "\u00abruntime:isCurrentChallengeComplete\u00bb",
+    "allChallengesComplete": "\u00abruntime:allChallengesComplete\u00bb",
+    "instruction": "Start at 7 and jump back 2. Where do you land?",
+    "challengeType": "\u00abruntime:challengeType\u00bb",
+    "targetValues": [
+      5
+    ],
+    "exactTargetValue": "\u00abruntime:exactTargetValue\u00bb",
+    "placedPoints": "\u00abruntime:placedPoints\u00bb",
+    "jumpEndPoints": "\u00abruntime:jumpEndPoints\u00bb",
+    "orderedPlacements": "\u00abruntime:orderedPlacements\u00bb",
+    "attemptNumber": "\u00abruntime:attemptNumber\u00bb",
+    "zoomLevel": "\u00abruntime:zoomLevel\u00bb",
+    "currentPhase": "\u00abruntime:currentPhase\u00bb",
+    "supportTier": "\u00abruntime:supportTier\u00bb"
+  }
+}

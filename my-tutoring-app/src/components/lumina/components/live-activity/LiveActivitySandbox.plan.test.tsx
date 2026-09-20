@@ -16,9 +16,16 @@ vi.mock('@/contexts/LuminaAIContext', () => ({
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { uid: 'tester' } }) }));
 const finishButton = (data: any, label: string) =>
   <button onClick={() => data.onEvaluationSubmit?.({ success: false, score: 75 })}>{label}</button>;
-vi.mock('../../primitives/visual-primitives/math/TenFrame', () => ({ default: ({ data, autoStart }: any) =>
-  <div data-testid="ten-frame" data-auto-start={String(autoStart)}>{data.title}{finishButton(data, 'finish frame')}</div> }));
-vi.mock('../../primitives/visual-primitives/math/NumberLine', () => ({ default: (props: any) => { mocks.lineProps = props; const { data } = props; return <div data-testid="number-line">{data.title}{finishButton(data, 'finish line')}</div>; } }));
+// One mock for every adopted family; a new adoption needs no edit here. The
+// number-line row still records its props, because the plan projection asserts
+// the resolved eval mode and plan item reach the mounted primitive.
+vi.mock('./liveRenderers', () => {
+  const Mounted = ({ id, data, autoStart, planItemId, evalMode }: any) => {
+    if (id === 'number-line') mocks.lineProps = { data, runtimePlanItemId: planItemId, runtimeEvalMode: evalMode };
+    return <div data-testid={id} data-auto-start={String(autoStart)}>{data.title}{finishButton(data, `finish ${id}`)}</div>;
+  };
+  return { LIVE_RENDERERS: new Proxy({}, { get: (_t, id: string) => (p: any) => <Mounted id={id} {...p} /> }) };
+});
 
 const frame = { title: 'Frame practice', mode: 'single', gradeBand: '1-2', challenges: [
   { id: 'a', type: 'subtract', targetCount: 4, startCount: 7, instruction: 'Take away 3.' }] };
@@ -89,8 +96,8 @@ it('runs a loaded package as a planned lesson: in order, prepared content, one c
   await emit({ type: 'activity_ready', callId: 'start-1', instanceId: mounted.instanceId });
   expect(screen.getByTestId('ten-frame').getAttribute('data-auto-start')).toBe('true');
 
-  fireEvent.click(screen.getByText('finish frame'));
-  fireEvent.click(screen.getByText('finish frame'));
+  fireEvent.click(screen.getByText('finish ten-frame'));
+  fireEvent.click(screen.getByText('finish ten-frame'));
   expect(sent('plan_item_complete')).toEqual([{ type: 'plan_item_complete', callId: 'start-1', instanceId: mounted.instanceId,
     itemId: 'item-1', nextItemId: 'item-2',
     outcome: { itemId: 'item-1', disposition: 'completed', allCorrect: false, score: 75 } }]);
@@ -106,7 +113,7 @@ it('runs a loaded package as a planned lesson: in order, prepared content, one c
   const second = sent('activity_result').at(-1);
   expect(second).toMatchObject({ callId: 'start-2', status: 'mounted', primitiveId: 'number-line', planItem: { itemId: 'item-2', evalMode: 'jump' } });
   expect(second.data).toMatchObject({ instruction: 'Start at 7 and hop back 3.', currentChallengeIndex: 0 });
-  fireEvent.click(screen.getByText('finish line'));
+  fireEvent.click(screen.getByText('finish number-line'));
   expect(sent('plan_item_complete').at(-1)).toMatchObject({ callId: 'start-2', itemId: 'item-2', nextItemId: '' });
 
   await emit({ type: 'activity_request', callId: 'after', args: { planItemId: 'item-2' } });
@@ -133,7 +140,7 @@ it('preserves plan metadata and holds its completion report until the mounted ru
         evidence: { attemptNumber: 1, correctness: terminal ? 'correct' : 'unknown', recentResponses: [] } }) } });
     release = runtime.holdTeachingTurn({ allowTutorActions: true });
   });
-  fireEvent.click(screen.getByText('finish line'));
+  fireEvent.click(screen.getByText('finish number-line'));
   expect(sent('plan_item_complete')).toHaveLength(0);
   act(() => { terminal = true; registration.changed(); runtime.requestCompletion(); });
   expect(runtime.getSnapshot().status).toBe('closing');

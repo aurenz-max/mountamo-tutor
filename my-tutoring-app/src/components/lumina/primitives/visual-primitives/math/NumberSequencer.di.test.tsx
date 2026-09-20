@@ -20,6 +20,10 @@ vi.mock('../../../components/PhaseSummaryPanel', () => ({ default: (props: any) 
   phaseSummary(props); return <div>Sequence Complete!</div>;
 } }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: sounds }));
+// The component now reads the live session so the host can auto-start the runner.
+// Disconnected here: these cases drive the runner through its own controls.
+vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0,
+  useLuminaAIContext: () => ({ isConnected: false, isListening: false, sessionMode: null, activePrimitiveId: null }) }));
 import NumberSequencer, { type NumberSequencerData } from './NumberSequencer';
 const data: NumberSequencerData = { title: 'The answer is five', gradeBand: 'K', showNumberLine: false, showDotArrays: true,
   challenges: [{ id: 'a', type: 'before-after', instruction: 'Say five', sequence: [null, 6], correctAnswers: [5], rangeMin: 5, rangeMax: 6 },

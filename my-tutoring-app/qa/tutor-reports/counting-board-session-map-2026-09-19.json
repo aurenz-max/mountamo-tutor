@@ -1,0 +1,311 @@
+{
+  "source": "backend\\logs\\lumina-sessions\\2026-09-19-190241-lumina-tutor-4aca92f0ac84.jsonl",
+  "observations": [
+    {
+      "ts": "2026-09-19T19:03:14.745+00:00",
+      "status": "visible",
+      "verdict": "correct",
+      "transition": "advance",
+      "reason": "tutor_success_feedback_finished",
+      "ms": 442,
+      "itemId": "c1"
+    },
+    {
+      "ts": "2026-09-19T19:03:33.268+00:00",
+      "status": "visible",
+      "verdict": "correct",
+      "transition": "advance",
+      "reason": "tutor_success_feedback_finished",
+      "ms": 348,
+      "itemId": "c2"
+    },
+    {
+      "ts": "2026-09-19T19:03:53.329+00:00",
+      "status": "abstained",
+      "verdict": "none",
+      "transition": "none",
+      "reason": "unsupported",
+      "ms": 419,
+      "itemId": "c3"
+    },
+    {
+      "ts": "2026-09-19T19:04:04.537+00:00",
+      "status": "visible",
+      "verdict": "correct",
+      "transition": "advance",
+      "reason": "tutor_success_feedback_finished",
+      "ms": 485,
+      "itemId": "c3"
+    },
+    {
+      "ts": "2026-09-19T19:04:19.992+00:00",
+      "status": "visible",
+      "verdict": "correct",
+      "transition": "advance",
+      "reason": "tutor_success_feedback_finished",
+      "ms": 423,
+      "itemId": "c4"
+    },
+    {
+      "ts": "2026-09-19T19:04:36.951+00:00",
+      "status": "abstained",
+      "verdict": "none",
+      "transition": "none",
+      "reason": "unsupported",
+      "ms": 509,
+      "itemId": "c5"
+    },
+    {
+      "ts": "2026-09-19T19:04:48.654+00:00",
+      "status": "visible",
+      "verdict": "correct",
+      "transition": "advance",
+      "reason": "tutor_success_feedback_finished",
+      "ms": 378,
+      "itemId": "c5"
+    },
+    {
+      "ts": "2026-09-19T19:04:55.578+00:00",
+      "status": "abstained",
+      "verdict": "none",
+      "transition": "none",
+      "reason": "unsupported",
+      "ms": 323,
+      "itemId": "c6"
+    },
+    {
+      "ts": "2026-09-19T19:05:15.674+00:00",
+      "status": "visible",
+      "verdict": "correct",
+      "transition": "advance",
+      "reason": "tutor_success_feedback_finished",
+      "ms": 357,
+      "itemId": "c6"
+    },
+    {
+      "ts": "2026-09-19T19:05:22.907+00:00",
+      "status": "abstained",
+      "verdict": "none",
+      "transition": "none",
+      "reason": "uncertain_or_invalid",
+      "ms": 467,
+      "itemId": "c7"
+    },
+    {
+      "ts": "2026-09-19T19:05:36.311+00:00",
+      "status": "abstained",
+      "verdict": "none",
+      "transition": "none",
+      "reason": "unsupported",
+      "ms": 385,
+      "itemId": "c7"
+    },
+    {
+      "ts": "2026-09-19T19:05:51.463+00:00",
+      "status": "visible",
+      "verdict": "correct",
+      "transition": "advance",
+      "reason": "tutor_success_feedback_finished",
+      "ms": 421,
+      "itemId": "c7"
+    }
+  ],
+  "turns": [
+    {
+      "turn": 1,
+      "speaker": "learner",
+      "text": "Uhum."
+    },
+    {
+      "turn": 2,
+      "speaker": "tutor",
+      "text": "We're going to practice counting some objects together on our counting board."
+    },
+    {
+      "turn": 3,
+      "speaker": "tutor",
+      "text": "Let's start by counting the blocks together. How many blocks do you see on your board?"
+    },
+    {
+      "turn": 4,
+      "speaker": "learner",
+      "text": "four"
+    },
+    {
+      "turn": 4,
+      "speaker": "tutor",
+      "text": "Exactly! There are four blocks on the board."
+    },
+    {
+      "turn": 5,
+      "speaker": "tutor",
+      "text": "Let's try another one with even more blocks. How many blocks are on the board now?"
+    },
+    {
+      "turn": 6,
+      "speaker": "learner",
+      "text": "sex"
+    },
+    {
+      "turn": 6,
+      "speaker": "tutor",
+      "text": "That's right, there are six blocks on the board."
+    },
+    {
+      "turn": 7,
+      "speaker": "tutor",
+      "text": "You are doing great with your counting! Let's count the blocks on the board one more time."
+    },
+    {
+      "turn": 8,
+      "speaker": "learner",
+      "text": "ocho"
+    },
+    {
+      "turn": 9,
+      "speaker": "learner",
+      "text": "¿Qué?"
+    },
+    {
+      "turn": 9,
+      "speaker": "tutor",
+      "text": "Let's count them together block by block to be sure. Can you count the blocks one more time?"
+    },
+    {
+      "turn": 10,
+      "speaker": "learner",
+      "text": "saben"
+    },
+    {
+      "turn": 10,
+      "speaker": "tutor",
+      "text": "That is correct! There are seven blocks on the board."
+    },
+    {
+      "turn": 11,
+      "speaker": "tutor",
+      "text": "You're on a roll! Let's count the blocks on the board again."
+    },
+    {
+      "turn": 12,
+      "speaker": "learner",
+      "text": "A"
+    },
+    {
+      "turn": 12,
+      "speaker": "tutor",
+      "text": "That's right, there are eight blocks on the board."
+    },
+    {
+      "turn": 13,
+      "speaker": "tutor",
+      "text": "Let's count the blocks on the board again. How many blocks do you see now?"
+    },
+    {
+      "turn": 14,
+      "speaker": "learner",
+      "text": "sex"
+    },
+    {
+      "turn": 14,
+      "speaker": "tutor",
+      "text": "Let's take a closer look and count them together block by block. How many blocks do you count when we go slowly?"
+    },
+    {
+      "turn": 15,
+      "speaker": "learner",
+      "text": "1 2 3 4 5"
+    },
+    {
+      "turn": 16,
+      "speaker": "learner",
+      "text": "¿Qué?"
+    },
+    {
+      "turn": 16,
+      "speaker": "tutor",
+      "text": "That's right, there are five blocks on the board."
+    },
+    {
+      "turn": 17,
+      "speaker": "learner",
+      "text": "¿Qué?"
+    },
+    {
+      "turn": 17,
+      "speaker": "tutor",
+      "text": "Let's keep up the great work! How many blocks do you see on your board now?"
+    },
+    {
+      "turn": 18,
+      "speaker": "learner",
+      "text": "¿Qué?"
+    },
+    {
+      "turn": 18,
+      "speaker": "tutor",
+      "text": "Let's count each block slowly together so we can find the total. Can you count the blocks with me?"
+    },
+    {
+      "turn": 19,
+      "speaker": "learner",
+      "text": "eight in the first row and one in the second row, so nine."
+    },
+    {
+      "turn": 19,
+      "speaker": "tutor",
+      "text": "That's perfect! You counted precisely, and there are nine blocks in total."
+    },
+    {
+      "turn": 20,
+      "speaker": "learner",
+      "text": "¿Qué?"
+    },
+    {
+      "turn": 20,
+      "speaker": "tutor",
+      "text": "Let's count the blocks on the board once more. How many blocks do you see?"
+    },
+    {
+      "turn": 21,
+      "speaker": "learner",
+      "text": "seven in the first row and two in the second row, so nine."
+    },
+    {
+      "turn": 21,
+      "speaker": "tutor",
+      "text": "Let's count them again together to make sure we get every single block. How many do you count now?"
+    },
+    {
+      "turn": 22,
+      "speaker": "learner",
+      "text": "¿Qué? En la primera row, dos en la segunda row, so 10."
+    },
+    {
+      "turn": 22,
+      "speaker": "tutor",
+      "text": "Spot on! You counted them perfectly, and there are ten blocks in total."
+    },
+    {
+      "turn": 23,
+      "speaker": "learner",
+      "text": "¿Qué?"
+    },
+    {
+      "turn": 23,
+      "speaker": "tutor",
+      "text": "<!-- silence -->"
+    },
+    {
+      "turn": 24,
+      "speaker": "learner",
+      "text": "¿Qué?"
+    }
+  ],
+  "finalState": {
+    "item": "c7",
+    "phase": "completed",
+    "status": "completed",
+    "correctness": "correct"
+  }
+}

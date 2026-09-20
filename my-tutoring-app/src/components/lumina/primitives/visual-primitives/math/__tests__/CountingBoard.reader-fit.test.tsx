@@ -67,6 +67,8 @@ vi.mock('../../../../evaluation', () => ({
     submittedResult: null,
     elapsedMs: 0,
   }),
+  // Mounted standalone, outside an EvaluationProvider: the real hook returns null there.
+  useEvaluationContext: () => null,
 }));
 vi.mock('../../../../utils/SoundManager', () => ({
   SoundManager: new Proxy({}, { get: () => vi.fn() }),

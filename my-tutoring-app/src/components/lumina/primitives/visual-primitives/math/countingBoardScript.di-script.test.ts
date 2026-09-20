@@ -44,6 +44,7 @@ import {
   ACTION_FOR_KIND,
   completeCue,
   countingBoardHarnessAnswers,
+  askFor,
   countingBoardPackBase,
   countedNoun,
   countWalk,
@@ -548,10 +549,43 @@ describe('the two-branch law (cap-drill finding, 2026-08-15)', () => {
   it('every judged contract states the law BEFORE its branches', () => {
     for (const f of FIXTURES.filter((i) => i.answerKind === 'voice')) {
       const cue = itemCue(f, {});
-      expect(cue).toContain('Your whole reply to their attempt is ONE of the quoted lines below');
+      expect(cue).toContain('Your whole reply to their ATTEMPT is ONE of the quoted lines below');
       expect(cue).toContain('no scaffolding line');
       expect(cue.indexOf('Your whole reply')).toBeLessThan(cue.indexOf('If the answer is right'));
     }
+  });
+
+  // ── THE THIRD BRANCH (2026-09-19) ─────────────────────────────────────────
+  // A live session: the child said "can you help me" and got the wrong-answer
+  // correction line twice, verbatim. The law is unchanged for ATTEMPTS; this
+  // adds the outcome for a turn that is not an attempt at all.
+  it('every voice contract carries the help branch, AFTER the two it qualifies', () => {
+    for (const f of FIXTURES.filter((i) => i.answerKind === 'voice')) {
+      const cue = itemCue(f, {});
+      expect(cue).toContain('THIRD BRANCH — THE LEARNER ASKS INSTEAD OF ANSWERING');
+      expect(cue).toContain('Say exactly: "Good question."');
+      expect(cue.indexOf('If it is wrong')).toBeLessThan(cue.indexOf('THIRD BRANCH'));
+    }
+  });
+
+  it('the help branch ends by re-asking THIS item, so the runner sends no cue', () => {
+    for (const f of FIXTURES.filter((i) => i.answerKind === 'voice')) {
+      const cue = itemCue(f, {});
+      // The clause quotes the item's own ask back. That is what lets the runner
+      // re-arm without sending a second ask over the top of her answer.
+      expect(cue.slice(cue.indexOf('THIRD BRANCH'))).toContain(askFor(f));
+    }
+  });
+
+  it('caps the help turn at one sentence — a third reply channel is what stalls a run', () => {
+    const cue = itemCue(item('count_all', 5), {});
+    expect(cue).toContain('ONE short sentence');
+    expect(cue).toContain('never add a second sentence of teaching');
+    expect(cue).toContain('Never give the answer to the question you asked them');
+  });
+
+  it('opts the pack into the help sentinel — the clause and the opener ship together', () => {
+    expect(countingBoardPackBase([]).sentinels?.help).toEqual([['good', 'question']]);
   });
 
   it('the correction is named as invariant for the item', () => {

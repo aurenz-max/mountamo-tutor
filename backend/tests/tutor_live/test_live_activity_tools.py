@@ -40,14 +40,43 @@ class ActivityToolsTest(IsolatedAsyncioTestCase):
         self.assertEqual(self.replies[-1].scheduling.value, "SILENT")
         self.assertEqual(self.replies[-1].response["state"], {"placedPoints": [3]})
 
+    async def test_runtime_updates_reach_voice_context_without_taking_the_floor(self):
+        state = {'instanceId': 'x', 'revision': 7, 'choices': [{'actionId': 'epoch/7/0'}]}
+        await self.bridge.runtime_state(state)
+        self.assertFalse(self.replies)
+        await self.bridge.call(self.call())
+        await self.bridge.result({'callId': 'a', 'status': 'mounted', 'data': {'liveRuntime': state}, 'instanceId': 'x'})
+        self.assertEqual(self.replies[-1].response['data']['liveRuntime'], state)
+        state = {**state, 'revision': 8}
+        await self.bridge.runtime_state(state)
+        self.assertEqual(self.replies[-1].response['state']['liveRuntime'], state)
+        self.assertTrue(self.replies[-1].will_continue)
+        self.assertEqual(self.replies[-1].scheduling.value, 'SILENT')
+        n = len(self.replies)
+        await self.bridge.runtime_state({**state, 'instanceId': 'old'})
+        self.assertEqual(len(self.replies), n)
+
     async def test_superseded_and_duplicate_requests_cannot_mount(self):
         await self.bridge.call(self.call())
         await self.bridge.call(self.call())
         self.assertEqual(len(self.events), 1)
-        await self.bridge.call(self.call("b"))
+        await self.bridge.call(self.call("b", topic="A different assignment"))
         self.assertEqual(self.replies[-2].response["status"], "cancelled")
         self.assertFalse(await self.bridge.result({"callId": "a", "status": "mounted", "data": {}, "instanceId": "stale"}))
         self.assertEqual(self.bridge.pending, "b")
+
+    async def test_equivalent_requests_keep_generation_and_original_mount_receipt(self):
+        await self.bridge.call(self.call("a"))
+        timer = self.bridge.timer
+        await self.bridge.call(self.call("b"))
+        await self.bridge.call(self.call("c", topic=" Subtract within 10 "))
+        self.assertEqual(len(self.events), 1)
+        self.assertEqual(self.bridge.pending, "a")
+        self.assertIs(self.bridge.timer, timer)
+        self.assertEqual(self.replies[-1].response["status"], "already_preparing")
+        self.assertEqual(self.replies[-1].scheduling.value, "SILENT")
+        self.assertTrue(await self.bridge.result({"callId": "a", "status": "mounted", "data": {}, "instanceId": "board"}))
+        self.assertEqual(self.bridge.active, ("a", "board"))
 
     async def test_timeout_and_model_cancellation_reject_late_results(self):
         await self.bridge.call(self.call())

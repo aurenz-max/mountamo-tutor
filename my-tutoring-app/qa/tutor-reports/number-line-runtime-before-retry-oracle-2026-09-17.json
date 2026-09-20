@@ -1,0 +1,5506 @@
+[
+  {
+    "passed": false,
+    "events": [
+      {
+        "type": "learner",
+        "t": 4.94,
+        "phase": "opening",
+        "text": "Please read my current number-line instruction so I can begin."
+      },
+      {
+        "type": "runtime_command",
+        "t": 6.38,
+        "phase": "opening",
+        "command": {
+          "sessionEpoch": "537e78a7-7e9b-4a7c-bce7-40c6336406dc",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 1,
+          "commandId": "call_78829",
+          "action": {
+            "type": "replay"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 6.45,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_78829",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "537e78a7-7e9b-4a7c-bce7-40c6336406dc",
+            "revision": 2,
+            "visibleRevision": 2,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "537e78a7-7e9b-4a7c-bce7-40c6336406dc/2/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "537e78a7-7e9b-4a7c-bce7-40c6336406dc/2/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "537e78a7-7e9b-4a7c-bce7-40c6336406dc/2/2"
+              }
+            ]
+          },
+          "elapsedMs": 49.36329999999998
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 12.88,
+        "phase": "opening",
+        "text": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+        "state": {
+          "sessionEpoch": "537e78a7-7e9b-4a7c-bce7-40c6336406dc",
+          "revision": 2,
+          "visibleRevision": 2,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "537e78a7-7e9b-4a7c-bce7-40c6336406dc/2/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "537e78a7-7e9b-4a7c-bce7-40c6336406dc/2/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "537e78a7-7e9b-4a7c-bce7-40c6336406dc/2/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "text",
+        "t": 12.91,
+        "message": {
+          "type": "text",
+          "content": "[ANSWER_INCORRECT] Challenge: \"Let us start at the number 7. Make 1 little hop to the left to see where you land!\". Student placed: [7]. Target: [6]. Attempt 1. Give a hint without revealing the answer.",
+          "silent": true
+        }
+      },
+      {
+        "type": "runtime_command",
+        "t": 14.59,
+        "phase": "wrong",
+        "command": {
+          "sessionEpoch": "537e78a7-7e9b-4a7c-bce7-40c6336406dc",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 4,
+          "commandId": "call_78880",
+          "action": {
+            "type": "retry"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 14.66,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_78880",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "537e78a7-7e9b-4a7c-bce7-40c6336406dc",
+            "revision": 5,
+            "visibleRevision": 5,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "537e78a7-7e9b-4a7c-bce7-40c6336406dc/5/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "537e78a7-7e9b-4a7c-bce7-40c6336406dc/5/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "537e78a7-7e9b-4a7c-bce7-40c6336406dc/5/2"
+              }
+            ]
+          },
+          "elapsedMs": 47.862199999999575
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 20.44,
+        "phase": "wrong",
+        "text": "When we hop to the left on the number line, do the numbers get bigger or smaller?",
+        "state": {
+          "sessionEpoch": "537e78a7-7e9b-4a7c-bce7-40c6336406dc",
+          "revision": 5,
+          "visibleRevision": 5,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "537e78a7-7e9b-4a7c-bce7-40c6336406dc/5/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "537e78a7-7e9b-4a7c-bce7-40c6336406dc/5/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "537e78a7-7e9b-4a7c-bce7-40c6336406dc/5/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "failure",
+        "t": 20.44,
+        "reason": "AssertionError()",
+        "state": {
+          "sessionEpoch": "537e78a7-7e9b-4a7c-bce7-40c6336406dc",
+          "revision": 5,
+          "visibleRevision": 5,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "537e78a7-7e9b-4a7c-bce7-40c6336406dc/5/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "537e78a7-7e9b-4a7c-bce7-40c6336406dc/5/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "537e78a7-7e9b-4a7c-bce7-40c6336406dc/5/2"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "passed": true,
+    "events": [
+      {
+        "type": "learner",
+        "t": 4.95,
+        "phase": "opening",
+        "text": "Please read my current number-line instruction so I can begin."
+      },
+      {
+        "type": "runtime_command",
+        "t": 6.66,
+        "phase": "opening",
+        "command": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 1,
+          "commandId": "call_97293",
+          "action": {
+            "type": "replay"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 6.74,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_97293",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+            "revision": 2,
+            "visibleRevision": 2,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/2/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/2/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/2/2"
+              }
+            ]
+          },
+          "elapsedMs": 58.11499999999978
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 12.95,
+        "phase": "opening",
+        "text": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+        "state": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "revision": 2,
+          "visibleRevision": 2,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/2/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/2/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/2/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "text",
+        "t": 12.99,
+        "message": {
+          "type": "text",
+          "content": "[ANSWER_INCORRECT] Challenge: \"Let us start at the number 7. Make 1 little hop to the left to see where you land!\". Student placed: [7]. Target: [6]. Attempt 1. Give a hint without revealing the answer.",
+          "silent": true
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 20.11,
+        "phase": "wrong",
+        "text": "Remember to start at 7, then hop one space to the left to find your new number.",
+        "state": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "revision": 4,
+          "visibleRevision": 4,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[7],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[7]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/4/0"
+            },
+            {
+              "action": {
+                "type": "retry"
+              },
+              "description": "Clear this incorrect response for another try; retain attempts and assistance",
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/4/1"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/4/2"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/4/3"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 20.11,
+        "phase": "retry",
+        "text": "Please clear my incorrect response so I can try this same problem again."
+      },
+      {
+        "type": "runtime_command",
+        "t": 21.14,
+        "phase": "retry",
+        "command": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 4,
+          "commandId": "call_97386",
+          "action": {
+            "type": "retry"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 21.2,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_97386",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+            "revision": 5,
+            "visibleRevision": 5,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/5/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/5/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/5/2"
+              }
+            ]
+          },
+          "elapsedMs": 47.01190000000133
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 28.61,
+        "phase": "retry",
+        "text": "I have cleared the board for you. Give hopping one space to the left another try from the number 7.",
+        "state": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "revision": 5,
+          "visibleRevision": 5,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/5/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/5/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/5/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 28.61,
+        "phase": "replay",
+        "text": "Please repeat this same instruction using the replay action."
+      },
+      {
+        "type": "runtime_command",
+        "t": 29.69,
+        "phase": "replay",
+        "command": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 5,
+          "commandId": "call_97434",
+          "action": {
+            "type": "replay"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 29.75,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_97434",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+            "revision": 6,
+            "visibleRevision": 6,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/6/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/6/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/6/2"
+              }
+            ]
+          },
+          "elapsedMs": 44.1971999999987
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 35.84,
+        "phase": "replay",
+        "text": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+        "state": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "revision": 6,
+          "visibleRevision": 6,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/6/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/6/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/6/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 35.86,
+        "phase": "hint",
+        "text": "Please show the spaces reminder on my screen."
+      },
+      {
+        "type": "runtime_command",
+        "t": 36.97,
+        "phase": "hint",
+        "command": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 6,
+          "commandId": "call_97496",
+          "action": {
+            "type": "scaffold",
+            "strategyId": "count-spaces",
+            "direction": 1
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 37.05,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_97496",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+            "revision": 7,
+            "visibleRevision": 7,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Find the starting mark. Count the spaces you move, one at a time."
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/7/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": -1
+                },
+                "description": "Hide the spaces reminder",
+                "assistance": {
+                  "level": 0,
+                  "answerExposure": "none"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/7/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/7/2"
+              }
+            ]
+          },
+          "elapsedMs": 62.12640000000101
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 41.61,
+        "phase": "hint",
+        "text": "I have shown the reminder to help you count the spaces as you hop.",
+        "state": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "revision": 7,
+          "visibleRevision": 7,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Find the starting mark. Count the spaces you move, one at a time."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/7/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "description": "Hide the spaces reminder",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/7/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/7/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 41.61,
+        "phase": "fade",
+        "text": "Please hide the reminder now."
+      },
+      {
+        "type": "runtime_command",
+        "t": 42.69,
+        "phase": "fade",
+        "command": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 7,
+          "commandId": "call_97523",
+          "action": {
+            "type": "scaffold",
+            "strategyId": "count-spaces",
+            "direction": -1
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 42.75,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_97523",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+            "revision": 8,
+            "visibleRevision": 8,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 8,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/8/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/8/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/8/2"
+              }
+            ]
+          },
+          "elapsedMs": 39.21499999999651
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 45.31,
+        "phase": "fade",
+        "text": "I have hidden the reminder.",
+        "state": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "revision": 8,
+          "visibleRevision": 8,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/8/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/8/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/8/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 45.33,
+        "phase": "example",
+        "text": "Please open the worked example and save my unfinished number line."
+      },
+      {
+        "type": "runtime_command",
+        "t": 46.69,
+        "phase": "example",
+        "command": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 9,
+          "commandId": "call_97556",
+          "action": {
+            "type": "request_support",
+            "artifactId": "example-show_jump-0"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 46.75,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_97556",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+            "revision": 10,
+            "visibleRevision": 10,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "support",
+            "status": "support",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "help",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[7],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[7]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": {
+              "id": "example-show_jump-0",
+              "kind": "counter-example",
+              "operation": "subtract",
+              "title": "See subtraction with another group",
+              "total": 6,
+              "removed": 2,
+              "altText": "Start with 6 counters. Take away 2, one at a time. 4 remain. On a number line, each counter taken away is one space back.",
+              "answerExposure": "partial",
+              "provenance": "prepared"
+            },
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 8,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 10,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "return"
+                },
+                "description": "Return to the same unfinished task",
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/10/0"
+              }
+            ]
+          },
+          "elapsedMs": 52.29520000000048
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 55.16,
+        "phase": "example",
+        "text": "In this example, taking away counters shows that moving back one space on a number line is just like taking away one counter.",
+        "state": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "revision": 10,
+          "visibleRevision": 10,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "support",
+          "status": "support",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "help",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[7],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[7]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": {
+            "id": "example-show_jump-0",
+            "kind": "counter-example",
+            "operation": "subtract",
+            "title": "See subtraction with another group",
+            "total": 6,
+            "removed": 2,
+            "altText": "Start with 6 counters. Take away 2, one at a time. 4 remain. On a number line, each counter taken away is one space back.",
+            "answerExposure": "partial",
+            "provenance": "prepared"
+          },
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 10,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "return"
+              },
+              "description": "Return to the same unfinished task",
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/10/0"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 55.16,
+        "phase": "return",
+        "text": "Please close the example and return to my saved number line."
+      },
+      {
+        "type": "runtime_command",
+        "t": 56.25,
+        "phase": "return",
+        "command": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 10,
+          "commandId": "call_97620",
+          "action": {
+            "type": "return"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 56.31,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_97620",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+            "revision": 11,
+            "visibleRevision": 11,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[7],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[7]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 8,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 10,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/11/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/11/1"
+              }
+            ]
+          },
+          "elapsedMs": 53.83899999999994
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 62.03,
+        "phase": "return",
+        "text": "Welcome back to your number line. Now, make one hop to the left from 7.",
+        "state": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "revision": 11,
+          "visibleRevision": 11,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[7],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[7]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 10,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/11/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/11/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "text",
+        "t": 62.06,
+        "message": {
+          "type": "text",
+          "content": "[ANSWER_CORRECT] Student correctly completed \"Let us start at the number 7. Make 1 little hop to the left to see where you land!\". Attempts: 2. Congratulate briefly. This challenge is checked complete. Execute the advertised runtime advance action now, then wait for its visible receipt before introducing the next instruction.",
+          "silent": true
+        }
+      },
+      {
+        "type": "runtime_command",
+        "t": 63.97,
+        "phase": "advance",
+        "command": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 13,
+          "commandId": "call_97663",
+          "action": {
+            "type": "advance"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 64.02,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_97663",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+            "revision": 14,
+            "visibleRevision": 14,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-1",
+              "task": "Our friendly frog is sitting on the number 9. Help him hop backward 5 spaces to the left!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 1,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 8,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 10,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Our friendly frog is sitting on the number 9. Help him hop backward 5 spaces to the left!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/14/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/14/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-1"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/14/2"
+              }
+            ]
+          },
+          "elapsedMs": 32.560300000004645
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 65.78,
+        "phase": "advance",
+        "text": "Great job hopping to the number 6!",
+        "state": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "revision": 14,
+          "visibleRevision": 14,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-1",
+            "task": "Our friendly frog is sitting on the number 9. Help him hop backward 5 spaces to the left!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 1,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 10,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Our friendly frog is sitting on the number 9. Help him hop backward 5 spaces to the left!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/14/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/14/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-1"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "aea8519a-a191-4bc0-a5aa-784fe181bfcf/14/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "text",
+        "t": 65.81,
+        "message": {
+          "type": "text",
+          "content": "[ANSWER_CORRECT] Student correctly completed \"Our friendly frog is sitting on the number 9. Help him hop backward 5 spaces to the left!\". Attempts: 1. Congratulate briefly.",
+          "silent": true
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 71.34,
+        "phase": "complete",
+        "text": "Fantastic job helping the frog hop backward to the number 4!",
+        "state": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "revision": 17,
+          "visibleRevision": 17,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "show_jump-1",
+            "task": "Our friendly frog is sitting on the number 9. Help him hop backward 5 spaces to the left!",
+            "phase": "done",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[4],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 1,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[4]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 10,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        }
+      },
+      {
+        "type": "complete",
+        "t": 71.36,
+        "state": {
+          "sessionEpoch": "aea8519a-a191-4bc0-a5aa-784fe181bfcf",
+          "revision": 17,
+          "visibleRevision": 17,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "show_jump-1",
+            "task": "Our friendly frog is sitting on the number 9. Help him hop backward 5 spaces to the left!",
+            "phase": "done",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[4],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 1,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[4]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 10,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        },
+        "submissions": 1
+      }
+    ]
+  },
+  {
+    "passed": true,
+    "events": [
+      {
+        "type": "learner",
+        "t": 5.02,
+        "phase": "opening",
+        "text": "Please read my current number-line instruction so I can begin."
+      },
+      {
+        "type": "runtime_command",
+        "t": 6.56,
+        "phase": "opening",
+        "command": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 1,
+          "commandId": "call_117772",
+          "action": {
+            "type": "replay"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 6.64,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_117772",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+            "revision": 2,
+            "visibleRevision": 2,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/2/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/2/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/2/2"
+              }
+            ]
+          },
+          "elapsedMs": 59.264500000000226
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 13.16,
+        "phase": "opening",
+        "text": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+        "state": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "revision": 2,
+          "visibleRevision": 2,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/2/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/2/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/2/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "text",
+        "t": 13.19,
+        "message": {
+          "type": "text",
+          "content": "[ANSWER_INCORRECT] Challenge: \"Let us start at the number 7. Make 1 little hop to the left to see where you land!\". Student placed: [7]. Target: [6]. Attempt 1. Give a hint without revealing the answer.",
+          "silent": true
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 22.59,
+        "phase": "wrong",
+        "text": "Remember, when we hop to the left on the number line, the numbers get smaller. If you start at 7, which number comes right before it?",
+        "state": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "revision": 4,
+          "visibleRevision": 4,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[7],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[7]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/4/0"
+            },
+            {
+              "action": {
+                "type": "retry"
+              },
+              "description": "Clear this incorrect response for another try; retain attempts and assistance",
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/4/1"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/4/2"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/4/3"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 22.59,
+        "phase": "retry",
+        "text": "Please clear my incorrect response so I can try this same problem again."
+      },
+      {
+        "type": "runtime_command",
+        "t": 23.92,
+        "phase": "retry",
+        "command": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 4,
+          "commandId": "call_117873",
+          "action": {
+            "type": "retry"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 24.0,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_117873",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+            "revision": 5,
+            "visibleRevision": 5,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/5/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/5/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/5/2"
+              }
+            ]
+          },
+          "elapsedMs": 58.06299999999828
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 28.28,
+        "phase": "retry",
+        "text": "It is cleared and ready for you to try your jump again.",
+        "state": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "revision": 5,
+          "visibleRevision": 5,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/5/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/5/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/5/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 28.28,
+        "phase": "replay",
+        "text": "Please repeat this same instruction using the replay action."
+      },
+      {
+        "type": "runtime_command",
+        "t": 29.42,
+        "phase": "replay",
+        "command": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 5,
+          "commandId": "call_117909",
+          "action": {
+            "type": "replay"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 29.5,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_117909",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+            "revision": 6,
+            "visibleRevision": 6,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/6/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/6/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/6/2"
+              }
+            ]
+          },
+          "elapsedMs": 59.89890000000014
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 35.88,
+        "phase": "replay",
+        "text": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+        "state": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "revision": 6,
+          "visibleRevision": 6,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/6/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/6/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/6/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 35.89,
+        "phase": "hint",
+        "text": "Please show the spaces reminder on my screen."
+      },
+      {
+        "type": "runtime_command",
+        "t": 37.27,
+        "phase": "hint",
+        "command": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 6,
+          "commandId": "call_117990",
+          "action": {
+            "type": "scaffold",
+            "strategyId": "count-spaces",
+            "direction": 1
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 37.34,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_117990",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+            "revision": 7,
+            "visibleRevision": 7,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Find the starting mark. Count the spaces you move, one at a time."
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/7/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": -1
+                },
+                "description": "Hide the spaces reminder",
+                "assistance": {
+                  "level": 0,
+                  "answerExposure": "none"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/7/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/7/2"
+              }
+            ]
+          },
+          "elapsedMs": 59.72849999999744
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 42.39,
+        "phase": "hint",
+        "text": "Find the starting mark and count the spaces you move, one at a time.",
+        "state": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "revision": 7,
+          "visibleRevision": 7,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Find the starting mark. Count the spaces you move, one at a time."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/7/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "description": "Hide the spaces reminder",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/7/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/7/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 42.39,
+        "phase": "fade",
+        "text": "Please hide the reminder now."
+      },
+      {
+        "type": "runtime_command",
+        "t": 43.45,
+        "phase": "fade",
+        "command": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 7,
+          "commandId": "call_118051",
+          "action": {
+            "type": "scaffold",
+            "strategyId": "count-spaces",
+            "direction": -1
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 43.5,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_118051",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+            "revision": 8,
+            "visibleRevision": 8,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 8,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/8/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/8/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/8/2"
+              }
+            ]
+          },
+          "elapsedMs": 37.88239999999496
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 46.5,
+        "phase": "fade",
+        "text": "There you go, the reminder is hidden.",
+        "state": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "revision": 8,
+          "visibleRevision": 8,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/8/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/8/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/8/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 46.52,
+        "phase": "example",
+        "text": "Please open the worked example and save my unfinished number line."
+      },
+      {
+        "type": "runtime_command",
+        "t": 47.73,
+        "phase": "example",
+        "command": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 9,
+          "commandId": "call_118086",
+          "action": {
+            "type": "request_support",
+            "artifactId": "example-show_jump-0"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 47.8,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_118086",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+            "revision": 10,
+            "visibleRevision": 10,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "support",
+            "status": "support",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "help",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[7],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[7]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": {
+              "id": "example-show_jump-0",
+              "kind": "counter-example",
+              "operation": "subtract",
+              "title": "See subtraction with another group",
+              "total": 6,
+              "removed": 2,
+              "altText": "Start with 6 counters. Take away 2, one at a time. 4 remain. On a number line, each counter taken away is one space back.",
+              "answerExposure": "partial",
+              "provenance": "prepared"
+            },
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 8,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 10,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "return"
+                },
+                "description": "Return to the same unfinished task",
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/10/0"
+              }
+            ]
+          },
+          "elapsedMs": 41.336999999999534
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 53.42,
+        "phase": "example",
+        "text": "You can see here that taking away counters is just like moving back on a number line.",
+        "state": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "revision": 10,
+          "visibleRevision": 10,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "support",
+          "status": "support",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "help",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[7],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[7]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": {
+            "id": "example-show_jump-0",
+            "kind": "counter-example",
+            "operation": "subtract",
+            "title": "See subtraction with another group",
+            "total": 6,
+            "removed": 2,
+            "altText": "Start with 6 counters. Take away 2, one at a time. 4 remain. On a number line, each counter taken away is one space back.",
+            "answerExposure": "partial",
+            "provenance": "prepared"
+          },
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 10,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "return"
+              },
+              "description": "Return to the same unfinished task",
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/10/0"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 53.42,
+        "phase": "return",
+        "text": "Please close the example and return to my saved number line."
+      },
+      {
+        "type": "runtime_command",
+        "t": 54.73,
+        "phase": "return",
+        "command": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 10,
+          "commandId": "call_118153",
+          "action": {
+            "type": "return"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 54.8,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_118153",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+            "revision": 11,
+            "visibleRevision": 11,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-0",
+              "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 2,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[7],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 0,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[7]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 8,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 10,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/11/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/11/1"
+              }
+            ]
+          },
+          "elapsedMs": 58.122300000002724
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 59.86,
+        "phase": "return",
+        "text": "Now let us see where you land when you hop one space left from 7.",
+        "state": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "revision": 11,
+          "visibleRevision": 11,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "task": "Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[7],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 0,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[7]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 10,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Let us start at the number 7. Make 1 little hop to the left to see where you land!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/11/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/11/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "text",
+        "t": 59.89,
+        "message": {
+          "type": "text",
+          "content": "[ANSWER_CORRECT] Student correctly completed \"Let us start at the number 7. Make 1 little hop to the left to see where you land!\". Attempts: 2. Congratulate briefly. This challenge is checked complete. Execute the advertised runtime advance action now, then wait for its visible receipt before introducing the next instruction.",
+          "silent": true
+        }
+      },
+      {
+        "type": "runtime_command",
+        "t": 61.03,
+        "phase": "advance",
+        "command": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "instanceId": "line",
+          "itemId": "show_jump-0",
+          "expectedRevision": 13,
+          "commandId": "call_118200",
+          "action": {
+            "type": "advance"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 61.09,
+        "message": {
+          "type": "runtime_result",
+          "commandId": "call_118200",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+            "revision": 14,
+            "visibleRevision": 14,
+            "instanceId": "line",
+            "planItemId": "line",
+            "primitiveId": "number-line",
+            "objectiveId": "number-line-practice",
+            "evalMode": "jump",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "show_jump-1",
+              "task": "Our friendly frog is sitting on the number 9. Help him hop backward 5 spaces to the left!",
+              "phase": "responding",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "unknown",
+                "recentResponses": [
+                  {
+                    "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                    "source": "gesture",
+                    "recognition": "not-applicable"
+                  }
+                ]
+              },
+              "demand": {
+                "challengeIndex": 1,
+                "kind": "show_jump",
+                "points": "[]",
+                "endpoints": "[]",
+                "ordered": "[]"
+              },
+              "support": {
+                "level": 0,
+                "answerExposure": "none"
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 2,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 6,
+                "action": {
+                  "type": "replay"
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 8,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": -1
+                },
+                "level": 0,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "line",
+                "itemId": "show_jump-0",
+                "revision": 10,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-0"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Our friendly frog is sitting on the number 9. Help him hop backward 5 spaces to the left!",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/14/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "count-spaces",
+                  "direction": 1
+                },
+                "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/14/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-show_jump-1"
+                },
+                "description": "See subtraction with another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/14/2"
+              }
+            ]
+          },
+          "elapsedMs": 47.66279999999824
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 68.95,
+        "phase": "advance",
+        "text": "\u7d20\u6674\u3089\u3057\u3044! Our friendly frog is sitting on the number 9. Help him hop backward 5 spaces to the left!",
+        "state": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "revision": 14,
+          "visibleRevision": 14,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-1",
+            "task": "Our friendly frog is sitting on the number 9. Help him hop backward 5 spaces to the left!",
+            "phase": "responding",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 1,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 10,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Focus the current instruction without changing work. After the visible receipt, read this exact instruction aloud: Our friendly frog is sitting on the number 9. Help him hop backward 5 spaces to the left!",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/14/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Find the starting mark. Count the spaces you move, one at a time.\". No points or answers are placed.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/14/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-1"
+              },
+              "description": "See subtraction with another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "actionId": "ac3c9ab4-8852-4729-811f-320691cce294/14/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "text",
+        "t": 69.0,
+        "message": {
+          "type": "text",
+          "content": "[ANSWER_CORRECT] Student correctly completed \"Our friendly frog is sitting on the number 9. Help him hop backward 5 spaces to the left!\". Attempts: 1. Congratulate briefly.",
+          "silent": true
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 73.98,
+        "phase": "complete",
+        "text": "You did it! That is another perfect hop on the number line.",
+        "state": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "revision": 17,
+          "visibleRevision": 17,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "show_jump-1",
+            "task": "Our friendly frog is sitting on the number 9. Help him hop backward 5 spaces to the left!",
+            "phase": "done",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[4],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 1,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[4]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 10,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        }
+      },
+      {
+        "type": "complete",
+        "t": 74.0,
+        "state": {
+          "sessionEpoch": "ac3c9ab4-8852-4729-811f-320691cce294",
+          "revision": 17,
+          "visibleRevision": 17,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "show_jump-1",
+            "task": "Our friendly frog is sitting on the number 9. Help him hop backward 5 spaces to the left!",
+            "phase": "done",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "{\"points\":[],\"endpoints\":[4],\"ordered\":[]}",
+                  "source": "gesture",
+                  "recognition": "not-applicable"
+                }
+              ]
+            },
+            "demand": {
+              "challengeIndex": 1,
+              "kind": "show_jump",
+              "points": "[]",
+              "endpoints": "[4]",
+              "ordered": "[]"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "assistance": [
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 2,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 6,
+              "action": {
+                "type": "replay"
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 8,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "count-spaces",
+                "direction": -1
+              },
+              "level": 0,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "line",
+              "itemId": "show_jump-0",
+              "revision": 10,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-show_jump-0"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        },
+        "submissions": 1
+      }
+    ]
+  }
+]

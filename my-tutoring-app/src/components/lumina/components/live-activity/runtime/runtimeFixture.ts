@@ -11,7 +11,9 @@ export function createRuntimeFixture(instanceId = 'reference-instance') {
   function initial(): TutorPrimitiveState {
     return { itemId: `reference-item-${index + 1}`, phase: 'answer', task: index === 0 ? 'Find 8 minus 3.' : 'Find 9 minus 2.',
       completed: false, evidence: { attemptNumber: 1, correctness: 'unknown', recentResponses: [] },
-      demand: { operation: 'subtraction', steps: 1 }, support: { level: 0, answerExposure: 'none' } };
+      demand: { operation: 'subtraction', steps: 1 }, support: { level: 0, answerExposure: 'none' },
+      // The reference item asks HOW MANY are left, so `count` is the dimension it assesses.
+      assessment: { responseDimension: 'count' } };
   }
   const mount: RuntimeMount = {
     instanceId, planItemId: 'reference-plan-item', primitiveId: 'runtime-reference', objectiveId: 'subtract-within-10', evalMode: 'reference-only',
@@ -38,8 +40,33 @@ export function createRuntimeFixture(instanceId = 'reference-instance') {
         return actions;
       },
       suspension: { suspend: () => { suspended = true; generation++; }, resume: () => { suspended = false; generation++; } },
-      supportArtifacts: [{ id: 'seven-take-two', kind: 'counter-example', title: 'A different subtraction example', total: 7, removed: 2,
-        altText: 'Seven counters with two crossed out, leaving five.', answerExposure: 'full', provenance: 'prepared' }],
+      // What EXISTS, with its meaning. The fixture never decides when attending is allowed;
+      // `attentionRefusal` does, from these roles and the item's own assessed dimension.
+      attentionTargets: () => [
+        { id: 'start', label: 'the number you started from', semanticRole: 'number-position', represents: 'start' },
+        { id: 'jump', label: 'the jump you drew', semanticRole: 'jump', represents: 'minus-three' },
+        { id: 'total', label: 'how many are left', semanticRole: 'count', represents: 'result' },
+      ],
+      supportArtifacts: [
+        { id: 'seven-take-two', kind: 'counter-example', title: 'A different subtraction example', total: 7, removed: 2,
+          altText: 'Seven counters with two crossed out, leaving five.', answerExposure: 'full', provenance: 'prepared' },
+        // The second SHAPE the shell draws, here as a rendering reference only: the
+        // lab's task is a subtraction, so this contrast teaches nothing about it.
+        { id: 'six-against-four', kind: 'contrast-pair', title: 'A contrast pair: 6 against 4',
+          panels: [{ kind: 'counters', label: '6', count: 6, highlighted: 2 }, { kind: 'counters', label: '4', count: 4, highlighted: 0 }],
+          caption: '6 has two more than 4. The last two have no partner.',
+          altText: 'Two rows of counters lined up. The top row has 6 and the bottom row has 4. The last two counters of the top row are ringed because nothing sits under them.',
+          answerExposure: 'none', provenance: 'prepared' },
+        // The third SHAPE, again as a rendering reference: a process in aligned steps.
+        { id: 'seven-take-two-steps', kind: 'step-sequence', title: 'Take away, step by step',
+          frames: [
+            { segments: [{ count: 7, tone: 'plain' }], caption: 'Start with 7 counters.' },
+            { segments: [{ count: 5, tone: 'plain' }, { count: 2, tone: 'crossed' }], caption: 'Cross out 2.' },
+            { segments: [{ count: 5, tone: 'plain' }], caption: '5 counters are left.' },
+          ],
+          altText: 'Three steps. Step 1: seven counters. Step 2: the last two are crossed out. Step 3: five counters are left.',
+          answerExposure: 'full', provenance: 'prepared' },
+      ],
     },
   };
   return {
@@ -47,6 +74,8 @@ export function createRuntimeFixture(instanceId = 'reference-instance') {
     get replays() { return replays; },
     get pointed() { return pointed; },
     get suspended() { return suspended; },
+    /** Change what this item assesses, so one adapter can exercise both sides of the invariant. */
+    assess(responseDimension: string) { state = { ...state, assessment: { responseDimension } }; },
     respond(response: string) {
       if (suspended || state.completed) return false;
       const correct = response.trim() === (index === 0 ? '5' : '7');

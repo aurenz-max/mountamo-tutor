@@ -1,0 +1,5459 @@
+[
+  {
+    "passed": false,
+    "primitiveId": "ten-frame",
+    "events": [
+      {
+        "type": "ready",
+        "t": 5.0
+      },
+      {
+        "type": "runner_cue",
+        "t": 5.02,
+        "text": "[TF_ITEM] Say exactly: \"Hi! Time to work with the ten frame! Some counters are already there. Then say how many MORE counters fill the frame. There are nine counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"one\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"one more\" or \"one counters\" counts as \"one\". If the answer is right, say exactly: \"Yes, one more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: nine and one make ten. One more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "type": "tutor",
+        "t": 18.95,
+        "phase": "opening",
+        "text": "Hi! Time to work with the ten frame! Some counters are already there. Then say how many MORE counters fill the frame. There are nine counters on the frame. Your turn. How many more counters make ten?",
+        "state": {
+          "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+          "revision": 4,
+          "visibleRevision": 4,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": {
+            "deltas": [
+              "re-represent",
+              "contrast",
+              "model-process"
+            ],
+            "representation": "ten-frame",
+            "alternateRepresentations": [
+              "counters",
+              "fingers",
+              "story-objects"
+            ]
+          },
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/4/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Look at the empty spaces. Count each empty space once.\". This does not highlight or move counters.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/4/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "description": "Fill another frame, step by step",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Step-by-step explanation",
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/4/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 18.97,
+        "intent": "warmup",
+        "performed": [],
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7,8",
+          "flippedCells": ""
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 18.98,
+        "intent": "wrong",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "two"
+          }
+        ],
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7,8",
+          "flippedCells": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 18.98,
+        "text": "two"
+      },
+      {
+        "type": "tutor",
+        "t": 26.8,
+        "phase": "wrong",
+        "text": "My turn: nine and one make ten. One more. Your turn. How many more counters make ten?",
+        "state": {
+          "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+          "revision": 6,
+          "visibleRevision": 6,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": {
+            "deltas": [
+              "re-represent",
+              "contrast",
+              "model-process"
+            ],
+            "representation": "ten-frame",
+            "alternateRepresentations": [
+              "counters",
+              "fingers",
+              "story-objects"
+            ]
+          },
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/6/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Look at the empty spaces. Count each empty space once.\". This does not highlight or move counters.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/6/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "description": "Fill another frame, step by step",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Step-by-step explanation",
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/6/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 26.8,
+        "intent": "warmup",
+        "performed": [],
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7,8",
+          "flippedCells": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 26.81,
+        "text": "Please show me a counting hint for this task."
+      },
+      {
+        "type": "runtime_command",
+        "t": 28.47,
+        "phase": "hint",
+        "command": {
+          "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+          "instanceId": "frame",
+          "itemId": "c1",
+          "expectedRevision": 6,
+          "commandId": "call_145106",
+          "action": {
+            "type": "scaffold",
+            "strategyId": "one-counter-at-a-time",
+            "direction": 1
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 28.55,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_145106",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+            "revision": 7,
+            "visibleRevision": 7,
+            "instanceId": "frame",
+            "planItemId": "frame",
+            "primitiveId": "ten-frame",
+            "objectiveId": "ten-frame-practice",
+            "evalMode": "make_ten",
+            "owner": "runner",
+            "status": "active",
+            "task": {
+              "itemId": "c1",
+              "phase": "asking",
+              "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "two",
+                    "source": "speech",
+                    "recognition": "clear"
+                  }
+                ]
+              },
+              "demand": {
+                "kind": "make_ten",
+                "response": "voice",
+                "filledCells": "0,1,2,3,4,5,6,7,8",
+                "flippedCells": ""
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Look at the empty spaces. Count each empty space once."
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "canGenerateSupport": false,
+            "moveOptions": {
+              "deltas": [
+                "re-represent",
+                "contrast",
+                "model-process"
+              ],
+              "representation": "ten-frame",
+              "alternateRepresentations": [
+                "counters",
+                "fingers",
+                "story-objects"
+              ]
+            },
+            "assistance": [
+              {
+                "instanceId": "frame",
+                "itemId": "c1",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "one-counter-at-a-time",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat this task with the same frame; the runner speaks the question",
+                "responseSpeech": "runner",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/7/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "one-counter-at-a-time",
+                  "direction": -1
+                },
+                "description": "Hide the counting reminder",
+                "assistance": {
+                  "level": 0,
+                  "answerExposure": "none"
+                },
+                "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/7/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-c1"
+                },
+                "description": "Fill another frame, step by step",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "purpose": "Step-by-step explanation",
+                "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/7/2"
+              }
+            ]
+          },
+          "elapsedMs": 61.77599999999802
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 33.39,
+        "phase": "hint",
+        "text": "Look at the empty spaces. Count each empty space once.",
+        "state": {
+          "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+          "revision": 7,
+          "visibleRevision": 7,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Look at the empty spaces. Count each empty space once."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": {
+            "deltas": [
+              "re-represent",
+              "contrast",
+              "model-process"
+            ],
+            "representation": "ten-frame",
+            "alternateRepresentations": [
+              "counters",
+              "fingers",
+              "story-objects"
+            ]
+          },
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/7/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": -1
+              },
+              "description": "Hide the counting reminder",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/7/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "description": "Fill another frame, step by step",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Step-by-step explanation",
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/7/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 33.39,
+        "text": "Please show the worked example and save my unfinished frame."
+      },
+      {
+        "type": "runtime_command",
+        "t": 34.69,
+        "phase": "example",
+        "command": {
+          "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+          "instanceId": "frame",
+          "itemId": "c1",
+          "expectedRevision": 7,
+          "commandId": "call_145147",
+          "action": {
+            "type": "request_support",
+            "artifactId": "example-c1"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 34.77,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_145147",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+            "revision": 8,
+            "visibleRevision": 8,
+            "instanceId": "frame",
+            "planItemId": "frame",
+            "primitiveId": "ten-frame",
+            "objectiveId": "ten-frame-practice",
+            "evalMode": "make_ten",
+            "owner": "support",
+            "status": "support",
+            "task": {
+              "itemId": "c1",
+              "phase": "help",
+              "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "two",
+                    "source": "speech",
+                    "recognition": "clear"
+                  }
+                ]
+              },
+              "demand": {
+                "kind": "make_ten",
+                "response": "voice",
+                "filledCells": "0,1,2,3,4,5,6,7,8",
+                "flippedCells": ""
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Look at the empty spaces. Count each empty space once."
+              }
+            },
+            "supportArtifact": {
+              "id": "example-c1",
+              "kind": "step-sequence",
+              "title": "Fill another frame, step by step",
+              "frames": [
+                {
+                  "segments": [
+                    {
+                      "count": 6,
+                      "tone": "plain"
+                    },
+                    {
+                      "count": 4,
+                      "tone": "empty"
+                    }
+                  ],
+                  "caption": "6 counters are on the frame."
+                },
+                {
+                  "segments": [
+                    {
+                      "count": 6,
+                      "tone": "plain"
+                    },
+                    {
+                      "count": 4,
+                      "tone": "marked"
+                    }
+                  ],
+                  "caption": "Count the empty spaces. There are 4."
+                },
+                {
+                  "segments": [
+                    {
+                      "count": 6,
+                      "tone": "plain"
+                    },
+                    {
+                      "count": 4,
+                      "tone": "added"
+                    }
+                  ],
+                  "caption": "6 and 4 make 10."
+                }
+              ],
+              "altText": "Three steps on a frame of 10 spaces. Step 1: 6 counters are on the frame. Step 2: the 4 empty spaces are counted. Step 3: 4 more counters fill them, so 6 and 4 make 10.",
+              "provenance": "prepared",
+              "answerExposure": "partial"
+            },
+            "blockedReason": null,
+            "canStartNext": false,
+            "canGenerateSupport": false,
+            "moveOptions": null,
+            "assistance": [
+              {
+                "instanceId": "frame",
+                "itemId": "c1",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "one-counter-at-a-time",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "frame",
+                "itemId": "c1",
+                "revision": 8,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-c1"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "return"
+                },
+                "description": "Return to the same unfinished task",
+                "responseSpeech": "runner",
+                "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/8/0"
+              }
+            ]
+          },
+          "elapsedMs": 60.28059999999823
+        }
+      },
+      {
+        "type": "saved",
+        "t": 34.77,
+        "state": {
+          "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+          "revision": 8,
+          "visibleRevision": 8,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "support",
+          "status": "support",
+          "task": {
+            "itemId": "c1",
+            "phase": "help",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Look at the empty spaces. Count each empty space once."
+            }
+          },
+          "supportArtifact": {
+            "id": "example-c1",
+            "kind": "step-sequence",
+            "title": "Fill another frame, step by step",
+            "frames": [
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "empty"
+                  }
+                ],
+                "caption": "6 counters are on the frame."
+              },
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "marked"
+                  }
+                ],
+                "caption": "Count the empty spaces. There are 4."
+              },
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "added"
+                  }
+                ],
+                "caption": "6 and 4 make 10."
+              }
+            ],
+            "altText": "Three steps on a frame of 10 spaces. Step 1: 6 counters are on the frame. Step 2: the 4 empty spaces are counted. Step 3: 4 more counters fill them, so 6 and 4 make 10.",
+            "provenance": "prepared",
+            "answerExposure": "partial"
+          },
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "return"
+              },
+              "description": "Return to the same unfinished task",
+              "responseSpeech": "runner",
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/8/0"
+            }
+          ]
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 37.88,
+        "phase": "ask-return",
+        "text": "6 counters are on the frame.",
+        "state": {
+          "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+          "revision": 8,
+          "visibleRevision": 8,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "support",
+          "status": "support",
+          "task": {
+            "itemId": "c1",
+            "phase": "help",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Look at the empty spaces. Count each empty space once."
+            }
+          },
+          "supportArtifact": {
+            "id": "example-c1",
+            "kind": "step-sequence",
+            "title": "Fill another frame, step by step",
+            "frames": [
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "empty"
+                  }
+                ],
+                "caption": "6 counters are on the frame."
+              },
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "marked"
+                  }
+                ],
+                "caption": "Count the empty spaces. There are 4."
+              },
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "added"
+                  }
+                ],
+                "caption": "6 and 4 make 10."
+              }
+            ],
+            "altText": "Three steps on a frame of 10 spaces. Step 1: 6 counters are on the frame. Step 2: the 4 empty spaces are counted. Step 3: 4 more counters fill them, so 6 and 4 make 10.",
+            "provenance": "prepared",
+            "answerExposure": "partial"
+          },
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "return"
+              },
+              "description": "Return to the same unfinished task",
+              "responseSpeech": "runner",
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/8/0"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 37.88,
+        "text": "Please close the example and return to my saved frame."
+      },
+      {
+        "type": "runtime_command",
+        "t": 39.12,
+        "phase": "return",
+        "command": {
+          "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+          "instanceId": "frame",
+          "itemId": "c1",
+          "expectedRevision": 8,
+          "commandId": "call_145182",
+          "action": {
+            "type": "return"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 39.19,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_145182",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+            "revision": 9,
+            "visibleRevision": 9,
+            "instanceId": "frame",
+            "planItemId": "frame",
+            "primitiveId": "ten-frame",
+            "objectiveId": "ten-frame-practice",
+            "evalMode": "make_ten",
+            "owner": "runner",
+            "status": "active",
+            "task": {
+              "itemId": "c1",
+              "phase": "help",
+              "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "two",
+                    "source": "speech",
+                    "recognition": "clear"
+                  }
+                ]
+              },
+              "demand": {
+                "kind": "make_ten",
+                "response": "voice",
+                "filledCells": "0,1,2,3,4,5,6,7,8",
+                "flippedCells": ""
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Look at the empty spaces. Count each empty space once."
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": "Runner owns the teaching turn",
+            "canStartNext": false,
+            "canGenerateSupport": false,
+            "moveOptions": null,
+            "assistance": [
+              {
+                "instanceId": "frame",
+                "itemId": "c1",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "one-counter-at-a-time",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "frame",
+                "itemId": "c1",
+                "revision": 8,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-c1"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": []
+          },
+          "elapsedMs": 50.26589999999851
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 39.73,
+        "text": "[TF_ITEM] Say exactly: \"Some counters are already there. Then say how many MORE counters fill the frame. There are nine counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"one\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"one more\" or \"one counters\" counts as \"one\". If the answer is right, say exactly: \"Yes, one more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: nine and one make ten. One more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "type": "tutor",
+        "t": 50.75,
+        "phase": "reask",
+        "text": "Some counters are already there. Then say how many MORE counters fill the frame. There are nine counters on the frame. Your turn. How many more counters make ten?",
+        "state": {
+          "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+          "revision": 10,
+          "visibleRevision": 10,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Look at the empty spaces. Count each empty space once."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/10/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": -1
+              },
+              "description": "Hide the counting reminder",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/10/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "preserved",
+        "t": 50.75,
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7,8",
+          "flippedCells": ""
+        },
+        "vacuous": true
+      },
+      {
+        "type": "learner_input",
+        "t": 50.77,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "one"
+          }
+        ],
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7,8",
+          "flippedCells": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 50.77,
+        "text": "one"
+      },
+      {
+        "type": "tutor",
+        "t": 53.61,
+        "phase": "right",
+        "text": "Yes, one more.",
+        "state": {
+          "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+          "revision": 14,
+          "visibleRevision": 14,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c2",
+            "phase": "affirmed",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": {
+            "deltas": [
+              "re-represent",
+              "contrast",
+              "model-process"
+            ],
+            "representation": "ten-frame",
+            "alternateRepresentations": [
+              "counters",
+              "fingers",
+              "story-objects"
+            ]
+          },
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/14/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Look at the empty spaces. Count each empty space once.\". This does not highlight or move counters.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/14/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c2"
+              },
+              "description": "Fill another frame, step by step",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Step-by-step explanation",
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/14/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 54.14,
+        "text": "[TF_ITEM] Say exactly: \"There are eight counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"two more\" or \"two counters\" counts as \"two\". If the answer is right, say exactly: \"Yes, two more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: eight and two make ten. Two more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "type": "tutor",
+        "t": 60.58,
+        "phase": "next-ask",
+        "text": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+        "state": {
+          "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+          "revision": 14,
+          "visibleRevision": 14,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c2",
+            "phase": "affirmed",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": {
+            "deltas": [
+              "re-represent",
+              "contrast",
+              "model-process"
+            ],
+            "representation": "ten-frame",
+            "alternateRepresentations": [
+              "counters",
+              "fingers",
+              "story-objects"
+            ]
+          },
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/14/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Look at the empty spaces. Count each empty space once.\". This does not highlight or move counters.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/14/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c2"
+              },
+              "description": "Fill another frame, step by step",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Step-by-step explanation",
+              "actionId": "f788b20b-79b0-43c2-876a-c3b4b17fca76/14/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 60.59,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "two"
+          }
+        ],
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7",
+          "flippedCells": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 60.59,
+        "text": "two"
+      },
+      {
+        "type": "tutor",
+        "t": 63.41,
+        "phase": "finishing",
+        "text": "Yes, two more.",
+        "state": {
+          "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+          "revision": 18,
+          "visibleRevision": 18,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "closing",
+          "task": {
+            "itemId": "c2",
+            "phase": "done",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is closing",
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 63.94,
+        "text": "[TF_COMPLETE] Say exactly: \"What great number work today! Your eyes and your hands did hard thinking. See you next time!\" Then stop \u2014 the activity is over."
+      },
+      {
+        "type": "tutor",
+        "t": 71.0,
+        "phase": "finishing",
+        "text": "What great number work today! Your eyes and your hands did hard thinking. See you next time!",
+        "state": {
+          "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+          "revision": 19,
+          "visibleRevision": null,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "c2",
+            "phase": "done",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        }
+      },
+      {
+        "type": "complete",
+        "t": 71.0,
+        "state": {
+          "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+          "revision": 19,
+          "visibleRevision": null,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "c2",
+            "phase": "done",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        },
+        "submissions": 1
+      },
+      {
+        "type": "example_verdict",
+        "t": 71.02,
+        "ok": false,
+        "reason": "Worked example omitted its actual quantities: 4, 10",
+        "artifact": {
+          "id": "example-c1",
+          "kind": "step-sequence",
+          "title": "Fill another frame, step by step",
+          "frames": [
+            {
+              "segments": [
+                {
+                  "count": 6,
+                  "tone": "plain"
+                },
+                {
+                  "count": 4,
+                  "tone": "empty"
+                }
+              ],
+              "caption": "6 counters are on the frame."
+            },
+            {
+              "segments": [
+                {
+                  "count": 6,
+                  "tone": "plain"
+                },
+                {
+                  "count": 4,
+                  "tone": "marked"
+                }
+              ],
+              "caption": "Count the empty spaces. There are 4."
+            },
+            {
+              "segments": [
+                {
+                  "count": 6,
+                  "tone": "plain"
+                },
+                {
+                  "count": 4,
+                  "tone": "added"
+                }
+              ],
+              "caption": "6 and 4 make 10."
+            }
+          ],
+          "altText": "Three steps on a frame of 10 spaces. Step 1: 6 counters are on the frame. Step 2: the 4 empty spaces are counted. Step 3: 4 more counters fill them, so 6 and 4 make 10.",
+          "provenance": "prepared",
+          "answerExposure": "partial"
+        }
+      },
+      {
+        "type": "failure",
+        "t": 71.02,
+        "reason": "AssertionError('Worked example omitted its actual quantities: 4, 10')",
+        "state": {
+          "sessionEpoch": "f788b20b-79b0-43c2-876a-c3b4b17fca76",
+          "revision": 19,
+          "visibleRevision": null,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "c2",
+            "phase": "done",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        }
+      }
+    ]
+  },
+  {
+    "passed": false,
+    "primitiveId": "ten-frame",
+    "events": [
+      {
+        "type": "ready",
+        "t": 5.0
+      },
+      {
+        "type": "runner_cue",
+        "t": 5.02,
+        "text": "[TF_ITEM] Say exactly: \"Hi! Time to work with the ten frame! Some counters are already there. Then say how many MORE counters fill the frame. There are nine counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"one\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"one more\" or \"one counters\" counts as \"one\". If the answer is right, say exactly: \"Yes, one more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: nine and one make ten. One more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "type": "tutor",
+        "t": 18.83,
+        "phase": "opening",
+        "text": "Hi! Time to work with the ten frame! Some counters are already there. Then say how many MORE counters fill the frame. There are nine counters on the frame. Your turn. How many more counters make ten?",
+        "state": {
+          "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+          "revision": 4,
+          "visibleRevision": 4,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": {
+            "deltas": [
+              "re-represent",
+              "contrast",
+              "model-process"
+            ],
+            "representation": "ten-frame",
+            "alternateRepresentations": [
+              "counters",
+              "fingers",
+              "story-objects"
+            ]
+          },
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/4/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Look at the empty spaces. Count each empty space once.\". This does not highlight or move counters.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/4/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "description": "Fill another frame, step by step",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Step-by-step explanation",
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/4/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 18.84,
+        "intent": "warmup",
+        "performed": [],
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7,8",
+          "flippedCells": ""
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 18.86,
+        "intent": "wrong",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "two"
+          }
+        ],
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7,8",
+          "flippedCells": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 18.86,
+        "text": "two"
+      },
+      {
+        "type": "tutor",
+        "t": 26.47,
+        "phase": "wrong",
+        "text": "My turn: nine and one make ten. One more. Your turn. How many more counters make ten?",
+        "state": {
+          "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+          "revision": 6,
+          "visibleRevision": 6,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": {
+            "deltas": [
+              "re-represent",
+              "contrast",
+              "model-process"
+            ],
+            "representation": "ten-frame",
+            "alternateRepresentations": [
+              "counters",
+              "fingers",
+              "story-objects"
+            ]
+          },
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/6/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Look at the empty spaces. Count each empty space once.\". This does not highlight or move counters.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/6/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "description": "Fill another frame, step by step",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Step-by-step explanation",
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/6/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 26.48,
+        "intent": "warmup",
+        "performed": [],
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7,8",
+          "flippedCells": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 26.48,
+        "text": "Please show me a counting hint for this task."
+      },
+      {
+        "type": "runtime_command",
+        "t": 27.7,
+        "phase": "hint",
+        "command": {
+          "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+          "instanceId": "frame",
+          "itemId": "c1",
+          "expectedRevision": 6,
+          "commandId": "call_275416",
+          "action": {
+            "type": "scaffold",
+            "strategyId": "one-counter-at-a-time",
+            "direction": 1
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 27.78,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_275416",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+            "revision": 7,
+            "visibleRevision": 7,
+            "instanceId": "frame",
+            "planItemId": "frame",
+            "primitiveId": "ten-frame",
+            "objectiveId": "ten-frame-practice",
+            "evalMode": "make_ten",
+            "owner": "runner",
+            "status": "active",
+            "task": {
+              "itemId": "c1",
+              "phase": "asking",
+              "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "two",
+                    "source": "speech",
+                    "recognition": "clear"
+                  }
+                ]
+              },
+              "demand": {
+                "kind": "make_ten",
+                "response": "voice",
+                "filledCells": "0,1,2,3,4,5,6,7,8",
+                "flippedCells": ""
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Look at the empty spaces. Count each empty space once."
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "canGenerateSupport": false,
+            "moveOptions": {
+              "deltas": [
+                "re-represent",
+                "contrast",
+                "model-process"
+              ],
+              "representation": "ten-frame",
+              "alternateRepresentations": [
+                "counters",
+                "fingers",
+                "story-objects"
+              ]
+            },
+            "assistance": [
+              {
+                "instanceId": "frame",
+                "itemId": "c1",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "one-counter-at-a-time",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat this task with the same frame; the runner speaks the question",
+                "responseSpeech": "runner",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/7/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "one-counter-at-a-time",
+                  "direction": -1
+                },
+                "description": "Hide the counting reminder",
+                "assistance": {
+                  "level": 0,
+                  "answerExposure": "none"
+                },
+                "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/7/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-c1"
+                },
+                "description": "Fill another frame, step by step",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "purpose": "Step-by-step explanation",
+                "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/7/2"
+              }
+            ]
+          },
+          "elapsedMs": 61.60109999999986
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 32.36,
+        "phase": "hint",
+        "text": "Look at the empty spaces. Count each empty space once.",
+        "state": {
+          "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+          "revision": 7,
+          "visibleRevision": 7,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Look at the empty spaces. Count each empty space once."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": {
+            "deltas": [
+              "re-represent",
+              "contrast",
+              "model-process"
+            ],
+            "representation": "ten-frame",
+            "alternateRepresentations": [
+              "counters",
+              "fingers",
+              "story-objects"
+            ]
+          },
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/7/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": -1
+              },
+              "description": "Hide the counting reminder",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/7/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "description": "Fill another frame, step by step",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Step-by-step explanation",
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/7/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 32.36,
+        "text": "Please show the worked example and save my unfinished frame."
+      },
+      {
+        "type": "runtime_command",
+        "t": 33.47,
+        "phase": "example",
+        "command": {
+          "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+          "instanceId": "frame",
+          "itemId": "c1",
+          "expectedRevision": 7,
+          "commandId": "call_275455",
+          "action": {
+            "type": "request_support",
+            "artifactId": "example-c1"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 33.56,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_275455",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+            "revision": 8,
+            "visibleRevision": 8,
+            "instanceId": "frame",
+            "planItemId": "frame",
+            "primitiveId": "ten-frame",
+            "objectiveId": "ten-frame-practice",
+            "evalMode": "make_ten",
+            "owner": "support",
+            "status": "support",
+            "task": {
+              "itemId": "c1",
+              "phase": "help",
+              "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "two",
+                    "source": "speech",
+                    "recognition": "clear"
+                  }
+                ]
+              },
+              "demand": {
+                "kind": "make_ten",
+                "response": "voice",
+                "filledCells": "0,1,2,3,4,5,6,7,8",
+                "flippedCells": ""
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Look at the empty spaces. Count each empty space once."
+              }
+            },
+            "supportArtifact": {
+              "id": "example-c1",
+              "kind": "step-sequence",
+              "title": "Fill another frame, step by step",
+              "frames": [
+                {
+                  "segments": [
+                    {
+                      "count": 6,
+                      "tone": "plain"
+                    },
+                    {
+                      "count": 4,
+                      "tone": "empty"
+                    }
+                  ],
+                  "caption": "6 counters are on the frame."
+                },
+                {
+                  "segments": [
+                    {
+                      "count": 6,
+                      "tone": "plain"
+                    },
+                    {
+                      "count": 4,
+                      "tone": "marked"
+                    }
+                  ],
+                  "caption": "Count the empty spaces. There are 4."
+                },
+                {
+                  "segments": [
+                    {
+                      "count": 6,
+                      "tone": "plain"
+                    },
+                    {
+                      "count": 4,
+                      "tone": "added"
+                    }
+                  ],
+                  "caption": "6 and 4 make 10."
+                }
+              ],
+              "altText": "Three steps on a frame of 10 spaces. Step 1: 6 counters are on the frame. Step 2: the 4 empty spaces are counted. Step 3: 4 more counters fill them, so 6 and 4 make 10.",
+              "provenance": "prepared",
+              "answerExposure": "partial"
+            },
+            "blockedReason": null,
+            "canStartNext": false,
+            "canGenerateSupport": false,
+            "moveOptions": null,
+            "assistance": [
+              {
+                "instanceId": "frame",
+                "itemId": "c1",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "one-counter-at-a-time",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "frame",
+                "itemId": "c1",
+                "revision": 8,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-c1"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "return"
+                },
+                "description": "Return to the same unfinished task",
+                "responseSpeech": "runner",
+                "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/8/0"
+              }
+            ]
+          },
+          "elapsedMs": 66.27440000000206
+        }
+      },
+      {
+        "type": "saved",
+        "t": 33.56,
+        "state": {
+          "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+          "revision": 8,
+          "visibleRevision": 8,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "support",
+          "status": "support",
+          "task": {
+            "itemId": "c1",
+            "phase": "help",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Look at the empty spaces. Count each empty space once."
+            }
+          },
+          "supportArtifact": {
+            "id": "example-c1",
+            "kind": "step-sequence",
+            "title": "Fill another frame, step by step",
+            "frames": [
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "empty"
+                  }
+                ],
+                "caption": "6 counters are on the frame."
+              },
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "marked"
+                  }
+                ],
+                "caption": "Count the empty spaces. There are 4."
+              },
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "added"
+                  }
+                ],
+                "caption": "6 and 4 make 10."
+              }
+            ],
+            "altText": "Three steps on a frame of 10 spaces. Step 1: 6 counters are on the frame. Step 2: the 4 empty spaces are counted. Step 3: 4 more counters fill them, so 6 and 4 make 10.",
+            "provenance": "prepared",
+            "answerExposure": "partial"
+          },
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "return"
+              },
+              "description": "Return to the same unfinished task",
+              "responseSpeech": "runner",
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/8/0"
+            }
+          ]
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 36.42,
+        "phase": "ask-return",
+        "text": "6 counters are on the frame.",
+        "state": {
+          "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+          "revision": 8,
+          "visibleRevision": 8,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "support",
+          "status": "support",
+          "task": {
+            "itemId": "c1",
+            "phase": "help",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Look at the empty spaces. Count each empty space once."
+            }
+          },
+          "supportArtifact": {
+            "id": "example-c1",
+            "kind": "step-sequence",
+            "title": "Fill another frame, step by step",
+            "frames": [
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "empty"
+                  }
+                ],
+                "caption": "6 counters are on the frame."
+              },
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "marked"
+                  }
+                ],
+                "caption": "Count the empty spaces. There are 4."
+              },
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "added"
+                  }
+                ],
+                "caption": "6 and 4 make 10."
+              }
+            ],
+            "altText": "Three steps on a frame of 10 spaces. Step 1: 6 counters are on the frame. Step 2: the 4 empty spaces are counted. Step 3: 4 more counters fill them, so 6 and 4 make 10.",
+            "provenance": "prepared",
+            "answerExposure": "partial"
+          },
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "return"
+              },
+              "description": "Return to the same unfinished task",
+              "responseSpeech": "runner",
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/8/0"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 36.42,
+        "text": "Please close the example and return to my saved frame."
+      },
+      {
+        "type": "runtime_command",
+        "t": 37.53,
+        "phase": "return",
+        "command": {
+          "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+          "instanceId": "frame",
+          "itemId": "c1",
+          "expectedRevision": 8,
+          "commandId": "call_275490",
+          "action": {
+            "type": "return"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 37.61,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_275490",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+            "revision": 9,
+            "visibleRevision": 9,
+            "instanceId": "frame",
+            "planItemId": "frame",
+            "primitiveId": "ten-frame",
+            "objectiveId": "ten-frame-practice",
+            "evalMode": "make_ten",
+            "owner": "runner",
+            "status": "active",
+            "task": {
+              "itemId": "c1",
+              "phase": "help",
+              "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "two",
+                    "source": "speech",
+                    "recognition": "clear"
+                  }
+                ]
+              },
+              "demand": {
+                "kind": "make_ten",
+                "response": "voice",
+                "filledCells": "0,1,2,3,4,5,6,7,8",
+                "flippedCells": ""
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Look at the empty spaces. Count each empty space once."
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": "Runner owns the teaching turn",
+            "canStartNext": false,
+            "canGenerateSupport": false,
+            "moveOptions": null,
+            "assistance": [
+              {
+                "instanceId": "frame",
+                "itemId": "c1",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "one-counter-at-a-time",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "frame",
+                "itemId": "c1",
+                "revision": 8,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-c1"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": []
+          },
+          "elapsedMs": 46.485899999999674
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 38.14,
+        "text": "[TF_ITEM] Say exactly: \"Some counters are already there. Then say how many MORE counters fill the frame. There are nine counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"one\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"one more\" or \"one counters\" counts as \"one\". If the answer is right, say exactly: \"Yes, one more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: nine and one make ten. One more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "type": "tutor",
+        "t": 49.33,
+        "phase": "reask",
+        "text": "Some counters are already there. Then say how many MORE counters fill the frame. There are nine counters on the frame. Your turn. How many more counters make ten?",
+        "state": {
+          "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+          "revision": 10,
+          "visibleRevision": 10,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Look at the empty spaces. Count each empty space once."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/10/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": -1
+              },
+              "description": "Hide the counting reminder",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/10/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "preserved",
+        "t": 49.33,
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7,8",
+          "flippedCells": ""
+        },
+        "vacuous": true
+      },
+      {
+        "type": "learner_input",
+        "t": 49.34,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "one"
+          }
+        ],
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7,8",
+          "flippedCells": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 49.34,
+        "text": "one"
+      },
+      {
+        "type": "tutor",
+        "t": 52.34,
+        "phase": "right",
+        "text": "Yes, one more.",
+        "state": {
+          "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+          "revision": 14,
+          "visibleRevision": 14,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c2",
+            "phase": "affirmed",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": {
+            "deltas": [
+              "re-represent",
+              "contrast",
+              "model-process"
+            ],
+            "representation": "ten-frame",
+            "alternateRepresentations": [
+              "counters",
+              "fingers",
+              "story-objects"
+            ]
+          },
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/14/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Look at the empty spaces. Count each empty space once.\". This does not highlight or move counters.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/14/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c2"
+              },
+              "description": "Fill another frame, step by step",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Step-by-step explanation",
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/14/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 52.88,
+        "text": "[TF_ITEM] Say exactly: \"There are eight counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"two more\" or \"two counters\" counts as \"two\". If the answer is right, say exactly: \"Yes, two more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: eight and two make ten. Two more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "type": "tutor",
+        "t": 59.28,
+        "phase": "next-ask",
+        "text": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+        "state": {
+          "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+          "revision": 14,
+          "visibleRevision": 14,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c2",
+            "phase": "affirmed",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": {
+            "deltas": [
+              "re-represent",
+              "contrast",
+              "model-process"
+            ],
+            "representation": "ten-frame",
+            "alternateRepresentations": [
+              "counters",
+              "fingers",
+              "story-objects"
+            ]
+          },
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/14/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Look at the empty spaces. Count each empty space once.\". This does not highlight or move counters.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/14/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c2"
+              },
+              "description": "Fill another frame, step by step",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Step-by-step explanation",
+              "actionId": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e/14/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 59.3,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "two"
+          }
+        ],
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7",
+          "flippedCells": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 59.3,
+        "text": "two"
+      },
+      {
+        "type": "tutor",
+        "t": 62.55,
+        "phase": "finishing",
+        "text": "Yes, two more.",
+        "state": {
+          "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+          "revision": 18,
+          "visibleRevision": 18,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "closing",
+          "task": {
+            "itemId": "c2",
+            "phase": "done",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is closing",
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 63.08,
+        "text": "[TF_COMPLETE] Say exactly: \"What great number work today! Your eyes and your hands did hard thinking. See you next time!\" Then stop \u2014 the activity is over."
+      },
+      {
+        "type": "tutor",
+        "t": 70.09,
+        "phase": "finishing",
+        "text": "What great number work today! Your eyes and your hands did hard thinking. See you next time!",
+        "state": {
+          "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+          "revision": 19,
+          "visibleRevision": null,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "c2",
+            "phase": "done",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        }
+      },
+      {
+        "type": "complete",
+        "t": 70.09,
+        "state": {
+          "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+          "revision": 19,
+          "visibleRevision": null,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "c2",
+            "phase": "done",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        },
+        "submissions": 1
+      },
+      {
+        "type": "example_verdict",
+        "t": 70.11,
+        "ok": false,
+        "reason": "Worked example omitted its actual quantities: 4, 10",
+        "artifact": {
+          "id": "example-c1",
+          "kind": "step-sequence",
+          "title": "Fill another frame, step by step",
+          "frames": [
+            {
+              "segments": [
+                {
+                  "count": 6,
+                  "tone": "plain"
+                },
+                {
+                  "count": 4,
+                  "tone": "empty"
+                }
+              ],
+              "caption": "6 counters are on the frame."
+            },
+            {
+              "segments": [
+                {
+                  "count": 6,
+                  "tone": "plain"
+                },
+                {
+                  "count": 4,
+                  "tone": "marked"
+                }
+              ],
+              "caption": "Count the empty spaces. There are 4."
+            },
+            {
+              "segments": [
+                {
+                  "count": 6,
+                  "tone": "plain"
+                },
+                {
+                  "count": 4,
+                  "tone": "added"
+                }
+              ],
+              "caption": "6 and 4 make 10."
+            }
+          ],
+          "altText": "Three steps on a frame of 10 spaces. Step 1: 6 counters are on the frame. Step 2: the 4 empty spaces are counted. Step 3: 4 more counters fill them, so 6 and 4 make 10.",
+          "provenance": "prepared",
+          "answerExposure": "partial"
+        }
+      },
+      {
+        "type": "failure",
+        "t": 70.11,
+        "reason": "AssertionError('Worked example omitted its actual quantities: 4, 10')",
+        "state": {
+          "sessionEpoch": "0c9de932-6fc0-43a0-95fb-cb9aafeb0f4e",
+          "revision": 19,
+          "visibleRevision": null,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "c2",
+            "phase": "done",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        }
+      }
+    ]
+  },
+  {
+    "passed": false,
+    "primitiveId": "ten-frame",
+    "events": [
+      {
+        "type": "ready",
+        "t": 4.94
+      },
+      {
+        "type": "runner_cue",
+        "t": 4.94,
+        "text": "[TF_ITEM] Say exactly: \"Hi! Time to work with the ten frame! Some counters are already there. Then say how many MORE counters fill the frame. There are nine counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"one\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"one more\" or \"one counters\" counts as \"one\". If the answer is right, say exactly: \"Yes, one more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: nine and one make ten. One more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "type": "tutor",
+        "t": 20.25,
+        "phase": "opening",
+        "text": "Hi! Time to work with the ten frame! Some counters are already there. Then say how many MORE counters fill the frame. There are nine counters on the frame. Your turn. How many more counters make ten?",
+        "state": {
+          "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+          "revision": 4,
+          "visibleRevision": 4,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": {
+            "deltas": [
+              "re-represent",
+              "contrast",
+              "model-process"
+            ],
+            "representation": "ten-frame",
+            "alternateRepresentations": [
+              "counters",
+              "fingers",
+              "story-objects"
+            ]
+          },
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/4/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Look at the empty spaces. Count each empty space once.\". This does not highlight or move counters.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/4/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "description": "Fill another frame, step by step",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Step-by-step explanation",
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/4/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 20.27,
+        "intent": "warmup",
+        "performed": [],
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7,8",
+          "flippedCells": ""
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 20.28,
+        "intent": "wrong",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "two"
+          }
+        ],
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7,8",
+          "flippedCells": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 20.28,
+        "text": "two"
+      },
+      {
+        "type": "tutor",
+        "t": 29.36,
+        "phase": "wrong",
+        "text": "My turn: nine and one make ten. One more. Your turn. How many more counters make ten?",
+        "state": {
+          "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+          "revision": 6,
+          "visibleRevision": 6,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": {
+            "deltas": [
+              "re-represent",
+              "contrast",
+              "model-process"
+            ],
+            "representation": "ten-frame",
+            "alternateRepresentations": [
+              "counters",
+              "fingers",
+              "story-objects"
+            ]
+          },
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/6/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Look at the empty spaces. Count each empty space once.\". This does not highlight or move counters.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/6/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "description": "Fill another frame, step by step",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Step-by-step explanation",
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/6/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 29.38,
+        "intent": "warmup",
+        "performed": [],
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7,8",
+          "flippedCells": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 29.38,
+        "text": "Please show me a counting hint for this task."
+      },
+      {
+        "type": "runtime_command",
+        "t": 30.61,
+        "phase": "hint",
+        "command": {
+          "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+          "instanceId": "frame",
+          "itemId": "c1",
+          "expectedRevision": 6,
+          "commandId": "call_246961",
+          "action": {
+            "type": "scaffold",
+            "strategyId": "one-counter-at-a-time",
+            "direction": 1
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 30.69,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_246961",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+            "revision": 7,
+            "visibleRevision": 7,
+            "instanceId": "frame",
+            "planItemId": "frame",
+            "primitiveId": "ten-frame",
+            "objectiveId": "ten-frame-practice",
+            "evalMode": "make_ten",
+            "owner": "runner",
+            "status": "active",
+            "task": {
+              "itemId": "c1",
+              "phase": "asking",
+              "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "two",
+                    "source": "speech",
+                    "recognition": "clear"
+                  }
+                ]
+              },
+              "demand": {
+                "kind": "make_ten",
+                "response": "voice",
+                "filledCells": "0,1,2,3,4,5,6,7,8",
+                "flippedCells": ""
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Look at the empty spaces. Count each empty space once."
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "canGenerateSupport": false,
+            "moveOptions": {
+              "deltas": [
+                "re-represent",
+                "contrast",
+                "model-process"
+              ],
+              "representation": "ten-frame",
+              "alternateRepresentations": [
+                "counters",
+                "fingers",
+                "story-objects"
+              ]
+            },
+            "assistance": [
+              {
+                "instanceId": "frame",
+                "itemId": "c1",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "one-counter-at-a-time",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Repeat this task with the same frame; the runner speaks the question",
+                "responseSpeech": "runner",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/7/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "one-counter-at-a-time",
+                  "direction": -1
+                },
+                "description": "Hide the counting reminder",
+                "assistance": {
+                  "level": 0,
+                  "answerExposure": "none"
+                },
+                "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/7/1"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-c1"
+                },
+                "description": "Fill another frame, step by step",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "purpose": "Step-by-step explanation",
+                "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/7/2"
+              }
+            ]
+          },
+          "elapsedMs": 54.96260000000257
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 35.62,
+        "phase": "hint",
+        "text": "Look at the empty spaces. Count each empty space once.",
+        "state": {
+          "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+          "revision": 7,
+          "visibleRevision": 7,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Look at the empty spaces. Count each empty space once."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": {
+            "deltas": [
+              "re-represent",
+              "contrast",
+              "model-process"
+            ],
+            "representation": "ten-frame",
+            "alternateRepresentations": [
+              "counters",
+              "fingers",
+              "story-objects"
+            ]
+          },
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/7/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": -1
+              },
+              "description": "Hide the counting reminder",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/7/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "description": "Fill another frame, step by step",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Step-by-step explanation",
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/7/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 35.62,
+        "text": "Please show the worked example and save my unfinished frame."
+      },
+      {
+        "type": "runtime_command",
+        "t": 36.91,
+        "phase": "example",
+        "command": {
+          "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+          "instanceId": "frame",
+          "itemId": "c1",
+          "expectedRevision": 7,
+          "commandId": "call_247019",
+          "action": {
+            "type": "request_support",
+            "artifactId": "example-c1"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 37.0,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_247019",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+            "revision": 8,
+            "visibleRevision": 8,
+            "instanceId": "frame",
+            "planItemId": "frame",
+            "primitiveId": "ten-frame",
+            "objectiveId": "ten-frame-practice",
+            "evalMode": "make_ten",
+            "owner": "support",
+            "status": "support",
+            "task": {
+              "itemId": "c1",
+              "phase": "help",
+              "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "two",
+                    "source": "speech",
+                    "recognition": "clear"
+                  }
+                ]
+              },
+              "demand": {
+                "kind": "make_ten",
+                "response": "voice",
+                "filledCells": "0,1,2,3,4,5,6,7,8",
+                "flippedCells": ""
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Look at the empty spaces. Count each empty space once."
+              }
+            },
+            "supportArtifact": {
+              "id": "example-c1",
+              "kind": "step-sequence",
+              "title": "Fill another frame, step by step",
+              "frames": [
+                {
+                  "segments": [
+                    {
+                      "count": 6,
+                      "tone": "plain"
+                    },
+                    {
+                      "count": 4,
+                      "tone": "empty"
+                    }
+                  ],
+                  "caption": "6 counters are on the frame."
+                },
+                {
+                  "segments": [
+                    {
+                      "count": 6,
+                      "tone": "plain"
+                    },
+                    {
+                      "count": 4,
+                      "tone": "marked"
+                    }
+                  ],
+                  "caption": "Count the empty spaces. There are 4."
+                },
+                {
+                  "segments": [
+                    {
+                      "count": 6,
+                      "tone": "plain"
+                    },
+                    {
+                      "count": 4,
+                      "tone": "added"
+                    }
+                  ],
+                  "caption": "6 and 4 make 10."
+                }
+              ],
+              "altText": "Three steps on a frame of 10 spaces. Step 1: 6 counters are on the frame. Step 2: the 4 empty spaces are counted. Step 3: 4 more counters fill them, so 6 and 4 make 10.",
+              "provenance": "prepared",
+              "answerExposure": "partial"
+            },
+            "blockedReason": null,
+            "canStartNext": false,
+            "canGenerateSupport": false,
+            "moveOptions": null,
+            "assistance": [
+              {
+                "instanceId": "frame",
+                "itemId": "c1",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "one-counter-at-a-time",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "frame",
+                "itemId": "c1",
+                "revision": 8,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-c1"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "return"
+                },
+                "description": "Return to the same unfinished task",
+                "responseSpeech": "runner",
+                "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/8/0"
+              }
+            ]
+          },
+          "elapsedMs": 65.49229999999807
+        }
+      },
+      {
+        "type": "saved",
+        "t": 37.0,
+        "state": {
+          "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+          "revision": 8,
+          "visibleRevision": 8,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "support",
+          "status": "support",
+          "task": {
+            "itemId": "c1",
+            "phase": "help",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Look at the empty spaces. Count each empty space once."
+            }
+          },
+          "supportArtifact": {
+            "id": "example-c1",
+            "kind": "step-sequence",
+            "title": "Fill another frame, step by step",
+            "frames": [
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "empty"
+                  }
+                ],
+                "caption": "6 counters are on the frame."
+              },
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "marked"
+                  }
+                ],
+                "caption": "Count the empty spaces. There are 4."
+              },
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "added"
+                  }
+                ],
+                "caption": "6 and 4 make 10."
+              }
+            ],
+            "altText": "Three steps on a frame of 10 spaces. Step 1: 6 counters are on the frame. Step 2: the 4 empty spaces are counted. Step 3: 4 more counters fill them, so 6 and 4 make 10.",
+            "provenance": "prepared",
+            "answerExposure": "partial"
+          },
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "return"
+              },
+              "description": "Return to the same unfinished task",
+              "responseSpeech": "runner",
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/8/0"
+            }
+          ]
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 40.45,
+        "phase": "ask-return",
+        "text": "6 counters are on the frame.",
+        "state": {
+          "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+          "revision": 8,
+          "visibleRevision": 8,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "support",
+          "status": "support",
+          "task": {
+            "itemId": "c1",
+            "phase": "help",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Look at the empty spaces. Count each empty space once."
+            }
+          },
+          "supportArtifact": {
+            "id": "example-c1",
+            "kind": "step-sequence",
+            "title": "Fill another frame, step by step",
+            "frames": [
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "empty"
+                  }
+                ],
+                "caption": "6 counters are on the frame."
+              },
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "marked"
+                  }
+                ],
+                "caption": "Count the empty spaces. There are 4."
+              },
+              {
+                "segments": [
+                  {
+                    "count": 6,
+                    "tone": "plain"
+                  },
+                  {
+                    "count": 4,
+                    "tone": "added"
+                  }
+                ],
+                "caption": "6 and 4 make 10."
+              }
+            ],
+            "altText": "Three steps on a frame of 10 spaces. Step 1: 6 counters are on the frame. Step 2: the 4 empty spaces are counted. Step 3: 4 more counters fill them, so 6 and 4 make 10.",
+            "provenance": "prepared",
+            "answerExposure": "partial"
+          },
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "return"
+              },
+              "description": "Return to the same unfinished task",
+              "responseSpeech": "runner",
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/8/0"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 40.45,
+        "text": "Please close the example and return to my saved frame."
+      },
+      {
+        "type": "runtime_command",
+        "t": 41.77,
+        "phase": "return",
+        "command": {
+          "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+          "instanceId": "frame",
+          "itemId": "c1",
+          "expectedRevision": 8,
+          "commandId": "call_247076",
+          "action": {
+            "type": "return"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 41.84,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_247076",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+            "revision": 9,
+            "visibleRevision": 9,
+            "instanceId": "frame",
+            "planItemId": "frame",
+            "primitiveId": "ten-frame",
+            "objectiveId": "ten-frame-practice",
+            "evalMode": "make_ten",
+            "owner": "runner",
+            "status": "active",
+            "task": {
+              "itemId": "c1",
+              "phase": "help",
+              "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "two",
+                    "source": "speech",
+                    "recognition": "clear"
+                  }
+                ]
+              },
+              "demand": {
+                "kind": "make_ten",
+                "response": "voice",
+                "filledCells": "0,1,2,3,4,5,6,7,8",
+                "flippedCells": ""
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Look at the empty spaces. Count each empty space once."
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": "Runner owns the teaching turn",
+            "canStartNext": false,
+            "canGenerateSupport": false,
+            "moveOptions": null,
+            "assistance": [
+              {
+                "instanceId": "frame",
+                "itemId": "c1",
+                "revision": 7,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "one-counter-at-a-time",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "frame",
+                "itemId": "c1",
+                "revision": 8,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-c1"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": []
+          },
+          "elapsedMs": 59.56079999999929
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 42.39,
+        "text": "[TF_ITEM] Say exactly: \"Some counters are already there. Then say how many MORE counters fill the frame. There are nine counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"one\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"one more\" or \"one counters\" counts as \"one\". If the answer is right, say exactly: \"Yes, one more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: nine and one make ten. One more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "type": "tutor",
+        "t": 55.2,
+        "phase": "reask",
+        "text": "Some counters are already there. Then say how many MORE counters fill the frame. There are nine counters on the frame. Your turn. How many more counters make ten?",
+        "state": {
+          "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+          "revision": 10,
+          "visibleRevision": 10,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "There are nine counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7,8",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Look at the empty spaces. Count each empty space once."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/10/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": -1
+              },
+              "description": "Hide the counting reminder",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/10/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "preserved",
+        "t": 55.2,
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7,8",
+          "flippedCells": ""
+        },
+        "vacuous": true
+      },
+      {
+        "type": "learner_input",
+        "t": 55.22,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "one"
+          }
+        ],
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7,8",
+          "flippedCells": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 55.22,
+        "text": "one"
+      },
+      {
+        "type": "tutor",
+        "t": 58.25,
+        "phase": "right",
+        "text": "Yes, one more.",
+        "state": {
+          "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+          "revision": 14,
+          "visibleRevision": 14,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c2",
+            "phase": "affirmed",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": {
+            "deltas": [
+              "re-represent",
+              "contrast",
+              "model-process"
+            ],
+            "representation": "ten-frame",
+            "alternateRepresentations": [
+              "counters",
+              "fingers",
+              "story-objects"
+            ]
+          },
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/14/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Look at the empty spaces. Count each empty space once.\". This does not highlight or move counters.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/14/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c2"
+              },
+              "description": "Fill another frame, step by step",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Step-by-step explanation",
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/14/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 58.78,
+        "text": "[TF_ITEM] Say exactly: \"There are eight counters on the frame. Your turn. How many more counters make ten?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The total \"ten\" said back is NOT the answer, however confident it sounds \u2014 the answer is how many MORE are needed. \"two more\" or \"two counters\" counts as \"two\". If the answer is right, say exactly: \"Yes, two more.\" and stop there \u2014 add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. If it is wrong, say exactly: \"My turn: eight and two make ten. Two more. Your turn. How many more counters make ten?\" and stop there; that correction is the whole turn. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "type": "tutor",
+        "t": 65.48,
+        "phase": "next-ask",
+        "text": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+        "state": {
+          "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+          "revision": 14,
+          "visibleRevision": 14,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c2",
+            "phase": "affirmed",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": {
+            "deltas": [
+              "re-represent",
+              "contrast",
+              "model-process"
+            ],
+            "representation": "ten-frame",
+            "alternateRepresentations": [
+              "counters",
+              "fingers",
+              "story-objects"
+            ]
+          },
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Repeat this task with the same frame; the runner speaks the question",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/14/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "description": "Show this text reminder: \"Look at the empty spaces. Count each empty space once.\". This does not highlight or move counters.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/14/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c2"
+              },
+              "description": "Fill another frame, step by step",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Step-by-step explanation",
+              "actionId": "f5592907-6cdb-4391-8a67-d391be1e3d3e/14/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 65.5,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "two"
+          }
+        ],
+        "demand": {
+          "kind": "make_ten",
+          "response": "voice",
+          "filledCells": "0,1,2,3,4,5,6,7",
+          "flippedCells": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 65.5,
+        "text": "two"
+      },
+      {
+        "type": "tutor",
+        "t": 68.47,
+        "phase": "finishing",
+        "text": "Yes, two more.",
+        "state": {
+          "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+          "revision": 18,
+          "visibleRevision": 18,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "runner",
+          "status": "closing",
+          "task": {
+            "itemId": "c2",
+            "phase": "done",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is closing",
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 69.0,
+        "text": "[TF_COMPLETE] Say exactly: \"What great number work today! Your eyes and your hands did hard thinking. See you next time!\" Then stop \u2014 the activity is over."
+      },
+      {
+        "type": "tutor",
+        "t": 75.83,
+        "phase": "finishing",
+        "text": "What great number work today! Your eyes and your hands did hard thinking. See you next time!",
+        "state": {
+          "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+          "revision": 19,
+          "visibleRevision": null,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "c2",
+            "phase": "done",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        }
+      },
+      {
+        "type": "complete",
+        "t": 75.83,
+        "state": {
+          "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+          "revision": 19,
+          "visibleRevision": null,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "c2",
+            "phase": "done",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        },
+        "submissions": 1
+      },
+      {
+        "type": "example_verdict",
+        "t": 75.84,
+        "ok": false,
+        "reason": "Worked example omitted its actual quantities: 4, 10",
+        "artifact": {
+          "id": "example-c1",
+          "kind": "step-sequence",
+          "title": "Fill another frame, step by step",
+          "frames": [
+            {
+              "segments": [
+                {
+                  "count": 6,
+                  "tone": "plain"
+                },
+                {
+                  "count": 4,
+                  "tone": "empty"
+                }
+              ],
+              "caption": "6 counters are on the frame."
+            },
+            {
+              "segments": [
+                {
+                  "count": 6,
+                  "tone": "plain"
+                },
+                {
+                  "count": 4,
+                  "tone": "marked"
+                }
+              ],
+              "caption": "Count the empty spaces. There are 4."
+            },
+            {
+              "segments": [
+                {
+                  "count": 6,
+                  "tone": "plain"
+                },
+                {
+                  "count": 4,
+                  "tone": "added"
+                }
+              ],
+              "caption": "6 and 4 make 10."
+            }
+          ],
+          "altText": "Three steps on a frame of 10 spaces. Step 1: 6 counters are on the frame. Step 2: the 4 empty spaces are counted. Step 3: 4 more counters fill them, so 6 and 4 make 10.",
+          "provenance": "prepared",
+          "answerExposure": "partial"
+        }
+      },
+      {
+        "type": "failure",
+        "t": 75.84,
+        "reason": "AssertionError('Worked example omitted its actual quantities: 4, 10')",
+        "state": {
+          "sessionEpoch": "f5592907-6cdb-4391-8a67-d391be1e3d3e",
+          "revision": 19,
+          "visibleRevision": null,
+          "instanceId": "frame",
+          "planItemId": "frame",
+          "primitiveId": "ten-frame",
+          "objectiveId": "ten-frame-practice",
+          "evalMode": "make_ten",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "c2",
+            "phase": "done",
+            "task": "There are eight counters on the frame. Your turn. How many more counters make ten?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "two",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "make_ten",
+              "response": "voice",
+              "filledCells": "0,1,2,3,4,5,6,7",
+              "flippedCells": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-counter-at-a-time",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "frame",
+              "itemId": "c1",
+              "revision": 8,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        }
+      }
+    ]
+  }
+]

@@ -11,6 +11,10 @@ const state = vi.hoisted(() => ({ index: 0, running: true, awaiting: false, cued
   evaluate: vi.fn(), timer: null as ReturnType<typeof setTimeout> | null,
 }));
 vi.mock('../../../evaluation', () => ({ usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: state.evaluate }) }));
+// The component now reads the live session so the host can auto-start the runner.
+// Disconnected here: these cases drive the runner through its own controls.
+vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0,
+  useLuminaAIContext: () => ({ isConnected: false, isListening: false, sessionMode: null, activePrimitiveId: null }) }));
 vi.mock('../../../components/JudgedMicPanel', () => ({ default: ({ run }: { run: { currentItem?: NumberBondItem } }) => <div data-testid="turn-kind">{run.currentItem?.answerKind}</div> }));
 vi.mock('../../../hooks/useJudgedScriptRunner', () => ({
   useJudgedScriptRunner: (options: JudgedScriptRunnerOptions<NumberBondItem>) => {

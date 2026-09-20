@@ -34,13 +34,47 @@ export interface SentinelPair {
   affirm: string[][];
   /** Lowercase token sequences that OPEN a correction sentence. */
   correct: string[][];
+  /**
+   * Lowercase token sequences that OPEN a HELP sentence — the tutor answering
+   * a child who asked something instead of answering.
+   *
+   * THE THIRD BRANCH (2026-09-19, user review). The two-branch law made every
+   * judged turn either right or wrong, so a child who says "can you help me"
+   * is judged as having answered wrong: counting-board's live log shows the
+   * same correction line delivered twice, verbatim, to a child who had asked
+   * for help. The tutor was not off-script — she had no script to be on.
+   *
+   * A help sentence is NOT a miss. It resolves the attempt without a verdict
+   * on the child's knowledge, leaves the item where it was, and re-asks. The
+   * consecutive-miss counter resets, because the tutor did exactly the right
+   * thing: `resyncAfterMisses` exists to catch a tutor who has drifted off the
+   * script, and answering a question is the script now.
+   */
+  help?: string[][];
 }
 
-/** The DISTAR pair the DI script uses. */
+/** The DISTAR pair the DI script uses. Two branches — the help branch is
+ *  OPT-IN per pack via `withHelpBranch`, never global: a pack whose contract
+ *  has no third branch must not start classifying a stray "Good question." as
+ *  one, because its tutor was never told to end that line with the ask. */
 export const DI_SENTINELS: SentinelPair = {
   affirm: [['yes']],
   correct: [['my', 'turn']],
 };
+
+/** The help opener. Chosen because no judged pack's spoken lines open with it
+ *  (checked by `findSentinelCollisions` in every pack's own test file). */
+export const HELP_OPENER: string[][] = [['good', 'question']];
+
+/**
+ * Opt a pack into the third branch. Pair it with `helpBranch(...)` in the
+ * pack's cue contract — the sentinel and the clause that tells the tutor to
+ * speak it are two halves of one change, and shipping either alone is the
+ * failure it is meant to fix (a tutor with no branch, or a branch the loop
+ * cannot hear).
+ */
+export const withHelpBranch = (sentinels: SentinelPair = DI_SENTINELS): SentinelPair =>
+  ({ ...sentinels, help: HELP_OPENER });
 
 export interface JudgedLoopConfig {
   sentinels: SentinelPair;
@@ -82,7 +116,7 @@ export const normalizeSpeech = (value: string) => value.replace(/\s+/g, ' ').tri
 /** What a scan of tutor text found. 'pending' = a partial sentinel may still
  *  be completing in the stream; 'none' = no sentinel yet (NOT off-script —
  *  that verdict needs quiet or timeout, the reducer's call). */
-export type SentinelScan = 'affirmed' | 'corrected' | 'pending' | 'none';
+export type SentinelScan = 'affirmed' | 'corrected' | 'helped' | 'pending' | 'none';
 
 const matchesOpener = (tokens: string[], opener: string[]): boolean =>
   opener.length <= tokens.length && opener.every((word, i) => tokens[i] === word);
@@ -106,11 +140,13 @@ const couldBecomeOpener = (tokens: string[], opener: string[]): boolean => {
 export function scanForSentinel(text: string, sentinels: SentinelPair): SentinelScan {
   const sentences = text.split(/[.!?]+/);
   const tail = sentences.pop() ?? '';
+  const help = sentinels.help ?? [];
   for (const sentence of sentences) {
     const tokens = tokenize(sentence);
     if (tokens.length === 0) continue;
     if (sentinels.affirm.some((opener) => matchesOpener(tokens, opener))) return 'affirmed';
     if (sentinels.correct.some((opener) => matchesOpener(tokens, opener))) return 'corrected';
+    if (help.some((opener) => matchesOpener(tokens, opener))) return 'helped';
   }
   const tailTokens = tokenize(tail);
   if (tailTokens.length > 0) {
@@ -118,7 +154,8 @@ export function scanForSentinel(text: string, sentinels: SentinelPair): Sentinel
     // sentence's punctuation streams in ("Yes, mmm" arriving unterminated).
     if (sentinels.affirm.some((opener) => matchesOpener(tailTokens, opener))) return 'affirmed';
     if (sentinels.correct.some((opener) => matchesOpener(tailTokens, opener))) return 'corrected';
-    const couldStill = [...sentinels.affirm, ...sentinels.correct]
+    if (help.some((opener) => matchesOpener(tailTokens, opener))) return 'helped';
+    const couldStill = [...sentinels.affirm, ...sentinels.correct, ...help]
       .some((opener) => couldBecomeOpener(tailTokens, opener));
     if (couldStill) return 'pending';
   }
@@ -169,7 +206,19 @@ export interface LoopAttempt {
   transcriptAt: number | null;
 }
 
-export type LoopJudgment = 'affirmed' | 'corrected' | 'off-script' | 'no-verdict';
+/**
+ * 'helped' is the THIRD BRANCH (see `SentinelPair.help`): the child asked
+ * something instead of answering and the tutor answered them. It resolves the
+ * attempt and is NOT a miss — no progression, no correction counted, the item
+ * stays exactly where it was and is re-asked.
+ */
+export type LoopJudgment = 'affirmed' | 'corrected' | 'helped' | 'off-script' | 'no-verdict';
+
+/** The judgments that classify the LEARNER. 'helped' is about the tutor's
+ *  turn, not the child's knowledge, so it is deliberately absent. */
+export const isLearnerVerdict = (
+  judgment: LoopJudgment,
+): judgment is 'affirmed' | 'corrected' => judgment === 'affirmed' || judgment === 'corrected';
 
 /**
  * Evidence that the learner spoke without the loop opening an attempt for it —
@@ -267,12 +316,14 @@ export type LoopEmission =
        * The tutor's OWN judging sentence(s), verbatim — everything it said
        * between the attempt closing and the sentinel that classified it.
        *
-       * Present only for 'affirmed' | 'corrected', because only those are a
-       * judgment: 'off-script' means the tutor did not judge (the accumulated
-       * text is unclassified chatter) and 'no-verdict' means it said nothing
-       * at all. Keeping the field to the judging branches is what lets a
-       * consumer ship it straight into `DiagnosisEvidence.judgeFeedback`
-       * (Misconception Loop Tier A) without laundering noise into evidence.
+       * Present only for 'affirmed' | 'corrected' | 'helped', because only
+       * those are a classified reply: 'off-script' means the tutor did not
+       * judge (the accumulated text is unclassified chatter) and 'no-verdict'
+       * means it said nothing at all. Keeping the field to the classified
+       * branches is what lets a consumer ship it straight into
+       * `DiagnosisEvidence.judgeFeedback` (Misconception Loop Tier A) without
+       * laundering noise into evidence — and 'helped' never reaches evidence
+       * at all, because it judges no answer (`isLearnerVerdict`).
        *
        * Since the 2026-07-25 contrastive-correction ruling a correction NAMES
        * the error ("My turn: not one — two plus one is three."), so this
@@ -501,6 +552,9 @@ export function reduceJudgedLoop(
       if (!state.armed) return { state, emissions };
       if (!state.attempt) {
         const stray = scanForSentinel(event.text, config.sentinels);
+        // A stray HELP sentence is never retro-anchored: it judges nothing, so
+        // there is no lost answer to rescue. It is simply the tutor answering a
+        // child who spoke outside an attempt, which is allowed.
         if (stray !== 'affirmed' && stray !== 'corrected') return { state, emissions };
         // The tutor judged something. If the learner left a trace we declined to
         // anchor — a sub-minimum blip, a transcript with no attempt — this
@@ -546,6 +600,29 @@ export function reduceJudgedLoop(
       }
       const verdictText = `${state.verdictText} ${event.text}`;
       const scan = scanForSentinel(verdictText, config.sentinels);
+      if (scan === 'helped') {
+        // The child asked instead of answering. Resolve the attempt, keep the
+        // miss counter at zero (the tutor is ON script — this branch IS the
+        // script), and hand the consumer a judgment that means "re-ask".
+        emissions.push({
+          kind: 'verdict',
+          judgment: 'helped',
+          attempt: state.attempt,
+          misses: 0,
+          verdictText: normalizeSpeech(verdictText),
+        });
+        return {
+          state: {
+            ...state,
+            attempt: null,
+            verdictText: '',
+            sawSentenceSinceAttempt: false,
+            sawQuietSinceAttempt: false,
+            consecutiveMisses: 0,
+          },
+          emissions,
+        };
+      }
       if (scan === 'affirmed' || scan === 'corrected') {
         // Ship the sentence, not just the classification. The reducer already
         // has it; dropping it is what forced consumers to guess at WHY the

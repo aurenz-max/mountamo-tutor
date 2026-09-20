@@ -88,6 +88,9 @@ import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { compareObjectsPipPose } from '../../../pip/compareObjectsPipPose';
+import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
+import { useCompareObjectsRuntime } from './useCompareObjectsRuntime';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -355,9 +358,15 @@ function renderNonStandardMeasure(
 interface CompareObjectsProps {
   data: CompareObjectsData;
   className?: string;
+  /** The live host opts in only after its correlated mount handoff. */
+  autoStart?: boolean;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
+const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode }) => {
+  const liveRuntime = useLiveRuntime();
   const {
     title,
     description,
@@ -483,6 +492,10 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
 
   const runner = useJudgedScriptRunner<CompareObjectsItem>({
     pack,
+    // Load-bearing for the live host: without it the runner's `resume()` early-returns,
+    // its speech holds never settle, and the completion handoff has nothing to read.
+    runtime: liveRuntime,
+    ...(runtimePlanItemId ? { completionCue: '[CO_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
     instanceId: resolvedInstanceId,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
     exhibitId,
@@ -641,6 +654,17 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
   // ============================================================================
   // Render
   // ============================================================================
+
+  const runtimeHint = useCompareObjectsRuntime({ runner, instanceId: resolvedInstanceId, objectiveId,
+    // The SESSION's mode, from the first item — never `runner.currentItem`.
+    // A mount's identity must not change while the runner owns it: an item
+    // change would rebuild the mount and re-register into an unreleased owner.
+    planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || items[0]?.kind || 'default',
+    placedOrder });
+  // AFTER the runtime mount is registered, never before: `start()` waits for
+  // `grantOwnership('runner')`, which cannot be granted until this primitive's
+  // mount exists. Declared earlier, its effect runs first and the runner spins.
+  useLiveAutoStart(autoStart, resolvedInstanceId, runner.start);
 
   if (items.length === 0) {
     return (

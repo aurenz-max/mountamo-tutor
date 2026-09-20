@@ -16,10 +16,39 @@ from app.api.endpoints.lumina_tutor import (
     held_back,
     interpolate_line,
     interpolate_template,
+    input_transcription_message,
+    InputTranscriptBoundary,
     should_queue_greeting,
     switch_tail,
 )
 from app.services.session_ledger import classify_cue
+
+
+def test_input_transcription_preserves_empty_final_boundary():
+    from types import SimpleNamespace
+    assert input_transcription_message(None) is None
+    assert input_transcription_message(SimpleNamespace(text="three", finished=False)) == {
+        "type": "user_transcription", "content": "three", "finished": False}
+    assert input_transcription_message(SimpleNamespace(text=None, finished=True)) == {
+        "type": "user_transcription", "content": "", "finished": True}
+    assert input_transcription_message(SimpleNamespace(text="", finished=False)) is None
+
+
+def test_input_transcription_without_finished_closes_at_provider_response_not_fragments():
+    from types import SimpleNamespace as N
+    boundary = InputTranscriptBoundary()
+    def fragment(text, finished=None):
+        return N(server_content=N(input_transcription=N(text=text, finished=finished)))
+    assert boundary.observe(fragment('one two'))[0]['finished'] is False
+    assert boundary.observe(fragment(' three four five'))[0]['finished'] is False
+    assert boundary.observe(N(server_content=N(interrupted=True, turn_complete=True))) == []
+    assert boundary.observe(N(tool_call=N(function_calls=[1]))) == [
+        {'type': 'user_transcription', 'content': '', 'finished': True}]
+    assert boundary.observe(N(server_content=N(model_turn=N(parts=[1])))) == []
+    # A late empty provider final marker must not create another learner stream.
+    assert boundary.observe(fragment('', True)) == []
+    assert boundary.observe(fragment('can you help me?', True))[0]['finished'] is True
+    assert boundary.observe(N(server_content=N(turn_complete=True))) == []
 
 
 # ---------------------------------------------------------------------------

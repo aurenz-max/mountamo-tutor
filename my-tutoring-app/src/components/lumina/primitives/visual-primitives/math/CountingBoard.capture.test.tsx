@@ -13,7 +13,7 @@ vi.mock('../../../hooks/useJudgedSpeechLoop', () => ({ useJudgedSpeechLoop: (opt
 } }));
 vi.mock('../../../evaluation', () => ({ usePrimitiveEvaluation: (identity: Record<string, unknown>) => {
   seam.identity = identity; return { hasSubmitted: false, submitResult: seam.submit, submittedResult: null, elapsedMs: 0 };
-} }));
+}, useEvaluationContext: () => null }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => vi.fn() }) }));
 vi.mock('../../../components/JudgedMicPanel', () => ({ default: ({ run }: { run: { start: () => void } }) => <button onClick={run.start}>Start test</button> }));
 vi.mock('@/lib/authApiClient', () => ({ authApi: { post: vi.fn() } }));

@@ -114,6 +114,9 @@ import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { ordinalLinePipPose } from '../../../pip/ordinalLinePipPose';
+import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
+import { useOrdinalLineRuntime } from './useOrdinalLineRuntime';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -233,13 +236,19 @@ function seededShuffle<T>(values: readonly T[], seed: string): T[] {
 interface OrdinalLineProps {
   data: OrdinalLineData;
   className?: string;
+  /** The live host opts in only after its correlated mount handoff. */
+  autoStart?: boolean;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
+const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode }) => {
+  const liveRuntime = useLiveRuntime();
   const {
     title,
     description,
@@ -428,6 +437,10 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
   }, [items, evaluation]);
 
   const runner = useJudgedScriptRunner<OrdinalLineItem>({
+    // Load-bearing for the live host: without it the runner's `resume()` early-returns,
+    // its speech holds never settle, and the completion handoff has nothing to read.
+    runtime: liveRuntime,
+    ...(runtimePlanItemId ? { completionCue: '[OL_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
     pack,
     instanceId: resolvedInstanceId,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
@@ -724,6 +737,17 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
     });
     return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Ordinal line', dock: pip.dock.current, targets, pose };
   });
+
+  const runtimeHint = useOrdinalLineRuntime({ runner, instanceId: resolvedInstanceId, objectiveId,
+    // The SESSION's mode, from the first item — never `runner.currentItem`.
+    // A mount's identity must not change while the runner owns it: an item
+    // change would rebuild the mount and re-register into an unreleased owner.
+    planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || items[0]?.kind || 'default',
+    placedOrder });
+  // AFTER the runtime mount is registered, never before: `start()` waits for
+  // `grantOwnership('runner')`, which cannot be granted until this primitive's
+  // mount exists. Declared earlier, its effect runs first and the runner spins.
+  useLiveAutoStart(autoStart, resolvedInstanceId, runner.start);
 
   // ============================================================================
   // Render

@@ -3,6 +3,7 @@ import { useRef, useCallback, useEffect, useState } from 'react';
 
 interface UseAudioPlaybackProps {
   sampleRate?: number;
+  onIdle?: () => void;
 }
 
 const DEFAULT_SAMPLE_RATE = 24000;
@@ -15,7 +16,9 @@ const DEFAULT_SAMPLE_RATE = 24000;
  */
 const PRE_BUFFER_SECONDS = 0.15;
 
-export const useAudioPlayback = ({ sampleRate = DEFAULT_SAMPLE_RATE }: UseAudioPlaybackProps = {}) => {
+export const useAudioPlayback = ({ sampleRate = DEFAULT_SAMPLE_RATE, onIdle }: UseAudioPlaybackProps = {}) => {
+  const onIdleRef = useRef(onIdle);
+  onIdleRef.current = onIdle;
   const ctxRef = useRef<AudioContext | null>(null);
   const nextStartTimeRef = useRef<number>(0);
   const isStreamingRef = useRef(false);
@@ -79,7 +82,10 @@ export const useAudioPlayback = ({ sampleRate = DEFAULT_SAMPLE_RATE }: UseAudioP
     source.onended = () => {
       const idx = activeSourcesRef.current.indexOf(source);
       if (idx !== -1) activeSourcesRef.current.splice(idx, 1);
-      if (activeSourcesRef.current.length === 0) setIsAudioPlaying(false);
+      if (activeSourcesRef.current.length === 0) {
+        setIsAudioPlaying(false);
+        if (!preBufferRef.current.length) onIdleRef.current?.();
+      }
     };
 
     nextStartTimeRef.current += audioBuffer.duration;
@@ -144,6 +150,7 @@ export const useAudioPlayback = ({ sampleRate = DEFAULT_SAMPLE_RATE }: UseAudioP
     preBufferRef.current = [];
     preBufferDurationRef.current = 0;
     isStreamingRef.current = false;
+    if (!activeSourcesRef.current.length) onIdleRef.current?.();
   }, []);
 
   const stopAudioPlayback = useCallback(() => {
@@ -159,6 +166,7 @@ export const useAudioPlayback = ({ sampleRate = DEFAULT_SAMPLE_RATE }: UseAudioP
     isStreamingRef.current = false;
     nextStartTimeRef.current = 0;
     setIsAudioPlaying(false);
+    onIdleRef.current?.();
   }, []);
 
   return {

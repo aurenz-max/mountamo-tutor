@@ -587,6 +587,12 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
           lastHeardRef.current = emission.text;
           return;
         case 'verdict':
+          // THE THIRD BRANCH is opt-in (`withHelpBranch`) and this pack's cue
+          // contract has no help clause, so the loop can never classify one here.
+          // The branch is declared inert rather than omitted: if this pack adopts
+          // `helpBranch` later, the compiler stops pointing at this line and a
+          // help turn would otherwise fall through and be scored as an answer.
+          if (emission.judgment === 'helped') return;
           if (emission.judgment === 'off-script') return;
           if (emission.judgment === 'no-verdict') {
             // On a BUILD item this is routinely the child talking while they

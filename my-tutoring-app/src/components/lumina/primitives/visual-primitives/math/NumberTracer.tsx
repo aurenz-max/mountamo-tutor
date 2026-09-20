@@ -83,6 +83,7 @@ export interface NumberTracerChallenge {
 }
 
 import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
+import { useNumberTracerRuntime } from './useNumberTracerRuntime';
 export interface NumberTracerData {
   /** Safe adaptation metadata; `source` is stamped only by the observation delivery server. */
   learningAdaptation?: LearningAdaptation<'contrast_gap_positions_in_one_run'>;
@@ -437,13 +438,17 @@ const DigitModel: React.FC<DigitModelProps> = ({ digit, size = 120, showArrows =
 interface NumberTracerProps {
   data: NumberTracerData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
+const NumberTracer: React.FC<NumberTracerProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const {
     title,
     description,
@@ -1006,6 +1011,29 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
     hasSubmittedEvaluation, phaseResults, sendText, submitSession, tutorRevealClause,
   ]);
 
+  // ── Live tutor runtime ──────────────────────────────────────────────
+  // The tutor drives the learner's OWN handlers; grading and progression are
+  // untouched. `promptRef` exists so `replay` has a real, focusable effect
+  // rather than a claim, and the label matches the shared journey probe.
+  const promptRef = useRef<HTMLDivElement | null>(null);
+  const runtimeHint = useNumberTracerRuntime({
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || currentChallenge?.type || 'trace',
+    challenge: currentChallenge, index: currentChallengeIndex, attempts: currentAttempts,
+    checked: hasChecked, correct: hasChecked && feedbackType === 'success',
+    incorrect: hasChecked && feedbackType === 'error', completed: allChallengesComplete,
+    score: lastScore, strokeCount: allStrokes.length,
+    guideStrokeCount: idealPaths.length,
+    inkPoints: allStrokes.reduce((total, stroke) => total + stroke.length, 0),
+    guidePoints: idealPaths.reduce((total, stroke) => total + stroke.length, 0),
+    advance: handleNextChallenge,
+    clear: handleClear,
+    replay: () => { promptRef.current?.focus(); return !!promptRef.current && document.activeElement === promptRef.current; },
+    // Ending the stroke is the whole of this canvas's quiescing: there is no
+    // timer here, and a half-drawn stroke left live would land after the detour.
+    cancelStroke: () => { setIsDrawing(false); setCurrentStroke([]); },
+  });
+
   // ── Render ──────────────────────────────────────────────────────────
 
   if (challenges.length === 0) {
@@ -1047,9 +1075,11 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
           <div className="space-y-2">
-            <LuminaPrompt center>
-              <span className="text-lg">{currentChallenge.instruction}</span>
-            </LuminaPrompt>
+            <div ref={promptRef} tabIndex={-1} aria-label="Current instruction" className="outline-none">
+              <LuminaPrompt center>
+                <span className="text-lg">{currentChallenge.instruction}</span>
+              </LuminaPrompt>
+            </div>
             {currentChallenge.hint && currentAttempts >= 2 && (
               <p className="text-center text-sm text-blue-400">{currentChallenge.hint}</p>
             )}

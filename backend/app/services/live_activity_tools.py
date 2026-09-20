@@ -166,6 +166,7 @@ class LiveActivityTools:
         # Mounted instances whose completion the browser has already reported.
         self.completed = set()
         self.pending = None
+        self.pending_request = None
         self.active = None
         self.timer = None
         self.seen = set()
@@ -294,6 +295,7 @@ class LiveActivityTools:
 
     async def cancel_pending(self, reason):
         call_id, self.pending = self.pending, None
+        self.pending_request = None
         self.stop_timer()
         if call_id:
             await self.emit({"type": "activity_cancelled", "callId": call_id, "reason": reason})
@@ -337,8 +339,16 @@ class LiveActivityTools:
             await self.reply(types.FunctionResponse(id=call.id, name=call.name,
                 response={"status": "error", "error": "Unsupported activity request"}))
             return
+        request = {k: args[k].strip() for k in ("primitiveId", "topic", "intent", "mode")}
+        if self.pending and request == self.pending_request:
+            # A fresh model call ID is not a fresh learner request. Keep the
+            # generation already in flight and its original mount correlation.
+            await self.respond(call.id, "already_preparing", scheduling="SILENT",
+                               originalCallId=self.pending, visible=False)
+            return
         await self.cancel_pending("superseded")
         self.pending = call.id
+        self.pending_request = request
         self.pending_type = primitive
         # NON_BLOCKING alone leaves the standard Live model waiting silently.
         # A continuing response gives it a conversational turn while generation
@@ -346,7 +356,7 @@ class LiveActivityTools:
         await self.respond(call.id, "preparing", continuing=True, scheduling="SILENT" if offer["teachingOwner"] == "di-runner" else "WHEN_IDLE",
                            teachingOwner=offer["teachingOwner"], topic=args["topic"], intent=args["intent"], visible=False)
         await self.emit({"type": "activity_request", "callId": call.id,
-                         "args": {k: args[k].strip() for k in ("primitiveId", "topic", "intent", "mode")}})
+                         "args": request})
         self.timer = asyncio.create_task(self.expire(call.id))
 
     async def expire(self, call_id):
@@ -359,6 +369,7 @@ class LiveActivityTools:
         if not call_id or call_id != self.pending:
             return False
         self.pending = None
+        self.pending_request = None
         item, self.pending_item = self.pending_item, None
         self.stop_timer()
         status = message.get("status")
@@ -399,6 +410,15 @@ class LiveActivityTools:
             await self.respond(self.active[0], "student_state", continuing=True,
                                instanceId=instance_id, state=state)
 
+    async def runtime_state(self, state):
+        """Deliver browser controls to voice turns through the open activity stream.
+
+        SILENT updates change model context without taking the conversational floor.
+        Text-only state attachment cannot reach a learner speaking over audio.
+        """
+        if self.active and self.active[1] == state.get("instanceId"):
+            await self.state(self.active[1], {"liveRuntime": state})
+
     async def cancelled_by_model(self, ids):
         if self.command and self.command[0] in ids:
             self.command = None
@@ -422,4 +442,5 @@ class LiveActivityTools:
         if self.pending:
             await self.emit({"type": "activity_cancelled", "callId": self.pending, "reason": "session reconnecting"})
         self.pending = self.active = None
+        self.pending_request = None
         self.active_type = self.pending_item = self.active_item = None

@@ -18,7 +18,7 @@ from google.genai.types import LiveConnectConfig, SpeechConfig, VoiceConfig, Pre
 from ...core.config import settings
 from ...services.session_ledger import SessionLedger, classify_cue
 from ...services.live_activity_tools import LiveActivityTools, activity_tool, parse_activity_spec, activity_instruction
-from ...services.live_runtime_tools import LiveRuntimeTools, CombinedLiveTools, runtime_tool, parse_runtime_spec, RUNTIME_INSTRUCTION
+from ...services.live_runtime_tools import LiveRuntimeTools, CombinedLiveTools, runtime_tool, parse_runtime_spec, RUNTIME_INSTRUCTION, MOVE_INSTRUCTION
 
 # Enhanced logging configuration
 logging.basicConfig(
@@ -50,6 +50,10 @@ DEFAULT_VOICE = "Leda"
 # qa/tutor-reports/live-model-ab-gemini-3.8-live-2026-09-15.md). Rollback = the
 # previous default, "gemini-3.1-flash-live-preview", here or via the env override.
 MODEL = os.environ.get("LUMINA_LIVE_MODEL") or "gemini-3.8-live"
+# Live speech language. Unset, the model infers the language from the audio and
+# the prompt, and gemini-3.8-live drifts into Spanish mid-session.
+# LUMINA_LIVE_LANGUAGE (process env) overrides it for non-English drives.
+DEFAULT_LANGUAGE = os.environ.get("LUMINA_LIVE_LANGUAGE") or "en-US"
 # Audio constants
 FORMAT = "audio/pcm"
 SEND_SAMPLE_RATE = 16000
@@ -381,6 +385,40 @@ FLOOR_SETTLE_MAX_S = 2.5    # a steady drip of cues still has to ship eventually
 FLOOR_WATCHDOG_S = 90.0
 
 
+def input_transcription_message(transcription):
+    """Keep the provider's completion boundary even when its final chunk is empty."""
+    text = getattr(transcription, "text", None)
+    finished = getattr(transcription, "finished", None) is True
+    if not text and not finished:
+        return None
+    return {"type": "user_transcription", "content": text or "", "finished": finished}
+
+
+class InputTranscriptBoundary:
+    """Finalize source input when the provider starts answering it.
+
+    Some Live models omit Transcription.finished entirely. Their output/tool-call
+    boundary still closes the input they are responding to. Client VAD pauses do
+    not: a spoken count can contain several of those within one response.
+    """
+    def __init__(self):
+        self.pending = False
+
+    def observe(self, response):
+        sc = getattr(response, 'server_content', None)
+        message = input_transcription_message(getattr(sc, 'input_transcription', None))
+        messages = []
+        if message and (message['content'] or self.pending):
+            messages.append(message)
+            self.pending = not message['finished']
+        answering = (getattr(response, 'tool_call', None) or getattr(sc, 'model_turn', None)
+                     or getattr(sc, 'output_transcription', None) or getattr(sc, 'turn_complete', False))
+        if self.pending and answering and not getattr(sc, 'interrupted', False):
+            messages.append({'type': 'user_transcription', 'content': '', 'finished': True})
+            self.pending = False
+        return messages
+
+
 def should_queue_greeting(
     *,
     owns_opening: bool,
@@ -675,12 +713,16 @@ When the student requests a hint, respond based on the level they request:
 
 def _interaction_rules(grade_level: str, use_name: bool) -> str:
     name_rule = "\n- Use the student's name if provided" if use_name else ""
+    language_rule = (
+        "\n- Speak and write ENGLISH ONLY, every turn, whatever language you hear. "
+        "If the student speaks another language, answer in English anyway."
+    )
     return f"""**INTERACTION RULES:**
 - Keep responses SHORT (1-2 sentences max)
 - Use encouraging, supportive tone appropriate for {grade_level} students
 - Ask AT MOST ONE question per response — never stack two questions in one breath
 - Most responses END WITH A STATEMENT, not a question. Save questions for moments that need the student's thinking: a struggle, a misconception, a prediction before they act. After a celebration or an observation, stop — do not add a closing question.
-- Reference lesson context naturally without being formulaic{name_rule}
+- Reference lesson context naturally without being formulaic{name_rule}{language_rule}
 - Celebrate milestones; skip praise for routine moves
 - If student is stuck after Level 3 hint, encourage them to try and provide reassurance"""
 
@@ -909,6 +951,15 @@ async def lumina_tutor_session(websocket: WebSocket):
             except ValueError as error:
                 await websocket.close(code=4003, reason=str(error))
                 return
+        if auth_data.get("runtime_lesson") is not None:
+            if runtime_spec or sandbox_enabled or auth_data.get("session_mode") != "lesson":
+                await websocket.close(code=4003, reason="Lesson runtime requires an ordinary lesson session")
+                return
+            try:
+                runtime_spec = parse_runtime_spec(auth_data["runtime_lesson"], activity_enabled=False, lesson_enabled=True)
+            except ValueError as error:
+                await websocket.close(code=4003, reason=str(error))
+                return
         primitive_context = auth_data.get("primitive_context", {})
         lesson_context = auth_data.get("lesson_context", {})
         student_progress = auth_data.get("student_progress", {})
@@ -976,12 +1027,13 @@ async def lumina_tutor_session(websocket: WebSocket):
         if sandbox_spec:
             system_instruction += "\n" + activity_instruction(sandbox_spec)
         if runtime_spec:
-            system_instruction += "\n" + RUNTIME_INSTRUCTION
+            system_instruction += "\n" + RUNTIME_INSTRUCTION + (MOVE_INSTRUCTION if runtime_spec.get("teachingMoves") else "")
 
         speech_config = SpeechConfig(
             voice_config=VoiceConfig(
                 prebuilt_voice_config=PrebuiltVoiceConfig(voice_name=DEFAULT_VOICE)
-            )
+            ),
+            language_code=DEFAULT_LANGUAGE,
         )
 
         def build_realtime_input_config() -> Optional[types.RealtimeInputConfig]:
@@ -1048,7 +1100,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                 ),
                 session_resumption=types.SessionResumptionConfig(handle=handle),
                 system_instruction=Content(parts=[{"text": system_instruction}]),
-                tools=((([runtime_tool()] if runtime_spec else []) +
+                tools=((([runtime_tool(runtime_spec)] if runtime_spec else []) +
                         ([activity_tool(sandbox_spec)] if sandbox_enabled else [])) or None),
             )
 
@@ -1064,7 +1116,7 @@ async def lumina_tutor_session(websocket: WebSocket):
         tool_response_queue: asyncio.Queue = asyncio.Queue()
         sandbox = LiveActivityTools(ws_send_queue.put, tool_response_queue.put, sandbox_spec) if sandbox_enabled else None
         runtime_bridge = LiveRuntimeTools(ws_send_queue.put, tool_response_queue.put, runtime_spec) if runtime_spec else None
-        tool_bridge = CombinedLiveTools(sandbox, runtime_bridge) if runtime_bridge else sandbox
+        tool_bridge = CombinedLiveTools(sandbox, runtime_bridge) if sandbox and runtime_bridge else runtime_bridge or sandbox
 
         async def handle_tool_responses(session):
             while True:
@@ -1134,6 +1186,8 @@ async def lumina_tutor_session(websocket: WebSocket):
         # primitive the session opened on — the greeting's scaffold carries it.
         primitive_state = PrimitiveState()
         primitive_state.reset(primitive_data)
+        if runtime_bridge:
+            primitive_state.merge({"liveRuntime": runtime_bridge.state})
 
         # Send session ready message via the send queue
         await ws_send_queue.put({
@@ -1238,6 +1292,19 @@ async def lumina_tutor_session(websocket: WebSocket):
                     if message_type == "runtime_state" and runtime_bridge:
                         if runtime_bridge.update(message.get("state")):
                             primitive_state.merge({"liveRuntime": runtime_bridge.state})
+                            state = runtime_bridge.state
+                            task = state.get("task") or {}
+                            ledger.write("runtime-state", instance=state.get("instanceId"), revision=state.get("revision"),
+                                         status=state.get("status"), item=task.get("itemId"), phase=task.get("phase"),
+                                         correctness=(task.get("evidence") or {}).get("correctness"))
+                            if sandbox:
+                                await sandbox.runtime_state(runtime_bridge.state)
+                            else:
+                                await runtime_bridge.publish_observation()
+
+                    elif message_type == "dialogue_observation" and runtime_bridge:
+                        ledger.write("dialogue-observation", **{k: message.get(k) for k in
+                            ("scope", "verdict", "transition", "confidence", "verdictConfidence", "grounded", "accepted", "reason", "status", "ms", "model")})
 
                     elif message_type == "runtime_result" and runtime_bridge:
                         accepted = await runtime_bridge.result(message)
@@ -1247,6 +1314,13 @@ async def lumina_tutor_session(websocket: WebSocket):
                                      status=message.get("status"), accepted=accepted)
 
                     elif message_type == "activity_result" and sandbox:
+                        # Runtime registration precedes the visible mount receipt. Carry
+                        # those controls in the receipt; resetting primitive state must
+                        # not lose them, and voice-only sessions have no text attachment.
+                        if (runtime_bridge and message.get("status") == "mounted"
+                                and isinstance(message.get("data"), dict)
+                                and runtime_bridge.state.get("instanceId") == message.get("instanceId")):
+                            message["data"] = {**message["data"], "liveRuntime": runtime_bridge.state}
                         # The browser acknowledges only after the real component commits.
                         if sandbox.pending_type in sandbox.activities and message.get("status") == "mounted" and isinstance(message.get("data"), dict):
                             message["guidance"] = (get_primitive_specific_instructions(
@@ -1342,6 +1416,8 @@ async def lumina_tutor_session(websocket: WebSocket):
                         # one. The announcement below carries the new data
                         # in its scaffold, so it counts as already conveyed.
                         primitive_state.reset(primitive_data)
+                        if runtime_bridge:
+                            primitive_state.merge({"liveRuntime": runtime_bridge.state})
 
                         # Straight into the floor gate, in FIFO order with
                         # the new primitive's own opening cues. Tab-flipping
@@ -1699,6 +1775,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                 return False
 
             turn_had_content = False
+            input_boundary = InputTranscriptBoundary()
             turn_count = 0
             audio_frames = 0
             audio_bytes = 0
@@ -1735,6 +1812,11 @@ async def lumina_tutor_session(websocket: WebSocket):
                     audio_frames = 0
                     audio_bytes = 0
                     async for response in session.receive():
+                        # Complete source input before relaying output/tool events.
+                        for user_message in input_boundary.observe(response):
+                            ledger.write('user-transcript', turn=turn_count,
+                                         text=user_message['content'], finished=user_message['finished'])
+                            await ws_send_queue.put(user_message)
                         if tool_bridge:
                             cancellation = getattr(response, "tool_call_cancellation", None)
                             if cancellation:
@@ -1845,17 +1927,6 @@ async def lumina_tutor_session(websocket: WebSocket):
                                             })
                                     else:
                                         gemini_logger.warning(f"inline_data present but no data: {part.inline_data}")
-
-                            # Handle user's speech transcription
-                            user_text = getattr(getattr(sc, 'input_transcription', None), 'text', None)
-                            if user_text:
-                                logger.info(f"User transcription: {user_text}")
-                                ledger.write("user-transcript", turn=turn_count, text=user_text)
-
-                                await ws_send_queue.put({
-                                    "type": "user_transcription",
-                                    "content": user_text
-                                })
 
                             # Handle output transcription
                             ai_text = getattr(getattr(sc, 'output_transcription', None), 'text', None)

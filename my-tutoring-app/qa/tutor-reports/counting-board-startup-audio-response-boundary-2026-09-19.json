@@ -1,0 +1,1264 @@
+[
+  {
+    "passed": false,
+    "primitiveId": "counting-board",
+    "events": [
+      {
+        "type": "learner",
+        "t": 3.31,
+        "text": "[LESSON_START] Begin a counting-board lesson in count mode. Call request_activity now. Teach from the mounted workspace."
+      },
+      {
+        "type": "activity_request",
+        "t": 4.69,
+        "request": {
+          "primitiveId": "counting-board",
+          "topic": "Counting objects",
+          "intent": "Practice counting objects up to 10",
+          "mode": "count"
+        }
+      },
+      {
+        "type": "mounted_generated_payload",
+        "t": 4.86,
+        "state": {
+          "sessionEpoch": "7466cadb-b1f9-44a3-a565-492643e84538",
+          "revision": 1,
+          "visibleRevision": 1,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "working",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count_all",
+              "objects": "blocks",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "speech",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            },
+            "workspace": {
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "block 1",
+                  "selected": false
+                },
+                {
+                  "id": "object-1",
+                  "label": "block 2",
+                  "selected": false
+                },
+                {
+                  "id": "object-2",
+                  "label": "block 3",
+                  "selected": false
+                },
+                {
+                  "id": "object-3",
+                  "label": "block 4",
+                  "selected": false
+                },
+                {
+                  "id": "object-4",
+                  "label": "block 5",
+                  "selected": false
+                }
+              ],
+              "demonstration": [],
+              "lastResponse": null,
+              "utterance": null,
+              "attempts": []
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/1/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate"
+              },
+              "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/1/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 9.11,
+        "phase": "startup",
+        "text": "Let's count the blocks together to see how many we have.",
+        "state": {
+          "sessionEpoch": "7466cadb-b1f9-44a3-a565-492643e84538",
+          "revision": 1,
+          "visibleRevision": 1,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "working",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count_all",
+              "objects": "blocks",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "speech",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            },
+            "workspace": {
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "block 1",
+                  "selected": false
+                },
+                {
+                  "id": "object-1",
+                  "label": "block 2",
+                  "selected": false
+                },
+                {
+                  "id": "object-2",
+                  "label": "block 3",
+                  "selected": false
+                },
+                {
+                  "id": "object-3",
+                  "label": "block 4",
+                  "selected": false
+                },
+                {
+                  "id": "object-4",
+                  "label": "block 5",
+                  "selected": false
+                }
+              ],
+              "demonstration": [],
+              "lastResponse": null,
+              "utterance": null,
+              "attempts": []
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/1/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate"
+              },
+              "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/1/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_audio",
+        "t": 11.59,
+        "text": "What do I do?",
+        "bytes": 57200
+      },
+      {
+        "type": "provider_transcript",
+        "t": 11.78,
+        "text": "What do I do?",
+        "finished": false
+      },
+      {
+        "type": "provider_transcript",
+        "t": 12.38,
+        "text": "",
+        "finished": true
+      },
+      {
+        "type": "tutor",
+        "t": 15.91,
+        "phase": "opening",
+        "text": "Go ahead and point to the first block and count it for me.",
+        "state": {
+          "sessionEpoch": "7466cadb-b1f9-44a3-a565-492643e84538",
+          "revision": 2,
+          "visibleRevision": 2,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "working",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count_all",
+              "objects": "blocks",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "speech",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            },
+            "workspace": {
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "block 1",
+                  "selected": false
+                },
+                {
+                  "id": "object-1",
+                  "label": "block 2",
+                  "selected": false
+                },
+                {
+                  "id": "object-2",
+                  "label": "block 3",
+                  "selected": false
+                },
+                {
+                  "id": "object-3",
+                  "label": "block 4",
+                  "selected": false
+                },
+                {
+                  "id": "object-4",
+                  "label": "block 5",
+                  "selected": false
+                }
+              ],
+              "demonstration": [],
+              "lastResponse": null,
+              "utterance": "What do I do?",
+              "attempts": []
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/2/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate"
+              },
+              "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/2/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_audio",
+        "t": 18.2,
+        "text": "Can you help me?",
+        "bytes": 52800
+      },
+      {
+        "type": "provider_transcript",
+        "t": 18.36,
+        "text": "Can you help me?",
+        "finished": false
+      },
+      {
+        "type": "provider_transcript",
+        "t": 19.27,
+        "text": "",
+        "finished": true
+      },
+      {
+        "type": "tutor",
+        "t": 22.89,
+        "phase": "help",
+        "text": "Let's touch the first block together and say \"one.\"",
+        "state": {
+          "sessionEpoch": "7466cadb-b1f9-44a3-a565-492643e84538",
+          "revision": 4,
+          "visibleRevision": 4,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "working",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count_all",
+              "objects": "blocks",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "speech",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            },
+            "workspace": {
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "block 1",
+                  "selected": false
+                },
+                {
+                  "id": "object-1",
+                  "label": "block 2",
+                  "selected": false
+                },
+                {
+                  "id": "object-2",
+                  "label": "block 3",
+                  "selected": false
+                },
+                {
+                  "id": "object-3",
+                  "label": "block 4",
+                  "selected": false
+                },
+                {
+                  "id": "object-4",
+                  "label": "block 5",
+                  "selected": false
+                }
+              ],
+              "demonstration": [],
+              "lastResponse": null,
+              "utterance": "Can you help me?",
+              "attempts": []
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/4/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate"
+              },
+              "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/4/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_audio",
+        "t": 25.81,
+        "text": "Can you show me what you mean?",
+        "bytes": 68400
+      },
+      {
+        "type": "provider_transcript",
+        "t": 26.02,
+        "text": "Can you show me what you mean?",
+        "finished": false
+      },
+      {
+        "type": "provider_transcript",
+        "t": 26.83,
+        "text": "",
+        "finished": true
+      },
+      {
+        "type": "runtime_command",
+        "t": 28.88,
+        "phase": "show",
+        "command": {
+          "sessionEpoch": "7466cadb-b1f9-44a3-a565-492643e84538",
+          "instanceId": "board",
+          "itemId": "c1",
+          "expectedRevision": 6,
+          "commandId": "call_545960",
+          "action": {
+            "type": "workspace",
+            "operation": "demonstrate",
+            "input": {
+              "targets": [
+                "object-0"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 28.94,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_545960",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "7466cadb-b1f9-44a3-a565-492643e84538",
+            "revision": 7,
+            "visibleRevision": 7,
+            "instanceId": "board",
+            "planItemId": "board",
+            "primitiveId": "counting-board",
+            "objectiveId": "counting-board-practice",
+            "evalMode": "count",
+            "owner": "tutor",
+            "status": "active",
+            "task": {
+              "itemId": "c1",
+              "phase": "working",
+              "task": "Count the blocks. Your turn. How many blocks?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 0,
+                "correctness": "unknown",
+                "recentResponses": []
+              },
+              "demand": {
+                "kind": "count_all",
+                "objects": "blocks",
+                "counted": 0,
+                "takenOff": 0,
+                "putOn": 0,
+                "moved": "no",
+                "startFrom": "",
+                "changeBy": "",
+                "constraints": "",
+                "response": "speech",
+                "presentation": "ready"
+              },
+              "support": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "workspace": {
+                "objects": [
+                  {
+                    "id": "object-0",
+                    "label": "block 1",
+                    "selected": false
+                  },
+                  {
+                    "id": "object-1",
+                    "label": "block 2",
+                    "selected": false
+                  },
+                  {
+                    "id": "object-2",
+                    "label": "block 3",
+                    "selected": false
+                  },
+                  {
+                    "id": "object-3",
+                    "label": "block 4",
+                    "selected": false
+                  },
+                  {
+                    "id": "object-4",
+                    "label": "block 5",
+                    "selected": false
+                  }
+                ],
+                "demonstration": [
+                  "object-0"
+                ],
+                "lastResponse": null,
+                "utterance": "Can you show me what you mean?",
+                "attempts": []
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "canGenerateSupport": false,
+            "moveOptions": null,
+            "markedTargetIds": [],
+            "assistance": [
+              {
+                "instanceId": "board",
+                "itemId": "c1",
+                "revision": 7,
+                "action": {
+                  "type": "workspace",
+                  "operation": "demonstrate",
+                  "input": {
+                    "targets": [
+                      "object-0"
+                    ]
+                  }
+                },
+                "level": 2,
+                "answerExposure": "full"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "workspace",
+                  "operation": "begin_help"
+                },
+                "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/7/0"
+              },
+              {
+                "action": {
+                  "type": "workspace",
+                  "operation": "demonstrate"
+                },
+                "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "full"
+                },
+                "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/7/1"
+              }
+            ]
+          },
+          "elapsedMs": 52.86330000000089
+        }
+      },
+      {
+        "type": "visible_demonstration",
+        "t": 28.94,
+        "state": {
+          "sessionEpoch": "7466cadb-b1f9-44a3-a565-492643e84538",
+          "revision": 7,
+          "visibleRevision": 7,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "working",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count_all",
+              "objects": "blocks",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "speech",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 2,
+              "answerExposure": "full"
+            },
+            "workspace": {
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "block 1",
+                  "selected": false
+                },
+                {
+                  "id": "object-1",
+                  "label": "block 2",
+                  "selected": false
+                },
+                {
+                  "id": "object-2",
+                  "label": "block 3",
+                  "selected": false
+                },
+                {
+                  "id": "object-3",
+                  "label": "block 4",
+                  "selected": false
+                },
+                {
+                  "id": "object-4",
+                  "label": "block 5",
+                  "selected": false
+                }
+              ],
+              "demonstration": [
+                "object-0"
+              ],
+              "lastResponse": null,
+              "utterance": "Can you show me what you mean?",
+              "attempts": []
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate",
+                "input": {
+                  "targets": [
+                    "object-0"
+                  ]
+                }
+              },
+              "level": 2,
+              "answerExposure": "full"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/7/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate"
+              },
+              "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/7/1"
+            }
+          ]
+        },
+        "dom": {
+          "reminder": false,
+          "support": false,
+          "mounted": 5,
+          "demonstration": 1
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 34.0,
+        "phase": "show",
+        "text": "I'm highlighting the first block for you, so please touch it and say \"one.\"",
+        "state": {
+          "sessionEpoch": "7466cadb-b1f9-44a3-a565-492643e84538",
+          "revision": 7,
+          "visibleRevision": 7,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "working",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count_all",
+              "objects": "blocks",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "speech",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 2,
+              "answerExposure": "full"
+            },
+            "workspace": {
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "block 1",
+                  "selected": false
+                },
+                {
+                  "id": "object-1",
+                  "label": "block 2",
+                  "selected": false
+                },
+                {
+                  "id": "object-2",
+                  "label": "block 3",
+                  "selected": false
+                },
+                {
+                  "id": "object-3",
+                  "label": "block 4",
+                  "selected": false
+                },
+                {
+                  "id": "object-4",
+                  "label": "block 5",
+                  "selected": false
+                }
+              ],
+              "demonstration": [
+                "object-0"
+              ],
+              "lastResponse": null,
+              "utterance": "Can you show me what you mean?",
+              "attempts": []
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate",
+                "input": {
+                  "targets": [
+                    "object-0"
+                  ]
+                }
+              },
+              "level": 2,
+              "answerExposure": "full"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/7/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate"
+              },
+              "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/7/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 34.02,
+        "intent": "wrong",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "1 2 3 4 5 6"
+          }
+        ],
+        "demand": {
+          "kind": "count_all",
+          "objects": "blocks",
+          "counted": 0,
+          "takenOff": 0,
+          "putOn": 0,
+          "moved": "no",
+          "startFrom": "",
+          "changeBy": "",
+          "constraints": "",
+          "response": "speech",
+          "presentation": "ready"
+        }
+      },
+      {
+        "type": "learner_audio",
+        "t": 37.7,
+        "text": "1 2 3 4 5 6",
+        "bytes": 90400
+      },
+      {
+        "type": "provider_transcript",
+        "t": 37.92,
+        "text": "1 2 3 4 5 6",
+        "finished": false
+      },
+      {
+        "type": "provider_transcript",
+        "t": 38.62,
+        "text": "",
+        "finished": true
+      },
+      {
+        "type": "tutor",
+        "t": 43.31,
+        "phase": "wrong",
+        "text": "Oops, let's try counting one by one again to be sure we get the right number.",
+        "state": {
+          "sessionEpoch": "7466cadb-b1f9-44a3-a565-492643e84538",
+          "revision": 9,
+          "visibleRevision": 9,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "working",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count_all",
+              "objects": "blocks",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "speech",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 2,
+              "answerExposure": "full"
+            },
+            "workspace": {
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "block 1",
+                  "selected": false
+                },
+                {
+                  "id": "object-1",
+                  "label": "block 2",
+                  "selected": false
+                },
+                {
+                  "id": "object-2",
+                  "label": "block 3",
+                  "selected": false
+                },
+                {
+                  "id": "object-3",
+                  "label": "block 4",
+                  "selected": false
+                },
+                {
+                  "id": "object-4",
+                  "label": "block 5",
+                  "selected": false
+                }
+              ],
+              "demonstration": [
+                "object-0"
+              ],
+              "lastResponse": null,
+              "utterance": "1 2 3 4 5 6",
+              "attempts": []
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate",
+                "input": {
+                  "targets": [
+                    "object-0"
+                  ]
+                }
+              },
+              "level": 2,
+              "answerExposure": "full"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/9/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate"
+              },
+              "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/9/1"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "record_response"
+              },
+              "description": "Check the latest learner answer using the activity key. Copy workspace.utterance exactly into utterance. Do not use for a question or a request for help. No targets.",
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/9/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "failure",
+        "t": 92.78,
+        "reason": "TimeoutError()",
+        "state": {
+          "sessionEpoch": "7466cadb-b1f9-44a3-a565-492643e84538",
+          "revision": 9,
+          "visibleRevision": 9,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "working",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count_all",
+              "objects": "blocks",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "startFrom": "",
+              "changeBy": "",
+              "constraints": "",
+              "response": "speech",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 2,
+              "answerExposure": "full"
+            },
+            "workspace": {
+              "objects": [
+                {
+                  "id": "object-0",
+                  "label": "block 1",
+                  "selected": false
+                },
+                {
+                  "id": "object-1",
+                  "label": "block 2",
+                  "selected": false
+                },
+                {
+                  "id": "object-2",
+                  "label": "block 3",
+                  "selected": false
+                },
+                {
+                  "id": "object-3",
+                  "label": "block 4",
+                  "selected": false
+                },
+                {
+                  "id": "object-4",
+                  "label": "block 5",
+                  "selected": false
+                }
+              ],
+              "demonstration": [
+                "object-0"
+              ],
+              "lastResponse": null,
+              "utterance": "1 2 3 4 5 6",
+              "attempts": []
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 7,
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate",
+                "input": {
+                  "targets": [
+                    "object-0"
+                  ]
+                }
+              },
+              "level": 2,
+              "answerExposure": "full"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/9/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "demonstrate"
+              },
+              "description": "Mark a tutor-owned example selection on the existing objects. Supply targets from workspace.objects; [] clears it. These marks are NOT learner selections: the learner must still select every object themselves. Never count tutor marks toward the learner response. You can mark one object at a time, explain, then have the learner try.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "full"
+              },
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/9/1"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "record_response"
+              },
+              "description": "Check the latest learner answer using the activity key. Copy workspace.utterance exactly into utterance. Do not use for a question or a request for help. No targets.",
+              "actionId": "7466cadb-b1f9-44a3-a565-492643e84538/9/2"
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

@@ -130,6 +130,7 @@ import {
   type ResponseClassId,
 } from '../../../hooks/judgedScriptContract';
 import { numberWordFor } from './countingBoardScript';
+import { resolveScaffolds, type LiveScaffold } from '../../../components/live-activity/runtime/liveScaffolds';
 
 // Re-exported so the generator imports its build gates from ONE address — both
 // sides of the wire must agree on what is sayable.
@@ -876,7 +877,8 @@ const questionFor = (item: SortingStationItem): string => {
 };
 
 /** The whole ask for one item. */
-const askFor = (item: SortingStationItem): string => {
+/** The question as the runner asks it. The adapter publishes this as the tutor task. */
+export const askFor = (item: SortingStationItem): string => {
   switch (item.kind) {
     case 'sort':
       return item.namesChoices
@@ -1448,3 +1450,102 @@ export const sortingStationHarnessAnswers = (item: SortingStationItem) => {
       };
   }
 };
+
+/* ------------------------------------------------------------------ *
+ * Live-tutor misstep inventory (see `/add-live-tutor-tools`).
+ *
+ * Kept beside `correctionFor` above, because the two answer different things.
+ * The correction re-models the sort and STATES the answer, and it fires however
+ * the child was wrong. These aids name the misstep and never state the answer —
+ * which on this primitive means never a group label, an object name, a count or
+ * a comparison word, because each of those is the answer on some mode.
+ *
+ * Missteps deliberately left to another lane:
+ *   - "cannot read the tray labels" — the band floor already forces the ask to
+ *     NAME the groups at Kindergarten (`namesChoices`), so this is a tier
+ *     question, not an error response.
+ *   - "does not know the attribute word" — between-item remediation.
+ *   - "needs the tray count badges" — that is the support tier, and on a count
+ *     or compare ask `hidesCounts` overrides it because the badge IS the answer.
+ * ------------------------------------------------------------------ */
+
+/** What the child has actually done on this item, as the adapter publishes it. */
+export interface SortingMisstepEvidence {
+  /** The raw transcript, lower-cased. Null when nothing has been heard. */
+  said: string | null;
+  /** The number the transcript names, or null. */
+  saidNumber: number | null;
+  /**
+   * Whether the last committed attempt was judged wrong.
+   *
+   * Every aid here gates on it. A transcript alone cannot tell a wrong answer
+   * from a right one phrased differently, and correcting a right answer is worse
+   * than offering no aid at all.
+   */
+  wrongNow: boolean;
+}
+
+export type SortingScaffold = LiveScaffold<SortingStationItem, SortingMisstepEvidence>;
+
+/** Did the child name one of the options the ask actually offered? */
+const namedAChoice = (item: SortingStationItem, said: string | null) =>
+  !!said && item.choices.some(choice => choice && said.includes(choice.toLowerCase()));
+
+/**
+ * One method reminder per item kind. Deliberately free of group labels, object
+ * names, counts and comparison words, because each is an answer on some mode.
+ */
+const METHOD: Record<SortingItemKind, SortingScaffold> = {
+  sort: { strategyId: 'what-makes-it-belong', when: 'the child needs the method again',
+    hint: () => 'Look at the one I named, and think about what makes it belong with a group.' },
+  pick_rule: { strategyId: 'same-inside-different-between', when: 'the child needs the method again',
+    hint: () => 'Look at the groups. Find what is the same inside a group, and what is different between them.' },
+  odd_one: { strategyId: 'find-what-does-not-fit', when: 'the child needs the method again',
+    hint: () => 'Look at them all together, and find the one that does not fit with the rest.' },
+  count_group: { strategyId: 'count-that-group-only', when: 'the child needs the method again',
+    hint: () => 'Count the ones in that group only. Leave the other groups out of it.' },
+  compare: { strategyId: 'put-the-groups-side-by-side', when: 'the child needs the method again',
+    hint: () => 'Look at the two groups together, not at one group on its own.' },
+  both_criteria: { strategyId: 'both-things-have-to-match', when: 'the child needs the method again',
+    hint: () => 'It has to match both of the things I said, not just one of them.' },
+};
+
+/**
+ * The error-specific aids, offered only once the published evidence fits. Each
+ * `when` states the CONDITION, because the model routes on that sentence.
+ */
+const AIDS: readonly SortingScaffold[] = [
+  { strategyId: 'say-one-of-the-ones-i-named', when: 'the child answered with something that was not one of the choices',
+    hint: () => 'Say one of the ones I named for you.',
+    matches: (i, e) => e.wrongNow && i.namesChoices && i.choices.length > 0
+      && !!e.said && !namedAChoice(i, e.said) },
+
+  { strategyId: 'that-is-the-thing-not-the-group', when: 'the child said back the object instead of naming a group',
+    hint: () => 'That is the thing itself. Tell me which group it belongs in.',
+    matches: (i, e) => e.wrongNow && i.kind === 'sort' && !!e.said && !!i.stimulus
+      && e.said.includes(i.stimulus.toLowerCase()) },
+
+  { strategyId: 'count-them-again-slowly', when: 'the child was one out on the count',
+    hint: () => 'You are very close. Count them again, and touch each one as you go.',
+    matches: (i, e) => e.wrongNow && i.kind === 'count_group' && typeof i.answerValue === 'number'
+      && e.saidNumber !== null && Math.abs(e.saidNumber - i.answerValue) === 1 },
+
+  { strategyId: 'i-did-not-ask-how-many', when: 'the child answered a comparison with a number',
+    hint: () => 'You told me how many. Now look at the two groups together and answer about their sizes.',
+    matches: (i, e) => e.wrongNow && i.kind === 'compare' && e.saidNumber !== null },
+
+  { strategyId: 'that-matches-only-one-of-them', when: 'the child matched only one of the two things asked for',
+    hint: () => 'That matches only one of the things I said. It has to match both of them.',
+    matches: (i, e) => {
+      if (!e.wrongNow || i.kind !== 'both_criteria' || !i.criteria || !e.said) return false;
+      const hits = [i.criteria.primary, i.criteria.secondary]
+        .filter(c => c && e.said!.includes(c.toLowerCase())).length;
+      return hits === 1;
+    } },
+];
+
+/** The item kind's method reminder plus every aid whose evidence currently fits. */
+export function sortingScaffoldsFor(item: SortingStationItem | null | undefined,
+  evidence: SortingMisstepEvidence): SortingScaffold[] {
+  return resolveScaffolds(item, evidence, item ? METHOD[item.kind] : undefined, AIDS);
+}

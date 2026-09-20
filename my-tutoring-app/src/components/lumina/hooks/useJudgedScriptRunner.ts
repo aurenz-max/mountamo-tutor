@@ -105,7 +105,7 @@ export type JudgedRunStage = 'idle' | 'asking' | 'judging' | 'affirmed' | 'done'
 export interface JudgedOpportunityEvent {
   seq: number;
   item_id: string;
-  kind: 'presented' | 'response' | 'transcript' | 'affirmed' | 'corrected' | 'repeat' | 'resync' | 'unavailable' | 'completed';
+  kind: 'presented' | 'response' | 'transcript' | 'affirmed' | 'corrected' | 'helped' | 'repeat' | 'resync' | 'unavailable' | 'completed';
   text?: string;
   source?: string;
   solved?: boolean;
@@ -359,6 +359,7 @@ const DEFAULT_STATUS_LINES: JudgedStatusLines<JudgedScriptItem> = {
   judging: 'Let’s see…',
   retry: () => 'Have another go.',
   noVerdict: () => 'One more time — say your answer.',
+  helped: 'Good question! Now have a go.',
   affirmedNext: 'Yes! You got it.',
   affirmedLast: 'You did it!',
   moveOn: 'Good try — here comes the next one.',
@@ -707,6 +708,26 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
           // On a BUILD item this is routinely the child talking while they
           // work — never re-prompt over a board being filled (cvc rule a).
           if (item && item.answerKind !== 'gesture') setStatusLine(lines.noVerdict(item));
+          break;
+        }
+        if (emission.judgment === 'helped') {
+          // THE THIRD BRANCH (2026-09-19). The child asked something instead of
+          // answering and the tutor answered them. Nothing about their
+          // knowledge was established, so this touches NO evidence: not
+          // `correctness`, not the correction count, not `observation` — the
+          // item is still unanswered and must not be scored as attempted.
+          //
+          // No cue is sent. The help contract requires her line to END by
+          // re-asking, exactly as a correction does, so re-cueing here would
+          // ask twice. Re-arming the stimulus makes a re-flash wait for her
+          // answer to finish, the same gate the correction retry uses.
+          if (item) {
+            recordOpportunity(item.id, 'helped');
+            clearStillness();
+            armStimulus(item);
+            setStage('asking');
+            setStatusLine(lines.helped);
+          }
           break;
         }
         const corrected = emission.judgment === 'corrected';

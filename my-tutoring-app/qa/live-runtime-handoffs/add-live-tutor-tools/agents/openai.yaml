@@ -1,4 +1,0 @@
-interface:
-  display_name: "Add Live Tutor Tools"
-  short_description: "Wire and verify tutor actions in Lumina primitives"
-  default_prompt: "Use $add-live-tutor-tools to add scoped AI tutor actions to a Lumina primitive, verify them in the existing live activity tester, and record a handoff."

@@ -311,6 +311,7 @@ export {
   namesEarSeparable,
   MEASURE_ADJECTIVES,
 } from './spokenNameGates';
+import { resolveScaffolds, type LiveScaffold } from '../../../components/live-activity/runtime/liveScaffolds';
 
 export const nameCarriesTheAnswer = (name: string): boolean =>
   nameCarriesAny(name, MEASURE_ADJECTIVES);
@@ -1027,3 +1028,104 @@ export const compareObjectsHarnessAnswers = (
  */
 export const orderCueForPlaced = (item: CompareObjectsItem, placed: number): string =>
   orderVerdictCue(item, placed === 1 ? item.answerNames : [...item.answerNames].reverse());
+
+/* ------------------------------------------------------------------ *
+ * Live-tutor misstep inventory (see `/add-live-tutor-tools`).
+ *
+ * Kept beside the correction lines above, because the two answer different
+ * things. The correction re-models the comparison and STATES the answer, and it
+ * fires however the child was wrong. These aids name the misstep and never state
+ * the answer — which here means never an object NAME, never an attribute word
+ * and never the unit count, because each is the answer on some mode.
+ *
+ * Missteps deliberately left to another lane:
+ *   - "does not know the attribute vocabulary" — between-item remediation.
+ *   - "needs the objects aligned for them" — that is the support tier, a
+ *     difficulty axis, not an error response.
+ *   - "said a right answer in different words" — the spoken judge's accept set
+ *     owns that, and an aid fired on it would correct a correct child.
+ * ------------------------------------------------------------------ */
+
+/** What the child has actually done on this item, as the adapter publishes it. */
+export interface CompareMisstepEvidence {
+  /** The raw transcript, lower-cased. Null when nothing has been heard. */
+  said: string | null;
+  /** The number the transcript names, or null. */
+  saidNumber: number | null;
+  /** order_three: the names currently placed, in the child's order. */
+  placed: readonly string[];
+  /**
+   * Whether the last committed attempt was judged wrong.
+   *
+   * Only the aids that CANNOT tell a wrong answer from a right one gate on it.
+   * Most conditions here are answer-discriminating by construction — "named the
+   * other object", "named a thing when asked what is measured", "one unit out" —
+   * and a right answer simply does not match them, so those offer as soon as the
+   * evidence exists rather than waiting for a verdict turn. An incomplete row is
+   * the exception: mid-build is what building looks like.
+   */
+  wrongNow: boolean;
+}
+
+export type CompareScaffold = LiveScaffold<CompareObjectsItem, CompareMisstepEvidence>;
+
+const namedOnScreen = (item: CompareObjectsItem, said: string | null) =>
+  !!said && item.objectNames.some(name => name && said.includes(name.toLowerCase()));
+
+/**
+ * One method reminder per mode, and none of them names an object, an attribute
+ * or a count. `identify_attribute` is the delicate one: listing "how long, how
+ * tall, how heavy" would recite the answer menu, so it says none of them.
+ */
+const METHOD: Record<CompareObjectsKind, CompareScaffold> = {
+  compare_two: { strategyId: 'line-them-up-at-the-same-start', when: 'the child needs the method again',
+    hint: () => 'Put them side by side, both starting from the same place. Then look at how far each goes.' },
+  order_three: { strategyId: 'work-along-from-one-end', when: 'the child needs the method again',
+    hint: () => 'Line all of them up from the same starting place, then work along from one end.' },
+  identify_attribute: { strategyId: 'what-is-different-about-them', when: 'the child needs the method again',
+    hint: () => 'Look at the things together and think about what part of them is different.' },
+  non_standard: { strategyId: 'end-to-end-with-no-gaps', when: 'the child needs the method again',
+    hint: () => 'Lay them end to end with no gaps and no overlaps, then count along.' },
+};
+
+/**
+ * The error-specific aids, offered only once the published evidence fits. Each
+ * `when` states the CONDITION, because the model routes on that sentence.
+ */
+const AIDS: readonly CompareScaffold[] = [
+  { strategyId: 'you-picked-the-other-thing', when: 'the child named the other object instead',
+    hint: () => 'You picked the other thing. Line them up again and look at how far each one goes.',
+    matches: (i, e) => i.kind === 'compare_two' && namedOnScreen(i, e.said)
+      && !i.answerNames.some(name => e.said!.includes(name.toLowerCase())) },
+
+  { strategyId: 'name-something-you-can-see', when: 'the child named something that is not on the screen',
+    hint: () => 'Say the name of something you can see on the screen.',
+    matches: (i, e) => ['compare_two', 'order_three'].includes(i.kind)
+      && !!e.said && !namedOnScreen(i, e.said) },
+
+  { strategyId: 'that-is-a-thing-not-a-measure', when: 'the child named an object when asked what is being measured',
+    hint: () => 'That is one of the things. I am asking what part of them we are comparing.',
+    matches: (i, e) => i.kind === 'identify_attribute' && namedOnScreen(i, e.said) },
+
+  { strategyId: 'you-ordered-them-the-other-way', when: 'the child placed them in the opposite order',
+    hint: () => 'You put them in the other order. Check which end I asked you to start from.',
+    matches: (i, e) => i.kind === 'order_three'
+      && e.placed.length === i.answerNames.length
+      && e.placed.every((name, index) => name === i.answerNames[i.answerNames.length - 1 - index]) },
+
+  { strategyId: 'every-one-needs-a-place', when: 'the child left part of the row empty',
+    hint: () => 'There are still things waiting. Every thing has a place in the row.',
+    matches: (i, e) => e.wrongNow && i.kind === 'order_three'
+      && e.placed.length > 0 && e.placed.length < i.answerNames.length },
+
+  { strategyId: 'count-the-units-again', when: 'the child was a single unit out on the count',
+    hint: () => 'You are very close. Count along again, and touch each unit as you say a number.',
+    matches: (i, e) => i.kind === 'non_standard' && e.saidNumber !== null
+      && Math.abs(e.saidNumber - i.unitCount) === 1 },
+];
+
+/** The mode's method reminder plus every aid whose evidence currently fits. */
+export function compareScaffoldsFor(item: CompareObjectsItem | null | undefined,
+  evidence: CompareMisstepEvidence): CompareScaffold[] {
+  return resolveScaffolds(item, evidence, item ? METHOD[item.kind] : undefined, AIDS);
+}

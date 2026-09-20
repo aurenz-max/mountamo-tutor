@@ -84,7 +84,12 @@ it('uses actual voice verdicts, keeps the same frame through help, and settles c
   expect(screen.getByText(/Count each empty space once/)).toBeTruthy();
   await h.answer('four'); // pause with a real judgment pending
   await h.command('request_support');
-  expect(screen.getByRole('complementary', { name: 'Worked example' })).toBeTruthy();
+  const example = screen.getByRole('complementary', { name: 'Worked example' });
+  // The item shows six, so the explanation uses a different frame: four, then six more.
+  expect(example.getAttribute('data-artifact-kind')).toBe('step-sequence');
+  expect(example.querySelectorAll('[data-step-frame]').length).toBe(3);
+  expect(example.querySelectorAll('[data-step-frame]')[2].querySelectorAll('[data-step-tone="added"]').length).toBe(6);
+  expect(example.textContent).toContain('4 and 6 make 10.');
   await h.speak('Yes, four more.'); await h.end(); // abandoned verdict must not advance
   expect(h.runtime.getSnapshot().task?.itemId).toBe('c0');
   await h.command('return');

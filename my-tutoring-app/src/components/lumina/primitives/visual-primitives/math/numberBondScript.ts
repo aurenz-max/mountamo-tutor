@@ -93,6 +93,7 @@
 
 import type { JudgedScriptItem, ResponseClassId, JudgedCueSurface } from '../../../hooks/judgedScriptContract';
 import { numberWordFor } from './countingBoardScript';
+import { resolveScaffolds, type LiveScaffold } from '../../../components/live-activity/runtime/liveScaffolds';
 
 export type NumberBondKind =
   | 'decompose'
@@ -519,7 +520,8 @@ export const howToPlayFor = (item: NumberBondItem): string => {
 
 // ── The asks — code-owned at every band; numbers spoken as WORDS ────────────
 
-const askFor = (item: NumberBondItem): string => {
+/** The question as the runner asks it. The adapter publishes this as the tutor task. */
+export const askFor = (item: NumberBondItem): string => {
   const wholeWord = numberWordFor(item.whole);
   switch (item.kind) {
     case 'decompose':
@@ -1128,3 +1130,121 @@ export const bondVerdictCueForPlaced = (item: NumberBondItem, placed: number): s
       return splitVerdictCue(item, 0, 0, []);
   }
 };
+
+/* ------------------------------------------------------------------ *
+ * Live-tutor misstep inventory (see `/add-live-tutor-tools`).
+ *
+ * Kept beside `correctionFor` above, because the two answer different things.
+ * The correction MODELS the count-up walk and states the answer, and it fires
+ * however the child was wrong. These aids name the misstep and never state the
+ * answer, so nothing here repeats what the correction already says.
+ *
+ * Missteps deliberately left to another lane:
+ *   - "does not know the count sequence" — between-item remediation, not an
+ *     in-item aid.
+ *   - "needs the counters shown / the equation pre-built" — that is the support
+ *     tier, a difficulty axis, not an error response.
+ *   - "said a number outside the sayable range" — the spoken judge's own
+ *     response-class contract owns that rejection.
+ *   - decompose with one empty part — whether zero is an accepted way is the
+ *     mode's accept set, not a misstep, so no aid claims it is wrong.
+ * ------------------------------------------------------------------ */
+
+/** What the child has actually done on this item, as the adapter publishes it. */
+export interface BondMisstepEvidence {
+  /** The number we heard, when it parsed. Null on a hand item or no transcript. */
+  heard: number | null;
+  /** Counters currently in each part of the bond. */
+  left: number;
+  right: number;
+  /** decompose: the ways already banked this challenge. */
+  waysFound: readonly (readonly [number, number])[];
+  /** The equation tiles currently in the slots, in order. */
+  tiles: readonly string[];
+  /** fact-family: the number sentences already banked for this challenge. */
+  builtSentences: readonly string[];
+  /**
+   * Whether the last committed attempt on this item was judged wrong.
+   *
+   * The HAND aids below gate on it, because a part that does not yet make the
+   * whole is what building LOOKS like: offering "count both parts together"
+   * while the child is still moving counters would correct work in progress.
+   * The spoken aids need no such gate — a heard number only exists after a turn.
+   */
+  wrongNow: boolean;
+}
+
+export type BondScaffold = LiveScaffold<NumberBondItem, BondMisstepEvidence>;
+
+const SPOKEN: NumberBondKind[] = ['missing-part', 'related-fact'];
+const built = (e: BondMisstepEvidence) => e.left + e.right;
+const samePair = (a: readonly [number, number], left: number, right: number) =>
+  (a[0] === left && a[1] === right) || (a[0] === right && a[1] === left);
+
+/**
+ * One method reminder per mode. Deliberately number-free — `statesNumber` sweeps
+ * every line in the tests, and a missing part really can be one, two or ten.
+ */
+const METHOD: Record<NumberBondKind, BondScaffold> = {
+  'missing-part': { strategyId: 'count-up-from-the-part', when: 'the child needs the method again',
+    hint: () => 'Start on the part you can see and count up to the whole. Count the steps you take.' },
+  'related-fact': { strategyId: 'the-same-bond-both-ways', when: 'the child needs the method again',
+    hint: i => i.pairIndex === 0
+      ? 'Start on the part you can see and count up to the whole.'
+      : 'You just made this bond. The parts you already found answer this question too.' },
+  decompose: { strategyId: 'both-parts-make-the-whole', when: 'the child needs the method again',
+    hint: () => 'Put some counters in each part. Together the parts make the whole.' },
+  'ten-and-ones': { strategyId: 'make-a-full-ten-first', when: 'the child needs the method again',
+    hint: () => 'Make a full ten in the first part. Everything left over goes in the other part.' },
+  'fact-family': { strategyId: 'every-sentence-uses-all-three', when: 'the child needs the method again',
+    hint: () => 'Each number sentence uses both parts and the whole.' },
+  'build-equation': { strategyId: 'parts-and-whole-together', when: 'the child needs the method again',
+    hint: () => 'Put both parts and the whole into a number sentence.' },
+};
+
+/**
+ * The error-specific aids, offered only once the published evidence fits. Each
+ * `when` states the CONDITION, because the model routes on that sentence.
+ */
+const AIDS: readonly BondScaffold[] = [
+  // Spoken modes: which of the three numbers in the bond the child actually said.
+  { strategyId: 'not-the-whole-number', when: 'the child said the whole instead of the missing part',
+    hint: () => 'That is the whole. We want the part that is missing.',
+    matches: (i, e) => SPOKEN.includes(i.kind) && e.heard !== null && e.heard === i.whole && i.answer !== i.whole },
+  { strategyId: 'not-the-part-you-can-see', when: 'the child said back the part that is already shown',
+    hint: () => 'That is the part you can already see. We want the other part.',
+    matches: (i, e) => SPOKEN.includes(i.kind) && e.heard !== null && e.heard === i.knownPart && i.answer !== i.knownPart },
+  { strategyId: 'the-part-you-start-on-is-not-a-step', when: 'the child counted the part they started on as a step',
+    hint: () => 'When you count up, the part you start on is not a step. Start counting after it.',
+    matches: (i, e) => SPOKEN.includes(i.kind) && e.heard !== null && e.heard === i.answer + 1 },
+
+  // decompose: the evidence is the pair currently built, and the ways already banked.
+  { strategyId: 'count-both-parts-together', when: 'the parts the child built do not make the whole',
+    hint: () => 'Count both parts together. They have to make the whole.',
+    matches: (i, e) => i.kind === 'decompose' && e.wrongNow && built(e) > 0 && built(e) !== i.whole },
+  { strategyId: 'move-a-counter-for-a-different-way', when: 'the child rebuilt a way they already found',
+    hint: () => 'You already found that way. Move a counter across to make a different way.',
+    matches: (i, e) => i.kind === 'decompose' && e.wrongNow && built(e) === i.whole
+      && e.waysFound.some(pair => samePair(pair, e.left, e.right)) },
+
+  // ten-and-ones: the ten has to be FULL, which is the structure the mode teaches.
+  { strategyId: 'fill-the-ten-all-the-way', when: 'the child split the whole without filling a ten',
+    hint: () => 'Neither part is a full ten yet. Fill one part all the way up before you stop.',
+    matches: (i, e) => i.kind === 'ten-and-ones' && e.wrongNow && built(e) === i.whole && e.left !== 10 && e.right !== 10 },
+
+  // The tile modes: the evidence is the sentence in the slots.
+  { strategyId: 'that-sentence-is-already-built', when: 'the child rebuilt a number sentence they already made',
+    hint: () => 'You already built that number sentence. Write the bond a different way.',
+    matches: (i, e) => i.kind === 'fact-family' && e.wrongNow && e.tiles.length > 0
+      && e.builtSentences.includes(e.tiles.join(' ')) },
+  { strategyId: 'a-sentence-needs-both-sides', when: 'the child left the number sentence unfinished',
+    hint: () => 'A number sentence needs something on each side of the equals sign.',
+    matches: (i, e) => ['fact-family', 'build-equation'].includes(i.kind) && e.wrongNow
+      && e.tiles.length > 0 && !e.tiles.includes('=') },
+];
+
+/** The mode's method reminder plus every aid whose evidence currently fits. */
+export function bondScaffoldsFor(item: NumberBondItem | null | undefined,
+  evidence: BondMisstepEvidence): BondScaffold[] {
+  return resolveScaffolds(item, evidence, item ? METHOD[item.kind] : undefined, AIDS);
+}

@@ -1,0 +1,1673 @@
+[
+  {
+    "passed": true,
+    "primitiveId": "counting-board",
+    "events": [
+      {
+        "type": "ready",
+        "t": 5.59
+      },
+      {
+        "type": "runner_cue",
+        "t": 5.62,
+        "text": "[COUNT_ITEM] Say exactly: \"Hi! Time to count some blocks! Touch each block one time as you count. Then say how many! Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"five\". Counting aloud that ENDS on \"five\" counts as that answer \u2014 the last number said tells the total. A final number other than \"five\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, five blocks.\" If it is wrong, say exactly: \"My turn: watch me count. One, two, three, four, five. Five blocks. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "type": "tutor",
+        "t": 17.08,
+        "phase": "opening",
+        "text": "Hi! Time to count some blocks! Touch each block one time as you count. Then say how many! Count the blocks. Your turn. How many blocks?",
+        "state": {
+          "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+          "revision": 3,
+          "visibleRevision": 3,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count_all",
+              "response": "voice",
+              "objects": "blocks",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "handPicked": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same board again; the runner speaks the question. Nothing on the board is cleared or recounted.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/3/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child is not sure how to start counting: \"Touch each block one time. Say the next number each time you touch.\". This does not touch, move, highlight or count any object, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/3/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "description": "Count another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Worked example",
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/3/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 17.09,
+        "intent": "warmup",
+        "performed": [
+          {
+            "type": "touch",
+            "index": 0
+          },
+          {
+            "type": "touch",
+            "index": 1
+          }
+        ],
+        "demand": {
+          "kind": "count_all",
+          "response": "voice",
+          "objects": "blocks",
+          "counted": 2,
+          "takenOff": 0,
+          "putOn": 0,
+          "moved": "no",
+          "handPicked": ""
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 17.11,
+        "intent": "wrong",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "four"
+          }
+        ],
+        "demand": {
+          "kind": "count_all",
+          "response": "voice",
+          "objects": "blocks",
+          "counted": 2,
+          "takenOff": 0,
+          "putOn": 0,
+          "moved": "no",
+          "handPicked": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 17.11,
+        "text": "four"
+      },
+      {
+        "type": "tutor",
+        "t": 27.45,
+        "phase": "wrong",
+        "text": "My turn: watch me count. One, two, three, four, five. Five blocks. Your turn. How many blocks?",
+        "state": {
+          "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+          "revision": 7,
+          "visibleRevision": 7,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "four",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count_all",
+              "response": "voice",
+              "objects": "blocks",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "handPicked": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same board again; the runner speaks the question. Nothing on the board is cleared or recounted.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/7/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child is not sure how to start counting: \"Touch each block one time. Say the next number each time you touch.\". This does not touch, move, highlight or count any object, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/7/1"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "start-by-touching",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child answered without counting anything: \"Start by touching the first block and saying \"one\".\". This does not touch, move, highlight or count any object, and it never says the answer.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/7/2"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "description": "Count another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Worked example",
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/7/3"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 27.47,
+        "intent": "warmup",
+        "performed": [
+          {
+            "type": "touch",
+            "index": 0
+          },
+          {
+            "type": "touch",
+            "index": 1
+          }
+        ],
+        "demand": {
+          "kind": "count_all",
+          "response": "voice",
+          "objects": "blocks",
+          "counted": 2,
+          "takenOff": 0,
+          "putOn": 0,
+          "moved": "no",
+          "handPicked": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 27.47,
+        "text": "Please show me a reminder for how to count this."
+      },
+      {
+        "type": "runtime_command",
+        "t": 29.06,
+        "phase": "hint",
+        "command": {
+          "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+          "instanceId": "board",
+          "itemId": "c1",
+          "expectedRevision": 9,
+          "commandId": "call_216542",
+          "action": {
+            "type": "scaffold",
+            "strategyId": "touch-each-one",
+            "direction": 1
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 29.14,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_216542",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+            "revision": 10,
+            "visibleRevision": 10,
+            "instanceId": "board",
+            "planItemId": "board",
+            "primitiveId": "counting-board",
+            "objectiveId": "counting-board-practice",
+            "evalMode": "count",
+            "owner": "runner",
+            "status": "active",
+            "task": {
+              "itemId": "c1",
+              "phase": "asking",
+              "task": "Count the blocks. Your turn. How many blocks?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "four",
+                    "source": "speech",
+                    "recognition": "clear"
+                  }
+                ]
+              },
+              "demand": {
+                "kind": "count_all",
+                "response": "voice",
+                "objects": "blocks",
+                "counted": 2,
+                "takenOff": 0,
+                "putOn": 0,
+                "moved": "no",
+                "handPicked": ""
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Touch each block one time. Say the next number each time you touch."
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "canGenerateSupport": false,
+            "moveOptions": null,
+            "assistance": [
+              {
+                "instanceId": "board",
+                "itemId": "c1",
+                "revision": 10,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "touch-each-one",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Ask this same board again; the runner speaks the question. Nothing on the board is cleared or recounted.",
+                "responseSpeech": "runner",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/10/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "touch-each-one",
+                  "direction": -1
+                },
+                "description": "Hide the reminder that is showing",
+                "assistance": {
+                  "level": 0,
+                  "answerExposure": "none"
+                },
+                "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/10/1"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "one-touch-each",
+                  "direction": 1
+                },
+                "description": "Show and say this reminder, for when the child touched more or fewer objects than are on the board \u2014 one got skipped or counted twice: \"Start again at the first block. Touch each one only once, and say the next number as you touch it.\". This does not touch, move, highlight or count any object, and it never says the answer.",
+                "assistance": {
+                  "level": 2,
+                  "answerExposure": "none"
+                },
+                "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/10/2"
+              },
+              {
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-c1"
+                },
+                "description": "Count another group",
+                "assistance": {
+                  "level": 6,
+                  "answerExposure": "partial"
+                },
+                "purpose": "Worked example",
+                "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/10/3"
+              }
+            ]
+          },
+          "elapsedMs": 54.730499999997846
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 34.41,
+        "phase": "hint",
+        "text": "Touch each block one time. Say the next number each time you touch.",
+        "state": {
+          "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+          "revision": 10,
+          "visibleRevision": 10,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "four",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count_all",
+              "response": "voice",
+              "objects": "blocks",
+              "counted": 2,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "handPicked": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Touch each block one time. Say the next number each time you touch."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 10,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same board again; the runner speaks the question. Nothing on the board is cleared or recounted.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/10/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": -1
+              },
+              "description": "Hide the reminder that is showing",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/10/1"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-touch-each",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child touched more or fewer objects than are on the board \u2014 one got skipped or counted twice: \"Start again at the first block. Touch each one only once, and say the next number as you touch it.\". This does not touch, move, highlight or count any object, and it never says the answer.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/10/2"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "description": "Count another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Worked example",
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/10/3"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 34.41,
+        "text": "Please show the worked example and save my unfinished board."
+      },
+      {
+        "type": "runtime_command",
+        "t": 35.8,
+        "phase": "example",
+        "command": {
+          "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+          "instanceId": "board",
+          "itemId": "c1",
+          "expectedRevision": 10,
+          "commandId": "call_216574",
+          "action": {
+            "type": "request_support",
+            "artifactId": "example-c1"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 35.86,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_216574",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+            "revision": 11,
+            "visibleRevision": 11,
+            "instanceId": "board",
+            "planItemId": "board",
+            "primitiveId": "counting-board",
+            "objectiveId": "counting-board-practice",
+            "evalMode": "count",
+            "owner": "support",
+            "status": "support",
+            "task": {
+              "itemId": "c1",
+              "phase": "help",
+              "task": "Count the blocks. Your turn. How many blocks?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "four",
+                    "source": "speech",
+                    "recognition": "clear"
+                  }
+                ]
+              },
+              "demand": {
+                "kind": "count_all",
+                "response": "voice",
+                "objects": "blocks",
+                "counted": 2,
+                "takenOff": 0,
+                "putOn": 0,
+                "moved": "no",
+                "handPicked": ""
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Touch each block one time. Say the next number each time you touch."
+              }
+            },
+            "supportArtifact": {
+              "id": "example-c1",
+              "kind": "counter-example",
+              "provenance": "prepared",
+              "answerExposure": "partial",
+              "operation": "count",
+              "title": "Count another group",
+              "total": 3,
+              "removed": 0,
+              "altText": "Place one counter at a time. Count each counter once to reach 3."
+            },
+            "blockedReason": null,
+            "canStartNext": false,
+            "canGenerateSupport": false,
+            "moveOptions": null,
+            "assistance": [
+              {
+                "instanceId": "board",
+                "itemId": "c1",
+                "revision": 10,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "touch-each-one",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "board",
+                "itemId": "c1",
+                "revision": 11,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-c1"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "return"
+                },
+                "description": "Return to the same unfinished task",
+                "responseSpeech": "runner",
+                "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/11/0"
+              }
+            ]
+          },
+          "elapsedMs": 43.23120000000199
+        }
+      },
+      {
+        "type": "saved",
+        "t": 35.86,
+        "state": {
+          "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+          "revision": 11,
+          "visibleRevision": 11,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "support",
+          "status": "support",
+          "task": {
+            "itemId": "c1",
+            "phase": "help",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "four",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count_all",
+              "response": "voice",
+              "objects": "blocks",
+              "counted": 2,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "handPicked": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Touch each block one time. Say the next number each time you touch."
+            }
+          },
+          "supportArtifact": {
+            "id": "example-c1",
+            "kind": "counter-example",
+            "provenance": "prepared",
+            "answerExposure": "partial",
+            "operation": "count",
+            "title": "Count another group",
+            "total": 3,
+            "removed": 0,
+            "altText": "Place one counter at a time. Count each counter once to reach 3."
+          },
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 10,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 11,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "return"
+              },
+              "description": "Return to the same unfinished task",
+              "responseSpeech": "runner",
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/11/0"
+            }
+          ]
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 41.14,
+        "phase": "ask-return",
+        "text": "Place one counter at a time. Count each counter once to reach 3.",
+        "state": {
+          "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+          "revision": 11,
+          "visibleRevision": 11,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "support",
+          "status": "support",
+          "task": {
+            "itemId": "c1",
+            "phase": "help",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "four",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count_all",
+              "response": "voice",
+              "objects": "blocks",
+              "counted": 2,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "handPicked": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Touch each block one time. Say the next number each time you touch."
+            }
+          },
+          "supportArtifact": {
+            "id": "example-c1",
+            "kind": "counter-example",
+            "provenance": "prepared",
+            "answerExposure": "partial",
+            "operation": "count",
+            "title": "Count another group",
+            "total": 3,
+            "removed": 0,
+            "altText": "Place one counter at a time. Count each counter once to reach 3."
+          },
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 10,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 11,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "return"
+              },
+              "description": "Return to the same unfinished task",
+              "responseSpeech": "runner",
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/11/0"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner",
+        "t": 41.14,
+        "text": "Please close the example and return to my saved board."
+      },
+      {
+        "type": "runtime_command",
+        "t": 42.44,
+        "phase": "return",
+        "command": {
+          "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+          "instanceId": "board",
+          "itemId": "c1",
+          "expectedRevision": 11,
+          "commandId": "call_216596",
+          "action": {
+            "type": "return"
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 42.52,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_216596",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+            "revision": 12,
+            "visibleRevision": 12,
+            "instanceId": "board",
+            "planItemId": "board",
+            "primitiveId": "counting-board",
+            "objectiveId": "counting-board-practice",
+            "evalMode": "count",
+            "owner": "runner",
+            "status": "active",
+            "task": {
+              "itemId": "c1",
+              "phase": "help",
+              "task": "Count the blocks. Your turn. How many blocks?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "four",
+                    "source": "speech",
+                    "recognition": "clear"
+                  }
+                ]
+              },
+              "demand": {
+                "kind": "count_all",
+                "response": "voice",
+                "objects": "blocks",
+                "counted": 2,
+                "takenOff": 0,
+                "putOn": 0,
+                "moved": "no",
+                "handPicked": ""
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Touch each block one time. Say the next number each time you touch."
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": "Runner owns the teaching turn",
+            "canStartNext": false,
+            "canGenerateSupport": false,
+            "moveOptions": null,
+            "assistance": [
+              {
+                "instanceId": "board",
+                "itemId": "c1",
+                "revision": 10,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "touch-each-one",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              },
+              {
+                "instanceId": "board",
+                "itemId": "c1",
+                "revision": 11,
+                "action": {
+                  "type": "request_support",
+                  "artifactId": "example-c1"
+                },
+                "level": 6,
+                "answerExposure": "partial"
+              }
+            ],
+            "choices": []
+          },
+          "elapsedMs": 61.277399999999034
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 43.06,
+        "text": "[COUNT_ITEM] Say exactly: \"Touch each block one time as you count. Then say how many! Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"five\". Counting aloud that ENDS on \"five\" counts as that answer \u2014 the last number said tells the total. A final number other than \"five\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, five blocks.\" If it is wrong, say exactly: \"My turn: watch me count. One, two, three, four, five. Five blocks. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "type": "tutor",
+        "t": 51.19,
+        "phase": "reask",
+        "text": "Touch each block one time as you count. Then say how many! Count the blocks. Your turn. How many blocks?",
+        "state": {
+          "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+          "revision": 13,
+          "visibleRevision": 13,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c1",
+            "phase": "asking",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "four",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count_all",
+              "response": "voice",
+              "objects": "blocks",
+              "counted": 2,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "handPicked": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Touch each block one time. Say the next number each time you touch."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 10,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 11,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same board again; the runner speaks the question. Nothing on the board is cleared or recounted.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/13/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": -1
+              },
+              "description": "Hide the reminder that is showing",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/13/1"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "one-touch-each",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child touched more or fewer objects than are on the board \u2014 one got skipped or counted twice: \"Start again at the first block. Touch each one only once, and say the next number as you touch it.\". This does not touch, move, highlight or count any object, and it never says the answer.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/13/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "preserved",
+        "t": 51.19,
+        "demand": {
+          "kind": "count_all",
+          "response": "voice",
+          "objects": "blocks",
+          "counted": 2,
+          "takenOff": 0,
+          "putOn": 0,
+          "moved": "no",
+          "handPicked": ""
+        },
+        "vacuous": false
+      },
+      {
+        "type": "learner_input",
+        "t": 51.2,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "five"
+          }
+        ],
+        "demand": {
+          "kind": "count_all",
+          "response": "voice",
+          "objects": "blocks",
+          "counted": 2,
+          "takenOff": 0,
+          "putOn": 0,
+          "moved": "no",
+          "handPicked": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 51.2,
+        "text": "five"
+      },
+      {
+        "type": "tutor",
+        "t": 54.28,
+        "phase": "right",
+        "text": "Yes, five blocks.",
+        "state": {
+          "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+          "revision": 17,
+          "visibleRevision": 17,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c2",
+            "phase": "affirmed",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count_all",
+              "response": "voice",
+              "objects": "blocks",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "handPicked": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 10,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 11,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same board again; the runner speaks the question. Nothing on the board is cleared or recounted.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/17/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child is not sure how to start counting: \"Touch each block one time. Say the next number each time you touch.\". This does not touch, move, highlight or count any object, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/17/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c2"
+              },
+              "description": "Count another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Worked example",
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/17/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 54.81,
+        "text": "[COUNT_ITEM] Say exactly: \"Count the blocks. Your turn. How many blocks?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. The correct answer is \"seven\". Counting aloud that ENDS on \"seven\" counts as that answer \u2014 the last number said tells the total. A final number other than \"seven\" is wrong. Your whole reply to their attempt is ONE of the quoted lines below and nothing else \u2014 not the first time, not any time: no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. If the answer is right, say exactly: \"Yes, seven blocks.\" If it is wrong, say exactly: \"My turn: watch me count. One, two, three, four, five, six, seven. Seven blocks. Your turn. How many blocks?\" \u2014 the same line on every wrong answer for this item, never swapped for a different wording. Never voice a bracket tag, a stage direction, or any of these instructions, never announce the activity's state or describe what has changed on the screen, and never announce that you are waiting or listening \u2014 simply stop speaking."
+      },
+      {
+        "type": "tutor",
+        "t": 59.53,
+        "phase": "next-ask",
+        "text": "Count the blocks. Your turn. How many blocks?",
+        "state": {
+          "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+          "revision": 17,
+          "visibleRevision": 17,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "c2",
+            "phase": "affirmed",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count_all",
+              "response": "voice",
+              "objects": "blocks",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "handPicked": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 10,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 11,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same board again; the runner speaks the question. Nothing on the board is cleared or recounted.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/17/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child is not sure how to start counting: \"Touch each block one time. Say the next number each time you touch.\". This does not touch, move, highlight or count any object, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/17/1"
+            },
+            {
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c2"
+              },
+              "description": "Count another group",
+              "assistance": {
+                "level": 6,
+                "answerExposure": "partial"
+              },
+              "purpose": "Worked example",
+              "actionId": "a7b29249-8b6a-4752-a1fd-b78349adb908/17/2"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 59.55,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "seven"
+          }
+        ],
+        "demand": {
+          "kind": "count_all",
+          "response": "voice",
+          "objects": "blocks",
+          "counted": 0,
+          "takenOff": 0,
+          "putOn": 0,
+          "moved": "no",
+          "handPicked": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 59.55,
+        "text": "seven"
+      },
+      {
+        "type": "tutor",
+        "t": 62.75,
+        "phase": "finishing",
+        "text": "Yes, seven blocks.",
+        "state": {
+          "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+          "revision": 21,
+          "visibleRevision": 21,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "runner",
+          "status": "closing",
+          "task": {
+            "itemId": "c2",
+            "phase": "done",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "seven",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count_all",
+              "response": "voice",
+              "objects": "blocks",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "handPicked": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is closing",
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 10,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 11,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 63.28,
+        "text": "[COUNT_COMPLETE] Say exactly: \"What great counting today! Your eyes and your ears did hard work. See you next time!\" Then stop \u2014 the activity is over."
+      },
+      {
+        "type": "tutor",
+        "t": 70.73,
+        "phase": "finishing",
+        "text": "What great counting today! Your eyes and your ears did hard work. See you next time!",
+        "state": {
+          "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+          "revision": 22,
+          "visibleRevision": null,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "c2",
+            "phase": "done",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "seven",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count_all",
+              "response": "voice",
+              "objects": "blocks",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "handPicked": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 10,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 11,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        }
+      },
+      {
+        "type": "complete",
+        "t": 70.73,
+        "state": {
+          "sessionEpoch": "a7b29249-8b6a-4752-a1fd-b78349adb908",
+          "revision": 22,
+          "visibleRevision": null,
+          "instanceId": "board",
+          "planItemId": "board",
+          "primitiveId": "counting-board",
+          "objectiveId": "counting-board-practice",
+          "evalMode": "count",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "c2",
+            "phase": "done",
+            "task": "Count the blocks. Your turn. How many blocks?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "seven",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count_all",
+              "response": "voice",
+              "objects": "blocks",
+              "counted": 0,
+              "takenOff": 0,
+              "putOn": 0,
+              "moved": "no",
+              "handPicked": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "assistance": [
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 10,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "touch-each-one",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            },
+            {
+              "instanceId": "board",
+              "itemId": "c1",
+              "revision": 11,
+              "action": {
+                "type": "request_support",
+                "artifactId": "example-c1"
+              },
+              "level": 6,
+              "answerExposure": "partial"
+            }
+          ],
+          "choices": []
+        },
+        "submissions": 1
+      },
+      {
+        "type": "example_verdict",
+        "t": 70.75,
+        "ok": true,
+        "reason": null,
+        "artifact": {
+          "id": "example-c1",
+          "kind": "counter-example",
+          "provenance": "prepared",
+          "answerExposure": "partial",
+          "operation": "count",
+          "title": "Count another group",
+          "total": 3,
+          "removed": 0,
+          "altText": "Place one counter at a time. Count each counter once to reach 3."
+        },
+        "spoken": "Place one counter at a time. Count each counter once to reach 3."
+      }
+    ]
+  }
+]

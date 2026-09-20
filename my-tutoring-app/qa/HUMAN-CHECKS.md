@@ -9,11 +9,50 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 
 ## Open — ONE list, newest first (as of 2026-09-09, K Language Arts atlas refresh)
 
-> **118 rows open.** **Newest:** #167 live runtime lab (help/return; mic after adoption); #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
+> **119 rows open.** **Newest:** #168 counting-board THE THIRD BRANCH — say "can you help me" mid-item and hear an answer, not the correction line; #167 live runtime lab (help/return; mic after adoption); #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
 > tablet + MIC · #144 You & Me role-switch MIC · #143 Letter Workshop manuscript/touch/audio ·
-> #142 ten-frame teen numbers. Next free ID is **#168**.
+> #142 ten-frame teen numbers. Next free ID is **#169**.
+
+### #168 — **counting-board: the tutor answers a question instead of correcting it (THE THIRD BRANCH)**
+
+**This row exists because of a session you ran.** A child asked "can you help me" and the
+tutor delivered the wrong-answer correction line, then delivered it again, verbatim
+(`[COUNT_GIVE]` ×2, 2026-09-19 10:51–10:52). She was not off-script — there was no script
+for a child who asks. The judged loop now has a third outcome.
+
+**Drive it:** `/lumina` → counting-board → any VOICE item (count the bears, count on,
+compare, take away, add more — NOT "give me N", see the limit below). Instead of answering,
+say one of: *"can you help me"* · *"what do I do"* · *"I don't know"* · *"what's that?"*
+
+**Pass:**
+1. She opens with **"Good question."** — not "My turn:".
+2. She answers what you actually asked, in **ONE** sentence.
+3. She then says **the same ask again**, and stops.
+4. She never says the answer to the counting question.
+5. The board does **not** advance, and the item is **not** marked wrong — a following
+   correct answer should still read as a clean first solve, not a correction.
+
+**Fail signals worth reporting verbatim:** two sentences of teaching before the re-ask;
+the correction line ("My turn:") anyway; silence; a bracket tag read aloud; the answer given.
+
+**KNOWN LIMIT — this is your exact repro and it is NOT fixed.** On **"Give me N"** and the
+hand-matching item the child answers with their HANDS, and the loop deliberately never hands
+Gemini a turn on those (`listenForVoice = false`), so speaking there still does nothing.
+That half needs a Live API bracket decision and its own drive — di BACKLOG item 44 (a).
+
+Machine-verified only: `typecheck:lumina` 0, tsc 770 = baseline, vitest 6902/0, 10 new tests.
+No mic sitting has been run. Owning entry: `qa/di/BACKLOG.md` item 44.
 
 ### #167 — **Live lesson runtime: TenFrame + Number Line adopted; microphone and combined lesson gate open**
+
+**2026-09-19 tutor/JEV follow-up:** The user reports the latest Counting Board sitting
+works well; its log shows seven visible advances and settled completion. This is scoped
+acceptance of that counting sitting, not all modes or the combined lesson. The user-selected
+second workspace is **Shape Sorter → Name the shape** at `/lumina/live-activity`.
+Its human sitting remains open: wrong name → help → visible purple demonstration →
+side-count subquestion → final shape name; the gold target must stay fixed, side praise
+must not finish naming, final feedback must settle before advancing, and completion must
+sound/show once. [Implementation, machine/model evidence and limitations](tutor-reports/shape-sorter-teaching-2026-09-19.md).
 
 **User verdict 2026-09-17: STOP.** The synthetic connected fixture was barely usable:
 no real manipulative, fragmented transcript, and a refusal to check spoken answers.
@@ -45,6 +84,12 @@ quantities. [Machine action evidence](tutor-reports/number-line-runtime-live-202
 does not close this sitting; model narration and intervention restraint need review.
 Both planned activity orders remain separate bounded work. **G1–G3 across the
 combined lesson and actual mic acceptance remain OPEN.**
+
+**09-19 S2 follow-up:** Ordinary lessons now wire Counting Board `count` and Shape
+Sorter `identify`, with tutor completion submitting through the normal evaluation
+provider. Verify a real lesson in both orders, Next/Back, and reconnect; the earlier
+bench sitting does not close this new entry-path check. [Wiring report](tutor-reports/lesson-workspace-wiring-2026-09-19.md).
+
 
 ### #166 🎤👀 — **`counting-board` themed objects: does a board of trucks hold the pilot student longer than a board of stars, at the same numbers?** This is the whole reason the interests path was built — paper worksheets themed on excavators and dump trucks hold him where generic ones do not (user observation 2026-09-15), and nothing machine-checkable can settle whether that carries to the screen. Shipped and machine-verified 2026-09-16: 12/12 live draws produce a complete themed triple, the tutor says "Touch each dump truck one time as you count", and the full pipeline traces interests → persona → manifest intent → a 🚛 board ([probe](eval-reports/counting-board-themed-objects-2026-09-16.json), [trace](topic-traces/counting-board-student-interests-2026-09-16.json)). **Also the first browser sighting of this board** — nobody has seen a themed emoji render at 40px or hit-tested one. Signed in as the pilot student (confirm `students/9001` is his), interests already set: (a) in a K counting lesson, does the board draw the truck glyph cleanly at object size, and does tapping register (hit-testing is by center distance, so a wide glyph should not matter)? (b) does the tutor SAY "dump trucks" and "dump truck" out loud, never "objects"? (c) sit with him on `give_me_n`, trucks vs stars, the same numbers — does the theme change whether he stays for four items? (d) if the emoji reads as the wrong machine to a four-year-old (there is no excavator emoji; the generator reaches for 🚜/🚛/🚚), say so — an SVG object set is the next step, not a bug in this one. Owner: user.
 

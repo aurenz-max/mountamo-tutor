@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardContent, LuminaBadge } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { NumberSequencerMetrics } from '../../../evaluation/types';
@@ -13,6 +13,9 @@ import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { numberSequencerPipPose } from '../../../pip/numberSequencerPipPose';
 import { buildSequencerItems, sequencerPackBase, sequencerOrderCue, type SequencerItem } from './numberSequencerScript';
+import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
+import { useNumberSequencerRuntime, sequencerEvalMode } from './useNumberSequencerRuntime';
 
 const PHASE_TYPE_CONFIG = {
   'fill-missing': { label: 'Fill Missing', icon: '\uD83D\uDD22', accentColor: 'purple' },
@@ -60,9 +63,17 @@ export interface NumberSequencerData {
 
 /** The train is the working surface. Voice fills one gap per judged turn;
  * ordering closes on stillness, including incomplete or incorrect arrangements. */
-export default function NumberSequencer({ data, className }: { data: NumberSequencerData; className?: string }) {
+export default function NumberSequencer({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode }: {
+  data: NumberSequencerData; className?: string;
+  /** The live host opts in only after its correlated mount handoff. */
+  autoStart?: boolean;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
+}) {
   const { items, droppedChallenges } = useMemo(() => buildSequencerItems(data.challenges ?? []), [data.challenges]);
   const instance = useRef(data.instanceId ?? `number-sequencer-${Date.now()}`);
+  const runtime = useLiveRuntime();
   const [affirmedOrder, setAffirmedOrder] = useState<number[]>([]);
   const [lastAffirmed, setLastAffirmed] = useState<SequencerItem | null>(null);
   const [placed, setPlaced] = useState<number[]>([]);
@@ -97,6 +108,10 @@ export default function NumberSequencer({ data, className }: { data: NumberSeque
         viaVoice: items.find(i => i.id === o.id)?.answerKind === 'voice' })) }, undefined, summary.diagnosisEvidence);
   };
   const runner = useJudgedScriptRunner({ pack, instanceId: instance.current,
+    // Load-bearing for the live host: without it the runner's `resume()` early-returns,
+    // its speech holds never settle, and the completion handoff has nothing to read.
+    runtime,
+    ...(runtimePlanItemId ? { completionCue: '[NS_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
     gradeLevel: data.gradeBand === 'K' ? 'Kindergarten' : 'Grade 1', exhibitId: data.exhibitId,
     onFinished: finish,
     onItemOpened: (item, index) => {
@@ -141,6 +156,13 @@ export default function NumberSequencer({ data, className }: { data: NumberSeque
     });
     return { instanceId: instance.current, scopeId: item.id, label: 'Number train', dock: pip.dock.current, targets, pose };
   });
+  const runtimeHint = useNumberSequencerRuntime({ runner, instanceId: instance.current,
+    objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || sequencerEvalMode(items[0]), placed });
+  // AFTER the runtime mount is registered, never before: `start()` waits for
+  // `grantOwnership('runner')`, which cannot be granted until this primitive's
+  // mount exists. Declared earlier, its effect runs first and the runner spins.
+  useLiveAutoStart(autoStart, instance.current, runner.start);
   if (!item) return <LuminaCard className={className}><LuminaCardContent>
     <p>No usable number trains are available. Generate another activity.</p>
   </LuminaCardContent></LuminaCard>;

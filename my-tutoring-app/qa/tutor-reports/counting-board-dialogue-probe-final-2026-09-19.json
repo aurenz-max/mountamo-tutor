@@ -1,0 +1,487 @@
+[
+  {
+    "name": "success",
+    "request": {
+      "scope": {
+        "sessionEpoch": "probe",
+        "instanceId": "board",
+        "itemId": "c1",
+        "revision": 1
+      },
+      "task": "Count the blocks.",
+      "phase": "checked",
+      "learner": "one two three four five",
+      "lastResponse": {
+        "response": "one two three four five",
+        "correct": true,
+        "assisted": false
+      },
+      "tutor": "Excellent counting! You found all five blocks."
+    },
+    "expected": "advance",
+    "result": {
+      "verdict": "correct",
+      "transition": "none",
+      "confidence": 0,
+      "verdictConfidence": 1,
+      "grounded": 1,
+      "ms": 672,
+      "model": "jev-1.13.0",
+      "accepted": true,
+      "reason": "no_transition"
+    },
+    "passed": false
+  },
+  {
+    "name": "next",
+    "request": {
+      "scope": {
+        "sessionEpoch": "probe",
+        "instanceId": "board",
+        "itemId": "c1",
+        "revision": 1
+      },
+      "task": "Count the blocks.",
+      "phase": "checked",
+      "learner": "one two three four five",
+      "lastResponse": {
+        "response": "one two three four five",
+        "correct": true,
+        "assisted": false
+      },
+      "tutor": "Yes, five! Let us try the next one."
+    },
+    "expected": "advance",
+    "result": {
+      "verdict": "correct",
+      "transition": "advance",
+      "confidence": 1,
+      "verdictConfidence": 1,
+      "grounded": 1,
+      "ms": 204,
+      "model": "jev-1.13.0",
+      "accepted": true,
+      "reason": "supported"
+    },
+    "passed": true
+  },
+  {
+    "name": "readiness",
+    "request": {
+      "scope": {
+        "sessionEpoch": "probe",
+        "instanceId": "board",
+        "itemId": "c1",
+        "revision": 1
+      },
+      "task": "Count the blocks.",
+      "phase": "checked",
+      "learner": "one two three four five",
+      "lastResponse": {
+        "response": "one two three four five",
+        "correct": true,
+        "assisted": false
+      },
+      "tutor": "We counted five blocks together. Are you ready for the next challenge?"
+    },
+    "expected": "none",
+    "result": {
+      "verdict": "none",
+      "transition": "none",
+      "confidence": 0,
+      "grounded": 0,
+      "accepted": false,
+      "reason": "uncertain_or_invalid",
+      "ms": 171
+    },
+    "passed": true
+  },
+  {
+    "name": "continue",
+    "request": {
+      "scope": {
+        "sessionEpoch": "probe",
+        "instanceId": "board",
+        "itemId": "c1",
+        "revision": 1
+      },
+      "task": "Count the blocks.",
+      "phase": "checked",
+      "learner": "Yeah, please. Let us continue.",
+      "lastResponse": {
+        "response": "one two three four five",
+        "correct": true,
+        "assisted": false
+      },
+      "tutor": "Let us see what our next counting challenge will be!"
+    },
+    "expected": "advance",
+    "result": {
+      "verdict": "none",
+      "transition": "advance",
+      "confidence": 0.96,
+      "verdictConfidence": 0.99,
+      "grounded": 1,
+      "ms": 256,
+      "model": "jev-1.13.0",
+      "accepted": true,
+      "reason": "supported"
+    },
+    "passed": true
+  },
+  {
+    "name": "retry",
+    "request": {
+      "scope": {
+        "sessionEpoch": "probe",
+        "instanceId": "board",
+        "itemId": "c1",
+        "revision": 1
+      },
+      "task": "Count the blocks.",
+      "phase": "checked",
+      "learner": "one two three four five",
+      "lastResponse": {
+        "response": "one two three four five",
+        "correct": false,
+        "assisted": false
+      },
+      "tutor": "Nice try! Let us count the blocks one more time, very carefully."
+    },
+    "expected": "retry",
+    "result": {
+      "verdict": "incorrect",
+      "transition": "retry",
+      "confidence": 1,
+      "verdictConfidence": 1,
+      "grounded": 1,
+      "ms": 207,
+      "model": "jev-1.13.0",
+      "accepted": true,
+      "reason": "supported"
+    },
+    "passed": true
+  },
+  {
+    "name": "false_praise",
+    "request": {
+      "scope": {
+        "sessionEpoch": "probe",
+        "instanceId": "board",
+        "itemId": "c1",
+        "revision": 1
+      },
+      "task": "Count the blocks.",
+      "phase": "checked",
+      "learner": "one two three four five",
+      "lastResponse": {
+        "response": "one two three four five",
+        "correct": false,
+        "assisted": false
+      },
+      "tutor": "Excellent counting! You found all five blocks."
+    },
+    "expected": "none",
+    "result": {
+      "verdict": "correct",
+      "transition": "none",
+      "confidence": 0.9,
+      "verdictConfidence": 1,
+      "grounded": 0,
+      "ms": 197,
+      "model": "jev-1.13.0",
+      "accepted": false,
+      "reason": "contradiction"
+    },
+    "passed": true
+  },
+  {
+    "name": "silence",
+    "request": {
+      "scope": {
+        "sessionEpoch": "probe",
+        "instanceId": "board",
+        "itemId": "c1",
+        "revision": 1
+      },
+      "task": "Count the blocks.",
+      "phase": "checked",
+      "learner": "one two three four five",
+      "lastResponse": {
+        "response": "one two three four five",
+        "correct": true,
+        "assisted": false
+      },
+      "tutor": "<no speech>{pause}"
+    },
+    "expected": "none",
+    "result": {
+      "verdict": "none",
+      "transition": "none",
+      "confidence": 0.98,
+      "verdictConfidence": 0.99,
+      "grounded": 1,
+      "ms": 225,
+      "model": "jev-1.13.0",
+      "accepted": true,
+      "reason": "no_transition"
+    },
+    "passed": true
+  },
+  {
+    "name": "help",
+    "request": {
+      "scope": {
+        "sessionEpoch": "probe",
+        "instanceId": "board",
+        "itemId": "c1",
+        "revision": 1
+      },
+      "task": "Count the blocks.",
+      "phase": "checked",
+      "learner": "one two three four five",
+      "lastResponse": {
+        "response": "one two three four five",
+        "correct": false,
+        "assisted": false
+      },
+      "tutor": "I can help. Touch each block as we count together."
+    },
+    "expected": "none",
+    "result": {
+      "verdict": "none",
+      "transition": "none",
+      "confidence": 0,
+      "grounded": 0,
+      "accepted": false,
+      "reason": "uncertain_or_invalid",
+      "ms": 163
+    },
+    "passed": true
+  },
+  {
+    "name": "explain",
+    "request": {
+      "scope": {
+        "sessionEpoch": "probe",
+        "instanceId": "board",
+        "itemId": "c1",
+        "revision": 1
+      },
+      "task": "Count the blocks.",
+      "phase": "checked",
+      "learner": "one two three four five",
+      "lastResponse": {
+        "response": "one two three four five",
+        "correct": true,
+        "assisted": false
+      },
+      "tutor": "Five is right. How did you keep track of the blocks?"
+    },
+    "expected": "none",
+    "result": {
+      "verdict": "correct",
+      "transition": "none",
+      "confidence": 1,
+      "verdictConfidence": 0.99,
+      "grounded": 1,
+      "ms": 227,
+      "model": "jev-1.13.0",
+      "accepted": true,
+      "reason": "no_transition"
+    },
+    "passed": true
+  },
+  {
+    "name": "finish",
+    "request": {
+      "scope": {
+        "sessionEpoch": "probe",
+        "instanceId": "board",
+        "itemId": "c1",
+        "revision": 1
+      },
+      "task": "Count the blocks.",
+      "phase": "checked",
+      "learner": "one two three four five",
+      "lastResponse": {
+        "response": "one two three four five",
+        "correct": true,
+        "assisted": false
+      },
+      "tutor": "You counted them all correctly. We are finished for today!"
+    },
+    "expected": "advance",
+    "result": {
+      "verdict": "correct",
+      "transition": "advance",
+      "confidence": 1,
+      "verdictConfidence": 1,
+      "grounded": 1,
+      "ms": 203,
+      "model": "jev-1.13.0",
+      "accepted": true,
+      "reason": "supported"
+    },
+    "passed": true
+  },
+  {
+    "name": "no_answer",
+    "request": {
+      "scope": {
+        "sessionEpoch": "probe",
+        "instanceId": "board",
+        "itemId": "c1",
+        "revision": 1
+      },
+      "task": "Count the blocks.",
+      "phase": "checked",
+      "learner": "one two three four five",
+      "lastResponse": null,
+      "tutor": "Excellent counting! You found all five blocks."
+    },
+    "expected": "none",
+    "result": {
+      "verdict": "correct",
+      "transition": "none",
+      "confidence": 0,
+      "verdictConfidence": 1,
+      "grounded": 0,
+      "ms": 174,
+      "model": "jev-1.13.0",
+      "accepted": false,
+      "reason": "unsupported"
+    },
+    "passed": true
+  },
+  {
+    "name": "false_correction",
+    "request": {
+      "scope": {
+        "sessionEpoch": "probe",
+        "instanceId": "board",
+        "itemId": "c1",
+        "revision": 1
+      },
+      "task": "Count the blocks.",
+      "phase": "checked",
+      "learner": "one two three four five",
+      "lastResponse": {
+        "response": "one two three four five",
+        "correct": true,
+        "assisted": false
+      },
+      "tutor": "That is not right. Try counting again."
+    },
+    "expected": "none",
+    "result": {
+      "verdict": "incorrect",
+      "transition": "none",
+      "confidence": 1,
+      "verdictConfidence": 1,
+      "grounded": 0,
+      "ms": 173,
+      "model": "jev-1.13.0",
+      "accepted": false,
+      "reason": "contradiction"
+    },
+    "passed": true
+  },
+  {
+    "name": "natural_retry",
+    "request": {
+      "scope": {
+        "sessionEpoch": "probe",
+        "instanceId": "board",
+        "itemId": "c1",
+        "revision": 1
+      },
+      "task": "Count the blocks.",
+      "phase": "checked",
+      "learner": "one two three four five",
+      "lastResponse": {
+        "response": "one two three four five",
+        "correct": false,
+        "assisted": false
+      },
+      "tutor": "That was some great counting, but let's count the blocks together to make sure we get them all."
+    },
+    "expected": "retry",
+    "result": {
+      "verdict": "incorrect",
+      "transition": "none",
+      "confidence": 0,
+      "verdictConfidence": 0.93,
+      "grounded": 1,
+      "ms": 231,
+      "model": "jev-1.13.0",
+      "accepted": true,
+      "reason": "no_transition"
+    },
+    "passed": false
+  },
+  {
+    "name": "encouraging_retry",
+    "request": {
+      "scope": {
+        "sessionEpoch": "probe",
+        "instanceId": "board",
+        "itemId": "c1",
+        "revision": 1
+      },
+      "task": "Count the blocks.",
+      "phase": "checked",
+      "learner": "one two three four five",
+      "lastResponse": {
+        "response": "one two three four five",
+        "correct": false,
+        "assisted": false
+      },
+      "tutor": "I know you can do it, so let's try counting slowly one by one."
+    },
+    "expected": "retry",
+    "result": {
+      "verdict": "none",
+      "transition": "none",
+      "confidence": 0,
+      "grounded": 0,
+      "accepted": false,
+      "reason": "uncertain_or_invalid",
+      "ms": 159
+    },
+    "passed": false
+  },
+  {
+    "name": "closing_praise",
+    "request": {
+      "scope": {
+        "sessionEpoch": "probe",
+        "instanceId": "board",
+        "itemId": "c1",
+        "revision": 1
+      },
+      "task": "Count the blocks.",
+      "phase": "checked",
+      "learner": "I am ready to finish.",
+      "lastResponse": {
+        "response": "one two three four five",
+        "correct": true,
+        "assisted": false
+      },
+      "tutor": "You did an amazing job with all your counting today!"
+    },
+    "expected": "advance",
+    "result": {
+      "verdict": "none",
+      "transition": "advance",
+      "confidence": 0.95,
+      "verdictConfidence": 0,
+      "grounded": 1,
+      "ms": 185,
+      "model": "jev-1.13.0",
+      "accepted": true,
+      "reason": "supported"
+    },
+    "passed": true
+  }
+]

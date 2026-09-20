@@ -4,15 +4,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link';
 import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { useAuth } from '@/contexts/AuthContext';
-import NumberLine, { type NumberLineControls, type NumberLineData } from '../../primitives/visual-primitives/math/NumberLine';
-import TenFrame, { type TenFrameData } from '../../primitives/visual-primitives/math/TenFrame';
 import { getComponentById } from '../../service/manifest/catalog';
 import { parseLessonPackage, type LessonPackage } from '../../service/qa/lessonBench/lessonPackage';
 import type { PrimitiveEvaluationResult } from '../../evaluation/types';
-import { LIVE_ADAPTERS, generatedActivityState, parseActivityRequest, validateGeneratedActivity, type MountedActivity } from './activityContract';
+import { LIVE_ADAPTERS, LIVE_PRIMITIVE_IDS, generatedActivityState, parseActivityRequest, validateGeneratedActivity, type LivePrimitiveId, type MountedActivity } from './activityContract';
 import { nextPlanItem, planForTutor, projectLessonPlan, type LiveSessionPlan, type PlanItemOutcome } from './livePlan';
 import DirectVisual, { type DirectVisualControls } from './DirectVisual';
 import ConversationTranscript from './ConversationTranscript';
+import JevInspector from './JevInspector';
 import { LiveLessonRuntime } from './runtime/LiveLessonRuntime';
 import { RuntimeTransport, runtimePacket } from './runtime/runtimeTransport';
 import { LiveRuntimeSurface } from './runtime/LiveRuntimeSurface';
@@ -20,6 +19,10 @@ import { useRuntimeSnapshot } from './runtime/LiveRuntimeContext';
 import { buildDirectVisual, visualSize, type MountedVisual } from './directVisualContract';
 
 import { buildLiveActivitySpec } from './liveActivitySpec';
+import { LIVE_RENDERERS, type NumberLineControls } from './liveRenderers';
+
+/** Picker copy comes from the adapter registry, so a new family adds no map here. */
+const familyCopy = (id: LivePrimitiveId) => LIVE_ADAPTERS[id].copy;
 
 type Event = Record<string, any>;
 type Log = { at: string; text: string };
@@ -47,10 +50,10 @@ function VisibleActivity({ activity, onVisible, onControls, autoStart }: {
     const first = requestAnimationFrame(() => { second = requestAnimationFrame(() => onVisible(activity)); });
     return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
   }, [activity, onVisible]);
+  const id = activity.request.primitiveId;
   return <div data-testid="live-activity" data-instance-id={activity.instanceId}>
-    {activity.request.primitiveId === 'ten-frame'
-      ? <TenFrame data={activity.data as TenFrameData} autoStart={autoStart} runtimePlanItemId={activity.planItemId} />
-      : <NumberLine data={activity.data as NumberLineData} onControlsReady={registerControls} runtimePlanItemId={activity.planItemId} runtimeEvalMode={activity.resolvedEvalMode ?? activity.request.mode} />}
+    {LIVE_RENDERERS[id]({ data: activity.data, autoStart, planItemId: activity.planItemId,
+      evalMode: activity.resolvedEvalMode ?? activity.request.mode ?? '', onControls: registerControls })}
   </div>;
 }
 
@@ -105,13 +108,20 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
   const transportRef = useRef<RuntimeTransport | null>(null);
   const aiRef = useRef(ai); aiRef.current = ai;
   const { user } = useAuth();
-  const [enabled, setEnabled] = useState(true);
-  const [tenFrameEnabled, setTenFrameEnabled] = useState(true);
+  // One row per adopted family rather than one boolean per family: a third
+  // primitive is a key here, not another piece of branching in start/render.
+  const [families, setFamilies] = useState<Record<LivePrimitiveId, boolean>>(
+    () => Object.fromEntries(LIVE_PRIMITIVE_IDS.map(id => [id, true])) as Record<LivePrimitiveId, boolean>);
+  const enabledFamilies = useMemo(() => (Object.keys(families) as LivePrimitiveId[]).filter(id => families[id]), [families]);
   const [lessonMode, setLessonMode] = useState('make_ten');
-  const [lessonPrimitive, setLessonPrimitive] = useState<'ten-frame' | 'number-line'>('ten-frame');
+  const [lessonPrimitive, setLessonPrimitive] = useState<LivePrimitiveId>('ten-frame');
+  // The session_ready log reads the family after the connect closure was built.
+  const lessonPrimitiveRef = useRef(lessonPrimitive); lessonPrimitiveRef.current = lessonPrimitive;
   const openingRef = useRef<string | null>(null);
   const [lessonReadyId, setLessonReadyId] = useState<string | null>(null);
   const [directVisuals, setDirectVisuals] = useState(true);
+  const [generatedPictures, setGeneratedPictures] = useState(true);
+  const [drawing, setDrawing] = useState(false);
   const [grade, setGrade] = useState('Grade 1');
   const gradeRef = useRef(grade); gradeRef.current = grade;
   const [ready, setReady] = useState(false);
@@ -155,7 +165,10 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
   }, []);
   const log = useCallback((text: string) => setLogs(old => [...old.slice(-99), { at: new Date().toLocaleTimeString(), text }]), []);
   useEffect(() => {
-    const transport = new RuntimeTransport(runtime, message => aiRef.current.sendActivityMessage(message));
+    const transport = new RuntimeTransport(runtime, message => {
+      if (message.type === 'dialogue_observation') log(`Dialogue: ${message.verdict}; ${message.transition} (${message.status}, ${message.reason}).`);
+      aiRef.current.sendActivityMessage(message);
+    });
     transportRef.current = transport;
     return () => { transport.close(); transportRef.current = null; };
   }, [runtime]);
@@ -244,7 +257,8 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
     aiRef.current.sendActivityMessage({ type: 'activity_result', callId: mounted.callId,
       status: 'mounted', instanceId: mounted.instanceId, primitiveId,
       data: generatedActivityState(primitiveId, item?.data ?? mounted.data),
-      tutoring: getComponentById(primitiveId)?.tutoring,
+      tutoring: LIVE_ADAPTERS[primitiveId].tutoring !== undefined
+        ? LIVE_ADAPTERS[primitiveId].tutoring : getComponentById(primitiveId)?.tutoring,
       guidance: LIVE_ADAPTERS[primitiveId].guidance,
       ...(item ? { planItem: { itemId: item.itemId, title: item.title, intent: item.intent, evalMode: item.evalMode, objective: item.objective.text } } : {}),
     });
@@ -278,7 +292,31 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
       const transport = transportRef.current;
       if (event.type === 'runtime_command') { void transport?.command(event.command); return; }
       if (event.type === 'runtime_cancelled') { transport?.cancel(event.commandId); return; }
-      if (event.type === 'runtime_turn_output') { transport?.beginTurn(); return; }
+      if (event.type === 'runtime_compose_move') {
+        const move = event.move;
+        // The tutor's own diagnosis goes to the timeline verbatim, beside what it asked for,
+        // because whether the move ADDS anything to the child's screen is the thing under review.
+        log(`Tutor move (${move.delta}, ${move.representation}, values ${JSON.stringify(move.values)}): obstacle "${move.obstacle}" -> next "${move.nextAction}"`
+          + (move.description ? ` picture: "${move.description}"` : ''));
+        const drawing = move.delta === 'illustrate';
+        if (drawing) setDrawing(true);
+        void transport?.composeMove(event.commandId, event.scope, move, async (request, signal) => {
+          const response = await fetch('/api/lumina/live-activity/support-image', { method: 'POST', signal,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ purpose: request.delta, concept: request.obstacle.slice(0, 120),
+              description: request.description, counts: request.values, gradeLevel: gradeRef.current }) });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || 'Picture failed');
+          log(`Picture drawn in ${result.timing.generateMs}ms, checked in ${result.timing.checkMs}ms, ${result.attempts} attempt(s). Checker saw: "${result.check.seen}" ${result.usable ? 'Usable.' : `REJECTED: ${result.check.problem || 'unrequested text'}`}`);
+          return result.usable ? { imageUrl: result.imageUrl }
+            : { refused: `The drawing did not match your description (${result.check.problem || 'it contained text'}). Make a cheaper move or use words instead.` };
+        }).then(outcome => { if (outcome) log(`Move ${outcome.status}${outcome.reason ? `: ${outcome.reason}` : ''}`); })
+          .finally(() => { if (drawing) setDrawing(false); });
+        return;
+      }
+      if (event.type === 'runtime_turn_output') { transport?.beginTurn(typeof event.text === 'string' ? event.text : ''); return; }
+      if (event.type === 'runtime_learner_text') { transport?.dialogue.learnerText(String(event.text ?? ''), event.finished === true); return; }
+      if (event.type === 'runtime_interrupted') { transport?.dialogue.interrupt(); transport?.endTurn(false); return; }
       if (event.type === 'runtime_turn_end') { transport?.endTurn(event.audioPending === true); return; }
       if (event.type === 'runtime_audio_idle') { transport?.audioChanged(false); return; }
       if (event.type === 'session_ready') {
@@ -286,7 +324,8 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
         const opening = openingRef.current; openingRef.current = null;
         if (opening) {
           aiRef.current.sendText(opening, { silent: true });
-          log(sessionPlanRef.current ? 'Starting the planned lesson automatically.' : 'Starting the ten-frame lesson automatically.');
+          log(sessionPlanRef.current ? 'Starting the planned lesson automatically.'
+            : `Starting the ${familyCopy(lessonPrimitiveRef.current).label.toLowerCase()} lesson automatically.`);
         }
         return;
       }
@@ -440,7 +479,7 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
 
   const start = async () => {
     const nextRuntime = resetRuntime();
-    const runtimeSandbox = { sessionEpoch: nextRuntime.sessionEpoch, initialState: runtimePacket(nextRuntime.getSnapshot()) };
+    const runtimeSandbox = { sessionEpoch: nextRuntime.sessionEpoch, initialState: runtimePacket(nextRuntime.getSnapshot()), teachingMoves: generatedPictures };
     commandRef.current = null;
     setError(''); setConnecting(true); setActivity(null); setVisual(null); setLessonReadyId(null); setLogs([]);
     outcomesRef.current = {}; setOutcomes({}); pendingCompletion.current = null;
@@ -459,13 +498,10 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
       });
       return;
     }
-    openingRef.current = lessonPrimitive === 'number-line' && enabled
-      ? `[LESSON_START] Begin a number-line lesson now for ${grade}, mode ${lessonMode}. Call request_activity with primitiveId number-line, mode ${lessonMode}, topic subtraction on a number line, and matching intent. Use two practice challenges. Do not greet before mounting. Teach from the mounted instruction and use the advertised runtime actions for help and progression.`
-      : tenFrameEnabled
-      ? `[LESSON_START] Begin a full ten-frame lesson now for ${grade}, mode ${lessonMode}. Call request_activity with primitiveId ten-frame, mode ${lessonMode}, a matching topic and intent. Use the existing full lesson with several practice items. Do not ask me to choose a topic or greet first. The DI runner will deliver the opening after mounting.`
-      : null;
+    openingRef.current = families[lessonPrimitive]
+      ? LIVE_ADAPTERS[lessonPrimitive].lessonStart(grade, lessonMode) : null;
     await ai.connectLesson({ runtimeSandbox, exhibit_id: `sandbox-${crypto.randomUUID()}`, topic: 'Live activity tutoring', grade_level: grade,
-      activitySandbox: buildLiveActivitySpec([...(enabled ? ['number-line' as const] : []), ...(tenFrameEnabled ? ['ten-frame' as const] : [])], directVisuals), firstPrimitive: {
+      activitySandbox: buildLiveActivitySpec(enabledFamilies, directVisuals), firstPrimitive: {
         primitive_type: 'live-activity-sandbox', instance_id: 'empty-workspace', primitive_data: { workspace: 'empty', gradeLevel: grade },
         topic: 'Live activity tutoring', grade_level: grade, owns_opening: true,
       },
@@ -482,7 +518,7 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>{onBack ? <button onClick={onBack} className="text-sm text-indigo-300">← Back to testers</button>
           : <Link href="/lumina" className="text-sm text-indigo-300">← Lumina</Link>}
-          <h1 className="mt-3 text-3xl font-semibold">{shownPlan ? shownPlan.topic : lessonPrimitive === 'ten-frame' ? 'Learn with Ten Frame' : 'Learn with Number Line'}</h1>
+          <h1 className="mt-3 text-3xl font-semibold">{shownPlan ? shownPlan.topic : familyCopy(lessonPrimitive).title}</h1>
           <p className="mt-2 text-slate-400">{shownPlan
             ? `A planned ${shownPlan.gradeLevel} lesson. Your tutor starts each activity and moves on when you finish.`
             : 'Start the lesson. Your tutor introduces each problem, helps you practice, and works with you on the activity.'}</p>
@@ -491,17 +527,18 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
       <section className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4">
         {!planMode && <>
           <label>Activity <select aria-label="Activity" value={lessonPrimitive} disabled={busy} onChange={e => {
-            const id = e.target.value as 'ten-frame' | 'number-line'; setLessonPrimitive(id); setLessonMode(id === 'ten-frame' ? 'make_ten' : 'jump');
-            if (id === 'ten-frame') setTenFrameEnabled(true); else setEnabled(true);
-          }} className="ml-2 rounded bg-slate-800 p-2"><option value="ten-frame">Ten Frame</option><option value="number-line">Number Line</option></select></label>
+            const id = e.target.value as LivePrimitiveId; setLessonPrimitive(id); setLessonMode(familyCopy(id).lessons[0][0]);
+            setFamilies(old => ({ ...old, [id]: true }));
+          }} className="ml-2 rounded bg-slate-800 p-2">{LIVE_PRIMITIVE_IDS.map(id =>
+            <option key={id} value={id}>{familyCopy(id).label}</option>)}</select></label>
           <label>Lesson <select aria-label="Lesson" value={lessonMode} disabled={busy} onChange={e => setLessonMode(e.target.value)} className="ml-2 rounded bg-slate-800 p-2">
-            {(lessonPrimitive === 'number-line' ? [['jump', 'Subtraction jumps'], ['plot', 'Plot points'], ['order', 'Order values'], ['between', 'Find between']] : [['make_ten', 'Make ten'], ['build', 'Build numbers'], ['subitize', 'Recognize quantities'], ['operate', 'Add and subtract'], ['decompose', 'Split into two groups'], ['build_teen', 'Build teen numbers'], ['decompose_teen', 'Find the ten']]).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            {familyCopy(lessonPrimitive).lessons.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select></label>
           <label>Grade <select aria-label="Grade" value={grade} disabled={busy} onChange={e => setGrade(e.target.value)} className="ml-2 rounded bg-slate-800 p-2">
             {['Kindergarten', 'Grade 1', 'Grade 2'].map(g => <option key={g}>{g}</option>)}
           </select></label>
         </>}
-        {!ready && !connecting ? <button className={button} disabled={(!planMode && !enabled && !directVisuals && !tenFrameEnabled) || (!!pkg && !projected.plan) || !user} onClick={start}>Start lesson</button>
+        {!ready && !connecting ? <button className={button} disabled={(!planMode && !enabledFamilies.length && !directVisuals) || (!!pkg && !projected.plan) || !user} onClick={start}>Start lesson</button>
           : <button className={button} onClick={stop}>End session</button>}
         {ready && <button className={button} onClick={ai.isListening ? ai.stopListening : ai.startListening}>{ai.isListening ? 'Pause microphone' : 'Enable microphone'}</button>}
         {!user && <Link href="/login" className="text-indigo-300 underline">Sign in to start</Link>}
@@ -512,9 +549,10 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
         onClear={() => { setPkg(null); setObjectiveId(''); setLoadError(''); }} />
       {!planMode && <details className="rounded-xl border border-slate-800 p-4"><summary className="cursor-pointer text-sm text-slate-400">Sandbox tools</summary>
         <div className="mt-3 flex flex-wrap gap-4 text-sm">
-          <label><input type="checkbox" checked={tenFrameEnabled} disabled={busy} onChange={e => setTenFrameEnabled(e.target.checked)} /> Ten Frame</label>
-          <label><input type="checkbox" checked={enabled} disabled={busy} onChange={e => setEnabled(e.target.checked)} /> Number line</label>
+          {LIVE_PRIMITIVE_IDS.map(id => <label key={id}>
+            <input type="checkbox" checked={families[id]} disabled={busy} onChange={e => setFamilies(old => ({ ...old, [id]: e.target.checked }))} /> {familyCopy(id).checkbox}</label>)}
           <label><input type="checkbox" checked={directVisuals} disabled={busy} onChange={e => setDirectVisuals(e.target.checked)} /> Counters, fractions &amp; letter tiles</label>
+          <label><input type="checkbox" checked={generatedPictures} disabled={busy} onChange={e => setGeneratedPictures(e.target.checked)} /> Teaching moves (composed shapes; pictures checked before showing)</label>
         </div>
       </details>}
       {error && <p role="alert" className="rounded-lg bg-red-950 p-3 text-red-200">{error}</p>}
@@ -529,6 +567,7 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
               </li>;
             })}
           </ol>}
+          {drawing && <p role="status" className="rounded-lg bg-indigo-950 p-3">Your tutor is drawing a picture…</p>}
           {pending && <div role="status" className="flex items-center justify-between rounded-lg bg-indigo-950 p-3"><span>Preparing your activity…</span><button className="underline" onClick={() => cancel()}>Cancel</button></div>}
           {visual ? <ActivityBoundary key={visual.instanceId} onError={() => fail(visual.callId, 'The visual could not render.')}>
             <VisibleDirectVisual visual={visual} onVisible={onVisualVisible} onState={onVisualState} onControls={onVisualControls} />
@@ -542,11 +581,16 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
             <button className={button} disabled={!ready || !text.trim()}>Send</button>
           </form>
           {ready && runtimeState.instanceId && <div className="flex flex-wrap gap-3">
+            {runtimeState.affordances.some(a => a.controller === 'observer' && a.action.type === 'advance')
+              ? <button className={button} disabled={ai.isAudioPlaying} onClick={() => void transportRef.current?.learnerProgress('advance')}>Next challenge</button>
+              : runtimeState.affordances.some(a => a.controller === 'observer' && a.action.type === 'retry')
+                && <button className={button} disabled={ai.isAudioPlaying} onClick={() => void transportRef.current?.learnerProgress('retry')}>Try again</button>}
             {runtimeState.affordances.some(a => a.action.type === 'scaffold') && <button className={button} onClick={() => send('Please show me a reminder for this task.')}>Help me start</button>}
             {runtimeState.affordances.some(a => a.action.type === 'request_support') && <button className={button} onClick={() => send('Please show me the worked example, keeping my task saved.')}>Show an example</button>}
+            {generatedPictures && runtimeState.moveOptions && <button className={button} disabled={drawing} onClick={() => send('I am stuck. Please help me with this in a way that is different from what is already on my screen, keeping my task saved.')}>Help me another way</button>}
             {runtimeState.status === 'support' && <button className={button} onClick={() => send('I am ready to return to my saved task. Please close the example.')}>Return to my task</button>}
           </div>}
-          {!planMode && <button className="text-sm text-indigo-300 disabled:opacity-40" disabled={!ready} onClick={() => send(activity?.request.primitiveId === 'ten-frame' ? `Please start another full ten-frame lesson in ${lessonMode} mode.` : visual ? 'Please give me another example using the same kind of visual.' : 'Please give me another example with a new number line.')}>Ask for another example</button>}
+          {!planMode && <button className="text-sm text-indigo-300 disabled:opacity-40" disabled={!ready} onClick={() => send(activity && LIVE_ADAPTERS[activity.request.primitiveId].teachingOwner === 'di-runner' ? `Please start another full ${familyCopy(activity.request.primitiveId).label.toLowerCase()} lesson in ${lessonMode} mode.` : visual ? 'Please give me another example using the same kind of visual.' : 'Please give me another example with a new number line.')}>Ask for another example</button>}
           {directVisuals && !planMode && <details><summary className="cursor-pointer text-sm text-slate-400">Explore another visual</summary><div className="mt-3 flex flex-wrap gap-2" aria-label="Try a visual">
             {['Show six counters and help me take away two.', 'Show three quarters as a fraction bar.', 'Help me blend the word ship using letter tiles.'].map(prompt =>
               <button key={prompt} disabled={!ready} className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-cyan-200 disabled:opacity-40" onClick={() => send(prompt)}>{prompt}</button>)}
@@ -558,6 +602,7 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
               <ConversationTranscript messages={ai.conversation} />
             </div>
           </section>
+          <JevInspector runtime={runtime} />
           <details open className="rounded-xl border border-slate-800 p-4"><summary className="cursor-pointer font-semibold">Experiment timeline</summary>
             <ol className="mt-3 max-h-80 space-y-3 overflow-y-auto text-xs text-slate-400">{logs.map((entry, i) => <li key={i}><time className="text-slate-500">{entry.at}</time><p>{entry.text}</p></li>)}</ol>
           </details>
@@ -568,7 +613,7 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
 }
 
 export default function LiveActivitySandbox({ onBack }: { onBack?: () => void } = {}) {
-  const makeRuntime = () => new LiveLessonRuntime(crypto.randomUUID(), { maxSupportLevel: 3, allowAnswerExposure: true, allowSupportArtifacts: true });
+  const makeRuntime = () => new LiveLessonRuntime(crypto.randomUUID(), { maxSupportLevel: 3, allowAnswerExposure: true, allowSupportArtifacts: true, allowGeneratedSupport: true });
   const [runtime, setRuntime] = useState(makeRuntime);
   const resetRuntime = () => { if (runtime.getSnapshot().status !== 'empty') runtime.stop(); const next = makeRuntime(); setRuntime(next); return next; };
   const handler = useRef<((event: Event) => void) | null>(null);

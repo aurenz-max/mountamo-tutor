@@ -25,6 +25,8 @@ import { getPrimitive } from '../config/primitiveRegistry';
 import { OrderedSection } from './ManifestOrderRenderer';
 import { useEvaluationContext } from '../evaluation';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import { useLessonWorkspace } from './live-activity/LessonWorkspace';
+import { lessonPrimitiveContext } from './live-activity/lessonWorkspacePlan';
 import { SoundManager } from '../utils/SoundManager';
 
 /** Dwell before a display-only section unlocks its arrow (mirrors DeepDive's
@@ -46,15 +48,13 @@ interface KindergartenStageProps {
 // Live inside AnimatePresence so the tutor changes with the mounted frame,
 // after the outgoing frame exits. Layout timing precedes child opening effects.
 const StageTutorFocus: React.FC<{ section: OrderedComponent; children: React.ReactNode }> = ({ section, children }) => {
+  const workspace = useLessonWorkspace();
   const { sessionMode, isConnected, switchPrimitive } = useLuminaAIContext();
   useLayoutEffect(() => {
+    workspace?.focus(section.instanceId);
     if (sessionMode !== 'lesson' || !isConnected) return;
-    switchPrimitive({
-      primitive_type: section.componentId,
-      instance_id: section.instanceId,
-      primitive_data: section.data || {},
-    });
-  }, [section, sessionMode, isConnected, switchPrimitive]);
+    switchPrimitive(lessonPrimitiveContext(section, workspace?.items.get(section.instanceId)));
+  }, [section, sessionMode, isConnected, switchPrimitive, workspace?.focus, workspace?.items]);
   return <>{children}</>;
 };
 
@@ -77,6 +77,7 @@ export const KindergartenStage: React.FC<KindergartenStageProps> = ({
   const [finished, setFinished] = useState(false);
 
   const evaluationContext = useEvaluationContext();
+  const workspace = useLessonWorkspace();
 
   const active = sections[activeIndex];
   const activeConfig = active ? getPrimitive(active.componentId) : undefined;
@@ -166,8 +167,16 @@ export const KindergartenStage: React.FC<KindergartenStageProps> = ({
       </div>
 
       {/* The stage: one section, full-bleed, animated frame flow */}
+      {/* Keep workspace state mounted when moving back and forth. Only the focused
+          surface can register, consume speech or receive commands. */}
+      {sections.filter(s => workspace?.items.has(s.instanceId)).map(section => <div key={section.instanceId} hidden={section.instanceId !== active.instanceId}>
+        {section.instanceId === active.instanceId && <StageTutorFocus section={section}>{null}</StageTutorFocus>}
+        <div className="min-h-[62vh] flex flex-col justify-center">
+          <OrderedSection item={section} index={sections.indexOf(section)} onDetailItemClick={onDetailItemClick} onTermClick={onTermClick} hideChrome />
+        </div>
+      </div>)}
       <AnimatePresence mode="wait">
-        <motion.div
+        {!workspace?.items.has(active.instanceId) && <motion.div
           key={active.instanceId}
           initial={{ opacity: 0, x: 120, scale: 0.97 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
@@ -185,7 +194,7 @@ export const KindergartenStage: React.FC<KindergartenStageProps> = ({
               />
             </div>
           </StageTutorFocus>
-        </motion.div>
+        </motion.div>}
       </AnimatePresence>
 
       {/* Navigation row. The forward arrow only EXISTS once the section is

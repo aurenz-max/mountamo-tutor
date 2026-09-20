@@ -1,0 +1,2768 @@
+[
+  {
+    "passed": true,
+    "primitiveId": "number-sequencer",
+    "events": [
+      {
+        "type": "ready",
+        "t": 4.81
+      },
+      {
+        "type": "runner_cue",
+        "t": 4.83,
+        "text": "[NS_ITEM] Say exactly: \"Let us work on a number train. Count forward from 12. What is the next number?\" Private target: 13. Correct answer: say exactly: \"Yes, 13.\". Wrong answer: say exactly: \"My turn: counting forward, after 12 comes 13. Your turn. Count forward from 12. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 12 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "type": "tutor",
+        "t": 11.92,
+        "phase": "opening",
+        "text": "Let us work on a number train. Count forward from 12. What is the next number?",
+        "state": {
+          "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+          "revision": 3,
+          "visibleRevision": 3,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:1-answer",
+            "phase": "asking",
+            "task": "Count forward from 12. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/3/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child needs the method again: \"Start on the number I just said, then say what comes next.\". This does not move a card, fill a space or reorder the train, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/3/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 11.94,
+        "intent": "warmup",
+        "performed": [],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 11.95,
+        "intent": "wrong",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "15"
+          }
+        ],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 11.95,
+        "text": "15"
+      },
+      {
+        "type": "tutor",
+        "t": 21.91,
+        "phase": "wrong",
+        "text": "My turn: counting forward, after 12 comes 13. Your turn. Count forward from 12. What is the next number?",
+        "state": {
+          "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+          "revision": 5,
+          "visibleRevision": 5,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:1-answer",
+            "phase": "asking",
+            "task": "Count forward from 12. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "15",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/5/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child needs the method again: \"Start on the number I just said, then say what comes next.\". This does not move a card, fill a space or reorder the train, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/5/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 21.92,
+        "intent": "warmup",
+        "performed": [],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 21.92,
+        "text": "Please show me a reminder for how to work out this number."
+      },
+      {
+        "type": "runtime_command",
+        "t": 23.22,
+        "phase": "hint",
+        "command": {
+          "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+          "instanceId": "train",
+          "itemId": "seq1:1-answer",
+          "expectedRevision": 5,
+          "commandId": "call_529178",
+          "action": {
+            "type": "scaffold",
+            "strategyId": "say-what-comes-next",
+            "direction": 1
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 23.27,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_529178",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+            "revision": 6,
+            "visibleRevision": 6,
+            "instanceId": "train",
+            "planItemId": "train",
+            "primitiveId": "number-sequencer",
+            "objectiveId": "number-sequencer-practice",
+            "evalMode": "count_from",
+            "owner": "runner",
+            "status": "active",
+            "task": {
+              "itemId": "seq1:1-answer",
+              "phase": "asking",
+              "task": "Count forward from 12. What is the next number?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "15",
+                    "source": "speech",
+                    "recognition": "clear"
+                  }
+                ]
+              },
+              "demand": {
+                "kind": "count-from",
+                "response": "voice",
+                "direction": "forward",
+                "cardsPlaced": 0,
+                "placedOrder": ""
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Start on the number I just said, then say what comes next."
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "train",
+                "itemId": "seq1:1-answer",
+                "revision": 6,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "say-what-comes-next",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+                "responseSpeech": "runner",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/6/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "say-what-comes-next",
+                  "direction": -1
+                },
+                "description": "Hide the reminder that is showing",
+                "assistance": {
+                  "level": 0,
+                  "answerExposure": "none"
+                },
+                "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/6/1"
+              }
+            ]
+          },
+          "elapsedMs": 40.46719999999914
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 27.69,
+        "phase": "hint",
+        "text": "Start on the number I just said, then say what comes next.",
+        "state": {
+          "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+          "revision": 6,
+          "visibleRevision": 6,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:1-answer",
+            "phase": "asking",
+            "task": "Count forward from 12. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "15",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Start on the number I just said, then say what comes next."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/6/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": -1
+              },
+              "description": "Hide the reminder that is showing",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/6/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "no_detour_by_design",
+        "t": 27.69,
+        "choices": [
+          "replay",
+          "scaffold"
+        ]
+      },
+      {
+        "type": "learner_input",
+        "t": 27.7,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "13"
+          }
+        ],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 27.7,
+        "text": "13"
+      },
+      {
+        "type": "tutor",
+        "t": 30.72,
+        "phase": "right",
+        "text": "Yes, 13.",
+        "state": {
+          "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+          "revision": 10,
+          "visibleRevision": 10,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:2-answer",
+            "phase": "affirmed",
+            "task": "Count forward from 13. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/10/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child needs the method again: \"Start on the number I just said, then say what comes next.\". This does not move a card, fill a space or reorder the train, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/10/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 31.25,
+        "text": "[NS_ITEM] Say exactly: \"Count forward from 13. What is the next number?\" Private target: 14. Correct answer: say exactly: \"Yes, 14.\". Wrong answer: say exactly: \"My turn: counting forward, after 13 comes 14. Your turn. Count forward from 13. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 13 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "type": "tutor",
+        "t": 35.97,
+        "phase": "next-ask",
+        "text": "Count forward from 13. What is the next number?",
+        "state": {
+          "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+          "revision": 10,
+          "visibleRevision": 10,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:2-answer",
+            "phase": "affirmed",
+            "task": "Count forward from 13. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/10/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child needs the method again: \"Start on the number I just said, then say what comes next.\". This does not move a card, fill a space or reorder the train, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/10/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 35.98,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "14"
+          }
+        ],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 35.98,
+        "text": "14"
+      },
+      {
+        "type": "tutor",
+        "t": 38.91,
+        "phase": "finishing",
+        "text": "Yes, 14.",
+        "state": {
+          "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+          "revision": 13,
+          "visibleRevision": 13,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:3-answer",
+            "phase": "affirmed",
+            "task": "Count forward from 14. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/13/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child needs the method again: \"Start on the number I just said, then say what comes next.\". This does not move a card, fill a space or reorder the train, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/13/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 38.92,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "15"
+          }
+        ],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 38.92,
+        "text": "15"
+      },
+      {
+        "type": "tutor",
+        "t": 42.42,
+        "phase": "finishing",
+        "text": "Yes, 15.",
+        "state": {
+          "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+          "revision": 16,
+          "visibleRevision": 16,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq2:1-answer",
+            "phase": "affirmed",
+            "task": "Count forward from 24. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/16/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child needs the method again: \"Start on the number I just said, then say what comes next.\". This does not move a card, fill a space or reorder the train, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/16/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 42.42,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "25"
+          }
+        ],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 42.42,
+        "text": "25"
+      },
+      {
+        "type": "tutor",
+        "t": 45.62,
+        "phase": "finishing",
+        "text": "Yes, 25.",
+        "state": {
+          "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+          "revision": 19,
+          "visibleRevision": 19,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq2:2-answer",
+            "phase": "affirmed",
+            "task": "Count forward from 25. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/19/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child needs the method again: \"Start on the number I just said, then say what comes next.\". This does not move a card, fill a space or reorder the train, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/19/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 45.64,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "26"
+          }
+        ],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 45.64,
+        "text": "26"
+      },
+      {
+        "type": "tutor",
+        "t": 48.72,
+        "phase": "finishing",
+        "text": "Yes, 26.",
+        "state": {
+          "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+          "revision": 22,
+          "visibleRevision": 22,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq2:3-answer",
+            "phase": "affirmed",
+            "task": "Count forward from 26. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/22/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child needs the method again: \"Start on the number I just said, then say what comes next.\". This does not move a card, fill a space or reorder the train, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/22/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 48.73,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "27"
+          }
+        ],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 48.73,
+        "text": "27"
+      },
+      {
+        "type": "runner_cue",
+        "t": 50.84,
+        "text": "[NS_ITEM] Say exactly: \"Count forward from 26. What is the next number?\" Private target: 27. Correct answer: say exactly: \"Yes, 27.\". Wrong answer: say exactly: \"My turn: counting forward, after 26 comes 27. Your turn. Count forward from 26. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 26 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "type": "tutor",
+        "t": 51.44,
+        "phase": "finishing",
+        "text": "<!-- The runner-owned activity manages responses and progression. -->",
+        "state": {
+          "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+          "revision": 23,
+          "visibleRevision": 23,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq2:3-answer",
+            "phase": "affirmed",
+            "task": "Count forward from 26. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "27",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/23/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child needs the method again: \"Start on the number I just said, then say what comes next.\". This does not move a card, fill a space or reorder the train, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/23/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 51.45,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "27"
+          }
+        ],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 51.45,
+        "text": "27"
+      },
+      {
+        "type": "tutor",
+        "t": 52.05,
+        "phase": "finishing",
+        "text": "Count forward ",
+        "state": {
+          "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+          "revision": 24,
+          "visibleRevision": 24,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq2:3-answer",
+            "phase": "affirmed",
+            "task": "Count forward from 26. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "27",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/24/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child needs the method again: \"Start on the number I just said, then say what comes next.\". This does not move a card, fill a space or reorder the train, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "77abb41c-2b84-4cd3-b022-53f9aac78c06/24/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 52.06,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "27"
+          }
+        ],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 52.06,
+        "text": "27"
+      },
+      {
+        "type": "tutor",
+        "t": 52.7,
+        "phase": "finishing",
+        "text": "Yes, ",
+        "state": {
+          "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+          "revision": 28,
+          "visibleRevision": 28,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "closing",
+          "task": {
+            "itemId": "seq2:3-answer",
+            "phase": "done",
+            "task": "Count forward from 26. What is the next number?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 3,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "27",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is closing",
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": []
+        }
+      },
+      {
+        "type": "runner_cue",
+        "t": 53.06,
+        "text": "[NS_DONE] Say exactly: \"You worked on number sequences. Nice effort!\""
+      },
+      {
+        "type": "tutor",
+        "t": 53.67,
+        "phase": "finishing",
+        "text": "<!-- The runner-owned activity manages responses and progression. -->",
+        "state": {
+          "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+          "revision": 29,
+          "visibleRevision": null,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "seq2:3-answer",
+            "phase": "done",
+            "task": "Count forward from 26. What is the next number?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 3,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "27",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": []
+        }
+      },
+      {
+        "type": "complete",
+        "t": 53.67,
+        "state": {
+          "sessionEpoch": "77abb41c-2b84-4cd3-b022-53f9aac78c06",
+          "revision": 29,
+          "visibleRevision": null,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "none",
+          "status": "completed",
+          "task": {
+            "itemId": "seq2:3-answer",
+            "phase": "done",
+            "task": "Count forward from 26. What is the next number?",
+            "completed": true,
+            "evidence": {
+              "attemptNumber": 3,
+              "correctness": "correct",
+              "recentResponses": [
+                {
+                  "response": "27",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": "Activity is completed",
+          "canStartNext": true,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": []
+        },
+        "submissions": 1
+      }
+    ]
+  },
+  {
+    "passed": false,
+    "primitiveId": "number-sequencer",
+    "events": [
+      {
+        "type": "ready",
+        "t": 4.74
+      },
+      {
+        "type": "runner_cue",
+        "t": 4.75,
+        "text": "[NS_ITEM] Say exactly: \"Let us work on a number train. Count forward from 12. What is the next number?\" Private target: 13. Correct answer: say exactly: \"Yes, 13.\". Wrong answer: say exactly: \"My turn: counting forward, after 12 comes 13. Your turn. Count forward from 12. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 12 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "type": "tutor",
+        "t": 10.91,
+        "phase": "opening",
+        "text": "Let us work on a number train. Count forward from 12. What is the next number?",
+        "state": {
+          "sessionEpoch": "71216906-816f-470f-b714-a06e8642248d",
+          "revision": 3,
+          "visibleRevision": 3,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:1-answer",
+            "phase": "asking",
+            "task": "Count forward from 12. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "71216906-816f-470f-b714-a06e8642248d/3/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child needs the method again: \"Start on the number I just said, then say what comes next.\". This does not move a card, fill a space or reorder the train, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "71216906-816f-470f-b714-a06e8642248d/3/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 10.92,
+        "intent": "warmup",
+        "performed": [],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 10.94,
+        "intent": "wrong",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "15"
+          }
+        ],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 10.94,
+        "text": "15"
+      },
+      {
+        "type": "tutor",
+        "t": 19.5,
+        "phase": "wrong",
+        "text": "My turn: counting forward, after 12 comes 13. Your turn. Count forward from 12. What is the next number?",
+        "state": {
+          "sessionEpoch": "71216906-816f-470f-b714-a06e8642248d",
+          "revision": 5,
+          "visibleRevision": 5,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:1-answer",
+            "phase": "asking",
+            "task": "Count forward from 12. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "15",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "71216906-816f-470f-b714-a06e8642248d/5/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child needs the method again: \"Start on the number I just said, then say what comes next.\". This does not move a card, fill a space or reorder the train, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "71216906-816f-470f-b714-a06e8642248d/5/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 19.52,
+        "intent": "warmup",
+        "performed": [],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 19.52,
+        "text": "Please show me a reminder for how to work out this number."
+      },
+      {
+        "type": "runtime_command",
+        "t": 20.89,
+        "phase": "hint",
+        "command": {
+          "sessionEpoch": "71216906-816f-470f-b714-a06e8642248d",
+          "instanceId": "train",
+          "itemId": "seq1:1-answer",
+          "expectedRevision": 5,
+          "commandId": "call_723533",
+          "action": {
+            "type": "scaffold",
+            "strategyId": "say-what-comes-next",
+            "direction": 1
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 20.97,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_723533",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "71216906-816f-470f-b714-a06e8642248d",
+            "revision": 6,
+            "visibleRevision": 6,
+            "instanceId": "train",
+            "planItemId": "train",
+            "primitiveId": "number-sequencer",
+            "objectiveId": "number-sequencer-practice",
+            "evalMode": "count_from",
+            "owner": "runner",
+            "status": "active",
+            "task": {
+              "itemId": "seq1:1-answer",
+              "phase": "asking",
+              "task": "Count forward from 12. What is the next number?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "15",
+                    "source": "speech",
+                    "recognition": "clear"
+                  }
+                ]
+              },
+              "demand": {
+                "kind": "count-from",
+                "response": "voice",
+                "direction": "forward",
+                "cardsPlaced": 0,
+                "placedOrder": ""
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Start on the number I just said, then say what comes next."
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "train",
+                "itemId": "seq1:1-answer",
+                "revision": 6,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "say-what-comes-next",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+                "responseSpeech": "runner",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "71216906-816f-470f-b714-a06e8642248d/6/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "say-what-comes-next",
+                  "direction": -1
+                },
+                "description": "Hide the reminder that is showing",
+                "assistance": {
+                  "level": 0,
+                  "answerExposure": "none"
+                },
+                "actionId": "71216906-816f-470f-b714-a06e8642248d/6/1"
+              }
+            ]
+          },
+          "elapsedMs": 61.675100000000384
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 25.24,
+        "phase": "hint",
+        "text": "Start on the number I just said, then say what comes next.",
+        "state": {
+          "sessionEpoch": "71216906-816f-470f-b714-a06e8642248d",
+          "revision": 6,
+          "visibleRevision": 6,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:1-answer",
+            "phase": "asking",
+            "task": "Count forward from 12. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "15",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Start on the number I just said, then say what comes next."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "71216906-816f-470f-b714-a06e8642248d/6/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": -1
+              },
+              "description": "Hide the reminder that is showing",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "71216906-816f-470f-b714-a06e8642248d/6/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "no_detour_by_design",
+        "t": 25.24,
+        "choices": [
+          "replay",
+          "scaffold"
+        ]
+      },
+      {
+        "type": "learner_input",
+        "t": 25.25,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "13"
+          }
+        ],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 25.25,
+        "text": "13"
+      },
+      {
+        "type": "tutor",
+        "t": 28.25,
+        "phase": "right",
+        "text": "-",
+        "state": {
+          "sessionEpoch": "71216906-816f-470f-b714-a06e8642248d",
+          "revision": 7,
+          "visibleRevision": 7,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:1-answer",
+            "phase": "asking",
+            "task": "Count forward from 12. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "13",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Start on the number I just said, then say what comes next."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "71216906-816f-470f-b714-a06e8642248d/7/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": -1
+              },
+              "description": "Hide the reminder that is showing",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "71216906-816f-470f-b714-a06e8642248d/7/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "failure",
+        "t": 304.75,
+        "reason": "TimeoutError()",
+        "state": {
+          "sessionEpoch": "71216906-816f-470f-b714-a06e8642248d",
+          "revision": 7,
+          "visibleRevision": 7,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:1-answer",
+            "phase": "asking",
+            "task": "Count forward from 12. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "13",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Start on the number I just said, then say what comes next."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "71216906-816f-470f-b714-a06e8642248d/7/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": -1
+              },
+              "description": "Hide the reminder that is showing",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "71216906-816f-470f-b714-a06e8642248d/7/1"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "passed": false,
+    "primitiveId": "number-sequencer",
+    "events": [
+      {
+        "type": "ready",
+        "t": 4.75
+      },
+      {
+        "type": "runner_cue",
+        "t": 4.76,
+        "text": "[NS_ITEM] Say exactly: \"Let us work on a number train. Count forward from 12. What is the next number?\" Private target: 13. Correct answer: say exactly: \"Yes, 13.\". Wrong answer: say exactly: \"My turn: counting forward, after 12 comes 13. Your turn. Count forward from 12. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 12 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "type": "tutor",
+        "t": 12.61,
+        "phase": "opening",
+        "text": "Let us work on a number train. Count forward from 12. What is the next number?",
+        "state": {
+          "sessionEpoch": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe",
+          "revision": 3,
+          "visibleRevision": 3,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:1-answer",
+            "phase": "asking",
+            "task": "Count forward from 12. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe/3/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child needs the method again: \"Start on the number I just said, then say what comes next.\". This does not move a card, fill a space or reorder the train, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe/3/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 12.62,
+        "intent": "warmup",
+        "performed": [],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 12.64,
+        "intent": "wrong",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "15"
+          }
+        ],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 12.64,
+        "text": "15"
+      },
+      {
+        "type": "tutor",
+        "t": 23.91,
+        "phase": "wrong",
+        "text": "My turn: counting forward, after 12 comes 13. Your turn. Count forward from 12. What is the next number?",
+        "state": {
+          "sessionEpoch": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe",
+          "revision": 5,
+          "visibleRevision": 5,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:1-answer",
+            "phase": "asking",
+            "task": "Count forward from 12. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "15",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe/5/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "description": "Show and say this reminder, for when the child needs the method again: \"Start on the number I just said, then say what comes next.\". This does not move a card, fill a space or reorder the train, and it never says the answer.",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe/5/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "learner_input",
+        "t": 23.92,
+        "intent": "warmup",
+        "performed": [],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 23.92,
+        "text": "Please show me a reminder for how to work out this number."
+      },
+      {
+        "type": "runtime_command",
+        "t": 25.14,
+        "phase": "hint",
+        "command": {
+          "sessionEpoch": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe",
+          "instanceId": "train",
+          "itemId": "seq1:1-answer",
+          "expectedRevision": 5,
+          "commandId": "call_592856",
+          "action": {
+            "type": "scaffold",
+            "strategyId": "say-what-comes-next",
+            "direction": 1
+          }
+        }
+      },
+      {
+        "type": "runtime_result",
+        "t": 25.22,
+        "result": {
+          "type": "runtime_result",
+          "commandId": "call_592856",
+          "status": "visible",
+          "state": {
+            "sessionEpoch": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe",
+            "revision": 6,
+            "visibleRevision": 6,
+            "instanceId": "train",
+            "planItemId": "train",
+            "primitiveId": "number-sequencer",
+            "objectiveId": "number-sequencer-practice",
+            "evalMode": "count_from",
+            "owner": "runner",
+            "status": "active",
+            "task": {
+              "itemId": "seq1:1-answer",
+              "phase": "asking",
+              "task": "Count forward from 12. What is the next number?",
+              "completed": false,
+              "evidence": {
+                "attemptNumber": 1,
+                "correctness": "incorrect",
+                "recentResponses": [
+                  {
+                    "response": "15",
+                    "source": "speech",
+                    "recognition": "clear"
+                  }
+                ]
+              },
+              "demand": {
+                "kind": "count-from",
+                "response": "voice",
+                "direction": "forward",
+                "cardsPlaced": 0,
+                "placedOrder": ""
+              },
+              "support": {
+                "level": 1,
+                "answerExposure": "none",
+                "instruction": "Start on the number I just said, then say what comes next."
+              }
+            },
+            "supportArtifact": null,
+            "blockedReason": null,
+            "canStartNext": false,
+            "assistance": [
+              {
+                "instanceId": "train",
+                "itemId": "seq1:1-answer",
+                "revision": 6,
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "say-what-comes-next",
+                  "direction": 1
+                },
+                "level": 1,
+                "answerExposure": "none"
+              }
+            ],
+            "choices": [
+              {
+                "action": {
+                  "type": "replay"
+                },
+                "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+                "responseSpeech": "runner",
+                "assistance": {
+                  "level": 1,
+                  "answerExposure": "none"
+                },
+                "actionId": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe/6/0"
+              },
+              {
+                "action": {
+                  "type": "scaffold",
+                  "strategyId": "say-what-comes-next",
+                  "direction": -1
+                },
+                "description": "Hide the reminder that is showing",
+                "assistance": {
+                  "level": 0,
+                  "answerExposure": "none"
+                },
+                "actionId": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe/6/1"
+              }
+            ]
+          },
+          "elapsedMs": 59.138300000002346
+        }
+      },
+      {
+        "type": "tutor",
+        "t": 29.97,
+        "phase": "hint",
+        "text": "Start on the number I just said, then say what comes next.",
+        "state": {
+          "sessionEpoch": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe",
+          "revision": 6,
+          "visibleRevision": 6,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:1-answer",
+            "phase": "asking",
+            "task": "Count forward from 12. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 1,
+              "correctness": "incorrect",
+              "recentResponses": [
+                {
+                  "response": "15",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Start on the number I just said, then say what comes next."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe/6/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": -1
+              },
+              "description": "Hide the reminder that is showing",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe/6/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "no_detour_by_design",
+        "t": 29.97,
+        "choices": [
+          "replay",
+          "scaffold"
+        ]
+      },
+      {
+        "type": "learner_input",
+        "t": 29.98,
+        "intent": "correct",
+        "performed": [
+          {
+            "type": "answer",
+            "text": "13"
+          }
+        ],
+        "demand": {
+          "kind": "count-from",
+          "response": "voice",
+          "direction": "forward",
+          "cardsPlaced": 0,
+          "placedOrder": ""
+        }
+      },
+      {
+        "type": "learner",
+        "t": 29.98,
+        "text": "13"
+      },
+      {
+        "type": "tutor",
+        "t": 32.16,
+        "phase": "right",
+        "text": "Tutor.",
+        "state": {
+          "sessionEpoch": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe",
+          "revision": 7,
+          "visibleRevision": 7,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:1-answer",
+            "phase": "asking",
+            "task": "Count forward from 12. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "13",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Start on the number I just said, then say what comes next."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe/7/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": -1
+              },
+              "description": "Hide the reminder that is showing",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe/7/1"
+            }
+          ]
+        }
+      },
+      {
+        "type": "failure",
+        "t": 304.75,
+        "reason": "TimeoutError()",
+        "state": {
+          "sessionEpoch": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe",
+          "revision": 7,
+          "visibleRevision": 7,
+          "instanceId": "train",
+          "planItemId": "train",
+          "primitiveId": "number-sequencer",
+          "objectiveId": "number-sequencer-practice",
+          "evalMode": "count_from",
+          "owner": "runner",
+          "status": "active",
+          "task": {
+            "itemId": "seq1:1-answer",
+            "phase": "asking",
+            "task": "Count forward from 12. What is the next number?",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 2,
+              "correctness": "unknown",
+              "recentResponses": [
+                {
+                  "response": "13",
+                  "source": "speech",
+                  "recognition": "clear"
+                }
+              ]
+            },
+            "demand": {
+              "kind": "count-from",
+              "response": "voice",
+              "direction": "forward",
+              "cardsPlaced": 0,
+              "placedOrder": ""
+            },
+            "support": {
+              "level": 1,
+              "answerExposure": "none",
+              "instruction": "Start on the number I just said, then say what comes next."
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "assistance": [
+            {
+              "instanceId": "train",
+              "itemId": "seq1:1-answer",
+              "revision": 6,
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": 1
+              },
+              "level": 1,
+              "answerExposure": "none"
+            }
+          ],
+          "choices": [
+            {
+              "action": {
+                "type": "replay"
+              },
+              "description": "Ask this same number train again; the runner speaks the question. Nothing on the train is cleared, reordered or filled in.",
+              "responseSpeech": "runner",
+              "assistance": {
+                "level": 1,
+                "answerExposure": "none"
+              },
+              "actionId": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe/7/0"
+            },
+            {
+              "action": {
+                "type": "scaffold",
+                "strategyId": "say-what-comes-next",
+                "direction": -1
+              },
+              "description": "Hide the reminder that is showing",
+              "assistance": {
+                "level": 0,
+                "answerExposure": "none"
+              },
+              "actionId": "8fd2dc44-3fba-4e8c-ba0b-7e6d6e38ebfe/7/1"
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

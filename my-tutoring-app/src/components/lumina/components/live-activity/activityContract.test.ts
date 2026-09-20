@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { initialActivityState, parseActivityRequest, validateActivityData, validateTenFrameData, generatedActivityState } from './activityContract';
+import { initialActivityState, parseActivityRequest, validateActivityData, validateTenFrameData, validateShapeSorterData,
+  generatedActivityState, LIVE_ADAPTERS } from './activityContract';
 
 export const fixture = () => ({ title: 'Subtraction within 10', range: { min: 0, max: 10 },
   interactionMode: 'jump' as const, challenges: [{ id: 'c1', type: 'show_jump' as const,
@@ -9,6 +10,19 @@ export const fixture = () => ({ title: 'Subtraction within 10', range: { min: 0,
 });
 
 describe('live activity boundary', () => {
+  it('advertises only the naming workspace and rejects shapes it cannot draw truthfully', () => {
+    const data = { title: 'Shapes', gradeBand: 'K', challenges: [{ id: 'c1', type: 'identify', ruleAttribute: 'shape',
+      instruction: 'Name it.', shapes: [{ shape: 'triangle', color: 'red', size: 'medium', rotation: 0 }] }] };
+    expect(generatedActivityState('shape-sorter', validateShapeSorterData(data))).toMatchObject({ teachingOwner: 'tutor', totalChallenges: 1 });
+    expect(LIVE_ADAPTERS['shape-sorter']).toMatchObject({ tutoring: null, canAdvance: false, modes: ['identify'] });
+    for (const patch of [{ shape: 'unknown' }, { emoji: '🔺' }, { realObjectId: 'clock' }, { rotation: NaN }]) {
+      expect(() => validateShapeSorterData({ ...data, challenges: [{ ...data.challenges[0],
+        shapes: [{ ...data.challenges[0].shapes[0], ...patch }] }] })).toThrow();
+    }
+    for (const mode of ['count', 'sort', 'find_real_object']) {
+      expect(() => parseActivityRequest({ primitiveId: 'shape-sorter', mode, topic: 'Shapes', intent: 'Practice' })).toThrow();
+    }
+  });
   it('validates ten-frame content through the real DI item gates and resolves the first scaffold state', () => {
     const data = { title: 'Make ten', mode: 'single', gradeBand: '1-2',
       challenges: [{ id: 'a', type: 'make_ten', targetCount: 6, instruction: 'How many more?' }] };

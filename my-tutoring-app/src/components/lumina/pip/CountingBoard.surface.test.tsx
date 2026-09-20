@@ -15,7 +15,8 @@ vi.mock('../hooks/useJudgedScriptRunner', () => ({
     start: vi.fn(), isAwaitingGesture: () => false, submitGestureAttempt: vi.fn(),
   }),
 }));
-vi.mock('../evaluation', () => ({ usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: vi.fn() }) }));
+vi.mock('../evaluation', () => ({ usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: vi.fn() }),
+  useEvaluationContext: () => null }));
 vi.mock('../components/JudgedMicPanel', () => ({ default: () => null }));
 vi.mock('../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => vi.fn() }) }));
 

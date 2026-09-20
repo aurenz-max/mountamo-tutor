@@ -1,138 +1,101 @@
 # Implementation map and repeatable commands
 
-`src/` below is under `my-tutoring-app/`; everything else is from the repo root.
+Resolve repository paths from the Lumina repo root. `L` below means
+`my-tutoring-app/src/components/lumina`; it is a reading shorthand, not a shell variable.
+Read current files rather than relying on historical line numbers or consumer counts.
 
-## Read only the execution family you are joining
+## Destination architecture
 
-**Shared contract (always):**
-`src/components/lumina/components/live-activity/runtime/` — `README.md` (adapter
-obligations), `contract.ts` (`TutorAction`, `TutorPrimitiveState`,
-`ExecutableAffordance`, `CounterSupport`, `RuntimeSnapshot`, `TransitionReceipt`,
-`parseTutorCommand`, `validateCounterSupport`), `LiveLessonRuntime.ts` (policy,
-revisions, duplicate/conflict rejection, ownership, completion gate, one detour per
-item — policy defaults to `maxSupportLevel: 3, allowAnswerExposure: false,
-allowSupportArtifacts: false`, and `offers()` silently drops a `scaffold` with no
-`assistance`, an out-of-range level, and any exposure above `'none'` unless
-allowed), `LiveRuntimeContext.tsx` (`usePrimitiveRuntime`, `useLiveRuntime`),
-`LiveRuntimeSurface.tsx` (keeps the parent mounted, paints prepared support),
-`runtimeTransport.ts`, `waitForVisible.ts`.
-
-**Tutor-led reference (component grades; tutor asks):**
-`src/components/lumina/primitives/visual-primitives/math/useNumberLineRuntime.ts`,
-`NumberLine.tsx`, `NumberLine.runtime.test.tsx`, `NumberLine.jump-evidence.test.tsx`.
-Its prepared subtraction example is withheld for addition, fractional starts,
-multi-operation tasks and out-of-range quantities. Its reminder is jump-only.
-
-**Judged-runner reference (runner asks, judges, advances):**
-`src/components/lumina/primitives/visual-primitives/math/useTenFrameRuntime.ts`,
-`TenFrame.runtime.test.tsx`, `src/components/lumina/hooks/useJudgedScriptRunner.ts`.
-Read the runner before adding replay or suspension to another DI primitive. TenFrame
-advertises no tutor `advance`; `subitize` advertises no help detour. Other
-primitives do not inherit these capabilities.
-
-The runner takes an optional `runtime?: LiveLessonRuntime | null` option that the
-component must supply from `useLiveRuntime()`. Without it, `runtimeControls.resume()`
-returns early, the cue speech holds are never acquired, and the completion handoff
-never defers — a detour suspends and never resumes. `runtimeControls` exposes
-`getState()`, `replay()`, `suspend()` and `resume()`; `grantOwnership('runner')` is
-retried inside the runner's own start path.
-
-**Frontend host:** `src/components/lumina/components/live-activity/` —
-`LiveActivitySandbox.tsx`, `activityContract.ts` (`ActivityRequest`,
-`LIVE_ADAPTERS`, per-family `validate`/`initialState`), `liveActivitySpec.ts`,
-`livePlan.ts`, `directVisualContract.ts`; plus
-`src/app/api/lumina/live-activity/route.ts` and `capabilities/route.ts`. Generated
-content and prepared-plan mounts both need resolved metadata.
-
-**Backend bridge:** `backend/app/services/live_runtime_tools.py` (current-task help
-and `perform_runtime_action`), `live_activity_tools.py` (generation/mount
-correlation). Inspect protocol assumptions only. The bridge holds no primitive IDs,
-mode catalog, teaching-script tags or visual-data constructors: `parse_activity_spec`
-validates the host envelope arriving as `auth_data['activity_sandbox']` (called from
-`backend/app/api/endpoints/lumina_tutor.py:897`), declares the advertised tools, and
-correlates browser receipts. Silent runner startup keys off `teachingOwner`, never a
-primitive branch.
-
-The envelope validator enforces things your registration must satisfy:
-`primitiveId` matches `[a-z][a-z0-9-]{0,79}`, each mode `[a-z][a-z0-9_-]{0,63}`,
-1–32 modes, `guidance` 1–2000 characters, at most 32 activities plus visuals, 32 KB
-total — and **`teachingOwner: 'di-runner'` requires `canAdvance: false`**. A visual
-may not reuse an activity's `primitiveId`, and these tool names are reserved:
-`perform_runtime_action`, `request_activity`, `advance_activity`, `start_plan_item`,
-`highlight_visual`.
-
-## Mounted driver
-
-`my-tutoring-app/scripts/primitive-runtime-driver.mjs <epoch> <primitive-id>` loads
-the real component through Vite in JSDOM. Families registered today: `ten-frame`
-(default, instance `frame`) and `number-line` (instance `line`) — a small `families`
-map at the top of the file. `ten-frame-runtime-driver.mjs` forwards to it.
-`primitive-runtime-seams.tsx` isolates audio hardware, auth and evaluation writes;
-put any completion-summary context readers in those seams rather than replacing the
-primitive or its grading.
-
-Newline-delimited JSON on stdin/stdout; component diagnostics on stderr.
-
-| Input | Meaning |
+| Path relative to `L` | Responsibility |
 |---|---|
-| `mount` | render with `{...data, instanceId}` |
-| `command` | a wire `TutorCommand` through `RuntimeTransport` |
-| `output` / `end` | model turn begins (audio playing) / ends |
-| `stop` | `runtime.stop()` |
-| `start`, `answer` | TenFrame: begin, then real speech reduction |
-| `place` (numeric), `check` | Number Line: real SVG click, then the Check button |
+| `docs/TEACHING_WORKSPACE.md` | TW invariants, behavioral matrix, architecture and limits |
+| `components/live-activity/runtime/useTeachingWorkspace.ts` | Workspace binding, legal operations, pending speech and shared lifecycle |
+| `components/live-activity/runtime/TeachingSession.ts` | Attempts, assistance, checked outcomes and completion |
+| `components/live-activity/runtime/DialogueObserver.ts` and `dialogueContract.ts` | Settled exchange, response scope, cancellation and observer commits |
+| `components/live-activity/runtime/learnerUtterance.ts` | Provider fragment assembly and speech boundaries |
+| `service/typesafe/observeDialogue.ts` | Shared JEV interpretation of whole-assignment tutor feedback |
+| `components/live-activity/runtime/contract.ts` and `LiveLessonRuntime.ts` | Scope, ownership, deduplication, policy and action revision projection |
+| `components/live-activity/runtime/LiveRuntimeContext.tsx`, `LiveRuntimeSurface.tsx`, `runtimeTransport.ts`, `waitForVisible.ts` | Mount, committed transition and visible receipt |
+| `components/live-activity/LiveActivitySandbox.tsx` and `JevInspector.tsx` | Actual host integration, playback settlement and inspectable evidence |
+| `hooks/teachingItemContract.ts` | Domain item base and response classes extracted from legacy contracts |
 
-The driver replies to every line, so any unrecognized type reads state without
-input. Each reply carries `state` (`runtimePacket`), `messages`, `submissions`,
-`activityState` and a `dom` presence block — the block is hardcoded for the number
-line and the frame, so a new family needs its own probe there as well as an entry in
-the family map and its native input commands. Do not route a new primitive through
-TenFrame's speech path.
+## Pilot bindings and registration
 
-## Python journeys
+Read under `L/primitives/visual-primitives/math/`:
 
-Driver-emitted messages go through the real authenticated backend WebSocket, and the
-model's tool commands come back into `RuntimeTransport`. The journey pulls the host
-capability envelope with `fetch_activity_spec` from
-`backend/tests/tutor_live/activity_capabilities.py` — the frontend capabilities
-endpoint, not a Python catalog — and passes it as `activity_sandbox`. References:
+- `CountingBoard.tsx`, `useCountingTutorController.ts`, `countingBoardDomain.ts`:
+  counting task meaning and rendering bound to the shared lifecycle.
+- `ShapeSorter.tsx`, `ShapeSorterTeaching.tsx`, `shapeSorterDomain.ts`,
+  `shapeSorterDrawing.tsx`: plain-shape identification, accepted aliases, stable
+  assignment ring and separate demonstration marks. Other modes need their own proof.
+- `countingBoardScript.ts`, `shapeSorterScript.ts`: compatibility wrappers for
+  remaining scripted consumers. Read the census before removing dependencies.
 
-- `backend/tests/tutor_live/run_number_line_runtime.py` — retry, replay, hint, fade,
-  subtraction example, return, checked advance, blank transfer, final completion.
-  Flags: `--runs` (default 3), `--input` (replay a saved payload), `--output`.
-- `backend/tests/tutor_live/run_ten_frame_runtime.py` — real speech reduction, wrong
-  answer and correction, hint, prepared example, return, runner closing settlement.
+Under `L/components/live-activity/`, inspect `adapters/countingBoardLive.ts`,
+`adapters/shapeSorterLive.ts`, `activityContract.ts`, `liveActivitySpec.ts`,
+`liveRenderers.tsx`, `livePlan.ts` and `liveJourneySpec.ts`. The registry owns supported
+modes, data validation, guidance and ownership; generated and prepared-plan mounts
+both need exact mode and objective/plan metadata. A workspace uses `canAdvance: false`
+even though its teaching owner is the tutor.
 
-Deterministic bridge tests that need no model, run with the backend venv from
-`backend/`: `test_live_runtime_tools.py`, `test_live_activity_spec.py`,
-`test_live_activity_tools.py`, `test_live_lesson_plan.py`, `test_live_visual_tools.py`.
+The frontend API is under `my-tutoring-app/src/app/api/lumina/live-activity/`,
+including `observe-dialogue/route.ts` and `capabilities/route.ts`.
+Backend `backend/app/services/live_runtime_tools.py` and `live_activity_tools.py`
+carry the generic capability/action bridge. Keep domain IDs, cue tags and teaching
+plans out of that bridge. Read its actual validators before extending an envelope.
+
+Retirement state and extraction/deletion gates live in:
+
+- `my-tutoring-app/qa/live-runtime-handoffs/07-sunset-scripted-tutoring.md`
+- `my-tutoring-app/qa/live-runtime-handoffs/07-census.md`
+- `my-tutoring-app/qa/tutor-reports/shape-sorter-teaching-2026-09-19.md`
+
+S0/S1 extraction has been recorded; verify current status before selecting later work.
+Do not confuse this with ordinary-lesson integration or completed legacy deletion.
+
+## One mounted harness
+
+`my-tutoring-app/scripts/primitive-runtime-driver.mjs` loads the real component through
+Vite/JSDOM. `liveJourneySpec.ts` owns per-domain input derivation, execution descriptor
+and DOM probes; `primitive-runtime-seams.tsx` isolates audio hardware, auth and writes.
+A `mount` must carry `evalMode`, which becomes `runtimeEvalMode` on the component.
+Without it, a pilot can silently run its legacy branch.
+
+`backend/tests/tutor_live/run_live_runtime.py --primitive <id>` is the shared connected
+journey. Workspace execution is selected from the journey descriptor/current workspace;
+legacy phase programs still use production `teachingOwner`. Both workspace and older
+families use this harness. Do not recreate deleted per-primitive Python drivers or
+teach the generic JS driver primitive names. Read current `--help` for available flags.
+
+For spoken evidence, `--audio` uses synthesized learner PCM and provider transcription.
+Playback edges and JSDOM paint are simulated. Real model replies, tool choice and JEV
+results are distinct from deterministic mocked decisions, and neither replaces a human
+microphone/visual sitting. Keep original failed traces when fixing a run.
 
 ## Commands
 
-From `my-tutoring-app` (PowerShell):
+From `my-tutoring-app` (PowerShell), choose the tests affected by the change:
 
 ```powershell
-npm.cmd test -- --run src/components/lumina/components/live-activity src/components/lumina/primitives/visual-primitives/math/NumberLine src/components/lumina/primitives/visual-primitives/math/TenFrame.runtime.test.tsx src/components/lumina/hooks/useJudgedScriptRunner.test.tsx src/components/lumina/pip/NumberLine.surface.test.tsx
+npm.cmd test -- --run src/components/lumina/components/live-activity src/components/lumina/primitives/visual-primitives/math/CountingBoard.runtime.test.tsx src/components/lumina/primitives/visual-primitives/math/ShapeSorter.runtime.test.tsx src/components/lumina/service/typesafe/observeDialogue.test.ts
 npm.cmd run typecheck:lumina
+node scripts/tutor-verdict-probe.mjs --shapes qa/tutor-reports/shape-sorter-jev-current.json
 ```
 
-From the repo root, with frontend :3000 and backend :8000 already running:
+The JEV probe needs the frontend service and real model configuration. Omitting
+`--shapes` runs the Counting Board cases. Extend semantic cases for the new domain;
+passing these two existing sets alone does not certify another domain.
+
+From repo root, with frontend :3000 and backend :8000 already running:
 
 ```powershell
-backend/venv/Scripts/python.exe backend/tests/tutor_live/run_number_line_runtime.py --runs 3
-backend/venv/Scripts/python.exe backend/tests/tutor_live/run_number_line_runtime.py --runs 3 --input my-tutoring-app/qa/tutor-reports/number-line-runtime-payload-2026-09-17.json --output my-tutoring-app/qa/tutor-reports/number-line-runtime-replay.json
-backend/venv/Scripts/python.exe backend/tests/tutor_live/run_ten_frame_runtime.py --runs 1 --input my-tutoring-app/qa/tutor-reports/ten-frame-runtime-payload-2026-09-17.json --output my-tutoring-app/qa/tutor-reports/ten-frame-runtime-regression.json
+backend/venv/Scripts/python.exe backend/tests/tutor_live/run_live_runtime.py --primitive shape-sorter --mode identify --runs 3 --startup --audio --input my-tutoring-app/qa/tutor-reports/shape-sorter-runtime-identify-payload-2026-09-19.json --output my-tutoring-app/qa/tutor-reports/shape-sorter-workspace-current.json
+backend/venv/Scripts/python.exe backend/tests/tutor_live/run_live_runtime.py --primitive counting-board --mode count --runs 3 --startup --audio --input my-tutoring-app/qa/tutor-reports/counting-board-runtime-count-payload-2026-09-19.json --output my-tutoring-app/qa/tutor-reports/counting-board-workspace-current.json
 ```
 
-Use the backend venv (Python 3.11+); Windows system Python may be 3.9 and lacks
-`asyncio.timeout`. The existing auth helper reads test credentials without printing
-them — do not persist tokens in evidence. Never start a second `next dev`, and use a
-confirmed-running backend version when changing backend code rather than restarting
-another session's service.
-
-The Number Line probe needs two generated single-operation subtraction jumps. An
-incompatible generated payload is a failed precondition, not permission to invent
-matching content; the saved payload makes replay independent of a new generation
-call. Live journeys simulate playback edges and JSDOM paint — actual screen and
-microphone timing, and both prepared-plan orders, remain separate gates
-(HUMAN-CHECKS #167).
+Use a new output filename for each meaningful attempt. Use the backend venv; the
+system Python may lack dependencies. The auth helper reads credentials without printing
+them; never save tokens in evidence. Reuse running services and confirm their code
+version; do not start duplicate servers or restart another session's service blindly.
+For backend bridge changes also run affected `backend/tests/tutor_live/test_live_*.py`.
+Report exact results and unrun gates, including HUMAN-CHECKS #167, in the adoption report.

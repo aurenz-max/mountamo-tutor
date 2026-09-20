@@ -88,6 +88,9 @@ import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { sortingStationPipPose } from '../../../pip/sortingStationPipPose';
+import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
+import { useSortingStationRuntime } from './useSortingStationRuntime';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -202,9 +205,15 @@ const FALLBACK_BIN_EMOJI = ['🔴', '🔵', '🟢', '🟡'];
 interface SortingStationProps {
   data: SortingStationData;
   className?: string;
+  /** The live host opts in only after its correlated mount handoff. */
+  autoStart?: boolean;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
+const SortingStation: React.FC<SortingStationProps> = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode }) => {
+  const liveRuntime = useLiveRuntime();
   const {
     title,
     description,
@@ -346,6 +355,10 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
   }, [items, evaluation]);
 
   const runner = useJudgedScriptRunner<SortingStationItem>({
+    // Load-bearing for the live host: without it the runner's `resume()` early-returns,
+    // its speech holds never settle, and the completion handoff has nothing to read.
+    runtime: liveRuntime,
+    ...(runtimePlanItemId ? { completionCue: '[SS_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
     pack,
     instanceId: resolvedInstanceId,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
@@ -434,6 +447,16 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
   // ============================================================================
   // Render
   // ============================================================================
+
+  const runtimeHint = useSortingStationRuntime({ runner, instanceId: resolvedInstanceId, objectiveId,
+    // The SESSION's mode, from the first item — never `runner.currentItem`.
+    // A mount's identity must not change while the runner owns it: an item
+    // change would rebuild the mount and re-register into an unreleased owner.
+    planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || items[0]?.mode || 'default' });
+  // AFTER the runtime mount is registered, never before: `start()` waits for
+  // `grantOwnership('runner')`, which cannot be granted until this primitive's
+  // mount exists. Declared earlier, its effect runs first and the runner spins.
+  useLiveAutoStart(autoStart, resolvedInstanceId, runner.start);
 
   if (items.length === 0) {
     return (

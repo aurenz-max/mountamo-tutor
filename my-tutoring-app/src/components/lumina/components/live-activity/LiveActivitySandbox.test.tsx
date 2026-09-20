@@ -3,6 +3,7 @@ import React from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import LiveActivitySandbox from './LiveActivitySandbox';
+import { LIVE_ADAPTERS, LIVE_PRIMITIVE_IDS } from './activityContract';
 
 const mocks = vi.hoisted(() => ({ event: null as null | ((v: Record<string, unknown>) => void),
   ai: { connectLesson: vi.fn(), disconnect: vi.fn(), sendActivityMessage: vi.fn(), sendText: vi.fn(),
@@ -14,11 +15,16 @@ vi.mock('@/contexts/LuminaAIContext', () => ({
   LuminaAIProvider: ({ children, onActivityEvent }: any) => { mocks.event = onActivityEvent; return children; },
 }));
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { uid: 'tester' } }) }));
-vi.mock('../../primitives/visual-primitives/math/TenFrame', () => ({ default: ({ data, autoStart }: any) => <div data-testid="ten-frame" data-auto-start={String(autoStart)}>{data.title}</div> }));
-vi.mock('../../primitives/visual-primitives/math/NumberLine', () => ({ default: ({ data, onControlsReady }: any) => {
-  React.useEffect(() => { onControlsReady?.(mocks.controls); return () => onControlsReady?.(null); }, [onControlsReady]);
-  return <div>{data.title}</div>;
-} }));
+// One mock for every adopted family. The sandbox owns mounting, autoStart and
+// control registration; the primitives themselves are covered by their own
+// runtime tests, so a new adoption needs no edit here.
+vi.mock('./liveRenderers', () => {
+  const Mounted = ({ id, data, autoStart, onControls }: any) => {
+    React.useEffect(() => { onControls?.(mocks.controls); return () => onControls?.(null); }, [onControls]);
+    return <div data-testid={id} data-auto-start={String(autoStart)}>{data.title}</div>;
+  };
+  return { LIVE_RENDERERS: new Proxy({}, { get: (_t, id: string) => (p: any) => <Mounted id={id} {...p} /> }) };
+});
 
 const args = { primitiveId: 'number-line', topic: 'Subtract', intent: 'Practice subtraction', mode: 'jump' };
 const result = (id: string) => ({ instanceId: id, data: { title: `Activity ${id}`, instanceId: id,
@@ -132,7 +138,12 @@ it('reports generator failure to both tutor and learner', async () => {
 it('shows direct visuals without fetching, streams taps, and acknowledges highlighting after paint', async () => {
   const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
   render(<LiveActivitySandbox />);
-  fireEvent.click(screen.getByLabelText('Number line'));
+  // Leave exactly one family enabled, whichever families are adopted: the point is
+  // that an unchecked family does not reach the tutor's activity spec. Driven from
+  // the registry so a new adoption does not silently add a second activity here.
+  for (const id of LIVE_PRIMITIVE_IDS) {
+    if (id !== 'ten-frame') fireEvent.click(screen.getByLabelText(LIVE_ADAPTERS[id].copy.checkbox));
+  }
   fireEvent.click(screen.getByText('Start lesson'));
   expect(mocks.ai.connectLesson).toHaveBeenCalledWith(expect.objectContaining({
     activitySandbox: expect.objectContaining({ activities: [expect.objectContaining({ primitiveId: 'ten-frame', teachingOwner: 'di-runner' })], visuals: expect.arrayContaining([expect.objectContaining({ name: 'show_counters' })]) }),

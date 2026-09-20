@@ -1,0 +1,658 @@
+{
+  "audit": {
+    "componentId": "number-sequencer",
+    "status": "warn",
+    "componentFiles": [
+      "src/components/lumina/primitives/visual-primitives/math/NumberSequencer.tsx",
+      "src/components/lumina/primitives/visual-primitives/math/numberSequencerScript.ts"
+    ],
+    "dataBagKeys": null,
+    "dataBagDynamic": true,
+    "contextKeys": [
+      "challengeType",
+      "stimulus"
+    ],
+    "templateVars": [
+      "challengeType",
+      "stimulus"
+    ],
+    "sendTextTags": [],
+    "findings": [
+      {
+        "check": "data-bag-unparsed",
+        "severity": "WARN",
+        "message": "Could not statically parse the primitiveData bag \u2014 contextKeys/{{var}} checks skipped. Run the &probe=1 tier or verify in the Lumina Tutor Tester."
+      },
+      {
+        "check": "no-sendtext-moments",
+        "severity": "WARN",
+        "message": "Component never calls sendText \u2014 the tutor will go silent after the initial greeting (no pedagogical moments are wired)."
+      }
+    ]
+  },
+  "status": "warn",
+  "tutoring": {
+    "taskDescription": "Live-judged number sequencing: {{challengeType}}. The question side of the screen, described for you alone and never read aloud: {{stimulus}}.",
+    "contextKeys": [
+      "challengeType",
+      "stimulus"
+    ],
+    "scaffoldingLevels": {
+      "level1": "Repeat only the current scripted question when asked for help.",
+      "level2": "On a wrong answer use the exact scripted correction and re-ask.",
+      "level3": "The application owns the correction cap and next item; never invent another task."
+    },
+    "commonStruggles": [
+      {
+        "pattern": "Child echoes the start or counts in the wrong direction",
+        "response": "Use the current cue exact correction verdict. A sentiment without the scripted verdict cannot advance the run."
+      },
+      {
+        "pattern": "Child gives the replacement in spot-error",
+        "response": "The task asks for the printed wrong number. Use the current scripted correction, which contrasts that number with its replacement."
+      },
+      {
+        "pattern": "Child is arranging cards",
+        "response": "Speech does not submit the arrangement. Only the application supplies the code-computed ordering verdict."
+      }
+    ],
+    "aiDirectives": [
+      {
+        "title": "LIVE-JUDGED number sequencing",
+        "instruction": "Speak only the quoted current cue. Correct answers use its exact affirmation; incorrect answers use its exact correction. A verdict ends the turn. No fabricated next question, unscripted praise, or floor handback. Never reveal an unasked blank or read answer-bearing context. The app supplies every new item. Numbers above twenty use the standing build-ahead contract with microphone acceptance pending."
+      }
+    ]
+  },
+  "generatedData": {
+    "title": "Counting On from Different Numbers",
+    "description": "Practice counting forward from a given starting number instead of always starting at one.",
+    "challenges": [
+      {
+        "id": "seq1",
+        "type": "count-from",
+        "instruction": "Start at 12 and count forward!",
+        "sequence": [
+          12
+        ],
+        "correctAnswers": [
+          13,
+          14,
+          15
+        ],
+        "rangeMin": 12,
+        "rangeMax": 15,
+        "direction": "forward",
+        "startNumber": 12
+      },
+      {
+        "id": "seq2",
+        "type": "count-from",
+        "instruction": "Ready, set, go! Start at 24 and count forward.",
+        "sequence": [
+          24
+        ],
+        "correctAnswers": [
+          25,
+          26,
+          27
+        ],
+        "rangeMin": 24,
+        "rangeMax": 27,
+        "direction": "forward",
+        "startNumber": 24
+      },
+      {
+        "id": "seq3",
+        "type": "count-from",
+        "instruction": "Can you start at 45 and keep counting forward?",
+        "sequence": [
+          45
+        ],
+        "correctAnswers": [
+          46,
+          47,
+          48
+        ],
+        "rangeMin": 45,
+        "rangeMax": 48,
+        "direction": "forward",
+        "startNumber": 45
+      },
+      {
+        "id": "seq4",
+        "type": "count-from",
+        "instruction": "Take a deep breath and start counting forward from 68!",
+        "sequence": [
+          68
+        ],
+        "correctAnswers": [
+          69,
+          70,
+          71
+        ],
+        "rangeMin": 68,
+        "rangeMax": 71,
+        "direction": "forward",
+        "startNumber": 68
+      },
+      {
+        "id": "seq5",
+        "type": "count-from",
+        "instruction": "You are doing great! Start at 87 and count forward to finish strong.",
+        "sequence": [
+          87
+        ],
+        "correctAnswers": [
+          88,
+          89,
+          90
+        ],
+        "rangeMin": 87,
+        "rangeMax": 90,
+        "direction": "forward",
+        "startNumber": 87
+      }
+    ],
+    "gradeBand": "1",
+    "showNumberLine": true,
+    "showDotArrays": false
+  },
+  "mergedBag": {
+    "challengeType": "count-from",
+    "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+  },
+  "diPlan": {
+    "componentId": "number-sequencer",
+    "primitiveType": "number-sequencer",
+    "activityLine": "Complete number trains aloud and arrange number cards.",
+    "gradeLevel": "Grade 1",
+    "audioInput": {
+      "manual_activity": true
+    },
+    "sentinels": {
+      "affirm": [
+        [
+          "yes"
+        ]
+      ],
+      "correct": [
+        [
+          "my",
+          "turn"
+        ]
+      ]
+    },
+    "maxCorrections": 2,
+    "items": [
+      {
+        "id": "seq1:1-answer",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "count-from",
+        "cue": "[NS_ITEM] Say exactly: \"Let us work on a number train. Count forward from 12. What is the next number?\" Private target: 13. Correct answer: say exactly: \"Yes, 13.\". Wrong answer: say exactly: \"My turn: counting forward, after 12 comes 13. Your turn. Count forward from 12. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 12 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "askLine": "Let us work on a number train. Count forward from 12. What is the next number?",
+        "affirmLine": "Yes, 13.",
+        "correctionLine": "My turn: counting forward, after 12 comes 13. Your turn. Count forward from 12. What is the next number?",
+        "correctionLines": [
+          "My turn: counting forward, after 12 comes 13. Your turn. Count forward from 12. What is the next number?"
+        ],
+        "context": {
+          "challengeType": "count-from",
+          "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+        },
+        "answers": {
+          "correct": "13",
+          "plainWrong": "15",
+          "signatureWrong": {
+            "text": "12",
+            "why": "Echoes the anchor or names the neighbor instead of the missing value."
+          },
+          "leakTokens": [
+            "13"
+          ]
+        },
+        "pronounceCue": "[NS_HEAR] Say exactly: \"Count forward from 12. What is the next number?\" Private target: 13. Correct answer: say exactly: \"Yes, 13.\". Wrong answer: say exactly: \"My turn: counting forward, after 12 comes 13. Your turn. Count forward from 12. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 12 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "reanchorCue": "[NS_ITEM] Say exactly: \"Count forward from 12. What is the next number?\" Private target: 13. Correct answer: say exactly: \"Yes, 13.\". Wrong answer: say exactly: \"My turn: counting forward, after 12 comes 13. Your turn. Count forward from 12. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 12 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "moveOnCue": "[NS_ITEM] Say exactly: \"Count forward from 13. What is the next number?\" Private target: 14. Correct answer: say exactly: \"Yes, 14.\". Wrong answer: say exactly: \"My turn: counting forward, after 13 comes 14. Your turn. Count forward from 13. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 13 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "id": "seq1:2-answer",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "count-from",
+        "cue": "[NS_ITEM] Say exactly: \"Count forward from 13. What is the next number?\" Private target: 14. Correct answer: say exactly: \"Yes, 14.\". Wrong answer: say exactly: \"My turn: counting forward, after 13 comes 14. Your turn. Count forward from 13. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 13 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "askLine": "Count forward from 13. What is the next number?",
+        "affirmLine": "Yes, 14.",
+        "correctionLine": "My turn: counting forward, after 13 comes 14. Your turn. Count forward from 13. What is the next number?",
+        "correctionLines": [
+          "My turn: counting forward, after 13 comes 14. Your turn. Count forward from 13. What is the next number?"
+        ],
+        "context": {
+          "challengeType": "count-from",
+          "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+        },
+        "answers": {
+          "correct": "14",
+          "plainWrong": "16",
+          "signatureWrong": {
+            "text": "13",
+            "why": "Echoes the anchor or names the neighbor instead of the missing value."
+          },
+          "leakTokens": [
+            "14"
+          ]
+        },
+        "pronounceCue": "[NS_HEAR] Say exactly: \"Count forward from 13. What is the next number?\" Private target: 14. Correct answer: say exactly: \"Yes, 14.\". Wrong answer: say exactly: \"My turn: counting forward, after 13 comes 14. Your turn. Count forward from 13. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 13 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "reanchorCue": "[NS_ITEM] Say exactly: \"Count forward from 13. What is the next number?\" Private target: 14. Correct answer: say exactly: \"Yes, 14.\". Wrong answer: say exactly: \"My turn: counting forward, after 13 comes 14. Your turn. Count forward from 13. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 13 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "moveOnCue": "[NS_ITEM] Say exactly: \"Count forward from 14. What is the next number?\" Private target: 15. Correct answer: say exactly: \"Yes, 15.\". Wrong answer: say exactly: \"My turn: counting forward, after 14 comes 15. Your turn. Count forward from 14. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 14 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "id": "seq1:3-answer",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "count-from",
+        "cue": "[NS_ITEM] Say exactly: \"Count forward from 14. What is the next number?\" Private target: 15. Correct answer: say exactly: \"Yes, 15.\". Wrong answer: say exactly: \"My turn: counting forward, after 14 comes 15. Your turn. Count forward from 14. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 14 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "askLine": "Count forward from 14. What is the next number?",
+        "affirmLine": "Yes, 15.",
+        "correctionLine": "My turn: counting forward, after 14 comes 15. Your turn. Count forward from 14. What is the next number?",
+        "correctionLines": [
+          "My turn: counting forward, after 14 comes 15. Your turn. Count forward from 14. What is the next number?"
+        ],
+        "context": {
+          "challengeType": "count-from",
+          "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+        },
+        "answers": {
+          "correct": "15",
+          "plainWrong": "17",
+          "signatureWrong": {
+            "text": "14",
+            "why": "Echoes the anchor or names the neighbor instead of the missing value."
+          },
+          "leakTokens": [
+            "15"
+          ]
+        },
+        "pronounceCue": "[NS_HEAR] Say exactly: \"Count forward from 14. What is the next number?\" Private target: 15. Correct answer: say exactly: \"Yes, 15.\". Wrong answer: say exactly: \"My turn: counting forward, after 14 comes 15. Your turn. Count forward from 14. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 14 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "reanchorCue": "[NS_ITEM] Say exactly: \"Count forward from 14. What is the next number?\" Private target: 15. Correct answer: say exactly: \"Yes, 15.\". Wrong answer: say exactly: \"My turn: counting forward, after 14 comes 15. Your turn. Count forward from 14. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 14 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "moveOnCue": "[NS_ITEM] Say exactly: \"Count forward from 24. What is the next number?\" Private target: 25. Correct answer: say exactly: \"Yes, 25.\". Wrong answer: say exactly: \"My turn: counting forward, after 24 comes 25. Your turn. Count forward from 24. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 24 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "id": "seq2:1-answer",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_120",
+        "action": "count-from",
+        "cue": "[NS_ITEM] Say exactly: \"Count forward from 24. What is the next number?\" Private target: 25. Correct answer: say exactly: \"Yes, 25.\". Wrong answer: say exactly: \"My turn: counting forward, after 24 comes 25. Your turn. Count forward from 24. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 24 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "askLine": "Count forward from 24. What is the next number?",
+        "affirmLine": "Yes, 25.",
+        "correctionLine": "My turn: counting forward, after 24 comes 25. Your turn. Count forward from 24. What is the next number?",
+        "correctionLines": [
+          "My turn: counting forward, after 24 comes 25. Your turn. Count forward from 24. What is the next number?"
+        ],
+        "context": {
+          "challengeType": "count-from",
+          "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+        },
+        "answers": {
+          "correct": "25",
+          "plainWrong": "27",
+          "signatureWrong": {
+            "text": "24",
+            "why": "Echoes the anchor or names the neighbor instead of the missing value."
+          },
+          "leakTokens": [
+            "25"
+          ]
+        },
+        "pronounceCue": "[NS_HEAR] Say exactly: \"Count forward from 24. What is the next number?\" Private target: 25. Correct answer: say exactly: \"Yes, 25.\". Wrong answer: say exactly: \"My turn: counting forward, after 24 comes 25. Your turn. Count forward from 24. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 24 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "reanchorCue": "[NS_ITEM] Say exactly: \"Count forward from 24. What is the next number?\" Private target: 25. Correct answer: say exactly: \"Yes, 25.\". Wrong answer: say exactly: \"My turn: counting forward, after 24 comes 25. Your turn. Count forward from 24. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 24 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "moveOnCue": "[NS_ITEM] Say exactly: \"Count forward from 25. What is the next number?\" Private target: 26. Correct answer: say exactly: \"Yes, 26.\". Wrong answer: say exactly: \"My turn: counting forward, after 25 comes 26. Your turn. Count forward from 25. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 25 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "id": "seq2:2-answer",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_120",
+        "action": "count-from",
+        "cue": "[NS_ITEM] Say exactly: \"Count forward from 25. What is the next number?\" Private target: 26. Correct answer: say exactly: \"Yes, 26.\". Wrong answer: say exactly: \"My turn: counting forward, after 25 comes 26. Your turn. Count forward from 25. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 25 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "askLine": "Count forward from 25. What is the next number?",
+        "affirmLine": "Yes, 26.",
+        "correctionLine": "My turn: counting forward, after 25 comes 26. Your turn. Count forward from 25. What is the next number?",
+        "correctionLines": [
+          "My turn: counting forward, after 25 comes 26. Your turn. Count forward from 25. What is the next number?"
+        ],
+        "context": {
+          "challengeType": "count-from",
+          "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+        },
+        "answers": {
+          "correct": "26",
+          "plainWrong": "28",
+          "signatureWrong": {
+            "text": "25",
+            "why": "Echoes the anchor or names the neighbor instead of the missing value."
+          },
+          "leakTokens": [
+            "26"
+          ]
+        },
+        "pronounceCue": "[NS_HEAR] Say exactly: \"Count forward from 25. What is the next number?\" Private target: 26. Correct answer: say exactly: \"Yes, 26.\". Wrong answer: say exactly: \"My turn: counting forward, after 25 comes 26. Your turn. Count forward from 25. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 25 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "reanchorCue": "[NS_ITEM] Say exactly: \"Count forward from 25. What is the next number?\" Private target: 26. Correct answer: say exactly: \"Yes, 26.\". Wrong answer: say exactly: \"My turn: counting forward, after 25 comes 26. Your turn. Count forward from 25. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 25 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "moveOnCue": "[NS_ITEM] Say exactly: \"Count forward from 26. What is the next number?\" Private target: 27. Correct answer: say exactly: \"Yes, 27.\". Wrong answer: say exactly: \"My turn: counting forward, after 26 comes 27. Your turn. Count forward from 26. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 26 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "id": "seq2:3-answer",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_120",
+        "action": "count-from",
+        "cue": "[NS_ITEM] Say exactly: \"Count forward from 26. What is the next number?\" Private target: 27. Correct answer: say exactly: \"Yes, 27.\". Wrong answer: say exactly: \"My turn: counting forward, after 26 comes 27. Your turn. Count forward from 26. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 26 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "askLine": "Count forward from 26. What is the next number?",
+        "affirmLine": "Yes, 27.",
+        "correctionLine": "My turn: counting forward, after 26 comes 27. Your turn. Count forward from 26. What is the next number?",
+        "correctionLines": [
+          "My turn: counting forward, after 26 comes 27. Your turn. Count forward from 26. What is the next number?"
+        ],
+        "context": {
+          "challengeType": "count-from",
+          "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+        },
+        "answers": {
+          "correct": "27",
+          "plainWrong": "29",
+          "signatureWrong": {
+            "text": "26",
+            "why": "Echoes the anchor or names the neighbor instead of the missing value."
+          },
+          "leakTokens": [
+            "27"
+          ]
+        },
+        "pronounceCue": "[NS_HEAR] Say exactly: \"Count forward from 26. What is the next number?\" Private target: 27. Correct answer: say exactly: \"Yes, 27.\". Wrong answer: say exactly: \"My turn: counting forward, after 26 comes 27. Your turn. Count forward from 26. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 26 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "reanchorCue": "[NS_ITEM] Say exactly: \"Count forward from 26. What is the next number?\" Private target: 27. Correct answer: say exactly: \"Yes, 27.\". Wrong answer: say exactly: \"My turn: counting forward, after 26 comes 27. Your turn. Count forward from 26. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 26 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "moveOnCue": "[NS_ITEM] Say exactly: \"Count forward from 45. What is the next number?\" Private target: 46. Correct answer: say exactly: \"Yes, 46.\". Wrong answer: say exactly: \"My turn: counting forward, after 45 comes 46. Your turn. Count forward from 45. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 45 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "id": "seq3:1-answer",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_120",
+        "action": "count-from",
+        "cue": "[NS_ITEM] Say exactly: \"Count forward from 45. What is the next number?\" Private target: 46. Correct answer: say exactly: \"Yes, 46.\". Wrong answer: say exactly: \"My turn: counting forward, after 45 comes 46. Your turn. Count forward from 45. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 45 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "askLine": "Count forward from 45. What is the next number?",
+        "affirmLine": "Yes, 46.",
+        "correctionLine": "My turn: counting forward, after 45 comes 46. Your turn. Count forward from 45. What is the next number?",
+        "correctionLines": [
+          "My turn: counting forward, after 45 comes 46. Your turn. Count forward from 45. What is the next number?"
+        ],
+        "context": {
+          "challengeType": "count-from",
+          "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+        },
+        "answers": {
+          "correct": "46",
+          "plainWrong": "48",
+          "signatureWrong": {
+            "text": "45",
+            "why": "Echoes the anchor or names the neighbor instead of the missing value."
+          },
+          "leakTokens": [
+            "46"
+          ]
+        },
+        "pronounceCue": "[NS_HEAR] Say exactly: \"Count forward from 45. What is the next number?\" Private target: 46. Correct answer: say exactly: \"Yes, 46.\". Wrong answer: say exactly: \"My turn: counting forward, after 45 comes 46. Your turn. Count forward from 45. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 45 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "reanchorCue": "[NS_ITEM] Say exactly: \"Count forward from 45. What is the next number?\" Private target: 46. Correct answer: say exactly: \"Yes, 46.\". Wrong answer: say exactly: \"My turn: counting forward, after 45 comes 46. Your turn. Count forward from 45. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 45 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "moveOnCue": "[NS_ITEM] Say exactly: \"Count forward from 46. What is the next number?\" Private target: 47. Correct answer: say exactly: \"Yes, 47.\". Wrong answer: say exactly: \"My turn: counting forward, after 46 comes 47. Your turn. Count forward from 46. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 46 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "id": "seq3:2-answer",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_120",
+        "action": "count-from",
+        "cue": "[NS_ITEM] Say exactly: \"Count forward from 46. What is the next number?\" Private target: 47. Correct answer: say exactly: \"Yes, 47.\". Wrong answer: say exactly: \"My turn: counting forward, after 46 comes 47. Your turn. Count forward from 46. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 46 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "askLine": "Count forward from 46. What is the next number?",
+        "affirmLine": "Yes, 47.",
+        "correctionLine": "My turn: counting forward, after 46 comes 47. Your turn. Count forward from 46. What is the next number?",
+        "correctionLines": [
+          "My turn: counting forward, after 46 comes 47. Your turn. Count forward from 46. What is the next number?"
+        ],
+        "context": {
+          "challengeType": "count-from",
+          "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+        },
+        "answers": {
+          "correct": "47",
+          "plainWrong": "49",
+          "signatureWrong": {
+            "text": "46",
+            "why": "Echoes the anchor or names the neighbor instead of the missing value."
+          },
+          "leakTokens": [
+            "47"
+          ]
+        },
+        "pronounceCue": "[NS_HEAR] Say exactly: \"Count forward from 46. What is the next number?\" Private target: 47. Correct answer: say exactly: \"Yes, 47.\". Wrong answer: say exactly: \"My turn: counting forward, after 46 comes 47. Your turn. Count forward from 46. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 46 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "reanchorCue": "[NS_ITEM] Say exactly: \"Count forward from 46. What is the next number?\" Private target: 47. Correct answer: say exactly: \"Yes, 47.\". Wrong answer: say exactly: \"My turn: counting forward, after 46 comes 47. Your turn. Count forward from 46. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 46 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "moveOnCue": "[NS_ITEM] Say exactly: \"Count forward from 47. What is the next number?\" Private target: 48. Correct answer: say exactly: \"Yes, 48.\". Wrong answer: say exactly: \"My turn: counting forward, after 47 comes 48. Your turn. Count forward from 47. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 47 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "id": "seq3:3-answer",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_120",
+        "action": "count-from",
+        "cue": "[NS_ITEM] Say exactly: \"Count forward from 47. What is the next number?\" Private target: 48. Correct answer: say exactly: \"Yes, 48.\". Wrong answer: say exactly: \"My turn: counting forward, after 47 comes 48. Your turn. Count forward from 47. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 47 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "askLine": "Count forward from 47. What is the next number?",
+        "affirmLine": "Yes, 48.",
+        "correctionLine": "My turn: counting forward, after 47 comes 48. Your turn. Count forward from 47. What is the next number?",
+        "correctionLines": [
+          "My turn: counting forward, after 47 comes 48. Your turn. Count forward from 47. What is the next number?"
+        ],
+        "context": {
+          "challengeType": "count-from",
+          "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+        },
+        "answers": {
+          "correct": "48",
+          "plainWrong": "50",
+          "signatureWrong": {
+            "text": "47",
+            "why": "Echoes the anchor or names the neighbor instead of the missing value."
+          },
+          "leakTokens": [
+            "48"
+          ]
+        },
+        "pronounceCue": "[NS_HEAR] Say exactly: \"Count forward from 47. What is the next number?\" Private target: 48. Correct answer: say exactly: \"Yes, 48.\". Wrong answer: say exactly: \"My turn: counting forward, after 47 comes 48. Your turn. Count forward from 47. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 47 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "reanchorCue": "[NS_ITEM] Say exactly: \"Count forward from 47. What is the next number?\" Private target: 48. Correct answer: say exactly: \"Yes, 48.\". Wrong answer: say exactly: \"My turn: counting forward, after 47 comes 48. Your turn. Count forward from 47. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 47 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "moveOnCue": "[NS_ITEM] Say exactly: \"Count forward from 68. What is the next number?\" Private target: 69. Correct answer: say exactly: \"Yes, 69.\". Wrong answer: say exactly: \"My turn: counting forward, after 68 comes 69. Your turn. Count forward from 68. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 68 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "id": "seq4:1-answer",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_120",
+        "action": "count-from",
+        "cue": "[NS_ITEM] Say exactly: \"Count forward from 68. What is the next number?\" Private target: 69. Correct answer: say exactly: \"Yes, 69.\". Wrong answer: say exactly: \"My turn: counting forward, after 68 comes 69. Your turn. Count forward from 68. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 68 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "askLine": "Count forward from 68. What is the next number?",
+        "affirmLine": "Yes, 69.",
+        "correctionLine": "My turn: counting forward, after 68 comes 69. Your turn. Count forward from 68. What is the next number?",
+        "correctionLines": [
+          "My turn: counting forward, after 68 comes 69. Your turn. Count forward from 68. What is the next number?"
+        ],
+        "context": {
+          "challengeType": "count-from",
+          "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+        },
+        "answers": {
+          "correct": "69",
+          "plainWrong": "71",
+          "signatureWrong": {
+            "text": "68",
+            "why": "Echoes the anchor or names the neighbor instead of the missing value."
+          },
+          "leakTokens": [
+            "69"
+          ]
+        },
+        "pronounceCue": "[NS_HEAR] Say exactly: \"Count forward from 68. What is the next number?\" Private target: 69. Correct answer: say exactly: \"Yes, 69.\". Wrong answer: say exactly: \"My turn: counting forward, after 68 comes 69. Your turn. Count forward from 68. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 68 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "reanchorCue": "[NS_ITEM] Say exactly: \"Count forward from 68. What is the next number?\" Private target: 69. Correct answer: say exactly: \"Yes, 69.\". Wrong answer: say exactly: \"My turn: counting forward, after 68 comes 69. Your turn. Count forward from 68. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 68 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "moveOnCue": "[NS_ITEM] Say exactly: \"Count forward from 69. What is the next number?\" Private target: 70. Correct answer: say exactly: \"Yes, 70.\". Wrong answer: say exactly: \"My turn: counting forward, after 69 comes 70. Your turn. Count forward from 69. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 69 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "id": "seq4:2-answer",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_120",
+        "action": "count-from",
+        "cue": "[NS_ITEM] Say exactly: \"Count forward from 69. What is the next number?\" Private target: 70. Correct answer: say exactly: \"Yes, 70.\". Wrong answer: say exactly: \"My turn: counting forward, after 69 comes 70. Your turn. Count forward from 69. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 69 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "askLine": "Count forward from 69. What is the next number?",
+        "affirmLine": "Yes, 70.",
+        "correctionLine": "My turn: counting forward, after 69 comes 70. Your turn. Count forward from 69. What is the next number?",
+        "correctionLines": [
+          "My turn: counting forward, after 69 comes 70. Your turn. Count forward from 69. What is the next number?"
+        ],
+        "context": {
+          "challengeType": "count-from",
+          "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+        },
+        "answers": {
+          "correct": "70",
+          "plainWrong": "72",
+          "signatureWrong": {
+            "text": "69",
+            "why": "Echoes the anchor or names the neighbor instead of the missing value."
+          },
+          "leakTokens": [
+            "70"
+          ]
+        },
+        "pronounceCue": "[NS_HEAR] Say exactly: \"Count forward from 69. What is the next number?\" Private target: 70. Correct answer: say exactly: \"Yes, 70.\". Wrong answer: say exactly: \"My turn: counting forward, after 69 comes 70. Your turn. Count forward from 69. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 69 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "reanchorCue": "[NS_ITEM] Say exactly: \"Count forward from 69. What is the next number?\" Private target: 70. Correct answer: say exactly: \"Yes, 70.\". Wrong answer: say exactly: \"My turn: counting forward, after 69 comes 70. Your turn. Count forward from 69. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 69 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "moveOnCue": "[NS_ITEM] Say exactly: \"Count forward from 70. What is the next number?\" Private target: 71. Correct answer: say exactly: \"Yes, 71.\". Wrong answer: say exactly: \"My turn: counting forward, after 70 comes 71. Your turn. Count forward from 70. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 70 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "id": "seq4:3-answer",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_120",
+        "action": "count-from",
+        "cue": "[NS_ITEM] Say exactly: \"Count forward from 70. What is the next number?\" Private target: 71. Correct answer: say exactly: \"Yes, 71.\". Wrong answer: say exactly: \"My turn: counting forward, after 70 comes 71. Your turn. Count forward from 70. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 70 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "askLine": "Count forward from 70. What is the next number?",
+        "affirmLine": "Yes, 71.",
+        "correctionLine": "My turn: counting forward, after 70 comes 71. Your turn. Count forward from 70. What is the next number?",
+        "correctionLines": [
+          "My turn: counting forward, after 70 comes 71. Your turn. Count forward from 70. What is the next number?"
+        ],
+        "context": {
+          "challengeType": "count-from",
+          "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+        },
+        "answers": {
+          "correct": "71",
+          "plainWrong": "73",
+          "signatureWrong": {
+            "text": "70",
+            "why": "Echoes the anchor or names the neighbor instead of the missing value."
+          },
+          "leakTokens": [
+            "71"
+          ]
+        },
+        "pronounceCue": "[NS_HEAR] Say exactly: \"Count forward from 70. What is the next number?\" Private target: 71. Correct answer: say exactly: \"Yes, 71.\". Wrong answer: say exactly: \"My turn: counting forward, after 70 comes 71. Your turn. Count forward from 70. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 70 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "reanchorCue": "[NS_ITEM] Say exactly: \"Count forward from 70. What is the next number?\" Private target: 71. Correct answer: say exactly: \"Yes, 71.\". Wrong answer: say exactly: \"My turn: counting forward, after 70 comes 71. Your turn. Count forward from 70. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 70 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "moveOnCue": "[NS_ITEM] Say exactly: \"Count forward from 87. What is the next number?\" Private target: 88. Correct answer: say exactly: \"Yes, 88.\". Wrong answer: say exactly: \"My turn: counting forward, after 87 comes 88. Your turn. Count forward from 87. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 87 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "id": "seq5:1-answer",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_120",
+        "action": "count-from",
+        "cue": "[NS_ITEM] Say exactly: \"Count forward from 87. What is the next number?\" Private target: 88. Correct answer: say exactly: \"Yes, 88.\". Wrong answer: say exactly: \"My turn: counting forward, after 87 comes 88. Your turn. Count forward from 87. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 87 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "askLine": "Count forward from 87. What is the next number?",
+        "affirmLine": "Yes, 88.",
+        "correctionLine": "My turn: counting forward, after 87 comes 88. Your turn. Count forward from 87. What is the next number?",
+        "correctionLines": [
+          "My turn: counting forward, after 87 comes 88. Your turn. Count forward from 87. What is the next number?"
+        ],
+        "context": {
+          "challengeType": "count-from",
+          "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+        },
+        "answers": {
+          "correct": "88",
+          "plainWrong": "90",
+          "signatureWrong": {
+            "text": "87",
+            "why": "Echoes the anchor or names the neighbor instead of the missing value."
+          },
+          "leakTokens": [
+            "88"
+          ]
+        },
+        "pronounceCue": "[NS_HEAR] Say exactly: \"Count forward from 87. What is the next number?\" Private target: 88. Correct answer: say exactly: \"Yes, 88.\". Wrong answer: say exactly: \"My turn: counting forward, after 87 comes 88. Your turn. Count forward from 87. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 87 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "reanchorCue": "[NS_ITEM] Say exactly: \"Count forward from 87. What is the next number?\" Private target: 88. Correct answer: say exactly: \"Yes, 88.\". Wrong answer: say exactly: \"My turn: counting forward, after 87 comes 88. Your turn. Count forward from 87. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 87 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "moveOnCue": "[NS_ITEM] Say exactly: \"Count forward from 88. What is the next number?\" Private target: 89. Correct answer: say exactly: \"Yes, 89.\". Wrong answer: say exactly: \"My turn: counting forward, after 88 comes 89. Your turn. Count forward from 88. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 88 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "id": "seq5:2-answer",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_120",
+        "action": "count-from",
+        "cue": "[NS_ITEM] Say exactly: \"Count forward from 88. What is the next number?\" Private target: 89. Correct answer: say exactly: \"Yes, 89.\". Wrong answer: say exactly: \"My turn: counting forward, after 88 comes 89. Your turn. Count forward from 88. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 88 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "askLine": "Count forward from 88. What is the next number?",
+        "affirmLine": "Yes, 89.",
+        "correctionLine": "My turn: counting forward, after 88 comes 89. Your turn. Count forward from 88. What is the next number?",
+        "correctionLines": [
+          "My turn: counting forward, after 88 comes 89. Your turn. Count forward from 88. What is the next number?"
+        ],
+        "context": {
+          "challengeType": "count-from",
+          "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+        },
+        "answers": {
+          "correct": "89",
+          "plainWrong": "91",
+          "signatureWrong": {
+            "text": "88",
+            "why": "Echoes the anchor or names the neighbor instead of the missing value."
+          },
+          "leakTokens": [
+            "89"
+          ]
+        },
+        "pronounceCue": "[NS_HEAR] Say exactly: \"Count forward from 88. What is the next number?\" Private target: 89. Correct answer: say exactly: \"Yes, 89.\". Wrong answer: say exactly: \"My turn: counting forward, after 88 comes 89. Your turn. Count forward from 88. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 88 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "reanchorCue": "[NS_ITEM] Say exactly: \"Count forward from 88. What is the next number?\" Private target: 89. Correct answer: say exactly: \"Yes, 89.\". Wrong answer: say exactly: \"My turn: counting forward, after 88 comes 89. Your turn. Count forward from 88. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 88 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "moveOnCue": "[NS_ITEM] Say exactly: \"Count forward from 89. What is the next number?\" Private target: 90. Correct answer: say exactly: \"Yes, 90.\". Wrong answer: say exactly: \"My turn: counting forward, after 89 comes 90. Your turn. Count forward from 89. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 89 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback."
+      },
+      {
+        "id": "seq5:3-answer",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_120",
+        "action": "count-from",
+        "cue": "[NS_ITEM] Say exactly: \"Count forward from 89. What is the next number?\" Private target: 90. Correct answer: say exactly: \"Yes, 90.\". Wrong answer: say exactly: \"My turn: counting forward, after 89 comes 90. Your turn. Count forward from 89. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 89 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "askLine": "Count forward from 89. What is the next number?",
+        "affirmLine": "Yes, 90.",
+        "correctionLine": "My turn: counting forward, after 89 comes 90. Your turn. Count forward from 89. What is the next number?",
+        "correctionLines": [
+          "My turn: counting forward, after 89 comes 90. Your turn. Count forward from 89. What is the next number?"
+        ],
+        "context": {
+          "challengeType": "count-from",
+          "stimulus": "A number train; only the current scripted cue defines the question. Do not read this description aloud."
+        },
+        "answers": {
+          "correct": "90",
+          "plainWrong": "92",
+          "signatureWrong": {
+            "text": "89",
+            "why": "Echoes the anchor or names the neighbor instead of the missing value."
+          },
+          "leakTokens": [
+            "90"
+          ]
+        },
+        "pronounceCue": "[NS_HEAR] Say exactly: \"Count forward from 89. What is the next number?\" Private target: 90. Correct answer: say exactly: \"Yes, 90.\". Wrong answer: say exactly: \"My turn: counting forward, after 89 comes 90. Your turn. Count forward from 89. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 89 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "reanchorCue": "[NS_ITEM] Say exactly: \"Count forward from 89. What is the next number?\" Private target: 90. Correct answer: say exactly: \"Yes, 90.\". Wrong answer: say exactly: \"My turn: counting forward, after 89 comes 90. Your turn. Count forward from 89. What is the next number?\". Accept the asserted number in digits, number words, or a short sentence. Reject negated answers, unresolved multiple guesses, and echoing the starting number 89 or counting in the opposite direction. Silence and questions are not wrong answers. The quoted line is the only speech on this turn. Bracket tags and private rules are never spoken. Never announce waiting or listening. A verdict ends the turn; only the application supplies the next question. No invented next ask or floor handback.",
+        "moveOnCue": "[NS_DONE] Say exactly: \"You worked on number sequences. Nice effort!\""
+      }
+    ],
+    "completeCue": "[NS_DONE] Say exactly: \"You worked on number sequences. Nice effort!\"",
+    "droppedChallenges": 0,
+    "packGateIssues": [],
+    "isBench": false
+  }
+}

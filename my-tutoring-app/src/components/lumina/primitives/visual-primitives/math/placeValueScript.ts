@@ -101,6 +101,7 @@ import {
   placeWord,
   spokenIntegerWord,
 } from './spokenNumberWords';
+import { resolveScaffolds, type LiveScaffold } from '../../../components/live-activity/runtime/liveScaffolds';
 
 // ============================================================================
 // Domain vocabulary
@@ -881,3 +882,98 @@ export const placeValueHarnessAnswers = (
       };
   }
 };
+
+/* ------------------------------------------------------------------ *
+ * Live-tutor misstep inventory (see `/add-live-tutor-tools`).
+ *
+ * Kept beside the correction lines above, because the two answer different
+ * things. The correction walks the columns and STATES the answer, and it fires
+ * however the child was wrong. These aids name the misstep and never state the
+ * answer — which here means never a PLACE WORD (the answer on `find_place`),
+ * never the digit's VALUE (the answer on `say_value`) and never the target
+ * number (which `build_number` is dictated and must write).
+ *
+ * Missteps deliberately left to another lane:
+ *   - "cannot read the digit" — a reading task, not a place-value one.
+ *   - "put the right digits in the wrong columns" — telling that apart from a
+ *     partly-built chart needs per-column expectations published against
+ *     per-column entries; the adapter publishes how many columns are filled,
+ *     not which digit sits where. Publish that evidence before declaring it.
+ *   - "needs the column headers labelled" — that is the support tier.
+ * ------------------------------------------------------------------ */
+
+/** What the child has actually done on this item, as the adapter publishes it. */
+export interface PlaceValueMisstepEvidence {
+  /** The raw transcript, lower-cased. Null when nothing has been heard. */
+  said: string | null;
+  /** The number the transcript names, or null. */
+  saidNumber: number | null;
+  /** The place index the transcript names (0 = ones), or -1. */
+  saidPlace: number;
+  /** build_number: how many chart columns currently hold a digit. */
+  columnsFilled: number;
+  /** build_number: how many columns this number needs. */
+  columnsNeeded: number;
+}
+
+export type PlaceValueScaffold = LiveScaffold<PlaceValueItem, PlaceValueMisstepEvidence>;
+
+/** Which place the child named, or -1. Routing only, never judging. */
+export const saidPlaceOf = (text: string | null | undefined): number => {
+  if (!text) return -1;
+  const lower = text.toLowerCase();
+  for (let place = 0; place <= 4; place++) {
+    if (new RegExp(`\\b${placeWord(place)}\\b`).test(lower)) return place;
+  }
+  return -1;
+};
+
+/**
+ * One method reminder per kind, and not one of them contains a place word, a
+ * digit or a value — each is the answer on one of these three asks.
+ */
+const METHOD: Record<PlaceValueKind, PlaceValueScaffold> = {
+  find_place: { strategyId: 'count-the-columns-from-the-right', when: 'the child needs the method again',
+    hint: () => 'Start at the right-hand end of the chart and name the columns as you move left.' },
+  say_value: { strategyId: 'the-column-tells-you-what-it-is-worth', when: 'the child needs the method again',
+    hint: () => 'Read the glowing digit, then think about what the column it sits in is worth.' },
+  build_number: { strategyId: 'a-digit-in-each-column', when: 'the child needs the method again',
+    hint: () => 'Put a digit in each column, working across from the left.' },
+};
+
+/**
+ * The error-specific aids, offered only once the published evidence fits. Each
+ * `when` states the CONDITION, because the model routes on that sentence.
+ */
+const AIDS: readonly PlaceValueScaffold[] = [
+  { strategyId: 'you-named-the-column-next-door', when: 'the child named the column beside the glowing one',
+    hint: () => 'You named the column next door. Count the columns again from the right-hand end.',
+    matches: (i, e) => i.kind === 'find_place' && e.saidPlace >= 0
+      && Math.abs(e.saidPlace - i.place) === 1 },
+
+  { strategyId: 'name-the-column-not-the-number', when: 'the child answered a column question with a number',
+    hint: () => 'That is a number. I am asking for the name of the column it is sitting in.',
+    matches: (i, e) => i.kind === 'find_place' && e.saidPlace === -1 && e.saidNumber !== null },
+
+  { strategyId: 'the-digit-is-not-the-whole-worth', when: 'the child said the digit itself instead of what it is worth',
+    // Only where those two actually differ: in the ones column the digit IS
+    // what it is worth, and this line would be false there.
+    hint: () => 'That is the digit you can see. In that column it stands for more than that.',
+    matches: (i, e) => i.kind === 'say_value' && i.place > 0 && e.saidNumber === i.digit },
+
+  { strategyId: 'just-the-glowing-column', when: 'the child said the whole number instead of one column',
+    hint: () => 'That is the whole number. I am asking about the glowing column on its own.',
+    matches: (i, e) => i.kind === 'say_value' && e.saidNumber === i.targetNumber
+      && i.targetNumber !== i.digit },
+
+  { strategyId: 'every-column-needs-a-digit', when: 'the child left a column empty',
+    hint: () => 'There is still an empty column. Every column needs a digit in it.',
+    matches: (i, e) => i.kind === 'build_number'
+      && e.columnsFilled > 0 && e.columnsFilled < e.columnsNeeded },
+];
+
+/** The kind's method reminder plus every aid whose evidence currently fits. */
+export function placeValueScaffoldsFor(item: PlaceValueItem | null | undefined,
+  evidence: PlaceValueMisstepEvidence): PlaceValueScaffold[] {
+  return resolveScaffolds(item, evidence, item ? METHOD[item.kind] : undefined, AIDS);
+}

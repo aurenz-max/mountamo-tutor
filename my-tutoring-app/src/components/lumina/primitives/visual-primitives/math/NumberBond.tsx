@@ -12,7 +12,7 @@
  * and logical-outcome aggregation.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import {
   LuminaCard,
@@ -74,6 +74,9 @@ import {
   type BondActionEvidence,
   type BondEquationEvidence,
 } from './numberBondModes';
+import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
+import { useNumberBondRuntime } from './useNumberBondRuntime';
 
 
 // ============================================================================
@@ -398,9 +401,15 @@ const interactionKeyFor = (item: NumberBondItem): string =>
 interface NumberBondProps {
   data: NumberBondData;
   className?: string;
+  /** The live host opts in only after its correlated mount handoff. */
+  autoStart?: boolean;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
+const NumberBond: React.FC<NumberBondProps> = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode }) => {
+  const runtime = useLiveRuntime();
   const {
     title,
     description,
@@ -717,6 +726,10 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
 
   const runner = useJudgedScriptRunner<NumberBondItem>({
     pack,
+    // Load-bearing for the live host: without it the runner's `resume()` early-returns,
+    // its speech holds never settle, and the completion handoff has nothing to read.
+    runtime,
+    ...(runtimePlanItemId ? { completionCue: '[NB_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
     instanceId: resolvedInstanceId,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
     exhibitId,
@@ -1096,6 +1109,18 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     });
     return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Number bond workspace', dock: pip.dock.current, targets, pose };
   });
+
+  const runtimeHint = useNumberBondRuntime({ runner, instanceId: resolvedInstanceId, objectiveId,
+    // The SESSION's mode, from the first item — never `runner.currentItem`.
+    // A mount's identity must not change while the runner owns it: an item
+    // change would rebuild the mount and re-register into an unreleased owner.
+    planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || (items[0] ? items[0].kind.replace(/-/g, '_') : 'default'),
+    leftCount, rightCount, foundPairs, tiles: equationSlots,
+    builtSentences: familyRecord.map(entry => entry.equation) });
+  // AFTER the runtime mount is registered, never before: `start()` waits for
+  // `grantOwnership('runner')`, which cannot be granted until this primitive's
+  // mount exists. Declared earlier, its effect runs first and the runner spins.
+  useLiveAutoStart(autoStart, resolvedInstanceId, runner.start);
 
   // ============================================================================
   // Render

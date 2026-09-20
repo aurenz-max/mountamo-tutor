@@ -1,0 +1,235 @@
+{
+  "audit": {
+    "componentId": "shape-sorter",
+    "status": "warn",
+    "componentFiles": [
+      "src/components/lumina/primitives/visual-primitives/math/ShapeSorter.tsx",
+      "src/components/lumina/primitives/visual-primitives/math/shapeSorterScript.ts"
+    ],
+    "dataBagKeys": null,
+    "dataBagDynamic": true,
+    "contextKeys": [
+      "challengeType",
+      "stimulus"
+    ],
+    "templateVars": [
+      "challengeType",
+      "stimulus"
+    ],
+    "sendTextTags": [],
+    "findings": [
+      {
+        "check": "data-bag-unparsed",
+        "severity": "WARN",
+        "message": "Could not statically parse the primitiveData bag \u2014 contextKeys/{{var}} checks skipped. Run the &probe=1 tier or verify in the Lumina Tutor Tester."
+      },
+      {
+        "check": "no-sendtext-moments",
+        "severity": "WARN",
+        "message": "Component never calls sendText \u2014 the tutor will go silent after the initial greeting (no pedagogical moments are wired)."
+      }
+    ]
+  },
+  "status": "warn",
+  "tutoring": {
+    "taskDescription": "Live-judged Direct Instruction shape work for a young child. You ask one question out loud and the child answers OUT LOUD. Right now the task identity is \"{{challengeType}}\" and what is in front of them is {{stimulus}}. Under \"identify\" the child SAYS the name of the shape; under \"count\" the child SAYS how many sides or corners it has; under \"sort\" the child SAYS which group it belongs with. You speak the exact scripted lines from each bracketed application message, you re-ask when the child asks to hear the question again, and you judge each spoken attempt from the audio you heard using only the two allowed reply branches. Naming, counting and grouping ARE the skills being practised, so the child produces every answer \u2014 there is nothing to tap, drag, or point at.",
+    "contextKeys": [
+      "challengeType",
+      "stimulus"
+    ],
+    "scaffoldingLevels": {
+      "level1": "Use the scripted correction line for this shape, then hand the question back and wait.",
+      "level2": "Use that same scripted correction line again, unchanged, and give them longer in silence.",
+      "level3": "Use that same scripted correction line again \u2014 the wording is fixed, the patience is what changes."
+    },
+    "commonStruggles": [
+      {
+        "pattern": "Says a near shape name \u2014 \"rectangle\" at a square, \"circle\" at an oval, \"pentagon\" at a hexagon",
+        "response": "A different shape name is wrong however close it sounds, and it is the exact error this practice exists to catch. Run the scripted correction, then hand the question back and wait."
+      },
+      {
+        "pattern": "Says a count that is one more or one less than the true one",
+        "response": "A miscount by one is still a wrong count. Run the scripted correction, then ask once more and wait."
+      },
+      {
+        "pattern": "Names the SHAPE when asked which group it belongs with \u2014 \"square\" instead of the group",
+        "response": "That is a true thing to say about the drawing and it is still not a group. Run the scripted correction, then hand the question back and wait."
+      },
+      {
+        "pattern": "Counts out loud on the way to the answer \u2014 one, two, three, and then three",
+        "response": "That is a correct answer at this age, not a hesitation: wait for them to finish, judge the number they land on, and affirm it with the scripted line."
+      },
+      {
+        "pattern": "Says a shape name with young-child pronunciation, or with or without a little word in front",
+        "response": "Those are all the same correct answer \u2014 affirm with the scripted line. Naming is what is measured, not diction."
+      },
+      {
+        "pattern": "Goes quiet after the question, or asks to hear it again",
+        "response": "Silence is a five-year-old looking carefully at a drawing \u2014 wait. If they ask, the application sends the re-ask; never volunteer one."
+      }
+    ],
+    "aiDirectives": [
+      {
+        "title": "LIVE-JUDGED DIRECT INSTRUCTION",
+        "instruction": "Messages tagged [SHS_ITEM], [SHS_MOVE], [SHS_HEAR] or [SHS_COMPLETE] contain the only lesson words you may speak, and each one quotes the exact line after \"Say exactly:\". The square-bracket label is private metadata: never speak, reproduce, or invent it. Affirmations begin with \"Yes\" and corrections begin with \"My turn\" \u2014 never begin any other sentence with those words. Judge honestly from the audio and do not praise to be kind. YOUR VERDICT LINE IS THE END OF YOUR TURN: you never continue into another question, never ask about another shape, and never announce what is coming. The application decides which shape comes next and sends it to you when the screen is ready \u2014 a question you ask early is about the wrong shape, and the child then hears it twice."
+      },
+      {
+        "title": "THE OPENING LINE ALREADY TEACHES THE GAME",
+        "instruction": "The first [SHS_ITEM] carries the greeting, how the game works and the whole first question inside one quoted line. Speak it and stop. Do not greet the child separately, do not explain the activity in your own words, and do not add a warm-up question \u2014 the quoted line is the whole opening."
+      },
+      {
+        "title": "WHAT COUNTS AS AN ANSWER (it depends on the identity)",
+        "instruction": "Every answer here is SPOKEN, and the [SHS_ITEM] message names the one that is correct. Under \"identify\" it is the NAME OF THE SHAPE \u2014 young-child pronunciation counts, a little word in front is optional, and where the message says another name is also accepted, it is the same drawing and you affirm it. Under \"count\" it is a NUMBER WORD, and counting out loud on the way to it is a correct route: wait until they stop and judge only the number they finish on. Under \"sort\" it is a GROUP NAME: the label alone, with its ending changed, inside a little phrase, or \u2014 for a group like \"4 sides\" \u2014 just the number, are all the same answer. THE LAW: you never say the answer before the child does, in any identity, at any support level. There is nothing on screen for them to tap, so never suggest picking, pointing, dragging or showing you anything."
+      },
+      {
+        "title": "NEVER NAME THE SHAPE BEFORE THEY ANSWER \u2014 IT IS THE ANSWER TWICE OVER",
+        "instruction": "Under \"identify\" the name of the shape IS the answer. Under \"count\" it hands the answer over just as completely \u2014 a child who hears \"triangle\" knows the count without looking. So before the child answers, never name the shape and never describe the drawing (how many points it has, whether it is round), under any identity. When the quoted line names the GROUPS (\"Curved, or Straight?\"), that IS the question \u2014 a sort whose groups are unknowable cannot be answered at all, so naming them is never a leak. When the quoted line does NOT name them, they are printed and the student is expected to read them: say only what is quoted and do not helpfully list them."
+      },
+      {
+        "title": "WAIT (the silence is theirs)",
+        "instruction": "After you ask, STOP. Do not re-ask, do not fill the pause, do not offer a clue, and do not name the choices again to nudge them. A long pause is a five-year-old looking hard at a drawing or counting its corners under their breath, and that work IS the activity. Think time is unbounded and the application, not the clock, decides when to move on."
+      },
+      {
+        "title": "HEAR IT AGAIN ON DEMAND",
+        "instruction": "When you receive [SHS_HEAR], the child asked to hear the question again. Say ONLY the quoted line, warmly and slowly, then go back to waiting. Add nothing, judge nothing you just heard, and never let the repeat carry more help than the first asking did: no extra stress on any word, no clue about the name, the count or the group. This channel is answered at every grade and support tier."
+      }
+    ]
+  },
+  "generatedData": {
+    "title": "Triangle and Square Safari!",
+    "description": "Practice naming triangles and squares out loud while exploring their defining attributes.",
+    "challenges": [
+      {
+        "id": "c1",
+        "type": "identify",
+        "instruction": "Look at the shape that is marked and listen for the question.",
+        "ruleAttribute": "shape",
+        "shapes": [
+          {
+            "shape": "triangle",
+            "color": "red",
+            "size": "medium",
+            "rotation": 0
+          },
+          {
+            "shape": "square",
+            "color": "blue",
+            "size": "large",
+            "rotation": 0
+          },
+          {
+            "shape": "triangle",
+            "color": "green",
+            "size": "small",
+            "rotation": 45
+          },
+          {
+            "shape": "square",
+            "color": "yellow",
+            "size": "medium",
+            "rotation": 90
+          }
+        ],
+        "targetValue": "triangle"
+      },
+      {
+        "id": "c2",
+        "type": "identify",
+        "instruction": "Look at the shape that is marked and listen for the question.",
+        "ruleAttribute": "shape",
+        "shapes": [
+          {
+            "shape": "square",
+            "color": "purple",
+            "size": "small",
+            "rotation": 0
+          },
+          {
+            "shape": "triangle",
+            "color": "orange",
+            "size": "large",
+            "rotation": 180
+          },
+          {
+            "shape": "square",
+            "color": "cyan",
+            "size": "medium",
+            "rotation": 270
+          },
+          {
+            "shape": "triangle",
+            "color": "pink",
+            "size": "medium",
+            "rotation": 90
+          }
+        ],
+        "targetValue": "square"
+      },
+      {
+        "id": "c3",
+        "type": "identify",
+        "instruction": "Look at the shape that is marked and listen for the question.",
+        "ruleAttribute": "sides",
+        "shapes": [
+          {
+            "shape": "triangle",
+            "color": "blue",
+            "size": "large",
+            "rotation": 30
+          },
+          {
+            "shape": "square",
+            "color": "red",
+            "size": "small",
+            "rotation": 0
+          },
+          {
+            "shape": "triangle",
+            "color": "yellow",
+            "size": "medium",
+            "rotation": 120
+          }
+        ],
+        "targetValue": "triangle"
+      },
+      {
+        "id": "c4",
+        "type": "identify",
+        "instruction": "Look at the shape that is marked and listen for the question.",
+        "ruleAttribute": "shape",
+        "shapes": [
+          {
+            "shape": "square",
+            "color": "green",
+            "size": "large",
+            "rotation": 0
+          },
+          {
+            "shape": "triangle",
+            "color": "purple",
+            "size": "small",
+            "rotation": 210
+          },
+          {
+            "shape": "square",
+            "color": "orange",
+            "size": "medium",
+            "rotation": 90
+          },
+          {
+            "shape": "triangle",
+            "color": "cyan",
+            "size": "large",
+            "rotation": 15
+          }
+        ],
+        "targetValue": "triangle"
+      }
+    ],
+    "gradeBand": "K"
+  },
+  "mergedBag": {
+    "challengeType": "identify",
+    "stimulus": "one shape highlighted on the screen, with other shapes drawn beside it"
+  }
+}

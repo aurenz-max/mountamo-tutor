@@ -914,7 +914,6 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {runtimeHint && <p role="status" className="rounded-xl border border-cyan-400/40 bg-cyan-950/40 p-3 text-cyan-100">{runtimeHint}</p>}
         {!evaluation.hasSubmitted && currentItem && (
           <>
             {!isPreReader && (

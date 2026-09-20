@@ -1,0 +1,34 @@
+[
+  {
+    "passed": false,
+    "primitiveId": "counting-board",
+    "events": [
+      {
+        "type": "failure",
+        "t": 33.09,
+        "reason": "TimeoutError()",
+        "state": {
+          "sessionEpoch": "8392615f-31bd-4cf2-bf12-2651943ee1db",
+          "revision": 0,
+          "visibleRevision": null,
+          "instanceId": null,
+          "planItemId": null,
+          "primitiveId": null,
+          "objectiveId": null,
+          "evalMode": null,
+          "owner": "none",
+          "status": "empty",
+          "task": null,
+          "supportArtifact": null,
+          "blockedReason": "No mounted adapter",
+          "canStartNext": true,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": []
+        }
+      }
+    ]
+  }
+]
