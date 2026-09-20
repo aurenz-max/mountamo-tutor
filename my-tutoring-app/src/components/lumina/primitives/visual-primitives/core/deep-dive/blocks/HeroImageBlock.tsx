@@ -11,7 +11,8 @@ interface HeroImageBlockProps {
 /**
  * Full-bleed hero image — no card wrapper.
  * Acts as the visual anchor for the entire DeepDive experience.
- * Taller than other blocks, edge-to-edge, with gradient caption overlay.
+ * Taller than other blocks, edge-to-edge. The caption is carried by alt text only —
+ * it is not drawn over the image, so nothing competes with the visual.
  */
 const HeroImageBlock: React.FC<HeroImageBlockProps> = ({ data, index }) => {
   if (!data.imageBase64) {
@@ -48,15 +49,6 @@ const HeroImageBlock: React.FC<HeroImageBlockProps> = ({ data, index }) => {
         className="w-full h-full min-h-[280px] max-h-[420px] object-cover"
       />
 
-      {/* Gradient overlay — stronger for caption readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-      {/* Caption positioned at bottom with breathing room */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 pb-5">
-        <p className="text-white/90 text-base leading-relaxed font-light max-w-2xl">
-          {data.caption}
-        </p>
-      </div>
     </div>
   );
 };
