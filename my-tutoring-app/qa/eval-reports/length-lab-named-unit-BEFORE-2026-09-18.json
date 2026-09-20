@@ -1,0 +1,41 @@
+{
+  "startedAt": "2026-09-19T01:34:49.847Z",
+  "grade": "Kindergarten",
+  "draws": [
+    {
+      "label": "hands draw 1",
+      "expected": "hands",
+      "unitType": "paper_clips",
+      "mismatchedChallengeUnits": [
+        "paper_clips"
+      ],
+      "ok": false
+    },
+    {
+      "label": "feet draw 1",
+      "expected": "feet",
+      "unitType": "cubes",
+      "mismatchedChallengeUnits": [
+        "cubes",
+        "cubes"
+      ],
+      "ok": false
+    },
+    {
+      "label": "paper_clips draw 1",
+      "expected": "paper_clips",
+      "unitType": "paper_clips",
+      "mismatchedChallengeUnits": [],
+      "ok": true
+    },
+    {
+      "label": "cubes draw 1",
+      "expected": "cubes",
+      "unitType": "feet",
+      "mismatchedChallengeUnits": [
+        "feet"
+      ],
+      "ok": false
+    }
+  ]
+}

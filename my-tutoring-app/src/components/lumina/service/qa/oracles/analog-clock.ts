@@ -202,7 +202,7 @@ export const analogClockOracle: ContentOracle = {
         }
         // The instruction must not name which hand is which; that IS the answer.
         const text = `${String(c.instruction ?? '')} ${String(c.hint ?? '')}`.toLowerCase();
-        if (/(short|long)\s+hand/.test(text) || /(hour|minute)\s+hand/.test(text)) {
+        if (/\b(short|long)\s+hand\b/.test(text) || /\b(hour|minute)\s+hand\b/.test(text)) {
           violations.push({
             check: 'answer-leak',
             where: id,

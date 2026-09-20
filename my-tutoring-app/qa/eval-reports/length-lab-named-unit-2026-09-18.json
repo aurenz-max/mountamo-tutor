@@ -1,0 +1,62 @@
+{
+  "startedAt": "2026-09-19T01:34:13.955Z",
+  "grade": "Kindergarten",
+  "draws": [
+    {
+      "label": "hands draw 1",
+      "expected": "hands",
+      "unitType": "hands",
+      "mismatchedChallengeUnits": [],
+      "ok": true
+    },
+    {
+      "label": "hands draw 2",
+      "expected": "hands",
+      "unitType": "hands",
+      "mismatchedChallengeUnits": [],
+      "ok": true
+    },
+    {
+      "label": "feet draw 1",
+      "expected": "feet",
+      "unitType": "feet",
+      "mismatchedChallengeUnits": [],
+      "ok": true
+    },
+    {
+      "label": "feet draw 2",
+      "expected": "feet",
+      "unitType": "feet",
+      "mismatchedChallengeUnits": [],
+      "ok": true
+    },
+    {
+      "label": "paper_clips draw 1",
+      "expected": "paper_clips",
+      "unitType": "paper_clips",
+      "mismatchedChallengeUnits": [],
+      "ok": true
+    },
+    {
+      "label": "paper_clips draw 2",
+      "expected": "paper_clips",
+      "unitType": "paper_clips",
+      "mismatchedChallengeUnits": [],
+      "ok": true
+    },
+    {
+      "label": "cubes draw 1",
+      "expected": "cubes",
+      "unitType": "cubes",
+      "mismatchedChallengeUnits": [],
+      "ok": true
+    },
+    {
+      "label": "cubes draw 2",
+      "expected": "cubes",
+      "unitType": "cubes",
+      "mismatchedChallengeUnits": [],
+      "ok": true
+    }
+  ]
+}

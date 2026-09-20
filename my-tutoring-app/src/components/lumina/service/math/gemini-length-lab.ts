@@ -479,13 +479,13 @@ export const generateLengthLab = async (
    */
   const unitFromObjective = (text: string): string | undefined => {
     const t = text.toLowerCase();
-    if (/hand(s|span|spans)?/.test(t)) return 'hands';
-    if (/finger(s|width|widths)?/.test(t)) return 'fingers';
-    if (/feet|foot|footstep/.test(t)) return 'feet';
-    if (/paper ?clip/.test(t)) return 'paper_clips';
-    if (/erasers?/.test(t)) return 'erasers';
-    if (/bears?|counters?/.test(t)) return 'bears';
-    if (/cubes?|blocks?|lego/.test(t)) return 'cubes';
+    if (/\bhand(s|span|spans)?\b/.test(t)) return 'hands';
+    if (/\bfinger(s|width|widths)?\b/.test(t)) return 'fingers';
+    if (/\bfeet\b|\bfoot\b|\bfootstep/.test(t)) return 'feet';
+    if (/\bpaper ?clip/.test(t)) return 'paper_clips';
+    if (/\berasers?\b/.test(t)) return 'erasers';
+    if (/\bbears?\b|\bcounters?\b/.test(t)) return 'bears';
+    if (/\bcubes?\b|\bblocks?\b|\blego/.test(t)) return 'cubes';
     return undefined;
   };
   const namedUnit = unitFromObjective(`${topic} ${config?.intent ?? ''} ${config?.objectiveText ?? ''}`);

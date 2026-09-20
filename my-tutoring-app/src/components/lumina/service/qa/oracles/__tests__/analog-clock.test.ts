@@ -100,4 +100,31 @@ describe('analog-clock oracle', () => {
     const v = analogClockOracle.verify(data, readCtx).violations;
     expect(v.some((x) => x.check === 'schema' && x.where === 'c1')).toBe(true);
   });
+  // ── answer-leak on hand_name ──
+  // This check had no test, and its two regexes had been dead since they were
+  // written: their word-boundary escapes were saved as literal backspace bytes, so the
+  // oracle could never fire on a leaking instruction and read as green.
+  const handCtx = { ...readCtx, evalMode: 'hand_name', topic: 'the parts of a clock', gradeLevel: 'kindergarten' };
+  const handClean = {
+    title: 'Clock Hands', description: 'Point at a hand.',
+    challenges: [
+      { id: 'h1', type: 'hand_name', instruction: 'Point at the hand that tells the hour.', targetHour: 3, targetMinute: 0, targetHand: 'hour', hint: '?' },
+      { id: 'h2', type: 'hand_name', instruction: 'Point at the hand that counts the minutes.', targetHour: 9, targetMinute: 30, targetHand: 'minute', hint: '?' },
+      { id: 'h3', type: 'hand_name', instruction: 'Show me the hand that tells the hour.', targetHour: 6, targetMinute: 45, targetHand: 'hour', hint: '?' },
+      { id: 'h4', type: 'hand_name', instruction: 'Show me the hand that counts the minutes.', targetHour: 11, targetMinute: 15, targetHand: 'minute', hint: '?' },
+    ],
+  };
+  it('passes clean hand_name', () => {
+    expect(analogClockOracle.verify(handClean, handCtx).violations).toEqual([]);
+  });
+  it('flags answer-leak — the instruction names the hand as short or long', () => {
+    const data = { ...handClean, challenges: handClean.challenges.map((c) => c.id === 'h1' ? { ...c, instruction: 'Point at the short hand.' } : c) };
+    const v = analogClockOracle.verify(data, handCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'h1')).toBe(true);
+  });
+  it('flags answer-leak — the hint names the hour hand by its kind', () => {
+    const data = { ...handClean, challenges: handClean.challenges.map((c) => c.id === 'h2' ? { ...c, hint: 'The minute hand is the long one.' } : c) };
+    const v = analogClockOracle.verify(data, handCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'h2')).toBe(true);
+  });
 });
