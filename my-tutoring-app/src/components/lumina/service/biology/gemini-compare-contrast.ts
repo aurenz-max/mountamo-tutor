@@ -35,7 +35,7 @@ const compareContrastSchema: Schema = {
         },
         imagePrompt: {
           type: Type.STRING,
-          description: "Concise description for image generation or reference"
+          description: "Image-generation prompt for this entity. The compared feature must fill the frame and dominate the picture - follow IMAGE PROMPT RULES exactly."
         },
         imageUrl: {
           type: Type.STRING,
@@ -74,7 +74,7 @@ const compareContrastSchema: Schema = {
         },
         imagePrompt: {
           type: Type.STRING,
-          description: "Concise description for image generation or reference"
+          description: "Image-generation prompt for this entity. The compared feature must fill the frame and dominate the picture - follow IMAGE PROMPT RULES exactly."
         },
         imageUrl: {
           type: Type.STRING,
@@ -230,14 +230,14 @@ COMPARISON STRUCTURE:
 
 2. **Entity A** (${entityA}):
    - Name: Clear, accurate name
-   - Image Prompt: Concise visual description
+   - Image Prompt: follow IMAGE PROMPT RULES below, exactly
    - Attributes: Array of characteristics with category, value, and isShared flag
      - Mark isShared = true for any attribute that BOTH entities have in common
      - Mark isShared = false for unique attributes
 
 3. **Entity B** (${entityB}):
    - Name: Clear, accurate name
-   - Image Prompt: Concise visual description
+   - Image Prompt: follow IMAGE PROMPT RULES below, exactly
    - Attributes: Array of characteristics with category, value, and isShared flag
      - Use the SAME categories as Entity A where comparing the same aspect
      - Mark isShared = true for any attribute that BOTH entities have in common
@@ -295,6 +295,27 @@ COMPARISON STRATEGIES BY TYPE:
 - Soil characteristics
 - Seasonal patterns
 - Human impact
+
+IMAGE PROMPT RULES:
+
+These two pictures are the first thing a student sees, and the image model follows the
+prompt literally. The prompt therefore decides whether the comparison is visible at all.
+
+- State the compared feature in plain visual words and say it covers the whole subject:
+  "leaves that are bright pink over the entire blade", not "pink-tinged leaves".
+- Do not use hedging words that let the model split the frame between both sides of the
+  comparison: "variegated", "partly", "tinged", "accented", "hints of", "a mix of". If
+  the entity genuinely is a mixture, say which colour or texture dominates and roughly
+  how much of the subject it covers.
+- Do not put the OTHER entity's defining feature into this entity's prompt. A prompt for
+  "Pink Leaves" must not ask for green leaves in frame; a prompt for "Toad" must not ask
+  for smooth wet skin.
+- One subject, filling the frame, against a plain or softly blurred background. No
+  side-by-side collages, no other specimens in view, no text, labels or arrows.
+- Photographic and realistic for organisms, objects and places. A clean unlabelled
+  diagram for processes and cell structures.
+- Write the two prompts in parallel - same shot type, same distance, same lighting - so
+  the only visible difference is the feature being compared.
 
 QUALITY GUIDELINES:
 - Choose attributes that reveal MEANINGFUL differences and similarities

@@ -1,0 +1,54 @@
+{
+  "report": [
+    {
+      "case": "pink-vs-green-leaves",
+      "seconds": "3.2",
+      "title": "Color in the Canopy: Pink Leaves vs Green Leaves",
+      "entityA": {
+        "name": "Pink Leaves",
+        "imagePrompt": "Close-up macro photograph of a plant stem with leaves that are bright bubblegum pink over the entire leaf blade, soft natural lighting, blurred green garden background",
+        "image": "C:\\Users\\xbox3\\claude web tutor\\my-tutoring-app\\qa\\compare-contrast-images\\pink-vs-green-leaves-entityA.png"
+      },
+      "entityB": {
+        "name": "Green Leaves",
+        "imagePrompt": "Close-up macro photograph of a plant stem with leaves that are rich vibrant green over the entire leaf blade, soft natural lighting, blurred garden background",
+        "image": "C:\\Users\\xbox3\\claude web tutor\\my-tutoring-app\\qa\\compare-contrast-images\\pink-vs-green-leaves-entityB.png"
+      }
+    },
+    {
+      "case": "monarch-vs-viceroy",
+      "seconds": "3.6",
+      "title": "Butterfly Lookalikes: Monarch vs Viceroy",
+      "entityA": {
+        "name": "Monarch Butterfly",
+        "imagePrompt": "A single monarch butterfly with bright orange wings featuring thick black veins and a black border with white spots, filling the entire frame against a softly blurred green background",
+        "image": "C:\\Users\\xbox3\\claude web tutor\\my-tutoring-app\\qa\\compare-contrast-images\\monarch-vs-viceroy-entityA.png"
+      },
+      "entityB": {
+        "name": "Viceroy Butterfly",
+        "imagePrompt": "A single viceroy butterfly with bright orange wings featuring thick black veins and an extra black line across the hindwings, filling the entire frame against a softly blurred green background",
+        "image": "C:\\Users\\xbox3\\claude web tutor\\my-tutoring-app\\qa\\compare-contrast-images\\monarch-vs-viceroy-entityB.png"
+      }
+    },
+    {
+      "case": "frog-vs-toad",
+      "seconds": "2.4",
+      "title": "Hop to It: Comparing Frogs and Toads",
+      "entityA": {
+        "name": "Frog",
+        "imagePrompt": "A bright green frog with smooth, wet skin sitting on a damp green leaf, filling the frame",
+        "image": "C:\\Users\\xbox3\\claude web tutor\\my-tutoring-app\\qa\\compare-contrast-images\\frog-vs-toad-entityA.png"
+      },
+      "entityB": {
+        "name": "Toad",
+        "imagePrompt": "A brown toad with dry and bumpy skin sitting on dry dirt, filling the frame",
+        "image": "C:\\Users\\xbox3\\claude web tutor\\my-tutoring-app\\qa\\compare-contrast-images\\frog-vs-toad-entityB.png"
+      }
+    }
+  ],
+  "logs": [
+    "🔄 Compare & Contrast Generated: {\n  entityA: 'Pink Leaves',\n  entityB: 'Green Leaves',\n  mode: 'side-by-side',\n  gradeBand: '3-5',\n  totalAttributes: 14,\n  sharedAttributes: 3\n}",
+    "🔄 Compare & Contrast Generated: {\n  entityA: 'Monarch Butterfly',\n  entityB: 'Viceroy Butterfly',\n  mode: 'side-by-side',\n  gradeBand: '3-5',\n  totalAttributes: 16,\n  sharedAttributes: 3\n}",
+    "🔄 Compare & Contrast Generated: {\n  entityA: 'Frog',\n  entityB: 'Toad',\n  mode: 'side-by-side',\n  gradeBand: 'K-2',\n  totalAttributes: 12,\n  sharedAttributes: 2\n}"
+  ]
+}

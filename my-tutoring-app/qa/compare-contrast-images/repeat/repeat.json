@@ -1,0 +1,37 @@
+[
+  {
+    "run": 1,
+    "title": "Color in the Canopy: Pink Leaves vs Green Leaves",
+    "pinkPrompt": "A close-up photograph of a plant stem with leaves that are bright pink over the entire blade, against a soft blurred green background",
+    "greenPrompt": "A close-up photograph of a plant stem with leaves that are vibrant green over the entire blade, against a soft blurred background",
+    "rendered": true
+  },
+  {
+    "run": 2,
+    "title": "Color in the Canopy: Pink Leaves vs Green Leaves",
+    "pinkPrompt": "A close-up photograph of a plant branch featuring leaves that are bright pink over the entire blade, set against a softly blurred natural background",
+    "greenPrompt": "A close-up photograph of a plant branch featuring leaves that are rich green over the entire blade, set against a softly blurred natural background",
+    "rendered": true
+  },
+  {
+    "run": 3,
+    "title": "Color in the Canopy: Pink Leaves vs Green Leaves",
+    "pinkPrompt": "A close-up photograph of a plant stem with leaves that are bright pink over the entire blade, set against a softly blurred natural background",
+    "greenPrompt": "A close-up photograph of a plant stem with leaves that are vibrant green over the entire blade, set against a softly blurred natural background",
+    "rendered": true
+  },
+  {
+    "run": 4,
+    "title": "Color in the Canopy: Pink Leaves vs Green Leaves",
+    "pinkPrompt": "A close-up photograph of plant leaves that are bright pink over the entire blade against a softly blurred background",
+    "greenPrompt": "A close-up photograph of plant leaves that are vibrant green over the entire blade against a softly blurred background",
+    "rendered": true
+  },
+  {
+    "run": 5,
+    "title": "Color and Light: Pink Leaves vs Green Leaves",
+    "pinkPrompt": "A close-up photograph of plant leaves that are bright pink over the entire blade against a soft neutral background",
+    "greenPrompt": "A close-up photograph of plant leaves that are bright green over the entire blade against a soft neutral background",
+    "rendered": true
+  }
+]
