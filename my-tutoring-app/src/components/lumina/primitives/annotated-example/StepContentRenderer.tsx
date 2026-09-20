@@ -61,7 +61,7 @@ function renderKatex(latex: string, displayMode = true): string {
  * unescaped currency dollars get paired across a sentence (e.g. `$15 ... $2`
  * would otherwise italicize the whole span between them).
  */
-const ESCAPED_DOLLAR_PLACEHOLDER = '';
+const ESCAPED_DOLLAR_PLACEHOLDER = '\u0001';
 const MAX_INLINE_MATH_LEN = 100;
 
 function renderMixedContent(text: string): string {
