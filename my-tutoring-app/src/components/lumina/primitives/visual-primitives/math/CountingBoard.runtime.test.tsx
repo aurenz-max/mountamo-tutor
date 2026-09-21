@@ -394,7 +394,8 @@ it('counts wrong attempts and a repeated wrong response, and never treats the ho
   for (let attempt = 0; attempt < 2; attempt++) {
     for (let n = 0; n < 4; n++) h.tap(n);
     h.give();
-    act(() => h.transport.learnerText(String(seam.send.mock.calls.at(-1)![0]), true));
+    expect(seam.send.mock.calls.at(-1)![1]).toMatchObject({ author: 'host' });
+    act(() => h.transport.hostText());
     h.dispatch('retry');
   }
   expect(classifyLearner).not.toHaveBeenCalled();

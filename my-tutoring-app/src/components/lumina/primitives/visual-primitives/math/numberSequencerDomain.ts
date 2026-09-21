@@ -25,6 +25,7 @@
 import type { DiHarnessAnswers } from '../../../service/qa/di/diDrivePlan';
 import type { DiActionContract } from '../../../hooks/judgedScriptContract';
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
+import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { NumberSequencerChallenge } from './NumberSequencer';
 import { NUMBER_SEQUENCER_MODES, numberSequencerModePlan } from './numberSequencerModes';
 import { resolveScaffolds, type LiveScaffold } from '../../../components/live-activity/runtime/liveScaffolds';
@@ -146,6 +147,54 @@ export const NUMBER_SEQUENCER_WORKSPACE_MODES = NUMBER_SEQUENCER_MODES.map(mode 
 
 /** The question as the runner asks it. The adapter publishes this as the tutor task. */
 export const askFor = (i: SequencerItem): string => i.actionContract.instruction;
+
+/** What completes THIS item, said plainly, and what does not. Never the answer. */
+export function assignmentFor(item: SequencerItem): string {
+  switch (item.challengeType) {
+    case 'count-from': return `Say the next number counting ${item.direction} from ${item.previous}. `
+      + 'Counting along with the child is teaching; the number the child says is the answer.';
+    case 'before-after': return 'Say the number that belongs in the empty car. '
+      + 'Reading back the number already printed on the train is not the answer.';
+    case 'spot-error': return 'Say which printed number breaks the count. '
+      + 'The number that should have been there instead is not the answer to this question.';
+    case 'order-cards': return 'Put every card on the train from smallest to largest. '
+      + 'The train checks the arrangement itself as soon as the last card is placed.';
+    default: return 'Say the number that belongs in the glowing empty car. '
+      + 'A number already printed on another car is not the answer.';
+  }
+}
+
+/** The car the question is about. Spot-error asks about the whole train, so no car glows. */
+export const targetSlot = (item: SequencerItem): number => item.challengeType === 'spot-error' ? -1 : item.slot;
+
+/** The item as the tutor and the outcome observer are told it. Gesture items are checked
+ *  by the train; the ordered string is what the tutor sees, not a parser. */
+export const workspaceAssignment = (item: SequencerItem): TeachingAssignment => ({ id: item.id, task: askFor(item),
+  expectedAnswer: item.answerKind === 'gesture' ? item.answerOrder.join(', ') : String(item.answer),
+  response: item.answerKind === 'gesture' ? 'gesture' : 'speech' });
+
+/** `shown` is the drawn train, with slots of this challenge answered earlier filled in;
+ *  `placed` is the learner's arrangement so far on an order-cards item. */
+export interface SequencerView { shown: (number | null)[]; placed: number[] }
+
+/** The drawn stage: whole cars, or whole cards on an order-cards item. */
+export function workspaceScene(item: SequencerItem, { shown, placed }: SequencerView): WorkspaceScene {
+  const gesture = item.answerKind === 'gesture';
+  const cards = item.sequence.filter((n): n is number => n !== null);
+  const target = targetSlot(item);
+  return {
+    objects: gesture
+      ? cards.map(n => ({ id: `card-${n}`, label: `number card ${n}`, selected: placed.includes(n),
+        group: placed.includes(n) ? `on the train in place ${placed.indexOf(n) + 1}` : 'still waiting beside the train' }))
+      : shown.map((value, position) => ({ id: `car-${position}`,
+        label: value === null ? `car ${position + 1}, empty` : `car ${position + 1} showing ${value}`,
+        selected: false, group: position === target ? 'assignment target (the glowing empty car)' : 'visible car' })),
+    facts: { kind: item.challengeType, assignment: assignmentFor(item),
+      ...(item.challengeType === 'count-from' ? { countingDirection: item.direction, countingFrom: item.previous } : {}),
+      ...(gesture ? { cardsPlaced: placed.length, cardsWaiting: cards.length - placed.length } : {}),
+      markMeaning: 'Purple dashed rings are tutor marks. They never fill a car, move a card or change which car is being asked about.' },
+  };
+}
 
 export function sequencerHarnessAnswers(i: SequencerItem): DiHarnessAnswers {
   if (i.answerKind === 'gesture') return { correct: i.answerOrder.join(','), plainWrong: [...i.answerOrder].reverse().join(','),

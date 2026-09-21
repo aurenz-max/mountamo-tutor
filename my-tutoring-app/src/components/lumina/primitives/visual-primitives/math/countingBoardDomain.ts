@@ -23,6 +23,7 @@
  */
 
 import type { ResponseClassId, TeachingItem } from '../../../hooks/teachingItemContract';
+import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 
 
 export type CountingItemKind =
@@ -350,6 +351,72 @@ export const itemsFromChallenges = (
   challenges
     .map((ch) => itemFromChallenge(ch, opts))
     .filter((item): item is CountingItem => item !== null);
+
+/**
+ * The sizes of the groups a 'groups' board draws, in board order. A compare board names its two groups
+ * (bigger one on either side); every other board is cut into equal groups of `groupSize` with the
+ * remainder last. `cell` is the footprint every group is laid out in.
+ */
+export function boardGroups(count: number, groupSize?: number | null, compareGroups?: number[] | null): { sizes: number[]; cell: number } {
+  if (compareGroups && compareGroups.length > 0 && compareGroups.every((n) => Number.isInteger(n) && n >= 1)
+    && compareGroups.reduce((s, n) => s + n, 0) === count) {
+    return { sizes: compareGroups, cell: Math.max(...compareGroups) };
+  }
+  const cell = groupSize || 5;
+  return { sizes: Array.from({ length: Math.ceil(count / cell) }, (_, g) => Math.min(cell, count - g * cell)), cell };
+}
+
+/** Objects on the board for this item. add_more lays out the extras from the start (faint,
+ *  waiting to be put on), so putting one on never re-flows the objects already counted. */
+export const drawnCount = (item: CountingItem): number =>
+  item.kind === 'add_more' ? item.count + (item.changeBy ?? 0) : item.count;
+
+/** The item as the tutor and the outcome observer are told it. */
+export const workspaceAssignment = (item: CountingItem): TeachingAssignment => ({ id: item.id, task: askFor(item),
+  response: item.answerKind === 'voice' ? 'speech' : 'gesture', expectedAnswer: String(item.target) });
+
+/** What the learner has done on the board, and what is hidden from them right now. */
+export interface CountingBoardView {
+  counted: ReadonlySet<number>;
+  removed: ReadonlySet<number>;
+  added: ReadonlySet<number>;
+  moved: boolean;
+  /** Objects under the K count-on basket, which the learner cannot see. */
+  covered: number;
+  /** A K quick look between flashes: nothing on the board is visible to count. */
+  hidden: boolean;
+}
+
+/** The visible board. Hidden stimuli stay absent from the scene (contract R14). */
+export function workspaceScene(item: CountingItem, view: CountingBoardView): WorkspaceScene {
+  const drawn = drawnCount(item);
+  const { sizes } = boardGroups(drawn, item.groupSize, item.compareGroups);
+  const singular = objectSingularFor(item.objectWord, item.objectSingular);
+  const objects = view.hidden ? [] : Array.from({ length: drawn }, (_, index) => index)
+    .filter(index => index >= view.covered && !view.removed.has(index))
+    .map(index => {
+      let offset = 0;
+      const groupIndex = sizes.findIndex(size => { offset += size; return index < offset; });
+      const group = item.kind === 'compare' ? (groupIndex === 0 ? 'left' : 'right')
+        : item.kind === 'group_count' ? String(groupIndex + 1) : undefined;
+      const pending = item.kind === 'add_more' && index >= item.count && !view.added.has(index);
+      return { id: `object-${index}`, label: `${singular} ${index + 1}${pending ? ' (waiting to be added)' : ''}`,
+        selected: view.counted.has(index), ...(group ? { group } : {}) };
+    });
+  return {
+    objects,
+    // `markedOnBoard`, not `counted`: this is how many objects carry a count mark
+    // right now, which is zero whenever the child answers out loud. Named
+    // `counted` it read to the observer as "the learner counted zero" and
+    // contradicted a tutor who had just affirmed a correct spoken count.
+    facts: { kind: item.kind, objects: item.objectWord, markedOnBoard: view.counted.size,
+      takenOff: view.removed.size, putOn: view.added.size, moved: view.moved ? 'yes' : 'no',
+      startFrom: item.startFrom ?? '', changeBy: item.changeBy ?? '',
+      constraints: item.kind === 'subitize_perceptual' ? 'Pre-numeric matching: use no number words. Learner picks a hand.'
+        : item.kind === 'subitize' ? 'Quick look: present the stimulus before accepting an answer.'
+        : item.kind === 'recount_moved' ? 'After the move, remember the quantity; do not recount.' : '' },
+  };
+}
 
 // ── The context channel — STIMULUS-SIDE ONLY ────────────────────────────────
 

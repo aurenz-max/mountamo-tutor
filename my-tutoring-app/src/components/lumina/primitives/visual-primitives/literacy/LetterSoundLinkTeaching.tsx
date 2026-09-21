@@ -45,7 +45,7 @@ import { useTeachingWorkspace, type TeachingItem, type TeachingWorkspace }
 import { useTeachingEvaluation } from '../../../components/live-activity/runtime/useTeachingEvaluation';
 import type { LetterSoundLinkMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
-import { acceptedFor, askFor, assignmentFor, buildLetterSoundLinkItems, printedStimulus,
+import { buildLetterSoundLinkItems, printedStimulus, workspaceAssignment, workspaceScene,
   type LetterSoundItem, type LetterSoundMode, type LetterSoundTier } from './letterSoundLinkDomain';
 import type { LetterSoundLinkData } from './LetterSoundLink';
 
@@ -85,12 +85,7 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId, runtimeEvalM
   const evalMode = runtimeEvalMode || 'see_hear';
 
   const assignments = useMemo<TeachingItem[]>(() => items.map(item => ({
-    id: item.id,
-    task: askFor(item),
-    // `hear-see` deliberately has none: the activity checks the tap, and the
-    // tutor is never told which letter makes the sound.
-    ...(acceptedFor(item) !== undefined ? { expectedAnswer: acceptedFor(item) } : {}),
-    response: item.answerKind === 'gesture' ? 'gesture' as const : 'speech' as const,
+    ...workspaceAssignment(item),
     checkResponse: item.answerKind === 'gesture'
       ? (response: string) => response.trim().toLowerCase() === item.answer.trim().toLowerCase()
       : () => null,
@@ -137,29 +132,9 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId, runtimeEvalM
   const printed = printedStimulus(item);
 
   useLayoutEffect(() => {
-    const objects = gesture
-      // Both letters carry the SAME group. Nothing in the scene says which one
-      // is the answer, because nothing in the scene knows.
-      ? item.options.map(option => ({ id: `option-${option.value.toLowerCase()}`,
-        label: `a card showing the letter "${option.value.toUpperCase()}"`,
-        selected: tapped?.toLowerCase() === option.value.toLowerCase(),
-        group: 'one of the two letters the learner chooses between' }))
-      : [{ id: 'letter', label: `the letter "${item.letter}" printed on the card`, selected: false,
-          group: 'the printed letter this question is about' },
-        ...(item.mode === 'keyword-match' ? item.options.map(option => ({
-          id: `picture-${option.value.toLowerCase()}`, label: `a picture of a ${option.value}`,
-          selected: false, group: 'one of the two pictures' })) : [])];
     workspace.current = {
-      objects,
+      ...workspaceScene(item, tapped),
       demonstration: marks,
-      facts: { kind: item.mode, assignment: assignmentFor(item), supportTier: item.tier,
-        // `hear-see` needs the sound published: the tutor has to say it, and it
-        // is the QUESTION rather than the answer. The other two directions carry
-        // their sound in `expectedAnswer` (see-hear) or not at all.
-        ...(gesture ? { soundToSay: item.spoken } : { printedLetter: item.letter.toUpperCase() }),
-        ...(item.tier === 'hard' && !gesture
-          ? { coldAsk: 'This item is answered cold on purpose: the sound is not modelled before the learner answers.' }
-          : {}) },
       readyForResponse: true, canDemonstrate: !gesture, canPresent: false,
       mark, clearPresentation: () => mark([]),
     };

@@ -27,7 +27,8 @@ import { useTeachingWorkspace, type TeachingItem, type TeachingWorkspace }
 import { useTeachingEvaluation } from '../../../components/live-activity/runtime/useTeachingEvaluation';
 import type { NumberSequencerMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
-import { askFor, buildSequencerItems, sameOrder, type SequencerItem } from './numberSequencerDomain';
+import { buildSequencerItems, sameOrder, targetSlot, workspaceAssignment, workspaceScene,
+  type SequencerItem } from './numberSequencerDomain';
 import type { NumberSequencerChallenge, NumberSequencerData } from './NumberSequencer';
 
 export interface NumberSequencerTeachingProps {
@@ -41,22 +42,6 @@ const MODE_LABEL: Record<NumberSequencerChallenge['type'], string> = {
   'fill-missing': 'Fill Missing', 'before-after': 'Before & After', 'order-cards': 'Order Cards',
   'count-from': 'Count From', 'spot-error': 'Spot the Error', 'decade-fill': 'Decade Fill',
 };
-
-/** What completes THIS item, said plainly, and what does not. Never the answer. */
-function assignmentFor(item: SequencerItem): string {
-  switch (item.challengeType) {
-    case 'count-from': return `Say the next number counting ${item.direction} from ${item.previous}. `
-      + 'Counting along with the child is teaching; the number the child says is the answer.';
-    case 'before-after': return 'Say the number that belongs in the empty car. '
-      + 'Reading back the number already printed on the train is not the answer.';
-    case 'spot-error': return 'Say which printed number breaks the count. '
-      + 'The number that should have been there instead is not the answer to this question.';
-    case 'order-cards': return 'Put every card on the train from smallest to largest. '
-      + 'The train checks the arrangement itself as soon as the last card is placed.';
-    default: return 'Say the number that belongs in the glowing empty car. '
-      + 'A number already printed on another car is not the answer.';
-  }
-}
 
 export default function NumberSequencerTeaching({ data, className, runtimePlanItemId, runtimeEvalMode }: NumberSequencerTeachingProps) {
   const { items } = useMemo(() => buildSequencerItems(data.challenges ?? []), [data.challenges]);
@@ -78,12 +63,7 @@ function TrainWorkspace({ data, items, className, runtimePlanItemId, runtimeEval
   const evalMode = runtimeEvalMode || 'count_from';
 
   const assignments = useMemo<TeachingItem[]>(() => items.map(item => ({
-    id: item.id,
-    task: askFor(item),
-    // The whole assignment's answer, for tutor-feedback assessment. Gesture items
-    // are checked here instead; the string is what the tutor sees, not a parser.
-    expectedAnswer: item.answerKind === 'gesture' ? item.answerOrder.join(', ') : String(item.answer),
-    response: item.answerKind === 'gesture' ? 'gesture' : 'speech',
+    ...workspaceAssignment(item),
     checkResponse: item.answerKind === 'gesture'
       ? (response: string) => sameOrder(response.split(',').filter(Boolean).map(Number), item.answerOrder)
       : () => null,
@@ -117,21 +97,12 @@ function TrainWorkspace({ data, items, className, runtimePlanItemId, runtimeEval
     return solved ? (solved.repair ?? solved.answer) : value;
   }), [items, index, item]);
   const cards = useMemo(() => item.sequence.filter((n): n is number => n !== null), [item]);
-  const target = item.challengeType === 'spot-error' ? -1 : item.slot;
+  const target = targetSlot(item);
 
   useLayoutEffect(() => {
     workspace.current = {
-      objects: gesture
-        ? cards.map(n => ({ id: `card-${n}`, label: `number card ${n}`, selected: placed.includes(n),
-          group: placed.includes(n) ? `on the train in place ${placed.indexOf(n) + 1}` : 'still waiting beside the train' }))
-        : shown.map((value, position) => ({ id: `car-${position}`,
-          label: value === null ? `car ${position + 1}, empty` : `car ${position + 1} showing ${value}`,
-          selected: false, group: position === target ? 'assignment target (the glowing empty car)' : 'visible car' })),
+      ...workspaceScene(item, { shown, placed }),
       demonstration: marks,
-      facts: { kind: item.challengeType, assignment: assignmentFor(item),
-        ...(item.challengeType === 'count-from' ? { countingDirection: item.direction, countingFrom: item.previous } : {}),
-        ...(gesture ? { cardsPlaced: placed.length, cardsWaiting: cards.length - placed.length } : {}),
-        markMeaning: 'Purple dashed rings are tutor marks. They never fill a car, move a card or change which car is being asked about.' },
       readyForResponse: true, canDemonstrate: true, canPresent: false,
       mark, clearPresentation: () => mark([]),
     };

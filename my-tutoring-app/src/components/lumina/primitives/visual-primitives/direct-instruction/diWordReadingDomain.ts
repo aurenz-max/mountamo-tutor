@@ -35,6 +35,7 @@
  *      second, so the difference is structural rather than a sentence of guidance.
  */
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
+import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { diWordReadingModePlan, DI_WORD_READING_MODES, type DiWordReadingChallengeType }
   from './diWordReadingModes';
 
@@ -203,6 +204,30 @@ export function buildWordReadingItems(challenges: DiWordReadingChallenge[] = [])
     responseClass: 'short_spoken_word',
   }));
 }
+
+/** The item as the tutor and the outcome observer are told it. Every mode is spoken: the
+ *  child reads print aloud, the tutor hears the audio and JEV reads its completed feedback. */
+export const workspaceAssignment = (item: WordReadingItem): TeachingAssignment =>
+  ({ id: item.id, task: item.ask, expectedAnswer: item.accepted, response: 'speech' });
+
+/** The drawn stage. Letter objects exist only where the letters really spell the word, so
+ *  a sight word has no letter to sound out and the attempt is refused by the scene. */
+export const workspaceScene = (item: WordReadingItem): WorkspaceScene => ({
+  objects: [
+    { id: 'word', selected: false, group: 'assignment target (gold ring)',
+      label: `the word "${item.word}" printed on the card, which the learner must read` },
+    ...item.letters.map((letter, position) => ({ id: `letter-${position}`, selected: false,
+      group: 'printed letter of that word',
+      label: `the letter "${letter}", letter ${position + 1} of the printed word` })),
+  ],
+  facts: { kind: item.challengeType, assignment: item.assignment, printedWord: item.word,
+    wordType: item.wordType === 'cvc' ? 'decodable — blended from its printed letters'
+      : 'irregular sight word — recalled whole, never sounded out',
+    ...(item.soundOut ? { soundOut: item.soundOut } : {}),
+    markMeaning: 'Purple dashed marks are yours. They point at the whole word or at one of its printed '
+      + 'letters while you teach; they are not the learner reading, and they never move the gold ring off '
+      + 'the word.' },
+});
 
 /**
  * What the mounted journey driver SAYS for this item. The wrong answer is a

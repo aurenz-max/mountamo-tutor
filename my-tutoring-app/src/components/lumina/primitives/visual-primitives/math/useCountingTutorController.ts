@@ -4,7 +4,7 @@ import type { MutableRefObject } from 'react';
 import { useTeachingWorkspace, type TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { teachingEvaluation } from '../../../components/live-activity/runtime/teachingEvaluation';
 import type { TeachingSummary } from '../../../components/live-activity/runtime/TeachingSession';
-import { askFor, evalModeForKind, type CountingItem } from './countingBoardDomain';
+import { evalModeForKind, workspaceAssignment, type CountingItem } from './countingBoardDomain';
 
 /**
  * What the counting board RENDERS from, stated on its own terms.
@@ -86,14 +86,11 @@ export function useCountingTutorController(options: CountingControllerOptions): 
     instanceId: options.instanceId, primitiveId: 'counting-board', objectiveId: options.objectiveId,
     planItemId: options.planItemId, evalMode: options.evalMode || evalModeForKind(items[0].kind),
     workspace: options.workspace,
-    items: items.map(item => ({ id: item.id, task: askFor(item), response: item.answerKind === 'voice' ? 'speech' : 'gesture',
-      expectedAnswer: String(item.target),
-      checkResponse: text => text === String(item.target) })),
+    items: items.map(item => ({ ...workspaceAssignment(item), checkResponse: text => text === String(item.target) })),
     onItemOpened: index => options.onItemOpened?.(items[index], index),
     onPresentStimulus: index => options.onPresentStimulus?.(items[index], index),
   });
-  const teachingResult = lesson.summary ? teachingEvaluation(items.map(item => ({ id: item.id, task: askFor(item),
-    expectedAnswer: String(item.target), response: item.answerKind === 'voice' ? 'speech' : 'gesture', checkResponse: () => null })),
+  const teachingResult = lesson.summary ? teachingEvaluation(items.map(item => ({ ...workspaceAssignment(item), checkResponse: () => null })),
     lesson.state, lesson.summary, options.evalMode || evalModeForKind(items[0].kind)) : null;
   const { state } = lesson;
   const item = items[state.index];

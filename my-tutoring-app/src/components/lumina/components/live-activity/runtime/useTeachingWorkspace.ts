@@ -28,6 +28,14 @@ export interface TeachingWorkspace {
   mark: (ids: string[]) => void;
   clearPresentation: () => void;
 }
+/** An item as the tutor and the outcome observer are told it, without the private checker. */
+export type TeachingAssignment = Omit<TeachingItem, 'checkResponse'>;
+/**
+ * What the tutor and the outcome observer are shown about the current item. Each domain
+ * builds it with a pure `workspaceScene`, so the component and the verdict probe
+ * (`scripts/tutor-verdict-probe.mjs`) send the same model input.
+ */
+export type WorkspaceScene = Pick<TeachingWorkspace, 'objects' | 'facts'>;
 export interface TeachingWorkspaceOptions {
   instanceId: string; primitiveId: string; objectiveId?: string; planItemId?: string; evalMode: string;
   items: TeachingItem[];

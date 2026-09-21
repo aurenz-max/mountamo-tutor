@@ -32,6 +32,7 @@
  * answer rather than a guidance sentence asking the tutor to keep a secret.
  */
 import type { ResponseClassId, TeachingItem } from '../../../hooks/teachingItemContract';
+import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { speakablePhoneme } from './phonemeVoice';
 
 export type LetterSoundMode = 'see-hear' | 'hear-see' | 'keyword-match';
@@ -536,6 +537,39 @@ export const childVoicedSound = (item: Pick<LetterSoundItem, 'letter' | 'sound' 
  *  are the choices. */
 export const printedStimulus = (item: LetterSoundItem): string | null =>
   item.mode === 'hear-see' ? null : item.letter.toUpperCase();
+
+/** The item as the tutor and the outcome observer are told it. `hear-see` deliberately has
+ *  no expected answer: the activity checks the tap, and the tutor is never told the letter. */
+export const workspaceAssignment = (item: LetterSoundItem): TeachingAssignment => ({ id: item.id, task: askFor(item),
+  ...(acceptedFor(item) !== undefined ? { expectedAnswer: acceptedFor(item) } : {}),
+  response: item.answerKind === 'gesture' ? 'gesture' : 'speech' });
+
+/** The drawn stage. `tapped` is the letter the learner last tapped on a `hear-see` item. */
+export function workspaceScene(item: LetterSoundItem, tapped: string | null = null): WorkspaceScene {
+  const gesture = item.answerKind === 'gesture';
+  return {
+    objects: gesture
+      // Both letters carry the SAME group. Nothing in the scene says which one
+      // is the answer, because nothing in the scene knows.
+      ? item.options.map(option => ({ id: `option-${option.value.toLowerCase()}`,
+        label: `a card showing the letter "${option.value.toUpperCase()}"`,
+        selected: tapped?.toLowerCase() === option.value.toLowerCase(),
+        group: 'one of the two letters the learner chooses between' }))
+      : [{ id: 'letter', label: `the letter "${item.letter}" printed on the card`, selected: false,
+          group: 'the printed letter this question is about' },
+        ...(item.mode === 'keyword-match' ? item.options.map(option => ({
+          id: `picture-${option.value.toLowerCase()}`, label: `a picture of a ${option.value}`,
+          selected: false, group: 'one of the two pictures' })) : [])],
+    facts: { kind: item.mode, assignment: assignmentFor(item), supportTier: item.tier,
+      // `hear-see` needs the sound published: the tutor has to say it, and it
+      // is the QUESTION rather than the answer. The other two directions carry
+      // their sound in `expectedAnswer` (see-hear) or not at all.
+      ...(gesture ? { soundToSay: item.spoken } : { printedLetter: item.letter.toUpperCase() }),
+      ...(item.tier === 'hard' && !gesture
+        ? { coldAsk: 'This item is answered cold on purpose: the sound is not modelled before the learner answers.' }
+        : {}) },
+  };
+}
 
 /** Expand a generated pool into the assignments the workspace actually asks. */
 export function buildLetterSoundLinkItems(

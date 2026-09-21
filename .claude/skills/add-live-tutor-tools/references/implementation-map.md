@@ -15,7 +15,7 @@ Read current files rather than relying on historical line numbers or consumer co
 | `components/live-activity/runtime/learnerUtterance.ts` | Provider fragment assembly and speech boundaries |
 | `service/typesafe/observeDialogue.ts` | Shared JEV interpretation of whole-assignment tutor feedback |
 | `service/typesafe/observationKinds.ts` and `observeLearnerIntent.ts` | Observation-kind runner; the advisory learner-turn kind (help, stop, answer attempt). Only `assignment_outcome` may commit |
-| `components/live-activity/runtime/learnerSignals.ts`, `LearnerObserver.ts`, `learnerIntentContract.ts` | Per-item learner facts in the packet (`liveRuntime.learner`), automatic for every shared-workspace binding. `runtime.learner` holds the tracker; `expectHostText` registers a host-written message |
+| `components/live-activity/runtime/learnerSignals.ts`, `LearnerObserver.ts`, `learnerIntentContract.ts` | Per-item learner facts in the packet (`liveRuntime.learner`), automatic for every shared-workspace binding. `runtime.learner` holds the tracker. A host-written non-silent `sendText` passes `author: 'host'` and reaches the transport as `hostText()`, never `learnerText()` |
 | `components/live-activity/runtime/contract.ts` and `LiveLessonRuntime.ts` | Scope, ownership, deduplication, policy and action revision projection |
 | `components/live-activity/runtime/LiveRuntimeContext.tsx`, `LiveRuntimeSurface.tsx`, `runtimeTransport.ts`, `waitForVisible.ts` | Mount, committed transition and visible receipt |
 | `components/live-activity/LiveActivitySandbox.tsx` and `JevInspector.tsx` | Actual host integration, playback settlement and inspectable evidence |
@@ -114,7 +114,11 @@ node scripts/learner-intent-probe.mjs --shapes qa/tutor-reports/shape-sorter-lea
 ```
 
 Both JEV probes need the frontend service and real model configuration. Omitting
-`--shapes` runs the Counting Board cases. The learner-intent probe has one case set per
+`--shapes` runs the Counting Board cases. The verdict probe builds every task, expected
+answer, object and fact from the domain module's `workspaceAssignment(item)` and
+`workspaceScene(item, view)`, which the component also spreads into its workspace; a new
+adopter exports both from its domain, adds a challenge fixture per case item and a flag, and
+never copies a sentence into the probe. `--dry` prints each model input without calling JEV. The learner-intent probe has one case set per
 adopter domain (`--shapes`, `--trains`, `--letters`, `--words`); add a flag and a set for a
 new domain. It prints the false help/stop count, which must be 0. Extend semantic cases for the new domain;
 passing these two existing sets alone does not certify another domain.

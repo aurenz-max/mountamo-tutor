@@ -5,7 +5,7 @@ import { LuminaCard, LuminaCardContent, LuminaCardHeader, LuminaCardTitle, Lumin
   LuminaReadAloudGlyph } from '../../../ui';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { useTeachingWorkspace, type TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { itemsFromChallenges, SHAPE_PROPERTIES } from './shapeSorterDomain';
+import { itemsFromChallenges, workspaceAssignment, workspaceScene } from './shapeSorterDomain';
 import { renderShapeSVG } from './shapeSorterDrawing';
 import type { ShapeSorterMetrics } from '../../../evaluation/types';
 import { useTeachingEvaluation } from '../../../components/live-activity/runtime/useTeachingEvaluation';
@@ -27,11 +27,7 @@ function NamingWorkspace({ data, items, className, runtimePlanItemId, runtimeEva
   const instance = useRef(data.instanceId || `shape-sorter-${Date.now()}`);
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [marks, mark] = useState<string[]>([]);
-  const assignments = useMemo(() => items.map(item => ({ id: item.id,
-    task: 'Name the shape inside the gold ring. What shape is it?',
-    expectedAnswer: [item.answer, ...item.spokenAlternates].join(' or '),
-    response: 'speech' as const, checkResponse: () => null,
-  })), [items]);
+  const assignments = useMemo(() => items.map(item => ({ ...workspaceAssignment(item), checkResponse: () => null })), [items]);
   const evalMode = runtimeEvalMode || 'identify';
   const lesson = useTeachingWorkspace({ instanceId: instance.current, primitiveId: 'shape-sorter',
     objectiveId: data.objectiveId, planItemId: runtimePlanItemId, evalMode, items: assignments, workspace });
@@ -41,19 +37,10 @@ function NamingWorkspace({ data, items, className, runtimePlanItemId, runtimeEva
       sortAccuracy: 0, attemptsCount: result.attemptsCount }) });
   const item = items[lesson.state.index];
   const shapes = data.challenges.find(c => c.id === item.challengeId)!.shapes;
-  const focus = shapes[item.shapeIndex];
-  const geometry = SHAPE_PROPERTIES[item.shape];
   useLayoutEffect(() => {
     workspace.current = {
-      objects: shapes.map((shape, index) => ({ id: `shape-${index}`,
-        label: `${shape.size} ${shape.color} ${shape.shape}, rotated ${shape.rotation} degrees`,
-        selected: false, group: index === item.shapeIndex ? 'assignment target (gold ring)' : 'comparison shape' })),
+      ...workspaceScene(item, shapes),
       demonstration: marks,
-      facts: { targetId: `shape-${item.shapeIndex}`, targetShape: item.shape, color: focus.color,
-        rotation: focus.rotation, sides: geometry.sides, corners: geometry.corners,
-        curved: geometry.curved ? 'yes' : 'no',
-        assignment: 'Name the gold-ringed shape. Naming a color or counting sides is an intermediate step, not the answer.',
-        ringMeaning: 'Gold ring identifies the assignment. Purple dashed rings are tutor marks; they never change the target.' },
       readyForResponse: true, canDemonstrate: true, canPresent: false, mark, clearPresentation: () => mark([]),
     };
     lesson.publishWorkspace();

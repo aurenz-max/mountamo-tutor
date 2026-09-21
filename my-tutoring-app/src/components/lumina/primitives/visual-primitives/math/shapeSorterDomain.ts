@@ -24,6 +24,7 @@
  */
 
 import { type ResponseClassId, type TeachingItem } from '../../../hooks/teachingItemContract';
+import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { numberWordFor } from './countingBoardDomain';
 import {
   objectLabelLeaksShape,
@@ -824,6 +825,28 @@ export const stimulusFor = (item: ShapeSorterItem): string => {
  */
 export const leakExemptSpanFor = (item: ShapeSorterItem): string | undefined =>
   item.mode === 'sort' && item.namesChoices ? choicesPhrase(item) : undefined;
+
+/** An `identify` item as the tutor and the outcome observer are told it. Only naming is
+ *  bound to the teaching workspace. */
+export const workspaceAssignment = (item: ShapeSorterItem): TeachingAssignment => ({ id: item.id,
+  task: 'Name the shape inside the gold ring. What shape is it?',
+  expectedAnswer: [item.answer, ...item.spokenAlternates].join(' or '), response: 'speech' });
+
+/** The drawn pool for an `identify` item: the gold-ringed target and its comparison shapes. */
+export function workspaceScene(item: ShapeSorterItem, shapes: ShapeSorterShapeLike[]): WorkspaceScene {
+  const focus = shapes[item.shapeIndex];
+  const geometry = SHAPE_PROPERTIES[item.shape];
+  return {
+    objects: shapes.map((shape, index) => ({ id: `shape-${index}`,
+      label: `${shape.size} ${shape.color} ${shape.shape}, rotated ${shape.rotation} degrees`,
+      selected: false, group: index === item.shapeIndex ? 'assignment target (gold ring)' : 'comparison shape' })),
+    facts: { targetId: `shape-${item.shapeIndex}`, targetShape: item.shape, color: focus.color,
+      rotation: focus.rotation ?? 0, sides: geometry.sides, corners: geometry.corners,
+      curved: geometry.curved ? 'yes' : 'no',
+      assignment: 'Name the gold-ringed shape. Naming a color or counting sides is an intermediate step, not the answer.',
+      ringMeaning: 'Gold ring identifies the assignment. Purple dashed rings are tutor marks; they never change the target.' },
+  };
+}
 
 /**
  * The answers a headless student says on a judged drive. It lives beside the

@@ -44,6 +44,7 @@ import {
   objectSingularFor,
   type CountingItem,
 } from './countingBoardScript';
+import { boardGroups, workspaceScene } from './countingBoardDomain';
 import { countingBoardEvidenceSummary, countingObservation } from './countingBoardEvidence';
 import { useCountingTutorController, type CountingController, type CountingControllerOptions, type CountingWorkspace } from './useCountingTutorController';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
@@ -242,20 +243,6 @@ interface GroupLayout {
   positions: Array<{ x: number; y: number }>;
   /** One ring per group, drawn around exactly the objects placed in it. */
   rings: Array<{ cx: number; cy: number; rx: number; ry: number }>;
-}
-
-/**
- * The sizes of the groups a 'groups' board draws, in board order. A compare board names its two groups
- * (bigger one on either side); every other board is cut into equal groups of `groupSize` with the
- * remainder last. `cell` is the footprint every group is laid out in.
- */
-function boardGroups(count: number, groupSize?: number | null, compareGroups?: number[] | null): { sizes: number[]; cell: number } {
-  if (compareGroups && compareGroups.length > 0 && compareGroups.every((n) => Number.isInteger(n) && n >= 1)
-    && compareGroups.reduce((s, n) => s + n, 0) === count) {
-    return { sizes: compareGroups, cell: Math.max(...compareGroups) };
-  }
-  const cell = groupSize || 5;
-  return { sizes: Array.from({ length: Math.ceil(count / cell) }, (_, g) => Math.min(cell, count - g * cell)), cell };
 }
 
 function layoutGroups(sizes: number[], cell: number): GroupLayout {
@@ -874,28 +861,10 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
    *  run was never counted "out loud". */
   useLayoutEffect(() => {
     workspace.current = {
-      objects: positions.flatMap((_pos, index) => {
-        if (index < coveredCount || removedObjects.has(index) || (isKSubitize && !isSubitizeFlashing)) return [];
-        const layout = boardGroups(challengeCount, challengeGroupSize, currentChallenge?.compareGroups);
-        let offset = 0;
-        const groupIndex = layout.sizes.findIndex(size => { offset += size; return index < offset; });
-        const group = currentItem?.kind === 'compare' ? (groupIndex === 0 ? 'left' : 'right')
-          : currentItem?.kind === 'group_count' ? String(groupIndex + 1) : undefined;
-        const pending = currentItem?.kind === 'add_more' && index >= (currentChallenge?.count ?? 0) && !addedExtras.has(index);
-        return [{ id: `object-${index}`, label: `${objectSingularWord} ${index + 1}${pending ? ' (waiting to be added)' : ''}`,
-          selected: countedObjects.has(index), ...(group ? { group } : {}) }];
-      }),
+      ...(currentItem ? workspaceScene(currentItem, { counted: countedObjects, removed: removedObjects,
+        added: addedExtras, moved: hasMoved, covered: coveredCount, hidden: isKSubitize && !isSubitizeFlashing })
+        : { objects: [], facts: {} }),
       demonstration,
-      // `markedOnBoard`, not `counted`: this is how many objects carry a count mark
-      // right now, which is zero whenever the child answers out loud. Named
-      // `counted` it read to the observer as "the learner counted zero" and
-      // contradicted a tutor who had just affirmed a correct spoken count.
-      facts: { kind: currentItem?.kind ?? '', objects: objectWord, markedOnBoard: countedObjects.size,
-        takenOff: removedObjects.size, putOn: addedExtras.size, moved: hasMoved ? 'yes' : 'no',
-        startFrom: currentItem?.startFrom ?? '', changeBy: currentItem?.changeBy ?? '',
-        constraints: currentItem?.kind === 'subitize_perceptual' ? 'Pre-numeric matching: use no number words. Learner picks a hand.'
-          : currentItem?.kind === 'subitize' ? 'Quick look: present the stimulus before accepting an answer.'
-          : currentItem?.kind === 'recount_moved' ? 'After the move, remember the quantity; do not recount.' : '' },
       canDemonstrate: !['subitize', 'subitize_perceptual'].includes(currentItem?.kind ?? '') && !hasMoved,
       canPresent: isKSubitize,
       readyForResponse: (!isKSubitize || subitizeAnswerReady)

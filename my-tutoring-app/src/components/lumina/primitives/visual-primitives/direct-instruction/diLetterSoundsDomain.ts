@@ -23,6 +23,7 @@
  * letter NAMES. What does not survive is the wording that decided progression.
  */
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
+import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { diLetterSoundModePlan, DI_LETTER_SOUNDS_MODES, type DiLetterSoundChallengeType }
   from './diLetterSoundsModes';
 
@@ -210,6 +211,29 @@ export function buildLetterSoundItems(challenges: DiLetterSoundChallenge[] = [])
     responseClass: 'continuant_sound',
   }));
 }
+
+/** The item as the tutor and the outcome observer are told it. Every mode is spoken: the
+ *  child produces a sound, the tutor hears the audio and JEV reads its completed feedback. */
+export const workspaceAssignment = (item: LetterSoundItem): TeachingAssignment =>
+  ({ id: item.id, task: item.ask, expectedAnswer: item.accepted, response: 'speech' });
+
+/** The drawn stage: the stimulus card and the keyword picture, both markable. */
+export const workspaceScene = (item: LetterSoundItem): WorkspaceScene => ({
+  objects: [
+    { id: 'stimulus', selected: false, group: 'assignment target (gold ring)',
+      label: item.stimulus === 'word'
+        ? `the word "${item.keyword}" printed on the card`
+        : `the letter "${item.letter}" printed on the card` },
+    { id: 'picture', selected: false, group: 'keyword picture',
+      label: `a picture of a ${item.keyword}` },
+  ],
+  facts: { kind: item.challengeType, assignment: item.assignment,
+    keyword: item.keyword, elicitation: item.elicitation, articulation: item.articulation,
+    supportTier: item.supportTier,
+    ...(item.stimulus === 'letter' ? { printedLetter: item.letter } : { printedWord: item.keyword }),
+    markMeaning: 'Purple dashed marks are yours. They point at the card or the picture while you teach; '
+      + 'they are not the learner answering, and they never move the gold ring off the stimulus.' },
+});
 
 /** What the mounted journey driver SAYS for this item. The wrong answer is a
  *  different held sound rather than the letter name: the name is a real

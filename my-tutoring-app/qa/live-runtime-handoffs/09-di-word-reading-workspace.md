@@ -148,9 +148,9 @@ a clean read affirmed; a homophone or near neighbour affirmed as the printed wor
 (**must not** record success); praise after a sound-out substep with the whole word
 still unread; the tutor reading the word itself with no learner turn; help; a
 correction inviting retry; success followed by an open question; a sight word affirmed;
-a sight word the tutor wrongly sounds out. Copy the assignment sentences from the
-domain into the probe's fixture and note that they must be mirrored, as `--letters`
-does — the probe is plain `.mjs` and cannot import the TypeScript domain.
+a sight word the tutor wrongly sounds out. (Superseded 2026-09-21: the probe now imports
+the domain's `workspaceAssignment`/`workspaceScene` through the Vite module runner; nothing
+is copied. See brief 11 item 6.)
 
 From the repository root, with :3000 and :8000 already running:
 

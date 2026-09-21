@@ -42,6 +42,7 @@
  * openers, the two-branch law, the correction cap and the exact-line contract.
  */
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
+import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { spokenIntegerWord } from '../math/spokenNumberWords';
 import { diMathFactsModePlan, DI_MATH_FACTS_MODES, type DiMathFactsChallengeType }
   from './diMathFactsModes';
@@ -252,6 +253,44 @@ export function buildMathFactItems(challenges: DiMathFactsChallenge[] = []): Mat
     responseClass: c.answerNumeral <= 20 ? 'number_word_to_20' : 'number_word_to_120',
   }));
 }
+
+/** The item as the tutor and the outcome observer are told it. Every mode is spoken: the
+ *  child says a number word, the tutor hears the audio and JEV reads its completed feedback. */
+export const workspaceAssignment = (item: MathFactItem): TeachingAssignment =>
+  ({ id: item.id, task: item.ask, expectedAnswer: item.answerWord, response: 'speech' });
+
+/** Is this printed token a number the tutor can point at, or the operator
+ *  between them? Both are markable; only the label differs. */
+const isNumeral = (term: string) => /^[0-9]+$/.test(term);
+
+/** The drawn stage. Term objects exist only where the stimulus really has parts: a bare
+ *  numeral is one object, so there is no term inside it to point at separately. */
+export const workspaceScene = (item: MathFactItem): WorkspaceScene => ({
+  objects: [
+    { id: 'problem', selected: false, group: 'assignment target (the printed problem)',
+      label: `the printed problem "${item.display}", which the learner must answer out loud` },
+    ...item.terms.map((term, position) => ({ id: `term-${position}`, selected: false,
+      group: 'part of the printed problem',
+      label: isNumeral(term)
+        ? `the printed number "${term}", part ${position + 1} of the problem`
+        : `the "${term}" sign in the problem` })),
+  ],
+  facts: { kind: item.challengeType, assignment: item.assignment, printedProblem: item.display,
+    spokenProblem: item.problem,
+    // The tier the child is meant to meet this fact at. It is a fact rather
+    // than a composed lead-in: the tutor decides how much to model, and at
+    // `hard` the point of the item is that nothing models it first.
+    support: item.supportTier === 'hard'
+      ? 'answer it cold — do not say this fact or its answer before the learner answers'
+      : item.supportTier === 'medium' ? 'the fact may be modelled once before the learner answers'
+        : 'the fact may be modelled and said together before the learner answers',
+    countingRoute: item.countingRoute === null
+      ? 'none — counting the sequence is not a route to this answer'
+      : `counting ${item.countingRoute} to the answer is a legitimate route`,
+    markMeaning: 'Purple dashed marks are yours. They point at the whole problem or at one of its '
+      + 'printed parts while you teach; they are not the learner answering, and they never write an '
+      + 'answer on the stage.' },
+});
 
 /**
  * What the mounted journey driver SAYS for this item. The wrong answer is a
