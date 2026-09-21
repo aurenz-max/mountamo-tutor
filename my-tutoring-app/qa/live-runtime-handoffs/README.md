@@ -1,6 +1,18 @@
 # Live runtime adoption handoffs
 
-**Next session:** [08: lesson workspace follow-through](08-lesson-workspace-follow-through.md).
+**Next session:** [10: DI lesson entry](10-di-lesson-entry.md). Six primitives bind the shared
+teaching workspace; only three reach ordinary lessons. The three DI packs are speech-only, so
+the gesture-scoped retry blocker does not apply to them. **Done 2026-09-20, and wider than the
+brief:** by user ruling no existing mode is withheld from lessons. Every family that declares
+`bindsTeachingWorkspace` runs all its modes on the workspace in ordinary lessons — the three DI
+packs, `order_cards`, and all ten counting-board modes — and the gesture stall was fixed by
+moving the learner's Try again / Next challenge into the shared runtime shell.
+
+**Structure review, 2026-09-20:** [11: what was fixed, what is queued](11-structure-review-residuals.md).
+Duplicate wiring across the adapters, teaching components, observers and routes was folded into
+shared helpers; seven findings that change tutor or JEV input are queued there with executors.
+
+**Earlier:** [08: lesson workspace follow-through](08-lesson-workspace-follow-through.md).
 Repair the recorded JEV completion stalls on the two wired modes, preserve normal
 tutor-completed submissions, then retire one replaced pilot path under LA-14 S3.
 The brief includes source locations, saved failure evidence, commands and exit criteria.

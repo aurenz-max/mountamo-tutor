@@ -45,6 +45,62 @@ No mic sitting has been run. Owning entry: `qa/di/BACKLOG.md` item 44.
 
 ### #167 — **Live lesson runtime: TenFrame + Number Line adopted; microphone and combined lesson gate open**
 
+**2026-09-20 letter-sound-link (seventh workspace adopter).** At `/lumina/live-activity`,
+select Letter-Sound Link. Three things only a person can settle, one per direction:
+
+- **Say the Sound.** The machine gate cannot reach this direction at all: synthesised
+  "aaa" transcribes as the letter NAME "A", which this primitive's assignment blocks, so
+  the tutor correctly refuses it and the run dies. A real child saying a held sound is the
+  only evidence there is. Does a right answer get credited, and does "ess" for `s` get
+  corrected rather than affirmed?
+- **Find the Letter (the tap).** The tutor is never told which letter is right, and the
+  stage offers it nothing to point at. Listen for whether it ever names or spells either
+  letter while helping — and whether its help is still useful without that.
+- **Say the Word.** Two pictures are on screen and the tutor holds the answer word because
+  it has to judge it. Before the child answers, does it name the pictures? The first
+  guidance made it do exactly that on 2 of 3 connected runs; the repaired one is 0 of 3,
+  which is not the same as never.
+
+**2026-09-20 di-math-facts (sixth workspace adopter).** At `/lumina/live-activity`, select
+Math Facts and any of its five lessons. Two things only a person can settle:
+
+- **Does the tutor ever say the answer before the child does?** This is the one pack where
+  the answer is nowhere on screen, so nothing but the guidance stops it. Sit through a
+  `hard`-tier item (the child is meant to answer it cold) and listen for the fact being
+  modelled before the ask. A machine gate cannot hear this — the observer only ever sees
+  the tutor's feedback turn, never its teaching turns.
+- **Does "can you show me?" produce anything worth seeing?** The connected runs show the
+  tutor reaching for blocks and fingers instead of the board 6 times in 19, and the only
+  marks available are the whole card and its printed terms. The question for a person is
+  whether pointing at "+" teaches anything at all here, or whether this stimulus simply has
+  no demonstration in it. That answer decides whether the shared
+  demonstration-narrated-not-performed family has a capability gap underneath it.
+
+[Report](tutor-reports/di-math-facts-teaching-2026-09-20.md).
+
+**2026-09-20 di-word-reading (fifth workspace adopter) — one check here is the ONLY way to
+test it.** At `/lumina/live-activity`, select Word Reading and any of its four lessons.
+The machine gates cannot reach two things:
+
+- **Over-affirmation of a near neighbour.** The response class is unbenched; gate 1 was
+  waived 2026-07-22 with this risk deferred to exactly this sitting. Say `son` for **sun**,
+  `sat` for **sam**, `read` for **red**. When the tutor names the wrong word while
+  affirming, the observer correctly refuses (3/3 in the probe). When it affirms without
+  naming what it heard, the observer credits it — the learner transcript is excluded from
+  model input by design, so no observer rule can close that without becoming a second
+  speech judge. Only your ear can tell whether the tutor itself judges strictly.
+- **No pre-read picture, and the reward only after.** Watch that nothing but the printed
+  word is on the card before you read, that the tutor does not say the word before giving
+  you a chance, and that the reward picture appears only after your read is credited.
+  On `sight_word` the tutor named the word first in 2 of 3 machine runs. That is
+  DISTAR-correct for an irregular word but it means that mode is not an independent-read
+  measure — worth your judgement on whether it still teaches.
+
+Known before you sit down: a lesson can stall after a correct read that the tutor affirms
+without naming the word (observer abstains at 0.86, queued as LA-13 family 3). If you hit
+a silence after "You did it!", that is the known finding, not a new one.
+[Implementation, machine evidence and limits](tutor-reports/di-word-reading-teaching-2026-09-20.md).
+
 **2026-09-19 tutor/JEV follow-up:** The user reports the latest Counting Board sitting
 works well; its log shows seven visible advances and settled completion. This is scoped
 acceptance of that counting sitting, not all modes or the combined lesson. The user-selected

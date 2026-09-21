@@ -28,35 +28,73 @@ the tutor-driven host; everything else runs only its standalone scripted drill.
 |---|---|---|
 | `math/CountingBoard.tsx` | live (`countingBoardLive.ts`) + standalone | **domain extracted** (S1). Hosts both controllers; picks by `useLiveRuntime()`. Legacy branch is S3. |
 | `math/ShapeSorter.tsx` → `ShapeSorterTeaching.tsx` | live (`shapeSorterLive.ts`) + standalone | **domain extracted** (S1). `identify` is on the workspace; `count`, `sort`, `identify-real-object` are not. |
-| `math/NumberSequencer.tsx` | live (`numberSequencerLive.ts`) + standalone | legacy |
+| `math/NumberSequencer.tsx` | live (`numberSequencerLive.ts`) + standalone | **domain extracted + five modes on the workspace** (S1+S2, 09-19). `count_from`, `before_after`, `fill_missing`, `spot_error`, `decade_fill` mount `NumberSequencerTeaching`. `order_cards` is bound again since 09-20 (user ruling: no mode is withheld from lessons). The legacy live branch is now unreachable from the registry; deletion is S3. |
 | `math/BalanceScaleEquality.tsx` | standalone | legacy |
 | `math/BalanceScaleWorkshop.tsx` | standalone | legacy |
 | `math/BaseTenBlocksDi.tsx` | standalone | legacy |
 | `math/BarModelExplanation.tsx` | standalone | legacy |
 | `math/FractionTouch.tsx` | standalone | legacy |
 | `math/SpatialScene.tsx` | standalone | legacy |
+| `literacy/LetterSoundLink.tsx` → `LetterSoundLinkTeaching.tsx` | live (`letterSoundLinkLive.ts`) + ordinary lessons + standalone | **workspace verified** (dev host, 2026-09-20). Domain extracted (`letterSoundLinkDomain.ts`); all three modes bind, and `bindsTeachingWorkspace` puts them in ordinary lessons. First literacy adopter outside the DI packs and the first with TWO channels: `hear_see` is a checked TAP that publishes NO `expectedAnswer` and offers NO `demonstrate`. [Report](../tutor-reports/letter-sound-link-teaching-2026-09-20.md). |
 | `literacy/CvcSpeller.tsx` | standalone | legacy — calls BOTH runner hooks |
 | `literacy/PhonicsBlender.tsx` | standalone | legacy — calls BOTH runner hooks |
 | `literacy/SoundSwap.tsx` | standalone | legacy — calls BOTH runner hooks |
 | `literacy/WordFlip.tsx` | standalone | legacy — calls BOTH runner hooks |
 | `literacy/YouAndMe.tsx` | standalone | legacy |
-| `direct-instruction/DiLetterSounds.tsx` | standalone | legacy |
-| `direct-instruction/DiMathFacts.tsx` | standalone | legacy |
+| `direct-instruction/DiLetterSounds.tsx` → `DiLetterSoundsTeaching.tsx` | live (`diLetterSoundsLive.ts`) + standalone | **workspace verified** (dev host, 2026-09-19). All three modes bind; the scripted drill is the standalone path. Ordinary lessons are not wired. [Report](../tutor-reports/di-letter-sounds-teaching-2026-09-19.md). |
+| `direct-instruction/DiMathFacts.tsx` → `DiMathFactsTeaching.tsx` | live (`diMathFactsLive.ts`) + standalone | **workspace verified** (dev host, 2026-09-20). All five modes bind; the scripted drill is the standalone path. Ordinary lessons are not wired. 12/19 connected journeys — 6 of the 7 failures are the shared demonstration-narrated-not-performed family, with the modality split INVERTED from di-word-reading's. [Report](../tutor-reports/di-math-facts-teaching-2026-09-20.md). |
 | `direct-instruction/DiSentenceReading.tsx` | standalone | legacy |
 | `direct-instruction/DiShapes.tsx` | standalone | legacy |
-| `direct-instruction/DiWordReading.tsx` | standalone | legacy |
+| `direct-instruction/DiWordReading.tsx` → `DiWordReadingTeaching.tsx` | live (`diWordReadingLive.ts`) + standalone | **workspace verified** (dev host, 2026-09-20). All four modes bind; the scripted drill is the standalone path. Ordinary lessons are not wired. `sight_word` has no clean connected run — it stalls on the shared observer finding. [Report](../tutor-reports/di-word-reading-teaching-2026-09-20.md). |
 | `engineering/RampInvestigation.tsx` | standalone | legacy |
 | `components/di-bench/DirectInstructionBench.tsx` | bench harness | legacy — a test surface, not a learner one |
 
-The nine other live adapters (`ten-frame`, `number-line`, `number-bond`, `ordinal-line`,
+`di-letter-sounds` joined the live adapters on 2026-09-19 as the fourth workspace
+adopter — the first outside math, and the first DI pack. It was a standalone-only
+surface before that slice. `di-word-reading` followed on 2026-09-20 as the fifth, and
+its slice is where adoption should PAUSE: the sub-threshold-affirmation finding
+reproduced outside produced sound and stalled a live lesson, so the next work is LA-13's
+criterion rather than a sixth adopter. See the report above.
+
+`letter-sound-link` is the seventh adopter (2026-09-20, user request to move to the main
+literacy primitives). It is the first adopter whose tutor is NOT told the answer: `hear_see`
+publishes no `expectedAnswer` and no demonstration, because a letter NAME is a blocked
+response class and every object on that stage is an answer option. Its LA-13 contribution
+contradicts the sixth adopter's reading — see the report.
+
+`di-math-facts` is the sixth adopter (2026-09-20, user request for the next math
+primitive). It is the cheapest available test of the LA-13 question, because its answer is
+neither printed nor a produced phoneme: the sub-threshold shape does NOT reproduce on a
+spoken number word (0.94–0.96 accepted, including a variant controlled for the prior
+turn naming the target), so the failing family is not "produced sound" but "the child's
+answer and the tutor's own model are the same utterance in the same channel". A separate
+abstention DID stall one run, and a seven-cell isolation shows the word-reading remedy
+does not cover it — the reply names the answer and is still refused; what rescues it is a
+relational credit phrase. [Report](../tutor-reports/di-math-facts-teaching-2026-09-20.md).
+The next pull is still LA-13's criterion, now with four domains of cases.
+
+**CORRECTED 2026-09-20 (letter-sound-link adoption).** This paragraph used to say the
+nine other live adapters (`ten-frame`, `number-line`, `number-bond`, `ordinal-line`,
 `sorting-station`, `compare-objects`, `place-value-chart`, `number-tracer`,
-`comparison-builder`) do not call a runner hook from their component. They are LA-04
-adoptions on the live runtime, and they are not part of this retirement's consumer list.
+`comparison-builder`) "do not call a runner hook from their component". They do:
+`math/TenFrame.tsx:480` calls `useJudgedScriptRunner<TenFrameItem>`. Counting actual call
+EXPRESSIONS rather than files that name the symbols finds **58 non-test primitive modules**,
+not 20:
+
+```bash
+rg -l '= useJudgedScriptRunner\(|= useJudgedSpeechLoop\(|useJudgedScriptRunner<|useJudgedSpeechLoop<'   my-tutoring-app/src/components/lumina/primitives --glob '!*test*'
+```
+
+The 20-row table above is the list this retirement has been *working*, not the list that
+exists. S3-S5 scope is larger than it states; re-derive from the command before planning a
+deletion slice. The LA-04 adapters still differ from the rows above in that their live
+path does not run the judged runner — which is what the table was reaching for.
 
 ## Real lesson entry: S2 wired for two pilot modes
 
 `LessonScreen` now mounts `LessonWorkspaceProvider`. `OrderedSection` supplies the
-runtime only to eligible Counting Board `count` and Shape Sorter `identify` surfaces,
+runtime only to eligible Counting Board `count`, Shape Sorter `identify` and the five
+spoken Number Train modes (09-19, [report](../tutor-reports/number-sequencer-teaching-2026-09-19.md)),
 and only the focused surface registers. Both submit through the normal evaluation
 provider; Kindergarten uses its existing submission-based navigation. Scroll focus,
 back navigation, inactive surfaces and reconnect are covered in mounted renderer tests.
@@ -72,6 +110,7 @@ make the old shared runner deletable. Browser/mic acceptance remains #167.
 | `JudgedScriptRunnerOptions` / `JudgedScriptPack` in the board's option union | `math/CountingBoard.tsx` | S3. Confined to the file that hosts both controllers; the teaching controller no longer names them. |
 | `RESPONSE_CLASSES` re-export from `judgedScriptContract` | ~90 pack modules | S5, and only as an address change. The benched-class registry itself is preserved — it moved to `hooks/teachingItemContract.ts`. |
 | Sibling modes on a part-migrated primitive | shape-sorter (`count`, `sort`, `identify-real-object`), counting-board (ten kinds) | S3. A migrated mode does not retire its siblings. |
+| ~~No learner-owned retry in the lesson shell~~ **FIXED 09-20** | `runtime/LiveRuntimeSurface.tsx` | The learner's Try again / Next challenge now lives in the shared shell and the lesson passes `learnerProgress`; every gesture mode is admitted. What the row used to say: a checked-wrong manipulation locks the surface until an observer transition reopens it, and **Try again** exists only in `LiveActivitySandbox`. Withheld number-sequencer `order_cards` on this; counting-board's gesture kinds have the same gap. |
 
 ## What S1 changed
 

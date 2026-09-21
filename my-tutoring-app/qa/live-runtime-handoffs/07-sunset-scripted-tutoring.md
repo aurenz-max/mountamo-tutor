@@ -1,6 +1,6 @@
 # Sunset scripted tutoring in favor of the tutor/JEV workspace
 
-Date: 2026-09-19. Status: **S0 + S1 done; S2 wired for Counting Board count and Shape Sorter identify (2026-09-19).**
+Date: 2026-09-19. Status: **S0 + S1 done; S2 wired for Counting Board count and Shape Sorter identify (2026-09-19). Seven workspace adopters as of 2026-09-20.**
 Per-surface state lives in [07-census.md](07-census.md) — read it before pulling S2.
 Owner: [LIVE_LESSON_ROADMAP LA-14](../../src/components/lumina/docs/LIVE_LESSON_ROADMAP.md).
 
@@ -17,6 +17,108 @@ observed completion stalls and then scopes the first S3 controller retirement.
 Other modes still need adoption, and human acceptance remains separate. The baseline
 and original instructions below describe earlier states; consult this update and the
 census for current ownership before choosing another slice.
+
+## Fourth adopter: di-letter-sounds (2026-09-19)
+
+DI pack #1 now binds all three of its modes to the workspace in the development live
+host. It is the first adopter outside math and the first migrated DI pack, so its
+domain extraction (`diLetterSoundsDomain.ts`) is the template for the other DI packs
+in the consumer list below. Two findings carry beyond it, and are named as LA-13 work
+in the [report](../tutor-reports/di-letter-sounds-teaching-2026-09-19.md): a
+produced-sound affirmation sits just under the observer's 0.9 verdict gate because
+the tutor's affirmation and its own model use the same words, and synthetic-audio
+journeys cannot certify a phoneme-production task at all. Ordinary lessons are not
+wired and nothing was deleted.
+
+## Fifth adopter: di-word-reading (2026-09-20), and why adoption should now pause
+
+DI pack #2 binds all four of its modes in the development live host
+([report](../tutor-reports/di-word-reading-teaching-2026-09-20.md), brief
+[09](09-di-word-reading-workspace.md)). It was chosen to answer two questions, and both
+are answered:
+
+1. **A synthesised whole word IS a fair test of the spoken channel.** The connected audio
+   gate ran: the provider transcribed `dog`, `cat` and `mat` correctly and the loop
+   closed on them to completion. Letter sounds scored 0/3 here because TTS of a held
+   phoneme is not a child producing one. That limit is specific to phoneme production.
+2. **The sub-threshold-affirmation finding is NOT specific to produced sound.** A correct
+   read affirmed with "You did it!" after a corrective turn classified `correct` at 0.86
+   against a 0.9 gate, the observer abstained, and the live lesson stalled to timeout —
+   in a domain where the answer is a nameable printed word. The shape that predicts it is
+   a bare affirmation naming no answer after a turn in which the tutor corrected or
+   modelled the target. Two success-condition clauses were tried in the primitive's own
+   layer and both reverted; the probabilities and all three runs are in the report.
+
+**Therefore: stop adopting and fix the observer criterion first.** That is this handoff's
+own rule and five adopters across three domains is enough evidence to act on. Two
+harness-side families are also past their third occurrence and are shared-layer work: the
+retry-path timeout, and a requested demonstration narrated without being performed
+(markedly worse in audio mode — text called `demonstrate` 3/3, audio 0/2).
+
+Ordinary lessons are not wired and nothing was deleted.
+
+## Sixth adopter: di-math-facts (2026-09-20)
+
+DI pack #3 binds all five of its modes in the development live host
+([report](../tutor-reports/di-math-facts-teaching-2026-09-20.md)). It is the only remaining
+math surface on the legacy runner whose every mode is a bounded spoken answer, and the
+gesture math surfaces are still blocked from lesson entry by the missing learner-owned
+**Try again**. Because its answer is neither printed nor a produced phoneme, it is also the
+cheapest available test of the LA-13 question, and it settles two parts of it:
+
+1. **The sub-threshold-affirmation shape does not reproduce on a spoken number word.** The
+   same case that scored 0.83–0.89 (letter sounds) and 0.86 (word reading) scores 0.95–0.96
+   and is accepted 3/3. A controlled variant, whose prior turn models the act without naming
+   the target — matching the failing domains exactly — still scores 0.94–0.95. The line is
+   therefore not "produced sound": it is whether **the child's answer and the tutor's own
+   model are the same utterance in the same channel.**
+2. **The word-reading remedy does not generalise.** One connected run stalled, and a
+   seven-cell isolation (3 repetitions each, all deterministic) shows the reply *names the
+   answer* and is still refused. What rescues it is a relational credit phrase, not naming.
+   On this pack naming the answer back produces the DISTAR model line verbatim, so "name the
+   answer in the same breath" may be the wrong instruction here.
+
+Two harness families recurred. The demonstration-narrated-not-performed family appeared 6 of
+19 journeys with its **modality split inverted** from word reading's (text 2/7, audio 10/12
+here; text 3/3, audio 0/2 there), so the current explanation of that family is incomplete —
+and on an abstract symbol stimulus there may be nothing useful to demonstrate with, which is
+a capability question rather than a guidance one. One guidance attempt measured 1/3 before
+and 1/3 after, and was reverted.
+
+Ordinary lessons are not wired and nothing was deleted. **The next pull remains LA-13's
+shared criterion**, now with cases from four domains and one isolated mechanism.
+
+## Seventh adopter: letter-sound-link (2026-09-20)
+
+The first literacy primitive outside the DI packs, at the user's request to move to the
+main literacy primitives. All three directions bind, in the development host and in
+ordinary lessons, and its domain is extracted S1-style
+([report](../tutor-reports/letter-sound-link-teaching-2026-09-20.md)).
+
+Two things are new in the contract, and both are scene rules rather than guidance:
+
+1. **A mode whose answer the tutor is never told.** `hear_see` says a sound and the child
+   TAPS one of two confusable letters. A letter NAME is a blocked response class, so the
+   item publishes no `expectedAnswer` at all and the activity owns the check. Both cards
+   carry one shared group, so nothing in the scene marks the target either.
+2. **A mode that offers no demonstration.** Every object on that stage is an answer option,
+   so marking either one answers for the child, and the workspace advertises none. This
+   broke `run_live_runtime.py`, which asserted a visible demonstration unconditionally; the
+   assertion now reads the production envelope for a `demonstrate` operation, which is what
+   the file's own doctrine already required.
+
+Its LA-13 result **contradicts the sixth adopter's reading**. The `wrong_then_corrected`
+shape — a bare affirmation after a corrective turn — is *accepted* here at 0.94–0.96 on a
+produced sound, the one domain where the child's answer and the tutor's own model are
+plainly the same utterance in the same channel. What abstains instead, 3/3 each, is a reply
+whose entire content is the answer token ("Yes, /t/.", "Yes, sss."); the same exchange in a
+sentence scores 0.99–1.00. The failing shape is therefore about the reply, not the sound,
+the channel or the notation. One primitive-layer change was made and measured: naming the
+letter's own NAME in the success condition took a false affirm of "Yes, em is right!" from
+2/3 accepted to 0/3.
+
+Ordinary lessons ARE wired for this family (every bound mode reaches them since brief 10),
+and nothing was deleted.
 
 ## User direction and intended end state
 

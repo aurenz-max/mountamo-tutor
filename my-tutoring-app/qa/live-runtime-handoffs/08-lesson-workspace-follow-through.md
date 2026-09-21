@@ -51,6 +51,25 @@ live observation and is not certified. **Start from the following slice.**
 
 The original brief for that slice follows, for the reasoning it records.
 
+## Second slice: DONE 2026-09-19 — Number Train, five spoken modes
+
+[Adoption and evidence](../tutor-reports/number-sequencer-teaching-2026-09-19.md).
+Third adopter on the shared workspace, in the live host and in ordinary lessons.
+Domain extracted (S1 shape), `teachingOwner: 'tutor'`, journey row on `workspace`
+execution. Real JEV 42/42 new train cases with shapes 42/42 and counting board 54/54
+unchanged; connected `--lesson-entry --audio` 3/3 on `before_after` and 3/3 on
+`spot_error`. One shared `correct`-criterion sentence: a very short agreement that
+names the expected answer credits the learner ("Yes, eight." scored 0.89 and stalled).
+
+**The next slice is named there and is a SHARED gap, not a train one:** the ordinary
+lesson shell has no learner-owned Try again / Next challenge, so a checked-wrong
+manipulation locks the surface until an observer transition reopens it. That blocks
+every gesture mode from lesson entry — number-sequencer `order_cards` is withheld on
+it, and counting-board's gesture kinds have never been wired through a lesson for the
+same reason. Give `LessonWorkspace`/`ManifestOrderRenderer` the controls
+`LiveActivitySandbox` already has (`transport.learnerProgress`), then admit
+`order_cards`; its binding, checker and tests are already in place.
+
 ## First slice (original brief): repair the observed completion stalls (LA-13)
 
 Reproduce from the saved observations before changing prompts or lifecycle code.
@@ -68,6 +87,30 @@ Keep the two failure families distinct:
    [42/45 diagnostic](../tutor-reports/shape-sorter-lesson-jev-2026-09-19.json) ran a
    prompt candidate that was reverted. Reproduce against current code; it is not a
    current-prompt baseline. The unchanged-prompt [baseline passed 42/42](../tutor-reports/shape-sorter-lesson-jev-baseline-2026-09-19.json).
+
+3. **The cross-domain reproduction (added 2026-09-20, di-word-reading).** This is now
+   the clearest instance of family 1, and it removes the explanation letter sounds had
+   offered. From [the sight-word batch](../tutor-reports/di-word-reading-workspace-sight_word-2-2026-09-20.json),
+   with no fixture involved: the child reads `and` correctly, the prior tutor turn was
+   "That sounds like a different word, let's try reading it together", the tutor says
+   "You did it!" — and JEV returns `correct` at **0.86** (`none` 0.06, `incorrect` 0.08)
+   with `advance` at 0.97. Under the 0.9 gate it is refused, the item stays open, the
+   tutor's next turn is "..." and the run times out. `sight_word` is 0/3 for this reason
+   alone. [The probe](../tutor-reports/di-word-reading-workspace-jev-shipped-2026-09-20.json)
+   reproduces the same shape at 0.84 x3 (`wrong_then_corrected`).
+
+   **Letter sounds attributed this to produced sound** — a tutor affirming a *sound* uses
+   the same words as its own model of that sound. A printed word is a nameable token, so
+   that explanation does not apply, and the abstention happens anyway. The shape that
+   actually predicts it is **a bare affirmation naming no answer, after a turn in which
+   the tutor corrected or modelled the target.** The control is in the same probe:
+   `sight_no_restate` ("Perfect reading!") passes at 0.93-0.95 with no prior tutor turn.
+
+   Two success-condition clauses were tried in the primitive's own layer and both
+   reverted — one had no measurable effect, one lifted this case to the 0.90 boundary
+   while dropping the plain affirmation case from 0.96 to 0.91. All three runs are kept
+   beside [the report](../tutor-reports/di-word-reading-teaching-2026-09-20.md). The
+   repair belongs in the shared criterion. Executor: `$add-live-tutor-tools`.
 
 Also preserve the distinction from the earlier [browser cancellation defect](../tutor-reports/counting-board-browser-handoff-2026-09-19.md):
 raw VAD cancelling observation was fixed. Do not assume every stall is the same bug
