@@ -1,7 +1,7 @@
 import type { ShapeSorterData } from '../../../primitives/visual-primitives/math/ShapeSorter';
 import { itemsFromChallenges, SHAPE_PROPERTIES, SHAPE_SORTER_WORKSPACE_MODES }
   from '../../../primitives/visual-primitives/math/shapeSorterDomain';
-import { type LiveActivityAdapter } from './adapterContract';
+import { workspaceGuidance, type LiveActivityAdapter } from './adapterContract';
 
 const shapeItems = (d: ShapeSorterData) =>
   itemsFromChallenges(d.challenges, { isPreReader: (d.gradeBand ?? 'K') === 'K' });
@@ -41,16 +41,13 @@ export const shapeSorterLive: LiveActivityAdapter<ShapeSorterData> = {
     lessons: [['identify', 'Name the shape']],
   },
   lessonStart: (grade, mode) => `[LESSON_START] Begin a shape naming lesson for ${grade}. Call request_activity with primitiveId shape-sorter and mode ${mode}. After mounting, teach from the current workspace.`,
-  guidance: 'You own the teaching conversation. The gold ring fixes which shape the learner must name. '
-    + 'Judge the spoken name against the assignment, accepting its listed alternative names and equivalent names in other languages. '
+  // Teaching ownership, spoken verdicts, crediting, help and progression come from
+  // WORKSPACE_DOCTRINE (adapterContract.ts); this names only the sorter's own facts.
+  guidance: workspaceGuidance('The gold ring fixes which shape the learner must name. Accept its listed alternative names and '
+    + 'equivalent names in other languages. '
     + 'A color, side count, or corner count can be useful intermediate progress but does not complete the naming assignment. '
-    + 'Use begin_help before guiding questions or explanations. Use demonstrate with visible shape IDs to draw purple dashed tutor rings for comparison; [] clears them. '
-    + 'When asked to show what you mean, execute demonstrate on the shape you are discussing and wait for its visible result before claiming it is marked. '
-    + 'Those marks never change the gold-ringed assignment and are not learner responses. You cannot move, rotate, or sort shapes. '
-    + 'Teach one step at a time and let the learner try. Speak feedback naturally; the host records the verdict and handles retry/advance after speech settles. '
-    + 'When the name is right, say so and name the shape back in the same breath, in your own words; praise that '
-    + 'names no shape is generic and credits nothing. '
-    + 'Do not call recording/progression tools or replace an unfinished activity. No correction cap or exact correction wording.',
+    + 'Use demonstrate with visible shape IDs to draw purple dashed tutor rings for comparison; [] clears them. '
+    + 'Those marks never change the gold-ringed assignment. You cannot move, rotate, or sort shapes.'),
   validate: validateShapeSorterData,
   initialState: shapeSorterState,
 };

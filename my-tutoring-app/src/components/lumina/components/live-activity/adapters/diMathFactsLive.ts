@@ -1,7 +1,7 @@
 import type { DiMathFactsData } from '../../../primitives/visual-primitives/direct-instruction/DiMathFacts';
 import { askFor, buildMathFactItems, mathFactChallengeValid, DI_MATH_FACTS_WORKSPACE_MODES }
   from '../../../primitives/visual-primitives/direct-instruction/diMathFactsDomain';
-import { validateChallengePool, workspaceLessonStart, type LiveActivityAdapter } from './adapterContract';
+import { workspaceGuidance, validateChallengePool, workspaceLessonStart, type LiveActivityAdapter } from './adapterContract';
 
 /** Reject a pool whose items cannot be ASKED before they reach a five-year-old:
  *  a desynced answer word, or a stimulus carrying its own solution. */
@@ -41,32 +41,23 @@ export const diMathFactsLive: LiveActivityAdapter<DiMathFactsData> = {
       ['subtraction_fact', 'Answer a take-away fact']],
   },
   lessonStart: workspaceLessonStart('math-facts', 'di-math-facts'),
+  // Teaching ownership, spoken verdicts, crediting, help and progression come from
+  // WORKSPACE_DOCTRINE (adapterContract.ts); this names only the math-fact facts.
   // No example sentence anywhere below: a quoted sentence in this position becomes
   // the tutor's whole script (the letter-sounds finding). Length is also a hard
   // gate — `live_activity_tools.parse_activity_spec` caps guidance at 2000
   // characters and closes the socket with `Invalid activity offer` above it.
-  guidance: 'You own the teaching conversation. Read the task and the workspace facts, then teach. '
-    + 'The gold-bordered card shows ONE printed problem; the child answers it out loud. '
+  guidance: workspaceGuidance('The gold-bordered card shows ONE printed problem; the child answers it out loud. '
     + 'The answer is NOT on the card: the facts carry it so you can judge, not so you can supply it. '
     + 'Give the child a chance first, and never name an answer still to come. '
     + 'The one exception is naming a printed numeral: there the numeral itself is the answer. '
     + 'The support fact says how much you may model before they answer; at the cold tier, nothing. '
-    + 'Judge the audio you hear against the assignment fact and say your verdict naturally. The transcript is '
-    + 'noisy supporting context, never the answer. A different number is wrong however close it is, but '
+    + 'A different number is wrong however close it is, but '
     + 'young-child pronunciation of the right one is correct. The counting-route fact says whether counting '
     + 'to the answer is a legitimate route, and which way; where it is, a child who counts and then says the '
     + 'number has answered. Echoing a number out of the problem is a common miss, not a near answer. '
-    + 'When the answer is right, say so and name the number back to the child in the same breath, in your own '
-    + 'words. Praise that names no number is generic and credits nothing. Asking for a smaller step is good '
-    + 'teaching, but praise straight after one credits only that step: return to the whole fact before '
-    + 'affirming. '
-    + 'Use begin_help before guiding questions, explanations or a demonstration. Use demonstrate with the '
-    + 'target "problem", or a term target from workspace.objects, and [] to clear; wait for the visible result '
-    + 'before saying anything is marked. '
-    + 'No other scene action exists: you cannot write the answer, change the problem, or answer for the child. '
-    + 'Teach one step at a time. The host records your completed feedback, so do not call a '
-    + 'recording or progression tool, and do not request another activity. '
-    + 'No correction cap and no scripted wording.',
+    + 'Use demonstrate with the target "problem", or a term target from workspace.objects, and [] to clear. '
+    + 'No other scene action exists: you cannot write the answer, change the problem, or answer for the child.'),
   validate: validateDiMathFactsData,
   initialState: diMathFactsState,
 };

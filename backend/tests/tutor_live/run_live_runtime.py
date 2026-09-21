@@ -471,8 +471,23 @@ async def teaching_workspace(s):
     if s.state['task']['itemId'] == first:
         await turn('advance', 'I am ready for the next one.', lambda st: st['task']['itemId'] != first)
     assert s.state['task']['evidence']['attemptNumber'] == 0, 'Fresh item inherited an attempt'
+    second = s.state['task']['itemId']
     await s.learner('correct')
-    await turn('transfer', until=lambda st: st['status'] in ('closing', 'completed') or st['task']['evidence']['correctness'] == 'correct')
+    # A committed success can advance before any packet shows it as `correct`, so the next
+    # item appearing is the same outcome; waiting only for `correct` timed out every
+    # shape-sorter journey (workspace-doctrine-2026-09-21.md).
+    await turn('transfer', until=lambda st: st['status'] in ('closing', 'completed')
+               or st['task']['itemId'] != second or st['task']['evidence']['correctness'] == 'correct')
+    # Only the last item's outcome completes a workspace lesson; no tutor tool ends it early,
+    # so a longer payload is answered through rather than asked to finish.
+    for _ in range(12):
+        if (s.state['status'] in ('closing', 'completed') or not s.state.get('task')
+                or s.state['task']['evidence']['correctness'] == 'correct'):
+            break
+        current = s.state['task']['itemId']
+        await s.learner('correct')
+        await turn('remaining', until=lambda st: st['status'] in ('closing', 'completed')
+                   or st['task']['itemId'] != current)
     if s.state['status'] != 'completed':
         await turn('finish', 'I am ready to finish.', lambda st: st['status'] == 'completed')
     reply = await s.step({'type': 'poll'})
@@ -529,7 +544,9 @@ async def drive(args, token, live, index):
         assert (receipts or workspace) and all(r['status'] == 'visible' or safe_stale(r) for r in receipts), 'An action did not reach visible'
         if workspace:
             observations = [e['result'] for e in s.events if e['type'] == 'dialogue_observation']
-            assert sum(e['status'] == 'visible' and e['transition'] == 'advance' for e in observations) == 2, 'Both observer advances must reach visible'
+            answered = sum(e['type'] == 'learner_input' and e.get('intent') == 'correct' for e in s.events)
+            assert sum(e['status'] == 'visible' and e['transition'] == 'advance' for e in observations) == answered, \
+                'Every correct answer must reach a visible observer advance'
             assert all(c['action']['type'] not in ('advance', 'retry') for c in commands.values()), 'Progression still depended on tutor tool calls'
         elif args.progression_only:
             assert sum(r['status'] == 'visible' and commands[r['commandId']]['action']['type'] == 'advance' for r in receipts) == 2, 'Both checked advances must reach visible'

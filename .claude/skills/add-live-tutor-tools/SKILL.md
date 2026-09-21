@@ -147,9 +147,14 @@ operations. Keep domain-specific rendering and task rules in the primitive.
   count, and a named consumer: the packet field the tutor will read, or a trace-only bench
   while it is being measured. Only `assignment_outcome` may commit.
 
-Do not add prescribed correction wording to adapter guidance. Explain task constraints,
-which operations exist, when to record help and how to teach from the scene. A request
-to show something needs an actual action and visible receipt before narration claims it.
+Adapter guidance is `workspaceGuidance(domain)`: write only the domain's sentences (task
+constraints, which targets exist, what the tutor cannot do) and let `WORKSPACE_DOCTRINE` in
+`adapters/adapterContract.ts` carry teaching ownership, help, showing, crediting and
+progression for every adopter. A change to that doctrine is a framework correction: make it
+there, once, and measure every adopter. Keep it in guidance, which the mount receipt echoes
+beside the conversation; the same sentences in the backend session instruction cut visible
+demonstrations from 19/21 to 14/21. Do not add prescribed correction wording. A request to
+show something needs an actual action and visible receipt before narration claims it.
 
 ## 3. Preserve execution and observation boundaries
 

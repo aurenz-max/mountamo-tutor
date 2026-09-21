@@ -118,7 +118,9 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
           input => !input?.targets?.length && commit(() => session.assist()), true);
         if (w?.objects.length && w.canDemonstrate) {
           operation('demonstrate', 'Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.', input => {
-            if (!input?.targets || input.targets.some(id => !latest.current.workspace.current?.objects.some(o => o.id === id))) return false;
+            if (!Array.isArray(input?.targets)) return 'demonstrate needs targets: ids from workspace.objects, or [] to clear the marks.';
+            const unknown = input.targets.filter(id => !latest.current.workspace.current?.objects.some(o => o.id === id));
+            if (unknown.length) return `Not in workspace.objects: ${unknown.join(', ')}. Use ids listed there.`;
             return commit(() => { session.assist('full'); latest.current.workspace.current!.mark(input.targets!); return true; });
           }, true, 'full');
         }

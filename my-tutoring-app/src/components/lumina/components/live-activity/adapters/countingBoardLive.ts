@@ -1,7 +1,7 @@
 import type { CountingBoardData } from '../../../primitives/visual-primitives/math/CountingBoard';
 import { askFor, itemsFromChallenges as countingItemsFromChallenges, objectWordFor }
   from '../../../primitives/visual-primitives/math/countingBoardDomain';
-import { workspaceLessonStart, type LiveActivityAdapter } from './adapterContract';
+import { workspaceGuidance, workspaceLessonStart, type LiveActivityAdapter } from './adapterContract';
 
 /** The CATALOG mode names, not the challenge types: `count_all` ships as `count` and `group_count` as `group` (CNB-3). */
 export const COUNTING_BOARD_MODES = ['count', 'subitize', 'subitize_perceptual', 'count_on', 'group', 'compare',
@@ -50,15 +50,11 @@ export const countingBoardLive: LiveActivityAdapter<CountingBoardData> = {
       ['group', 'Count by groups'], ['subitize', 'Quick look'], ['subitize_perceptual', 'Match the hand']],
   },
   lessonStart: workspaceLessonStart('counting-board', 'counting-board'),
-  guidance: 'You own the teaching conversation. Read the task and observe the workspace, respond to the learner, '
-    + 'and choose useful actions. Begin help with begin_help; use demonstrate to show a selection on the actual board '
-    + 'without changing learner work. Use one step at a time and wait for the learner to try. '
-    + 'For spoken answers, judge what you hear against the visible assignment and communicate your verdict naturally. The transcript may be noisy or multilingual; it is supporting context. The host records your completed feedback, so do not wait for workspace.lastResponse or call a recording tool. '
-    + 'Handovers and hand choices are checked directly by the board. A question or help request is not an answer. '
-    + 'After a mistake, invite another attempt. When the answer is right, say so and name the number back in the '
-    + 'same breath, in your own words; praise that names no number is generic and credits nothing. '
-    + 'The host observes your completed reply and handles retry/advance. Do not call progression tools or request a replacement activity. A readiness question waits for the learner. No correction cap or scripted wording. '
-    + 'Respect the current task constraints, including hidden quick-look objects and pre-numeric hand matching.',
+  // Teaching ownership, spoken verdicts, crediting, help and progression come from
+  // WORKSPACE_DOCTRINE (adapterContract.ts); this names only the board's own facts.
+  guidance: workspaceGuidance('Use demonstrate to show a selection on the actual board without changing learner work. '
+    + 'Handovers and hand choices are checked directly by the board. '
+    + 'Respect the current task constraints, including hidden quick-look objects and pre-numeric hand matching.'),
   validate: validateCountingBoardData,
   initialState: countingBoardState,
 };

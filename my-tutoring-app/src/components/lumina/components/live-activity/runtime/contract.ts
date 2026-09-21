@@ -83,8 +83,12 @@ export interface Affordance {
 }
 export interface ExecutableAffordance extends Omit<Affordance, 'action'> {
   action: LocalAction;
-  /** Synchronous validated transition shared with learner controls. False must leave state untouched. No queued mutation. */
-  execute: (input?: WorkspaceInput) => boolean;
+  /**
+   * Synchronous validated transition shared with learner controls. False, or a refusal reason
+   * for the tutor, must leave state untouched. No queued mutation. A reason is what stops a
+   * model repeating the same malformed call: a bare refusal once drew 45 identical retries.
+   */
+  execute: (input?: WorkspaceInput) => boolean | string;
 }
 
 export interface CounterSupport {

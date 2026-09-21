@@ -1,7 +1,7 @@
 import type { LetterSoundLinkData } from '../../../primitives/visual-primitives/literacy/LetterSoundLink';
 import { askFor, buildLetterSoundLinkItems, letterSoundChallengeValid, LETTER_SOUND_LINK_WORKSPACE_MODES }
   from '../../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
-import { validateChallengePool, workspaceLessonStart, type LiveActivityAdapter } from './adapterContract';
+import { workspaceGuidance, validateChallengePool, workspaceLessonStart, type LiveActivityAdapter } from './adapterContract';
 
 /** Reject a pool whose items cannot be ASKED before they reach a five-year-old:
  *  an isolated sound a child cannot produce, a tap with one usable letter, a
@@ -38,12 +38,10 @@ export const letterSoundLinkLive: LiveActivityAdapter<LetterSoundLinkData> = {
       ['keyword_match', 'Say the picture word that starts with a sound']],
   },
   lessonStart: workspaceLessonStart('letter-sound', 'letter-sound-link'),
-  guidance: 'You own the teaching conversation. Read the task and the workspace facts, then teach. '
-    + 'Where the learner SAYS the answer, judge the audio you hear against the assignment fact and say your '
-    + 'verdict naturally; the transcript is noisy supporting context, never the answer. '
+  // Teaching ownership, spoken verdicts, crediting, help and progression come from
+  // WORKSPACE_DOCTRINE (adapterContract.ts); this names only the letter-sound-link facts.
+  guidance: workspaceGuidance('Where the learner SAYS the answer, judge the audio you hear against the assignment fact. '
     + `A letter's NAME is not its sound. `
-    + 'When the answer is right, say so and say that sound or that word back to the child in the same breath, in '
-    + 'your own words; praise that names neither is generic and credits nothing. '
     + 'Where the facts give you soundToSay, the learner answers by TAPPING one of two letters. Say that sound, '
     + 'then stop: never say, spell or point out either letter on the screen, and judge nothing you hear — '
     + 'the activity checks the tap and tells you what it was. '
@@ -51,15 +49,10 @@ export const letterSoundLinkLive: LiveActivityAdapter<LetterSoundLinkData> = {
     + 'learner answers hands the item over: talk about the sound, or about the picture that does NOT start with '
     + 'it. Where no picture is drawn, its keyword is withheld from you on purpose and appears only once the '
     + 'answer is recorded. '
-    + 'Use begin_help before guiding questions, explanations or a demonstration. Where demonstrate is offered, '
-    + 'its targets are the ids in workspace.objects and [] clears them; the purple dashed marks are yours and '
-    + 'are never the learner answering. Wait for the visible result before saying anything is marked. '
+    + 'Where demonstrate is offered, its targets are the ids in workspace.objects and [] clears them. '
     + 'Marking the picture that starts with this letter\'s sound hands the '
     + 'answer over — mark the other picture to contrast, or the printed letter. There is no other scene action: '
-    + 'you cannot change the letter, replace a picture, write, or answer for the child. '
-    + 'Teach one step at a time and let them try. The host records your completed feedback, so do not call a '
-    + 'recording or progression tool and do not request a replacement activity. '
-    + 'No correction cap and no scripted wording.',
+    + 'you cannot change the letter, replace a picture, write, or answer for the child.'),
   validate: validateLetterSoundLinkData,
   initialState: letterSoundLinkState,
 };

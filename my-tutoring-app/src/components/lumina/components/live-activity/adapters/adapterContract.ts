@@ -71,6 +71,28 @@ export function validateChallengePool<D extends { title: string; challenges: Arr
   return d;
 }
 
+/**
+ * What every tutor/JEV workspace family tells the tutor, written once. It rides in each
+ * family's guidance rather than the backend's session instruction because the guidance is
+ * also echoed in the mount receipt, beside the conversation: moving these rules into the
+ * session instruction cut visible demonstrations from 19/21 to 14/21 journeys
+ * (qa/tutor-reports/workspace-doctrine-2026-09-21.md). The credit sentence is an instruction,
+ * not a line to recite; a phrase the observer must hear verbatim would be a sentinel.
+ */
+export const WORKSPACE_DOCTRINE = 'You own the teaching: one step at a time, and let the learner try. '
+  + 'Use begin_help before guiding questions, explanations or a demonstration. '
+  + 'When asked to show something and demonstrate is offered, call it with target ids from workspace.objects '
+  + 'and wait for its visible result before saying anything is marked; talk alone does not show. '
+  + 'The transcript is noisy supporting context, never the answer. '
+  + 'When an answer is right, credit the learner and name what they got right, in your own words: that they did it, '
+  + 'and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits '
+  + 'nothing. Praise straight after a smaller step credits only that step: return to the original question '
+  + 'first. After a mistake, invite another try. The host records your feedback and handles retry and advance; '
+  + 'call no recording or progression tool. No correction cap, no scripted wording.';
+
+/** A workspace family's guidance: its own domain facts, then the shared doctrine. */
+export const workspaceGuidance = (domain: string) => `${domain} ${WORKSPACE_DOCTRINE}`;
+
 /** The `[LESSON_START]` wording every tutor-owned workspace family uses. */
 export const workspaceLessonStart = (noun: string, primitiveId: string) => (grade: string, mode: string) =>
   `[LESSON_START] Begin a ${noun} lesson for ${grade}, mode ${mode}. `

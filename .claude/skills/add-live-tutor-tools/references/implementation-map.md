@@ -56,8 +56,11 @@ Per-family facts are declared once, on the adapter, and shared helpers do the re
   family's `*_WORKSPACE_MODES` constant from its domain module — the same constant the adapter
   publishes as `modes`.
 - **Evaluation submit:** `runtime/useTeachingEvaluation.ts`; the binding supplies only `metrics`.
-- **Adapter boilerplate:** `validateChallengePool` and `workspaceLessonStart` in
+- **Adapter boilerplate:** `validateChallengePool`, `workspaceLessonStart` and
+  `workspaceGuidance` (domain sentences + the shared `WORKSPACE_DOCTRINE`) in
   `adapters/adapterContract.ts`.
+- **A refused workspace action:** `execute` returns `false` or, better, the reason as a string;
+  `LiveLessonRuntime` relays it to the tutor. A bare refusal once drew 45 identical retries.
 - **A new observation kind:** `service/typesafe/observationRoute.ts` for its route,
   `runtime/observationContract.ts` for scope keys and request bounds.
 

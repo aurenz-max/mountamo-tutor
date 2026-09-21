@@ -244,9 +244,10 @@ export class LiveLessonRuntime {
         this.status = 'active';
       } else {
         const applied = (offer as ExecutableAffordance).execute(command.action.type === 'workspace' ? command.action.input : undefined);
-        if (applied === false) {
+        if (applied === false || typeof applied === 'string') {
           this.publish();
-          return receipt('blocked', 'Adapter refused the transition; use refreshed affordances');
+          return receipt('blocked', typeof applied === 'string' ? applied
+            : 'Adapter refused the transition; use refreshed affordances');
         }
         if (applied !== true) throw new Error('Adapter did not acknowledge a synchronous commit');
       }

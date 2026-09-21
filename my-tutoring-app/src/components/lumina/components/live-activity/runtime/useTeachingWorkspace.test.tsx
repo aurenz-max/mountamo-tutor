@@ -58,6 +58,22 @@ it('accepts an empty optional target list for help, but refuses object targets o
   expect(runtime.getSnapshot().task!.evidence.attemptNumber).toBe(0);
 });
 
+it('tells the tutor why a demonstration was refused, and marks nothing', () => {
+  const runtime = new LiveLessonRuntime('why', { allowAnswerExposure: true, maxSupportLevel: 3, allowSupportArtifacts: false });
+  const view = render(<LiveRuntimeContext.Provider value={runtime}><ColorWorkspace /></LiveRuntimeContext.Provider>);
+  const demonstrate = (input: { targets?: string[] }) => {
+    const s = runtime.getSnapshot();
+    return runtime.dispatch({ sessionEpoch: s.sessionEpoch, commandId: crypto.randomUUID(), instanceId: s.instanceId,
+      itemId: s.task!.itemId, expectedRevision: s.revision, action: { type: 'workspace', operation: 'demonstrate', input } });
+  };
+  act(() => {
+    expect(demonstrate({})).toMatchObject({ status: 'blocked', reason: expect.stringMatching(/needs targets.*workspace\.objects/) });
+    expect(demonstrate({ targets: ['green'] })).toMatchObject({ status: 'blocked', reason: expect.stringMatching(/green/) });
+  });
+  expect(view.getByText('red').getAttribute('data-marked')).toBe('false');
+  expect(runtime.getSnapshot().task!.support.level).toBe(0);
+});
+
 it('gives every shared-workspace binding learner facts in its packet with nothing wired by the binding', async () => {
   const runtime = new LiveLessonRuntime('facts', { allowAnswerExposure: true, maxSupportLevel: 3, allowSupportArtifacts: false });
   const view = render(<LiveRuntimeContext.Provider value={runtime}><ColorWorkspace /></LiveRuntimeContext.Provider>);
