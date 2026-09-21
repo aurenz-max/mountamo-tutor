@@ -33,6 +33,12 @@ Read under `L/primitives/visual-primitives/math/`:
 - `countingBoardScript.ts`, `shapeSorterScript.ts`: compatibility wrappers for
   remaining scripted consumers. Read the census before removing dependencies.
 
+Every domain module exports `workspaceAssignment(item)` and `workspaceScene(item, view)`;
+the component spreads them and the verdict probe imports them. A spoken DI pack binds
+through `direct-instruction/DiTeachingStage.tsx`: supply those two, the drawn stimulus, an
+optional trail of committed answers, a recap label, metrics (`diStageMetrics`) and wording.
+`DiLetterSoundsTeaching.tsx` is the smallest example.
+
 Under `L/components/live-activity/`, inspect `adapters/countingBoardLive.ts`,
 `adapters/shapeSorterLive.ts`, `activityContract.ts`, `liveActivitySpec.ts`,
 `liveRenderers.tsx`, `livePlan.ts` and `liveJourneySpec.ts`. The registry owns supported

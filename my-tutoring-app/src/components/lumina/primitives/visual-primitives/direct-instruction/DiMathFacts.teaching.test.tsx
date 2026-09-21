@@ -13,8 +13,6 @@
  * be the same number — the tutor judges one and the evaluation records the other.
  */
 import React from 'react';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { LiveLessonRuntime } from '../../../components/live-activity/runtime/LiveLessonRuntime';
@@ -40,7 +38,7 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 vi.mock('../../../components/DiActionPanel', () => ({ default: () => null }));
 import DiMathFacts, { type DiMathFactsData } from './DiMathFacts';
-import { DI_MATH_FACTS_WORKSPACE_MODES, buildMathFactItems,
+import { DI_MATH_FACTS_WORKSPACE_MODES, buildMathFactItems, workspaceAssignment, workspaceScene,
   type DiMathFactsChallenge, type DiMathFactsChallengeType } from './diMathFactsDomain';
 import { diMathFactsLive, validateDiMathFactsData } from '../../../components/live-activity/adapters/diMathFactsLive';
 
@@ -469,20 +467,16 @@ it('keeps guidance inside the backend offer cap, with no sentence for the tutor 
   expect(diMathFactsLive.guidance).not.toMatch(/say exactly|Speak exactly|"[A-Z][^"]{12,}"/);
 });
 
-it('has the JEV probe mirroring the real success conditions, not a paraphrase of them', () => {
-  // `scripts/tutor-verdict-probe.mjs` is plain .mjs and cannot import this domain,
-  // so its fixtures are hand-mirrored. Mirrored text rots silently, and a probe
-  // replaying a paraphrase is measuring nothing. Joining the source's string
-  // concatenation lets this assert the mirror instead of trusting a comment.
-  const probe = readFileSync(resolve(process.cwd(), 'scripts/tutor-verdict-probe.mjs'), 'utf8')
-    .replace(/['"]\s*\+\s*['"]/g, '');
-  const mirrored = [buildMathFactItems(CHALLENGES.answer_fact)[0],
-    buildMathFactItems(CHALLENGES.subtraction_fact)[0],
-    buildMathFactItems(CHALLENGES.name_numeral)[0]];
-  for (const item of mirrored) {
-    expect(probe, `probe no longer mirrors the "${item.display}" success condition`).toContain(item.assignment);
-  }
-  expect(probe).toContain(mirrored[0].ask);
+it('publishes exactly the domain assignment and scene that the verdict probe replays', () => {
+  // `scripts/tutor-verdict-probe.mjs` builds its model input from `workspaceAssignment`
+  // and `workspaceScene`. It replays the lesson only while the mounted stage publishes
+  // those and nothing else.
+  const h = mount('answer_fact');
+  const item = buildMathFactItems(CHALLENGES.answer_fact)[0];
+  const { task, expectedAnswer, response } = workspaceAssignment(item), scene = workspaceScene(item);
+  expect(h.state().task).toMatchObject({ task, demand: { ...scene.facts, response, presentation: 'ready' } });
+  expect(h.state().task!.demand).toEqual({ ...scene.facts, response, presentation: 'ready' });
+  expect(h.state().task!.workspace).toMatchObject({ objects: scene.objects, expectedAnswer });
 });
 
 // ── The pool gates: what cannot be asked is dropped, not repaired ──

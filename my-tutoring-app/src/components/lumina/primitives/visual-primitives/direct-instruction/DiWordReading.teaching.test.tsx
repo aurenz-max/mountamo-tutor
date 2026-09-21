@@ -12,8 +12,6 @@
  * publish no letter to sound out.
  */
 import React from 'react';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { LiveLessonRuntime } from '../../../components/live-activity/runtime/LiveLessonRuntime';
@@ -38,7 +36,7 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 vi.mock('../../../components/DiActionPanel', () => ({ default: () => null }));
 import DiWordReading, { type DiWordReadingData } from './DiWordReading';
-import { DI_WORD_READING_WORKSPACE_MODES, buildWordReadingItems,
+import { DI_WORD_READING_WORKSPACE_MODES, buildWordReadingItems, workspaceAssignment, workspaceScene,
   type DiWordReadingChallenge, type DiWordReadingChallengeType } from './diWordReadingDomain';
 import { diWordReadingLive, validateDiWordReadingData } from '../../../components/live-activity/adapters/diWordReadingLive';
 
@@ -355,21 +353,16 @@ it('keeps guidance inside the backend offer cap, with no sentence for the tutor 
   expect(diWordReadingLive.guidance).not.toMatch(/say exactly|Speak exactly|"[A-Z][^"]{12,}"/);
 });
 
-it('has the JEV probe mirroring the real success conditions, not a paraphrase of them', () => {
-  // `scripts/tutor-verdict-probe.mjs` is plain .mjs and cannot import this domain,
-  // so its fixtures are hand-mirrored. Mirrored text rots silently, and a probe
-  // replaying a paraphrase is measuring nothing. Joining the source's string
-  // concatenation lets this assert the mirror instead of trusting a comment.
-  const probe = readFileSync(resolve(process.cwd(), 'scripts/tutor-verdict-probe.mjs'), 'utf8')
-    .replace(/['"]\s*\+\s*['"]/g, '');
-  const mirrored = [...buildWordReadingItems(CHALLENGES.cvc_reading).slice(0, 1),
-    ...buildWordReadingItems(CHALLENGES.sight_word).slice(0, 1),
-    ...buildWordReadingItems(CHALLENGES.word_reading_review).slice(0, 1)];
-  for (const item of mirrored) {
-    if (item.word !== 'sam' && item.word !== 'the' && item.word !== 'sun') continue;
-    expect(probe, `probe no longer mirrors the "${item.word}" success condition`).toContain(item.assignment);
-  }
-  expect(probe).toContain(mirrored[0].ask);
+it('publishes exactly the domain assignment and scene that the verdict probe replays', () => {
+  // `scripts/tutor-verdict-probe.mjs` builds its model input from `workspaceAssignment`
+  // and `workspaceScene`. It replays the lesson only while the mounted stage publishes
+  // those and nothing else.
+  const h = mount('cvc_reading');
+  const item = buildWordReadingItems(CHALLENGES.cvc_reading)[0];
+  const { task, expectedAnswer, response } = workspaceAssignment(item), scene = workspaceScene(item);
+  expect(h.state().task!.task).toBe(task);
+  expect(h.state().task!.demand).toEqual({ ...scene.facts, response, presentation: 'ready' });
+  expect(h.state().task!.workspace).toMatchObject({ objects: scene.objects, expectedAnswer });
 });
 
 it('rejects a pool whose items cannot be asked, and one whose blend does not spell its word', () => {
