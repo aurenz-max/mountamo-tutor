@@ -36,7 +36,7 @@ When building new primitives, always use the Gemini generator pattern — never 
 
 When Gemini schemas are too complex (6+ types, deeply nested), the LLM will produce malformed JSON. Simplify schemas proactively to 3-4 types max and reduce redundancy.
 
-**Lifecycle:** primitives are built in layers, not one pass — `/primitive` births L0, each `/add-*` skill raises one layer (L5 = `/add-di-loop`, the tutor-owned judged loop), `/eval-test` closes every layer. Ladder, detection signals, and which skill owns which rung: `my-tutoring-app/src/components/lumina/docs/PRIMITIVE_LIFECYCLE.md`.
+**Lifecycle:** primitives are built in layers, not one pass — `/primitive` births L0, each `/add-*` skill raises one layer (L5 voice = `/add-live-tutor-tools`, the shared tutor/JEV workspace; it owns migrating the legacy `/add-di-loop` packs and may edit them in place), `/eval-test` closes every layer. Ladder, detection signals, and which skill owns which rung: `my-tutoring-app/src/components/lumina/docs/PRIMITIVE_LIFECYCLE.md`.
 
 **Key skills:** `/primitive` (birth L0), `/add-eval-modes` (wire IRT), `/eval-test` (verify, agent-judged), `/oracle-test` (verify, code-judged content contracts — CI-able), `/eval-fix` (fix issues).
 

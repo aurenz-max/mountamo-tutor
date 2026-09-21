@@ -12,6 +12,8 @@ description: >-
 
 This skill converts a click-to-advance or timer-advanced primitive to the **Direct Instruction modality**: the Live tutor owns the clock — it asks, waits, judges the child's answer from the audio in-band, corrects contrastively, and **its own affirmation is the advance**. When you are done there is no advance timer, no Next button, no push-to-talk mic, and no printed answer anywhere in the path.
 
+> **The control architecture here is being retired (user direction 2026-09-19; standing authority 2026-09-21).** Spoken teaching moves to the shared tutor/JEV workspace, and `/add-live-tutor-tools` owns that move. It may rewrite any pack, catalog directive, contract requirement or rule in this document that uses wording as control: sentinel verdicts, the affirmation-advances rule, fixed corrections and the correction cap. Where the two skills disagree, `/add-live-tutor-tools` wins, and a new spoken conversion binds the workspace rather than starting a runner pack. This document stays authoritative for task knowledge: the child answers out loud, the answer-material fork and response classes (including the benched list), content and leak gates, stimulus timing, and mode definitions.
+
 ## The outcome you're designing for
 
 > **The tutor asks. The child answers OUT LOUD. The tutor's verdict moves the lesson. The screen only follows.**

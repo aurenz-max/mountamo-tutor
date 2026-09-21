@@ -4,8 +4,9 @@ description: >-
   Add or migrate executable AI tutor interactions for a Lumina primitive using
   the shared tutor/JEV teaching workspace. Use for live surface bindings, truthful
   scene actions, observer-owned outcomes, help and return, runtime verification,
-  or a scoped slice of scripted-tutoring retirement. Includes maintenance of
-  existing adapters during migration. Separate from catalog-only tutoring text,
+  or a scoped slice of scripted-tutoring retirement. Owns the existing spoken DI
+  modality's migration and edits its adapters, packs, contracts and shared doctrine
+  in place when the framework needs correcting. Separate from catalog-only tutoring text,
   Pip animation, voice capture, or phoneme-level spoken-production judging.
 ---
 
@@ -23,8 +24,39 @@ entry points migrate. A live-bench pass alone does not authorize deleting them.
 
 Scope a request to a primitive, resolved evaluation mode, entry point and requested
 behavior. Example: `shape-sorter identify: demonstrate the target without changing
-learner work`. Follow the user's requested scope; the handoff index is not a mandate
-to migrate the catalog. Inspect the working tree and preserve existing changes.
+learner work`. Adopting a new primitive follows the user's requested scope; the handoff
+index is not a mandate to migrate the catalog. A correction to the framework itself is
+not limited that way (next section). Inspect the working tree and preserve existing changes.
+
+## Standing authority over the existing spoken modality
+
+User rulings 2026-09-19 (sunset scripted tutoring) and 2026-09-21: this skill owns moving
+the spoken DI modality onto the workspace, and it edits that modality in place to make
+the framework correct. Do not propose a framework correction and wait for approval; the
+before/after measurement is the gate.
+
+- **In scope without a new ruling:** every workspace adapter's guidance, the shared
+  doctrine in `adapters/adapterContract.ts`, the shared observer and its criterion, DI
+  packs (`*Script.ts`, `*Modes.ts`, their stages), catalog tutoring directives, the
+  `/add-di-loop` skill, and contract requirements that encode scripted control.
+- **A framework correction is made once and applied to every adopter.** When a finding
+  recurs in two or more adopters, or the fix is a sentence the adopters share, change the
+  shared layer and every adopter in the same slice. Do not tune per-adopter variants or
+  file the finding against one adopter.
+- **Runner-era requirements are re-based, not forked around.** A requirement that pins a
+  sentinel word, a fixed correction, a correction cap or "the tutor's affirmation advances"
+  was protecting something: strict judging, no unearned credit, one progression owner, the
+  child answering aloud. Restate that property against the workspace (the observer's
+  committed outcome advances; JEV refuses unearned credit) and log the re-base in the
+  contract history. The CLAUDE.md fork ladder still governs task requirements: content,
+  scope, answer keys, response class, stimulus timing and evidence.
+- **The measurement decides.** Run every affected domain's verdict and learner-intent
+  probes before and after, and one connected `--audio` journey per changed family. Keep
+  the change if no domain regresses; otherwise revert it and report the numbers. Guidance
+  tells the tutor what to do in its own words. A phrase the observer must hear verbatim
+  is a sentinel, whatever it is called.
+- **Still the user's call:** attempt, mastery or student-record semantics
+  (`$student-data-loop`), opening a benched response class, and shipping.
 
 ## Read the current contract
 
