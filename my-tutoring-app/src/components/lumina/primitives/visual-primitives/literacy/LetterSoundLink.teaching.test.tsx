@@ -75,10 +75,11 @@ function mount(mode: EvalMode = 'see_hear', classify?: DialogueClassifier, class
   const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
   const sent: any[] = [];
   const transport = new RuntimeTransport(runtime, m => sent.push(m), classify, classifyLearner);
-  // Production stamps every non-silent `sendText` as learner text on the wire, so
-  // the gesture message the hook writes has to travel that channel here too —
-  // otherwise the host-text registration this binding depends on is untested.
-  seam.send.mockImplementation((text: string) => { transport.learnerText(text, true); });
+  // Routes a non-silent `sendText` the way LuminaAIContext does: host-written text opens
+  // an exchange, anything else is learner words. The gesture message must take the host path.
+  seam.send.mockImplementation((text: string, options?: { silent?: boolean; author?: 'learner' | 'host' }) => {
+    if (!options?.silent) options?.author === 'host' ? transport.hostText() : transport.learnerText(text, true);
+  });
   const data = { instanceId: 'links', title: 'Letter sounds', letterGroup: 1,
     cumulativeLetters: ['m', 's', 't', 'b', 'p'], challenges: CHALLENGES[mode] } as LetterSoundLinkData;
   const tree = () => <LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
@@ -182,9 +183,7 @@ it('names the letter NAME as the miss on a produced sound, and widens the accept
   const h = mount('see_hear');
   expect(h.state().task!.task).toBe('What sound does the letter "m" make?');
   expect(h.state().task!.workspace!.expectedAnswer).toBe('mmm');
-  // The exact sentence, because `scripts/tutor-verdict-probe.mjs` mirrors it by
-  // hand: if this changes and the mirror does not, the probe stops replaying the
-  // real model input.
+  // The exact sentence: a change to this success condition changes what the observer judges against.
   expect(h.state().task!.demand.assignment).toBe(
     'The learner must say the continuous sound mmm that this letter makes. '
     + 'A short try counts, and so does a little "uh" on the end.'

@@ -84,11 +84,30 @@ it('gives every shared-workspace binding learner facts in its packet with nothin
   const first = sent.at(-1).state.learner;
   expect(first.about).toMatch(/never grade an answer/);
   expect(first.signals).toMatchObject({ itemId: 'red-item', attempts: 0, learnerTurns: 0, helpRequests: 0 });
-  // A checked gesture sends a host-written message down the learner-text channel. It is not a learner turn.
+  // A checked gesture's message is written by the host. The context routes it as a host turn, never as learner words.
   fireEvent.click(view.getByText('blue'));
-  act(() => transport.learnerText(String(seam.sendText.mock.calls.at(-1)![0]), true));
+  expect(seam.sendText.mock.calls.at(-1)![1]).toMatchObject({ author: 'host' });
+  act(() => transport.hostText());
   expect(classifyLearner).not.toHaveBeenCalled();
   await act(async () => { transport.learnerText('which one is red', true); await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
   expect(sent.at(-1).state.learner.signals).toMatchObject({ attempts: 1, wrongAttempts: 1, learnerTurns: 1, helpRequests: 1 });
+  transport.close();
+});
+
+it('judges a checked gesture with no learner words: the host message is not the learner, and earlier speech does not carry over', async () => {
+  const runtime = new LiveLessonRuntime('gesture', { allowAnswerExposure: true, maxSupportLevel: 3, allowSupportArtifacts: false });
+  const view = render(<LiveRuntimeContext.Provider value={runtime}><ColorWorkspace /></LiveRuntimeContext.Provider>);
+  const requests: any[] = [];
+  const classify = vi.fn(async (request: any) => { requests.push(request); return { verdict: 'none' as const, transition: 'none' as const,
+    confidence: 0, grounded: 0, accepted: false, reason: 'test', ms: 1 }; });
+  const transport = new RuntimeTransport(runtime, () => {}, classify, vi.fn(async () => ({ asksForHelp: .01, wantsToStop: .01,
+    attemptsAnswer: .01, accepted: true, reason: 'observed', ms: 1 })));
+  act(() => transport.learnerText('um is it the blue one', true));
+  fireEvent.click(view.getByText('blue'));
+  act(() => { transport.hostText(); transport.beginTurn('That one is blue. Look for red.'); transport.endTurn(false); });
+  await act(async () => { await Promise.resolve(); });
+  expect(classify).toHaveBeenCalledTimes(1);
+  expect(requests[0]).toMatchObject({ learner: '', phase: 'checked', lastResponse: { response: 'blue', correct: false } });
+  expect(JSON.stringify(requests[0])).not.toMatch(/submitted their selection|is it the blue one/);
   transport.close();
 });

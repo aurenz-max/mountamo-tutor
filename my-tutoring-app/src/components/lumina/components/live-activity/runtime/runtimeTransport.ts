@@ -58,8 +58,11 @@ export class RuntimeTransport {
   learnerText(text: string, finished: boolean) {
     if (this.closed) return;
     this.dialogue.learnerText(text, finished);
-    if (finished && this.runtime.learner.consumeHostText(text)) return;
     if (this.learnerObserver.learnerText(text, finished)) this.runtime.learner.learnerFinished();
+  }
+  /** The host sent the tutor a message it wrote itself. A new exchange begins; nobody spoke. */
+  hostText() {
+    if (!this.closed) this.dialogue.hostTurn();
   }
   beginTurn(text = '') {
     if (this.closed) return;

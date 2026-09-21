@@ -77,7 +77,13 @@ class Session:
         return reply
 
     async def say(self, text):
-        if self.args.audio and not text.startswith('[LESSON_START]'):
+        # The host writes the start message and both hosts send it silently: the model
+        # hears it, the runtime never receives it as learner words or a learner turn.
+        if text.startswith('[LESSON_START]'):
+            await self.ws.send(json.dumps({'type': 'text', 'content': text, 'interrupt': False}))
+            self.record('host', text=text)
+            return
+        if self.args.audio:
             import azure.cognitiveservices.speech as speech
             from dotenv import dotenv_values
             config = dotenv_values(ROOT / 'my-tutoring-app/.env.local')

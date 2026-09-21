@@ -441,11 +441,14 @@ Piloted on Counting Board behind an opt-in, then made general the same day: ever
 `liveRuntime.learner` and gets the learner-turn observation, with nothing wired per
 primitive. Legacy runner adapters are unchanged; a runner owns its own judge and clock.
 The block carries its own one-sentence `about` note, because adapter guidance is capped at
-2000 characters and two adopters sit within 110 of it. A binding owes a truthful
-`readyForResponse`, registration of any host-written message, and a domain case set.
-Host-written messages that travel the learner-text
-channel (the checked-gesture facts) are registered by exact string and dropped, which is an
-identity match on text this code wrote, not a phrase rule. A new kind needs its questions,
+2000 characters: the shared `WORKSPACE_DOCTRINE` (`adapters/adapterContract.ts`) takes 900 of
+them and letter-sound-link sits at 1961. A binding owes a truthful
+`readyForResponse`, `author: 'host'` on any non-silent message it writes itself, and a
+domain case set. `LuminaAIContext` sends only learner-authored text down the learner-text
+channel; a host-authored send (the checked-gesture facts) arrives as `runtime_host_text`,
+which opens the next exchange for the outcome observer with no learner words and is
+neither classified nor counted as a learner turn (2026-09-21; replaced a registry that
+matched the host's own string and dropped it). A new kind needs its questions,
 its decision, a real-model case set with a false-positive count, and a named consumer.
 It does not need, and must not get, a primitive-specific branch (TW-10).
 [Pilot report](../../../../qa/tutor-reports/counting-board-learner-signals-2026-09-20.md).

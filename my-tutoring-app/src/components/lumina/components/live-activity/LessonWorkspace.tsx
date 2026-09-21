@@ -61,6 +61,7 @@ function LessonWorkspaceBridge({ handler, progress }: {
         case 'runtime_cancelled': t?.cancel(event.commandId); break;
         case 'runtime_turn_output': t?.beginTurn(String(event.text ?? '')); break;
         case 'runtime_learner_text': t?.learnerText(String(event.text ?? ''), event.finished === true); break;
+        case 'runtime_host_text': t?.hostText(); break;
         case 'runtime_turn_end': t?.endTurn(event.audioPending === true); break;
         case 'runtime_audio_idle': t?.audioChanged(false); break;
         case 'runtime_interrupted': t?.dialogue.interrupt(); t?.endTurn(false); break;

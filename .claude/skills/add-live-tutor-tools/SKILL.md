@@ -127,15 +127,15 @@ operations. Keep domain-specific rendering and task rules in the primitive.
   recorded help, help and stop request counts), and `observations`, an advisory JEV
   reading of each finished learner turn (asked for help, asked to stop, attempted an
   answer). The packet describes itself, so add nothing about it to adapter guidance.
-  Guidance is capped at 2000 characters and two adopters sit within 110 of it. The
+  Guidance is capped at 2000 characters, and the shared doctrine takes 900 of it. The
   binding owes three things:
   - `readyForResponse` is true only while the learner can actually answer.
     `secondsSinceReady` is measured from it, so a stimulus still pending must report false.
-  - A host-written message sent through `sendText` without `{ silent: true }` is registered
-    first with `runtime.learner.expectHostText(text)`. A non-silent send travels the
-    learner-text channel, so an unregistered host message is counted and classified as a
-    learner turn. A silent send never reaches that channel and needs nothing. The shared
-    hook already registers its checked-gesture message.
+  - A message the host writes itself and sends through `sendText` without `{ silent: true }`
+    passes `author: 'host'`. Without it, the context treats the text as learner words: the
+    outcome observer receives it as the learner's answer and the learner-turn observer counts
+    it. A silent send never reaches that channel. The shared hook's checked-gesture message
+    already passes it.
   - The domain gets its own learner-turn cases (step 5.4).
 
   Do not build a per-primitive struggle detector, an idle timer that prompts the tutor,

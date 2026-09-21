@@ -38,8 +38,8 @@ export interface LearnerSignals {
 
 /**
  * Travels inside the packet, so the instruction arrives with the data on every host and
- * no adapter has to restate it. Adapter guidance is capped at 2000 characters and two
- * adopters sit within 110 of it, so this cannot live there.
+ * no adapter has to restate it. Adapter guidance is capped at 2000 characters and the shared
+ * WORKSPACE_DOCTRINE already takes 900 of it, so this cannot live there.
  */
 export const LEARNER_FACTS_NOTE = 'Facts about the learner on this item, for choosing between waiting, helping and offering a break. '
   + 'They never grade an answer. Quiet time alone is not a reason to interrupt.';
@@ -60,7 +60,6 @@ export class LearnerSignalTracker {
   private stopRequests = 0;
   private turnsWithoutAnswer = 0;
   private observed: LearnerObservation[] = [];
-  private hostTexts: string[] = [];
   constructor(private now: () => number = Date.now) {}
 
   /** Call on every runtime publish. A new item starts every count again. */
@@ -78,21 +77,6 @@ export class LearnerSignalTracker {
   }
   learnerFinished() { if (this.key) { this.learnerTurns++; this.spokeAt = this.now(); } }
   tutorSettled() { if (this.key) { this.tutorTurns++; this.settledAt = this.now(); } }
-
-  /**
-   * The host composes some "learner" messages itself, e.g. the facts it sends after a
-   * checked gesture. They travel the learner-text channel, so the hook registers the
-   * exact string first and the transport drops it here. An identity match on a string
-   * this code wrote, never a phrase rule about what a child might say.
-   */
-  expectHostText(text: string) { this.hostTexts = [...this.hostTexts.slice(-7), text]; }
-  /** Each registration drops one delivery. Several may be pending at once; a second must not overwrite the first. */
-  consumeHostText(text: string) {
-    const index = this.hostTexts.indexOf(text);
-    if (index < 0) return false;
-    this.hostTexts.splice(index, 1);
-    return true;
-  }
 
   /** Returns true when this observation newly raises a request the tutor should see now. */
   intent(scopeKey: string, observation: LearnerObservation, flags: LearnerIntentFlags) {

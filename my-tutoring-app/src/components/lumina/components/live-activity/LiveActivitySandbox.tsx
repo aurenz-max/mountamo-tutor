@@ -316,6 +316,7 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
       }
       if (event.type === 'runtime_turn_output') { transport?.beginTurn(typeof event.text === 'string' ? event.text : ''); return; }
       if (event.type === 'runtime_learner_text') { transport?.learnerText(String(event.text ?? ''), event.finished === true); return; }
+      if (event.type === 'runtime_host_text') { transport?.hostText(); return; }
       if (event.type === 'runtime_interrupted') { transport?.dialogue.interrupt(); transport?.endTurn(false); return; }
       if (event.type === 'runtime_turn_end') { transport?.endTurn(event.audioPending === true); return; }
       if (event.type === 'runtime_audio_idle') { transport?.audioChanged(false); return; }

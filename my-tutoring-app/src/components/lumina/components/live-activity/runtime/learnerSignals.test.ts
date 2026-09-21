@@ -56,19 +56,6 @@ it('counts classified requests, leaves an unclear turn alone, and asks for a pac
   expect(t.observations()).toHaveLength(5);
 });
 
-it('drops exactly the host-written message once, and nothing a learner could say', () => {
-  const t = new LearnerSignalTracker(() => 0);
-  t.expectHostText('The learner submitted their selection.');
-  expect(t.consumeHostText('the learner submitted their selection.')).toBe(false);
-  expect(t.consumeHostText('The learner submitted their selection.')).toBe(true);
-  expect(t.consumeHostText('The learner submitted their selection.')).toBe(false);
-  // Two pending registrations, delivered out of order: neither overwrites the other.
-  t.expectHostText('first'); t.expectHostText('second');
-  expect(t.consumeHostText('second')).toBe(true);
-  expect(t.consumeHostText('first')).toBe(true);
-  expect(t.consumeHostText('first')).toBe(false);
-});
-
 it('reports nothing without a task or after the activity stopped', () => {
   const t = new LearnerSignalTracker(() => 0);
   expect(t.read(snapshot())).toBeNull();

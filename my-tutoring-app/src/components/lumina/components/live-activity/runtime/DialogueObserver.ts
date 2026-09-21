@@ -44,6 +44,12 @@ export class DialogueObserver {
     this.learner = this.learnerFinished ? text : this.learner + text;
     this.learnerFinished = finished;
   }
+  /** A host-written message opens the next exchange. Its text is not learner words, and a gesture's evidence is `lastResponse`. */
+  hostTurn() {
+    this.learnerStart();
+    this.learner = '';
+    this.learnerFinished = true;
+  }
   output(text = '') {
     if (this.closed) return;
     if (this.ended || this.consumed || !this.scope || this.scope !== this.key()) {

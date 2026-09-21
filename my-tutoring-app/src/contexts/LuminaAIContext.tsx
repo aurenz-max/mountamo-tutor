@@ -168,7 +168,7 @@ interface LuminaAIContextType {
   // AI interaction
   requestHint: (level: 1 | 2 | 3, currentState?: any) => void;
   sendVoice: (audioData: string) => void;
-  sendText: (text: string, options?: { silent?: boolean; interrupt?: boolean; scripted?: boolean }) => void;
+  sendText: (text: string, options?: { silent?: boolean; interrupt?: boolean; scripted?: boolean; author?: 'learner' | 'host' }) => void;
   updateContext: (newState: any, progress?: any) => void;
 
   // State
@@ -1133,7 +1133,10 @@ export const LuminaAIProvider: React.FC<{
   // its [CURRENT STATE] block — the Live model narrates that preamble aloud,
   // target answer included (ten-frame DI drive, 2026-08-14). Per message, like
   // `interrupt`: only the caller knows whether its cue is self-contained.
-  const sendText = useCallback((text: string, options?: { silent?: boolean; interrupt?: boolean; scripted?: boolean }) => {
+  // `author: 'host'` marks a non-silent message the app wrote itself (the facts
+  // sent after a checked gesture). The live runtime sees a new exchange begin but
+  // never receives the text as learner words or counts it as a learner turn.
+  const sendText = useCallback((text: string, options?: { silent?: boolean; interrupt?: boolean; scripted?: boolean; author?: 'learner' | 'host' }) => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
       console.warn('Cannot send text: not connected');
       return;
@@ -1155,7 +1158,8 @@ export const LuminaAIProvider: React.FC<{
     lastCueRef.current = { text, at: now };
 
     if (!options?.silent) {
-      if (runtimeEnabledRef.current) activityEventRef.current?.({ type: 'runtime_learner_text', text, finished: true });
+      if (runtimeEnabledRef.current) activityEventRef.current?.(options?.author === 'host'
+        ? { type: 'runtime_host_text' } : { type: 'runtime_learner_text', text, finished: true });
       setAIMetrics(prev => ({
         ...prev,
         conversationTurns: prev.conversationTurns + 1,

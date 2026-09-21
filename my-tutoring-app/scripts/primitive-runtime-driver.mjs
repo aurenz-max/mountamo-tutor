@@ -80,7 +80,12 @@ const sharedVoiceTurns = { subscribe: listener => { close = listener.onTurnClose
 let context = { isConnected: true, isListening: true, sessionMode: 'lesson', activePrimitiveId: instanceId, lessonModeRef: { current: true }, switchPrimitive() {},
   sessionResumeCount: 0, conversation: [], isAudioPlaying: false, sharedVoiceTurns,
   holdVoiceTurns: () => () => {}, startListening() {}, stopListening() {},
-  sendText: (content, options) => messages.push({ type: 'text', content, ...options }),
+  // Routes a non-silent send the way LuminaAIContext does: host-written text opens an exchange, anything else is learner words.
+  sendText: (content, options) => {
+    if (!options?.silent) options?.author === 'host' ? transport.hostText() : transport.learnerText(content, true);
+    const { author, ...wire } = options ?? {};
+    messages.push({ type: 'text', content, ...wire });
+  },
   updateContext: primitive_data => messages.push({ type: 'update_context', primitive_data }),
 };
 const root = createRoot(document.getElementById('root'));
