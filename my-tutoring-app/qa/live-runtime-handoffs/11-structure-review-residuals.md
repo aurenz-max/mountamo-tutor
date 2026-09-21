@@ -26,42 +26,58 @@ observation routes probed on the running server, one `--lesson-entry` number-tra
 
 ## Queued — each changes what the tutor or JEV receives, so each needs live runs
 
-1. **The host-text guard is a guard in the loop** (`expectHostText`/`consumeHostText`,
-   `useTeachingWorkspace.ts`, `runtimeTransport.ts`). `LuminaAIContext` stamps every non-silent
-   `sendText` as `runtime_learner_text`, so the hook registers its own string and the transport
-   drops it again — and the dialogue observer still receives "The learner submitted their
-   selection…" as learner words. Fix at the source: `sendText(text, { author: 'host' })`, emit
-   `runtime_learner_text` only for learner-authored text, delete `hostTexts`. Matches the 09-17
-   ruling. Executor: `/add-live-tutor-tools`; re-run the verdict probes for gesture turns.
+1. ~~**The host-text guard is a guard in the loop**~~ **DONE 2026-09-21.** `sendText(text,
+   { author: 'host' })` emits `runtime_host_text`; the transport's `hostText()` opens the next
+   exchange for the outcome observer with an empty `learner`; `hostTexts` is deleted. The
+   headless driver and the harness's `[LESSON_START]` now take the same route the browser does.
+   Checked-tap verdict probe 10/15 → 12/15; 9/9 connected gesture journeys, 27/27 gesture
+   observations committed with no learner words.
+   [Report](../tutor-reports/host-text-source-2026-09-21.md).
 2. **Packet weight.** Every `runtime_state` carries the ~170-char `about` note, 14 signal
    fields and up to 5 observations with full probabilities, about 4-5 times per spoken exchange,
    and each is relayed into the Live context. Send `about` once per item (or from the backend
    runtime instruction), drop `probabilities` from the packet copy. Pair with the already-queued
    with/without-packet comparison. Executor: `/tutor-test`.
-3. **`markMeaning` rides `facts`**, so a tutor-directed sentence about purple marks enters every
-   packet and every outcome-JEV input. Move it to adapter guidance or publish it outside
-   `demand`. Executor: `/add-live-tutor-tools`; re-baseline the verdict probes.
-4. **Shared workspace doctrine is retyped in six adapters against the 2000-char cap**
-   (word reading 1996, letter sounds 1969). The "name the answer back in the same breath"
-   sentence exists in five tuned variants. Carry the shared part once for
-   `progression === 'observer'`. Guidance wording is known to be sensitive: measure before and
-   after. Executor: `/add-live-tutor-tools`, under LA-13.
+3. ~~**`markMeaning` rides `facts`**~~ **MEASURED, NOT ADOPTED 2026-09-21.** Removing it (and
+   Shape Sorter's `ringMeaning`) changed no JEV verdict (same passes and failing cases in all five
+   domains, confidence flat or higher) but cost the tutor demonstrations: 3 of 15 connected audio
+   journeys answered "show me" in speech or claimed an unmade mark, against 1 of 15 in a
+   same-conditions control with the sentence kept. The sentence stays in `facts`. Guidance has no
+   room for it (item 8). [Report](../tutor-reports/workspace-scene-2026-09-21.md).
+4. ~~**Shared workspace doctrine is retyped in six adapters against the 2000-char cap**~~
+   **DONE 2026-09-21.** `WORKSPACE_DOCTRINE` + `workspaceGuidance()` in `adapterContract.ts`;
+   the seven adopters keep only domain sentences, and the five "name it back" variants became
+   one instruction to credit the learner and name what they got right. It rides in adapter
+   guidance, not the backend session instruction: that placement was measured and cut visible
+   demonstrations 19/21 → 14/21. Kept design, 21 audio journeys: 40/42 correct answers credited
+   (both misses are the tutor misjudging synthetic `aaa`), 0 false credit, 21/21 demonstrations,
+   16/21 passed vs 13/21 before. A refused workspace action now returns its reason. The LA-13
+   criterion did not need changing. [Report](../tutor-reports/workspace-doctrine-2026-09-21.md).
 5. **`lessonVoiceTurnPolicy.ts` is a per-primitive if-chain** that has drifted from the
    primitives' own values (di-math-facts 420 ms in a lesson, 1000 ms standalone for compound
    numerals). Move to a catalog field beside `audioInput`. Copying values is safe; changing any
    is a mic-timing change. Executor: `/add-voice-control`.
-6. **`tutor-verdict-probe.mjs` hand-copies ~130 lines of domain sentences and scenes** on the
-   stated premise that `.mjs` cannot import TypeScript; `primitive-runtime-driver.mjs` already
-   does through the Vite module runner. The copy has drifted: production facts carry
-   `markMeaning` (and `supportTier` for letters), the probe sends neither, so it is not replaying
-   the real model input. Extract a pure `workspaceScene(item, marks)` per domain, have component
-   and probe both call it, replace the five six-arm flag ternaries with a table. Probe inputs
-   change, so re-baseline. Executor: `/add-live-tutor-tools`.
-7. **`DiTeachingStage` shell.** The three DI teaching components share ~110 of ~200 lines
-   (props, empty state, speech-only assignments, summary card, header, receipt trail). Seven DI
-   packs are still unmigrated, so extract before the fourth copy — after item 6, which supplies
-   the `scene(item)` seam. DOM and `data-*` selectors must be preserved. Executor:
-   `/add-live-tutor-tools`.
+6. ~~**`tutor-verdict-probe.mjs` hand-copies domain sentences and scenes**~~ **DONE 2026-09-21.**
+   Every adopter's domain exports `workspaceAssignment(item)` and `workspaceScene(item, view)`;
+   the seven components spread them and the probe imports them through the Vite module runner,
+   building items from challenge fixtures with the real builders (a domain table replaces the
+   ternaries; `--dry` prints the input). The copy had drifted further than listed: Counting Board
+   and Shape Sorter cases sent `facts: { response }` only, and train before/after cases had no
+   `kind` or `assignment`. Re-baseline on the real input: board 54/54, shapes 42/42, letters 36/48,
+   words 45/48, trains 41/42, facts 63/63, links 57/63, the same failing cases as before.
+   [Report](../tutor-reports/workspace-scene-2026-09-21.md).
+7. ~~**`DiTeachingStage` shell.**~~ **DONE 2026-09-21.** `direct-instruction/DiTeachingStage.tsx`
+   owns the empty state, workspace binding, evaluation submit, recap and card; each DI pack
+   supplies its domain, stimulus, trail, recap label, metrics and wording. The three components
+   went from 574 to 291 lines plus a 140-line shell; DOM and `data-*` selectors unchanged. 647
+   tests; 9/9 connected `--audio` journeys (18/18 demonstrations, 18/18 correct answers credited).
+   [Report](../tutor-reports/workspace-scene-2026-09-21.md).
+
+8. **Guidance budget — standing constraint, no task.** The shared doctrine is 900 of each
+   adapter's 2000 characters; letter-sound-link sits at 1961, word reading 1917. The next shared
+   sentence must replace one, or the per-offer cap in `live_activity_tools.parse_activity_spec`
+   moves (a backend change; the lesson path's `teachingGuidance` has no such cap), with the
+   connected journeys re-run. The cap is stated in `/add-live-tutor-tools` §2.
 
 Not recommended: merging the two observers' `observe()` bodies (their cancellation semantics
 differ on purpose), or merging the two JEV calls per exchange (the outcome kind deliberately
