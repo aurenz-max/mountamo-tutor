@@ -64,3 +64,15 @@ it('versions a learner transition even when an audio event publishes before the 
   expect(s.runtime.getSnapshot().revision).toBe(published);
   s.transport.close();
 });
+
+it('counts one settled tutor turn per held turn, however many output chunks and audio-idle events arrive', () => {
+  const s = setup();
+  s.transport.beginTurn('Count '); s.transport.beginTurn('the blocks.');
+  s.transport.endTurn(true); s.transport.audioChanged(false); s.transport.audioChanged(false); s.transport.audioChanged(false);
+  expect(s.runtime.learner.read(s.runtime.getSnapshot())!.tutorTurns).toBe(1);
+  s.transport.beginTurn('Try again.'); s.transport.endTurn(false); s.transport.audioChanged(false);
+  expect(s.runtime.learner.read(s.runtime.getSnapshot())!.tutorTurns).toBe(2);
+  // The fixture is a legacy adapter, not a shared workspace, so its packet is unchanged.
+  expect('learner' in (s.sent.filter(m => m.type === 'runtime_state').at(-1)!.state as object)).toBe(false);
+  s.transport.close();
+});

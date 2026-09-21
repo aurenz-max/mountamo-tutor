@@ -11,7 +11,7 @@ import { ExhibitProvider } from '../../contexts/ExhibitContext';
 import CountingBoard from '../../primitives/visual-primitives/math/CountingBoard';
 import ShapeSorter from '../../primitives/visual-primitives/math/ShapeSorter';
 
-const seam = vi.hoisted(() => ({ event: null as any, host: null as any, evaluations: null as any,
+const seam = vi.hoisted(() => ({ event: null as any, host: null as any, evaluations: null as any, outcome: [] as any[],
   submit: vi.fn(async (_result: any, _student?: string) => ({})), finished: vi.fn(),
   ai: { connectLesson: vi.fn(), disconnect: vi.fn(), sendActivityMessage: vi.fn(), sendText: vi.fn(), switchPrimitive: vi.fn(),
     isConnected: true, isListening: true, isAudioPlaying: false, activePrimitiveId: '', sessionMode: 'lesson', sessionResumeCount: 0,
@@ -47,13 +47,17 @@ beforeEach(() => {
   vi.useFakeTimers(); vi.clearAllMocks(); stream = 0; seam.ai.conversation = []; seam.ai.isConnected = true; seam.ai.sessionResumeCount = 0;
   vi.stubGlobal('IntersectionObserver', class { observe() {} disconnect() {} });
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
-  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ verdict: 'correct', transition: 'advance',
-    accepted: true, confidence: .99, verdictConfidence: .99, grounded: 1, reason: 'settled', ms: 1 }) })));
+  // Two observers share fetch. The advisory learner-turn route is unavailable here, so a
+  // one-shot outcome decision below is always consumed by the outcome observer.
+  seam.outcome = [];
+  vi.stubGlobal('fetch', vi.fn(async (url: unknown) => String(url).includes('observe-learner') ? { ok: false, json: async () => ({}) }
+    : { ok: true, json: async () => seam.outcome.shift() ?? ({ verdict: 'correct', transition: 'advance',
+      accepted: true, confidence: .99, verdictConfidence: .99, grounded: 1, reason: 'settled', ms: 1 }) }));
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); });
-async function mount(reverse = false, scroll = false) {
-  const orderedComponents = reverse ? [shapes, board] : [board, shapes];
-  const manifestItems = orderedComponents.map(s => ({ ...s, config: { targetEvalMode: s === board ? 'count' : 'identify' } }));
+async function mount(reverse = false, scroll = false, counting: { section: typeof board; mode: string } = { section: board, mode: 'count' }) {
+  const orderedComponents = reverse ? [shapes, counting.section] : [counting.section, shapes];
+  const manifestItems = orderedComponents.map(s => ({ ...s, config: { targetEvalMode: s === shapes ? 'identify' : counting.mode } }));
   const objectives = orderedComponents.map(s => ({ id: s.objectiveIds[0], text: s.title, verb: 'identify',
     skillId: `skill-${s.instanceId}`, subskillId: `subskill-${s.instanceId}` }));
   const exhibit = { topic: 'Count and name', orderedComponents, manifest: { layout: manifestItems } } as any;
@@ -114,6 +118,27 @@ it.each([false, true])('submits actual tutor completion once through evaluation,
   expect(seam.finished).toHaveBeenCalledTimes(1);
 });
 
+it.each([false, true])('gives the learner a Try again when the observer leaves a checked gesture open (scroll=%s)', async scroll => {
+  // The stall that once kept gesture modes out of lessons: a wrong handover is checked
+  // by the board, the observer abstains on the tutor's reply, and nothing reopens the item.
+  const handover = { ...board, data: { ...board.data, challenges: [{ id: 'g1', type: 'give_me_n', count: 8, targetAnswer: 3,
+    arrangement: 'scattered', instruction: 'Give me three blocks.', hint: '', narration: '' }] } };
+  const h = await mount(false, scroll, { section: handover, mode: 'give_me_n' });
+  const runtime = seam.host.runtime;
+  expect(runtime.getSnapshot()).toMatchObject({ instanceId: 'count', evalMode: 'give_me_n' });
+  for (const index of [0, 1, 2, 3]) fireEvent.click(h.view.container.querySelector(`[data-pip-object="object-${index}"]`)!);
+  fireEvent.click(screen.getByRole('button', { name: /give/i, hidden: true }));
+  await act(async () => { await vi.advanceTimersByTimeAsync(90); });
+  expect(runtime.getSnapshot().task).toMatchObject({ phase: 'checked', evidence: { correctness: 'incorrect' } });
+  seam.outcome.push({ verdict: 'none', transition: 'none', accepted: false, confidence: 0, grounded: 0, reason: 'unclear', ms: 1 });
+  await h.feedback('Hmm, let us look at those together.');
+  expect(runtime.getSnapshot().task.phase).toBe('checked');
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  await act(async () => { await vi.advanceTimersByTimeAsync(120); });
+  expect(runtime.getSnapshot().task).toMatchObject({ itemId: 'g1', phase: 'working' });
+  expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+});
+
 it('preserves unfinished work on scroll focus and rejects prior-surface commands and feedback', async () => {
   const h = await mount(false, true); const runtime = seam.host.runtime;
   const s = runtime.getSnapshot();
@@ -138,8 +163,8 @@ it('preserves unfinished work on scroll focus and rejects prior-surface commands
 
 it('retains wrong attempts and assistance when tutor-guided correction completes the assignment', async () => {
   const h = await mount(); const runtime = seam.host.runtime;
-  vi.mocked(fetch).mockResolvedValueOnce({ ok: true, json: async () => ({ verdict: 'incorrect', transition: 'retry',
-    accepted: true, confidence: .99, verdictConfidence: .99, grounded: 1, reason: 'retry', ms: 1 }) } as any);
+  seam.outcome.push({ verdict: 'incorrect', transition: 'retry',
+    accepted: true, confidence: .99, verdictConfidence: .99, grounded: 1, reason: 'retry', ms: 1 });
   await h.say('four'); await h.feedback('Not quite, try counting them again.');
   expect(seam.submit).not.toHaveBeenCalled();
   const state = runtime.getSnapshot();

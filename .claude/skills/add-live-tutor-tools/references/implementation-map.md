@@ -14,6 +14,8 @@ Read current files rather than relying on historical line numbers or consumer co
 | `components/live-activity/runtime/DialogueObserver.ts` and `dialogueContract.ts` | Settled exchange, response scope, cancellation and observer commits |
 | `components/live-activity/runtime/learnerUtterance.ts` | Provider fragment assembly and speech boundaries |
 | `service/typesafe/observeDialogue.ts` | Shared JEV interpretation of whole-assignment tutor feedback |
+| `service/typesafe/observationKinds.ts` and `observeLearnerIntent.ts` | Observation-kind runner; the advisory learner-turn kind (help, stop, answer attempt). Only `assignment_outcome` may commit |
+| `components/live-activity/runtime/learnerSignals.ts`, `LearnerObserver.ts`, `learnerIntentContract.ts` | Per-item learner facts in the packet (`liveRuntime.learner`), automatic for every shared-workspace binding. `runtime.learner` holds the tracker; `expectHostText` registers a host-written message |
 | `components/live-activity/runtime/contract.ts` and `LiveLessonRuntime.ts` | Scope, ownership, deduplication, policy and action revision projection |
 | `components/live-activity/runtime/LiveRuntimeContext.tsx`, `LiveRuntimeSurface.tsx`, `runtimeTransport.ts`, `waitForVisible.ts` | Mount, committed transition and visible receipt |
 | `components/live-activity/LiveActivitySandbox.tsx` and `JevInspector.tsx` | Actual host integration, playback settlement and inspectable evidence |
@@ -38,8 +40,33 @@ modes, data validation, guidance and ownership; generated and prepared-plan moun
 both need exact mode and objective/plan metadata. A workspace uses `canAdvance: false`
 even though its teaching owner is the tutor.
 
+Per-family facts are declared once, on the adapter, and shared helpers do the rest:
+
+- **Ordinary lessons:** `bindsTeachingWorkspace: true` on the adapter, and then every mode in
+  `modes` binds in a lesson. `lessonWorkspacePlan.ts` names no primitive and lists no mode. Never
+  withhold a mode from lessons: a mode that misbehaves there is a defect to fix (user ruling
+  2026-09-20). Absent = an LA-04 adoption with no workspace binding.
+- **Learner's Try again / Next challenge on a checked item:** rendered by the shared shell
+  `runtime/LiveRuntimeSurface.tsx` from the observer affordances; a host passes
+  `learnerProgress`. Do not add a per-host or per-primitive copy.
+- **Where a payload spells its challenge type:** `challengeTypes` on the adapter (default
+  `challenges[].type`). `modeContentGate.ts` checks content against the catalog's
+  mode -> challenge types for both the lesson gate and `livePlan.ts`; never restate that mapping.
+- **Scripted drill or teaching workspace:** `runtime/withTeachingWorkspace.tsx`, given the
+  family's `*_WORKSPACE_MODES` constant from its domain module — the same constant the adapter
+  publishes as `modes`.
+- **Evaluation submit:** `runtime/useTeachingEvaluation.ts`; the binding supplies only `metrics`.
+- **Adapter boilerplate:** `validateChallengePool` and `workspaceLessonStart` in
+  `adapters/adapterContract.ts`.
+- **A new observation kind:** `service/typesafe/observationRoute.ts` for its route,
+  `runtime/observationContract.ts` for scope keys and request bounds.
+
+`activityContract.test.ts` checks every adapter: picker modes ⊆ `modes` ⊆ catalog modes, and
+guidance ≤ 2000 characters (the backend closes the socket above it).
+
 The frontend API is under `my-tutoring-app/src/app/api/lumina/live-activity/`,
-including `observe-dialogue/route.ts` and `capabilities/route.ts`.
+including `observe-dialogue/route.ts` and `capabilities/route.ts`. The shared observer
+routes sit one level up: `api/lumina/observe-dialogue` and `api/lumina/observe-learner`.
 Backend `backend/app/services/live_runtime_tools.py` and `live_activity_tools.py`
 carry the generic capability/action bridge. Keep domain IDs, cue tags and teaching
 plans out of that bridge. Read its actual validators before extending an envelope.
@@ -80,10 +107,13 @@ From `my-tutoring-app` (PowerShell), choose the tests affected by the change:
 npm.cmd test -- --run src/components/lumina/components/live-activity src/components/lumina/primitives/visual-primitives/math/CountingBoard.runtime.test.tsx src/components/lumina/primitives/visual-primitives/math/ShapeSorter.runtime.test.tsx src/components/lumina/service/typesafe/observeDialogue.test.ts
 npm.cmd run typecheck:lumina
 node scripts/tutor-verdict-probe.mjs --shapes qa/tutor-reports/shape-sorter-jev-current.json
+node scripts/learner-intent-probe.mjs --shapes qa/tutor-reports/shape-sorter-learner-intent-current.json
 ```
 
-The JEV probe needs the frontend service and real model configuration. Omitting
-`--shapes` runs the Counting Board cases. Extend semantic cases for the new domain;
+Both JEV probes need the frontend service and real model configuration. Omitting
+`--shapes` runs the Counting Board cases. The learner-intent probe has one case set per
+adopter domain (`--shapes`, `--trains`, `--letters`, `--words`); add a flag and a set for a
+new domain. It prints the false help/stop count, which must be 0. Extend semantic cases for the new domain;
 passing these two existing sets alone does not certify another domain.
 
 From repo root, with frontend :3000 and backend :8000 already running:

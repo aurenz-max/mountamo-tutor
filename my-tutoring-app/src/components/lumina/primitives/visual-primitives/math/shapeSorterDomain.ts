@@ -52,6 +52,10 @@ export { numberWordFor };
  * explaining that it could not import a `'use client'` module). This module is
  * not a client module, so both now import from here and the third copy is gone.
  */
+/** The modes the tutor/JEV teaching workspace binds: a bounded naming pilot. The
+ *  other modes stay on the standalone drill. The live adapter publishes this list. */
+export const SHAPE_SORTER_WORKSPACE_MODES = ['identify'] as const;
+
 export const SHAPE_PROPERTIES: Record<string, { sides: number; corners: number; curved: boolean }> = {
   circle: { sides: 0, corners: 0, curved: true },
   oval: { sides: 0, corners: 0, curved: true },

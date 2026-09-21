@@ -76,77 +76,21 @@
  * no successor to compute, the shown numeral IS the answer.
  */
 import type { DiActionContract } from '../../../hooks/judgedScriptContract';
-import { diMathFactsModePlan, type DiMathFactsChallengeType } from './diMathFactsModes';
-export type { DiMathFactsChallengeType } from './diMathFactsModes';
+import { diMathFactsModePlan } from './diMathFactsModes';
+import { countingRouteFor, type DiMathFactsChallenge } from './diMathFactsDomain';
 
 /**
- * The within-mode SUPPORT tier (L3, 2026-08-01). Second field of the two-field
- * contract: `challengeType` = WHICH fact skill, `supportTier` = HOW MUCH of the
- * DISTAR sequence the child is handed before they answer. The fade the birth
- * certificate specified, worked template di-sentence-reading L3:
- *
- *   easy   MODEL + GUIDE + TEST   hear the fact twice, then answer alone
- *   medium MODEL + TEST           hear the fact once, then answer alone
- *   hard   TEST only              RETRIEVE the answer cold, never having heard it
- *
- * `hard` matters MORE here than in the sentence pack. There the withheld model
- * was an echo route onto a target already printed on screen; here the screen
- * never shows the answer (answer-leak rule), so the model line is the ONLY
- * pre-answer channel that carries it. Withdrawing it turns the item into a
- * genuine retrieval probe — which is what fact FLUENCY exists to measure, and
- * what makes the silent `responseMs` a true retrieval-time signal rather than
- * partly an echo delay.
- *
- * The withdrawal is identical across all four task identities, and that is
- * correct rather than lazy: every mode is the same act (see the printed
- * problem, speak the number word), so the same three sub-steps precede it. A
- * MODE changes which facts are drawn; a TIER changes how much of the sequence
- * is handed over.
- *
- * NEVER withdrawn at any tier:
- *  - the PRINTED PROBLEM on screen (it is the stimulus — withdrawing it would
- *    turn a read fact into a dictated one, a different task);
- *  - the CORRECTION's re-model (standing gate 3 — DISTAR always re-models on
- *    an error; remediation is not scaffolding);
- *  - the restating AFFIRM ("Yes, two plus one is three." — it models the
- *    complete fact at the moment it is most useful);
- *  - the judging contract (a tier changes how much help precedes the answer,
- *    never how the answer is judged — else tiers stop being comparable evidence).
+ * S1 DOMAIN SPLIT (2026-09-20, sunset slice for DI pack #3). The item shape,
+ * the validity gates, the ask and the success condition moved to
+ * `diMathFactsDomain`; this module keeps only the retiring control protocol —
+ * the model/guide/test lead-in, the sentinel-opened branches, the in-band
+ * judging contract and the bracketed cues. The re-export below keeps ONE
+ * address for the generator, the tester, the Pip pose and the lesson-bench
+ * extractor, so nothing outside this file moved.
  */
-export type DiMathFactsSupportTier = 'easy' | 'medium' | 'hard';
-
-/** One printed problem the tutor drills. Mirrors the generator output. */
-export interface DiMathFactsChallenge {
-  id: string;
-  /** Which eval-mode SKILL this item drills. */
-  challengeType: DiMathFactsChallengeType;
-  /** How much of the DISTAR sequence precedes the child's answer. Absent =
-   *  easy (the L0 shape), so a session generated before L3 behaves exactly as
-   *  it did. */
-  supportTier?: DiMathFactsSupportTier;
-  /** The two numbers in the printed problem. Their RELATIONSHIP depends on the
-   *  challengeType (a + b / a − b / the number after a, where b is 1), so
-   *  `answerNumeral` is authoritative — never recompute it from a and b. */
-  a: number;
-  b: number;
-  /** Printed stimulus shown on the stage, e.g. "2 + 1", "3 − 1", "5 →".
-   *  Never contains the answer. */
-  display: string;
-  /** Spoken form of the printed problem, e.g. "two plus one", "the number
-   *  after five". Reads correctly inside every cue line below. */
-  problem: string;
-  /** The spoken target: the answer as a number word, e.g. "three". */
-  answerWord: string;
-  /** The numeric answer — derived in code, never by the LLM. */
-  answerNumeral: number;
-  /** The COMPLETED form, e.g. "2 + 1 = 3" or "5 → 6". Built in code because
-   *  only the generator knows the relation. Rendered ONLY after affirmation
-   *  (answer-leak rule) — the stage shows `display` until then. */
-  solvedDisplay: string;
-  /** Whole-token ASR aliases — passive cross-check only, never the judge.
-   *  Digit lexicalizations ("3") and homophones (won/to/for/ate) live here. */
-  asrAliases?: string[];
-}
+export type {
+  DiMathFactsChallenge, DiMathFactsChallengeType, DiMathFactsSupportTier,
+} from './diMathFactsDomain';
 
 export type ActionableDiMathFactsChallenge = DiMathFactsChallenge & {
   answerKind: 'voice';
@@ -209,7 +153,7 @@ export const contrastCorrectionLine = (it: DiMathFactsChallenge) =>
  * from the bench-proven L0 line (#46) byte-for-byte.
  */
 const countingDirection = (it: DiMathFactsChallenge): 'up' | 'back' =>
-  it.challengeType === 'subtraction_fact' ? 'back' : 'up';
+  countingRouteFor(it) ?? 'up';
 
 /**
  * Is "counting to the answer" a legitimate route for THIS item? For every
@@ -221,7 +165,7 @@ const countingDirection = (it: DiMathFactsChallenge): 'up' | 'back' =>
  * every other mode's contract stays byte-for-byte the #46-benched text.
  */
 const hasCountingRoute = (it: DiMathFactsChallenge): boolean =>
-  it.challengeType !== 'name_numeral';
+  countingRouteFor(it) !== null;
 
 /** The ways a RIGHT answer may legitimately arrive, per identity. */
 const rightAnswerRoutes = (it: DiMathFactsChallenge): string =>

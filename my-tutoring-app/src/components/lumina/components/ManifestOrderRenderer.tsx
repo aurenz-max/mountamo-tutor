@@ -194,7 +194,8 @@ export const OrderedSection: React.FC<OrderedSectionProps> = ({
   const body = workspace ? <LiveRuntimeContext.Provider value={binding ? workspace.runtime : null}>
     <LiveRuntimeActiveContext.Provider value={!!binding && active}>
       <LiveRuntimeConnectionContext.Provider value={ai.sessionResumeCount ?? 0}>
-      {binding ? <LiveRuntimeSurface runtime={workspace.runtime} active={active}>{primitive}</LiveRuntimeSurface> : primitive}
+      {binding ? <LiveRuntimeSurface runtime={workspace.runtime} active={active}
+        learnerProgress={{ act: workspace.learnerProgress, disabled: ai.isAudioPlaying }}>{primitive}</LiveRuntimeSurface> : primitive}
       </LiveRuntimeConnectionContext.Provider>
     </LiveRuntimeActiveContext.Provider>
   </LiveRuntimeContext.Provider> : primitive;

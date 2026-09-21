@@ -1,15 +1,14 @@
 'use client';
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { LuminaCard, LuminaCardContent, LuminaCardHeader, LuminaCardTitle, LuminaChallengeCounter,
   LuminaReadAloudGlyph } from '../../../ui';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { useTeachingWorkspace, type TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { itemsFromChallenges, SHAPE_PROPERTIES } from './shapeSorterDomain';
 import { renderShapeSVG } from './shapeSorterDrawing';
-import { useEvaluationContext, usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { ShapeSorterMetrics } from '../../../evaluation/types';
-import { teachingEvaluation } from '../../../components/live-activity/runtime/teachingEvaluation';
+import { useTeachingEvaluation } from '../../../components/live-activity/runtime/useTeachingEvaluation';
 import type { ShapeSorterProps } from './ShapeSorter';
 
 /** Naming pilot: geometry and scene binding only. Conversation and progression are shared. */
@@ -33,21 +32,13 @@ function NamingWorkspace({ data, items, className, runtimePlanItemId, runtimeEva
     expectedAnswer: [item.answer, ...item.spokenAlternates].join(' or '),
     response: 'speech' as const, checkResponse: () => null,
   })), [items]);
+  const evalMode = runtimeEvalMode || 'identify';
   const lesson = useTeachingWorkspace({ instanceId: instance.current, primitiveId: 'shape-sorter',
-    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || 'identify',
-    items: assignments, workspace });
-  const evaluationContext = useEvaluationContext();
-  const evaluation = usePrimitiveEvaluation<ShapeSorterMetrics>({ primitiveType: 'shape-sorter', instanceId: instance.current,
-    skillId: data.skillId, subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId,
-    onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined });
-  useEffect(() => {
-    if (!evaluationContext || !lesson.summary || evaluation.hasSubmitted) return;
-    const result = teachingEvaluation(assignments, lesson.state, lesson.summary, runtimeEvalMode || 'identify');
-    evaluation.submitResult(result.passed, result.accuracy, { type: 'shape-sorter', evalMode: runtimeEvalMode || 'identify',
-      identifyAccuracy: result.accuracy, countAccuracy: 0, sortAccuracy: 0, attemptsCount: result.attemptsCount },
-      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
-        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance }, undefined, result.diagnosisEvidence);
-  }, [evaluationContext, lesson.summary, lesson.state, evaluation, assignments, runtimeEvalMode]);
+    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, evalMode, items: assignments, workspace });
+  useTeachingEvaluation<ShapeSorterMetrics>({ primitiveType: 'shape-sorter', instanceId: instance.current,
+    data, assignments, lesson, evalMode,
+    metrics: result => ({ type: 'shape-sorter', evalMode, identifyAccuracy: result.accuracy, countAccuracy: 0,
+      sortAccuracy: 0, attemptsCount: result.attemptsCount }) });
   const item = items[lesson.state.index];
   const shapes = data.challenges.find(c => c.id === item.challengeId)!.shapes;
   const focus = shapes[item.shapeIndex];

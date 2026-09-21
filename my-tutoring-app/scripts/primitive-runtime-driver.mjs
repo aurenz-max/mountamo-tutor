@@ -68,6 +68,12 @@ const transport = new RuntimeTransport(runtime, message => messages.push(message
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request), signal });
   if (!response.ok) throw new Error('Dialogue observer unavailable');
   return response.json();
+}, async (request, signal) => {
+  // The advisory learner-turn observation, through the same real route the browser host uses.
+  const response = await fetch((process.env.LIVE_FRONTEND || 'http://localhost:3000') + '/api/lumina/observe-learner', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request), signal });
+  if (!response.ok) throw new Error('Learner observer unavailable');
+  return response.json();
 });
 const sharedVoiceTurns = { subscribe: listener => { close = listener.onTurnClose; return () => { close = null; }; },
   isVoiceActive: () => false, reset() {}, lastTurnOpenAtRef: { current: null }, floorsRef: { current: {} }, config: {} };
@@ -135,7 +141,7 @@ const PERFORM = {
     flushSync(() => button.click());
   },
   answer: ({ text }) => {
-    transport.dialogue.learnerText(text, true);
+    transport.learnerText(text, true);
     close?.({ kind: 'close', startedAt: performance.now() - 900, durationMs: 900, peak: .2, duringTutorAudio: false, belowMinVoice: false });
     context.conversation = [...context.conversation, { role: 'user', content: text, isAudio: true, timestamp: performance.now() }];
     render();
@@ -166,7 +172,7 @@ try {
     // A raw microphone/VAD start does not establish a new semantic turn.
     // Actual provider transcription below, or interruption, invalidates dialogue.
     if (input.type === 'audio_fragment') {
-      transport.dialogue.learnerText(input.text, input.finished === true);
+      transport.learnerText(input.text, input.finished === true);
       inputStream ??= ++inputSequence;
       context.conversation = [...context.conversation, { role: 'user', content: input.text, isAudio: true,
         timestamp: performance.now(), streamId: inputStream, transcriptFinished: input.finished === true }];

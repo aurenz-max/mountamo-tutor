@@ -9,6 +9,7 @@ import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/Li
 import { RuntimeTransport } from '../../../components/live-activity/runtime/runtimeTransport';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
 import type { DialogueClassifier } from '../../../components/live-activity/runtime/DialogueObserver';
+import type { LearnerIntentClassifier } from '../../../components/live-activity/runtime/LearnerObserver';
 import { runtimePacket } from '../../../components/live-activity/runtime/runtimeTransport';
 
 const seam = vi.hoisted(() => ({ conversation: [] as any[], send: vi.fn(), submit: vi.fn(),
@@ -49,10 +50,10 @@ function challenge(kind: Kind, id: string): CountingBoardChallenge {
   }
 }
 
-async function mount(kind: Kind = 'give_me_n', classify?: DialogueClassifier) {
+async function mount(kind: Kind = 'give_me_n', classify?: DialogueClassifier, classifyLearner?: LearnerIntentClassifier) {
   const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
   const sent: any[] = [];
-  const transport = new RuntimeTransport(runtime, m => sent.push(m), classify);
+  const transport = new RuntimeTransport(runtime, m => sent.push(m), classify, classifyLearner);
   const data: CountingBoardData = { instanceId: 'board', title: 'Counting stars', objects: { type: 'stars' }, gradeBand: 'K',
     challenges: [challenge(kind, 'one'), challenge(kind, 'two')] };
   const tree = () => <LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
@@ -360,5 +361,56 @@ it('keeps an explicit learner way forward when the observer is unavailable', asy
   await act(async () => { await vi.advanceTimersByTimeAsync(80); }); await recovery!;
   expect(h.state().task).toMatchObject({ itemId: 'two', phase: 'working' });
   expect(h.sent.filter(m => m.type === 'runtime_result')).toHaveLength(0);
+  h.transport.close();
+});
+
+const helpTurn = () => vi.fn(async (..._args: unknown[]) => ({ asksForHelp: .96, wantsToStop: .01, attemptsAnswer: .03,
+  accepted: true, reason: 'observed', ms: 200 }));
+const lastPacket = (sent: any[]) => sent.filter(m => m.type === 'runtime_state').at(-1).state;
+
+it('sends learner signals with the packet, and a classified help request reaches the tutor without grading anything', async () => {
+  const classifyLearner = helpTurn();
+  const h = await mount('count_all', undefined, classifyLearner as never);
+  h.transport.publish();
+  expect(lastPacket(h.sent).learner.signals).toMatchObject({ itemId: 'one', attempts: 0, learnerTurns: 0, helpRequests: 0, helpRecorded: false });
+  const revision = h.state().revision, before = h.sent.length;
+  await act(async () => { h.transport.learnerText('I do not know', true); await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
+  const request = classifyLearner.mock.calls[0][0] as Record<string, unknown>;
+  expect(request).toMatchObject({ learner: 'I do not know', task: h.state().task!.task, scope: { instanceId: 'board', itemId: 'one' } });
+  expect(JSON.stringify(request)).not.toContain('expectedAnswer');
+  const packet = lastPacket(h.sent.slice(before));
+  expect(packet.learner.signals).toMatchObject({ learnerTurns: 1, helpRequests: 1, stopRequests: 0, turnsWithoutAnswer: 1 });
+  expect(packet.learner.observations).toEqual([expect.objectContaining({ kind: 'learner_intent', helpRequested: true, attemptedAnswer: false })]);
+  // Advisory: the scene, the tutor's action tickets and the learner's record are untouched.
+  expect(packet.revision).toBe(revision);
+  expect(h.state().task).toMatchObject({ phase: 'working', evidence: { attemptNumber: 0, correctness: 'unknown' }, support: { level: 0 } });
+  expect(h.runtime.trace.getSnapshot().some(e => e.stage === 'learner_intent' && e.status === 'observed')).toBe(true);
+  h.transport.close();
+});
+
+it('counts wrong attempts and a repeated wrong response, and never treats the host gesture message as a learner turn', async () => {
+  const classifyLearner = helpTurn();
+  const h = await mount('give_me_n', undefined, classifyLearner as never);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    for (let n = 0; n < 4; n++) h.tap(n);
+    h.give();
+    act(() => h.transport.learnerText(String(seam.send.mock.calls.at(-1)![0]), true));
+    h.dispatch('retry');
+  }
+  expect(classifyLearner).not.toHaveBeenCalled();
+  h.transport.publish();
+  expect(lastPacket(h.sent).learner.signals).toMatchObject({ attempts: 2, wrongAttempts: 2, repeatedWrongResponse: true, learnerTurns: 0 });
+  h.transport.close();
+});
+
+it('starts the signals again on the next item', async () => {
+  const h = await mount('count_all', undefined, helpTurn() as never);
+  await act(async () => { h.transport.learnerText('help', true); await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
+  seam.voiceActive = true;
+  h.say('five', 'user', { isAudio: true, streamId: 1, transcriptFinished: true });
+  await act(async () => { seam.voiceActive = false; seam.close?.(); await Promise.resolve(); });
+  h.feedback('correct'); h.dispatch('advance');
+  h.transport.publish();
+  expect(lastPacket(h.sent).learner).toMatchObject({ signals: { itemId: 'two', learnerTurns: 0, helpRequests: 0, attempts: 0 }, observations: [] });
   h.transport.close();
 });

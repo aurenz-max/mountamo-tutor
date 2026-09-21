@@ -34,103 +34,25 @@
  *                            BLOCKED; blends/digraphs/stops bench first.
  */
 import type { DiActionContract } from '../../../hooks/judgedScriptContract';
-import { diLetterSoundModePlan, type DiLetterSoundChallengeType } from './diLetterSoundsModes';
-export type { DiLetterSoundChallengeType } from './diLetterSoundsModes';
+import { diLetterSoundModePlan } from './diLetterSoundsModes';
+import { isOnset, sentenceCase, targetDescription, type DiLetterSoundChallenge }
+  from './diLetterSoundsDomain';
 
 /**
- * The within-mode SUPPORT tier (L3, 2026-08-01). Second field of the two-field
- * contract: `challengeType` = WHICH sound skill, `supportTier` = HOW MUCH of
- * the DISTAR sequence the child is handed before they produce the sound. Third
- * use of the DI L3 template (di-sentence-reading 07-25 the original,
- * di-math-facts 08-01 the closest sibling):
- *
- *   easy   MODEL + GUIDE + TEST   hear the sound twice, then produce it alone
- *   medium MODEL + TEST           hear it once, then produce it alone
- *   hard   TEST only              produce it COLD, never having heard it
- *
- * Why `hard` matters here: the model line SPEAKS the very sound the child is
- * about to produce — the echo route. At hard the item becomes a genuine
- * grapheme→sound retrieval probe and the silent `responseMs` becomes true
- * retrieval time rather than partly an echo delay. Two per-mode nuances the
- * withdrawal must respect (and does, because the test lines already carry the
- * stimulus, never the target sound):
- *  - `first_sound_in_word`: the spoken WORD stays in the ask at every tier —
- *    it is the stimulus (there is no printed grapheme on that stage) — but its
- *    first sound is never spoken pre-attempt at hard: a genuine onset probe.
- *  - keyword-elicited vowels: the ask ("Your turn. Say apple.") still speaks
- *    the keyword — the elicitation requires it — so what hard withdraws is the
- *    model's sound-naming ("The first sound in apple is short a"), never the
- *    word. The guard protects the SOUND, not the word.
- *
- * The withdrawal is identical across all three task identities, and that is
- * correct rather than lazy: every mode is the same act (meet the stimulus,
- * produce the held sound), so the same three sub-steps precede it. A MODE
- * changes which items are drawn and how the cue is phrased; a TIER changes how
- * much of the sequence is handed over.
- *
- * NEVER withdrawn at any tier:
- *  - the on-screen stimulus (printed grapheme, or keyword + picture for onset
- *    items — withdrawing it would change the task identity);
- *  - the CORRECTION's re-model (standing gate 3 — DISTAR always re-models on
- *    an error; remediation is not scaffolding). This pack still carries the
- *    PLAIN correction — the contrastive port is frozen on HUMAN-CHECKS #55
- *    (family rule);
- *  - the restating AFFIRM (it models the sound at the moment it is most useful);
- *  - the judging contract (a tier changes how much help precedes the attempt,
- *    never how it is judged — else tiers stop being comparable evidence).
+ * The assignment — item shape, validity gates, asks and the success condition —
+ * moved to `diLetterSoundsDomain` in the sunset slice, so the tutor/JEV binding
+ * can read what this pack teaches without importing the sentinel engine. This
+ * module keeps the retiring control protocol and re-exports the domain, so the
+ * generator, the tester and the lesson-bench extractor keep one address.
  */
-export type DiLetterSoundsSupportTier = 'easy' | 'medium' | 'hard';
+export * from './diLetterSoundsDomain';
+export type { DiLetterSoundChallengeType } from './diLetterSoundsModes';
 
-/** One letter-sound item the tutor drills. Mirrors the generator output shape. */
-export interface DiLetterSoundChallenge {
-  id: string;
-  /** Which eval-mode SKILL this item drills (see DiLetterSoundChallengeType).
-   *  Drives the cue SHAPE (onset items get word-first lines) and the kid-facing
-   *  display (onset items show the picture/word, never the isolated grapheme). */
-  challengeType: DiLetterSoundChallengeType;
-  /** How much of the DISTAR sequence precedes the child's attempt. Absent =
-   *  easy (the L0 shape), so a session generated before L3 behaves exactly as
-   *  it did. */
-  supportTier?: DiLetterSoundsSupportTier;
-  /** The grapheme shown on screen, e.g. "m". */
-  letter: string;
-  /** The stretched continuous sound the learner must produce, e.g. "mmm". */
-  spoken: string;
-  /** A picturable keyword whose FIRST sound is the target, e.g. "moon". */
-  keyword: string;
-  /** Emoji picture support for the pre-reader (attached in code by the generator). */
-  emoji: string;
-  /** Vowels elicit through the keyword ("say apple"); continuants elicit the
-   *  isolated sound ("what sound?"). */
-  elicitation: 'isolated' | 'keyword';
-  /**
-   * How an isolated sound is made: `held` (a continuant the child stretches —
-   * the L0 benched class) or `clipped` (a stop — t p c k h d g b — released
-   * once; a small "uh" after it is tolerated, and the keyword or any word
-   * starting with the sound also counts). Absent = held. Added 2026-09-05
-   * under the user's ruling that a stop's sound is evidenced by the clipped
-   * sound OR the keyword onset — the phonics objectives name these letters and
-   * the lesson-coverage judge found they had no production surface at all.
-   * Benched live at HUMAN-CHECKS #133.
-   */
-  articulation?: 'held' | 'clipped';
-  /** Whole-token ASR aliases — passive cross-check only, never the judge. */
-  asrAliases?: string[];
-}
 
 export type ActionableDiLetterSoundChallenge = DiLetterSoundChallenge & {
   answerKind: 'voice';
   actionContract: DiActionContract;
 };
-
-const sentenceCase = (value: string | undefined) =>
-  value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
-
-/** Onset-isolation items (first_sound_in_word) drill the SAME continuant sound
- *  but from a whole spoken word, so every cue leads with the word and isolates
- *  its first sound. Checked before elicitation because these items are always
- *  continuants (isolated elicitation) yet need the word-first phrasing. */
-const isOnset = (it: DiLetterSoundChallenge) => it.challengeType === 'first_sound_in_word';
 
 /** MODEL: the tutor says the sound first (DISTAR "my turn"). Single repetition —
  *  bench run-2 timing showed tutor talk-time dominates the per-item cycle; brisk
@@ -179,19 +101,6 @@ export const correctionLine = (it: DiLetterSoundChallenge) =>
       ? `My turn: ${it.keyword}. Your turn. Say ${it.keyword}.`
       : `My turn: ${it.spoken}, as in ${it.keyword}. Your turn. What sound?`;
 
-const targetDescription = (it: DiLetterSoundChallenge) =>
-  isOnset(it)
-    ? `the first sound in "${it.keyword}" (the continuous sound ${it.spoken})`
-    : it.elicitation === 'keyword'
-      ? `the word "${it.keyword}"`
-      : it.articulation === 'clipped'
-        // A stop cannot be held: the judge hears one short release. The
-        // curriculum wants it crisp ("not tuh"), but a five-year-old's schwa
-        // is not a wrong sound, and a word that starts with the sound proves
-        // the same grapheme→phoneme link (the ruling this branch ships under).
-        ? `the short, clipped sound ${it.spoken} as at the start of "${it.keyword}" — a little "uh" after it counts, and so does "${it.keyword}" or another word that starts with that sound; the letter's NAME does not`
-        : `the continuous sound ${it.spoken}`;
-
 /**
  * The in-band judging contract for one item. The Live tutor hears the raw
  * audio and judges each attempt ITSELF; the engine reads which branch it took
@@ -205,6 +114,47 @@ Never begin any other sentence with the word "Yes" or the words "My turn".
 Speak nothing beyond these exact lines. After you affirm, wait silently for the application's next instruction.`;
 
 /**
+ * The within-mode SUPPORT tier (L3, 2026-08-01). Second field of the two-field
+ * contract: `challengeType` = WHICH sound skill, `supportTier` = HOW MUCH of
+ * the DISTAR sequence the child is handed before they produce the sound. Third
+ * use of the DI L3 template (di-sentence-reading 07-25 the original,
+ * di-math-facts 08-01 the closest sibling):
+ *
+ *   easy   MODEL + GUIDE + TEST   hear the sound twice, then produce it alone
+ *   medium MODEL + TEST           hear it once, then produce it alone
+ *   hard   TEST only              produce it COLD, never having heard it
+ *
+ * Why `hard` matters here: the model line SPEAKS the very sound the child is
+ * about to produce — the echo route. At hard the item becomes a genuine
+ * grapheme→sound retrieval probe and the silent `responseMs` becomes true
+ * retrieval time rather than partly an echo delay. Two per-mode nuances the
+ * withdrawal must respect (and does, because the test lines already carry the
+ * stimulus, never the target sound):
+ *  - `first_sound_in_word`: the spoken WORD stays in the ask at every tier —
+ *    it is the stimulus (there is no printed grapheme on that stage) — but its
+ *    first sound is never spoken pre-attempt at hard: a genuine onset probe.
+ *  - keyword-elicited vowels: the ask ("Your turn. Say apple.") still speaks
+ *    the keyword — the elicitation requires it — so what hard withdraws is the
+ *    model's sound-naming ("The first sound in apple is short a"), never the
+ *    word. The guard protects the SOUND, not the word.
+ *
+ * The withdrawal is identical across all three task identities, and that is
+ * correct rather than lazy: every mode is the same act (meet the stimulus,
+ * produce the held sound), so the same three sub-steps precede it. A MODE
+ * changes which items are drawn and how the cue is phrased; a TIER changes how
+ * much of the sequence is handed over.
+ *
+ * NEVER withdrawn at any tier:
+ *  - the on-screen stimulus (printed grapheme, or keyword + picture for onset
+ *    items — withdrawing it would change the task identity);
+ *  - the CORRECTION's re-model (standing gate 3 — DISTAR always re-models on
+ *    an error; remediation is not scaffolding). This pack still carries the
+ *    PLAIN correction — the contrastive port is frozen on HUMAN-CHECKS #55
+ *    (family rule);
+ *  - the restating AFFIRM (it models the sound at the moment it is most useful);
+ *  - the judging contract (a tier changes how much help precedes the attempt,
+ *    never how it is judged — else tiers stop being comparable evidence).
+ *
  * The spoken lead-in for one item, composed from its SUPPORT TIER. This is the
  * whole L3 ladder: `easy` hands over model + guide, `medium` only the model,
  * `hard` nothing at all. Absent tier = `easy`, the L0 shape — at which the

@@ -315,7 +315,7 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
         return;
       }
       if (event.type === 'runtime_turn_output') { transport?.beginTurn(typeof event.text === 'string' ? event.text : ''); return; }
-      if (event.type === 'runtime_learner_text') { transport?.dialogue.learnerText(String(event.text ?? ''), event.finished === true); return; }
+      if (event.type === 'runtime_learner_text') { transport?.learnerText(String(event.text ?? ''), event.finished === true); return; }
       if (event.type === 'runtime_interrupted') { transport?.dialogue.interrupt(); transport?.endTurn(false); return; }
       if (event.type === 'runtime_turn_end') { transport?.endTurn(event.audioPending === true); return; }
       if (event.type === 'runtime_audio_idle') { transport?.audioChanged(false); return; }
@@ -572,7 +572,8 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
           {visual ? <ActivityBoundary key={visual.instanceId} onError={() => fail(visual.callId, 'The visual could not render.')}>
             <VisibleDirectVisual visual={visual} onVisible={onVisualVisible} onState={onVisualState} onControls={onVisualControls} />
           </ActivityBoundary> : activity ? <ActivityBoundary key={activity.instanceId} onError={() => fail(activity.callId, 'The activity could not render.')}>
-            {<LiveRuntimeSurface runtime={runtime}><VisibleActivity activity={activity} onVisible={onVisible} onControls={onControls} autoStart={lessonReadyId === activity.instanceId} /></LiveRuntimeSurface>}
+            {<LiveRuntimeSurface runtime={runtime} learnerProgress={ready ? { disabled: ai.isAudioPlaying,
+              act: type => void transportRef.current?.learnerProgress(type) } : undefined}><VisibleActivity activity={activity} onVisible={onVisible} onControls={onControls} autoStart={lessonReadyId === activity.instanceId} /></LiveRuntimeSurface>}
           </ActivityBoundary> : <div className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700 p-8 text-center">
             <h2 className="text-xl">{shownPlan ? 'Your planned lesson is ready' : 'Your lesson is ready'}</h2><p className="mt-3 max-w-md text-slate-400">{shownPlan ? 'Press Start lesson and allow the microphone. Your tutor opens the first activity.' : 'Choose a lesson and press Start lesson. Allow the microphone, then your tutor will begin. No opening question needed.'}</p>
           </div>}
@@ -581,10 +582,6 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
             <button className={button} disabled={!ready || !text.trim()}>Send</button>
           </form>
           {ready && runtimeState.instanceId && <div className="flex flex-wrap gap-3">
-            {runtimeState.affordances.some(a => a.controller === 'observer' && a.action.type === 'advance')
-              ? <button className={button} disabled={ai.isAudioPlaying} onClick={() => void transportRef.current?.learnerProgress('advance')}>Next challenge</button>
-              : runtimeState.affordances.some(a => a.controller === 'observer' && a.action.type === 'retry')
-                && <button className={button} disabled={ai.isAudioPlaying} onClick={() => void transportRef.current?.learnerProgress('retry')}>Try again</button>}
             {runtimeState.affordances.some(a => a.action.type === 'scaffold') && <button className={button} onClick={() => send('Please show me a reminder for this task.')}>Help me start</button>}
             {runtimeState.affordances.some(a => a.action.type === 'request_support') && <button className={button} onClick={() => send('Please show me the worked example, keeping my task saved.')}>Show an example</button>}
             {generatedPictures && runtimeState.moveOptions && <button className={button} disabled={drawing} onClick={() => send('I am stuck. Please help me with this in a way that is different from what is already on my screen, keeping my task saved.')}>Help me another way</button>}

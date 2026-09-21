@@ -172,6 +172,8 @@ it.each(['f\u00fcnf', "It's 5:00.", 'six', 'Is this 5?'])('uses tutor feedback d
   const h = await startHost();
   await h.say(learner);
   expect(seam.runtime.getSnapshot().task.evidence.correctness).toBe('unknown');
+  // The opted-in binding's learner facts are inspectable, and the inspector says they reach the tutor.
+  expect(screen.getByTestId('learner-signals').textContent).toMatch(/sent to the tutor.*learnerTurns1/);
   expect(seam.correct).not.toHaveBeenCalled();
   h.speak("That's right, there are five fish on the board.");
   expect(h.fetcher.mock.calls.filter(([url]) => url.endsWith('/observe-dialogue'))).toHaveLength(0);

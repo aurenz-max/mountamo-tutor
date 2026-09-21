@@ -22,6 +22,16 @@
 import type { SupportArtifact } from './runtime/contract';
 import type { LivePrimitiveId } from './activityContract';
 import { itemsFromChallenges as shapeItems } from '../../primitives/visual-primitives/math/shapeSorterScript';
+import { buildSequencerItems as sequencerItems, sequencerHarnessAnswers }
+  from '../../primitives/visual-primitives/math/numberSequencerDomain';
+import { buildLetterSoundItems, letterSoundHarnessAnswers }
+  from '../../primitives/visual-primitives/direct-instruction/diLetterSoundsDomain';
+import { buildWordReadingItems, wordReadingHarnessAnswers }
+  from '../../primitives/visual-primitives/direct-instruction/diWordReadingDomain';
+import { buildMathFactItems, mathFactsHarnessAnswers }
+  from '../../primitives/visual-primitives/direct-instruction/diMathFactsDomain';
+import { buildLetterSoundLinkItems, letterSoundLinkWorkspaceAnswers }
+  from '../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -79,6 +89,25 @@ export interface LiveJourney {
   /** Extra DOM probes. `reminder` and `support` are shared and supplied by the driver. */
   probes?: Record<string, JourneyProbe>;
 }
+
+/** What a learner says to ask for each action on any shared-workspace surface. */
+const WORKSPACE_PROMPTS = { opening: 'What do I do?', hint: 'Can you help me?', example: 'Can you show me what you mean?' };
+
+/** The retiring cue tags. The workspace emits none of them; a model that voices
+ *  one is reading a legacy pack it should no longer be sent. */
+const RETIRED_DI_CUE_TAGS = ['DI_ITEM', 'DI_MOVE_ON', 'DI_COMPLETE'];
+
+/** Every mode of a spoken pack is one utterance per intent, and the utterance comes
+ *  from the pack's own domain, never from Python. */
+const spokenWorkspaceInputs = <I extends { id: string }>(build: (challenges: any[]) => I[],
+    answersFor: (item: I) => { correct: string; plainWrong: string }, noun: string): LiveJourney['inputsFor'] =>
+  (intent, ctx) => {
+    if (intent === 'warmup') return [];
+    const item = build(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
+    if (!item) throw new Error(`No current ${noun} assignment`);
+    const answers = answersFor(item);
+    return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+  };
 
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
   'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'];
@@ -162,7 +191,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     component: 'primitives/visual-primitives/math/CountingBoard.tsx', instanceId: 'board',
     defaults: { grade: 'Kindergarten', mode: 'give_me_n', di: false, topic: 'Giving a requested number of objects from a larger collection' },
     leakTokens: ['CB_', 'COUNT_'],
-    prompts: { opening: 'What do I do?', hint: 'Can you help me?', example: 'Can you show me what you mean?' },
+    prompts: WORKSPACE_PROMPTS,
     inputsFor: (intent, ctx) => {
       const ch = ctx.challenge;
       if (!ch) throw new Error('No current counting task');
@@ -179,21 +208,31 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' } },
   },
   'number-sequencer': {
+    execution: 'workspace',
     component: 'primitives/visual-primitives/math/NumberSequencer.tsx',
     instanceId: 'train',
-    defaults: { grade: 'Grade 1', mode: 'count_from', di: true,
-      topic: 'Counting forward from a number other than one' },
+    // `before_after` asks exactly ONE question per generated challenge, so the two
+    // challenges this harness mounts are two items. A mode whose challenge expands
+    // into several asks (count_from, fill_missing, decade_fill) leaves items open
+    // after the program's second correct answer and cannot reach completion here.
+    defaults: { grade: 'Kindergarten', mode: 'before_after', di: false,
+      topic: 'The number that comes just before or just after a given number' },
     leakTokens: ['NS_'],
-    // No example or return prompt: this family advertises no worked example, because
-    // the counter surface cannot draw a count SEQUENCE truthfully. A journey that
-    // asked for one would be scoring the runtime for refusing correctly.
-    prompts: {
-      hint: 'Please show me a reminder for how to work out this number.',
-      fade: 'Please hide the reminder now.',
-      replay: 'Please ask me this same number train again.',
+    prompts: WORKSPACE_PROMPTS,
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = sequencerItems(ctx.data.challenges ?? []).items.find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current number-train assignment');
+      const answers = sequencerHarnessAnswers(item);
+      const text = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      // Page work: the cards carry their own number as their whole label, so a
+      // placement is the shared `choose`, not a primitive-specific verb.
+      return item.answerKind === 'gesture'
+        ? text.split(',').map(label => ({ type: 'choose' as const, label }))
+        : [{ type: 'answer', text }];
     },
-    inputsFor: (intent, ctx) => intent === 'warmup' ? [] : spoken(ctx, intent === 'wrong' ? 'plainWrong' : 'correct'),
-    probes: { mounted: { selector: '[data-testid^="train-car-"]', kind: 'count' } },
+    probes: { mounted: { selector: '[data-testid^="train-car-"]', kind: 'count' },
+      demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' } },
   },
 
   'number-bond': {
@@ -353,7 +392,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     defaults: { grade: 'Kindergarten', mode: 'identify', di: false,
       topic: 'Naming flat shapes by their sides and corners' },
     leakTokens: ['SH_'],
-    prompts: { opening: 'What do I do?', hint: 'Can you help me?', example: 'Can you show me what you mean?' },
+    prompts: WORKSPACE_PROMPTS,
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
       const item = shapeItems(ctx.data.challenges, { isPreReader: ctx.data.gradeBand !== '1' }).find(i => i.id === ctx.itemId);
@@ -363,6 +402,84 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="shape"]' },
       demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' } },
+  },
+  'di-letter-sounds': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/direct-instruction/DiLetterSounds.tsx',
+    instanceId: 'sounds',
+    defaults: { grade: 'Kindergarten', mode: 'letter_sound', di: false,
+      topic: 'Saying the continuous sound a printed letter makes' },
+    leakTokens: RETIRED_DI_CUE_TAGS,
+    prompts: WORKSPACE_PROMPTS,
+    // The sound itself comes from the domain: the harness must not invent a phoneme.
+    inputsFor: spokenWorkspaceInputs(buildLetterSoundItems, letterSoundHarnessAnswers, 'letter-sound'),
+    probes: { mounted: { selector: '[data-sound-object="stimulus"]' },
+      demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' } },
+  },
+  'di-word-reading': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/direct-instruction/DiWordReading.tsx',
+    instanceId: 'words',
+    defaults: { grade: 'Kindergarten', mode: 'cvc_reading', di: false,
+      topic: 'Blending and reading short-vowel CVC words in print' },
+    leakTokens: RETIRED_DI_CUE_TAGS,
+    prompts: WORKSPACE_PROMPTS,
+    // The wrong answer is a plainly different word: the near neighbour this pack
+    // exists to correct belongs in the JEV probe, where the tutor's reply is fixed
+    // and only the observer is under test.
+    inputsFor: spokenWorkspaceInputs(buildWordReadingItems, wordReadingHarnessAnswers, 'word-reading'),
+    probes: { mounted: { selector: '[data-word-object="printed"]' },
+      demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' },
+      // The reward reveal, so a transcript inspection can check mechanically that
+      // no picture appeared before a committed success: this counts 0 until the
+      // observer has credited a read.
+      reward: { selector: '[data-word-read]', kind: 'count' } },
+  },
+  'di-math-facts': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/direct-instruction/DiMathFacts.tsx',
+    instanceId: 'facts',
+    defaults: { grade: 'Kindergarten', mode: 'answer_fact', di: false,
+      topic: 'Adding within five and saying the answer out loud' },
+    leakTokens: RETIRED_DI_CUE_TAGS,
+    prompts: WORKSPACE_PROMPTS,
+    // The wrong answer is a plainly different quantity: the off-by-one this pack
+    // exists to correct belongs in the JEV probe, where the tutor's reply is fixed
+    // and only the observer is under test.
+    inputsFor: spokenWorkspaceInputs(buildMathFactItems, mathFactsHarnessAnswers, 'math-fact'),
+    probes: { mounted: { selector: '[data-fact-object="problem"]' },
+      demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' },
+      // The completed-equation reveal, so a transcript inspection can check
+      // mechanically that no answer appeared on the stage before a committed
+      // success: this counts 0 until the observer has credited a fact.
+      reward: { selector: '[data-fact-solved]', kind: 'count' } },
+  },
+  'letter-sound-link': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/LetterSoundLink.tsx',
+    instanceId: 'links',
+    defaults: { grade: 'Kindergarten', mode: 'see_hear', di: false,
+      topic: 'Saying the sound a printed letter makes' },
+    leakTokens: ['LSL_'],
+    prompts: WORKSPACE_PROMPTS,
+    // The only MIXED-CHANNEL journey: two directions answer with an utterance
+    // and `hear_see` answers by tapping a letter card, whose label is the
+    // uppercase letter the stage prints. Both answers come from the domain —
+    // the harness invents neither a phoneme nor a grapheme.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = buildLetterSoundLinkItems(ctx.data.challenges ?? [], ctx.data.supportTier)
+        .find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current letter-sound assignment');
+      const answers = letterSoundLinkWorkspaceAnswers(item);
+      const value = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      return [item.answerKind === 'gesture' ? { type: 'choose', label: value } : { type: 'answer', text: value }];
+    },
+    probes: { mounted: { selector: '[data-letter-stage]' },
+      demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' },
+      // The keyword anchor, so a transcript inspection can check mechanically
+      // that no picture or word appeared before a committed success.
+      reward: { selector: '[data-letter-revealed]', kind: 'count' } },
   },
 };
 

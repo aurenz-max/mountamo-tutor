@@ -1,11 +1,7 @@
 import type { NumberSequencerData } from '../../../primitives/visual-primitives/math/NumberSequencer';
-import { buildSequencerItems, sequencerChallengeValid, sequencerPackBase }
-  from '../../../primitives/visual-primitives/math/numberSequencerScript';
-import { RUNNER_GUIDANCE, runnerLessonStart, type LiveActivityAdapter } from './adapterContract';
-
-/** The CATALOG eval modes, which are the mode names, not the challenge types. */
-export const NUMBER_SEQUENCER_LIVE_MODES = ['count_from', 'before_after', 'fill_missing',
-  'order_cards', 'spot_error', 'decade_fill'] as const;
+import { buildSequencerItems, sequencerChallengeValid, askFor, NUMBER_SEQUENCER_WORKSPACE_MODES }
+  from '../../../primitives/visual-primitives/math/numberSequencerDomain';
+import { workspaceLessonStart, type LiveActivityAdapter } from './adapterContract';
 
 /** Reject a train whose challenges cannot be ASKED before it reaches a five-year-old. */
 export function validateNumberSequencerData(value: unknown): NumberSequencerData {
@@ -15,7 +11,7 @@ export function validateNumberSequencerData(value: unknown): NumberSequencerData
       || new Set(d.challenges.map(c => c?.id)).size !== d.challenges.length)
     throw new Error('Generated number sequencer has invalid lesson content.');
   // The same independent key check the component runs, at the service boundary:
-  // a challenge the script would silently drop must not reach a mounted lesson.
+  // a challenge the domain would silently drop must not reach a mounted lesson.
   if (!d.challenges.every(sequencerChallengeValid))
     throw new Error('A number-sequencer challenge cannot run in the DI lesson.');
   if (!buildSequencerItems(d.challenges).items.length)
@@ -25,14 +21,18 @@ export function validateNumberSequencerData(value: unknown): NumberSequencerData
 
 function numberSequencerState(data: NumberSequencerData) {
   const { items } = buildSequencerItems(data.challenges);
-  return { ...data, ...sequencerPackBase(items).contextFor(items[0]),
-    teachingOwner: 'number-sequencer-di', totalChallenges: items.length };
+  return { title: data.title, instruction: askFor(items[0]), teachingOwner: 'tutor', totalChallenges: items.length,
+    interaction: 'Teach from liveRuntime.task and its workspace. Judge spoken answers naturally; the host records '
+      + 'your completed feedback and handles retry/advance. The train checks a card arrangement itself.' };
 }
 
 export const numberSequencerLive: LiveActivityAdapter<NumberSequencerData> = {
-  teachingOwner: 'di-runner',
-  modes: NUMBER_SEQUENCER_LIVE_MODES,
-  canAdvance: false,
+  tutoring: null,
+  teachingOwner: 'tutor',
+  // The CATALOG eval modes, which are the mode names, not the challenge types.
+  modes: NUMBER_SEQUENCER_WORKSPACE_MODES,
+  bindsTeachingWorkspace: true,
+  canAdvance: false, // The dialogue observer owns checked progression.
   grades: ['Kindergarten', 'Grade 1'],
   copy: {
     label: 'Number Train', checkbox: 'Number train', title: 'Learn with the Number Train',
@@ -40,11 +40,24 @@ export const numberSequencerLive: LiveActivityAdapter<NumberSequencerData> = {
       ['fill_missing', 'Fill the gaps'], ['order_cards', 'Put the cards in order'],
       ['spot_error', 'Spot the number that jumps'], ['decade_fill', 'Cross into the next ten']],
   },
-  lessonStart: runnerLessonStart('number-sequencer'),
-  guidance: RUNNER_GUIDANCE + ' Replay asks the same train again without clearing, reordering or filling anything, '
-    + 'and a reminder is TEXT only — never claim to move a card, fill an empty space or reorder the train. '
-    + 'This family has no worked example: a number train teaches the count sequence, which the counter '
-    + 'example cannot draw, so do not offer or describe one.',
+  lessonStart: workspaceLessonStart('number-train', 'number-sequencer'),
+  guidance: 'You own the teaching conversation. Read the task and observe the workspace, respond to the learner, '
+    + 'and choose useful actions. The glowing car marks the space the current question is about. '
+    + 'For spoken answers, judge what you hear against that question and communicate your verdict naturally. '
+    + 'The transcript may be noisy or multilingual; it is supporting context. The host records your completed '
+    + 'feedback, so do not wait for workspace.lastResponse or call a recording tool. '
+    + 'On the card-ordering mode the train checks the arrangement itself once the last card is placed; '
+    + 'praise or doubt about a part-built train is teaching, not a verdict. '
+    + 'Begin help with begin_help; use demonstrate with visible car or card IDs to draw purple dashed tutor marks '
+    + 'on the cars or cards you are discussing, and [] to clear them. When asked to show what you mean, execute '
+    + 'demonstrate and wait for its visible result before claiming anything is marked. Those marks are not learner '
+    + 'work: you cannot fill an empty car, move a card into a place, reorder the train or count for the learner. '
+    + 'Counting along out loud is teaching; the number the learner says is the answer. '
+    + 'Teach one step at a time and let the learner try. After a mistake, invite another attempt. When a spoken '
+    + 'answer is right, say so and name the number back in the same breath, in your own words; praise that names '
+    + 'no number is generic and credits nothing. '
+    + 'The host observes your completed reply and handles retry/advance. Do not call progression '
+    + 'tools or request a replacement activity. No correction cap or scripted wording.',
   validate: validateNumberSequencerData,
   initialState: numberSequencerState,
 };

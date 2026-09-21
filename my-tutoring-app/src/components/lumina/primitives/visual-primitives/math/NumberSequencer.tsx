@@ -13,7 +13,10 @@ import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { numberSequencerPipPose } from '../../../pip/numberSequencerPipPose';
 import { buildSequencerItems, sequencerPackBase, sequencerOrderCue, type SequencerItem } from './numberSequencerScript';
+import { NUMBER_SEQUENCER_WORKSPACE_MODES } from './numberSequencerDomain';
+import NumberSequencerTeaching from './NumberSequencerTeaching';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import { withTeachingWorkspace } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
 import { useNumberSequencerRuntime, sequencerEvalMode } from './useNumberSequencerRuntime';
 
@@ -61,16 +64,27 @@ export interface NumberSequencerData {
 }
 
 
-/** The train is the working surface. Voice fills one gap per judged turn;
- * ordering closes on stillness, including incomplete or incorrect arrangements. */
-export default function NumberSequencer({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode }: {
-  data: NumberSequencerData; className?: string;
+export interface NumberSequencerProps {
+  data: NumberSequencerData;
+  className?: string;
   /** The live host opts in only after its correlated mount handoff. */
   autoStart?: boolean;
   runtimePlanItemId?: string;
   /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
   runtimeEvalMode?: string;
-}) {
+}
+
+/**
+ * The tutor/JEV teaching workspace owns every mode the live host mounts; the
+ * standalone drill below keeps the judged runner until its own retirement gate.
+ */
+const NumberSequencer = withTeachingWorkspace(
+  NUMBER_SEQUENCER_WORKSPACE_MODES, NumberSequencerTeaching, ScriptedNumberSequencer);
+export default NumberSequencer;
+
+/** The train is the working surface. Voice fills one gap per judged turn;
+ * ordering closes on stillness, including incomplete or incorrect arrangements. */
+function ScriptedNumberSequencer({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode }: NumberSequencerProps) {
   const { items, droppedChallenges } = useMemo(() => buildSequencerItems(data.challenges ?? []), [data.challenges]);
   const instance = useRef(data.instanceId ?? `number-sequencer-${Date.now()}`);
   const runtime = useLiveRuntime();

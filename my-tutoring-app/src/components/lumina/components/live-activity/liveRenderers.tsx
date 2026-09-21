@@ -21,6 +21,10 @@ import ComparisonBuilder, { type ComparisonBuilderData } from '../../primitives/
 import CompareObjects, { type CompareObjectsData } from '../../primitives/visual-primitives/math/CompareObjects';
 import PlaceValueChart, { type PlaceValueChartData } from '../../primitives/visual-primitives/math/PlaceValueChart';
 import ShapeSorter, { type ShapeSorterData } from '../../primitives/visual-primitives/math/ShapeSorter';
+import DiLetterSounds, { type DiLetterSoundsData } from '../../primitives/visual-primitives/direct-instruction/DiLetterSounds';
+import DiWordReading, { type DiWordReadingData } from '../../primitives/visual-primitives/direct-instruction/DiWordReading';
+import DiMathFacts, { type DiMathFactsData } from '../../primitives/visual-primitives/direct-instruction/DiMathFacts';
+import LetterSoundLink, { type LetterSoundLinkData } from '../../primitives/visual-primitives/literacy/LetterSoundLink';
 import type { LivePrimitiveId } from './activityContract';
 
 export type { NumberLineControls };
@@ -58,5 +62,14 @@ export const LIVE_RENDERERS: Record<LivePrimitiveId, (p: MountProps) => React.Re
   'place-value-chart': p => <PlaceValueChart data={p.data as PlaceValueChartData} autoStart={p.autoStart}
     runtimePlanItemId={p.planItemId} runtimeEvalMode={p.evalMode} />,
   'shape-sorter': p => <ShapeSorter data={p.data as ShapeSorterData} autoStart={p.autoStart}
+    runtimePlanItemId={p.planItemId} runtimeEvalMode={p.evalMode} />,
+  // Tutor-led: the workspace binding has no judged runner to start.
+  'di-letter-sounds': p => <DiLetterSounds data={p.data as DiLetterSoundsData}
+    runtimePlanItemId={p.planItemId} runtimeEvalMode={p.evalMode} />,
+  'di-word-reading': p => <DiWordReading data={p.data as DiWordReadingData}
+    runtimePlanItemId={p.planItemId} runtimeEvalMode={p.evalMode} />,
+  'di-math-facts': p => <DiMathFacts data={p.data as DiMathFactsData}
+    runtimePlanItemId={p.planItemId} runtimeEvalMode={p.evalMode} />,
+  'letter-sound-link': p => <LetterSoundLink data={p.data as LetterSoundLinkData}
     runtimePlanItemId={p.planItemId} runtimeEvalMode={p.evalMode} />,
 };

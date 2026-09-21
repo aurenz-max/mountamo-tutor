@@ -8,23 +8,27 @@
  * new adapter file plus one line here, and the server route, the capabilities route
  * and the sandbox all widen automatically.
  */
-import { numberLineLive, ACTIVITY_MODES, validateActivityData, initialActivityState } from './adapters/numberLineLive';
-import { tenFrameLive, TEN_FRAME_MODES, validateTenFrameData } from './adapters/tenFrameLive';
-import { countingBoardLive, COUNTING_BOARD_MODES, validateCountingBoardData } from './adapters/countingBoardLive';
-import { numberSequencerLive, NUMBER_SEQUENCER_LIVE_MODES, validateNumberSequencerData } from './adapters/numberSequencerLive';
-import { numberBondLive, NUMBER_BOND_LIVE_MODES, validateNumberBondData } from './adapters/numberBondLive';
-import { ordinalLineLive, ORDINAL_LINE_LIVE_MODES, validateOrdinalLineData } from './adapters/ordinalLineLive';
-import { sortingStationLive, SORTING_STATION_LIVE_MODES, validateSortingStationData } from './adapters/sortingStationLive';
-import { numberTracerLive, NUMBER_TRACER_LIVE_MODES, validateNumberTracerData } from './adapters/numberTracerLive';
-import { comparisonBuilderLive, COMPARISON_BUILDER_LIVE_MODES, validateComparisonBuilderData } from './adapters/comparisonBuilderLive';
-import { compareObjectsLive, COMPARE_OBJECTS_LIVE_MODES, validateCompareObjectsData } from './adapters/compareObjectsLive';
-import { placeValueLive, PLACE_VALUE_LIVE_MODES, validatePlaceValueData } from './adapters/placeValueLive';
-import { shapeSorterLive, SHAPE_SORTER_LIVE_MODES, validateShapeSorterData } from './adapters/shapeSorterLive';
+import { numberLineLive, validateActivityData, initialActivityState } from './adapters/numberLineLive';
+import { tenFrameLive, validateTenFrameData } from './adapters/tenFrameLive';
+import { countingBoardLive } from './adapters/countingBoardLive';
+import { numberSequencerLive } from './adapters/numberSequencerLive';
+import { numberBondLive } from './adapters/numberBondLive';
+import { ordinalLineLive } from './adapters/ordinalLineLive';
+import { sortingStationLive } from './adapters/sortingStationLive';
+import { numberTracerLive } from './adapters/numberTracerLive';
+import { comparisonBuilderLive } from './adapters/comparisonBuilderLive';
+import { compareObjectsLive } from './adapters/compareObjectsLive';
+import { placeValueLive } from './adapters/placeValueLive';
+import { shapeSorterLive, validateShapeSorterData } from './adapters/shapeSorterLive';
+import { diLetterSoundsLive } from './adapters/diLetterSoundsLive';
+import { diWordReadingLive } from './adapters/diWordReadingLive';
+import { diMathFactsLive } from './adapters/diMathFactsLive';
+import { letterSoundLinkLive } from './adapters/letterSoundLinkLive';
 import type { LiveActivityAdapter } from './adapters/adapterContract';
 
 export type { LiveActivityAdapter } from './adapters/adapterContract';
-export { ACTIVITY_MODES, TEN_FRAME_MODES, COUNTING_BOARD_MODES, NUMBER_SEQUENCER_LIVE_MODES, NUMBER_BOND_LIVE_MODES, ORDINAL_LINE_LIVE_MODES, SORTING_STATION_LIVE_MODES, NUMBER_TRACER_LIVE_MODES, COMPARISON_BUILDER_LIVE_MODES, COMPARE_OBJECTS_LIVE_MODES, PLACE_VALUE_LIVE_MODES, SHAPE_SORTER_LIVE_MODES };
-export { validateActivityData, initialActivityState, validateTenFrameData, validateCountingBoardData, validateNumberSequencerData, validateNumberBondData, validateOrdinalLineData, validateSortingStationData, validateNumberTracerData, validateComparisonBuilderData, validateCompareObjectsData, validatePlaceValueData, validateShapeSorterData };
+// Re-exported for `activityContract.test.ts`; everything else reads `LIVE_ADAPTERS[id]`.
+export { validateActivityData, initialActivityState, validateTenFrameData, validateShapeSorterData };
 
 /**
  * Adopted families. Order is the picker's order.
@@ -45,6 +49,10 @@ export const LIVE_ADAPTERS = {
   'compare-objects': compareObjectsLive,
   'place-value-chart': placeValueLive,
   'shape-sorter': shapeSorterLive,
+  'di-letter-sounds': diLetterSoundsLive,
+  'di-word-reading': diWordReadingLive,
+  'di-math-facts': diMathFactsLive,
+  'letter-sound-link': letterSoundLinkLive,
 } satisfies Record<string, LiveActivityAdapter<any>>;
 
 export type LivePrimitiveId = keyof typeof LIVE_ADAPTERS;

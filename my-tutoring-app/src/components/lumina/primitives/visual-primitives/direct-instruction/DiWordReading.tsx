@@ -22,6 +22,13 @@
  * so the stage shows the PRINTED WORD ONLY — no picture, no emoji, no audio
  * pre-cue before the child reads. A challenge's emoji appears only AFTER an
  * affirmed read (reward) and in the completion recap.
+ *
+ * Inside a live runtime a resolved workspace mode mounts `DiWordReadingTeaching`
+ * instead of this drill (LA-14, 2026-09-20): there the tutor owns the clock and
+ * the observer commits the outcome, so the rule above is enforced against a
+ * COMMITTED read rather than a local `phase === 'affirmed'`. That binding's
+ * docblock carries the reward-reveal decision and its reason. Everything outside
+ * a live runtime still runs the scripted drill below.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -71,6 +78,9 @@ import { useDiPostRunDisconnect } from './useDiPostRunDisconnect';
 import DiActionPanel from '../../../components/DiActionPanel';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { diWordReadingPipPose } from '../../../pip/diWordReadingPipPose';
+import { withTeachingWorkspace } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import DiWordReadingTeaching from './DiWordReadingTeaching';
+import { DI_WORD_READING_WORKSPACE_MODES } from './diWordReadingDomain';
 
 export type { DiWordReadingChallenge, DiWordReadingChallengeType } from './diWordReadingScript';
 
@@ -151,10 +161,19 @@ const challengeSummaryFor = (item: DiWordReadingChallenge): string =>
 const expectedFor = (item: DiWordReadingChallenge): string =>
   `Read the printed word aloud as "${item.word}".`;
 
-/** PLATFORM PROP CONTRACT: registry primitives mount as
- *  `<Component data={…} index={…} />` — the generated data arrives as ONE `data`
- *  prop (evaluation props merged in), never spread across props. */
-export const DiWordReading: React.FC<{ data: DiWordReadingData; index?: number }> = ({ data }) => {
+export interface DiWordReadingProps {
+  data: DiWordReadingData;
+  index?: number;
+  className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED eval mode from the live mount; never rebuilt from a label. */
+  runtimeEvalMode?: string;
+}
+
+/** The scripted DISTAR drill: exact model/guide/test lines, sentinel-scanned
+ *  verdicts and a two-correction cap. Retiring (LA-14), and still the only path
+ *  for a standalone session with no live runtime around it. */
+const ScriptedDiWordReading: React.FC<DiWordReadingProps> = ({ data }) => {
   const ctx = useLuminaAIContext();
 
   const resolvedInstanceId = useMemo(
@@ -762,5 +781,13 @@ export const DiWordReading: React.FC<{ data: DiWordReadingData; index?: number }
     </LuminaCard>
   );
 };
+
+/** PLATFORM PROP CONTRACT: registry primitives mount as
+ *  `<Component data={…} index={…} />` — the generated data arrives as ONE `data`
+ *  prop (evaluation props merged in), never spread across props.
+ *
+ *  `withTeachingWorkspace` owns which of the two mounts. */
+export const DiWordReading = withTeachingWorkspace(
+  DI_WORD_READING_WORKSPACE_MODES, DiWordReadingTeaching, ScriptedDiWordReading);
 
 export default DiWordReading;

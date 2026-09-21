@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { LuminaCallout, LuminaCard, LuminaCardContent, LuminaCardHeader, LuminaCardTitle } from '../../../ui';
+import { LuminaButton, LuminaCallout, LuminaCard, LuminaCardContent, LuminaCardHeader, LuminaCardTitle } from '../../../ui';
 import { accentBorder, accentChipBg, accentSolidBg, accentStrongText, accentText } from '../../../ui/tokens';
 import type { LiveLessonRuntime } from './LiveLessonRuntime';
 import { useRuntimeSnapshot } from './LiveRuntimeContext';
@@ -165,10 +165,23 @@ function SupportPanel({ announce }: { announce: NonNullable<AssistanceEvent['ann
   </aside>;
 }
 
+/** The learner's own way out of a CHECKED item. The observer normally reopens or advances it
+ *  from the tutor's feedback; when it abstains, a checked gesture would otherwise stay locked. */
+export interface LearnerProgressControl {
+  act: (type: 'advance' | 'retry') => void;
+  disabled?: boolean;
+}
+
 /** Keeps the SAME child mounted. Suspension is an adapter guarantee, not a CSS hiding trick. */
-export function LiveRuntimeSurface({ runtime, children, active = true }: { runtime: LiveLessonRuntime; children: React.ReactNode; active?: boolean }) {
+export function LiveRuntimeSurface({ runtime, children, active = true, learnerProgress }: {
+  runtime: LiveLessonRuntime; children: React.ReactNode; active?: boolean;
+  /** Every host that mounts a workspace passes this: the dev host and the ordinary lesson share one control. */
+  learnerProgress?: LearnerProgressControl;
+}) {
   const state = useRuntimeSnapshot(runtime);
   const artifact = active ? state.supportArtifact : null;
+  const offers = (type: 'advance' | 'retry') => state.affordances.some(a => a.controller === 'observer' && a.action.type === type);
+  const progress = offers('advance') ? 'advance' as const : offers('retry') ? 'retry' as const : null;
   // The LAST event on the current item, so a fade — which announces nothing — clears
   // the panel rather than leaving a withdrawn aid on screen.
   const announce = state.assistance.filter(a => a.itemId === state.task?.itemId).at(-1)?.announce;
@@ -198,6 +211,10 @@ export function LiveRuntimeSurface({ runtime, children, active = true }: { runti
         </LuminaCardContent>
       </LuminaCard>
     </aside>}
+    {active && learnerProgress && progress && !artifact && state.status === 'active' && <div className="mt-4 flex justify-center">
+      <LuminaButton tone="primary" data-learner-progress={progress} disabled={learnerProgress.disabled}
+        onClick={() => learnerProgress.act(progress)}>{progress === 'advance' ? 'Next challenge' : 'Try again'}</LuminaButton>
+    </div>}
     {active && state.status === 'active' && state.markedTargetIds.map(id => <AttentionRing key={id} targetId={id} />)}
     {active && announce && state.status !== 'stopped' && <SupportPanel announce={announce} />}
     {active && state.status === 'stopped' && <p role="status">Lesson stopped. Unfinished work has not been marked complete.</p>}

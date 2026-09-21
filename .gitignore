@@ -78,3 +78,9 @@ my-tutoring-app/qa/*-tsc-after.txt
 my-tutoring-app/qa/misconception/*/*/
 my-tutoring-app/qa/misconception/*.json
 my-tutoring-app/qa/misconception/*.txt
+
+# tutor-reports: same pattern as misconception above. The dated
+# <primitive>-teaching-<date>.md is the deliverable; raw per-run JSON dumps
+# (payload/jev/workspace/smoke/criterion probes) are scratch that piles up
+# fast. 128 pre-existing JSON files stay tracked; this only stops new ones.
+my-tutoring-app/qa/tutor-reports/*.json

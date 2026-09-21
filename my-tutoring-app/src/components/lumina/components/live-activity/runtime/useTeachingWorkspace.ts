@@ -216,7 +216,10 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     const correct = checkResponse(response);
     if (correct === null || !session.submit(`gesture:${++gestureSequence.current}`, response, 'gesture', correct)) return;
     // Facts trigger the live conversation. No prescribed words; the browser has already checked the response.
-    aiRef.current.sendText(`The learner submitted their selection. Current workspace response: ${JSON.stringify(session.getSnapshot().lastResponse)}. Respond to the learner using the current task and workspace.`, { scripted: false });
+    const facts = `The learner submitted their selection. Current workspace response: ${JSON.stringify(session.getSnapshot().lastResponse)}. Respond to the learner using the current task and workspace.`;
+    // This host-written message travels the learner-text channel; it is not a learner turn.
+    runtime?.learner.expectHostText(facts);
+    aiRef.current.sendText(facts, { scripted: false });
   };
   return { state, item, summary, submitGestureResponse, publishWorkspace, present: () => currentItem().id === item.id && present(),
     canAttempt: active && state.phase === 'working' && !suspended.current,

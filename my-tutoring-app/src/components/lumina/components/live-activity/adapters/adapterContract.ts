@@ -44,7 +44,38 @@ export interface LiveActivityAdapter<T = any> {
   validate: (value: unknown) => T;
   /** The state the tutor receives on mount. */
   initialState: (data: T) => Record<string, unknown>;
+  /** The catalog challenge type of each challenge in a VALIDATED payload. Absent = `challenges[].type`. */
+  challengeTypes?: (data: T) => readonly string[];
+  /**
+   * This family binds the shared tutor/JEV teaching workspace, so EVERY mode in
+   * `modes` runs on it in an ordinary lesson as well as in the development host.
+   * A capability fact, never a rollout gate: a mode that misbehaves in a lesson is
+   * a defect to fix, not a mode to withhold (user ruling 2026-09-20). Absent = an
+   * LA-04 live adoption with no workspace binding, which keeps its lesson path.
+   */
+  bindsTeachingWorkspace?: true;
 }
+
+/** A generated pool every spoken pack shares the envelope of: titled, 1-12 uniquely-keyed askable items. */
+export function validateChallengePool<D extends { title: string; challenges: Array<{ id: string }> }>(
+  value: unknown, valid: (challenge: D['challenges'][number]) => boolean,
+  messages: { pool: string; item: string }): D {
+  const d = value as D;
+  if (!d || typeof d.title !== 'string' || !Array.isArray(d.challenges) || !d.challenges.length
+      || d.challenges.length > 12
+      || new Set(d.challenges.map(c => c?.id)).size !== d.challenges.length)
+    throw new Error(messages.pool);
+  // The same independent key check the component runs, at the service boundary:
+  // an item the domain would silently drop must not reach a mounted lesson.
+  if (!d.challenges.every(valid)) throw new Error(messages.item);
+  return d;
+}
+
+/** The `[LESSON_START]` wording every tutor-owned workspace family uses. */
+export const workspaceLessonStart = (noun: string, primitiveId: string) => (grade: string, mode: string) =>
+  `[LESSON_START] Begin a ${noun} lesson for ${grade}, mode ${mode}. `
+  + `Call request_activity with primitiveId ${primitiveId} and the requested mode. `
+  + 'After mounting, teach from the current workspace.';
 
 /** The judged families share one opening contract; only the closing sentence differs. */
 export const RUNNER_GUIDANCE = 'The mounted runner supplies the exact opening, question, correction, '

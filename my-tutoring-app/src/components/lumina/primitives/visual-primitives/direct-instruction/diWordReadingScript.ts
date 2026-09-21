@@ -34,51 +34,29 @@
 
 /** The L1 task identities: decodable, base mixed, sight-word, and review. */
 import type { DiActionContract } from '../../../hooks/judgedScriptContract';
-import { diWordReadingModePlan, type DiWordReadingChallengeType } from './diWordReadingModes';
-export type { DiWordReadingChallengeType } from './diWordReadingModes';
+import { diWordReadingModePlan } from './diWordReadingModes';
+import { isCvc, soundOutFor, type DiWordReadingChallenge } from './diWordReadingDomain';
 
-/** One printed word the tutor drills. Mirrors the generator output shape. */
-export interface DiWordReadingChallenge {
-  id: string;
-  /** Which eval-mode skill this item drills. */
-  challengeType: DiWordReadingChallengeType;
-  /** The printed word shown on screen and read aloud, e.g. "sam". */
-  word: string;
-  /** Decodable (sound-out blend) vs irregular high-frequency (whole-word recall). */
-  wordType: 'cvc' | 'sight';
-  /** Graphemes for the sound-out model, e.g. ["s","a","m"]. CVC only. */
-  graphemes?: string[];
-  /** POST-affirmation reward picture ONLY — never shown before the read
-   *  (the answer IS the printed word). Sight words usually have none. */
-  emoji?: string;
-  /** Whole-token ASR aliases — passive cross-check only, never the judge.
-   *  Near-neighbour homophones (son/sun) live here for reporting. */
-  asrAliases?: string[];
-}
+/**
+ * The assignment — item shape, validity gates, the ask, the accepted answer and
+ * the success condition — moved to `diWordReadingDomain` in the sunset slice, so
+ * the tutor/JEV binding can read what this pack teaches without importing the
+ * sentinel engine. This module keeps the retiring control protocol and
+ * re-exports the domain, so the generator, the DI tester, the Pip pose and the
+ * lesson-bench extractor keep one address.
+ *
+ * `isCvc` moved with it and gained one gate: a decodable item's graphemes must
+ * spell its word. A pool where they do not is a content defect, and the model
+ * line below would otherwise blend to a word that is not on the card. The
+ * generator splits the word itself, so no generated pool changes branch.
+ */
+export * from './diWordReadingDomain';
+export type { DiWordReadingChallengeType } from './diWordReadingModes';
 
 export type ActionableDiWordReadingChallenge = DiWordReadingChallenge & {
   answerKind: 'voice';
   actionContract: DiActionContract;
 };
-
-const sentenceCase = (value: string | undefined) =>
-  value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
-
-/** Stretched sound per grapheme for the sound-out model. Continuants and
- *  vowels stretch; stop consonants stay short (they can't be held). */
-const GRAPHEME_SOUNDS: Record<string, string> = {
-  a: 'aaa', e: 'eee', i: 'iii', o: 'ooo', u: 'uuu',
-  m: 'mmm', s: 'sss', f: 'fff', r: 'rrr', n: 'nnn', l: 'lll', v: 'vvv', z: 'zzz',
-  b: 'b', c: 'k', d: 'd', g: 'g', h: 'h', j: 'j', k: 'k', p: 'p', q: 'kw',
-  t: 't', w: 'w', x: 'ks', y: 'y',
-};
-
-const isCvc = (it: DiWordReadingChallenge) =>
-  it.wordType === 'cvc' && (it.graphemes?.length ?? 0) > 0;
-
-/** The slow blend for a decodable word: "sss-aaa-mmm". */
-export const soundOutFor = (it: DiWordReadingChallenge) =>
-  (it.graphemes ?? []).map((g) => GRAPHEME_SOUNDS[g.toLowerCase()] ?? g).join('-');
 
 /** MODEL: the tutor reads the word first. CVC gets the sound-out-then-say-fast
  *  model; sight words are modeled whole (irregular — recalled, not sounded

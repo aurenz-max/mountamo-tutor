@@ -10,9 +10,9 @@
  * silently dropped or substituted.
  */
 import type { LessonPackage } from '../../service/qa/lessonBench/lessonPackage';
-import { getComponentById } from '../../service/manifest/catalog';
 import { normalizeObjectiveGrade } from '../../service/generation/resolveGenerationContext';
 import { LIVE_ADAPTERS, isLivePrimitive, type LivePrimitiveId, type LiveActivityData } from './activityContract';
+import { allowedChallengeTypes, offModeChallengeTypes } from './modeContentGate';
 
 export interface LivePlanItem {
   /** Opaque id the tutor uses; never a manifest or primitive identifier. */
@@ -60,16 +60,6 @@ export interface PlanItemOutcome {
 
 export class LivePlanError extends Error {}
 
-/** Catalog challenge types the pinned mode(s) allow, or an error describing the pin. */
-function allowedChallengeTypes(primitiveId: string, pin: string): Set<string> | string {
-  const modes = getComponentById(primitiveId)?.evalModes ?? [];
-  if (!pin) return 'no resolved eval mode';
-  const keys = pin === 'mixed' ? modes.map(m => m.evalMode) : pin.split('|');
-  const picked = keys.map(key => modes.find(m => m.evalMode === key));
-  if (!keys.length || picked.some(m => !m)) return `eval mode "${pin}" is not in the ${primitiveId} catalog`;
-  return new Set(picked.flatMap(m => m!.challengeTypes));
-}
-
 function gradeLabel(raw: string): string {
   const grade = normalizeObjectiveGrade(raw);
   return grade === 'K' ? 'Kindergarten' : grade ? `Grade ${grade}` : raw;
@@ -103,8 +93,8 @@ export function projectLessonPlan(pkg: LessonPackage, options: { objectiveIds?: 
       } catch (error) {
         skip(error instanceof Error ? error.message : 'invalid prepared content'); continue;
       }
-      const offMode = ((data.challenges ?? []) as Array<{ type: string }>).map(c => c.type).filter(type => !allowed.has(type));
-      if (offMode.length) { skip(`content has ${Array.from(new Set(offMode)).join(', ')} challenges outside mode "${pin}"`); continue; }
+      const offMode = offModeChallengeTypes(component.componentId, data, allowed);
+      if (offMode.length) { skip(`content has ${offMode.join(', ')} challenges outside mode "${pin}"`); continue; }
       items.push({
         itemId: `item-${items.length + 1}`,
         primitiveId: component.componentId,

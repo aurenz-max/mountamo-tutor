@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { useTeachingWorkspace, type TeachingWorkspace } from './useTeachingWorkspace';
 import { LiveRuntimeContext } from './LiveRuntimeContext';
 import { LiveLessonRuntime } from './LiveLessonRuntime';
+import { RuntimeTransport } from './runtimeTransport';
 
 const seam = vi.hoisted(() => ({ conversation: [] as any[], sendText: vi.fn() }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useLuminaAIContext: () => ({ ...seam, isAudioPlaying: false }) }));
@@ -55,4 +56,23 @@ it('accepts an empty optional target list for help, but refuses object targets o
   act(() => { expect(dispatch([]).status).toBe('committed'); });
   expect(runtime.getSnapshot().task!.support.level).toBe(2);
   expect(runtime.getSnapshot().task!.evidence.attemptNumber).toBe(0);
+});
+
+it('gives every shared-workspace binding learner facts in its packet with nothing wired by the binding', async () => {
+  const runtime = new LiveLessonRuntime('facts', { allowAnswerExposure: true, maxSupportLevel: 3, allowSupportArtifacts: false });
+  const view = render(<LiveRuntimeContext.Provider value={runtime}><ColorWorkspace /></LiveRuntimeContext.Provider>);
+  const sent: any[] = [];
+  const classifyLearner = vi.fn(async () => ({ asksForHelp: .9, wantsToStop: .01, attemptsAnswer: .02, accepted: true, reason: 'observed', ms: 1 }));
+  const transport = new RuntimeTransport(runtime, m => sent.push(m), undefined, classifyLearner);
+  transport.publish();
+  const first = sent.at(-1).state.learner;
+  expect(first.about).toMatch(/never grade an answer/);
+  expect(first.signals).toMatchObject({ itemId: 'red-item', attempts: 0, learnerTurns: 0, helpRequests: 0 });
+  // A checked gesture sends a host-written message down the learner-text channel. It is not a learner turn.
+  fireEvent.click(view.getByText('blue'));
+  act(() => transport.learnerText(String(seam.sendText.mock.calls.at(-1)![0]), true));
+  expect(classifyLearner).not.toHaveBeenCalled();
+  await act(async () => { transport.learnerText('which one is red', true); await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
+  expect(sent.at(-1).state.learner.signals).toMatchObject({ attempts: 1, wrongAttempts: 1, learnerTurns: 1, helpRequests: 1 });
+  transport.close();
 });

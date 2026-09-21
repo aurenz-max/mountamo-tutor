@@ -32,7 +32,8 @@ Repository paths below resolve from the Lumina repository root, not this install
 skill's directory. Open these before implementing:
 
 - `my-tutoring-app/src/components/lumina/docs/TEACHING_WORKSPACE.md`: ownership,
-  TW-1 through TW-11, behavioral matrix and implementation limits.
+  TW-1 through TW-11, behavioral matrix, observation kinds and learner signals, and
+  implementation limits.
 - `my-tutoring-app/qa/live-runtime-handoffs/07-sunset-scripted-tutoring.md` and
   `07-census.md` beside it: retirement sequence, current consumers and blockers.
   Read current status and source; historical baseline paragraphs can predate extraction.
@@ -88,6 +89,32 @@ operations. Keep domain-specific rendering and task rules in the primitive.
   assistance and attempt history; a fresh item starts fresh. Current tracking relies
   on that explicit help action: no recorded help does not prove independence.
 
+- Learner facts come with the binding; nothing is wired per primitive. Every
+  `useTeachingWorkspace` surface publishes `liveRuntime.learner`: `signals`, computed by
+  code for the current item (elapsed seconds, turns, attempts, a repeated wrong response,
+  recorded help, help and stop request counts), and `observations`, an advisory JEV
+  reading of each finished learner turn (asked for help, asked to stop, attempted an
+  answer). The packet describes itself, so add nothing about it to adapter guidance.
+  Guidance is capped at 2000 characters and two adopters sit within 110 of it. The
+  binding owes three things:
+  - `readyForResponse` is true only while the learner can actually answer.
+    `secondsSinceReady` is measured from it, so a stimulus still pending must report false.
+  - A host-written message sent through `sendText` without `{ silent: true }` is registered
+    first with `runtime.learner.expectHostText(text)`. A non-silent send travels the
+    learner-text channel, so an unregistered host message is counted and classified as a
+    learner turn. A silent send never reaches that channel and needs nothing. The shared
+    hook already registers its checked-gesture message.
+  - The domain gets its own learner-turn cases (step 5.4).
+
+  Do not build a per-primitive struggle detector, an idle timer that prompts the tutor,
+  or an observer that chooses the hint. Facts go in the packet and the tutor decides;
+  silence alone establishes neither frustration nor a misconception. Before asking JEV a
+  new question, check whether a code signal already answers it; `repeatedWrongResponse`
+  already covers "the same wrong answer twice". A question that does need JEV is a new
+  observation kind under `service/typesafe/`, with a real-model case set, a false-positive
+  count, and a named consumer: the packet field the tutor will read, or a trace-only bench
+  while it is being measured. Only `assignment_outcome` may commit.
+
 Do not add prescribed correction wording to adapter guidance. Explain task constraints,
 which operations exist, when to record help and how to teach from the scene. A request
 to show something needs an actual action and visible receipt before narration claims it.
@@ -110,6 +137,8 @@ Use the existing scoped transport and shared observer lifecycle.
   observations. New recognized words or confirmed interruption invalidate pending work.
 - Keep commit, visible receipt and speech settlement distinct. Final success sound
   and completion summary occur once through the shared lifecycle after settlement.
+- The inspector also shows the learner signals and each learner-turn observation with
+  its exact model input. A new surface shows both without edits.
 - Keep the inspector's assignment, evidence, model input, classifications and applied
   or refused result inspectable. Reuse shared probability/margin policy; do not patch
   a domain failure with a new phrase rule or primitive-specific threshold.
@@ -145,6 +174,10 @@ alone does not authorize shipping or changing student-record semantics.
    demonstration/work, stale and duplicate outcomes, new-word cancellation, raw VAD,
    pending-speech ticket stability, actual-scene invalidation and final completion.
    Cover supported actions and unsupported targets, stop/unmount and help restoration.
+   Assert the packet carries `learner` and that a host-written message is not counted
+   as a learner turn. A test that mocks global `fetch` must route by URL. Two observers
+   call it: `/api/lumina/observe-dialogue` for the outcome and `/api/lumina/observe-learner`
+   for the learner turn. A one-shot outcome mock is otherwise eaten by the learner route.
 2. Add or update a row in `LIVE_JOURNEYS` (`liveJourneySpec.ts`), with workspace
    execution, domain-derived inputs and DOM probes. Always mount with resolved
    `evalMode`. Reuse the generic JS driver and `run_live_runtime.py`; do not create
@@ -153,11 +186,22 @@ alone does not authorize shipping or changing student-record semantics.
 3. Run focused component/runtime checks and `typecheck:lumina`. Regress Counting
    Board and Shape Sorter when changing shared workspace behavior; cover affected
    legacy consumers if a shared transport or contract changes.
-4. Run real JEV semantic cases and three full connected journeys (`--runs 3`, with
+4. Add the domain's case set to `scripts/learner-intent-probe.mjs`, behind a flag named
+   for the domain, and run it: answers
+   as this domain's learners say them, including the noisy transcript of a correct answer
+   (a held phoneme reads as "hmm"), plus help, stop, filler and off-task turns. Mark an
+   honestly ambiguous turn `null` when writing the case. A label changed after a failure
+   needs its reason stated in the report, and the question wording must not be tuned to a
+   case. False help or stop requests must be 0. Any other failed case, including a missed request, is a finding
+   to report, not a blocker.
+   Then run real JEV semantic cases and three full connected journeys (`--runs 3`, with
    `--audio` for speech evidence). Use a saved generated payload for replay. A
    progression-only run does not certify demonstrations. Mocked observer decisions
    prove lifecycle mechanics, not semantic classification or real model behavior.
-5. Inspect every transcript and receipt. Narration without a visible action is a
+5. Inspect every transcript and receipt. The journey sends its help and example prompts
+   unless `--progression-only` is passed. In the saved packets, each of those raises
+   `learner.signals.helpRequests`, and `tutorTurns` stays beside `learnerTurns` instead
+   of racing ahead of it. Narration without a visible action is a
    failure. Capture state at the transition, not a later tutor turn; support/return
    can occur in one turn. Check that preserved work was non-empty. Bound waits,
    retain failed reports, and never fabricate grades or receipts to pass a journey.

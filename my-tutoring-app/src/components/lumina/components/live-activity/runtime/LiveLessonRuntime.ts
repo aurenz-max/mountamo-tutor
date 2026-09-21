@@ -1,5 +1,6 @@
 import { TutorSpeechClock } from './TutorSpeechClock';
 import { TeachingTrace } from './TeachingTrace';
+import { LearnerSignalTracker } from './learnerSignals';
 import {
   actionKey, attentionRefusal, parseTutorCommand, spokenLine, supportLabel, validateSupportArtifact, SUPPORT_PURPOSE,
   type Affordance, type AssistanceEvent, type ExecutableAffordance, type MoveOptions, type RuntimeMount,
@@ -44,6 +45,8 @@ function sameActionScope(a: RuntimeSnapshot, b: RuntimeSnapshot) {
 export class LiveLessonRuntime {
   readonly speech = new TutorSpeechClock();
   readonly trace = new TeachingTrace();
+  /** Per-item learner facts. Read into the packet; never part of the snapshot, so a clock cannot move a revision. */
+  readonly learner = new LearnerSignalTracker();
   private mount: RuntimeMount | null = null;
   private registration: symbol | null = null;
   private revision = 0;
@@ -451,6 +454,7 @@ export class LiveLessonRuntime {
         && JSON.stringify(actionScopeTask(this.mount.adapter.getTutorState())) !== JSON.stringify(actionScopeTask(this.snapshot.task))) increment = true;
     if (increment) { this.revision += 1; this.visibleRevision = null; }
     this.snapshot = this.buildSnapshot();
+    this.learner.observe(this.snapshot);
     this.listeners.forEach(listener => listener());
   }
 }

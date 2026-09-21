@@ -63,6 +63,9 @@ import { DiStallCard } from './DiStallCard';
 import { useDiStallRecovery } from './useDiStallRecovery';
 import { useDiPostRunDisconnect } from './useDiPostRunDisconnect';
 import DiActionPanel from '../../../components/DiActionPanel';
+import { withTeachingWorkspace } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import DiLetterSoundsTeaching from './DiLetterSoundsTeaching';
+import { DI_LETTER_SOUNDS_WORKSPACE_MODES } from './diLetterSoundsDomain';
 
 export type { DiLetterSoundChallenge, DiLetterSoundChallengeType, DiLetterSoundsSupportTier } from './diLetterSoundsScript';
 
@@ -137,10 +140,19 @@ const challengeSummaryFor = (item: DiLetterSoundChallenge): string =>
 const expectedFor = (item: DiLetterSoundChallenge): string =>
   `Produce the held continuous sound "${item.spoken}" — the sound, never the letter name.`;
 
-/** PLATFORM PROP CONTRACT: registry primitives mount as
- *  `<Component data={…} index={…} />` — the generated data arrives as ONE `data`
- *  prop (evaluation props merged in), never spread across props. */
-export const DiLetterSounds: React.FC<{ data: DiLetterSoundsData; index?: number }> = ({ data }) => {
+export interface DiLetterSoundsProps {
+  data: DiLetterSoundsData;
+  index?: number;
+  className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED eval mode from the live mount; never rebuilt from a label. */
+  runtimeEvalMode?: string;
+}
+
+/** The scripted DISTAR drill: exact model/guide/test lines, sentinel-scanned
+ *  verdicts and a two-correction cap. Retiring (LA-14), and still the only path
+ *  for a standalone session with no live runtime around it. */
+const ScriptedDiLetterSounds: React.FC<DiLetterSoundsProps> = ({ data }) => {
   const ctx = useLuminaAIContext();
 
   const resolvedInstanceId = useMemo(
@@ -740,5 +752,13 @@ export const DiLetterSounds: React.FC<{ data: DiLetterSoundsData; index?: number
     </LuminaCard>
   );
 };
+
+/** PLATFORM PROP CONTRACT: registry primitives mount as
+ *  `<Component data={…} index={…} />` — the generated data arrives as ONE `data`
+ *  prop (evaluation props merged in), never spread across props.
+ *
+ *  `withTeachingWorkspace` owns which of the two mounts. */
+export const DiLetterSounds = withTeachingWorkspace(
+  DI_LETTER_SOUNDS_WORKSPACE_MODES, DiLetterSoundsTeaching, ScriptedDiLetterSounds);
 
 export default DiLetterSounds;

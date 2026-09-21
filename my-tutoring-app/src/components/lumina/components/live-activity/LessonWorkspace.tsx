@@ -13,6 +13,8 @@ interface LessonWorkspaceContextValue {
   items: Map<string, LessonWorkspaceItem>;
   activeId: string | null;
   focus: (id: string) => void;
+  /** The learner's Try again / Next challenge on a checked item, through the lesson's own transport. */
+  learnerProgress: (type: 'advance' | 'retry') => void;
 }
 const Context = createContext<LessonWorkspaceContextValue | null>(null);
 export const useLessonWorkspace = () => useContext(Context);
@@ -25,15 +27,21 @@ export function LessonWorkspaceProvider({ exhibit, children }: { exhibit: Exhibi
   const [activeId, setActiveId] = useState<string | null>(exhibit.orderedComponents?.find(s => s.audience !== 'caregiver')?.instanceId ?? null);
   const handler = useRef<(event: Record<string, any>) => void>(() => {});
   const onEvent = useCallback((event: Record<string, any>) => handler.current(event), []);
-  const value = useMemo(() => ({ runtime, items, activeId, focus: setActiveId }), [runtime, items, activeId]);
+  const progress = useRef<(type: 'advance' | 'retry') => void>(() => {});
+  const learnerProgress = useCallback((type: 'advance' | 'retry') => progress.current(type), []);
+  const value = useMemo(() => ({ runtime, items, activeId, focus: setActiveId, learnerProgress }),
+    [runtime, items, activeId, learnerProgress]);
   return <Context.Provider value={value}>
     <LuminaAIProvider liveLessonRuntime={items.size ? runtime : undefined} onActivityEvent={onEvent}>
-      <LessonWorkspaceBridge handler={handler} />{children}
+      <LessonWorkspaceBridge handler={handler} progress={progress} />{children}
     </LuminaAIProvider>
   </Context.Provider>;
 }
 
-function LessonWorkspaceBridge({ handler }: { handler: React.MutableRefObject<(event: Record<string, any>) => void> }) {
+function LessonWorkspaceBridge({ handler, progress }: {
+  handler: React.MutableRefObject<(event: Record<string, any>) => void>;
+  progress: React.MutableRefObject<(type: 'advance' | 'retry') => void>;
+}) {
   const host = useLessonWorkspace()!;
   const ai = useLuminaAIContext();
   const aiRef = useRef(ai); aiRef.current = ai;
@@ -52,7 +60,7 @@ function LessonWorkspaceBridge({ handler }: { handler: React.MutableRefObject<(e
         case 'runtime_command': void t?.command(event.command); break;
         case 'runtime_cancelled': t?.cancel(event.commandId); break;
         case 'runtime_turn_output': t?.beginTurn(String(event.text ?? '')); break;
-        case 'runtime_learner_text': t?.dialogue.learnerText(String(event.text ?? ''), event.finished === true); break;
+        case 'runtime_learner_text': t?.learnerText(String(event.text ?? ''), event.finished === true); break;
         case 'runtime_turn_end': t?.endTurn(event.audioPending === true); break;
         case 'runtime_audio_idle': t?.audioChanged(false); break;
         case 'runtime_interrupted': t?.dialogue.interrupt(); t?.endTurn(false); break;
@@ -60,8 +68,9 @@ function LessonWorkspaceBridge({ handler }: { handler: React.MutableRefObject<(e
         case 'session_resuming': case 'session_ended': case 'activity_session_closed': t?.close(); break;
       }
     };
-    return () => { handler.current = () => {}; };
-  }, [handler]);
+    progress.current = type => void transport.current?.learnerProgress(type);
+    return () => { handler.current = () => {}; progress.current = () => {}; };
+  }, [handler, progress]);
   useEffect(() => {
     if (!ai.isConnected || !ready || !host.activeId || !host.items.has(host.activeId)) return;
     const abort = new AbortController();

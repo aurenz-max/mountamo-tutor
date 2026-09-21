@@ -1,13 +1,9 @@
 import type { RuntimeSnapshot, TutorCommand } from './contract';
 import { abstain, type DialogueDecision, type DialogueRequest } from './dialogueContract';
+import { OBSERVATION_TIMEOUT_MS, postObservation, sameItemScope, snapshotScopeKey } from './observationContract';
 
 export type DialogueClassifier = (request: DialogueRequest, signal: AbortSignal) => Promise<DialogueDecision>;
-export const classifyDialogue: DialogueClassifier = async (request, signal) => {
-  const response = await fetch('/api/lumina/observe-dialogue', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request), signal,
-  });
-  return response.ok ? response.json() : abstain('unavailable');
-};
+export const classifyDialogue: DialogueClassifier = postObservation('/api/lumina/observe-dialogue', abstain);
 
 /** Observes tutor feedback and commits only the mounted observer capabilities. */
 export class DialogueObserver {
@@ -29,7 +25,7 @@ export class DialogueObserver {
   constructor(private snapshot: () => RuntimeSnapshot, private classify: DialogueClassifier,
     private execute: (command: TutorCommand) => Promise<string | undefined>,
     private report: (event: Record<string, unknown>) => void) {}
-  private key() { const s = this.snapshot(); return `${s.sessionEpoch}/${s.instanceId}/${s.task?.itemId}`; }
+  private key() { return snapshotScopeKey(this.snapshot()); }
   private cancel() {
     if (!this.closed && (this.pending || this.waitingForAudio)) this.status('cancelled', 'new_input_or_interruption');
     this.generation++; this.abort?.abort(); this.abort = null; this.pending = false; this.waitingForAudio = false;
@@ -92,13 +88,12 @@ export class DialogueObserver {
     const generation = this.generation, abort = new AbortController();
     this.abort = abort; this.pending = true;
     this.report({ type: 'dialogue_observation', ...abstain('completed_exchange'), status: 'observing', scope: request.scope, input: request });
-    const timer = setTimeout(() => abort.abort(), 4000);
+    const timer = setTimeout(() => abort.abort(), OBSERVATION_TIMEOUT_MS);
     try {
       const decision = await this.classify(request, abort.signal);
       if (this.closed || generation !== this.generation || abort.signal.aborted) return;
       const state = this.snapshot();
-      const current = state.sessionEpoch === request.scope.sessionEpoch && state.instanceId === request.scope.instanceId
-        && state.task?.itemId === request.scope.itemId && state.revision === request.scope.revision && state.status === 'active';
+      const current = sameItemScope(state, request.scope) && state.revision === request.scope.revision && state.status === 'active';
       let status: string | undefined = current ? 'abstained' : 'stale';
       const spoken = !!request.pendingResponse && request.activity?.facts.response === 'speech';
       const verdictValid = ['correct', 'incorrect'].includes(decision.verdict) && Number.isFinite(decision.verdictConfidence)

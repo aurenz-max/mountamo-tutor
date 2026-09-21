@@ -87,6 +87,9 @@ import DiActionPanel from '../../../components/DiActionPanel';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { diMathFactsPipPose } from '../../../pip/diMathFactsPipPose';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
+import { withTeachingWorkspace } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import DiMathFactsTeaching from './DiMathFactsTeaching';
+import { DI_MATH_FACTS_WORKSPACE_MODES } from './diMathFactsDomain';
 
 export type { DiMathFactsChallenge, DiMathFactsChallengeType, DiMathFactsSupportTier } from './diMathFactsScript';
 
@@ -194,7 +197,19 @@ const expectedFor = (item: DiMathFactsChallenge): string =>
  *  pack originally took the data object AS its props object (bench-only path:
  *  the DI tester spreads), which rendered fine in the tester and crashed on
  *  `data.challenges` the first time DI landed in a real lesson. */
-export const DiMathFacts: React.FC<{ data: DiMathFactsData; index?: number }> = ({ data }) => {
+export interface DiMathFactsProps {
+  data: DiMathFactsData;
+  index?: number;
+  className?: string;
+  /** Plan provenance from the mount, forwarded to the teaching workspace. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED eval mode from the mount. Never reconstructed from a
+   *  flattened interaction label — without it the live host would silently
+   *  fall through to the scripted drill. */
+  runtimeEvalMode?: string;
+}
+
+const ScriptedDiMathFacts: React.FC<DiMathFactsProps> = ({ data }) => {
   const ctx = useLuminaAIContext();
 
   const resolvedInstanceId = useMemo(
@@ -954,5 +969,13 @@ export const DiMathFacts: React.FC<{ data: DiMathFactsData; index?: number }> = 
     </LuminaCard>
   );
 };
+
+/** PLATFORM PROP CONTRACT: registry primitives mount as
+ *  `<Component data={…} index={…} />` — the generated data arrives as ONE `data`
+ *  prop (evaluation props merged in), never spread across props.
+ *
+ *  `withTeachingWorkspace` owns which of the two mounts. */
+export const DiMathFacts = withTeachingWorkspace(
+  DI_MATH_FACTS_WORKSPACE_MODES, DiMathFactsTeaching, ScriptedDiMathFacts);
 
 export default DiMathFacts;

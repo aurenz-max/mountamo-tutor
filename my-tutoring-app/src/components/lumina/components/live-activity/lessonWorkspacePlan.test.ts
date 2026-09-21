@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LIVE_ADAPTERS, type LiveActivityAdapter } from './activityContract';
 import { lessonPrimitiveContext, lessonWorkspaceItems } from './lessonWorkspacePlan';
 const section = { componentId: 'counting-board', instanceId: 'one', title: 'Count', objectiveIds: ['objective'], data: {
   title: 'Count', gradeBand: 'K', objects: { type: 'blocks' }, challenges: [
@@ -19,5 +20,63 @@ describe('ordinary lesson workspace eligibility', () => {
     for (const patch of [{ audience: 'caregiver' }, { objectiveIds: [] }, { objectiveIds: ['one', 'two'] }, { data: {} }]) {
       expect(lessonWorkspaceItems(exhibit('count', { ...section, ...patch })).size).toBe(0);
     }
+  });
+
+  const train = (type: string, challenge: Record<string, unknown>) => ({ componentId: 'number-sequencer',
+    instanceId: 'one', title: 'Train', objectiveIds: ['objective'], data: { title: 'Trains', gradeBand: 'K',
+      challenges: [{ id: 'c', type, instruction: '', ...challenge }] } });
+  const beforeAfter = train('before-after', { sequence: [7, null], correctAnswers: [8], rangeMin: 7, rangeMax: 8 });
+
+  it('binds a spoken number-train mode when the payload matches the manifest mode', () => {
+    const binding = lessonWorkspaceItems(exhibit('before_after', beforeAfter)).get('one')!;
+    expect(binding).toMatchObject({ primitiveId: 'number-sequencer', evalMode: 'before_after', objectiveId: 'objective' });
+  });
+
+  it('binds the card-ordering mode: a checked arrangement is reopened by the shell, not withheld from lessons', () => {
+    const cards = train('order-cards', { sequence: [7, 3, 5], correctAnswers: [3, 5, 7], rangeMin: 3, rangeMax: 7 });
+    expect(lessonWorkspaceItems(exhibit('order_cards', cards)).get('one'))
+      .toMatchObject({ primitiveId: 'number-sequencer', evalMode: 'order_cards' });
+  });
+
+  it('refuses a number train whose payload is not the mode the manifest asked for', () => {
+    // A before-after train under `fill_missing` is a mode/content mismatch, and an
+    // invalid key is dropped by the adapter's own gate before the workspace sees it.
+    expect(lessonWorkspaceItems(exhibit('fill_missing', beforeAfter)).size).toBe(0);
+    const broken = train('before-after', { sequence: [7, null], correctAnswers: [9], rangeMin: 7, rangeMax: 9 });
+    expect(lessonWorkspaceItems(exhibit('before_after', broken)).size).toBe(0);
+  });
+
+  it('refuses a counting board whose payload is not the mode the manifest asked for', () => {
+    const subitize = { ...section, data: { ...section.data,
+      challenges: [{ ...section.data.challenges[0], type: 'subitize' }] } };
+    expect(lessonWorkspaceItems(exhibit('count', subitize)).size).toBe(0);
+  });
+
+  it('binds the shape-naming mode from the adapter declaration, not a list kept here', () => {
+    const shapes = { componentId: 'shape-sorter', instanceId: 'one', title: 'Shapes', objectiveIds: ['objective'],
+      data: { title: 'Shapes', gradeBand: 'K', challenges: [{ id: 'c1', type: 'identify', ruleAttribute: 'shape',
+        instruction: 'Name it.', shapes: [{ shape: 'triangle', color: 'red', size: 'medium', rotation: 0 }] }] } };
+    expect(lessonWorkspaceItems(exhibit('identify', shapes)).get('one'))
+      .toMatchObject({ primitiveId: 'shape-sorter', evalMode: 'identify' });
+  });
+
+  const facts = { componentId: 'di-math-facts', instanceId: 'one', title: 'Facts', objectiveIds: ['objective'],
+    data: { title: 'Facts', challenges: [{ id: 'a1', challengeType: 'answer_fact', a: 2, b: 1, display: '2 + 1',
+      problem: 'two plus one', answerWord: 'three', answerNumeral: 3, solvedDisplay: '2 + 1 = 3' }] } };
+
+  it('binds a DI pack, whose payload spells its challenge type `challengeType`', () => {
+    expect(lessonWorkspaceItems(exhibit('answer_fact', facts)).get('one'))
+      .toMatchObject({ primitiveId: 'di-math-facts', evalMode: 'answer_fact', objectiveId: 'objective' });
+    // The same payload under a mode it is not: the gate reads the DI field, it does not wave it through.
+    expect(lessonWorkspaceItems(exhibit('name_numeral', facts)).size).toBe(0);
+  });
+
+  it('every family that binds the workspace admits every one of its modes; no mode is withheld from lessons', () => {
+    const bound = Object.entries(LIVE_ADAPTERS).filter(([, adapter]) => (adapter as LiveActivityAdapter).bindsTeachingWorkspace);
+    expect(bound.map(([id]) => id).sort()).toEqual(['counting-board', 'di-letter-sounds', 'di-math-facts',
+      'di-word-reading', 'letter-sound-link', 'number-sequencer', 'shape-sorter']);
+    // A live adoption with no workspace binding keeps its lesson path and its catalog tutoring.
+    const line = { componentId: 'number-line', instanceId: 'one', title: 'Line', objectiveIds: ['objective'], data: {} };
+    expect(lessonWorkspaceItems(exhibit('jump', line)).size).toBe(0);
   });
 });

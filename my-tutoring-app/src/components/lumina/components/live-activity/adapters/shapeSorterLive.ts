@@ -1,10 +1,7 @@
 import type { ShapeSorterData } from '../../../primitives/visual-primitives/math/ShapeSorter';
-import { itemsFromChallenges, SHAPE_PROPERTIES }
+import { itemsFromChallenges, SHAPE_PROPERTIES, SHAPE_SORTER_WORKSPACE_MODES }
   from '../../../primitives/visual-primitives/math/shapeSorterDomain';
 import { type LiveActivityAdapter } from './adapterContract';
-
-/** Bounded observer pilot. Other modes remain available in the standalone drill. */
-export const SHAPE_SORTER_LIVE_MODES = ['identify'] as const;
 
 const shapeItems = (d: ShapeSorterData) =>
   itemsFromChallenges(d.challenges, { isPreReader: (d.gradeBand ?? 'K') === 'K' });
@@ -35,7 +32,8 @@ function shapeSorterState(data: ShapeSorterData) {
 export const shapeSorterLive: LiveActivityAdapter<ShapeSorterData> = {
   tutoring: null,
   teachingOwner: 'tutor',
-  modes: SHAPE_SORTER_LIVE_MODES,
+  modes: SHAPE_SORTER_WORKSPACE_MODES,
+  bindsTeachingWorkspace: true,
   canAdvance: false,
   grades: ['Kindergarten', 'Grade 1'],
   copy: {
@@ -50,6 +48,8 @@ export const shapeSorterLive: LiveActivityAdapter<ShapeSorterData> = {
     + 'When asked to show what you mean, execute demonstrate on the shape you are discussing and wait for its visible result before claiming it is marked. '
     + 'Those marks never change the gold-ringed assignment and are not learner responses. You cannot move, rotate, or sort shapes. '
     + 'Teach one step at a time and let the learner try. Speak feedback naturally; the host records the verdict and handles retry/advance after speech settles. '
+    + 'When the name is right, say so and name the shape back in the same breath, in your own words; praise that '
+    + 'names no shape is generic and credits nothing. '
     + 'Do not call recording/progression tools or replace an unfinished activity. No correction cap or exact correction wording.',
   validate: validateShapeSorterData,
   initialState: shapeSorterState,

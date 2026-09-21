@@ -84,6 +84,107 @@ journeys after the scope/guidance fixes. Its human browser/mic sitting remains o
 an additional Counting Board run missed a requested demonstration, so tool-choice
 reliability remains follow-up work even though its progression regression passed.
 
+**Third adopter: Number Train, five spoken modes.** `count_from`, `before_after`,
+`fill_missing`, `spot_error` and `decade_fill` bind the same assignment/observer/
+runtime: the glowing car marks the space in question, the other cars are visible
+context, and demonstration marks whole cars without filling one. `spot-error` draws
+no assignment target at all — its question is which printed number breaks the count —
+and neither its facts nor any car carries the replacement. A multi-ask train fills the
+slots it has already answered and no others. No new observer criteria per mode, no
+backend branch and no teaching state machine were needed; the one shared change was a
+`correct`-criterion sentence saying a very short agreement that names the expected
+answer still credits the learner. Evidence and limits:
+[third-adopter report](../../../../qa/tutor-reports/number-sequencer-teaching-2026-09-19.md).
+
+**`order_cards` is withheld, and its reason is a framework gap.** The arrangement is
+activity-checked, which is correct, but a checked-wrong manipulation leaves the session
+in `checked` and the surface locked until an observer transition reopens the item — and
+the learner-owned **Try again** exists only in the development host. Until the ordinary
+lesson shell owns that control, no gesture mode should be admitted to lesson entry.
+
+**Fourth adopter: di-letter-sounds, 2026-09-19.** The first adopter outside math and
+the first migrated DI pack. Its assignment is a *produced sound*, which exposed two
+limits of the current contract rather than a missing capability. First, the tutor's
+affirmation and its own model of the sound use the same words, so a reply like "that is
+the sound" classifies at 0.83–0.89 and the observer abstains — safe, since the item
+stays open and the still-open cue fires, but it costs a turn. Second, a synthetic-audio
+journey cannot certify this family at all: TTS of a held phoneme is not a child
+producing one, and the tutor correctly judged what it was actually sent as wrong.
+Spoken evidence for produced-sound tasks therefore depends on a human microphone
+sitting. Its demonstration targets are whole objects (the stimulus card, the keyword
+picture) on the existing contract; no new operation or observer rule was added.
+[Report](../../../../qa/tutor-reports/di-letter-sounds-teaching-2026-09-19.md).
+
+**Fifth adopter: di-word-reading, 2026-09-20 — and the adopter that says pause.** DI pack
+#2, four modes, one act. Two constraints are new. First, **the answer is the stimulus**:
+the child reads print, so `askFor` never names the word (a tutor reading the task aloud
+would hand over the answer), while the word stays in `workspace.objects` and the facts
+because the tutor must have it to judge. Second, **the reward picture is not a workspace
+object** — as one the tutor could name it before the read, which is the same leak the
+pack's answer-leak rule blocks on screen but spoken. It is revealed in a read-words trail
+keyed on committed correct attempts, because `apply_tutor_verdict` submits and advances
+in one `flushSync` and there is no `phase === 'affirmed'` to key off. A decodable word
+publishes its printed letters as separate demonstration targets, so marking one is the
+real sound-out gesture; an irregular sight word publishes none, so sounding one out is
+refused by the scene rather than by guidance.
+
+Its audio gate ran and passed the channel letter sounds could not: a synthesised whole
+word transcribes correctly, and a connected run closed `dog` → retry, `cat` → success,
+`mat` → success to completion. But the sub-threshold-affirmation finding reproduced here
+too — `correct @ 0.86` for "You did it!" after a corrective turn, which stalled a live
+lesson — so it is **not** specific to produced sound, and the next work is LA-13's shared
+criterion rather than a sixth adopter. Two success-condition clauses were tried in the
+primitive's own layer and both reverted; one had no effect and one only nudged a single
+case onto the threshold while costing certainty elsewhere.
+[Report](../../../../qa/tutor-reports/di-word-reading-teaching-2026-09-20.md).
+
+**Sixth adopter: di-math-facts, 2026-09-20 — the adopter that narrows LA-13.** DI pack #3,
+five modes, one act: meet the printed problem, say the number out loud. Its answer is
+neither printed on the screen nor a produced phoneme, which is what makes it the cheapest
+test of the question the pause above was called for. Three constraints are new. First, **the answer is neither drawn nor withholdable**:
+unlike word reading the answer is nowhere on screen, yet the tutor must have it to judge, so
+the scene cannot prevent the tutor saying it first and only the guidance can. `name_numeral`
+inverts within the pack — the printed numeral IS the answer — so its content gate is
+inverted rather than exempted. Second, **answer-key desync is a gate**: the tutor judges the
+answer WORD while the evaluation records the NUMERAL, so an item whose word does not match
+`spokenIntegerWord(numeral)` is refused on both sides of the wire. Third, **the completed
+equation is keyed on the committed attempt**, small and secondary, because the standalone
+drill's in-place reward beat needs a `phase === 'affirmed'` window this path does not have.
+
+Its LA-13 result is the reason it is here. The sub-threshold-affirmation case that scored
+0.83–0.89 for letter sounds and 0.86 for word reading scores **0.95–0.96 accepted** on a
+spoken number, and a variant controlled for the prior turn naming the target still scores
+0.94–0.95. The failing line is therefore not produced sound; it is whether **the child's
+answer and the tutor's own model are the same utterance in the same channel**. A separate
+abstention did stall one connected run, and a deterministic seven-cell isolation shows the
+reply *names the answer* and is still refused — what rescues it is a relational credit
+phrase. On this pack, naming the answer back produces the DISTAR model line verbatim, so
+word reading's remedy does not generalise. Both results are shared-criterion input; nothing
+was patched in the primitive's layer.
+[Report](../../../../qa/tutor-reports/di-math-facts-teaching-2026-09-20.md).
+
+**Seventh adopter: letter-sound-link, 2026-09-20 — the first binding with two channels,
+and the first whose tutor is not told the answer.** The first literacy primitive outside the
+DI packs. `see_hear` says the sound a printed letter makes, `keyword_match` says the picture
+word that starts with it, and `hear_see` TAPS one of two confusable letters. Because a
+letter NAME is a blocked response class, `hear_see` publishes **no `expectedAnswer`** — the
+activity owns the check, both cards carry one shared group so nothing in the scene marks the
+target, and the workspace advertises **no `demonstrate`**, since every object on that stage
+is an answer option and marking either one answers for the child. Two capabilities the
+contract had never been asked for, and neither needed a new observer rule. The keyword anchor
+is not a workspace object in any mode: it encodes the sound, so it is drawn only on a
+committed correct attempt and is absent from the `see_hear` packet entirely.
+
+Its LA-13 result contradicts the sixth adopter's reading. The `wrong_then_corrected` shape is
+ACCEPTED here at 0.94–0.96 on a produced sound — exactly where "the child's answer and the
+tutor's own model are the same utterance in the same channel" predicts failure. What abstains
+3/3 is a reply whose entire content is the answer token ("Yes, /t/.", "Yes, sss."), while the
+same exchange in a sentence scores 0.99–1.00. One primitive-layer change was measured and
+kept: naming the letter's NAME in the success condition took a false affirm of "Yes, em is
+right!" from 2/3 accepted to 0/3, which is stating the success condition the way the two
+sibling directions already did.
+[Report](../../../../qa/tutor-reports/letter-sound-link-teaching-2026-09-20.md).
+
 ## Governing principle: completion belongs to the assignment
 
 **Teaching can change the path; only evidence satisfying the original assignment
@@ -302,6 +403,52 @@ Dragging, constructing, annotating, and open-ended explanations need their own
 truthful domain operations/checkers. Do not add a generic arbitrary-state mutation
 API or recreate per-mode teaching scripts. Shape identification supplies the second
 binding; its evidence does not authorize a catalog migration or certify these other interactions.
+
+## Observation kinds and learner signals (2026-09-20, every shared-workspace binding)
+
+The outcome observer answers one question after a tutor turn: was the assignment solved.
+Two additions answer the questions around it, without a second planner (TW-5).
+
+**Learner signals (code, no model call).** `LearnerSignalTracker` lives on the runtime and
+computes, per item: seconds on the item, since the task became ready, since the tutor last
+settled and since the learner last spoke; learner and tutor turn counts; attempts, wrong
+attempts, a repeated wrong response, recorded help; and the counts the learner-turn
+observation feeds. They ride in the packet as `liveRuntime.learner.signals`, beside the
+snapshot and never inside it, so a value that changes by the clock cannot move a revision
+or invalidate an action ticket. They are refreshed on the publishes that already happen.
+No timer publishes them and none speaks: silence alone establishes neither frustration nor
+a misconception, and a quiet-nudge policy would need its own user ruling.
+
+**Observation kinds (JEV).** `service/typesafe/observationKinds.ts` runs one kind: a fixed
+question set, a bounded model input, a pure decision, a budget. `assignment_outcome` is the
+existing verdict/feedback/transition trio, registered unchanged, and it stays the only kind
+with a runtime consumer. `learner_intent` is the first advisory kind: three Nouls on a
+finished LEARNER turn (asks for help, wants to stop, attempts an answer). Its model input
+holds the task, the prior tutor turn and the learner's words, and never the expected
+answer, so it cannot become a second speech grader (TW-3). Code holds the policy: a request
+is raised at 0.8, an answer attempt is three-valued, and an unclear turn is reported as unclear.
+
+| | `assignment_outcome` | `learner_intent` |
+|---|---|---|
+| Fires | After a settled tutor turn and drained playback | When a learner turn finishes, before the tutor's reply |
+| May commit | Verdict, retry, advance | Nothing |
+| Waited on | By progression | Never. A late result informs the following turn |
+| Cancelled by | New learner words, interruption, scope change | New learner words, item change. Not a tutor reply or a revision bump |
+| Reaches the tutor | As the visible transition | `liveRuntime.learner.observations` and the signal counts; a newly raised help or stop request sends one packet at the same revision |
+
+Piloted on Counting Board behind an opt-in, then made general the same day: every
+`useTeachingWorkspace` binding (`workspace.progression === 'observer'`) carries
+`liveRuntime.learner` and gets the learner-turn observation, with nothing wired per
+primitive. Legacy runner adapters are unchanged; a runner owns its own judge and clock.
+The block carries its own one-sentence `about` note, because adapter guidance is capped at
+2000 characters and two adopters sit within 110 of it. A binding owes a truthful
+`readyForResponse`, registration of any host-written message, and a domain case set.
+Host-written messages that travel the learner-text
+channel (the checked-gesture facts) are registered by exact string and dropped, which is an
+identity match on text this code wrote, not a phrase rule. A new kind needs its questions,
+its decision, a real-model case set with a false-positive count, and a named consumer.
+It does not need, and must not get, a primitive-specific branch (TW-10).
+[Pilot report](../../../../qa/tutor-reports/counting-board-learner-signals-2026-09-20.md).
 
 ## Compatibility and evidence limits
 

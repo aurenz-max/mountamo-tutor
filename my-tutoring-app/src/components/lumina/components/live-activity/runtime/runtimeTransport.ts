@@ -1,13 +1,22 @@
 import { DialogueObserver, classifyDialogue, type DialogueClassifier } from './DialogueObserver';
+import { LearnerObserver, classifyLearnerIntent, type LearnerIntentClassifier } from './LearnerObserver';
+import { LEARNER_FACTS_NOTE, type LearnerSignals } from './learnerSignals';
+import type { LearnerObservation } from './learnerIntentContract';
+import { itemScopeKey } from './observationContract';
 import { parseTutorCommand, type RuntimeSnapshot } from './contract';
 import type { LiveLessonRuntime } from './LiveLessonRuntime';
 import type { ComposedMove } from './moveContract';
 import { waitForVisible } from './waitForVisible';
 
-export function runtimePacket(state: RuntimeSnapshot) {
+/**
+ * `learner` rides beside the snapshot, never inside it: elapsed seconds differ on every
+ * read, and a value that changes by the clock must not look like a scene change.
+ */
+export function runtimePacket(state: RuntimeSnapshot,
+    learner?: { about: string; signals: LearnerSignals | null; observations: readonly LearnerObservation[] }) {
   const { affordances, ...semantic } = state;
   return { ...semantic, choices: affordances.filter(a => a.controller !== 'observer').map((a, index) => ({ ...a,
-    actionId: `${state.sessionEpoch}/${state.revision}/${index}` })) };
+    actionId: `${state.sessionEpoch}/${state.revision}/${index}` })), ...(learner ? { learner } : {}) };
 }
 
 /** Used by the actual browser host AND the headless live drive (only paint is simulated there). */
@@ -19,8 +28,17 @@ export class RuntimeTransport {
   private unsubscribe: () => void;
 
   readonly dialogue: DialogueObserver;
+  readonly learnerObserver: LearnerObserver;
 
-  constructor(private runtime: LiveLessonRuntime, private send: (message: Record<string, unknown>) => void, classify: DialogueClassifier = classifyDialogue) {
+  constructor(private runtime: LiveLessonRuntime, private send: (message: Record<string, unknown>) => void, classify: DialogueClassifier = classifyDialogue,
+      classifyLearner: LearnerIntentClassifier = classifyLearnerIntent) {
+    this.learnerObserver = new LearnerObserver(runtime.getSnapshot, classifyLearner, report => {
+      runtime.trace.record({ stage: 'learner_intent', status: report.status, reason: report.decision?.reason,
+        input: report.request, result: report.decision ? { ...report.decision, flags: report.flags } : undefined });
+      // Only a newly raised request is worth a packet of its own. Everything else rides the next publish.
+      if (report.status === 'observed' && runtime.learner.intent(itemScopeKey(report.request.scope), report.observation!, report.flags!))
+        this.publish();
+    });
     this.dialogue = new DialogueObserver(runtime.getSnapshot, classify, command => this.dispatch(command, true), message => {
       if (message.type === 'dialogue_observation') runtime.trace.record({ stage: 'dialogue', status: String(message.status),
         reason: String(message.reason), input: message.input, result: message });
@@ -28,12 +46,25 @@ export class RuntimeTransport {
     });
     this.unsubscribe = runtime.subscribe(() => { this.publish(); this.dialogue.stateChanged(); });
   }
+  /** The packet the tutor receives. Every shared-workspace binding carries learner facts; nothing is wired per primitive. */
+  private packet(state: RuntimeSnapshot = this.runtime.getSnapshot()) {
+    return runtimePacket(state, state.task?.workspace?.progression === 'observer'
+      ? { about: LEARNER_FACTS_NOTE, signals: this.runtime.learner.read(state), observations: this.runtime.learner.observations() } : undefined);
+  }
   publish() {
-    if (!this.closed) this.send({ type: 'runtime_state', state: runtimePacket(this.runtime.getSnapshot()) });
+    if (!this.closed) this.send({ type: 'runtime_state', state: this.packet() });
+  }
+  /** One entry for learner words: the outcome observer's context, and the advisory learner-turn observation. */
+  learnerText(text: string, finished: boolean) {
+    if (this.closed) return;
+    this.dialogue.learnerText(text, finished);
+    if (finished && this.runtime.learner.consumeHostText(text)) return;
+    if (this.learnerObserver.learnerText(text, finished)) this.runtime.learner.learnerFinished();
   }
   beginTurn(text = '') {
     if (this.closed) return;
     this.dialogue.output(text);
+    this.learnerObserver.output(text);
     this.runtime.speech.output();
     this.turnEnded = false;
     this.releaseTurn ??= this.runtime.holdTeachingTurn({ allowTutorActions: true });
@@ -49,6 +80,9 @@ export class RuntimeTransport {
     if (!this.turnEnded || audioPending) return;
     const release = this.releaseTurn;
     this.releaseTurn = null;
+    // Once per held turn: audio-idle events repeat after a turn has already settled. Counted
+    // before the release, whose publish then carries the settled turn.
+    if (release) this.runtime.learner.tutorSettled();
     release?.();
     this.dialogue.audio(audioPending);
   }
@@ -78,7 +112,7 @@ export class RuntimeTransport {
     if (this.closed || abort.signal.aborted) return;
     if (!observed) this.send({ type: 'runtime_result', commandId: receipt.commandId,
       status: rendered?.status ?? receipt.status, reason: receipt.reason,
-      state: runtimePacket(rendered?.state ?? receipt.state), elapsedMs: rendered?.elapsedMs });
+      state: this.packet(rendered?.state ?? receipt.state), elapsedMs: rendered?.elapsedMs });
     if (rendered?.status === 'visible' && receipt.commandId) {
       this.runtime.confirmVisibleResponse(receipt.commandId);
     }
@@ -99,7 +133,7 @@ export class RuntimeTransport {
     const reply = (status: string, reason?: string, extra: Record<string, unknown> = {}) => {
       this.pending.delete(commandId);
       if (!this.closed && !abort.signal.aborted) this.send({ type: 'runtime_result', commandId, status, reason,
-        state: runtimePacket(this.runtime.getSnapshot()), ...extra });
+        state: this.packet(), ...extra });
       return { status, reason };
     };
     const refusal = this.runtime.composeMoveRefusal(scope, move);
@@ -122,6 +156,7 @@ export class RuntimeTransport {
   close() {
     this.closed = true;
     this.dialogue.close();
+    this.learnerObserver.close();
     this.pending.forEach(abort => abort.abort());
     this.pending.clear();
     this.unsubscribe();

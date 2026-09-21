@@ -2,8 +2,10 @@
  * See docs/TEACHING_WORKSPACE.md: completion belongs to the original assignment,
  * not an intermediate tutor question. The expected answer grounds that distinction.
  */
+import { boundedText as text, validItemScope, type ItemScope, type ObservationAssessment } from './observationContract';
+
 export interface DialogueRequest {
-  scope: { sessionEpoch: string; instanceId: string; itemId: string; revision: number };
+  scope: ItemScope & { revision: number };
   task: string;
   phase: string;
   learner: string;
@@ -37,12 +39,10 @@ export interface DialogueDecision {
   reason: string;
   ms: number;
   model?: string;
-  assessment?: { state?: unknown; questions: unknown; answers: unknown };
+  assessment?: ObservationAssessment;
 }
-const text = (v: unknown, max: number) => typeof v === 'string' && v.length <= max;
 export function validDialogueRequest(v: any): v is DialogueRequest {
-  return !!v && !!v.scope && text(v.scope.sessionEpoch, 200) && !!v.scope.sessionEpoch
-    && text(v.scope.instanceId, 200) && !!v.scope.instanceId && text(v.scope.itemId, 200) && !!v.scope.itemId
+  return !!v && validItemScope(v.scope)
     && Number.isInteger(v.scope.revision) && v.scope.revision >= 0
     && text(v.task, 1500) && text(v.phase, 40) && text(v.learner, 2000) && text(v.tutor, 4000) && !!v.tutor.trim()
     && (v.expectedAnswer === undefined || text(v.expectedAnswer, 1500))

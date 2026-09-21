@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { initialActivityState, parseActivityRequest, validateActivityData, validateTenFrameData, validateShapeSorterData,
-  generatedActivityState, LIVE_ADAPTERS } from './activityContract';
+  generatedActivityState, LIVE_ADAPTERS, LIVE_PRIMITIVE_IDS, type LiveActivityAdapter } from './activityContract';
+import { getComponentById } from '../../service/manifest/catalog';
 
 export const fixture = () => ({ title: 'Subtraction within 10', range: { min: 0, max: 10 },
   interactionMode: 'jump' as const, challenges: [{ id: 'c1', type: 'show_jump' as const,
@@ -30,6 +31,15 @@ describe('live activity boundary', () => {
     expect(generatedActivityState('ten-frame', valid)).toMatchObject({ challengeType: 'make_ten', teachingOwner: 'ten-frame-di', totalChallenges: 1 });
     expect(() => validateTenFrameData({ ...data, challenges: [{ ...data.challenges[0], targetCount: 10 }] })).toThrow();
     expect(() => parseActivityRequest({ primitiveId: 'ten-frame', topic: 'Make ten', intent: 'Practice', mode: 'jump' })).toThrow();
+  });
+  it.each(LIVE_PRIMITIVE_IDS)('%s declares its facts once and consistently', id => {
+    const adapter: LiveActivityAdapter = LIVE_ADAPTERS[id];
+    const catalogModes = (getComponentById(id)?.evalModes ?? []).map(m => m.evalMode);
+    // The picker can only offer what the route accepts, and the route only what the catalog defines.
+    for (const [mode] of adapter.copy.lessons) expect(adapter.modes).toContain(mode);
+    for (const mode of adapter.modes) expect(catalogModes).toContain(mode);
+    // `live_activity_tools.parse_activity_spec` closes the socket above this length.
+    expect(adapter.guidance.length).toBeLessThanOrEqual(2000);
   });
   it('accepts only declared capabilities and bounded intent', () => {
     expect(parseActivityRequest({ primitiveId: 'number-line', topic: ' subtract ', intent: 'Move left', mode: 'jump' }).topic).toBe('subtract');

@@ -28,7 +28,10 @@ describe('live lesson plan projection', () => {
     const plan = projectLessonPlan(pkg);
     expect(plan.gradeLevel).toBe('Kindergarten');
     expect(plan.items.map(i => [i.itemId, i.primitiveId, i.evalMode, i.objective.id]))
-      .toEqual([['item-1', 'ten-frame', 'build', 'obj1'], ['item-2', 'number-line', 'jump', 'obj3']]);
+      // The DI pack spells its challenge type `challengeType`; the adapter's accessor is what
+      // lets the mode gate read it. Under a hardcoded `c.type` it was skipped as "undefined".
+      .toEqual([['item-1', 'ten-frame', 'build', 'obj1'], ['item-2', 'number-line', 'jump', 'obj3'],
+        ['item-3', 'di-math-facts', 'answer_fact', 'obj3']]);
     const source = pkg.manifest.objectiveBlocks[2];
     const line = plan.items[1];
     const manifestComponent = source.components.find(c => c.instanceId === line.provenance.manifestInstanceId)!;
@@ -37,7 +40,8 @@ describe('live lesson plan projection', () => {
     expect(line.data).toEqual(pkg.components.find(c => c.instanceId === manifestComponent.instanceId)!.data);
     expect(line.provenance).toMatchObject({ packageId: pkg.id, source: 'topic-trace', modeSource: 'manifest-resolved' });
     expect(plan.unavailable.map(u => u.reason)).toContain('no live adapter');
-    expect(projectLessonPlan(pkg, { objectiveIds: ['obj3'] }).items.map(i => i.primitiveId)).toEqual(['number-line']);
+    expect(projectLessonPlan(pkg, { objectiveIds: ['obj3'] }).items.map(i => i.primitiveId))
+      .toEqual(['number-line', 'di-math-facts']);
   });
 
   it('marks components unavailable instead of running content the resolved mode did not ask for', () => {
@@ -67,7 +71,9 @@ describe('live lesson plan projection', () => {
     expect(nextPlanItem(plan, {})?.itemId).toBe('item-1');
     const done = { 'item-1': { itemId: 'item-1', disposition: 'completed' as const, allCorrect: true, score: 100 } };
     expect(nextPlanItem(plan, done)?.itemId).toBe('item-2');
-    expect(nextPlanItem(plan, { ...done, 'item-2': { ...done['item-1'], itemId: 'item-2' } })).toBeNull();
+    const two = { ...done, 'item-2': { ...done['item-1'], itemId: 'item-2' } };
+    expect(nextPlanItem(plan, two)?.itemId).toBe('item-3');
+    expect(nextPlanItem(plan, { ...two, 'item-3': { ...done['item-1'], itemId: 'item-3' } })).toBeNull();
     const told = JSON.stringify(planForTutor(plan));
     expect(told).not.toContain('targetValues');
     expect(told).not.toContain('challenges');
