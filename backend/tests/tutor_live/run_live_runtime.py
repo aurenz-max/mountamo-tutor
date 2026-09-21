@@ -440,10 +440,21 @@ async def teaching_workspace(s):
         await turn('help', 'Can you help me?')
         assert s.state['task']['evidence']['attemptNumber'] == 0, 'Help was graded as a learner answer'
         assert s.state['task']['itemId'] == first, 'Help advanced the item'
-        if not any(e['type'] == 'visible_demonstration' for e in s.events):
-            await turn('show', 'Can you show me what you mean?')
-        assert any(e['type'] == 'visible_demonstration' for e in s.events), 'Help never changed the actual board'
-        assert s.state['task']['evidence']['attemptNumber'] == 0, 'Demonstration became a learner attempt'
+        # Whether a demonstration EXISTS is read from the production envelope, like
+        # every other per-primitive fact here. A mode can legitimately offer none:
+        # letter-sound-link's tapped direction draws only the two answer options, so
+        # marking either one would answer for the child and the workspace publishes
+        # no `demonstrate`. Asserting a visible demonstration there tested the
+        # harness's assumption rather than the tutor.
+        offers_demonstration = any(c.get('action', {}).get('operation') == 'demonstrate'
+                                   for c in s.state.get('choices', []))
+        if offers_demonstration:
+            if not any(e['type'] == 'visible_demonstration' for e in s.events):
+                await turn('show', 'Can you show me what you mean?')
+            assert any(e['type'] == 'visible_demonstration' for e in s.events), 'Help never changed the actual board'
+            assert s.state['task']['evidence']['attemptNumber'] == 0, 'Demonstration became a learner attempt'
+        else:
+            s.record('no_demonstration_offered', state=s.state)
     await s.learner('wrong')
     # A tutor may respond with guidance instead of a verdict. Speech is now
     # recorded from that verdict, so an ungraded exchange must remain open for

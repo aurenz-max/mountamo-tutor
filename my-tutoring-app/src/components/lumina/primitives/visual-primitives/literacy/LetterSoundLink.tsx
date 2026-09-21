@@ -73,6 +73,9 @@ import {
   type LetterSoundMode,
   type LetterSoundTier,
 } from './letterSoundLinkScript';
+import { withTeachingWorkspace } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { LETTER_SOUND_LINK_WORKSPACE_MODES } from './letterSoundLinkDomain';
+import LetterSoundLinkTeaching from './LetterSoundLinkTeaching';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
@@ -155,16 +158,23 @@ const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
 // Props
 // ============================================================================
 
-interface LetterSoundLinkProps {
+export interface LetterSoundLinkProps {
   data: LetterSoundLinkData;
+  index?: number;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED eval mode from the live mount; never rebuilt from a label. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) => {
+/** The scripted DISTAR drill: exact model/guide/test lines, sentinel-scanned
+ *  verdicts and a two-correction cap. Retiring (LA-14), and still the only path
+ *  for a standalone session with no live runtime around it. */
+const ScriptedLetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) => {
   const {
     title,
     letterGroup,
@@ -580,5 +590,13 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     </LuminaCard>
   );
 };
+
+/** PLATFORM PROP CONTRACT: registry primitives mount as
+ *  `<Component data={…} index={…} />` — the generated data arrives as ONE `data`
+ *  prop (evaluation props merged in), never spread across props.
+ *
+ *  `withTeachingWorkspace` owns which of the two mounts. */
+export const LetterSoundLink = withTeachingWorkspace(
+  LETTER_SOUND_LINK_WORKSPACE_MODES, LetterSoundLinkTeaching, ScriptedLetterSoundLink);
 
 export default LetterSoundLink;
