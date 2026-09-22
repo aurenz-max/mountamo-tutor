@@ -70,13 +70,8 @@ const evalModeFor = (kind: Kind) => kind.replace('-', '_');
 /** The kinds the registry actually mounts on the workspace: the spoken ones. */
 const BOUND_KINDS = ALL_KINDS.filter(k => NUMBER_SEQUENCER_WORKSPACE_MODES.includes(evalModeFor(k)));
 
-/**
- * `direct` mounts the binding itself rather than going through the component's
- * mode gate. Only `order-cards` needs it: the binding and its checker are built and
- * proven here, but the mode is withheld from the registry until the lesson shell
- * owns a learner "Try again" for a checked arrangement.
- */
-function mount(kind: Kind = 'before-after', classify?: DialogueClassifier, direct = kind === 'order-cards') {
+/** `direct` mounts the binding itself rather than going through the component's mode switch. */
+function mount(kind: Kind = 'before-after', classify?: DialogueClassifier, direct = false) {
   const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
   const sent: any[] = [];
   const transport = new RuntimeTransport(runtime, m => sent.push(m), classify);

@@ -10,7 +10,7 @@ import { Type, Schema, ThinkingLevel } from "@google/genai";
 import { PracticeManifest, CURRICULUM_SUBJECT_IDS } from "../../types";
 import { ai } from "../geminiClient";
 import { buildPracticeVisualCatalogContext } from "./practice-visual-catalog";
-import { resolvePracticeEvalModes } from "./resolvePracticeEvalModes";
+import { getComponentById } from "./catalog";
 
 /**
  * Map target_beta to nearest Bloom's tier when eval_mode_name is not available.
@@ -234,39 +234,6 @@ const MODE_SCAFFOLDING: Record<number, { label: string; difficulty: string; inst
 };
 
 /**
- * Build the difficulty/scaffolding section of the prompt based on mode and band.
- */
-const buildDifficultyContext = (options?: PracticeManifestOptions): string => {
-  const mode = options?.targetMode;
-  const band = options?.band;
-
-  if (!mode || !MODE_SCAFFOLDING[mode]) {
-    // Fallback: no mode from backend, use generic variety
-    return `## DIFFICULTY
-- Vary difficulty (some easy, some medium, some hard)`;
-  }
-
-  const scaffolding = MODE_SCAFFOLDING[mode];
-  let bandContext = '';
-  if (band === 'review') {
-    bandContext = '\nThis is a REVIEW item — the student has seen this skill before. Focus on recall and fluency, not teaching.';
-  } else if (band === 'frontier') {
-    bandContext = '\nThis is a FRONTIER PROBE — the student has NOT been formally taught this skill yet. Use a fair assessment approach: test whether they already know it, do not assume prior instruction.';
-  } else if (band === 'current') {
-    bandContext = '\nThis is a CURRENT LEARNING item — the student is actively learning this skill. Balance challenge with support.';
-  }
-
-  return `## DIFFICULTY & SCAFFOLDING (from adaptive calibration system)
-TARGET MODE: ${mode}/6 — "${scaffolding.label}"
-DIFFICULTY LEVEL: ${scaffolding.difficulty}
-
-${scaffolding.instruction}${bandContext}
-
-IMPORTANT: All items in this request MUST match the target mode ${mode} scaffolding level. Do NOT default to medium difficulty. The adaptive system has determined this student needs mode ${mode} content based on their demonstrated ability.
-- Set difficulty to "${scaffolding.difficulty}" for all items.`;
-};
-
-/**
  * Build the primitive diversity section based on cross-session history.
  */
 const buildDiversityContext = (options?: PracticeManifestOptions): string => {
@@ -319,246 +286,6 @@ Choose different visual primitives from the catalog to keep the experience fresh
   return parts.join('\n');
 };
 
-export const generatePracticeManifest = async (
-  topic: string,
-  gradeLevel: string,
-  problemCount: number,
-  callbacks?: PracticeManifestProgressCallback,
-  options?: PracticeManifestOptions,
-): Promise<PracticeManifest> => {
-  const gradeLevelContext = getGradeLevelContext(gradeLevel);
-  const visualCatalog = buildPracticeVisualCatalogContext();
-
-  callbacks?.onProgress?.(`Designing ${problemCount} practice problems...`);
-
-  const difficultyContext = buildDifficultyContext(options);
-  const diversityContext = buildDiversityContext(options);
-
-  const prompt = `You are an educational content designer creating an interactive practice session.
-
-ASSIGNMENT: Generate ${problemCount} practice problems for: "${topic}"
-TARGET AUDIENCE: ${gradeLevelContext}
-
-${visualCatalog}
-
-## SUBJECT (required)
-Set "subject" to the single closest curriculum subject for this session — one of MATHEMATICS, LANGUAGE_ARTS, SCIENCE, SOCIAL_STUDIES. Pick the best fit even when the topic is cross-cutting.
-
-## SESSION BRIEF (required)
-First, generate a "sessionBrief" — a short, student-facing intro for this activity set:
-- "title": A fun, engaging name (NOT the raw curriculum label). Examples: "Fraction Explorers", "Sound Safari", "Number Detectives".
-- "hook": One exciting sentence that pulls the student in. Speak directly to them.
-- "whyItMatters": One sentence connecting this skill to something they care about.
-
-## YOUR TASK
-
-For each problem, decide:
-1. Is there a visual primitive that would create a BETTER learning experience than multiple choice?
-   - If YES: set "visualPrimitive" with componentId, intent, and successCriteria. Set "standardProblem" to null.
-   - If NO: set "standardProblem" with problemType and generationIntent. Set "visualPrimitive" to null.
-
-2. EVERY item must have exactly one of: visualPrimitive OR standardProblem (never both, never neither)
-
-## VISUAL PRIMITIVE RULES
-- The "intent" field is natural language describing what the generator should build (target values, task type, context). Dedicated generators handle the full configuration — you just describe what you want.
-- "numberRange": For math primitives that work with numbers (place-value-chart, base-ten-blocks, number-line, counting-board, ten-frame, etc.), set numberRange to {min, max} appropriate for the student's GRADE LEVEL only. The scaffolding mode/difficulty changes HOW the problem is represented (concrete → symbolic) and how much guidance is given — it does NOT change the size of the numbers. A grade-2 student works with grade-2 numbers whether at mode 1 or mode 5. Grade-bound ranges:
-  * Kindergarten: {"min": 1, "max": 10}
-  * Grade 1: {"min": 1, "max": 20}
-  * Grade 2: {"min": 10, "max": 100}
-  * Grade 3: {"min": 100, "max": 1000}
-  * Grade 4: {"min": 100, "max": 9999}
-  * Grade 5+: {"min": 1000, "max": 99999}
-  Set to null for non-numeric primitives (fraction-circles, shape-builder, etc.).
-- successCriteria.description: tell the student what to DO
-- successCriteria.targetValue: the expected answer
-
-${difficultyContext}
-
-## PROBLEM VARIETY
-- Math topics: aim for 60-80% visual primitives
-- Non-math topics: use standard problems mostly (0-20% visual)
-- Mix different visual primitives when possible${diversityContext}${options?.enforceDiversity ? `
-
-## DIVERSITY REQUIREMENT (MANDATORY)
-This is a diagnostic assessment — each item must test a DIFFERENT facet of the skill.
-- NEVER use the same visual primitive componentId more than once.
-- NEVER use the same standard problem type more than once.
-- If only one visual primitive fits, use it once and make the other items standard problems of DIFFERENT types.
-- Each item should probe a distinct angle: e.g. one conceptual, one procedural, one applied.` : ''}
-
-## EXAMPLE (Fractions for Elementary)
-
-{
-  "topic": "Fractions",
-  "gradeLevel": "elementary",
-  "problemCount": 3,
-  "sessionBrief": {
-    "title": "Fraction Explorers",
-    "hook": "Did you know that every time you share a pizza equally, you're already using fractions?",
-    "whyItMatters": "Understanding fractions helps you share fairly, measure ingredients, and solve real-world puzzles!"
-  },
-  "items": [
-    {
-      "instanceId": "problem-1",
-      "problemText": "An explorer finds a ribbon and cuts it into 3 equal parts. What fraction is one part?",
-      "difficulty": "easy",
-      "rationale": "Tests basic understanding of unit fractions",
-      "teachingNote": "Connect to real-world sharing scenarios",
-      "visualPrimitive": {
-        "componentId": "fraction-circles",
-        "intent": "Build a fraction circle for 1/3. Task type: build. The student shades one out of three equal sections.",
-        "numberRange": null,
-        "successCriteria": {
-          "description": "Shade the circle to show 1/3",
-          "targetValue": "1/3"
-        }
-      },
-      "standardProblem": null
-    },
-    {
-      "instanceId": "problem-2",
-      "problemText": "Which fraction is larger: 1/2 or 1/4?",
-      "difficulty": "medium",
-      "rationale": "Tests fraction comparison using visual reasoning",
-      "teachingNote": "Use side-by-side fraction bars to compare",
-      "visualPrimitive": {
-        "componentId": "fraction-bar",
-        "intent": "Compare fractions 1/2 and 1/4 using fraction bars. Task type: compare.",
-        "successCriteria": {
-          "description": "Shade both fraction bars and identify that 1/2 is larger",
-          "targetValue": "1/2"
-        }
-      },
-      "standardProblem": null
-    },
-    {
-      "instanceId": "problem-3",
-      "problemText": "True or false: 2/4 is the same as 1/2.",
-      "difficulty": "easy",
-      "rationale": "Tests understanding of equivalent fractions",
-      "teachingNote": "Conceptual check before visual exploration",
-      "visualPrimitive": null,
-      "standardProblem": {
-        "problemType": "true_false",
-        "generationIntent": "True/false about whether 2/4 equals 1/2. Answer: TRUE."
-      }
-    }
-  ]
-}
-
-Now generate the practice manifest for: "${topic}" (${gradeLevel}, ${problemCount} problems)
-Return ONLY valid JSON matching the schema.`;
-
-  callbacks?.onProgress?.('AI is thinking about the best problems...');
-
-  const responseStream = await ai.models.generateContentStream({
-    model: "gemini-flash-latest",
-    contents: prompt,
-    config: {
-      thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-      responseMimeType: "application/json",
-      responseSchema: practiceManifestSchema,
-    },
-  });
-
-  let accumulatedText = '';
-  let chunkCount = 0;
-  for await (const chunk of responseStream) {
-    if (chunk.text) {
-      accumulatedText += chunk.text;
-      chunkCount++;
-      // Send periodic progress as chunks arrive
-      if (chunkCount % 3 === 0) {
-        callbacks?.onProgress?.('Generating problem details...');
-      }
-    }
-  }
-
-  if (!accumulatedText) throw new Error("No practice manifest returned");
-
-  callbacks?.onProgress?.('Parsing manifest...');
-
-  let jsonStr = accumulatedText.trim();
-  const match = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (match) jsonStr = match[1].trim();
-
-  const firstOpen = jsonStr.indexOf('{');
-  const lastClose = jsonStr.lastIndexOf('}');
-  if (firstOpen !== -1 && lastClose !== -1 && lastClose > firstOpen) {
-    jsonStr = jsonStr.substring(firstOpen, lastClose + 1);
-  }
-
-  const manifest = JSON.parse(jsonStr) as PracticeManifest;
-
-  // Post-manifest diversity enforcement: convert duplicate visual primitives
-  // to standard problems so every item tests a different facet.
-  // NOTE: only visual primitives are deduplicated — duplicate standard problem
-  // types (e.g. 2x multiple_choice) are fine and pedagogically valuable.
-  if (options?.enforceDiversity) {
-    const seenVisuals = new Set<string>();
-    const fallbackTypes = ['multiple_choice', 'true_false', 'fill_in_blanks', 'short_answer'];
-    let fallbackIdx = 0;
-
-    for (const item of manifest.items) {
-      if (item.visualPrimitive) {
-        const cid = item.visualPrimitive.componentId;
-        if (seenVisuals.has(cid)) {
-          const fallback = fallbackTypes[fallbackIdx % fallbackTypes.length];
-          fallbackIdx++;
-          console.log(`🔄 [Diversity] Swapping duplicate visual "${cid}" → standard "${fallback}" for ${item.instanceId}`);
-          item.standardProblem = {
-            problemType: fallback as any,
-            generationIntent: `Generate a ${fallback.replace(/_/g, ' ')} problem about: ${item.problemText}`,
-          };
-          item.visualPrimitive = null;
-        } else {
-          seenVisuals.add(cid);
-        }
-      }
-    }
-  }
-
-  // Safety net: items with neither visualPrimitive nor standardProblem get
-  // converted to a standard problem so the hydrator can always generate content.
-  const orphanFallbackTypes = ['multiple_choice', 'true_false', 'fill_in_blanks'];
-  let orphanIdx = 0;
-  for (const item of manifest.items) {
-    if (!item.visualPrimitive && !item.standardProblem) {
-      const fallback = orphanFallbackTypes[orphanIdx % orphanFallbackTypes.length];
-      orphanIdx++;
-      console.log(`⚠️ [Manifest] Item ${item.instanceId} has neither visual nor standard — assigning ${fallback}`);
-      item.standardProblem = {
-        problemType: fallback as any,
-        generationIntent: `Generate a ${fallback.replace(/_/g, ' ')} problem about: ${item.problemText}`,
-      };
-    }
-  }
-
-  // Dedicated eval-mode resolution stage (post-manifest, pre-hydration) — the
-  // authoritative selector for each multi-mode visual primitive's task type.
-  // One batched call sees the whole session, replacing the per-item intent-based
-  // resolution the generators would otherwise each run in isolation. Mutates
-  // item.visualPrimitive.targetEvalMode in place; non-regressing on failure.
-  callbacks?.onProgress?.('Resolving eval modes...');
-  try {
-    const summary = await resolvePracticeEvalModes(manifest, topic, gradeLevel);
-    if (summary.slots > 0) {
-      callbacks?.onProgress?.(`Eval modes: ${summary.changed} pinned, ${summary.kept} kept`);
-    }
-  } catch (e) {
-    console.warn('[practice-manifest] eval-mode resolution stage failed; generators will self-resolve:', e);
-  }
-
-  const visualCount = manifest.items.filter(i => i.visualPrimitive).length;
-  const standardCount = manifest.items.filter(i => i.standardProblem).length;
-  console.log(`📋 Practice Manifest Generated: ${manifest.items.length} items`);
-  console.log(`   🎨 Visual primitives: ${visualCount}, 📝 Standard problems: ${standardCount}`);
-
-  callbacks?.onProgress?.(`Manifest ready: ${manifest.items.length} problems (${visualCount} interactive, ${standardCount} text)`);
-
-  return manifest;
-};
-
 // ===========================================================================
 // Pulse batch manifest — multi-skill, one Gemini call
 // ===========================================================================
@@ -586,9 +313,8 @@ export interface PulseManifestItemInput {
 /**
  * Generate a practice manifest for ALL Pulse items in one Gemini call.
  *
- * Unlike `generatePracticeManifest` (single topic, N items), this sends
- * the full item queue so Gemini can diversify primitive selection across
- * the entire session.
+ * Sends the full item queue so Gemini can diversify primitive selection
+ * across the entire session.
  *
  * Each manifest item's instanceId matches the Pulse item_id, preserving
  * the identity chain from backend → manifest → renderer → result.
@@ -731,6 +457,16 @@ Return ONLY valid JSON matching the schema.`;
   // Re-stamp to ensure the identity chain is intact.
   for (let i = 0; i < manifest.items.length && i < items.length; i++) {
     manifest.items[i].instanceId = items[i].item_id;
+  }
+
+  // The Pulse engine chose eval_mode_name for the item's primitive_affinity by IRT. When the
+  // manifest kept that primitive, the generator builds that mode, so the content is the task the
+  // engine records and prices. Another primitive, or a mode its catalog lacks, keeps self-resolution.
+  for (let i = 0; i < manifest.items.length && i < items.length; i++) {
+    const visual = manifest.items[i].visualPrimitive;
+    const { eval_mode_name: mode, primitive_affinity: affinity } = items[i];
+    if (visual && mode && visual.componentId === affinity
+      && getComponentById(visual.componentId)?.evalModes?.some(m => m.evalMode === mode)) visual.targetEvalMode = mode;
   }
 
   // Inject Bloom's tier eval mode into standard problems for IRT-adaptive difficulty.

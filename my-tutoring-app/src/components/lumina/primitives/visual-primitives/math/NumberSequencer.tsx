@@ -15,10 +15,7 @@ import { numberSequencerPipPose } from '../../../pip/numberSequencerPipPose';
 import { buildSequencerItems, sequencerPackBase, sequencerOrderCue, type SequencerItem } from './numberSequencerScript';
 import { NUMBER_SEQUENCER_WORKSPACE_MODES } from './numberSequencerDomain';
 import NumberSequencerTeaching from './NumberSequencerTeaching';
-import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { withTeachingWorkspace } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
-import { useNumberSequencerRuntime, sequencerEvalMode } from './useNumberSequencerRuntime';
 
 const PHASE_TYPE_CONFIG = {
   'fill-missing': { label: 'Fill Missing', icon: '\uD83D\uDD22', accentColor: 'purple' },
@@ -67,7 +64,7 @@ export interface NumberSequencerData {
 export interface NumberSequencerProps {
   data: NumberSequencerData;
   className?: string;
-  /** The live host opts in only after its correlated mount handoff. */
+  /** Every live host passes it; the teaching workspace starts from the tutor, so nothing here reads it. */
   autoStart?: boolean;
   runtimePlanItemId?: string;
   /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
@@ -75,19 +72,21 @@ export interface NumberSequencerProps {
 }
 
 /**
- * The tutor/JEV teaching workspace owns every mode the live host mounts; the
- * standalone drill below keeps the judged runner until its own retirement gate.
+ * Inside a live runtime the tutor/JEV teaching workspace owns every mode, blends and
+ * `mixed` included. The scripted drill below runs only without one: Pulse, Practice,
+ * the Math tester, and lesson sections the plan does not bind (more than one objective,
+ * or content that fails the mode gate). It keeps the judged runner until those hosts
+ * move (LA-14 S3/S4).
  */
-const NumberSequencer = withTeachingWorkspace(
+const NumberSequencer = withTeachingWorkspace('number-sequencer',
   NUMBER_SEQUENCER_WORKSPACE_MODES, NumberSequencerTeaching, ScriptedNumberSequencer);
 export default NumberSequencer;
 
 /** The train is the working surface. Voice fills one gap per judged turn;
  * ordering closes on stillness, including incomplete or incorrect arrangements. */
-function ScriptedNumberSequencer({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode }: NumberSequencerProps) {
+function ScriptedNumberSequencer({ data, className }: NumberSequencerProps) {
   const { items, droppedChallenges } = useMemo(() => buildSequencerItems(data.challenges ?? []), [data.challenges]);
   const instance = useRef(data.instanceId ?? `number-sequencer-${Date.now()}`);
-  const runtime = useLiveRuntime();
   const [affirmedOrder, setAffirmedOrder] = useState<number[]>([]);
   const [lastAffirmed, setLastAffirmed] = useState<SequencerItem | null>(null);
   const [placed, setPlaced] = useState<number[]>([]);
@@ -122,10 +121,6 @@ function ScriptedNumberSequencer({ data, className, autoStart = false, runtimePl
         viaVoice: items.find(i => i.id === o.id)?.answerKind === 'voice' })) }, undefined, summary.diagnosisEvidence);
   };
   const runner = useJudgedScriptRunner({ pack, instanceId: instance.current,
-    // Load-bearing for the live host: without it the runner's `resume()` early-returns,
-    // its speech holds never settle, and the completion handoff has nothing to read.
-    runtime,
-    ...(runtimePlanItemId ? { completionCue: '[NS_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
     gradeLevel: data.gradeBand === 'K' ? 'Kindergarten' : 'Grade 1', exhibitId: data.exhibitId,
     onFinished: finish,
     onItemOpened: (item, index) => {
@@ -170,13 +165,6 @@ function ScriptedNumberSequencer({ data, className, autoStart = false, runtimePl
     });
     return { instanceId: instance.current, scopeId: item.id, label: 'Number train', dock: pip.dock.current, targets, pose };
   });
-  const runtimeHint = useNumberSequencerRuntime({ runner, instanceId: instance.current,
-    objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || sequencerEvalMode(items[0]), placed });
-  // AFTER the runtime mount is registered, never before: `start()` waits for
-  // `grantOwnership('runner')`, which cannot be granted until this primitive's
-  // mount exists. Declared earlier, its effect runs first and the runner spins.
-  useLiveAutoStart(autoStart, instance.current, runner.start);
   if (!item) return <LuminaCard className={className}><LuminaCardContent>
     <p>No usable number trains are available. Generate another activity.</p>
   </LuminaCardContent></LuminaCard>;

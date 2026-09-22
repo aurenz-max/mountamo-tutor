@@ -606,7 +606,8 @@ async def main():
     args.tutoring = live.get('tutoring')
     # Mode is part of the name: a take_away run used to overwrite the count payload,
     # so a later --input replay silently drove the wrong lesson.
-    stem = f'{args.primitive}-runtime-{args.mode}'
+    # A blend pin (`a|b`) is a legal mode but `|` is not a legal Windows filename character.
+    stem = f"{args.primitive}-runtime-{args.mode.replace('|', '+')}"
     stamp = date.today().isoformat()
     (REPORTS/f'{stem}-payload-{stamp}.json').write_text(json.dumps(live, indent=2), encoding='utf-8')
     report = args.output or REPORTS/f'{stem}-live-{stamp}.json'

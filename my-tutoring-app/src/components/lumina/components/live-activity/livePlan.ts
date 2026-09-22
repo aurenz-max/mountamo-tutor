@@ -12,7 +12,7 @@
 import type { LessonPackage } from '../../service/qa/lessonBench/lessonPackage';
 import { normalizeObjectiveGrade } from '../../service/generation/resolveGenerationContext';
 import { LIVE_ADAPTERS, isLivePrimitive, type LivePrimitiveId, type LiveActivityData } from './activityContract';
-import { allowedChallengeTypes, offModeChallengeTypes } from './modeContentGate';
+import { pinnedModes } from './pinnedModes';
 
 export interface LivePlanItem {
   /** Opaque id the tutor uses; never a manifest or primitive identifier. */
@@ -85,16 +85,14 @@ export function projectLessonPlan(pkg: LessonPackage, options: { objectiveIds?: 
       const raw = dataById.get(component.instanceId);
       if (raw === null || raw === undefined) { skip('no prepared content in the package'); continue; }
       const pin = typeof component.config?.targetEvalMode === 'string' ? component.config.targetEvalMode.trim() : '';
-      const allowed = allowedChallengeTypes(component.componentId, pin);
-      if (typeof allowed === 'string') { skip(allowed); continue; }
+      if (!pin) { skip('no resolved eval mode'); continue; }
+      if (!pinnedModes(component.componentId, pin)) { skip(`eval mode "${pin}" is not in the ${component.componentId} catalog`); continue; }
       let data: LiveActivityData;
       try {
         data = LIVE_ADAPTERS[component.componentId].validate(raw);
       } catch (error) {
         skip(error instanceof Error ? error.message : 'invalid prepared content'); continue;
       }
-      const offMode = offModeChallengeTypes(component.componentId, data, allowed);
-      if (offMode.length) { skip(`content has ${offMode.join(', ')} challenges outside mode "${pin}"`); continue; }
       items.push({
         itemId: `item-${items.length + 1}`,
         primitiveId: component.componentId,

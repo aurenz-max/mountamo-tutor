@@ -36,12 +36,12 @@ import MisconceptionLoopTester from './MisconceptionLoopTester';
 import LessonBenchPanel from './LessonBenchPanel';
 import type { LessonPackage } from '../service/qa/lessonBench/lessonPackage';
 import { PlannerDashboard } from './PlannerDashboard';
+import { PulseSession } from '../pulse/PulseSession';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { VisualPrimitivesGallery } from './VisualPrimitivesGallery';
 import { ScratchPad } from './scratch-pad';
 import TypeSafeSelectTester from './TypeSafeSelectTester';
 import LiveActivitySandbox from './live-activity/LiveActivitySandbox';
-import { PulseAdaptiveSession } from '../pulse/PulseAdaptiveSession';
 
 interface DevPanelProps {
   onBack: () => void;
@@ -87,7 +87,6 @@ const PANELS: Record<string, ComponentType<DevPanelProps>> = {
 interface DevPanelRouterProps {
   activePanel: string;
   gradeLevel: GradeLevel;
-  practiceTopic: string;
   onBack: () => void;
   onNavigate: (panel: string) => void;
   /** Lesson Bench: play a dropped package through the one launch verb. */
@@ -101,7 +100,6 @@ interface DevPanelRouterProps {
 export const DevPanelRouter: React.FC<DevPanelRouterProps> = ({
   activePanel,
   gradeLevel,
-  practiceTopic,
   onBack,
   onNavigate,
   onReplay,
@@ -143,16 +141,11 @@ export const DevPanelRouter: React.FC<DevPanelRouterProps> = ({
     return <LessonBenchPanel onBack={onBack} onReplay={onReplay} />;
   }
 
-  if (activePanel === 'practice-mode') {
+  // Pulse is the home screen's Practice mode.
+  if (activePanel === 'pulse') {
     return (
       <div className="flex-1 animate-fade-in">
-        <PulseAdaptiveSession
-          onBack={onBack}
-          gradeLevel={gradeLevel}
-          initialTopic={practiceTopic}
-          autoStart={!!practiceTopic}
-          debugMode={process.env.NODE_ENV === 'development'}
-        />
+        <PulseSession onBack={onBack} gradeLevel={gradeLevel} />
       </div>
     );
   }

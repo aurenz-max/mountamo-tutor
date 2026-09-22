@@ -27,7 +27,6 @@ export const letterSoundLinkLive: LiveActivityAdapter<LetterSoundLinkData> = {
   // tapped grapheme and a spoken word — on one workspace. The mixed channel is
   // the point of the primitive, not an accident of packaging.
   modes: LETTER_SOUND_LINK_WORKSPACE_MODES,
-  challengeTypes: data => data.challenges.map(c => c.mode),
   bindsTeachingWorkspace: true,
   canAdvance: false, // The dialogue observer owns checked progression.
   grades: ['Kindergarten', 'Grade 1'],

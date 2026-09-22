@@ -143,44 +143,6 @@ async function handlePost(body: Record<string, unknown>) {
         return NextResponse.json(hint);
       }
 
-      case 'generatePracticeAssessment': {
-        const { generatePracticeAssessment } = await import('@/components/lumina/service/problems/assessment-generator');
-        const assessment = await generatePracticeAssessment(
-          params.subject,
-          params.gradeLevel,
-          params.problemCount,
-          params.problems
-        );
-        return NextResponse.json(assessment);
-      }
-
-      // ============================================
-      // QUESTS & WARM-UP
-      // ============================================
-
-      case 'generateQuests': {
-        const { generateQuests } = await import('@/components/lumina/service/problems/quest-generator');
-        const quests = await generateQuests(
-          params.subject,
-          params.gradeLevel,
-          params.count
-        );
-        return NextResponse.json(quests);
-      }
-
-      case 'generateWarmUpQuestion': {
-        const { generateWarmUpQuestion } = await import('@/components/lumina/service/problems/quest-generator');
-        const warmUp = await generateWarmUpQuestion(
-          params.subject,
-          params.gradeLevel
-        );
-        return NextResponse.json(warmUp);
-      }
-
-      // ============================================
-      // SCRATCH PAD
-      // ============================================
-
       case 'analyzeScratchPad':
         const scratchPadAnalysis = await analyzeScratchPad(
           params.imageBase64,
@@ -444,26 +406,6 @@ async function handlePost(body: Record<string, unknown>) {
           params.resolution || '1K'
         );
         return NextResponse.json({ imageUrl: mediaImageUrl });
-
-      // ============================================
-      // PRACTICE MANIFEST (Problem + Visual Bridge)
-      // ============================================
-
-      case 'generatePracticeManifestAndHydrate': {
-        const { generatePracticeManifest } = await import(
-          '@/components/lumina/service/manifest/practice-manifest'
-        );
-        const { hydratePracticeManifest } = await import(
-          '@/components/lumina/service/manifest/practice-content-hydrator'
-        );
-        const practiceManifest = await generatePracticeManifest(
-          params.topic,
-          params.gradeLevel,
-          params.problemCount
-        );
-        const hydratedItems = await hydratePracticeManifest(practiceManifest);
-        return NextResponse.json(hydratedItems);
-      }
 
       // ============================================
       // MISCONCEPTION LOOP — S2 distiller (Diagnosis Lab / capture hook)

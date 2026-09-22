@@ -613,6 +613,6 @@ const ScriptedShapeSorter: React.FC<ShapeSorterProps> = ({ data, className, auto
 };
 
 /** The live pilot shares the actual drawing code; its lifecycle never mounts the drill runner. */
-const ShapeSorter = withTeachingWorkspace(
+const ShapeSorter = withTeachingWorkspace('shape-sorter',
   SHAPE_SORTER_WORKSPACE_MODES, ShapeSorterTeaching, ScriptedShapeSorter);
 export default ShapeSorter;

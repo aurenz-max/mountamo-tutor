@@ -596,7 +596,7 @@ const ScriptedLetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, classNa
  *  prop (evaluation props merged in), never spread across props.
  *
  *  `withTeachingWorkspace` owns which of the two mounts. */
-export const LetterSoundLink = withTeachingWorkspace(
+export const LetterSoundLink = withTeachingWorkspace('letter-sound-link',
   LETTER_SOUND_LINK_WORKSPACE_MODES, LetterSoundLinkTeaching, ScriptedLetterSoundLink);
 
 export default LetterSoundLink;

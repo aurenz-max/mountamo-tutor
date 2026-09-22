@@ -1,6 +1,6 @@
 import type { ExhibitData, OrderedComponent } from '../../types';
 import { LIVE_ADAPTERS, isLivePrimitive, type LiveActivityAdapter, type LivePrimitiveId } from './activityContract';
-import { allowedChallengeTypes, offModeChallengeTypes } from './modeContentGate';
+import { pinBindsWorkspace } from './pinnedModes';
 
 export interface LessonWorkspaceItem {
   instanceId: string;
@@ -11,32 +11,44 @@ export interface LessonWorkspaceItem {
   guidance: string;
 }
 
+/** One mounted primitive a host is deciding about. `pin` is the host's RESOLVED eval-mode pin:
+ *  a lesson section's manifest `targetEvalMode`, a Pulse item's IRT-chosen `eval_mode_name`. */
+export interface WorkspaceCandidate {
+  instanceId: string;
+  primitiveId: string;
+  pin: unknown;
+  objectiveIds: readonly string[];
+  data: unknown;
+}
+
 /**
- * Which sections of an ordinary lesson reach the shared teaching workspace. This
- * module names no primitive and withholds no mode: a family that binds the workspace
- * (`bindsTeachingWorkspace`) runs every one of its `modes` on it, and a section binds
- * when its generated content is what the manifest's resolved mode asks for.
+ * Whether one mounted primitive reaches the shared teaching workspace. This names no
+ * primitive and withholds no mode: a family that binds the workspace (`bindsTeachingWorkspace`)
+ * runs every one of its `modes` on it, and the primitive binds when its generated content is
+ * what the pin asks for. Every host decides with this, so there is one eligibility rule.
  */
+export function workspaceBinding({ instanceId, primitiveId, pin, objectiveIds, data }: WorkspaceCandidate): LessonWorkspaceItem | null {
+  if (!isLivePrimitive(primitiveId)) return null;
+  const adapter = LIVE_ADAPTERS[primitiveId] as LiveActivityAdapter;
+  // A blend (`a|b`) or `mixed` pin binds when every mode it names is one the family binds.
+  if (typeof pin !== 'string' || !adapter.bindsTeachingWorkspace || !pinBindsWorkspace(primitiveId, adapter.modes, pin)
+    || objectiveIds.length !== 1) return null;
+  try {
+    const validated = adapter.validate(data);
+    if (!validated.challenges?.length) return null;
+  } catch { return null; }
+  return { instanceId, primitiveId, evalMode: pin, objectiveId: objectiveIds[0], planItemId: instanceId, guidance: adapter.guidance };
+}
+
+/** Which sections of an ordinary lesson reach the shared teaching workspace. */
 export function lessonWorkspaceItems(exhibit: ExhibitData): Map<string, LessonWorkspaceItem> {
   const result = new Map<string, LessonWorkspaceItem>();
   for (const section of exhibit.orderedComponents ?? []) {
     if (section.audience === 'caregiver') continue;
-    const primitiveId = section.componentId;
-    if (!isLivePrimitive(primitiveId)) continue;
-    const adapter = LIVE_ADAPTERS[primitiveId] as LiveActivityAdapter;
     const manifest = exhibit.manifest?.layout?.find(m => m.instanceId === section.instanceId);
-    // The VERBATIM pin: a blend (`a|b`) or `mixed` is never admitted, even if every part is.
-    const mode = manifest?.config?.targetEvalMode;
-    const objectiveIds = section.objectiveIds ?? manifest?.objectiveIds ?? [];
-    if (typeof mode !== 'string' || !adapter.bindsTeachingWorkspace || !adapter.modes.includes(mode) || objectiveIds.length !== 1) continue;
-    const allowed = allowedChallengeTypes(primitiveId, mode);
-    if (typeof allowed === 'string') continue;
-    try {
-      const data = adapter.validate(section.data);
-      if (!data.challenges?.length || offModeChallengeTypes(primitiveId, data, allowed).length) continue;
-    } catch { continue; }
-    result.set(section.instanceId, { instanceId: section.instanceId, primitiveId, evalMode: mode,
-      objectiveId: objectiveIds[0], planItemId: section.instanceId, guidance: adapter.guidance });
+    const binding = workspaceBinding({ instanceId: section.instanceId, primitiveId: section.componentId,
+      pin: manifest?.config?.targetEvalMode, objectiveIds: section.objectiveIds ?? manifest?.objectiveIds ?? [], data: section.data });
+    if (binding) result.set(section.instanceId, binding);
   }
   return result;
 }

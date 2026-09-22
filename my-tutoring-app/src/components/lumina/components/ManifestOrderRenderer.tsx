@@ -6,10 +6,8 @@ import { ObjectiveBadge } from './ObjectiveBadge';
 import { useEvaluationContext } from '../evaluation';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { usePipSurfaceStore } from '../pip/PipSurfaceContext';
-import { useLessonWorkspace } from './live-activity/LessonWorkspace';
+import { WorkspaceSection, useLessonWorkspace, workspaceMountProps } from './live-activity/LessonWorkspace';
 import { lessonPrimitiveContext } from './live-activity/lessonWorkspacePlan';
-import { LiveRuntimeContext, LiveRuntimeActiveContext, LiveRuntimeConnectionContext } from './live-activity/runtime/LiveRuntimeContext';
-import { LiveRuntimeSurface } from './live-activity/runtime/LiveRuntimeSurface';
 import { LuminaPanel, LuminaSectionLabel } from '../ui';
 
 interface ManifestOrderRendererProps {
@@ -59,7 +57,6 @@ export const OrderedSection: React.FC<OrderedSectionProps> = ({
   const { getObjectivesForComponent, manifestItems } = useExhibitContext();
   const evaluationContext = useEvaluationContext();
   const workspace = useLessonWorkspace();
-  const ai = useLuminaAIContext();
 
   const { componentId, instanceId, data } = item;
 
@@ -182,23 +179,13 @@ export const OrderedSection: React.FC<OrderedSectionProps> = ({
   }
 
   const binding = workspace?.items.get(instanceId);
-  const active = workspace?.activeId === instanceId && ai.isConnected;
-  const primitive = <Component data={{ ...data, ...additionalProps, ...(binding ? {
-    instanceId, objectiveId: binding.objectiveId,
-    skillId: objectives.find(o => o.id === binding.objectiveId)?.skillId ?? additionalProps.skillId,
-    subskillId: objectives.find(o => o.id === binding.objectiveId)?.subskillId ?? additionalProps.subskillId,
-  } : {}) }} index={index} {...(binding ? { runtimePlanItemId: binding.planItemId,
-    runtimeEvalMode: binding.evalMode, autoStart: true } : {})} />;
-  // Unsupported surfaces cannot register their legacy adapters on the lesson runtime.
-  // Supported inactive surfaces stay on the workspace controller without consuming speech.
-  const body = workspace ? <LiveRuntimeContext.Provider value={binding ? workspace.runtime : null}>
-    <LiveRuntimeActiveContext.Provider value={!!binding && active}>
-      <LiveRuntimeConnectionContext.Provider value={ai.sessionResumeCount ?? 0}>
-      {binding ? <LiveRuntimeSurface runtime={workspace.runtime} active={active}
-        learnerProgress={{ act: workspace.learnerProgress, disabled: ai.isAudioPlaying }}>{primitive}</LiveRuntimeSurface> : primitive}
-      </LiveRuntimeConnectionContext.Provider>
-    </LiveRuntimeActiveContext.Provider>
-  </LiveRuntimeContext.Provider> : primitive;
+  const body = <WorkspaceSection instanceId={instanceId}>
+    <Component data={{ ...data, ...additionalProps, ...(binding ? {
+      instanceId, objectiveId: binding.objectiveId,
+      skillId: objectives.find(o => o.id === binding.objectiveId)?.skillId ?? additionalProps.skillId,
+      subskillId: objectives.find(o => o.id === binding.objectiveId)?.subskillId ?? additionalProps.subskillId,
+    } : {}) }} index={index} {...workspaceMountProps(binding)} />
+  </WorkspaceSection>;
 
   // Standard component rendering
   return (

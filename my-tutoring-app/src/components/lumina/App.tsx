@@ -54,14 +54,8 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
   // Single panel state replaces 17 individual booleans
   const [activePanel, setActivePanel] = useState<string | null>(null);
 
-  // Topic carried from the home-screen Practice slider into a Pulse session.
-  // When set, the Pulse setup screen is skipped and the session auto-starts.
-  const [practiceTopic, setPracticeTopic] = useState('');
-
-  const handleStartPractice = useCallback((t: string) => {
-    setPracticeTopic(t);
-    setActivePanel('practice-mode');
-  }, []);
+  // The home screen's Practice mode opens a Pulse session.
+  const handleStartPractice = useCallback(() => setActivePanel('pulse'), []);
 
   // Last generate request — lets the error screen retry without losing
   // session or curriculum state.
@@ -235,7 +229,6 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
 
   const handleBackFromPanel = useCallback(() => {
     setActivePanel(null);
-    setPracticeTopic('');
   }, []);
 
   const handleBlockStart = useCallback((block: LessonBlock) => {
@@ -527,7 +520,6 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
           <DevPanelRouter
             activePanel={activePanel}
             gradeLevel={gradeLevel}
-            practiceTopic={practiceTopic}
             onBack={handleBackFromPanel}
             onNavigate={setActivePanel}
             onReplay={handleReplayPackage}

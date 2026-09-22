@@ -4,13 +4,10 @@ import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { authApi } from '@/lib/authApiClient';
-import { PracticeMode } from '../PracticeModeEnhanced';
-import type { Subject } from '../SubjectSelector';
 
 import type {
   WeeklyPlan, DailyPlan, MonthlyPlan,
   VelocityData, MasterySummary, MasteryForecast,
-  SessionItem,
 } from './types';
 
 import { SubjectCard } from './SubjectCard';
@@ -46,8 +43,6 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
   const [showRawJson, setShowRawJson] = useState(false);
   const [activeTab, setActiveTab] = useState<'weekly' | 'daily' | 'session' | 'monthly' | 'velocity' | 'mastery' | 'progress'>('session');
 
-  // Active practice session — when set, renders PracticeModeEnhanced instead of dashboard
-  const [activeSession, setActiveSession] = useState<{ session: SessionItem; gate: number } | null>(null);
   // Active Pulse session — when set, renders PulseSession full-screen
   const [activePulse, setActivePulse] = useState(false);
 
@@ -64,30 +59,6 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
     }
     return undefined;
   }, [masterySummary]);
-
-  // Map session subject string to the Subject union type
-  const mapSubject = (subjectStr: string): Subject => {
-    const mapping: Record<string, Subject> = {
-      mathematics: 'mathematics', math: 'mathematics',
-      science: 'science',
-      'language-arts': 'language-arts', 'language arts': 'language-arts',
-      reading: 'reading',
-      writing: 'writing',
-      'social-studies': 'social-studies', 'social studies': 'social-studies',
-    };
-    return mapping[subjectStr.toLowerCase()] || 'mathematics';
-  };
-
-  // Handle starting a session from the daily plan
-  const handleStartSession = useCallback((session: SessionItem, gate: number) => {
-    if (gate >= 2) {
-      // Gate 2+ → practice mode
-      setActiveSession({ session, gate });
-    } else {
-      // TODO: Gate 1 → route to standard Lumina learning phase
-      console.log('Gate 1 (lesson) routing not yet implemented for:', session.skill_id);
-    }
-  }, []);
 
   const fetchWeeklyPlan = async () => {
     setLoading('weekly');
@@ -240,41 +211,6 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
       <PulseSession
         onBack={() => setActivePulse(false)}
         gradeLevel="elementary"
-      />
-    );
-  }
-
-  // When a practice session is active, render PracticeModeEnhanced full-screen
-  if (activeSession) {
-    const { session: activeSessionItem, gate: activeGate } = activeSession;
-    const skillContext = [
-      activeSessionItem.subskill_description || activeSessionItem.skill_name,
-      activeSessionItem.skill_description,
-      activeSessionItem.unit_title,
-    ].filter(Boolean).join('. ');
-
-    return (
-      <PracticeMode
-        onBack={() => setActiveSession(null)}
-        initialSubject={mapSubject(activeSessionItem.subject)}
-        initialSkillContext={skillContext}
-        initialGradeLevel="elementary" // TODO: resolve from student profile
-        initialGateNumber={activeGate}
-        onSessionComplete={async (result) => {
-          console.log('[PlannerDashboard] Gate session complete:', result);
-          try {
-            await authApi.post(`/api/mastery/${studentId}/eval`, {
-              subskill_id: activeSessionItem.skill_id,
-              subject: activeSessionItem.subject,
-              skill_id: activeSessionItem.skill_id,
-              score: result.scorePercent / 10, // convert percentage to 0-10 scale
-              source: 'practice',
-            });
-            console.log('[PlannerDashboard] Eval result posted to backend');
-          } catch (e) {
-            console.error('[PlannerDashboard] Failed to post eval result:', e);
-          }
-        }}
       />
     );
   }
@@ -678,7 +614,6 @@ export const PlannerDashboard: React.FC<PlannerDashboardProps> = ({ onBack }) =>
                             <SessionRow
                               session={session}
                               gate={getGateForSkill(session.skill_id)}
-                              onStart={handleStartSession}
                             />
                           </React.Fragment>
                         );

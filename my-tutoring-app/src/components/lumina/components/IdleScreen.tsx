@@ -153,7 +153,8 @@ interface IdleScreenProps {
   onTopicChange: (topic: string) => void;
   gradeLevel: GradeLevel;
   onGenerate: (options: GenerateOptions) => void;
-  onStartPractice: (topic: string, gradeLevel: GradeLevel) => void;
+  /** Practice mode's one action: open a Pulse session, which picks its own subject. */
+  onStartPractice: () => void;
   onCurriculumSelect: (topic: string, grade?: GradeLevel, curriculum?: CurriculumContext) => void;
   onLaunchGroupLesson: (params: {
     topic: string;
@@ -236,11 +237,7 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!topic.trim()) return;
-    if (mode === 'practice') {
-      onStartPractice(topic.trim(), gradeLevel);
-    } else {
-      onGenerate({ topic, gradeLevel });
-    }
+    onGenerate({ topic, gradeLevel });
   };
 
   const handleToggleSubskill = useCallback((subskill: SelectedSubskill) => {
@@ -344,40 +341,39 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
             </div>
           </div>
 
-          {/* Search bar — the primary CTA (routes to lesson or practice by mode) */}
-          <form onSubmit={handleFormSubmit} className="relative group max-w-xl mx-auto">
-            <div
-              className={`absolute -inset-1 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-700 bg-gradient-to-r ${
-                mode === 'learn' ? 'from-blue-600 to-purple-600' : 'from-violet-600 to-cyan-500'
-              }`}
-            ></div>
-            <div className="relative flex items-center">
-              <input
-                type="text"
-                value={topic}
-                onChange={(e) => onTopicChange(e.target.value)}
-                placeholder={mode === 'learn' ? 'Type any topic...' : 'Type a skill to practice...'}
-                className="w-full px-8 py-5 bg-slate-900/80 backdrop-blur-sm text-white rounded-full border border-slate-700/80 focus:border-blue-400/50 focus:outline-none text-lg shadow-2xl transition-all placeholder:text-slate-500"
-                autoFocus
-              />
-              <button
-                type="submit"
-                aria-label={mode === 'learn' ? 'Generate lesson' : 'Start practice'}
-                className={`absolute right-2 p-3 rounded-full transition-transform active:scale-95 disabled:opacity-50 ${
-                  mode === 'learn'
-                    ? 'bg-white text-slate-900 hover:bg-blue-50'
-                    : 'bg-gradient-to-r from-violet-500 to-cyan-500 text-white hover:from-violet-400 hover:to-cyan-400'
-                }`}
-                disabled={!topic}
-              >
-                {mode === 'learn' ? (
+          {/* The primary CTA: a topic search in Learn, a Pulse session in Practice */}
+          {mode === 'learn' ? (
+            <form onSubmit={handleFormSubmit} className="relative group max-w-xl mx-auto">
+              <div className="absolute -inset-1 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-700 bg-gradient-to-r from-blue-600 to-purple-600"></div>
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  value={topic}
+                  onChange={(e) => onTopicChange(e.target.value)}
+                  placeholder="Type any topic..."
+                  className="w-full px-8 py-5 bg-slate-900/80 backdrop-blur-sm text-white rounded-full border border-slate-700/80 focus:border-blue-400/50 focus:outline-none text-lg shadow-2xl transition-all placeholder:text-slate-500"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  aria-label="Generate lesson"
+                  className="absolute right-2 p-3 rounded-full transition-transform active:scale-95 disabled:opacity-50 bg-white text-slate-900 hover:bg-blue-50"
+                  disabled={!topic}
+                >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                ) : (
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" /></svg>
-                )}
-              </button>
-            </div>
-          </form>
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={onStartPractice}
+              className="inline-flex items-center gap-3 px-10 py-5 rounded-full text-lg font-bold text-white shadow-2xl transition-transform active:scale-95 bg-gradient-to-r from-violet-500 to-cyan-500 hover:from-violet-400 hover:to-cyan-400"
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" /></svg>
+              Start practice
+            </button>
+          )}
 
           {/* Mode toggle — Learn ⇄ Practice, sits with the search it controls */}
           <div className="space-y-3">

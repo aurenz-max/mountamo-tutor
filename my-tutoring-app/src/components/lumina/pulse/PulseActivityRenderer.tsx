@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useReducer, useCallback, useRef, useEffect } from 'react';
+import React, { useReducer, useCallback, useRef, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,9 @@ import type {
 } from './types';
 import { BAND_LABELS, BAND_COLORS, BAND_BG_COLORS } from './types';
 import { FrontierContextCard } from './FrontierContextCard';
+import { PulseWorkspace } from './PulseWorkspace';
+import { workspaceBinding } from '../components/live-activity/lessonWorkspacePlan';
+import { workspaceMountProps } from '../components/live-activity/LessonWorkspace';
 
 // ---------------------------------------------------------------------------
 // Logging prefix
@@ -241,6 +244,16 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
 
   const currentItem = state.items[state.currentIndex];
   const currentSpec = currentItem?.spec;
+
+  // Whether this item runs on the teaching workspace: the lesson rule, with the item's
+  // IRT-chosen mode as the pin and its subskill as the one objective. Never inferred from content.
+  const binding = useMemo(() => {
+    const visual = currentItem?.hydrated?.manifestItem.visualPrimitive;
+    const visualData = currentItem?.hydrated?.visualData;
+    if (!visual || !visualData || !currentSpec) return null;
+    return workspaceBinding({ instanceId: currentSpec.item_id, primitiveId: visual.componentId,
+      pin: currentSpec.eval_mode_name, objectiveIds: [currentSpec.subskill_id], data: visualData.data ?? visualData });
+  }, [currentItem?.hydrated, currentSpec]);
 
   // -------------------------------------------------------------------------
   // Batch-hydrate ALL items via /api/lumina/pulse-stream
@@ -539,9 +552,14 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
         subskillId: currentSpec.subskill_id,
       };
 
+      const primitive = <Component data={binding ? { ...mergedData, objectiveId: binding.objectiveId } : mergedData}
+        index={state.currentIndex} {...workspaceMountProps(binding ?? undefined)} />;
       return (
         <div className="max-w-5xl mx-auto">
-          <Component data={mergedData} index={state.currentIndex} />
+          {binding ? (
+            <PulseWorkspace key={currentSpec.item_id} binding={binding} data={innerData} sessionId={sessionId}
+              topic={currentSpec.description} gradeLevel={gradeLevel}>{primitive}</PulseWorkspace>
+          ) : primitive}
         </div>
       );
     }
@@ -695,8 +713,8 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
             {/* Primitive (rendered directly from registry) */}
             {renderPrimitive()}
 
-            {/* AI Helper for audio/hint interaction */}
-            {currentItem.hydrated.manifestItem.visualPrimitive ? (
+            {/* AI Helper for audio/hint interaction. A workspace item's tutor is its own session. */}
+            {binding ? null : currentItem.hydrated.manifestItem.visualPrimitive ? (
               <AIHelper
                 primitiveType={currentItem.hydrated.manifestItem.visualPrimitive.componentId as ComponentId}
                 instanceId={currentSpec.item_id}

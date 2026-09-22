@@ -232,7 +232,7 @@ export interface PrimitiveConfig {
    * PLATFORM PROP CONTRACT — the props type must accept the generated content as
    * ONE `data` prop, because that is how EVERY renderer mounts a primitive
    * (`<Component data={…} index={…} />`: ManifestOrderRenderer, KindergartenStage,
-   * PracticeManifestRenderer, PulseActivityRenderer). Evaluation props are merged
+   * PulseActivityRenderer). Evaluation props are merged
    * INTO `data` by the renderer, not passed alongside it.
    *
    * This was `ComponentType<any>`, which let a primitive declared props-are-data

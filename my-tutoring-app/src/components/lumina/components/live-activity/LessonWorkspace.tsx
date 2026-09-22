@@ -7,6 +7,8 @@ import { LiveLessonRuntime } from './runtime/LiveLessonRuntime';
 import { RuntimeTransport, runtimePacket } from './runtime/runtimeTransport';
 import { lessonPrimitiveContext, lessonWorkspaceItems, type LessonWorkspaceItem } from './lessonWorkspacePlan';
 import { waitForVisible } from './runtime/waitForVisible';
+import { LiveRuntimeActiveContext, LiveRuntimeConnectionContext, LiveRuntimeContext } from './runtime/LiveRuntimeContext';
+import { LiveRuntimeSurface } from './runtime/LiveRuntimeSurface';
 
 interface LessonWorkspaceContextValue {
   runtime: LiveLessonRuntime;
@@ -22,9 +24,21 @@ export const useLessonWorkspace = () => useContext(Context);
 /** Normal lesson entry. Primitives submit through the existing evaluation provider. */
 export function LessonWorkspaceProvider({ exhibit, children }: { exhibit: ExhibitData; children: React.ReactNode }) {
   const items = useMemo(() => lessonWorkspaceItems(exhibit), [exhibit]);
-  const runtime = useMemo(() => new LiveLessonRuntime(`lesson-${crypto.randomUUID()}`,
-    { maxSupportLevel: 3, allowAnswerExposure: true, allowSupportArtifacts: false }), [exhibit]);
-  const [activeId, setActiveId] = useState<string | null>(exhibit.orderedComponents?.find(s => s.audience !== 'caregiver')?.instanceId ?? null);
+  return <WorkspaceHostProvider scope="lesson" items={items}
+    initialActiveId={exhibit.orderedComponents?.find(s => s.audience !== 'caregiver')?.instanceId ?? null}>{children}</WorkspaceHostProvider>;
+}
+
+/**
+ * One runtime scope and the Live session that serves it. A lesson passes every section it
+ * binds; Pulse passes its one current item and remounts the scope per item. With no bound
+ * item the provider carries no runtime, so every primitive keeps its ordinary path.
+ */
+export function WorkspaceHostProvider({ scope, items, initialActiveId, children }: {
+  scope: string; items: Map<string, LessonWorkspaceItem>; initialActiveId: string | null; children: React.ReactNode;
+}) {
+  const runtime = useMemo(() => new LiveLessonRuntime(`${scope}-${crypto.randomUUID()}`,
+    { maxSupportLevel: 3, allowAnswerExposure: true, allowSupportArtifacts: false }), [scope, items]);
+  const [activeId, setActiveId] = useState<string | null>(initialActiveId);
   const handler = useRef<(event: Record<string, any>) => void>(() => {});
   const onEvent = useCallback((event: Record<string, any>) => handler.current(event), []);
   const progress = useRef<(type: 'advance' | 'retry') => void>(() => {});
@@ -36,6 +50,33 @@ export function LessonWorkspaceProvider({ exhibit, children }: { exhibit: Exhibi
       <LessonWorkspaceBridge handler={handler} progress={progress} />{children}
     </LuminaAIProvider>
   </Context.Provider>;
+}
+
+/** Props a bound primitive mounts with: the resolved mode and plan item, never inferred. */
+export function workspaceMountProps(binding: LessonWorkspaceItem | undefined) {
+  return binding ? { runtimePlanItemId: binding.planItemId, runtimeEvalMode: binding.evalMode, autoStart: true } : {};
+}
+
+/**
+ * The mounted half of the host, shared by every host. A bound primitive gets the runtime, the
+ * focus flag, the connection epoch and the shared surface; an unbound one gets none of them, so
+ * it cannot register a legacy adapter on the runtime. An inactive bound surface stays mounted on
+ * the workspace controller without consuming speech.
+ */
+export function WorkspaceSection({ instanceId, children }: { instanceId: string; children: React.ReactNode }) {
+  const host = useLessonWorkspace();
+  const ai = useLuminaAIContext();
+  if (!host) return <>{children}</>;
+  const bound = host.items.has(instanceId);
+  const active = host.activeId === instanceId && ai.isConnected;
+  return <LiveRuntimeContext.Provider value={bound ? host.runtime : null}>
+    <LiveRuntimeActiveContext.Provider value={bound && active}>
+      <LiveRuntimeConnectionContext.Provider value={ai.sessionResumeCount ?? 0}>
+        {bound ? <LiveRuntimeSurface runtime={host.runtime} active={active}
+          learnerProgress={{ act: host.learnerProgress, disabled: ai.isAudioPlaying }}>{children}</LiveRuntimeSurface> : children}
+      </LiveRuntimeConnectionContext.Provider>
+    </LiveRuntimeActiveContext.Provider>
+  </LiveRuntimeContext.Provider>;
 }
 
 function LessonWorkspaceBridge({ handler, progress }: {

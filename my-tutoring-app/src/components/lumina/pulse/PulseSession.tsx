@@ -392,11 +392,13 @@ export const PulseSession: React.FC<PulseSessionProps> = ({
 // Resume prompt
 // ---------------------------------------------------------------------------
 
+// A value must name a published curriculum graph once the backend upper-cases it and turns spaces
+// into underscores. 'language-arts' became LANGUAGE-ARTS and 'reading' has no graph; both failed.
 const PULSE_SUBJECTS: { value: string; label: string; icon: string; color: string }[] = [
   { value: 'mathematics', label: 'Mathematics', icon: '\u{1F522}', color: '56, 189, 248' },
   { value: 'science', label: 'Science', icon: '\u{1F52C}', color: '74, 222, 128' },
-  { value: 'language-arts', label: 'Language Arts', icon: '\u{1F4D6}', color: '168, 85, 247' },
-  { value: 'reading', label: 'Reading', icon: '\u{1F4DA}', color: '244, 114, 182' },
+  { value: 'LANGUAGE_ARTS', label: 'Language Arts', icon: '\u{1F4D6}', color: '168, 85, 247' },
+  { value: 'SOCIAL_STUDIES', label: 'Social Studies', icon: '\u{1F30E}', color: '244, 114, 182' },
 ];
 
 function ResumePrompt({ subject, startedAt, onResume, onDismiss }: {

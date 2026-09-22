@@ -1,13 +1,11 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import type { SessionItem, SubjectWeekProgress } from './types';
 
 export const SessionRow: React.FC<{
   session: SessionItem;
   /** Resolved mastery gate for this skill (undefined = not yet loaded) */
   gate?: number;
-  onStart?: (session: SessionItem, gate: number) => void;
-}> = ({ session, gate, onStart }) => {
+}> = ({ session, gate }) => {
   const isReview = session.type === 'review';
 
   const reasonLabels: Record<string, { label: string; color: string }> = {
@@ -83,20 +81,6 @@ export const SessionRow: React.FC<{
         </div>
       )}
 
-      {/* Start button */}
-      {onStart && (
-        <Button
-          variant="ghost"
-          className={`px-3 py-1 text-xs font-semibold flex-shrink-0 ${
-            isPracticeGate
-              ? 'bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30'
-              : 'bg-teal-500/20 border border-teal-500/30 text-teal-300 hover:bg-teal-500/30'
-          }`}
-          onClick={() => onStart(session, effectiveGate)}
-        >
-          {isPracticeGate ? 'Practice' : 'Learn'}
-        </Button>
-      )}
     </div>
   );
 };

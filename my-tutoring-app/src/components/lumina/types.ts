@@ -2052,12 +2052,11 @@ export interface VisualPrimitiveSpec {
   /** Structured number range from the manifest — grade-level appropriate. Null for non-numeric primitives. */
   numberRange?: { min: number; max: number } | null;
   /**
-   * Eval mode (the SKILL / task type the primitive evaluates) pinned by the
-   * dedicated post-manifest resolvePracticeEvalModes stage — NOT by the manifest
-   * call that chose the primitive. Carries the same single | 'a|b' | 'mixed'
-   * encoding the generators already read via config.targetEvalMode. Absent when
-   * the primitive is single-mode or resolution was skipped/failed (the generator
-   * then resolves its own mode from intent, the legacy path).
+   * Eval mode (the SKILL / task type the primitive evaluates): the Pulse item's
+   * IRT-chosen `eval_mode_name`, pinned in code after the manifest call when the
+   * manifest kept the item's `primitive_affinity`. Read by the generator via
+   * config.targetEvalMode. Absent otherwise (the generator resolves its own mode
+   * from intent).
    */
   targetEvalMode?: string;
   successCriteria: {
@@ -2181,34 +2180,6 @@ export interface HydratedPracticeItem {
   visualData?: any;
   problemData?: ProblemData;
   curriculumIds?: CurriculumIds;
-}
-
-/**
- * Unified result for a single practice item (visual or standard).
- */
-export interface PracticeItemResult {
-  instanceId: string;
-  itemIndex: number;
-  mode: 'visual-primitive' | 'standard-problem';
-  visualComponentId?: ComponentId;
-  problemType?: ProblemType;
-  success: boolean;
-  score: number;
-  durationMs: number;
-  /** Full evaluation result with rich metrics (when available) */
-  evaluationResult?: PrimitiveEvaluationResult;
-}
-
-/**
- * Session-level summary aggregating all practice items.
- */
-export interface PracticeSessionSummary {
-  totalItems: number;
-  completedItems: number;
-  correctItems: number;
-  averageScore: number;
-  totalDurationMs: number;
-  itemResults: PracticeItemResult[];
 }
 
 // Re-export component data types for external use

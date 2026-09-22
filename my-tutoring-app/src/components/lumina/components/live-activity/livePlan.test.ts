@@ -44,10 +44,9 @@ describe('live lesson plan projection', () => {
       .toEqual(['number-line', 'di-math-facts']);
   });
 
-  it('marks components unavailable instead of running content the resolved mode did not ask for', () => {
+  it('marks components unavailable when the mode pin or the content cannot run', () => {
     const plan = projectLessonPlan(synthetic([
       { componentId: 'number-line', instanceId: 'ok', targetEvalMode: 'jump', data: fixture() },
-      { componentId: 'number-line', instanceId: 'off-mode', targetEvalMode: 'plot', data: fixture() },
       { componentId: 'number-line', instanceId: 'no-pin', data: fixture() },
       { componentId: 'number-line', instanceId: 'bad-pin', targetEvalMode: 'jump|leap', data: fixture() },
       { componentId: 'number-line', instanceId: 'bad-data', targetEvalMode: 'jump', data: { title: 'x' } },
@@ -57,7 +56,6 @@ describe('live lesson plan projection', () => {
     expect(plan.gradeLevel).toBe('Grade 1');
     expect(plan.items.map(i => i.provenance.manifestInstanceId)).toEqual(['ok', 'mixed']);
     expect(Object.fromEntries(plan.unavailable.map(u => [u.manifestInstanceId, u.reason]))).toEqual({
-      'off-mode': 'content has show_jump challenges outside mode "plot"',
       'no-pin': 'no resolved eval mode',
       'bad-pin': 'eval mode "jump|leap" is not in the number-line catalog',
       'bad-data': 'Generated number line has no valid challenges or range',

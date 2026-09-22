@@ -186,3 +186,17 @@ scope through 100 (the earlier K ceiling in this document predates that extensio
   with the existing #63 sitting. Zero is outside both spoken response contracts.
 
 Verification and remaining human acceptance: `qa/number-sequencer-di/REPORT.md`.
+
+## Teaching-workspace amendment — 2026-09-21
+
+Inside a live runtime every mode runs on the tutor/JEV teaching workspace, and so does a
+blended (`a|b`) or `mixed` pin, because all six modes bind (`pinBindsWorkspace`). R1 is
+unchanged: the generator still draws only from the pinned union. The scripted drill's
+live-runtime branch (`useNumberSequencerRuntime` and its misstep aids) is deleted. The
+judged-runner clauses of the 2026-09-11 amendment (R4 stillness submit, R5 judged turns,
+R8 tutor-verdict progression) now apply only where the drill still runs, with no runtime:
+Pulse, Practice, the Math tester, and lesson sections the plan does not bind. Re-based for
+the workspace: the observer's committed outcome advances, JEV refuses unearned credit, and
+`order-cards` is checked by code when the last card lands. A blended section still records
+the evaluation mode it recorded before (`default`); per-mode recording is queued as a
+student-data slice. Evidence: `qa/tutor-reports/number-sequencer-blend-pin-2026-09-21.json`.
