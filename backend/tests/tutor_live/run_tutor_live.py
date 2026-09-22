@@ -3092,7 +3092,82 @@ def build_reading_repair_journey(live: Dict[str, Any], grade: str) -> Dict[str, 
             "assessmentStatus": "provisional-local-only", "audioJudgmentTested": False}}
 
 
+_LETTER_NAMES = ["ay", "bee", "see", "dee", "ee", "eff", "jee", "aitch", "eye", "jay", "kay", "ell", "em",
+                 "en", "oh", "pee", "cue", "ar", "ess", "tee", "you", "vee", "double you", "ex", "why", "zee"]
+
+
+def build_letter_workshop_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Write-from-listening: the Live tutor must SAY the hidden letter's name.
+
+    Replays what LetterWorkshop.tsx sends in write mode: the [SAY_LETTER] cue
+    (useLetterWorkshopCue.letterNameCue, scripted so no [CURRENT STATE] block is
+    prepended), a Help me request carrying the withheld context, a replay, and
+    the checked-attempt feedback. The cue beat must voice the name and nothing
+    else; every other beat before feedback must NOT name it, because the letter
+    stays `withheld` in the tutor's context and only the cue may reveal it.
+    Run with --eval-mode write.
+    """
+    data = live.get("generatedData") or {}
+    challenges = data.get("challenges") or []
+    ch0 = challenges[0] if challenges else {"id": "c1", "type": "write", "templateId": "lowercase-t"}
+    case, letter = str(ch0.get("templateId", "lowercase-t")).split("-", 1)
+    glyph = letter.upper()
+    name = _LETTER_NAMES[ord(letter.lower()) - 97]
+    Case = case.capitalize()
+    total = len(challenges) or 1
+    quoted = f"Write the {case} letter {glyph}. {Case} {glyph}."
+    # Mirrors letterNameCue() byte for byte.
+    cue = (f'[SAY_LETTER] Say exactly this and nothing else: "{quoted}" '
+           f'{glyph} is the letter\'s NAME, pronounced "{name}". Do not say its sound, a word that starts with it, '
+           f"or anything about its shape or strokes. This is not an attempt to judge. Then stay silent while the child writes.")
+    initial_bag = {
+        "letter": "withheld", "letterCase": "withheld", "supportTier": "default",
+        "showStarts": False, "showArrows": False, "showLineLabels": True, "showChecklist": False,
+        "challengeType": "write", "assistance": "auditory-cue", "challengeNumber": 1, "totalChallenges": total,
+        "instruction": "Listen, then write the letter on the lines.", "feedback": "No submitted feedback yet",
+        "feedbackFocus": "none", "interactionState": "ready", "cueState": "idle", "modelVisible": False,
+        "attemptCount": 0, "hintLevel": 0, "assessmentScope": "provisional-geometric-formation",
+    }
+
+    def bag(**changes: Any) -> Dict[str, Any]:
+        return {**initial_bag, **changes}
+
+    def hint(level: int, state: Dict[str, Any]) -> Dict[str, Any]:
+        guidance = {1: "Give a gentle nudge - ask a thought-provoking question or point them in the right direction."}
+        return text_msg(f"The student is requesting a Level {level} hint. {guidance[level]}\n\nCurrent state: {json.dumps(state)}")
+
+    # Anything that names the letter outside the cue. "letter t" style phrases
+    # only: a bare one-character token would match ordinary words.
+    names_letter = [[f"letter {letter.lower()}", f"letter {name}", f"{case} {letter.lower()} ", f"the {name}"]]
+    says_name = [[f"letter {letter.lower()}", f"letter {name}"], [case]]
+    cue_judge = (f'The tutor was told to say exactly "{quoted}" and nothing else. Did it say that line '
+                 f"(or a near-verbatim version naming the {case} letter {glyph}), WITHOUT adding the letter's sound, "
+                 "a word that starts with it, a description of its shape or strokes, or bracketed/system text?")
+    beats = [
+        Beat("greeting", sends=[], expect="turn", forbid=names_letter,
+             note="server auto-queues the standalone greeting on auth; write intros are suppressed"),
+        Beat("say_letter", sends=[ctx_msg(bag(cueState="speaking")), text_msg(cue, scripted=True)],
+             must_include=says_name, forbid=[["current state", "withheld", "say exactly"]], judge=cue_judge),
+        Beat("drawing_quiet", expect="silence", sends=[ctx_msg(bag(cueState="ready", interactionState="drawing"))]),
+        Beat("help_before_submit", sends=[hint(1, bag(cueState="ready", hintLevel=1))], forbid=names_letter,
+             judge="Is the reply a short procedural nudge (e.g. hear the letter name again, use the writing lines) "
+                   "that does NOT name, describe, or give the sound of any specific letter?"),
+        Beat("replay", sends=[ctx_msg(bag(cueState="speaking", hintLevel=1)), text_msg(cue, scripted=True)],
+             must_include=says_name, judge=cue_judge),
+        Beat("answer_incorrect", sends=[ctx_msg(bag(cueState="ready", interactionState="feedback", modelVisible=True,
+             assistance="beside-model", feedback="Compare your writing with the model. Notice its parts and where they meet the lines.",
+             feedbackFocus="direction-or-shape", attemptCount=1)), text_msg(
+             "[ANSWER_INCORRECT] Item 1; Write from listening; attempt 1. Provisional feedback: Compare your writing "
+             "with the model. Notice its parts and where they meet the lines. Say that briefly without naming a hidden "
+             "letter or claiming mastery.")],
+             judge="Is the reply one or two short, encouraging sentences inviting comparison with the model, without claiming mastery?"),
+    ]
+    return {"initial_bag": initial_bag, "beats": beats, "answers": [],
+            "meta": {"grade": grade, "target": f"{case}-{letter}", "cue": quoted}}
+
+
 JOURNEYS = {
+    "letter-workshop": build_letter_workshop_journey,
     "reading-repair-studio": build_reading_repair_journey,
     "cause-effect-chain": build_cause_effect_chain_journey,
     "lesson-refer-back": build_lesson_refer_back_journey,

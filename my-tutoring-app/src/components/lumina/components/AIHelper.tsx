@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useLuminaAI } from '../hooks/useLuminaAI';
+import { shownConversation } from '@/contexts/LuminaAIContext';
 import type { ComponentId } from '../types';
 import { Bot, Mic, MicOff, X, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -161,7 +162,7 @@ export const AIHelper: React.FC<AIHelperProps> = ({
 
           {/* Conversation History */}
           <ScrollArea className="h-64 p-4" ref={scrollRef}>
-            {conversation.length === 0 && (
+            {shownConversation(conversation).length === 0 && (
               <div className="p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-xl">
                 <p className="text-slate-300 text-sm leading-relaxed">
                   👋 Hi! I'm your Lumina AI assistant. I can help you understand this activity better.
@@ -170,7 +171,7 @@ export const AIHelper: React.FC<AIHelperProps> = ({
               </div>
             )}
 
-            {conversation.map((msg, i) => (
+            {shownConversation(conversation).map((msg, i) => (
               <div
                 key={i}
                 className={`mb-3 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}

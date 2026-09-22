@@ -4,10 +4,12 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import LetterWorkshop, { type LetterWorkshopData } from './LetterWorkshop';
 import { getLetterTemplate } from './letterWorkshopGeometry';
+import { judgeAcceptsLetter } from './letterWorkshopJudge';
 
-const { submit, sendText, evaluationOptions, tutor } = vi.hoisted(() => ({ submit: vi.fn(), sendText: vi.fn(), evaluationOptions: vi.fn(), tutor: { isConnected: false, requestHint: vi.fn(), data: vi.fn() } }));
+const { submit, sendText, evaluationOptions, tutor, judge } = vi.hoisted(() => ({ submit: vi.fn(), sendText: vi.fn(), evaluationOptions: vi.fn(), judge: vi.fn(), tutor: { isConnected: false, isAudioPlaying: false, requestHint: vi.fn(), data: vi.fn() } }));
 vi.mock('../../../evaluation', () => ({ usePrimitiveEvaluation: (options: unknown) => { evaluationOptions(options); return { submitResult: submit, elapsedMs: 100 }; } }));
-vi.mock('../../../hooks/useLuminaAI', () => ({ useLuminaAI: (options: unknown) => { tutor.data(options); return { sendText, isConnected: tutor.isConnected, requestHint: tutor.requestHint, isAudioPlaying: false, sessionMode: 'standalone' }; } }));
+vi.mock('../../../hooks/useLuminaAI', () => ({ useLuminaAI: (options: unknown) => { tutor.data(options); return { sendText, isConnected: tutor.isConnected, requestHint: tutor.requestHint, isAudioPlaying: tutor.isAudioPlaying, isAIResponding: false, sessionMode: 'standalone' }; } }));
+vi.mock('./letterWorkshopJudge', async (original) => ({ ...(await original<typeof import('./letterWorkshopJudge')>()), judgeLetterDrawing: judge }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { navigate: vi.fn() } }));
 vi.mock('../../../components/PhaseSummaryPanel', () => ({ default: () => <div>Tracing session complete</div> }));
 
@@ -36,51 +38,130 @@ describe('Letter Workshop copy and auditory writing', () => {
     expect(submit.mock.calls[0][3].attempts[0]).toMatchObject({ type: 'copy', assistance: 'beside-model' });
     expect(evaluationOptions).toHaveBeenLastCalledWith(expect.objectContaining({ localOnly: true }));
   });
-  it('hides the target, requires completed speech, and records model exposure on retry', () => {
-    const speak = vi.fn();
-    vi.stubGlobal('speechSynthesis', { speak, cancel: vi.fn() });
-    vi.stubGlobal('SpeechSynthesisUtterance', class { constructor(public text: string) {} });
+  it('hides the target, has the live tutor say its name, and records model exposure on retry', () => {
+    vi.useFakeTimers();
+    tutor.isConnected = true;
     const value = modeData('write');
     value.title = 'Write lowercase l'; value.description = 'The target is l.';
-    render(<LetterWorkshop data={value} />);
+    const view = render(<LetterWorkshop data={value} />);
     expect(screen.queryByText(value.title)).toBeNull();
     expect(screen.queryByText(value.description)).toBeNull();
     expect(screen.queryByTestId('letter-copy-model')).toBeNull();
+    // The item says its letter as soon as the tutor is free; the paper waits for that audio.
+    const cues = sendText.mock.calls.filter(([message]) => message.startsWith('[SAY_LETTER]'));
+    expect(cues).toHaveLength(1);
+    expect(cues[0][0]).toContain('"Write the lowercase letter L. Lowercase L."');
+    expect(cues[0][0]).toContain('pronounced "ell"');
+    expect(cues[0][1]).toEqual({ silent: true, scripted: true });
     trace('l');
     expect(screen.getByTestId('letter-writing-paper').querySelector('path[stroke="#244d76"]')).toBeNull();
-    expect(screen.queryByTestId('letter-feedback-reference')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Hear the letter name' }));
-    expect(speak.mock.calls[0][0].text).toBe('Write the lowercase letter ell.');
-    act(() => speak.mock.calls[0][0].onend());
+    tutorSays(view, value);
     trace('l'); fireEvent.click(screen.getByRole('button', { name: 'Check my writing' }));
     expect(screen.getByTestId('letter-copy-model')).toBeTruthy();
     expect(screen.getByTestId('letter-feedback-reference')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Try this letter again' }));
     trace('l'); fireEvent.click(screen.getByRole('button', { name: 'Check my writing' })); next();
     const attempts = submit.mock.calls[0][3].attempts;
-    expect(attempts[0]).toMatchObject({ type: 'write', assistance: 'auditory-cue', modelPreviouslySeen: false, cuePlays: 1 });
+    expect(attempts[0]).toMatchObject({ type: 'write', assistance: 'auditory-cue', modelPreviouslySeen: false, cuePlays: 1, visionJudge: null });
     expect(attempts[1]).toMatchObject({ assistance: 'beside-model', modelPreviouslySeen: true });
-    expect(sendText.mock.calls.some(([message]) => message.includes('lowercase l'))).toBe(false);
+    expect(judge).not.toHaveBeenCalled();
+    // Only the private cue names the letter.
+    expect(sendText.mock.calls.filter(([message]) => !message.startsWith('[SAY_LETTER]'))
+      .some(([message]) => /lowercase l\b|letter L\b/i.test(message))).toBe(false);
   });
-  it('keeps an audio failure unscored and cancels its cue on unmount', () => {
-    const speak = vi.fn(), cancel = vi.fn();
-    vi.stubGlobal('speechSynthesis', { speak, cancel });
-    vi.stubGlobal('SpeechSynthesisUtterance', class { constructor(public text: string) {} });
+  it('keeps a silent cue unscored, offers a replay, and clears its timer on unmount', () => {
+    vi.useFakeTimers();
+    tutor.isConnected = true;
     const view = render(<LetterWorkshop data={modeData('write')} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Hear the letter name' }));
-    act(() => speak.mock.calls[0][0].onerror());
-    expect(screen.getByText(/could not play/)).toBeTruthy();
+    act(() => { vi.advanceTimersByTime(10000); });
+    expect(screen.getByText(/did not play/)).toBeTruthy();
     trace('l'); expect(submit).not.toHaveBeenCalled();
+    expect(screen.getByTestId('letter-writing-paper').querySelector('path[stroke="#244d76"]')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Hear the letter name' }));
-    const stale = speak.mock.calls[1][0];
+    expect(sendText.mock.calls.filter(([message]) => message.startsWith('[SAY_LETTER]'))).toHaveLength(2);
     view.unmount();
-    expect(cancel).toHaveBeenCalled(); expect(stale.onend).toBeNull();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it('waits for the tutor instead of falling back to browser speech', () => {
+    const speak = vi.fn();
+    vi.stubGlobal('speechSynthesis', { speak, cancel: vi.fn() });
+    render(<LetterWorkshop data={modeData('write')} />);
+    expect(screen.getByText(/Waiting for your tutor/)).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Hear the letter name' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(speak).not.toHaveBeenCalled();
+    expect(sendText).not.toHaveBeenCalled();
   });
 });
 
+describe('Letter Workshop vision second opinion', () => {
+  const copyData = () => { const value = data(['l']); value.challengeType = 'copy'; value.challenges[0].type = 'copy'; return value; };
+  const verdict = (writtenAs: string, recognized = true) => ({ writtenAs, recognized, score: 90, confidence: 90, feedback: recognized ? 'You made a tall line!' : 'That looks like a different letter.' });
+
+  it('accepts a letter the geometry missed when Gemini reads the target', async () => {
+    judge.mockResolvedValue(verdict('l'));
+    render(<LetterWorkshop data={copyData()} />);
+    trace('l', true);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Check my writing' })); });
+    expect(judge).toHaveBeenCalledTimes(1);
+    expect(judge.mock.calls[0][1]).toMatchObject({ id: 'lowercase-l' });
+    expect(screen.getByText('You wrote it')).toBeTruthy();
+    expect(screen.getByText('You made a tall line!')).toBeTruthy();
+    next();
+    expect(submit.mock.calls[0][2]).toMatchObject({ correctCount: 1 });
+    const [attempt] = submit.mock.calls[0][3].attempts;
+    expect(attempt.assessment.passed).toBe(true);
+    expect(attempt.visionJudge).toMatchObject({ writtenAs: 'l', accepted: true, version: 'letter-vision-v1' });
+  });
+
+  it('keeps the geometric miss when Gemini reads another letter or fails', async () => {
+    judge.mockResolvedValueOnce(verdict('L')).mockResolvedValueOnce(null);
+    render(<LetterWorkshop data={copyData()} />);
+    trace('l', true);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Check my writing' })); });
+    expect(screen.getByText('Try this')).toBeTruthy();
+    expect(screen.queryByText('You made a tall line!')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Try this letter again' }));
+    trace('l', true);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Check my writing' })); });
+    expect(screen.getByText('Try this')).toBeTruthy();
+    next();
+    const attempts = submit.mock.calls[0][3].attempts;
+    expect(attempts.map((a: { assessment: { passed: boolean } }) => a.assessment.passed)).toEqual([false, false]);
+    expect(attempts[0].visionJudge).toMatchObject({ writtenAs: 'L', accepted: false });
+    expect(attempts[1].visionJudge).toBeNull();
+  });
+
+  it('never asks Gemini about a trace', () => {
+    render(<LetterWorkshop data={data(['l'])} />);
+    trace('l', true); check();
+    expect(judge).not.toHaveBeenCalled();
+    expect(screen.getByText('Try this')).toBeTruthy();
+  });
+
+  it('accepts only its own reading, allowing case only for same-shape letters', () => {
+    const lower = (letter: string) => getLetterTemplate(`lowercase-${letter}`);
+    expect(judgeAcceptsLetter(verdict('p'), lower('p'))).toBe(true);
+    expect(judgeAcceptsLetter(verdict('q'), lower('p'))).toBe(false);
+    expect(judgeAcceptsLetter(verdict('P'), lower('p'))).toBe(false);
+    expect(judgeAcceptsLetter(verdict('C'), lower('c'))).toBe(true);
+    expect(judgeAcceptsLetter(verdict('c', false), lower('c'))).toBe(false);
+    expect(judgeAcceptsLetter({ ...verdict('p'), confidence: 40 }, lower('p'))).toBe(false);
+    expect(judgeAcceptsLetter(null, lower('p'))).toBe(false);
+  });
+});
+
+/** Tutor audio plays and then stays quiet past the 500 ms settle window. */
+function tutorSays(view: ReturnType<typeof render>, value: LetterWorkshopData) {
+  tutor.isAudioPlaying = true; view.rerender(<LetterWorkshop data={value} />);
+  tutor.isAudioPlaying = false; view.rerender(<LetterWorkshop data={value} />);
+  act(() => { vi.advanceTimersByTime(600); });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  judge.mockResolvedValue(null);
   tutor.isConnected = false;
+  tutor.isAudioPlaying = false;
   class Pointer extends MouseEvent {
     pointerId: number; pointerType: string; isPrimary: boolean;
     constructor(type: string, options: PointerEventInit) {
@@ -97,7 +178,7 @@ beforeEach(() => {
     setPointerCapture: vi.fn(), hasPointerCapture: () => false, releasePointerCapture: vi.fn(),
   });
 });
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 function trace(letter: string, reverse = false) {
   const paper = screen.getByTestId('letter-writing-paper');
@@ -219,15 +300,19 @@ describe('Letter Workshop tutor moments', () => {
     expect(submit.mock.calls[0][2].hintsViewed).toBe(4);
   });
   it('overwrites visible-letter context on transition to write and uses procedural hints', () => {
+    vi.useFakeTimers();
     tutor.isConnected = true;
     const value = data(['l', 't']); value.challenges[1].type = 'write';
-    render(<LetterWorkshop data={value} />);
+    const view = render(<LetterWorkshop data={value} />);
     trace('l'); check(); next();
-    expect(tutor.data.mock.lastCall?.[0].primitiveData).toMatchObject({ letter: 'withheld', letterCase: 'withheld', modelVisible: false, challengeType: 'write' });
+    expect(tutor.data.mock.lastCall?.[0].primitiveData).toMatchObject({ letter: 'withheld', letterCase: 'withheld', modelVisible: false, challengeType: 'write', cueState: 'speaking' });
     expect(sendText.mock.calls.filter(([text]) => text.includes('[NEXT_ITEM]'))).toHaveLength(0);
+    expect(sendText.mock.lastCall?.[0]).toContain('[SAY_LETTER] Say exactly this and nothing else: "Write the lowercase letter T.');
+    expect((screen.getByRole('button', { name: 'Help me' }) as HTMLButtonElement).disabled).toBe(true);
+    tutorSays(view, value);
     fireEvent.click(screen.getByRole('button', { name: 'Help me' }));
     const state = tutor.requestHint.mock.lastCall?.[1];
-    expect(state).toMatchObject({ letter: 'withheld', assistance: 'auditory-cue', cueState: 'idle' });
+    expect(state).toMatchObject({ letter: 'withheld', assistance: 'auditory-cue', cueState: 'ready' });
     expect(JSON.stringify(state)).not.toContain('lowercase-t');
   });
   it('does not interrupt existing handwriting with a late-connection greeting', () => {

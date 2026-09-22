@@ -7,17 +7,17 @@ import { PipSurfaceStore } from './PipSurfaceStore';
 import LetterWorkshop, { type LetterWorkshopData } from '../primitives/visual-primitives/literacy/LetterWorkshop';
 import { getLetterTemplate } from '../primitives/visual-primitives/literacy/letterWorkshopGeometry';
 
-const tutor = vi.hoisted(() => ({ isAudioPlaying: false, activePrimitiveId: 'workshop' as string | null }));
+const tutor = vi.hoisted(() => ({ isAudioPlaying: false, isConnected: false, activePrimitiveId: 'workshop' as string | null }));
 vi.mock('../evaluation', () => ({ usePrimitiveEvaluation: () => ({ submitResult: vi.fn(), elapsedMs: 0 }) }));
 vi.mock('../hooks/useLuminaAI', () => ({
-  useLuminaAI: () => ({ sendText: vi.fn(), requestHint: vi.fn(), isConnected: false, isAudioPlaying: tutor.isAudioPlaying,
+  useLuminaAI: () => ({ sendText: vi.fn(), requestHint: vi.fn(), isConnected: tutor.isConnected, isAudioPlaying: tutor.isAudioPlaying,
     sessionMode: 'standalone', activePrimitiveId: tutor.activePrimitiveId }),
 }));
 vi.mock('../utils/SoundManager', () => ({ SoundManager: { navigate: vi.fn() } }));
 vi.mock('../components/PhaseSummaryPanel', () => ({ default: () => <div>Practice complete</div> }));
 
 beforeEach(() => {
-  Object.assign(tutor, { isAudioPlaying: false, activePrimitiveId: 'workshop' });
+  Object.assign(tutor, { isAudioPlaying: false, isConnected: false, activePrimitiveId: 'workshop' });
   class Pointer extends MouseEvent {
     pointerId: number; pointerType: string; isPrimary: boolean;
     constructor(type: string, options: PointerEventInit) {
@@ -34,7 +34,7 @@ beforeEach(() => {
     setPointerCapture: vi.fn(), hasPointerCapture: () => false, releasePointerCapture: vi.fn(),
   });
 });
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 const data = (type: 'trace' | 'write' = 'trace'): LetterWorkshopData => ({
   title: 'Letters', description: 'Practice.', gradeLevel: 'K', challengeType: type, instanceId: 'workshop',
@@ -91,14 +91,16 @@ describe('Letter Workshop drives Pip from its check state', () => {
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'paper' });
   });
 
-  it('write: the browser letter-name cue points at the paper; unregisters on unmount', () => {
-    const speak = vi.fn();
-    vi.stubGlobal('speechSynthesis', { speak, cancel: vi.fn() });
-    vi.stubGlobal('SpeechSynthesisUtterance', class { constructor(public text: string) {} });
-    const { store, unmount } = mount(data('write'));
-    fireEvent.click(screen.getByRole('button', { name: 'Hear the letter name' }));
+  it("write: the tutor's letter-name cue points at the paper; unregisters on unmount", () => {
+    vi.useFakeTimers();
+    tutor.isConnected = true;
+    const { store, refresh, unmount } = mount(data('write'));
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'paper' });
-    act(() => speak.mock.calls[0][0].onend());
+    tutor.isAudioPlaying = true;
+    refresh();
+    tutor.isAudioPlaying = false;
+    refresh();
+    act(() => { vi.advanceTimersByTime(600); });
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'none' });
     unmount();
     expect(store.getActive()).toBeNull();

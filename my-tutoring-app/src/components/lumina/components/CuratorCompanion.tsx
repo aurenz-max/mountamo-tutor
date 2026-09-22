@@ -263,7 +263,8 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
   // Most recent thing Pip said — shown big in the bubble + read aloud via audio.
   const lastAssistant = useMemo(() => {
     for (let i = conversation.length - 1; i >= 0; i--) {
-      if (conversation[i].role === 'assistant') return conversation[i].content;
+      // A cue turn is heard, not read: while it is the latest line, show none.
+      if (conversation[i].role === 'assistant') return conversation[i].cue ? null : conversation[i].content;
     }
     return null;
   }, [conversation]);

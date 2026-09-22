@@ -21,6 +21,7 @@ import {
 import { LETTER_WORKSHOP_MODES, LETTER_WORKSHOP_MODE_INFO, isLetterWorkshopMode, type LetterWorkshopMode } from './letterWorkshopModes';
 import { resolveSupportStructure, normalizeSupportTier, type SupportTier, type letterStructure } from './letterWorkshopDifficulty';
 import { useLetterWorkshopCue } from './useLetterWorkshopCue';
+import { judgeLetterDrawing, judgeAcceptsLetter, LETTER_JUDGE_VERSION, type LetterEvaluationResult } from './letterWorkshopJudge';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { letterWorkshopPipPose } from '../../../pip/letterWorkshopPipPose';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
@@ -65,6 +66,8 @@ interface TraceAttempt {
   disposition: 'submitted' | 'cleared';
   strokes: TraceStroke[];
   assessment: TraceAssessment | null;
+  /** Gemini's reading of a copy/write attempt the geometric check failed; null when it was not asked or did not answer. */
+  visionJudge: (LetterEvaluationResult & { version: string; accepted: boolean }) | null;
 }
 
 const PHASES = Object.fromEntries(LETTER_WORKSHOP_MODES.map(mode => [mode, { label: LETTER_WORKSHOP_MODE_INFO[mode].label, accentColor: 'cyan' as const }]));
@@ -114,6 +117,11 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
   const introducedRef = useRef<string | null>(null);
   const [hintLevel, setHintLevel] = useState(0);
   const [hintsViewed, setHintsViewed] = useState(0);
+  const [judging, setJudging] = useState(false);
+  const judgingRef = useRef(false);
+  const mountedRef = useRef(true);
+  useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
+  const cuedRef = useRef<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const { submitResult, elapsedMs } = usePrimitiveEvaluation<LetterWorkshopMetrics>({
     primitiveType: 'letter-workshop', instanceId: instanceRef.current, localOnly,
@@ -145,14 +153,29 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
     assessmentScope: localOnly ? 'provisional-geometric-formation' : 'provisional-geometric-tracing',
   }), [template, mode, modeInfo.assistance, modelRevealed, progress.currentIndex, data.challenges.length,
     prompt, assessment, progress.isComplete, drawing, cue.state, progress.currentAttempts, hintLevel, localOnly, supportTier, support.showStarts, support.showArrows, support.showLineLabels, support.showChecklist]);
-  const { sendText, requestHint, isConnected, isAudioPlaying, sessionMode, activePrimitiveId } = useLuminaAI({ primitiveType: 'letter-workshop',
+  const { sendText, requestHint, isConnected, isAudioPlaying, isAIResponding, sessionMode, activePrimitiveId } = useLuminaAI({ primitiveType: 'letter-workshop',
     instanceId: instanceRef.current, primitiveData: aiData, gradeLevel: data.gradeLevel });
   const tutorActive = isConnected && (sessionMode !== 'lesson' || activePrimitiveId === instanceRef.current);
+
+  // ── Write cue: the live tutor says the letter name ──────────────────────
+  const { observeAudio, play: playCue } = cue;
+  useEffect(() => { observeAudio(isAudioPlaying); }, [isAudioPlaying, observeAudio]);
+  // Scripted: the cue holds every word to speak, so the backend must not prepend
+  // its [CURRENT STATE] block, which the Live model tends to read aloud.
+  const speakLetterName = useCallback(() => playCue(tutorActive ? text => sendText(text, { silent: true, scripted: true }) : null),
+    [playCue, tutorActive, sendText]);
+  // Each write item says its letter once the tutor is free; the button replays it.
+  useEffect(() => {
+    if (mode !== 'write' || !tutorActive || progress.isComplete || cuedRef.current === current.id) return;
+    if (isAudioPlaying || isAIResponding || cue.state !== 'idle') return;
+    cuedRef.current = current.id;
+    speakLetterName();
+  }, [mode, tutorActive, progress.isComplete, current.id, isAudioPlaying, isAIResponding, cue.state, speakLetterName]);
 
   // ── Pip shared surface ──────────────────────────────────────────────────
   // A projection of this letter's check state, the spoken cue, and the child's
   // ink; Pip never draws, checks, or advances. Tutor audio counts only while the
-  // tutor is on this block; the browser letter-name cue is scoped to this item.
+  // tutor is on this block; the tutor's letter-name cue is scoped to this item.
   const pip = usePipTargets(current.id, false);
   const tutorAudio = isAudioPlaying && activePrimitiveId === instanceRef.current;
   const speechOnItem = useSpeechScope(current.id, tutorAudio);
@@ -212,7 +235,7 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
       hintsViewed, overallAccuracy, averageAttemptsPerChallenge: attemptsCount / data.challenges.length,
     }, { assistance: localOnly ? 'per-attempt' : 'trace-guide', assessmentScope: localOnly ? 'provisional-geometric-formation' : 'provisional-geometric-tracing',
       localOnly, tolerances: { trace: TRACE_TOLERANCES, formation: FORMATION_TOLERANCES }, attempts: evidenceRef.current });
-    if (tutorActive) sendText(`[ALL_COMPLETE] Letter practice finished: ${correctCount} of ${data.challenges.length} paths met the geometric checks. Encourage practice; do not claim handwriting mastery.`, { silent: true });
+    if (tutorActive) sendText(`[ALL_COMPLETE] Letter practice finished: ${correctCount} of ${data.challenges.length} letters passed the practice checks. Encourage practice; do not claim handwriting mastery.`, { silent: true });
   }, [progress.isComplete, progress.results, data.challenges, localOnly, hintsViewed, tutorActive, submitResult, sendText]);
 
   function coordinate(event: React.PointerEvent<SVGSVGElement>): TracePoint | null {
@@ -233,7 +256,7 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
   }
 
   function drawStart(event: React.PointerEvent<SVGSVGElement>) {
-    if ((mode === 'write' && cue.state !== 'ready') || assessmentRef.current || advancingRef.current || pointerRef.current !== null || event.button !== 0 || !event.isPrimary) return;
+    if ((mode === 'write' && cue.state !== 'ready') || assessmentRef.current || judgingRef.current || advancingRef.current || pointerRef.current !== null || event.button !== 0 || !event.isPrimary) return;
     const point = coordinate(event);
     if (!point) return;
     event.preventDefault();
@@ -264,18 +287,18 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
     releasePointer();
   }
 
-  function saveAttempt(disposition: TraceAttempt['disposition'], result: TraceAssessment | null) {
+  function saveAttempt(disposition: TraceAttempt['disposition'], result: TraceAssessment | null, visionJudge: TraceAttempt['visionJudge'] = null) {
     evidenceRef.current.push({ challengeId: current.id, templateId: current.templateId,
       type: mode, assistance: modelRevealed ? 'beside-model' : modeInfo.assistance, disposition,
       modelPreviouslySeen: exposedTemplates.current.has(current.templateId), cuePlays: cue.plays,
       scorerVersion: mode === 'trace' ? TRACE_TOLERANCES.version : FORMATION_TOLERANCES.version, templateVersion: 'school-manuscript-v1', hintLevel, supportTier,
       strokes: strokesRef.current.map(stroke => ({ ...stroke, points: stroke.points.map(point => ({ ...point })) })),
-      assessment: result });
+      assessment: result, visionJudge });
     progress.incrementAttempts();
   }
 
   function clear() {
-    if (pointerRef.current !== null || advancingRef.current) return;
+    if (pointerRef.current !== null || advancingRef.current || judgingRef.current) return;
     if (strokesRef.current.length && !assessmentRef.current) saveAttempt('cleared', null);
     strokesRef.current = [];
     setStrokes([]);
@@ -283,17 +306,36 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
     setAssessment(null);
   }
 
-  function check() {
-    if (pointerRef.current !== null || assessmentRef.current || !strokesRef.current.length || advancingRef.current) return;
+  async function check() {
+    if (pointerRef.current !== null || assessmentRef.current || judgingRef.current || !strokesRef.current.length || advancingRef.current) return;
     if (mode === 'write' && cue.state !== 'ready') return;
     const rawResult = mode === 'trace' ? evaluateLetterTrace(template, strokesRef.current) : evaluateLetterFormation(template, strokesRef.current);
-    const result = mode === 'trace' && !support.showArrows && !rawResult.passed
+    let result = mode === 'trace' && !support.showArrows && !rawResult.passed
       ? { ...rawResult, correctionPoint: support.showStarts ? rawResult.correctionPoint : undefined,
           feedback: support.showStarts ? 'Compare your trace with the whole path. Start at each numbered dot and try again.' : 'Compare your marks with the whole letter path. Try tracing it again.' }
       : rawResult;
+    // The formation check compares against ONE template, so a real letter made
+    // another way (one continuous stroke, a narrower bowl) fails it. Copy/write
+    // then ask Gemini whether the child wrote the letter, as NumberTracer does.
+    // Trace keeps geometry: its task is following this path from these starts.
+    let visionJudge: TraceAttempt['visionJudge'] = null;
+    if (!result.passed && mode !== 'trace') {
+      judgingRef.current = true; setJudging(true);
+      const verdict = await judgeLetterDrawing(strokesRef.current, template, mode);
+      judgingRef.current = false;
+      if (!mountedRef.current) return;
+      setJudging(false);
+      const accepted = judgeAcceptsLetter(verdict, template);
+      if (verdict) visionJudge = { ...verdict, version: LETTER_JUDGE_VERSION, accepted };
+      // A rejection keeps the geometric tip unless the judge confidently read a
+      // different letter; a "recognized" verdict we overrode would praise a miss.
+      if (verdict?.feedback && (accepted || (verdict.confidence >= 60 && !verdict.recognized))) {
+        result = { ...result, passed: accepted, feedback: verdict.feedback, correctionPoint: undefined };
+      }
+    }
     assessmentRef.current = result;
     setAssessment(result);
-    saveAttempt('submitted', result);
+    saveAttempt('submitted', result, visionJudge);
     if (mode === 'write') { exposedTemplates.current.add(current.templateId); setRevealedId(current.id); }
     if (tutorActive) sendText(`[${result.passed ? 'ANSWER_CORRECT' : 'ANSWER_INCORRECT'}] Item ${progress.currentIndex + 1}; ${modeInfo.label}; attempt ${progress.currentAttempts + 1}. Provisional feedback: ${result.feedback} Say that briefly without naming a hidden letter or claiming mastery.`, { silent: true });
   }
@@ -324,10 +366,12 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
       <div className="flex items-center gap-3">
         <LuminaPrompt className="flex-1">{prompt}</LuminaPrompt>
         <LuminaReadAloud label={mode === 'write' ? 'Hear the letter name' : 'Read this to me'} speaking={cue.state === 'speaking'} aria-label={mode === 'write' ? 'Hear the letter name' : 'Hear the writing instruction'}
-          disabled={drawing || cue.state === 'speaking' || isAudioPlaying || (mode !== 'write' && !tutorActive)} onClick={() => mode === 'write' ? cue.play() : sendText(`[READ_ALOUD] Say exactly: ${prompt}`, { silent: true })} />
+          disabled={drawing || judging || cue.state === 'speaking' || isAudioPlaying || !tutorActive} onClick={() => mode === 'write' ? speakLetterName() : sendText(`[READ_ALOUD] Say exactly: ${prompt}`, { silent: true })} />
       </div>
       {mode === 'write' && cue.state !== 'ready' && <LuminaFeedbackCard status="insight" role="status">
-        {cue.state === 'error' ? 'The letter name could not play. Tap Hear the letter name to try again.' : cue.state === 'speaking' ? 'Listen to the letter name.' : 'Tap Hear the letter name before you start.'}
+        {cue.state === 'error' ? 'The letter name did not play. Tap Hear the letter name to try again.'
+          : cue.state === 'speaking' ? 'Listen to the letter name.'
+          : !tutorActive ? 'Waiting for your tutor to say the letter name.' : 'Tap Hear the letter name before you start.'}
       </LuminaFeedbackCard>}
       {mode !== 'trace' && <LuminaCardDescription>Practice shape feedback</LuminaCardDescription>}
       {support.showChecklist && <LuminaCardDescription data-testid="letter-self-check">{mode === 'trace'
@@ -384,20 +428,21 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
           fill="none" stroke="#b77824" strokeWidth="2" strokeDasharray="4 3" />}
       </svg>
       </div>
+      {judging && <LuminaFeedbackCard status="insight" role="status">Checking your writing…</LuminaFeedbackCard>}
       {assessment && <LuminaFeedbackCard status={assessment.passed ? 'correct' : 'insight'}
-        label={assessment.passed ? (mode === 'trace' ? 'Path followed' : 'Shape matches') : 'Try this'} role="status">{assessment.feedback}</LuminaFeedbackCard>}
+        label={assessment.passed ? (mode === 'trace' ? 'Path followed' : 'You wrote it') : 'Try this'} role="status">{assessment.feedback}</LuminaFeedbackCard>}
       <div className="flex justify-center items-center gap-3 flex-wrap">
-        <LuminaButton tone="ghost" disabled={!tutorActive || drawing || cue.state === 'speaking' || isAudioPlaying}
+        <LuminaButton tone="ghost" disabled={!tutorActive || drawing || judging || cue.state === 'speaking' || isAudioPlaying}
           onClick={() => {
             if (!tutorActive || pointerRef.current !== null || cue.state === 'speaking') return;
             const level = Math.min(3, hintLevel + 1) as 1 | 2 | 3;
             setHintLevel(level); setHintsViewed(count => count + 1);
             requestHint(level, { ...aiData, hintLevel: level });
           }}>Help me</LuminaButton>
-        <LuminaButton tone="ghost" onClick={clear} disabled={!strokes.length || drawing} aria-label={assessment ? 'Try this letter again' : 'Clear writing'}>
+        <LuminaButton tone="ghost" onClick={clear} disabled={!strokes.length || drawing || judging} aria-label={assessment ? 'Try this letter again' : 'Clear writing'}>
           <Eraser className="w-5 h-5" aria-hidden="true" /> {assessment ? 'Try again' : 'Clear'}
         </LuminaButton>
-        {!assessment ? <LuminaActionButton action="check" onClick={check} disabled={!strokes.length || drawing || (mode === 'write' && cue.state !== 'ready')}>
+        {!assessment ? <LuminaActionButton action="check" onClick={() => { void check(); }} disabled={!strokes.length || drawing || judging || (mode === 'write' && cue.state !== 'ready')}>
           <Check className="w-5 h-5" aria-hidden="true" /> {mode === 'trace' ? 'Check my tracing' : 'Check my writing'}
         </LuminaActionButton> : <LuminaActionButton action="next" onClick={next}>
           {progress.currentIndex === data.challenges.length - 1 ? 'Finish practice' : 'Next letter'} <ArrowRight className="w-5 h-5" aria-hidden="true" />

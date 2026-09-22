@@ -1153,6 +1153,14 @@ async def lumina_tutor_session(websocket: WebSocket):
         # that survives the floor gate moves this — see _switch_render.
         announced_primitive = {"value": primitive_type}
         floor = FloorGate()
+        # Is the model's current turn answering a scripted cue? Its
+        # transcription then reaches the client tagged `cue`, and transcript
+        # surfaces hide it: a say-exactly line is the cue's own script (a
+        # dictated letter, a spelling word), which the child must hear and
+        # never read. A send whose batch holds a scripted entry sets it; that
+        # turn's end clears it. `through_interrupt` is for a cut-in send: the
+        # interruption it causes ends the OLD turn, not the cue's.
+        cue_turn: Dict[str, bool] = {"on": False, "through_interrupt": False}
 
         def _switch_render(sw: Dict[str, Any]) -> Callable[[], str]:
             """Build the switch announcement when it SENDS, not when it queues.
@@ -1641,12 +1649,15 @@ async def lumina_tutor_session(websocket: WebSocket):
                         f"{', CUT IN on the tutor (caller asked)' if cut_in else ''}"
                         f"{', WATCHDOG' if wedged else ''}): {text[:100]}..."
                     )
+                    cue_turn["on"] = any(e.scripted for e in kept.values())
+                    cue_turn["through_interrupt"] = cut_in and cue_turn["on"]
                     await session.send_realtime_input(text=text)
                     logger.info(f"Text sent to Gemini successfully")
                     ledger.write(
                         "text-to-gemini",
                         kind=text_kind,
                         end_of_turn=end_of_turn,
+                        cue_turn=cue_turn["on"],
                         chars=len(text),
                         state_attached=primitive_state.attached,
                         # What the gate did to get here: how many cues went
@@ -1784,6 +1795,9 @@ async def lumina_tutor_session(websocket: WebSocket):
                 """One epilogue for both turn-end detection paths (explicit
                 flag vs iterator exhaustion): log, ledger, free the floor,
                 tell the client."""
+                # Before the floor frees: the next send may set it again.
+                cue_turn["on"] = False
+                cue_turn["through_interrupt"] = False
                 logger.info(
                     f"AI turn finished ({via}) — "
                     f"{audio_frames} audio frames, {audio_bytes} bytes."
@@ -1882,6 +1896,10 @@ async def lumina_tutor_session(websocket: WebSocket):
                             if getattr(sc, 'interrupted', False):
                                 logger.info("Gemini generation interrupted by user activity (barge-in)")
                                 ledger.write("barge-in", turn=turn_count)
+                                if cue_turn["through_interrupt"]:
+                                    cue_turn["through_interrupt"] = False
+                                else:
+                                    cue_turn["on"] = False
                                 # The tutor abandoned this turn — the floor
                                 # is free NOW, not at turn_complete.
                                 floor.release()
@@ -1904,7 +1922,8 @@ async def lumina_tutor_session(websocket: WebSocket):
 
                                         await ws_send_queue.put({
                                             "type": "ai_response",
-                                            "content": clean_text
+                                            "content": clean_text,
+                                            **({"cue": True} if cue_turn["on"] else {}),
                                         })
 
                                 # Handle audio data
@@ -1941,7 +1960,8 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 if not fault_muted():
                                     await ws_send_queue.put({
                                         "type": "ai_transcription",
-                                        "content": ai_text
+                                        "content": ai_text,
+                                        **({"cue": True} if cue_turn["on"] else {}),
                                     })
 
                             # Check for end of turn

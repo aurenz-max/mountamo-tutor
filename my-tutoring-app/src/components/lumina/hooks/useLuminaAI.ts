@@ -255,7 +255,7 @@ export function useLuminaAI({
   // itself and wins — overriding viewport tracking, with no scroll to correct
   // it on a static intro. Focus is viewport-driven; only real student turns
   // should override it.
-  const sendText = useCallback((text: string, options?: { silent?: boolean; activate?: boolean }) => {
+  const sendText = useCallback((text: string, options?: { silent?: boolean; activate?: boolean; scripted?: boolean; interrupt?: boolean }) => {
     // A real help-button tap may hide its protocol cue from chat while still
     // claiming focus. Background lifecycle messages must leave activate unset.
     if (!options?.silent || options.activate) ensureActive();

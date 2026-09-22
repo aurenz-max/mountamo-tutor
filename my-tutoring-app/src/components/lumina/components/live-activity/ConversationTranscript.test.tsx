@@ -30,3 +30,17 @@ it('keeps separate tutor turns and typed messages separate, preserving split wor
   ]);
   expect(turns.map(m => m.content)).toEqual(['Subtract three.', 'What remains?', 'Hi.', 'Can you repeat that?']);
 });
+
+it('hides a turn answering a scripted cue, so a dictated letter or word is heard and never read', () => {
+  const messages = [
+    { role: 'assistant' as const, streamId: 1, content: 'Nice work!' },
+    { role: 'assistant' as const, streamId: 2, content: 'Write the uppercase letter S.', cue: true },
+    { role: 'assistant' as const, streamId: 2, content: ' Uppercase S.', cue: true },
+    { role: 'user' as const, streamId: 3, content: 'Done.' },
+  ];
+  render(<ConversationTranscript messages={messages} />);
+  expect(screen.queryByText(/letter S|Uppercase S/)).toBeNull();
+  expect(screen.getByText(/Nice work!/)).toBeTruthy();
+  expect(screen.getByText(/Done\./)).toBeTruthy();
+  expect(messages).toHaveLength(4);
+});

@@ -30,7 +30,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../evaluation';
 import { ExhibitProvider } from '../contexts/ExhibitContext';
-import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import { LuminaAIProvider, useLuminaAIContext, shownConversation } from '@/contexts/LuminaAIContext';
 import { getComponentById } from '../service/manifest/catalog';
 import type { ComponentId } from '../types';
 import { Bot, Send, Mic, MicOff, Loader2, CheckCircle, XCircle, ChevronRight, ChevronLeft } from 'lucide-react';
@@ -570,12 +570,12 @@ const AITutorPanel: React.FC<{
         <div className="flex-1 flex flex-col min-h-0 px-4 pb-3">
           <div className="flex-1 bg-slate-900/50 rounded-lg border border-slate-700 overflow-hidden flex flex-col">
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {ai.conversation.length === 0 && (
+              {shownConversation(ai.conversation).length === 0 && (
                 <p className="text-slate-500 text-xs text-center py-4">
                   Connected. Request a hint or type a message to start.
                 </p>
               )}
-              {ai.conversation.map((msg, i) => (
+              {shownConversation(ai.conversation).map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] rounded-lg p-2 ${
                     msg.role === 'user'

@@ -34,6 +34,19 @@ interface Message {
   streamId?: number;
   /** Provider completion, distinct from microphone VAD silence. */
   transcriptFinished?: boolean;
+  /** Tutor speech answering a scripted cue (the backend tags that turn). Kept
+   *  for consumers that judge speech; transcript surfaces hide it. */
+  cue?: boolean;
+}
+
+/**
+ * The messages a transcript surface may SHOW. A turn answering a scripted cue
+ * speaks that cue's own say-exactly line: a dictated letter, a spelling word, a
+ * judged ask. The child must hear it, never read it. `conversation` keeps those
+ * messages, because the judged loops read them; only display filters.
+ */
+export function shownConversation<T extends { cue?: boolean }>(messages: readonly T[]): T[] {
+  return messages.filter(message => !message.cue);
 }
 
 // Primitive context for connection
@@ -541,6 +554,7 @@ export const LuminaAIProvider: React.FC<{
               content: message.content,
               timestamp: Date.now(),
               isAudio: false,
+              ...(message.cue === true ? { cue: true } : {}),
             },
           ]);
           setIsAIResponding(false);
@@ -558,6 +572,7 @@ export const LuminaAIProvider: React.FC<{
               timestamp: Date.now(),
               isAudio: true,
               streamId,
+              ...(message.cue === true ? { cue: true } : {}),
             },
           ]);
         } else if (messageType === 'user_transcription') {

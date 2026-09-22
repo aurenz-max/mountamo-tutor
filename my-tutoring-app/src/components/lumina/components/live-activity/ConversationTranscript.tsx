@@ -5,11 +5,14 @@ export interface TranscriptMessage {
   content: string;
   /** Only streaming chunks share an ID. The underlying event feed stays append-only. */
   streamId?: number;
+  /** Tutor speech answering a scripted cue: heard, never shown. */
+  cue?: boolean;
 }
 
 export function transcriptTurns(messages: readonly TranscriptMessage[]): TranscriptMessage[] {
   const turns: TranscriptMessage[] = [];
   for (const message of messages) {
+    if (message.cue) continue;
     const last = turns[turns.length - 1];
     if (message.streamId !== undefined && last?.streamId === message.streamId && last.role === message.role) {
       // Gemini sends transcript deltas, including its own spaces and word splits.

@@ -371,6 +371,19 @@ async function handlePost(body: Record<string, unknown>) {
         return NextResponse.json(digitEvaluation);
       }
 
+      case 'evaluateLetterDrawing': {
+        const { evaluateLetterDrawing } = await import(
+          '@/components/lumina/service/literacy/gemini-letter-evaluation'
+        );
+        const letterEvaluation = await evaluateLetterDrawing(
+          params.imageBase64,
+          params.targetLetter,
+          params.letterCase,
+          params.challengeType,
+        );
+        return NextResponse.json(letterEvaluation);
+      }
+
       // ============================================
       // BIOLOGY PRIMITIVES
       // ============================================

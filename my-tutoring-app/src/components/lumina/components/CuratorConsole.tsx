@@ -21,7 +21,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import { useLuminaAIContext, shownConversation } from '@/contexts/LuminaAIContext';
 import { getComponentById } from '../service/manifest/catalog';
 import { getPrimitive } from '../config/primitiveRegistry';
 import { interpolateTemplate } from '../utils/interpolateTemplate';
@@ -386,18 +386,18 @@ export const CuratorConsole: React.FC<CuratorConsoleProps> = ({ defaultExpanded 
             >
               <MessageSquare className="h-3 w-3" />
               {showTranscript ? 'Hide conversation' : 'Show conversation'}
-              {conversation.length > 0 && (
-                <span className="text-slate-600">({conversation.length})</span>
+              {shownConversation(conversation).length > 0 && (
+                <span className="text-slate-600">({shownConversation(conversation).length})</span>
               )}
             </button>
             {showTranscript && (
               <div className="max-h-48 space-y-2 overflow-y-auto rounded-lg border border-white/5 bg-black/30 p-2">
-                {conversation.length === 0 && (
+                {shownConversation(conversation).length === 0 && (
                   <p className="py-3 text-center text-xs text-slate-600">
                     Tap a next step or ask me anything.
                   </p>
                 )}
-                {conversation.map((msg, i) => (
+                {shownConversation(conversation).map((msg, i) => (
                   <div
                     key={i}
                     className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
