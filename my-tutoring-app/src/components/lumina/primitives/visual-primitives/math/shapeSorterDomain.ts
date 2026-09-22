@@ -53,9 +53,9 @@ export { numberWordFor };
  * explaining that it could not import a `'use client'` module). This module is
  * not a client module, so both now import from here and the third copy is gone.
  */
-/** The modes the tutor/JEV teaching workspace binds: a bounded naming pilot. The
- *  other modes stay on the standalone drill. The live adapter publishes this list. */
-export const SHAPE_SORTER_WORKSPACE_MODES = ['identify'] as const;
+/** The CATALOG eval modes the tutor/JEV teaching workspace binds — every mode this
+ *  family has. The live adapter publishes this list. */
+export const SHAPE_SORTER_WORKSPACE_MODES = ['identify', 'find_real_object', 'count', 'sort'] as const;
 
 export const SHAPE_PROPERTIES: Record<string, { sides: number; corners: number; curved: boolean }> = {
   circle: { sides: 0, corners: 0, curved: true },
@@ -826,20 +826,87 @@ export const stimulusFor = (item: ShapeSorterItem): string => {
 export const leakExemptSpanFor = (item: ShapeSorterItem): string | undefined =>
   item.mode === 'sort' && item.namesChoices ? choicesPhrase(item) : undefined;
 
-/** An `identify` item as the tutor and the outcome observer are told it. Only naming is
- *  bound to the teaching workspace. */
-export const workspaceAssignment = (item: ShapeSorterItem): TeachingAssignment => ({ id: item.id,
-  task: 'Name the shape inside the gold ring. What shape is it?',
-  expectedAnswer: [item.answer, ...item.spokenAlternates].join(' or '), response: 'speech' });
+/** An item as the tutor and the outcome observer are told it, across every mode this
+ *  family binds to the teaching workspace: naming (plain or a real-object drawing),
+ *  counting, and sorting into a printed group. */
+export const workspaceAssignment = (item: ShapeSorterItem): TeachingAssignment => {
+  if (item.mode === 'count') {
+    const noun = countNounOf(item);
+    const alternates = item.countNumeral != null ? [String(item.countNumeral)] : [];
+    return { id: item.id, task: `Count the gold-ringed shape's own ${noun} and say the number.`,
+      expectedAnswer: [item.answer, ...alternates].join(' or '), response: 'speech' };
+  }
+  if (item.mode === 'sort') {
+    const alternates = item.rule === 'sides' ? [item.answer.split(' ')[0]] : [];
+    return { id: item.id, task: 'Say which printed mat the gold-ringed shape belongs to. Naming the shape itself is not the group.',
+      expectedAnswer: [item.answer, ...alternates].join(' or '), response: 'speech' };
+  }
+  if (item.realObjectId) {
+    return { id: item.id,
+      task: item.realObject
+        ? `Name the 2D shape the gold-ringed ${item.realObject} is drawn as. Naming the object itself is not the answer.`
+        : 'Name the 2D shape the gold-ringed everyday object is drawn as. Naming the object itself is not the answer.',
+      expectedAnswer: [item.answer, ...item.spokenAlternates].join(' or '), response: 'speech' };
+  }
+  return { id: item.id, task: 'Name the shape inside the gold ring. What shape is it?',
+    expectedAnswer: [item.answer, ...item.spokenAlternates].join(' or '), response: 'speech' };
+};
 
-/** The drawn pool for an `identify` item: the gold-ringed target and its comparison shapes. */
+/** What is actually drawn for one item. Only the whole objects genuinely visible on
+ *  screen are published: `count` and a real-object `identify` show one object alone,
+ *  plain `identify` and `sort` show the whole pool with the target ringed, and `sort`
+ *  adds the printed mats — labelled at every tier, so every one of them is a legitimate
+ *  demonstration target. */
 export function workspaceScene(item: ShapeSorterItem, shapes: ShapeSorterShapeLike[]): WorkspaceScene {
+  const ringed = 'assignment target (gold ring)', dimmed = 'comparison shape';
+  if (item.mode === 'count') {
+    const focus = shapes[item.shapeIndex];
+    const geometry = SHAPE_PROPERTIES[item.shape];
+    return {
+      objects: [{ id: `shape-${item.shapeIndex}`,
+        label: `${focus?.size ?? 'medium'} ${focus?.color ?? ''} ${item.shape}, rotated ${focus?.rotation ?? 0} degrees`.replace(/\s+/g, ' ').trim(),
+        selected: false, group: ringed }],
+      facts: { targetId: `shape-${item.shapeIndex}`, targetShape: item.shape, countNoun: countNounOf(item),
+        count: item.countNumeral ?? geometry.sides, cornerHintsShown: item.showCornerHints ? 'yes' : 'no',
+        assignment: `Count the gold-ringed shape's own ${countNounOf(item)} and say the number. Naming the shape is not the answer.`,
+        ringMeaning: 'Gold ring identifies the shape being counted. Purple dashed rings are tutor marks; they never change the target.' },
+    };
+  }
+  if (item.mode === 'identify' && item.realObjectId) {
+    const geometry = SHAPE_PROPERTIES[item.shape];
+    return {
+      objects: [{ id: `shape-${item.shapeIndex}`, label: item.realObject ?? 'an everyday object',
+        selected: false, group: ringed }],
+      facts: { targetId: `shape-${item.shapeIndex}`, targetShape: item.shape,
+        targetObject: item.realObject ?? 'unnamed', sides: geometry.sides, corners: geometry.corners,
+        curved: geometry.curved ? 'yes' : 'no',
+        assignment: 'Name the 2D shape the gold-ringed everyday object is drawn as. Naming the object itself is not the answer.',
+        ringMeaning: 'Gold ring identifies the assignment. Purple dashed rings are tutor marks; they never change the target.' },
+    };
+  }
+  const poolObjects = shapes.map((shape, index) => ({ id: `shape-${index}`,
+    label: `${shape.size} ${shape.color} ${shape.shape}, rotated ${shape.rotation} degrees`,
+    selected: false, group: index === item.shapeIndex ? ringed : dimmed }));
+  if (item.mode === 'sort') {
+    const matObjects = item.choices.map((label, index) => ({ id: `mat-${index}`,
+      label: `mat printed "${label}"`, selected: false, group: 'sort mat' }));
+    // The mat label IS the property a natural sub-step question asks for ("curved or
+    // straight?", "how many sides?"), so stating that property already answers the
+    // sort assignment — the learner does not additionally have to say the mat's name.
+    const property = item.rule === 'curved' ? "its curved-or-straight property" : item.rule === 'sides'
+      ? 'its own side count' : 'its color';
+    return {
+      objects: [...poolObjects, ...matObjects],
+      facts: { targetId: `shape-${item.shapeIndex}`, targetShape: item.shape, rule: item.rule ?? '',
+        groups: item.choices.join(', '), groupsSpokenInAsk: item.namesChoices ? 'yes' : 'no',
+        assignment: `Say which printed mat the gold-ringed shape belongs to. Each mat's label is the shape's ${property}, so a learner who states ${property} has already named the group — that credits the assignment, and does not need a further question asking them to name the mat too. Naming the shape's own kind (e.g. "triangle") is not the group.`,
+        ringMeaning: 'Gold ring identifies the assignment. Purple dashed rings are tutor marks; they never change the target.' },
+    };
+  }
   const focus = shapes[item.shapeIndex];
   const geometry = SHAPE_PROPERTIES[item.shape];
   return {
-    objects: shapes.map((shape, index) => ({ id: `shape-${index}`,
-      label: `${shape.size} ${shape.color} ${shape.shape}, rotated ${shape.rotation} degrees`,
-      selected: false, group: index === item.shapeIndex ? 'assignment target (gold ring)' : 'comparison shape' })),
+    objects: poolObjects,
     facts: { targetId: `shape-${item.shapeIndex}`, targetShape: item.shape, color: focus.color,
       rotation: focus.rotation ?? 0, sides: geometry.sides, corners: geometry.corners,
       curved: geometry.curved ? 'yes' : 'no',

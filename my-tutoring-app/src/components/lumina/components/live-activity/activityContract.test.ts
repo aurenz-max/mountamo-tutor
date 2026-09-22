@@ -11,18 +11,27 @@ export const fixture = () => ({ title: 'Subtraction within 10', range: { min: 0,
 });
 
 describe('live activity boundary', () => {
-  it('advertises only the naming workspace and rejects shapes it cannot draw truthfully', () => {
+  it('advertises the shape workspace across every catalog mode and rejects shapes it cannot draw truthfully', () => {
     const data = { title: 'Shapes', gradeBand: 'K', challenges: [{ id: 'c1', type: 'identify', ruleAttribute: 'shape',
       instruction: 'Name it.', shapes: [{ shape: 'triangle', color: 'red', size: 'medium', rotation: 0 }] }] };
     expect(generatedActivityState('shape-sorter', validateShapeSorterData(data))).toMatchObject({ teachingOwner: 'tutor', totalChallenges: 1 });
-    expect(LIVE_ADAPTERS['shape-sorter']).toMatchObject({ tutoring: null, canAdvance: false, modes: ['identify'] });
+    expect(LIVE_ADAPTERS['shape-sorter']).toMatchObject({ tutoring: null, canAdvance: false,
+      modes: ['identify', 'find_real_object', 'count', 'sort'] });
+    // A shape whose real-object fields are unusable for its challenge type is rejected either way:
+    // `identify` never carries them, and `identify-real-object` needs a real, known object id.
     for (const patch of [{ shape: 'unknown' }, { emoji: '🔺' }, { realObjectId: 'clock' }, { rotation: NaN }]) {
       expect(() => validateShapeSorterData({ ...data, challenges: [{ ...data.challenges[0],
         shapes: [{ ...data.challenges[0].shapes[0], ...patch }] }] })).toThrow();
     }
+    const realObject = { title: 'Shapes', gradeBand: 'K', challenges: [{ id: 'c1', type: 'identify-real-object', ruleAttribute: 'shape',
+      instruction: 'Name it.', shapes: [{ shape: 'circle', color: 'blue', size: 'large', rotation: 0, realObject: 'clock face', realObjectId: 'clock' }] }] };
+    expect(validateShapeSorterData(realObject)).toBeTruthy();
+    expect(() => validateShapeSorterData({ ...realObject, challenges: [{ ...realObject.challenges[0],
+      shapes: [{ ...realObject.challenges[0].shapes[0], realObjectId: 'not-a-real-object' }] }] })).toThrow();
     for (const mode of ['count', 'sort', 'find_real_object']) {
-      expect(() => parseActivityRequest({ primitiveId: 'shape-sorter', mode, topic: 'Shapes', intent: 'Practice' })).toThrow();
+      expect(() => parseActivityRequest({ primitiveId: 'shape-sorter', mode, topic: 'Shapes', intent: 'Practice' })).not.toThrow();
     }
+    expect(() => parseActivityRequest({ primitiveId: 'shape-sorter', mode: 'not_a_real_mode', topic: 'Shapes', intent: 'Practice' })).toThrow();
   });
   it('validates ten-frame content through the real DI item gates and resolves the first scaffold state', () => {
     const data = { title: 'Make ten', mode: 'single', gradeBand: '1-2',
