@@ -66,6 +66,12 @@ it('never promotes an incorrect learner answer because of tutor praise', async (
   const s = setup(); s.state.task!.workspace!.lastResponse!.correct = false;
   s.turn(); await settle(); expect(s.execute).not.toHaveBeenCalled();
 });
+it('does not observe a tutor turn transcribed as non-speech markup', () => {
+  const s = setup(true); s.observer.learnerText('three', true); s.observer.output('<no speech>{pause}'); s.observer.end(false);
+  expect(s.classify).not.toHaveBeenCalled();
+  s.observer.learnerText('three', true); s.observer.output('Yes, three!'); s.observer.end(false);
+  expect(s.classify).toHaveBeenCalledWith(expect.not.objectContaining({ priorTutor: expect.anything() }), expect.any(AbortSignal));
+});
 it('does not observe help before an actual answer', () => {
   const s = setup(); s.state.task!.workspace!.lastResponse = null;
   s.turn(); expect(s.classify).not.toHaveBeenCalled();

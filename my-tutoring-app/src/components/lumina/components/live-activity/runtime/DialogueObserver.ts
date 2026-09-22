@@ -5,6 +5,11 @@ import { OBSERVATION_TIMEOUT_MS, postObservation, sameItemScope, snapshotScopeKe
 export type DialogueClassifier = (request: DialogueRequest, signal: AbortSignal) => Promise<DialogueDecision>;
 export const classifyDialogue: DialogueClassifier = postObservation('/api/lumina/observe-dialogue', abstain);
 
+/** Whether a tutor transcript holds any spoken word. The provider can transcribe a silent turn
+ *  as markup such as `<no speech>{pause}`; judged as feedback, that turn once reopened a
+ *  correctly read item. Markup is not speech, so it is not an exchange to observe. */
+const hasSpokenWords = (text: string) => /[^\s!-/:-@[-`{-~]/.test(text.replace(/<[^>]*>|\{[^}]*\}/g, ''));
+
 /** Observes tutor feedback and commits only the mounted observer capabilities. */
 export class DialogueObserver {
   private generation = 0;
@@ -36,7 +41,7 @@ export class DialogueObserver {
       scope: { sessionEpoch: s.sessionEpoch, instanceId: s.instanceId, itemId: s.task?.itemId, revision: s.revision } });
   }
   learnerStart() {
-    if (this.ended && this.text.trim()) { this.priorTutor = this.text; this.priorTutorScope = this.scope; }
+    if (this.ended && hasSpokenWords(this.text)) { this.priorTutor = this.text; this.priorTutorScope = this.scope; }
     this.cancel(); this.text = ''; this.consumed = true;
   }
   learnerText(text: string, finished: boolean) {
@@ -71,9 +76,9 @@ export class DialogueObserver {
     this.waitingForAudio = false;
     const s = this.snapshot(), w = s.task?.workspace;
     if (s.status !== 'active' || this.scope !== this.key() || w?.progression !== 'observer'
-        || !s.task || (!w.pendingResponse && (s.task.phase !== 'checked' || !w.lastResponse)) || !this.text.trim() || !this.learnerFinished) {
+        || !s.task || (!w.pendingResponse && (s.task.phase !== 'checked' || !w.lastResponse)) || !hasSpokenWords(this.text) || !this.learnerFinished) {
       if (s.task?.phase === 'checked') this.status('skipped', this.scope !== this.key() ? 'item_changed'
-        : !this.text.trim() ? 'no_tutor_transcript' : !this.learnerFinished ? 'input_unfinished' : 'workspace_unavailable');
+        : !hasSpokenWords(this.text) ? 'no_tutor_transcript' : !this.learnerFinished ? 'input_unfinished' : 'workspace_unavailable');
       return;
     }
     this.consumed = true;

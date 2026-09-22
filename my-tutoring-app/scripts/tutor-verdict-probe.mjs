@@ -7,7 +7,7 @@
 // conversation: the learner transcript, the tutor reply, the prior tutor turn and the
 // evidence state.
 //
-//   node scripts/tutor-verdict-probe.mjs [--shapes|--letters|--words|--trains|--facts|--links] [out.json] [--dry]
+//   node scripts/tutor-verdict-probe.mjs [--shapes|--letters|--words|--trains|--facts|--links|--sentences] [out.json] [--dry]
 //
 // No domain flag runs counting-board. `--dry` prints each model input without calling the route.
 import { writeFileSync } from 'node:fs';
@@ -20,10 +20,11 @@ const server = await vite.createServer({ root: process.cwd(), configFile: false,
 const runner = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
 const domain = path => runner.import('/src/components/lumina/primitives/visual-primitives/' + path);
 
-const [board, shapes, sounds, words, facts, trains, links] = await Promise.all([
+const [board, shapes, sounds, words, facts, trains, links, sentences] = await Promise.all([
   'math/countingBoardDomain.ts', 'math/shapeSorterDomain.ts', 'direct-instruction/diLetterSoundsDomain.ts',
   'direct-instruction/diWordReadingDomain.ts', 'direct-instruction/diMathFactsDomain.ts',
-  'math/numberSequencerDomain.ts', 'literacy/letterSoundLinkDomain.ts'].map(domain));
+  'math/numberSequencerDomain.ts', 'literacy/letterSoundLinkDomain.ts',
+  'direct-instruction/diSentenceReadingDomain.ts'].map(domain));
 
 /** One built item per fixture. Built one at a time, because two builders drop an item that
  *  repeats a letter or shape an earlier item already named. */
@@ -66,17 +67,35 @@ const BOARD_CASES = [
     "Let's count them again slowly. Try again from the start and touch each block as you count.", {
       lastResponse: { response: '1 2 3 4 5 6', correct: false, assisted: true },
       activity: { responseSource: 'speech', attemptNumber: 1, assistance: { level: 2, answerExposure: 'full' } } }],
+  // LA-13 (2026-09-22): whole-task praise that states no result, and praise for the
+  // quality of the whole count. Both credit the assignment the prior turn asked.
+  ['la13_whole_praise', 'five', 'You did it!', 'correct', 'advance', 'five', 'How many fish are on the board?'],
+  ['la13_quality_praise', 'five', 'You counted every fish, nice and carefully!', 'correct', 'advance', 'five', 'How many fish are on the board?'],
 ];
 
-// ── Shape sorter (identify) ─────────────────────────────────────────────────
-const shapeItem = (id, pool) => {
+// ── Shape sorter (identify, count, sort, real-object) ───────────────────────
+const shapeItem = (id, pool, type = 'identify', ruleAttribute = 'shape') => {
   const drawn = shapePool(pool);
-  const item = only(shapes.itemsFromChallenges([{ id, type: 'identify', shapes: drawn }], { isPreReader: true }), id);
+  const item = only(shapes.itemsFromChallenges([{ id, type, ruleAttribute, shapes: drawn }], { isPreReader: true }), id);
+  return { assignment: shapes.workspaceAssignment(item), scene: shapes.workspaceScene(item, drawn) };
+};
+const realObjectPool = list => list.map(([shape, color, realObject, realObjectId]) =>
+  ({ shape, color, size: 'large', rotation: 0, realObject, realObjectId }));
+const realObjectItem = (id, list) => {
+  const drawn = realObjectPool(list);
+  const item = only(shapes.itemsFromChallenges([{ id, type: 'identify-real-object', ruleAttribute: 'shape', shapes: drawn }],
+    { isPreReader: true }), id);
   return { assignment: shapes.workspaceAssignment(item), scene: shapes.workspaceScene(item, drawn) };
 };
 const SHAPE_ITEMS = {
   triangle: shapeItem('triangle', [['triangle', 'red'], ['square', 'blue']]),
   rhombus: shapeItem('rhombus', [['rhombus', 'red', 45], ['circle', 'blue']]),
+  hexagon_count: shapeItem('hexagon-count', [['hexagon', 'blue']], 'count'),
+  sort_sides: shapeItem('sort-sides',
+    [['triangle', 'red'], ['square', 'blue'], ['triangle', 'green'], ['rectangle', 'yellow']], 'sort', 'sides'),
+  door: realObjectItem('door', [['rectangle', 'blue', 'door', 'door']]),
+  sort_curved_circle: shapeItem('sort-curved-circle', [['circle', 'blue'], ['triangle', 'red'], ['square', 'green']], 'sort', 'curved'),
+  sort_curved_triangle: shapeItem('sort-curved-triangle', [['triangle', 'red'], ['circle', 'blue'], ['square', 'green']], 'sort', 'curved'),
 };
 const SHAPE_CASES = [
   ['name', 'triangle', 'Correct, it is a triangle.', 'correct', 'advance', 'triangle'],
@@ -99,6 +118,40 @@ const SHAPE_CASES = [
   ['example', 'show me', 'This example is a triangle. Now you try naming the gold-ringed shape.', 'none', 'none', 'triangle'],
   ['no_learner', '', 'It is a triangle.', 'none', 'none', 'triangle'],
   ['alternate', 'diamond', 'Correct, diamond is another name for this rhombus.', 'correct', 'advance', 'rhombus'],
+  // COUNT: the answer is a number; the off-by-one and the shape's own name are the risks.
+  ['count', 'six', 'Yes, this shape has six sides.', 'correct', 'advance', 'hexagon_count'],
+  ['count_aloud', 'one two three four five six', "That's right, six sides.", 'correct', 'advance', 'hexagon_count'],
+  ['count_off_by_one_praise', 'five', 'Yes, five is right!', 'none', 'none', 'hexagon_count'],
+  ['count_off_by_one_corrected', 'five', 'Not quite — count again, one more time around.', 'incorrect', 'retry', 'hexagon_count'],
+  ['count_shape_name_praise', 'hexagon', 'Yes, hexagon is correct!', 'none', 'none', 'hexagon_count'],
+  ['count_open_question', 'six', 'Six is right. How did you count them?', 'correct', 'none', 'hexagon_count'],
+  ['count_help', 'help', 'Start at the top and count each side once.', 'none', 'none', 'hexagon_count'],
+  ['count_no_learner', '', 'This shape has six sides.', 'none', 'none', 'hexagon_count'],
+  // SORT: the answer is the printed group; the shape's own name is the signature wrong.
+  ['group', '3 sides', 'Yes, this triangle belongs with the 3 sides group.', 'correct', 'advance', 'sort_sides'],
+  ['group_bare_number', 'three', "That's right, 3 sides.", 'correct', 'advance', 'sort_sides'],
+  ['group_shape_name_praise', 'triangle', 'Yes, triangle is correct!', 'none', 'none', 'sort_sides'],
+  ['group_wrong_corrected', '4 sides', 'Not that mat — this shape belongs with 3 sides. Try again.', 'incorrect', 'retry', 'sort_sides'],
+  ['group_open_question', '3 sides', '3 sides is right. What tells you that?', 'correct', 'none', 'sort_sides'],
+  ['group_help', 'help', 'Look at what each mat is collecting, then check this shape against them.', 'none', 'none', 'sort_sides'],
+  // Real-object naming: the object's own name is the risk, never the answer.
+  ['object_shape', 'rectangle', 'Yes, the door is drawn as a rectangle.', 'correct', 'advance', 'door'],
+  ['object_name_praise', 'a door', 'Yes, a door is right!', 'none', 'none', 'door'],
+  ['object_open_question', 'rectangle', 'Rectangle is right. What tells you that?', 'correct', 'none', 'door'],
+  ['object_help', 'help', "Trace the door's outline with your eyes.", 'none', 'none', 'door'],
+  // LA-13: whole-task and quality praise for the naming task.
+  ['la13_whole_praise', 'triangle', 'You did it!', 'correct', 'advance', 'triangle', 'What is the name of the shape in the gold ring?'],
+  ['la13_quality_praise', 'triangle', 'You named it just right!', 'correct', 'advance', 'triangle', 'What is the name of the shape in the gold ring?'],
+  // LA-13, verbatim from the refused connected `sort` runs (2026-09-22). The mat label IS
+  // the property a sub-step asks for, and the scene says so, so stating the property as
+  // the learner's is the group. `sort_live_should_place` is honestly ambiguous: "you
+  // should place it" can read as a further step; it is labelled before any run.
+  ['sort_live_three_sides', 'three sides', "That's right! You found that the shape has three straight sides.", 'correct', 'advance', 'sort_sides',
+    "Let's try counting the sides on that triangle one more time together. How many straight sides do you see?"],
+  ['sort_live_straight', 'straight', 'Exactly! The triangle has straight lines and pointy corners, so it belongs on the straight mat.', 'correct', 'advance', 'sort_curved_triangle',
+    'Do you see any straight lines or pointy corners on this one?'],
+  ['sort_live_should_place', 'curved', 'Exactly! Since the circle is curved all the way around, you should place it on the mat printed "Curved".', 'correct', 'advance', 'sort_curved_circle',
+    "Let's take another look at the shape's edge. It goes all the way around in a smooth, round way without any sharp corners or flat sides."],
 ];
 
 // ── di-letter-sounds ────────────────────────────────────────────────────────
@@ -135,6 +188,13 @@ const SOUND_CASES = [
   ['clipped_keyword', 'tent', 'Yes, tent starts with that sound.', 'correct', 'advance', 'clipped'],
   ['onset', 'mmm', 'Yes, moon starts with mmm.', 'correct', 'advance', 'onset'],
   ['onset_whole_word', 'moon', 'Yes, the word is moon. Now say just its first sound.', 'none', 'none', 'onset', 'What is the word?'],
+  // LA-13, verbatim from the refused live `--audio` run 1 (2026-09-22): the synthetic
+  // "mmm" transcribed as "M", after a correction that modelled the sound.
+  ['la13_live_just_right', 'M', 'Great job, you made the "mmm" sound just right.', 'correct', 'advance', 'grapheme',
+    'That\'s the sound for a different letter. Try making the "mmm" sound, like when you taste something yummy.',
+    { lastResponse: { response: 'S', correct: false, assisted: true }, activity: CORRECTED_SPEECH }],
+  ['la13_whole_praise', 'mmm', 'You did it!', 'correct', 'advance', 'grapheme', 'What sound does this letter make?'],
+  ['la13_quality_praise', 'mmm', 'That sound was just right, nice and long!', 'correct', 'advance', 'grapheme', 'What sound does this letter make?'],
 ];
 
 // ── di-word-reading ─────────────────────────────────────────────────────────
@@ -181,6 +241,8 @@ const WORD_CASES = [
   // teaching error. The observer grades the assignment, not the teaching.
   ['sight_sounded_out', 'the', 'Yes — tuh-huh-eee, the. Well done.', 'correct', 'advance', 'sight'],
   ['sight_no_restate', 'the', 'Perfect reading!', 'correct', 'advance', 'sight'],
+  ['la13_whole_praise', 'sam', 'You read it!', 'correct', 'advance', 'cvc', 'Read this word.'],
+  ['la13_quality_praise', 'sam', 'You read that word smoothly, every sound!', 'correct', 'advance', 'cvc', 'Read this word.'],
 ];
 
 // ── di-math-facts ───────────────────────────────────────────────────────────
@@ -231,6 +293,8 @@ const FACT_CASES = [
   // The discrimination the 1-120 extension depends on: affirming the decade for the
   // teen must not record success.
   ['teen_decade_praise', 'thirty', 'Yes, thirty!', 'none', 'none', 'teen'],
+  ['la13_whole_praise', 'three', 'You did it!', 'correct', 'advance', 'addition', 'What is two plus one?'],
+  ['la13_quality_praise', 'three', 'Quick and right, great job on that fact!', 'correct', 'advance', 'addition', 'What is two plus one?'],
 ];
 
 // ── Number train ────────────────────────────────────────────────────────────
@@ -260,6 +324,8 @@ const TRAIN_CASES = [
   ['spot_error_named', 'nine', 'Yes, nine does not belong. Five belongs there.', 'correct', 'advance', 'spot'],
   // Naming the replacement answers a DIFFERENT question; affirming it is not success here.
   ['spot_error_repair', 'five', 'Yes, five is the number that belongs there.', 'none', 'none', 'spot'],
+  ['la13_whole_praise', 'eight', 'You did it!', 'correct', 'advance', 'next', 'What number comes after 7?'],
+  ['la13_quality_praise', 'eight', 'You found the missing number just right!', 'correct', 'advance', 'next', 'What number comes after 7?'],
 ];
 
 // ── letter-sound-link ───────────────────────────────────────────────────────
@@ -321,6 +387,41 @@ const LINK_CASES = [
   ['other_picture_praise', 'net', 'Yes, net!', 'none', 'none', 'word'],
   ['fair_name', 'sunshine', "That's right, the sun.", 'correct', 'advance', 'word'],
   ['word_retry', 'net', 'Not that one. Listen to the sound again and look at both pictures.', 'incorrect', 'retry', 'word'],
+  ['la13_whole_praise', 'mmm', 'You did it!', 'correct', 'advance', 'held', 'What sound does this letter make?'],
+  ['la13_quality_praise', 'mmm', 'That sound was just right!', 'correct', 'advance', 'held', 'What sound does this letter make?'],
+];
+
+// ── di-sentence-reading ─────────────────────────────────────────────────────
+// The answer IS the printed sentence and is already on screen, so the risks are the
+// ones connected text adds: one word dropped, added or swapped inside an otherwise
+// right read; praise for part of the sentence; a slow read or a self-correction that
+// must still count; and the tutor's own model standing in for the child's read.
+const sentenceItem = challenge => {
+  const item = only(sentences.buildSentenceReadingItems([challenge]), challenge.id);
+  return { assignment: sentences.workspaceAssignment(item), scene: sentences.workspaceScene(item) };
+};
+const SENTENCE_ITEMS = {
+  cat: sentenceItem({ id: 'cat', challengeType: 'decodable_sentence', text: 'The cat sat.', wordCount: 3 }),
+  pig: sentenceItem({ id: 'pig', challengeType: 'read_sentence', text: 'I see a big pig.', wordCount: 5 }),
+};
+const SENTENCE_CASES = [
+  ['read', 'The cat sat.', 'Yes, that says the cat sat.', 'correct', 'advance', 'cat'],
+  ['noisy', 'the kat sat', 'You read every word. The cat sat!', 'correct', 'advance', 'cat'],
+  ['slow_read', 'The... cat... sat.', 'Yes, you read every word, nice and careful.', 'correct', 'advance', 'cat'],
+  ['self_correction', 'I see a pig, a big pig.', 'You caught that and fixed it — I see a big pig. Well done.', 'correct', 'advance', 'pig'],
+  // Partial praise: the tutor credits the first words and asks for the rest.
+  ['partial_praise', 'I see a', 'Good, I see a. Keep going, read the rest.', 'none', 'none', 'pig'],
+  // The tutor affirms a reading it names, and the reading it names drops a word.
+  ['skipped_word_praise', 'I see a pig.', 'Yes! I see a pig.', 'none', 'none', 'pig'],
+  ['swapped_word_praise', 'The cat sit.', 'Yes, the cat sit. Good reading!', 'none', 'none', 'cat'],
+  ['tutor_models', '', 'Listen: The cat sat. Now you read it.', 'none', 'none', 'cat'],
+  ['help', "I can't read that", 'Let us look at the first word together. What sound does it start with?', 'none', 'none', 'pig'],
+  ['retry', 'I see a big pin.', 'Almost. Look at the last word again, and read the whole sentence once more.', 'incorrect', 'retry', 'pig'],
+  ['open_question', 'The cat sat.', 'You read it all! What did the cat do?', 'correct', 'none', 'cat'],
+  ['wrong_then_corrected', 'The cat sat.', 'There you go, every word!', 'correct', 'advance', 'cat',
+    'Listen to me read it, then you read it: The cat sat.', { lastResponse: { response: 'The cat sit.', correct: false, assisted: true }, activity: CORRECTED_SPEECH }],
+  ['la13_whole_praise', 'The cat sat.', 'You did it!', 'correct', 'advance', 'cat', 'Read this sentence.'],
+  ['la13_quality_praise', 'The cat sat.', 'You read it smoothly, every single word!', 'correct', 'advance', 'cat', 'Read this sentence.'],
 ];
 
 const DOMAINS = [
@@ -330,6 +431,7 @@ const DOMAINS = [
   { flag: '--trains', report: 'number-sequencer', items: TRAIN_ITEMS, cases: TRAIN_CASES },
   { flag: '--facts', report: 'di-math-facts', items: FACT_ITEMS, cases: FACT_CASES },
   { flag: '--links', report: 'letter-sound-link', items: LINK_ITEMS, cases: LINK_CASES },
+  { flag: '--sentences', report: 'di-sentence-reading', items: SENTENCE_ITEMS, cases: SENTENCE_CASES },
 ];
 const chosen = DOMAINS.find(d => process.argv.includes(d.flag))
   ?? { report: 'counting-board', items: BOARD_ITEMS, cases: BOARD_CASES };
@@ -375,7 +477,13 @@ try {
     const out = process.argv.slice(2).find(arg => !arg.startsWith('--'))
       || `qa/tutor-reports/${chosen.report}-tutor-verdict-${new Date().toISOString().slice(0, 10)}.json`;
     writeFileSync(out, JSON.stringify(results, null, 2));
-    console.log(`${results.filter(r => r.passed).length}/${results.length} passed -> ${out}`);
+    // False credit: success recorded where none was expected. Under-credit: an expected
+    // success that was not recorded. Everything else that failed is `other`.
+    const got = r => r.result.accepted ? r.result.verdict : 'none';
+    const falseCredit = results.filter(r => got(r) === 'correct' && r.expected.every(e => e.verdict !== 'correct'));
+    const underCredit = results.filter(r => !r.passed && r.expected.some(e => e.verdict === 'correct') && got(r) !== 'correct');
+    console.log(`${results.filter(r => r.passed).length}/${results.length} passed, false credit ${falseCredit.length}, `
+      + `under-credit ${underCredit.length}, other ${results.filter(r => !r.passed).length - falseCredit.length - underCredit.length} -> ${out}`);
   }
 } finally {
   await server.close();
