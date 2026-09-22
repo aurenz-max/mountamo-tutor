@@ -194,7 +194,9 @@ actual renderer and task gates. Advertise only verified modes.
 
 Inspect the real entry point. The pilots were implemented in `/lumina/live-activity`;
 ordinary lesson integration is a separate retirement gate. Keep required fallbacks
-until their consumers have migrated. Follow the handoff's current stage and census
+until their consumers have migrated. Once every consumer binds, delete the drill and render
+a visible unbound state rather than a silent fallback (the four DI packs, handoff 13); run
+`scripts/di-drill-unbind-probe.mjs`-style evidence over saved and fresh lessons first. Follow the handoff's current stage and census
 instead of restarting completed extraction or deleting every file named `Script`.
 Preserve useful instructional content while removing wording as a control protocol.
 
@@ -222,8 +224,16 @@ alone does not authorize shipping or changing student-record semantics.
    an actual new operation; no backend primitive branches or answer injection.
 3. Run focused component/runtime checks and `typecheck:lumina`. Regress Counting
    Board and Shape Sorter when changing shared workspace behavior; cover affected
-   legacy consumers if a shared transport or contract changes.
-4. Add the domain's case set to `scripts/learner-intent-probe.mjs`, behind a flag named
+   legacy consumers if a shared transport or contract changes. These are free,
+   deterministic vitest runs — run them on every slice regardless of scope.
+4. The real-model probes and connected journeys below cost API calls; scope them
+   to the domain(s) actually in play. Adding or mounting one primitive with no
+   shared-layer edit needs only its own domain's cases and journey — do not
+   re-run a sibling primitive's JEV probe, learner-intent probe, or `--audio`
+   journey just because it exists. Only a framework correction (Standing
+   Authority above) requires the wider "every affected domain" sweep, and even
+   then "affected" means domains the change actually touches, not the whole roster.
+   Add the domain's case set to `scripts/learner-intent-probe.mjs`, behind a flag named
    for the domain, and run it: answers
    as this domain's learners say them, including the noisy transcript of a correct answer
    (a held phoneme reads as "hmm"), plus help, stop, filler and off-task turns. Mark an

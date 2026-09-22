@@ -55,12 +55,18 @@ Per-family facts are declared once, on the adapter, and shared helpers do the re
 - **Learner's Try again / Next challenge on a checked item:** rendered by the shared shell
   `runtime/LiveRuntimeSurface.tsx` from the observer affordances; a host passes
   `learnerProgress`. Do not add a per-host or per-primitive copy.
-- **Where a payload spells its challenge type:** `challengeTypes` on the adapter (default
-  `challenges[].type`). `modeContentGate.ts` checks content against the catalog's
-  mode -> challenge types for both the lesson gate and `livePlan.ts`; never restate that mapping.
+- **Mode -> content:** the generator owns it (schema enum or code-built `challengeType`). The
+  live hosts check only that the pin names catalog modes (`pinnedModes.ts`); do not add a
+  runtime re-check of generated content. An off-mode payload is a generator defect for `/oracle-test`.
 - **Scripted drill or teaching workspace:** `runtime/withTeachingWorkspace.tsx`, given the
   family's `*_WORKSPACE_MODES` constant from its domain module — the same constant the adapter
-  publishes as `modes`.
+  publishes as `modes`. Only for a family that still has a scripted drill. The four spoken DI
+  packs (letter sounds, word reading, math facts, sentence reading) have none since LA-14 S5:
+  `Di*.tsx` exports the teaching component, and `DiTeachingStage` renders a visible "needs the
+  tutor" card for a mount with no runtime. A new DI pack follows that shape, not the wrapper.
+- **Pool size:** `validateChallengePool` caps a pool at 12 unless the domain passes its own
+  maximum. A generator that fills past 12 by design (letter sounds' 20-item review set) must
+  export that number from its domain and pass it, or those sections silently fail to bind.
 - **Evaluation submit:** `runtime/useTeachingEvaluation.ts`; the binding supplies only `metrics`.
 - **Adapter boilerplate:** `validateChallengePool`, `workspaceLessonStart` and
   `workspaceGuidance` (domain sentences + the shared `WORKSPACE_DOCTRINE`) in

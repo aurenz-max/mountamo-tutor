@@ -45,6 +45,19 @@ No mic sitting has been run. Owning entry: `qa/di/BACKLOG.md` item 44.
 
 ### #167 — **Live lesson runtime: TenFrame + Number Line adopted; microphone and combined lesson gate open**
 
+**2026-09-22 Shape Sorter, all four modes: USER RAN IT.** The user ran Shape Sorter in the browser on
+`identify`, `find_real_object`, `count` and `sort` and reported that it worked well on all of them. The
+harness had `sort` at 1/3 connected runs after LA-13
+([report](tutor-reports/la13-crediting-criterion-2026-09-22.md)), so the remaining `sort` refusals are
+harness evidence, not something a child has hit yet.
+
+**2026-09-21 Pulse on the workspace (LA-14 S3 slice 2).** Home screen → Practice → Start practice →
+pick a subject. When an item is counting-board, number-sequencer, letter-sound-link or a DI pack
+(math facts, letter sounds, word reading) with a resolved mode, it should show Pip and no "AI Helper"
+button. Check: the tutor opens the item on its own, a spoken answer is credited, Pulse's Next enables
+once, and the next item starts a fresh tutor with nothing carried over. No bound item has been seen in
+a browser yet. [Report](tutor-reports/pulse-on-workspace-2026-09-21.md).
+
 **2026-09-20 letter-sound-link (seventh workspace adopter).** At `/lumina/live-activity`,
 select Letter-Sound Link. Three things only a person can settle, one per direction:
 

@@ -269,6 +269,46 @@ Exit: migrated modes have exactly one active teaching controller; importing thei
 normal surface cannot start the old runner. Old correction-count behavior is absent.
 Any remaining sibling-mode fallback is named with an explicit removal dependency.
 
+**Progress, 2026-09-21.** Slice 1: blended and `mixed` pins run on the workspace when every
+mode they name binds (`pinnedModes.ts`, used by the lesson plan, the content gate and
+`withTeachingWorkspace`); number-sequencer's scripted live branch is deleted.
+[Report](../tutor-reports/blend-pins-on-workspace-2026-09-21.md). di-letter-sounds,
+di-word-reading, di-math-facts and letter-sound-link also bind every catalog mode, and their
+scripted drills carry no live wiring at all (checked 2026-09-21: no `useLiveRuntime`, no runtime
+passed to the runner, no completion cue), so there is nothing of theirs to delete in S3. Shape
+Sorter binds `identify` only (`count`, `sort`, `find_real_object` stay scripted).
+
+Slice 2 ([handoff 12](12-pulse-practice-on-workspace.md), [report](../tutor-reports/pulse-on-workspace-2026-09-21.md)):
+Pulse binds through the same per-primitive rule as lessons (`workspaceBinding`), with the item's
+IRT-chosen `eval_mode_name` as the pin and a runtime and Live session per bound item; submissions
+are identical per family (mounted host test). Practice is deleted (user ruling: vestigial), and the
+home screen's Practice mode now opens Pulse. For the six families, no normal student surface starts
+the scripted runner except a lesson section with more than one objective. Removal dependencies for
+the drills themselves: the domain testers and the DI drive harness (`DI_PORTS`, `--di`) are S5;
+~~multi-objective sections need attribution per objective~~ **corrected 09-22 (S5 step 0):** that
+path is unreachable. `flattenManifest` gives every objective-block component one objective; the
+only multi-objective items are the curator brief and the final assessment (`knowledge-check`), and
+a probe over 73 saved and 6 fresh lessons found 0 multi-objective content sections and 44/44 DI
+pack sections bound, once a 12-item pool cap below letter sounds' 20-item review set was fixed.
+A bound Pulse item still needs a browser sighting (HUMAN-CHECKS #167).
+
+**S5 pilot DONE 2026-09-22 ([handoff 13](13-delete-di-scripted-drills.md),
+[report](../tutor-reports/di-drill-deletion-2026-09-22.md)):** the scripted drills of
+di-letter-sounds, di-word-reading, di-math-facts and di-sentence-reading are deleted. None had a
+`DI_PORTS` entry. The DI tester mounts them inside a one-item workspace host; an unbound mount shows
+a visible "needs the tutor" state. Still scripted and out of this slice: letter-sound-link,
+counting-board, number-sequencer and shape-sorter (their scripted component is the original tap
+UI), and the six DI packs with no workspace binding.
+
+**Queued, student-data (USER RULING 2026-09-21: record a blended section per item).** A
+submission carries exactly one eval mode (`submission_service.py` reads one `eval_mode`; one
+attempt, one IRT key, one θ update), and the evaluation boundary accepts only a single-mode
+pin (`evalModeKey.ts`), so every blended section, scripted or workspace, files under
+`<primitive>_default` (β prior 3.0) or the session `challengeType`, and skips learning-
+observation capture. Per-item recording needs either one submission per mode group
+(frontend; a blended section writes N attempts, which rollups and XP count) or per-challenge
+IRT in the backend. Executor: `/student-data-loop` to choose, then the evaluation layer.
+
 ### S4 — Migrate remaining domains in bounded batches
 
 Use the census to group by response/evidence needs rather than file order. Bounded

@@ -1,6 +1,29 @@
 # Live runtime adoption handoffs
 
-**Next session:** [10: DI lesson entry](10-di-lesson-entry.md). Six primitives bind the shared
+**Next session:** [15: put every answerable primitive on the teaching workspace](15-workspace-rollout.md)
+(`/add-live-tutor-tools`). 8 of ~212 primitives are on the workspace. Pilot a minimal binding (W1) on
+ten-frame and one more primitive, write the recipe into the skill, build `qa/workspace-rollout/ROLLOUT.md`,
+run batch A1. Custom scaffolding (W2) comes after, per primitive, only where testing shows a need.
+The LA-13 follow-ups (shape-sorter `sort` wording, sentence reading's `incorrect` weight, statement-of-fact
+credit) are parked W2 work.
+
+**Done 2026-09-22:** [14: the observer refuses credit the tutor clearly gave](14-la13-crediting-reply-abstains.md)
+([report](../tutor-reports/la13-crediting-criterion-2026-09-22.md)). Three criterion sentences: verdict probe
+445/443 -> 473/478 of 510, 0 false credit in every domain; shape-sorter one case below baseline, owned by
+the sort slice above. A tutor turn transcribed as `<no speech>{pause}` is no longer observed (it had reopened
+a correctly read item).
+
+**Done 2026-09-22:** [13: the four DI packs' scripted drills are deleted](13-delete-di-scripted-drills.md)
+(LA-14 S5, [report](../tutor-reports/di-drill-deletion-2026-09-22.md)). The multi-objective
+blocker was unreachable (step-0 probe, 79 lessons); the real unbind cause was a 12-item pool cap,
+now per domain.
+
+**Done 2026-09-21:** LA-14 S3 slice 2: Pulse hosts the workspace and Practice is deleted
+([report](../tutor-reports/pulse-on-workspace-2026-09-21.md)).
+
+**Done 2026-09-21:** [12: Pulse and Practice host the teaching workspace](12-pulse-practice-on-workspace.md).
+
+**Earlier, 2026-09-20:** [10: DI lesson entry](10-di-lesson-entry.md). Six primitives bind the shared
 teaching workspace; only three reach ordinary lessons. The three DI packs are speech-only, so
 the gesture-scoped retry blocker does not apply to them. **Done 2026-09-20, and wider than the
 brief:** by user ruling no existing mode is withheld from lessons. Every family that declares
