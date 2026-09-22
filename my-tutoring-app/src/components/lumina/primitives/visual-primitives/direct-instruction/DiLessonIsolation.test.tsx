@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 // Replays the client-side failure in f1b2ab9da15f: a sentence verdict must
-// never advance the still-mounted CVC activity from hat to wet.
+// never advance the still-mounted CVC activity from hat to wet. Since LA-14 S5
+// the sentence pack has no scripted drill: mounted without a runtime (a section
+// that did not bind) it shows a visible "needs the tutor" state, sends no cue and
+// holds no voice-turn subscription, so the CVC drill stays the only consumer.
 import React from 'react';
 import { act, cleanup, fireEvent, render, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -70,11 +73,10 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
-it('only the focused DI component consumes the sentence verdict and queues its next item', async () => {
+it('an unbound sentence pack consumes no verdict and leaves the CVC drill on its item', async () => {
   const view = render(<Lesson />);
   expect(state.updateContext.mock.calls).toHaveLength(1);
   expect(state.updateContext).toHaveBeenLastCalledWith(expect.objectContaining({ word: 'hat' }));
-  // Both activities are started in sequence, and both remain mounted.
   await act(async () => {
     const buttons = within(view.getByTestId('cvc')).getAllByRole('button');
     fireEvent.click(buttons.find(b => b.getAttribute('aria-label') !== 'hear the word')!);
@@ -82,9 +84,13 @@ it('only the focused DI component consumes the sentence verdict and queues its n
   expect(state.sendText.mock.calls.some(([text]) => text.includes('[DI_CVC_ITEM]'))).toBe(true);
   state.activePrimitiveId = 'sentences';
   view.rerender(<Lesson />);
-  expect(state.updateContext).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'The cat sat.' }));
-  await act(async () => { fireEvent.click(within(view.getByTestId('sentences')).getByRole('button')); });
-  expect(listeners.size).toBe(1);
+  // Visible, not blank: the pack says it needs the tutor and offers no start control.
+  const sentencesView = within(view.getByTestId('sentences'));
+  expect(sentencesView.getByText(/needs the tutor/)).toBeTruthy();
+  expect(sentencesView.queryByRole('button')).toBeNull();
+  expect(view.container.querySelector('[data-di-unbound="di-sentence-reading"]')).toBeTruthy();
+  // The unfocused CVC drill has released its subscription, and the sentence pack never takes one.
+  expect(listeners.size).toBe(0);
   state.sendText.mockClear(); state.updateContext.mockClear();
   act(() => {
     listeners.forEach(close => close({ kind: 'close', startedAt: performance.now(),
@@ -98,7 +104,7 @@ it('only the focused DI component consumes the sentence verdict and queues its n
   view.rerender(<Lesson />);
   act(() => vi.advanceTimersByTime(2500));
   const cues = state.sendText.mock.calls.map(([text]) => text);
-  expect(cues.some(text => text.includes('I see a pig.'))).toBe(true);
+  expect(cues.some(text => text.includes('I see a pig.'))).toBe(false);
   expect(cues.some(text => text.includes('[DI_CVC_ITEM]'))).toBe(false);
   expect(state.updateContext.mock.calls.some(([data]) => 'middleSound' in data)).toBe(false);
   // Return to CVC: its original item remains, with fresh context for that item.

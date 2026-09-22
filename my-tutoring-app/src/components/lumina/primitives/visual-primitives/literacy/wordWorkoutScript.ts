@@ -101,7 +101,7 @@ import { judgedAnswerMix, opensWithSentinel, type JudgedCueSurface } from '../..
 import {
   MAX_SENTENCE_WORDS,
   MIN_SENTENCE_WORDS,
-} from '../direct-instruction/diSentenceReadingScript';
+} from '../direct-instruction/diSentenceReadingDomain';
 import {
   earlyContextTrialFor,
   earlyExtendedWordFor,

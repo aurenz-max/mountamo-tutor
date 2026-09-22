@@ -46,7 +46,7 @@ import type { DiMathFactsData } from "../../primitives/visual-primitives/direct-
 import type {
   DiMathFactsChallenge,
   DiMathFactsSupportTier,
-} from "../../primitives/visual-primitives/direct-instruction/diMathFactsScript";
+} from "../../primitives/visual-primitives/direct-instruction/diMathFactsDomain";
 import {
   DI_MATH_FACTS_CHALLENGE_TYPES,
   DI_MATH_FACTS_TYPE_DOCS,
@@ -1159,8 +1159,8 @@ Return the wrapper JSON only.`;
   // That is tier→content leakage, i.e. structural difficulty through the back
   // door, and it would break the one hard rule. Operand structure is this
   // pack's structural axis and belongs to /add-structural-difficulty, not
-  // here. The tier is 100% code-composed into the cue (diMathFactsScript
-  // `leadInFor` + `coldAnswerGuard`).
+  // here. The tier reaches the tutor as a scene fact (`workspaceScene`'s
+  // `support`, diMathFactsDomain), never through the prompt.
   if (supportTier) {
     for (const ch of challenges) {
       ch.supportTier = resolveSupportStructure(ch.challengeType, supportTier).tier;

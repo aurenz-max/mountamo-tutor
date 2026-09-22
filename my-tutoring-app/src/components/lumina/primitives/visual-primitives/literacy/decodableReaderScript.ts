@@ -97,7 +97,7 @@ import { opensWithSentinel, spokenSpansOf } from '../../../hooks/judgedScriptCon
 import {
   MAX_SENTENCE_WORDS,
   MIN_SENTENCE_WORDS,
-} from '../direct-instruction/diSentenceReadingScript';
+} from '../direct-instruction/diSentenceReadingDomain';
 
 /** The benched judged-utterance window, re-exported so the component, the
  *  generator and the tests all read the SAME numbers the bench sitting set. */

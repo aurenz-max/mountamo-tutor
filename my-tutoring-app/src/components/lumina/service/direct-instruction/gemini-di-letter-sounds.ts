@@ -50,10 +50,11 @@ import type {
   DiLetterSoundsData,
   DiLetterSoundChallenge,
 } from "../../primitives/visual-primitives/direct-instruction/DiLetterSounds";
-import type {
-  DiLetterSoundChallengeType,
-  DiLetterSoundsSupportTier,
-} from "../../primitives/visual-primitives/direct-instruction/diLetterSoundsScript";
+import {
+  DI_LETTER_SOUNDS_MAX_ITEMS,
+  type DiLetterSoundChallengeType,
+  type DiLetterSoundsSupportTier,
+} from "../../primitives/visual-primitives/direct-instruction/diLetterSoundsDomain";
 
 // ── Support tier harness (L3) ───────────────────────────────────────
 
@@ -147,11 +148,9 @@ const MENU_LETTERS = Object.keys(LETTER_SOUND_MENU);
 const CONTINUANT_LETTERS = MENU_LETTERS.filter((l) => LETTER_SOUND_MENU[l].elicitation === 'isolated' && LETTER_SOUND_MENU[l].articulation !== 'clipped');
 const DEFAULT_INSTANCE_COUNT = 4;
 const MAX_INSTANCE_COUNT = 6;
-/** A named set is drilled once each up to this many items: a brisk spoken
- *  review at ~8 s an item keeps a 19-letter cumulative set under three minutes.
- *  A cap below the objective's intent is a bug (user ruling), so this is the
- *  ceiling of a K attention span, not a schema convenience. */
-const SET_COVERAGE_CAP = 20;
+/** A named set is drilled once each up to this many items (the domain owns the
+ *  number so the workspace adapter accepts every pool this fills). */
+const SET_COVERAGE_CAP = DI_LETTER_SOUNDS_MAX_ITEMS;
 /** Sensible starter set when the objective names no menu letters. */
 const DEFAULT_LETTERS = ['m', 's', 'a', 'f'];
 /** Cumulative-review walk: continuants and vowels interleaved, widest-first, so

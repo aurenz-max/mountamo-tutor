@@ -156,9 +156,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // exact wording is the pedagogy). Moved here from diWordReadingScript at the
     // L2 layer so both connect paths (standalone fallback + lesson
     // auth/switch_primitive) resolve it from the catalog, the single source of
-    // truth. The cue lines and per-item judging contract stay in
-    // diWordReadingScript (bench-proven wording, byte-frozen); this block is the
-    // session-level frame around them. Sentinel discipline re-checked on all the
+    // truth. The cue lines and per-item judging contract it framed were deleted
+    // with the scripted drill (LA-14 S5). Sentinel discipline re-checked on all the
     // new copy: no scaffolding level, struggle response, or directive sentence
     // begins with "Yes" or "My turn" — the engine's sentence-scoped verdict scan
     // must never see a phantom opener.
@@ -282,8 +281,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // the catalog, the single source of truth. Sentinel discipline: no struggle
     // response or scaffolding line begins with "Yes" or "My turn" — the engine's
     // sentence-scoped verdict scan must never see a phantom opener. The per-item
-    // judging contract still lives in diMathFactsScript (bench-proven wording);
-    // this block is the session-level frame around it.
+    // judging contract it framed was deleted with the scripted drill (LA-14 S5).
     tutoring: {
       taskDescription:
         'Live-judged Direct Instruction math-facts practice for a young learner '

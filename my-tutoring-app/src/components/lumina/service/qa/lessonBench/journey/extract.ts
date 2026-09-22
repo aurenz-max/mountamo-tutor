@@ -1,7 +1,8 @@
-/** Content adapters read the production cue builders. Catalog roles cannot prove instruction. */
-import { itemCue as soundCue, type DiLetterSoundChallenge } from '../../../../primitives/visual-primitives/direct-instruction/diLetterSoundsScript';
+/** Content adapters read the production cue builders (or, for the workspace DI packs, the domain's
+ *  ask and support tier). Catalog roles cannot prove instruction. */
+import { askFor as soundAsk, type DiLetterSoundChallenge } from '../../../../primitives/visual-primitives/direct-instruction/diLetterSoundsDomain';
 import { itemCue as blendCue, canWalk, type BlendItem } from '../../../../primitives/visual-primitives/literacy/phonicsBlenderScript';
-import { itemCue as wordCue, type DiWordReadingChallenge } from '../../../../primitives/visual-primitives/direct-instruction/diWordReadingScript';
+import { askFor as wordAsk, type DiWordReadingChallenge } from '../../../../primitives/visual-primitives/direct-instruction/diWordReadingDomain';
 import { itemsFromChallenges, itemCue as linkCue } from '../../../../primitives/visual-primitives/literacy/letterSoundLinkScript';
 import type { LetterSoundChallengeLike, LetterSoundTier } from '../../../../primitives/visual-primitives/literacy/letterSoundLinkScript';
 import { itemsFromChallenges as spotterItems, itemCue as spotterCue } from '../../../../primitives/visual-primitives/literacy/letterSpotterScript';
@@ -90,12 +91,16 @@ export function extractLesson(pkg: LessonPackage, contract: LessonContract): Ext
           if (!['isolated', 'keyword'].includes(it.elicitation) || !soundMatches(it.letter, it.spoken)) throw new Error(`Challenge ${i}: sound/letter contract mismatch`);
           // Keyword elicitation asks the child to repeat the WORD, not produce a phoneme.
           const capability = it.elicitation === 'keyword' ? 'keyword' : it.challengeType === 'first_sound_in_word' ? 'onset' : 'sound-production';
-          const cue = spokenOpening(soundCue(it, i === 0));
+          // The workspace tutor decides how much to model; the support tier is the fact it is
+          // given (easy: model and say together, medium: model, hard: cold). An ask that names
+          // its own answer (a keyword elicitation) is modelled at every tier.
+          const cue = soundAsk(it);
+          const tier = it.supportTier ?? 'easy';
           add({ itemId: it.id, evalMode: it.challengeType, capability,
             target: lower(capability === 'keyword' ? it.keyword : it.letter), graphemes: [lower(it.letter)],
             cue, source: `${source}/challenges/${i}`,
-            modality: 'spoken', modeled: openingModelsAnswer(cue, it.elicitation === 'keyword' ? it.keyword : it.spoken),
-            guided: /Together[,:]/i.test(cue), explainsRelation: it.elicitation !== 'keyword',
+            modality: 'spoken', modeled: tier !== 'hard' || openingModelsAnswer(cue, it.elicitation === 'keyword' ? it.keyword : it.spoken),
+            guided: tier === 'easy', explainsRelation: it.elicitation !== 'keyword',
           });
         });
       } else if (block.componentId === 'phonics-blender') {
@@ -119,10 +124,11 @@ export function extractLesson(pkg: LessonPackage, contract: LessonContract): Ext
           const it = raw as DiWordReadingChallenge;
           if (!it.id || !it.word || it.wordType !== 'cvc' || !it.graphemes?.length) throw new Error(`Word ${i}: only explicit CVC grapheme sequences are supported by this adapter`);
           if (lower(it.graphemes.join('')) !== lower(it.word)) throw new Error(`Word ${i}: graphemes disagree with word`);
-          const cue = spokenOpening(wordCue(it, i === 0));
+          // Word reading has no support tier: the tutor may model and read it together on every
+          // item, as the deleted drill always did, so neither counts as independent evidence.
           add({ itemId: it.id, evalMode: it.challengeType, capability: 'decode', target: lower(it.word), graphemes: it.graphemes.map(lower),
-            cue, source: `${source}/challenges/${i}`,
-            modality: 'spoken', modeled: openingModelsAnswer(cue, it.word), guided: /Together[,:]/i.test(cue), explainsRelation: true });
+            cue: wordAsk(it), source: `${source}/challenges/${i}`,
+            modality: 'spoken', modeled: true, guided: true, explainsRelation: true });
         });
       } else if (block.componentId === 'letter-sound-link') {
         if (!Array.isArray(data.challenges) || !data.challenges.length) throw new Error('No challenges');

@@ -11,11 +11,9 @@
  *   - HERE: the assignment. Which items can be asked at all, the question the
  *     child hears, what counts as the answer, and the success condition stated
  *     plainly enough for a tutor to judge against.
- *   - `diWordReadingScript`: the retiring control protocol — the model/guide/
- *     test lead-in, the sentinel-opened affirm and correction lines, the in-band
- *     judging contract and the bracketed cues. It re-exports this module, so the
- *     generator, the tester, the Pip pose and the lesson-bench extractor keep one
- *     address.
+ *   - The scripted drill (model/guide/test lead-in, sentinel-opened affirm and
+ *     correction lines, in-band judging contract, bracketed cues) was deleted in
+ *     LA-14 S5; the workspace is the only teaching path.
  *
  * Three pieces of DISTAR content survive the sunset, because each is task
  * structure rather than control protocol:

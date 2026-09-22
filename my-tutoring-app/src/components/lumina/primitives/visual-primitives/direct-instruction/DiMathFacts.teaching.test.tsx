@@ -82,14 +82,14 @@ const CHALLENGES: Record<DiMathFactsChallengeType, DiMathFactsChallenge[]> = {
 const ALL_MODES = Object.keys(CHALLENGES) as DiMathFactsChallengeType[];
 
 function mount(mode: DiMathFactsChallengeType = 'answer_fact', classify?: DialogueClassifier,
-    classifyLearner?: LearnerIntentClassifier) {
+    classifyLearner?: LearnerIntentClassifier, pin: string = mode) {
   const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
   const sent: any[] = [];
   const transport = new RuntimeTransport(runtime, m => sent.push(m), classify, classifyLearner);
   const data = { instanceId: 'facts', title: 'Math facts', description: 'Say each answer.',
     challengeType: mode, challenges: CHALLENGES[mode] } as DiMathFactsData;
   const tree = () => <LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
-    <DiMathFacts data={data} runtimePlanItemId="plan-facts" runtimeEvalMode={mode} />
+    <DiMathFacts data={data} runtimePlanItemId="plan-facts" runtimeEvalMode={pin} />
   </LiveRuntimeSurface></LiveRuntimeContext.Provider>;
   const view = render(tree());
   const state = () => runtime.getSnapshot();
@@ -267,6 +267,26 @@ it('recaps each answered fact by its solved form, including one that took a corr
   expect(screen.getByText('3 + 1 = 4')).toBeTruthy();
   const [, accuracy] = seam.submit.mock.calls[0];
   expect(accuracy).toBeLessThan(100);
+  h.transport.close();
+});
+
+it('runs a blended pin on the workspace and records it under the session challenge type, as the scripted drill did', async () => {
+  // The evaluation boundary accepts only a single-mode pin, so a blend keeps the reported
+  // mode. Reporting the blend itself would open a new IRT item key; per-mode recording is
+  // a separate student-data slice.
+  const classify = vi.fn(async () => ({ verdict: 'correct' as const, transition: 'advance' as const, confidence: .99,
+    verdictConfidence: .99, grounded: 1, accepted: true, reason: 'supported', ms: 200 }));
+  seam.evaluationContext = { lesson: 'test' };
+  const h = mount('answer_fact', classify as never, undefined, 'answer_fact|fact_review');
+  expect(h.state().task?.itemId).toBeTruthy();
+  for (const answer of ['three', 'four']) {
+    h.say(answer);
+    act(() => { h.transport.beginTurn(`That is right, ${answer}.`); h.transport.endTurn(true); });
+    await act(async () => { h.transport.audioChanged(false); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(80); });
+  }
+  expect(h.state().status).toBe('completed');
+  expect(seam.submit.mock.calls[0][2]).toMatchObject({ evalMode: 'answer_fact', challengeType: 'answer_fact' });
   h.transport.close();
 });
 

@@ -24,6 +24,7 @@ import ShapeSorter, { type ShapeSorterData } from '../../primitives/visual-primi
 import DiLetterSounds, { type DiLetterSoundsData } from '../../primitives/visual-primitives/direct-instruction/DiLetterSounds';
 import DiWordReading, { type DiWordReadingData } from '../../primitives/visual-primitives/direct-instruction/DiWordReading';
 import DiMathFacts, { type DiMathFactsData } from '../../primitives/visual-primitives/direct-instruction/DiMathFacts';
+import DiSentenceReading, { type DiSentenceReadingData } from '../../primitives/visual-primitives/direct-instruction/DiSentenceReading';
 import LetterSoundLink, { type LetterSoundLinkData } from '../../primitives/visual-primitives/literacy/LetterSoundLink';
 import type { LivePrimitiveId } from './activityContract';
 
@@ -69,6 +70,8 @@ export const LIVE_RENDERERS: Record<LivePrimitiveId, (p: MountProps) => React.Re
   'di-word-reading': p => <DiWordReading data={p.data as DiWordReadingData}
     runtimePlanItemId={p.planItemId} runtimeEvalMode={p.evalMode} />,
   'di-math-facts': p => <DiMathFacts data={p.data as DiMathFactsData}
+    runtimePlanItemId={p.planItemId} runtimeEvalMode={p.evalMode} />,
+  'di-sentence-reading': p => <DiSentenceReading data={p.data as DiSentenceReadingData}
     runtimePlanItemId={p.planItemId} runtimeEvalMode={p.evalMode} />,
   'letter-sound-link': p => <LetterSoundLink data={p.data as LetterSoundLinkData}
     runtimePlanItemId={p.planItemId} runtimeEvalMode={p.evalMode} />,

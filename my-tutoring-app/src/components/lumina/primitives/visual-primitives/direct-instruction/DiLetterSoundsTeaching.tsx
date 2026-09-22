@@ -70,5 +70,5 @@ export default function DiLetterSoundsTeaching({ data, className, runtimePlanIte
     items={items} evalMode={evalMode} className={className} runtimePlanItemId={runtimePlanItemId}
     assignment={workspaceAssignment} scene={workspaceScene} copy={COPY} stimulus={stimulus}
     recapLabel={item => item.stimulus === 'word' ? item.keyword : item.letter}
-    metrics={result => ({ type: 'di-letter-sounds', ...diStageMetrics(result, items, evalMode) })} />;
+    metrics={result => ({ type: 'di-letter-sounds', ...diStageMetrics(result, items, data.challengeType) })} />;
 }

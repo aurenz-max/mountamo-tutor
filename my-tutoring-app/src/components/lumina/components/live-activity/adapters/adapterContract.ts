@@ -44,8 +44,6 @@ export interface LiveActivityAdapter<T = any> {
   validate: (value: unknown) => T;
   /** The state the tutor receives on mount. */
   initialState: (data: T) => Record<string, unknown>;
-  /** The catalog challenge type of each challenge in a VALIDATED payload. Absent = `challenges[].type`. */
-  challengeTypes?: (data: T) => readonly string[];
   /**
    * This family binds the shared tutor/JEV teaching workspace, so EVERY mode in
    * `modes` runs on it in an ordinary lesson as well as in the development host.
@@ -59,10 +57,10 @@ export interface LiveActivityAdapter<T = any> {
 /** A generated pool every spoken pack shares the envelope of: titled, 1-12 uniquely-keyed askable items. */
 export function validateChallengePool<D extends { title: string; challenges: Array<{ id: string }> }>(
   value: unknown, valid: (challenge: D['challenges'][number]) => boolean,
-  messages: { pool: string; item: string }): D {
+  messages: { pool: string; item: string }, maxItems = 12): D {
   const d = value as D;
   if (!d || typeof d.title !== 'string' || !Array.isArray(d.challenges) || !d.challenges.length
-      || d.challenges.length > 12
+      || d.challenges.length > maxItems
       || new Set(d.challenges.map(c => c?.id)).size !== d.challenges.length)
     throw new Error(messages.pool);
   // The same independent key check the component runs, at the service boundary:

@@ -21,7 +21,7 @@
  */
 import type { SupportArtifact } from './runtime/contract';
 import type { LivePrimitiveId } from './activityContract';
-import { itemsFromChallenges as shapeItems } from '../../primitives/visual-primitives/math/shapeSorterScript';
+import { itemsFromChallenges as shapeItems, shapeSorterHarnessAnswers } from '../../primitives/visual-primitives/math/shapeSorterScript';
 import { buildSequencerItems as sequencerItems, sequencerHarnessAnswers }
   from '../../primitives/visual-primitives/math/numberSequencerDomain';
 import { buildLetterSoundItems, letterSoundHarnessAnswers }
@@ -30,6 +30,8 @@ import { buildWordReadingItems, wordReadingHarnessAnswers }
   from '../../primitives/visual-primitives/direct-instruction/diWordReadingDomain';
 import { buildMathFactItems, mathFactsHarnessAnswers }
   from '../../primitives/visual-primitives/direct-instruction/diMathFactsDomain';
+import { buildSentenceReadingItems, sentenceReadingHarnessAnswers }
+  from '../../primitives/visual-primitives/direct-instruction/diSentenceReadingDomain';
 import { buildLetterSoundLinkItems, letterSoundLinkWorkspaceAnswers }
   from '../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
 
@@ -393,13 +395,8 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       topic: 'Naming flat shapes by their sides and corners' },
     leakTokens: ['SH_'],
     prompts: WORKSPACE_PROMPTS,
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = shapeItems(ctx.data.challenges, { isPreReader: ctx.data.gradeBand !== '1' }).find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current naming assignment');
-      const wrong = ['circle', 'triangle', 'square'].find(name => name !== item.answer && !item.spokenAlternates.includes(name))!;
-      return [{ type: 'answer', text: intent === 'wrong' ? wrong : item.answer }];
-    },
+    inputsFor: spokenWorkspaceInputs(challenges => shapeItems(challenges, { isPreReader: false }),
+      shapeSorterHarnessAnswers, 'shape'),
     probes: { mounted: { selector: '[data-pip-object="shape"]' },
       demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' } },
   },
@@ -434,6 +431,25 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       // no picture appeared before a committed success: this counts 0 until the
       // observer has credited a read.
       reward: { selector: '[data-word-read]', kind: 'count' } },
+  },
+  'di-sentence-reading': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/direct-instruction/DiSentenceReading.tsx',
+    instanceId: 'sentences',
+    defaults: { grade: 'Kindergarten', mode: 'read_sentence', di: false,
+      topic: 'Reading a printed short sentence aloud, every word in order' },
+    leakTokens: RETIRED_DI_CUE_TAGS,
+    prompts: WORKSPACE_PROMPTS,
+    // The wrong answer is a plainly different sentence: the near-neighbour misread
+    // this pack exists to correct belongs in the JEV probe, where the tutor's reply
+    // is fixed and only the observer is under test.
+    inputsFor: spokenWorkspaceInputs(buildSentenceReadingItems, sentenceReadingHarnessAnswers, 'sentence-reading'),
+    probes: { mounted: { selector: '[data-sentence-object="printed"]' },
+      demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' },
+      // The reward reveal, so a transcript inspection can check mechanically that
+      // no picture appeared before a committed success: this counts 0 until the
+      // observer has credited a read.
+      reward: { selector: '[data-sentence-read]', kind: 'count' } },
   },
   'di-math-facts': {
     execution: 'workspace',

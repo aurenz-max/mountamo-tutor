@@ -27,7 +27,6 @@ export const diMathFactsLive: LiveActivityAdapter<DiMathFactsData> = {
   // What differs is what the facts license: counting up, counting back, or no
   // counting route at all when the task is to name a printed numeral.
   modes: DI_MATH_FACTS_WORKSPACE_MODES,
-  challengeTypes: data => data.challenges.map(c => c.challengeType),
   bindsTeachingWorkspace: true,
   canAdvance: false, // The dialogue observer owns checked progression.
   // The catalog entry scopes this pack to kindergarten and grade 1 fact fluency.

@@ -22,7 +22,7 @@ import type {
   DiMathFactsChallenge,
   DiMathFactsChallengeType,
   DiMathFactsSupportTier,
-} from '../../primitives/visual-primitives/direct-instruction/diMathFactsScript';
+} from '../../primitives/visual-primitives/direct-instruction/diMathFactsDomain';
 
 const TIERS: DiMathFactsSupportTier[] = ['easy', 'medium', 'hard'];
 const MODES: DiMathFactsChallengeType[] = [

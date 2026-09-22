@@ -14,9 +14,15 @@
  * The trail is keyed on COMMITTED attempts, never on a local phase: the observer submits and
  * advances inside one `flushSync`, so a reward keyed on the current item's phase would render
  * on the held-success path and never on the advance path.
+ *
+ * The workspace is the only teaching path these packs have (the scripted drill was deleted in
+ * LA-14 S5). A mount with no live runtime around it, which is what a host gives a section that
+ * did not bind, renders a plain "needs the tutor" card instead of a blank or stalled stage, and
+ * logs why in development. An unbound section is a defect to fix at its host, not a mode to
+ * route around (09-20 ruling).
  */
 
-import React, { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { LuminaBadge, LuminaCard, LuminaCardContent, LuminaCardDescription, LuminaCardHeader,
   LuminaCardTitle, LuminaChallengeCounter, LuminaReadAloudGlyph } from '../../../ui';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -24,6 +30,7 @@ import { useTeachingWorkspace, type TeachingAssignment, type TeachingItem, type 
   type WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { useTeachingEvaluation, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useTeachingEvaluation';
+import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import type { PrimitiveMetrics } from '../../../evaluation';
 import type { ComponentId } from '../../../types';
 
@@ -58,10 +65,15 @@ export interface DiTeachingStageProps<Item extends { id: string }, M extends Pri
   trail?: (committed: Item[]) => ReactNode;
 }
 
-/** The metrics every spoken DI pack reports from the shared teaching result. */
+/**
+ * The metrics every spoken DI pack reports from the shared teaching result. `sessionMode` is the
+ * generated session's `challengeType`, the value the scripted drill reports too. In a lesson a
+ * single-mode pin replaces it at the evaluation boundary; a blended or `mixed` section keeps it,
+ * so moving blends onto the workspace records them exactly as before.
+ */
 export function diStageMetrics<C extends string>(result: TeachingEvaluationResult,
-    items: readonly { challengeType: C }[], evalMode: string) {
-  return { evalMode, challengeType: items[0].challengeType, totalChallenges: items.length,
+    items: readonly unknown[], sessionMode: C) {
+  return { evalMode: sessionMode, challengeType: sessionMode, totalChallenges: items.length,
     correctCount: result.solvedCount, attemptsCount: result.attemptsCount, firstTryCount: result.firstTryCount,
     hintsViewed: 0, overallAccuracy: result.accuracy,
     averageAttemptsPerChallenge: Math.round(result.attemptsCount / items.length * 10) / 10 };
@@ -69,12 +81,30 @@ export function diStageMetrics<C extends string>(result: TeachingEvaluationResul
 
 export default function DiTeachingStage<Item extends { id: string }, M extends PrimitiveMetrics>(
     props: DiTeachingStageProps<Item, M>) {
+  const runtime = useLiveRuntime();
+  if (!runtime) return <NeedsTutor primitiveId={props.primitiveId} evalMode={props.evalMode}
+    title={props.data.title || props.copy.title} className={props.className} />;
   if (!props.items.length) {
     return <LuminaCard className={props.className}><LuminaCardContent>
       <p>{props.copy.empty}</p>
     </LuminaCardContent></LuminaCard>;
   }
   return <StageWorkspace key={props.data.instanceId} {...props} />;
+}
+
+/** What an unbound mount shows. There is no fallback teaching path to run instead. */
+function NeedsTutor({ primitiveId, evalMode, title, className }:
+    { primitiveId: string; evalMode: string; title: string; className?: string }) {
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') console.warn(`[${primitiveId}] mounted without a teaching workspace `
+      + `(pin "${evalMode}"). Its host did not bind this section; see workspaceBinding in lessonWorkspacePlan.ts.`);
+  }, [primitiveId, evalMode]);
+  return <LuminaCard className={className} data-di-unbound={primitiveId}>
+    <LuminaCardHeader><LuminaCardTitle>{title}</LuminaCardTitle></LuminaCardHeader>
+    <LuminaCardContent>
+      <p className="text-center text-slate-300">This activity needs the tutor. Start it from a lesson or practice session.</p>
+    </LuminaCardContent>
+  </LuminaCard>;
 }
 
 function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>({ primitiveId, data, items,

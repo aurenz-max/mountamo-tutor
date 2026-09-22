@@ -84,6 +84,20 @@ journeys after the scope/guidance fixes. Its human browser/mic sitting remains o
 an additional Counting Board run missed a requested demonstration, so tool-choice
 reliability remains follow-up work even though its progression regression passed.
 
+**Shape Sorter's siblings, 2026-09-22.** `count`, `sort` and `find_real_object`
+(challenge type `identify-real-object`) joined `identify` on the workspace, closing
+the primitive's part-migration: every catalog mode now binds. `count` and a
+real-object `identify` publish one object alone (no comparison pool — the standalone
+drill never draws one either); `sort` additionally publishes its printed mats as
+demonstrable objects, since they are labelled at every tier. `count` and
+`find_real_object` are connected-journey verified (1/1 each); `sort` passed 0/5
+connected runs, every failure the LA-13 sub-threshold-affirmation shape (a real,
+correct tutor credit the observer refuses under 0.9 confidence) rather than a broken
+mechanism — one run's first item passed cleanly at 0.98/0.94 before its second item
+hit the same wall. `sort`'s mat labels ("3 sides", "Curved") are, by construction,
+the same words a natural intermediate strategy question uses, which concentrates the
+family-wide LA-13 risk on this mode. [Report](../../../../qa/tutor-reports/shape-sorter-siblings-teaching-2026-09-22.md).
+
 **Third adopter: Number Train, five spoken modes.** `count_from`, `before_after`,
 `fill_missing`, `spot_error` and `decade_fill` bind the same assignment/observer/
 runtime: the glowing car marks the space in question, the other cars are visible

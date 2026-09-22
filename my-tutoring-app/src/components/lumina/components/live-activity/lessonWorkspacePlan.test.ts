@@ -12,9 +12,19 @@ describe('ordinary lesson workspace eligibility', () => {
     expect(binding).toMatchObject({ objectiveId: 'objective', evalMode: 'count', planItemId: 'one' });
     expect(lessonPrimitiveContext(section as any, binding)).toMatchObject({ tutoring: null, owns_opening: true });
   });
-  it.each([undefined, 'mixed', 'count|compare', 'compare'])('does not guess unsupported/missing mode %s', mode => {
+  it.each([undefined, '', 'count|not_a_mode'])('does not guess a missing or unknown mode %s', mode => {
     const data = exhibit(); data.manifest.layout[0].config.targetEvalMode = mode;
     expect(lessonWorkspaceItems(data).size).toBe(0);
+  });
+  it.each(['count|compare', 'mixed'])('binds a %s pin whose every mode the family binds, keeping the pin verbatim', mode => {
+    expect(lessonWorkspaceItems(exhibit(mode)).get('one')).toMatchObject({ evalMode: mode, objectiveId: 'objective' });
+  });
+  it('leaves a blend on the scripted drill when its generated content does not match the pin', () => {
+    // Shape Sorter binds every catalog mode now, but this fixture's `data` is still
+    // `section`'s counting-board challenges, so validation fails and it stays scripted.
+    const shapes = { ...section, componentId: 'shape-sorter' };
+    expect(lessonWorkspaceItems(exhibit('identify|count', shapes)).size).toBe(0);
+    expect(lessonWorkspaceItems(exhibit('mixed', shapes)).size).toBe(0);
   });
   it('leaves caregiver, ambiguous-objective and incompatible payload paths on their existing controller', () => {
     for (const patch of [{ audience: 'caregiver' }, { objectiveIds: [] }, { objectiveIds: ['one', 'two'] }, { data: {} }]) {
@@ -38,18 +48,9 @@ describe('ordinary lesson workspace eligibility', () => {
       .toMatchObject({ primitiveId: 'number-sequencer', evalMode: 'order_cards' });
   });
 
-  it('refuses a number train whose payload is not the mode the manifest asked for', () => {
-    // A before-after train under `fill_missing` is a mode/content mismatch, and an
-    // invalid key is dropped by the adapter's own gate before the workspace sees it.
-    expect(lessonWorkspaceItems(exhibit('fill_missing', beforeAfter)).size).toBe(0);
+  it('refuses a number train the adapter rejects', () => {
     const broken = train('before-after', { sequence: [7, null], correctAnswers: [9], rangeMin: 7, rangeMax: 9 });
     expect(lessonWorkspaceItems(exhibit('before_after', broken)).size).toBe(0);
-  });
-
-  it('refuses a counting board whose payload is not the mode the manifest asked for', () => {
-    const subitize = { ...section, data: { ...section.data,
-      challenges: [{ ...section.data.challenges[0], type: 'subitize' }] } };
-    expect(lessonWorkspaceItems(exhibit('count', subitize)).size).toBe(0);
   });
 
   it('binds the shape-naming mode from the adapter declaration, not a list kept here', () => {
@@ -64,17 +65,15 @@ describe('ordinary lesson workspace eligibility', () => {
     data: { title: 'Facts', challenges: [{ id: 'a1', challengeType: 'answer_fact', a: 2, b: 1, display: '2 + 1',
       problem: 'two plus one', answerWord: 'three', answerNumeral: 3, solvedDisplay: '2 + 1 = 3' }] } };
 
-  it('binds a DI pack, whose payload spells its challenge type `challengeType`', () => {
+  it('binds a DI pack', () => {
     expect(lessonWorkspaceItems(exhibit('answer_fact', facts)).get('one'))
       .toMatchObject({ primitiveId: 'di-math-facts', evalMode: 'answer_fact', objectiveId: 'objective' });
-    // The same payload under a mode it is not: the gate reads the DI field, it does not wave it through.
-    expect(lessonWorkspaceItems(exhibit('name_numeral', facts)).size).toBe(0);
   });
 
   it('every family that binds the workspace admits every one of its modes; no mode is withheld from lessons', () => {
     const bound = Object.entries(LIVE_ADAPTERS).filter(([, adapter]) => (adapter as LiveActivityAdapter).bindsTeachingWorkspace);
     expect(bound.map(([id]) => id).sort()).toEqual(['counting-board', 'di-letter-sounds', 'di-math-facts',
-      'di-word-reading', 'letter-sound-link', 'number-sequencer', 'shape-sorter']);
+      'di-sentence-reading', 'di-word-reading', 'letter-sound-link', 'number-sequencer', 'shape-sorter']);
     // A live adoption with no workspace binding keeps its lesson path and its catalog tutoring.
     const line = { componentId: 'number-line', instanceId: 'one', title: 'Line', objectiveIds: ['objective'], data: {} };
     expect(lessonWorkspaceItems(exhibit('jump', line)).size).toBe(0);

@@ -23,9 +23,9 @@ function pkg(componentId = 'di-letter-sounds', data: unknown = { challenges: [..
 const run = (p: LessonPackage, profile = PROFILES[0]) => runJourney(scenario(), [{ contract: contract(), package: p }], profile, 42).lessons[0];
 
 describe('actual lesson content, independent evidence and persona controls', () => {
-  it('reads the production cue and excludes its private judging answer key', () => {
+  it('reads the workspace ask, which never carries the answer key', () => {
     const event = extractLesson(pkg(), contract()).events[0];
-    expect(event.cue).toBe('Your turn. What sound?');
+    expect(event.cue).toBe('What sound does the letter "m" make?');
     expect(event.modeled).toBe(false);
     expect(event.source).toBe('/components/0/data/challenges/0');
     expect(event.skillId).toBeUndefined();

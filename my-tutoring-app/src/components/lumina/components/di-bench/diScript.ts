@@ -372,7 +372,7 @@ const targetDescription = (it: DIItem) =>
  * sitting exists to detect. It also names COMPLETENESS, because a compound
  * numeral is one answer that arrives in pieces. Permissiveness that survives
  * both forks: young-child pronunciation and counting up to the answer, matching
- * the pack's shipped contract (`diMathFactsScript.judgingContract`) so the
+ * the pack's former shipped contract (`diMathFactsScript.judgingContract`, deleted in LA-14 S5) so the
  * bench measures the conditions the primitive would actually run under.
  */
 const judgingCriteria = (it: DIItem) => it.kind === 'shape'

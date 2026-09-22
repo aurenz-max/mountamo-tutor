@@ -11,11 +11,9 @@
  *   - HERE: the assignment. Which items can be asked at all, the question the
  *     child hears, what counts as the answer, and the success condition stated
  *     plainly enough for a tutor to judge against.
- *   - `diLetterSoundsScript`: the retiring control protocol — the model/guide/test
- *     lead-in, the sentinel-opened affirm and correction lines, the in-band
- *     judging contract and the bracketed cues. It re-exports this module, so the
- *     generator, the tester, the Pip pose and the lesson-bench extractor keep one
- *     address.
+ *   - The scripted drill (model/guide/test lead-in, sentinel-opened affirm and
+ *     correction lines, in-band judging contract, bracketed cues) was deleted in
+ *     LA-14 S5; the workspace is the only teaching path.
  *
  * The DISTAR content that survives the sunset is here: the keyword route, the
  * elicitation fork (a short vowel distorts in isolation, so it is elicited
@@ -96,6 +94,13 @@ export const targetDescription = (it: DiLetterSoundChallenge) =>
         // the same grapheme-to-phoneme link (the 2026-09-05 ruling).
         ? `the short, clipped sound ${it.spoken} as at the start of "${it.keyword}" — a little "uh" after it counts, and so does "${it.keyword}" or another word that starts with that sound; the letter's NAME does not`
         : `the continuous sound ${it.spoken}`;
+
+/** A named set is drilled once each up to this many items: a brisk spoken
+ *  review at ~8 s an item keeps a 19-letter cumulative set under three minutes.
+ *  A cap below the objective's intent is a bug (user ruling), so this is the
+ *  ceiling of a K attention span, not a schema convenience. The generator fills
+ *  to it and the workspace adapter accepts up to it, so the two cannot disagree. */
+export const DI_LETTER_SOUNDS_MAX_ITEMS = 20;
 
 /** The eval modes this primitive binds to the shared teaching workspace. */
 export const DI_LETTER_SOUNDS_WORKSPACE_MODES =

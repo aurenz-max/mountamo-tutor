@@ -69,7 +69,7 @@ import {
   MAX_SENTENCE_WORDS,
   MIN_SENTENCE_WORDS,
   type DiSentenceReadingSupportTier,
-} from "../../primitives/visual-primitives/direct-instruction/diSentenceReadingScript";
+} from "../../primitives/visual-primitives/direct-instruction/diSentenceReadingDomain";
 
 // ── Support tier harness (L3) ───────────────────────────────────────
 

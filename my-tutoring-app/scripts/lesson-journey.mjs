@@ -72,8 +72,8 @@ try {
   }));
   const sourceFiles = [
     ...readdirSync('src/components/lumina/service/qa/lessonBench/journey').filter((f) => f.endsWith('.ts')).map((f) => `src/components/lumina/service/qa/lessonBench/journey/${f}`),
-    'src/components/lumina/primitives/visual-primitives/direct-instruction/diLetterSoundsScript.ts',
-    'src/components/lumina/primitives/visual-primitives/direct-instruction/diWordReadingScript.ts',
+    'src/components/lumina/primitives/visual-primitives/direct-instruction/diLetterSoundsDomain.ts',
+    'src/components/lumina/primitives/visual-primitives/direct-instruction/diWordReadingDomain.ts',
     'src/components/lumina/primitives/visual-primitives/literacy/phonicsBlenderScript.ts',
     'src/components/lumina/primitives/visual-primitives/literacy/letterSoundLinkScript.ts',
   ];

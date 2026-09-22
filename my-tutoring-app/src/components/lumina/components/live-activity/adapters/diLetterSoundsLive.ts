@@ -1,5 +1,6 @@
 import type { DiLetterSoundsData } from '../../../primitives/visual-primitives/direct-instruction/DiLetterSounds';
-import { askFor, buildLetterSoundItems, letterSoundChallengeValid, DI_LETTER_SOUNDS_WORKSPACE_MODES }
+import { askFor, buildLetterSoundItems, letterSoundChallengeValid, DI_LETTER_SOUNDS_MAX_ITEMS,
+  DI_LETTER_SOUNDS_WORKSPACE_MODES }
   from '../../../primitives/visual-primitives/direct-instruction/diLetterSoundsDomain';
 import { workspaceGuidance, validateChallengePool, workspaceLessonStart, type LiveActivityAdapter } from './adapterContract';
 
@@ -7,7 +8,7 @@ import { workspaceGuidance, validateChallengePool, workspaceLessonStart, type Li
 export const validateDiLetterSoundsData = (value: unknown) =>
   validateChallengePool<DiLetterSoundsData>(value, letterSoundChallengeValid, {
     pool: 'Generated letter sounds has invalid lesson content.',
-    item: 'A letter-sound item cannot run in the teaching workspace.' });
+    item: 'A letter-sound item cannot run in the teaching workspace.' }, DI_LETTER_SOUNDS_MAX_ITEMS);
 
 function diLetterSoundsState(data: DiLetterSoundsData) {
   const items = buildLetterSoundItems(data.challenges);
@@ -23,7 +24,6 @@ export const diLetterSoundsLive: LiveActivityAdapter<DiLetterSoundsData> = {
   // All three task identities are the same act — meet the stimulus, produce the
   // sound — so they bind to one workspace rather than to three.
   modes: DI_LETTER_SOUNDS_WORKSPACE_MODES,
-  challengeTypes: data => data.challenges.map(c => c.challengeType),
   bindsTeachingWorkspace: true,
   canAdvance: false, // The dialogue observer owns checked progression.
   grades: ['Kindergarten', 'Grade 1'],

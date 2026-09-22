@@ -23,6 +23,7 @@ import { shapeSorterLive, validateShapeSorterData } from './adapters/shapeSorter
 import { diLetterSoundsLive } from './adapters/diLetterSoundsLive';
 import { diWordReadingLive } from './adapters/diWordReadingLive';
 import { diMathFactsLive } from './adapters/diMathFactsLive';
+import { diSentenceReadingLive } from './adapters/diSentenceReadingLive';
 import { letterSoundLinkLive } from './adapters/letterSoundLinkLive';
 import type { LiveActivityAdapter } from './adapters/adapterContract';
 
@@ -52,6 +53,7 @@ export const LIVE_ADAPTERS = {
   'di-letter-sounds': diLetterSoundsLive,
   'di-word-reading': diWordReadingLive,
   'di-math-facts': diMathFactsLive,
+  'di-sentence-reading': diSentenceReadingLive,
   'letter-sound-link': letterSoundLinkLive,
 } satisfies Record<string, LiveActivityAdapter<any>>;
 

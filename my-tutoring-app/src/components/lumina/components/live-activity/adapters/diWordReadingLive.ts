@@ -26,7 +26,6 @@ export const diWordReadingLive: LiveActivityAdapter<DiWordReadingData> = {
   // what the tutor may DO: an irregular sight word must not be sounded out, and
   // the scene enforces that by publishing no letter targets for one.
   modes: DI_WORD_READING_WORKSPACE_MODES,
-  challengeTypes: data => data.challenges.map(c => c.challengeType),
   bindsTeachingWorkspace: true,
   canAdvance: false, // The dialogue observer owns checked progression.
   // The catalog entry scopes this pack to kindergarten and grade 1 decoding.

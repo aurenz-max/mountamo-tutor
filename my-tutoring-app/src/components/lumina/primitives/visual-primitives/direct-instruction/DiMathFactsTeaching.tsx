@@ -111,5 +111,5 @@ export default function DiMathFactsTeaching({ data, className, runtimePlanItemId
     items={items} evalMode={evalMode} className={className} runtimePlanItemId={runtimePlanItemId}
     assignment={workspaceAssignment} scene={workspaceScene} copy={COPY} stimulus={stimulus} trail={solvedFacts}
     recapLabel={recapLabel}
-    metrics={result => ({ type: 'di-math-facts', ...diStageMetrics(result, items, evalMode), meanResponseMs: null })} />;
+    metrics={result => ({ type: 'di-math-facts', ...diStageMetrics(result, items, data.challengeType), meanResponseMs: null })} />;
 }

@@ -17,7 +17,7 @@ import {
   generateDiMathFacts,
   resolveDiRemediationMove,
 } from './gemini-di-math-facts';
-import type { DiMathFactsChallenge } from '../../primitives/visual-primitives/direct-instruction/diMathFactsScript';
+import type { DiMathFactsChallenge } from '../../primitives/visual-primitives/direct-instruction/diMathFactsDomain';
 
 const SUCCESSOR_FOCUS =
   'When answering a subtraction fact, the student identifies the successor—the number that comes after the first number—instead of subtracting.';

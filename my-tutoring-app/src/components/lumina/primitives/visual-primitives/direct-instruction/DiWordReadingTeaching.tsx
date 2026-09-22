@@ -98,5 +98,5 @@ export default function DiWordReadingTeaching({ data, className, runtimePlanItem
     items={items} evalMode={evalMode} className={className} runtimePlanItemId={runtimePlanItemId}
     assignment={workspaceAssignment} scene={workspaceScene} copy={COPY} stimulus={stimulus} trail={readWords}
     recapLabel={item => item.word}
-    metrics={result => ({ type: 'di-word-reading', ...diStageMetrics(result, items, evalMode) })} />;
+    metrics={result => ({ type: 'di-word-reading', ...diStageMetrics(result, items, data.challengeType) })} />;
 }

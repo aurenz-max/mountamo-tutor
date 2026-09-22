@@ -112,7 +112,7 @@ import type {
   Inset,
   VisualPrimitive,
 } from '../types';
-import { MAX_SENTENCE_WORDS } from './visual-primitives/direct-instruction/diSentenceReadingScript';
+import { MAX_SENTENCE_WORDS } from './visual-primitives/direct-instruction/diSentenceReadingDomain';
 import {
   serializeInsetForPrompt,
   spokenArrangement,

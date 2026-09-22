@@ -17,7 +17,7 @@ import {
   generateDiLetterSounds,
   resolveProblemShape,
 } from './gemini-di-letter-sounds';
-import type { DiLetterSoundsSupportTier } from '../../primitives/visual-primitives/direct-instruction/diLetterSoundsScript';
+import type { DiLetterSoundsSupportTier } from '../../primitives/visual-primitives/direct-instruction/diLetterSoundsDomain';
 
 const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
 const PAIRS = [['m', 'n'], ['f', 'v']] as const;

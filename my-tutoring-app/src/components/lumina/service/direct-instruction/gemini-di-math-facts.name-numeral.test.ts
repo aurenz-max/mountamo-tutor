@@ -31,9 +31,10 @@ vi.mock('../geminiClient', () => ({
 
 import { generateDiMathFacts, numberWordFor, resolveTextScope } from './gemini-di-math-facts';
 import {
-  judgingContract,
+  buildMathFactItems,
+  workspaceScene,
   type DiMathFactsChallenge,
-} from '../../primitives/visual-primitives/direct-instruction/diMathFactsScript';
+} from '../../primitives/visual-primitives/direct-instruction/diMathFactsDomain';
 
 /** The census objective, verbatim from the item-20 lesson-coverage row. */
 const CENSUS_OBJECTIVE = 'Recognize and name the written numbers 1 through 10 in order';
@@ -125,7 +126,7 @@ describe('name_numeral — the session the census objective asks for', () => {
   });
 });
 
-describe('name_numeral — the judging contract drops the two clauses that misfire', () => {
+describe('name_numeral — the success condition drops the two clauses that misfire', () => {
   const naming: DiMathFactsChallenge = {
     id: 'dimf-1-id7',
     challengeType: 'name_numeral',
@@ -149,24 +150,24 @@ describe('name_numeral — the judging contract drops the two clauses that misfi
     solvedDisplay: '5 → 6',
   };
 
+  const conditionOf = (c: DiMathFactsChallenge) => buildMathFactItems([c])[0].assignment;
+  const routeOf = (c: DiMathFactsChallenge) => String(workspaceScene(buildMathFactItems([c])[0]).facts.countingRoute);
+
   it('offers no "count to the answer" route — you do not count to a name', () => {
-    expect(judgingContract(naming)).not.toContain('after counting');
-    expect(judgingContract(naming)).toContain('right away, or with young-child pronunciation');
-    // Every other identity keeps the benched wording.
-    expect(judgingContract(counting)).toContain('or after counting up to it');
+    expect(routeOf(naming)).toContain('none');
+    expect(conditionOf(naming)).toContain('Reciting the counting sequence up to it');
+    // Every other identity keeps the counting route.
+    expect(routeOf(counting)).toContain('legitimate route');
+    expect(conditionOf(counting)).toContain('Counting up to it out loud and then saying it is a correct answer');
   });
 
-  it('drops the echo warning, which here would describe the CORRECT answer', () => {
-    // The stimulus is a bare numeral, so "a number straight out of the problem"
-    // IS the target production — leaving the clause in would tell the tutor to
-    // treat a right answer as a common error.
-    expect(judgingContract(naming)).not.toContain('echoing a number straight out of the problem');
-    expect(judgingContract(counting)).toContain('echoing a number straight out of the problem');
+  it('names the numeral itself as the answer, which a computed fact would call an echo', () => {
+    // The stimulus is a bare numeral, so saying the number on the card IS the target production.
+    expect(conditionOf(naming)).toContain('the name of the printed numeral 7 out loud: seven');
   });
 
-  it('still corrects a different number word', () => {
-    const contract = judgingContract(naming);
-    expect(contract).toContain('Yes, this number is seven.');
-    expect(contract).toContain('A different number word is always wrong');
+  it('still refuses a different number word', () => {
+    expect(conditionOf(naming)).toContain('saying a different number, is not naming this numeral');
+    expect(conditionOf(counting)).toContain('A different number is not the answer');
   });
 });

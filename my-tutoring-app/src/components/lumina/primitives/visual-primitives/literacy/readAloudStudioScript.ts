@@ -68,7 +68,7 @@ import { opensWithSentinel } from '../../../hooks/judgedScriptContract';
 import {
   MAX_SENTENCE_WORDS,
   MIN_SENTENCE_WORDS,
-} from '../direct-instruction/diSentenceReadingScript';
+} from '../direct-instruction/diSentenceReadingDomain';
 
 export type ReadAloudMode = 'accuracy' | 'expression' | 'dialogue';
 

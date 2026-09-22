@@ -56,7 +56,7 @@ import {
 import {
   MAX_SENTENCE_WORDS as BENCH_MAX,
   MIN_SENTENCE_WORDS as BENCH_MIN,
-} from '../../direct-instruction/diSentenceReadingScript';
+} from '../../direct-instruction/diSentenceReadingDomain';
 import {
   spokenSpanOf,
   type JudgedScriptPack,
