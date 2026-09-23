@@ -16,7 +16,7 @@ import { numberBondLiveDomain } from './adapters/numberBondLive';
 import { ordinalLineLiveDomain } from './adapters/ordinalLineLive';
 import { sortingStationLiveDomain } from './adapters/sortingStationLive';
 import { numberTracerLive } from './adapters/numberTracerLive';
-import { comparisonBuilderLive } from './adapters/comparisonBuilderLive';
+import { comparisonBuilderLiveDomain } from './adapters/comparisonBuilderLive';
 import { compareObjectsLiveDomain } from './adapters/compareObjectsLive';
 import { placeValueLiveDomain } from './adapters/placeValueLive';
 import { shapeSorterLiveDomain, validateShapeSorterData } from './adapters/shapeSorterLive';
@@ -46,7 +46,7 @@ export const LIVE_ADAPTERS = {
   'ordinal-line': workspaceAdapter('ordinal-line', ordinalLineLiveDomain),
   'sorting-station': workspaceAdapter('sorting-station', sortingStationLiveDomain),
   'number-tracer': numberTracerLive,
-  'comparison-builder': comparisonBuilderLive,
+  'comparison-builder': workspaceAdapter('comparison-builder', comparisonBuilderLiveDomain),
   'compare-objects': workspaceAdapter('compare-objects', compareObjectsLiveDomain),
   'place-value-chart': workspaceAdapter('place-value-chart', placeValueLiveDomain),
   'shape-sorter': workspaceAdapter('shape-sorter', shapeSorterLiveDomain),

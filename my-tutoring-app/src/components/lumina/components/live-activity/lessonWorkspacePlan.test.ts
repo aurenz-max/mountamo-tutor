@@ -72,7 +72,7 @@ describe('ordinary lesson workspace eligibility', () => {
 
   it('every family that binds the workspace admits every one of its modes; no mode is withheld from lessons', () => {
     const bound = Object.entries(LIVE_ADAPTERS).filter(([, adapter]) => (adapter as LiveActivityAdapter).bindsTeachingWorkspace);
-    expect(bound.map(([id]) => id).sort()).toEqual(['compare-objects', 'counting-board', 'di-letter-sounds', 'di-math-facts',
+    expect(bound.map(([id]) => id).sort()).toEqual(['compare-objects', 'comparison-builder', 'counting-board', 'di-letter-sounds', 'di-math-facts',
       'di-sentence-reading', 'di-word-reading', 'letter-sound-link', 'number-bond', 'number-line', 'number-sequencer', 'ordinal-line', 'place-value-chart', 'shape-sorter', 'sorting-station', 'ten-frame']);
     // A live adoption with no workspace binding keeps its lesson path and its catalog tutoring.
     const tracer = { componentId: 'number-tracer', instanceId: 'one', title: 'Trace', objectiveIds: ['objective'], data: {} };

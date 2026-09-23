@@ -2605,6 +2605,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
     {
       id: 'comparison-builder',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'The learner answers by tapping on the screen: a side or the equals sign, a number or a symbol, number '
+        + 'cards in order, or a number cell, then Check where there is one; the activity checks the answer itself. Which '
+        + 'side has more, the symbol, the sorted order and the number one more or one less are each the answer on their own '
+        + 'mode: never say one before the check. Counting each group with the learner is teaching; naming the winner is not. '
+        + 'A Kindergarten learner cannot read: read the instruction aloud and name the choice being made, because the '
+        + 'pictures, arrows and bars on screen carry no words. You cannot tap, choose or order anything for the learner.',
+    },
       misconceptionScope: 'primitive',
     description: 'Multi-phase comparison activity with four challenge types: compare groups of objects visually, compare written numerals with inequality symbols, order numbers least-to-greatest or greatest-to-least, and identify one more / one less. Features animated correspondence lines and alligator mouth mnemonic for < and >. Perfect for teaching quantity comparison and number ordering. ESSENTIAL for K-1 math.',
     constraints: 'Supports numbers 1-20. Groups contain up to 10 objects. Order challenges use 3-5 numbers. Object types: bears, apples, stars, blocks, fish, butterflies, hearts, flowers, cookies, balls.',

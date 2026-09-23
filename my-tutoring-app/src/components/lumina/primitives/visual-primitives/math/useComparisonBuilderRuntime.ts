@@ -52,6 +52,8 @@ export interface ComparisonRuntimeOptions {
   replay: () => boolean;
   /** Clears every flash timer this component owns. Synchronous or it is not suspension. */
   cancelFlashes: () => void;
+  /** The teaching workspace owns this mount instead: register nothing and never request completion. */
+  disabled?: boolean;
 }
 
 export function useComparisonBuilderRuntime(options: ComparisonRuntimeOptions) {
@@ -175,9 +177,10 @@ export function useComparisonBuilderRuntime(options: ComparisonRuntimeOptions) {
     mounted.current = true; suspended.current = false;
     return () => { mounted.current = false; suspended.current = true; };
   }, [mount]);
-  const { runtime, changed } = usePrimitiveRuntime(mount);
+  const { runtime, changed } = usePrimitiveRuntime(options.disabled ? null : mount);
   useLayoutEffect(() => { changed(); });
-  useEffect(() => { if (options.completed) runtime?.requestCompletion(); }, [runtime, options.completed]);
+  useEffect(() => { if (options.completed && !options.disabled) runtime?.requestCompletion(); },
+    [runtime, options.completed, options.disabled]);
   useEffect(() => { shown.current = null; setHint(null); }, [options.index]);
   return runtime ? hint : null;
 }

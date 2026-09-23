@@ -361,6 +361,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       promptFocused: { selector: '[aria-label="Current instruction"]', kind: 'focused' } },
   },
   'comparison-builder': {
+    execution: 'workspace',
     component: 'primitives/visual-primitives/math/ComparisonBuilder.tsx',
     instanceId: 'compare',
     // Grade 1, because that is the band with labelled choice buttons and a Check
@@ -368,39 +369,36 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // pictures themselves, which is an SVG gesture the driver has no verb for.
     defaults: { grade: 'Grade 1', mode: 'compare_groups', di: false,
       topic: 'Deciding which of two groups has more' },
-    leakTokens: ['ANSWER_CORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'DISAMBIGUATE'],
-    prompts: {
-      opening: 'Please read my current comparison instruction so I can begin.',
-      retry: 'Please clear my answer so I can try this same comparison again.',
-      replay: 'Please repeat this same instruction using the replay action.',
-      hint: 'Please show me a reminder for how to work this out.',
-      fade: 'Please hide the reminder now.',
-      example: 'I still cannot see it. Please show me an example with different groups and save my work.',
-      return: 'Please close the example and return to my saved comparison.',
-    },
-    // compare-groups only: the wrong choice is the OPPOSITE comparison word, never
-    // "the same", so the misstep the aids route on is the one the child made.
-    // The other three modes still have no driver verb and return nothing.
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'DISAMBIGUATE', 'ACTIVITY_START'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every Grade-1 mode through its real buttons, then Check. A wrong answer is the
+    // mode's signature error: the opposite word or symbol, the reversed order, a step
+    // the wrong way. Derived from the mounted challenge, not from Python.
     inputsFor: (intent, ctx) => {
-      const c = ctx.challenge;
-      if (intent === 'warmup' || c?.type !== 'compare-groups' || !c.correctAnswer) return [];
-      const label = (answer: string) => answer === 'equal' ? 'The Same' : answer === 'more' ? 'More' : 'Fewer';
-      const wrong = c.correctAnswer === 'more' ? 'less' : 'more';
-      return [{ type: 'choose', label: label(intent === 'wrong' ? wrong : c.correctAnswer) }, { type: 'check' }];
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current comparison-builder challenge');
+      if ((ctx.data.gradeBand ?? 'K') !== '1') throw new Error(`comparison-builder ${c.type}: Kindergarten taps pictures; the row drives Grade 1`);
+      const wrong = intent === 'wrong';
+      const check: DriverInput = { type: 'check' };
+      if (c.type === 'compare-groups') {
+        const label = (answer: string) => answer === 'equal' ? 'The Same' : answer === 'more' ? 'More' : 'Fewer';
+        return [{ type: 'choose', label: label(wrong ? (c.correctAnswer === 'more' ? 'less' : 'more') : c.correctAnswer) }, check];
+      }
+      if (c.type === 'compare-numbers') {
+        const symbol = wrong ? (c.correctSymbol === '<' ? '>' : '<') : c.correctSymbol;
+        return [{ type: 'choose', label: symbol }, check];
+      }
+      if (c.type === 'order') {
+        const sorted = [...c.numbers].sort((a: number, b: number) => c.direction === 'descending' ? b - a : a - b);
+        return [...(wrong ? sorted.reverse() : sorted).map((n: number): DriverInput => ({ type: 'choose', label: String(n) })), check];
+      }
+      const step = (c.askFor === 'one-less' ? -1 : 1) * (wrong ? -1 : 1);
+      if (c.askFor !== 'one-more' && c.askFor !== 'one-less')
+        throw new Error('comparison-builder one-more-one-less both: two rows share their labels and the driver has no row-scoped choice');
+      return [{ type: 'choose', label: String(c.targetNumber + step) }, check];
     },
-    // A contrast pair IS its two counts and the relationship between them. A turn
-    // that names neither the counts nor which row has counters left over has
-    // announced a picture, not taught a comparison.
-    exampleTaught: (artifact, text) => {
-      if (artifact.kind !== 'contrast-pair') return `Expected a contrast pair, got ${artifact.kind}`;
-      const missing = artifact.panels.map(p => p.count).filter(n => !says(text, n));
-      if (missing.length) return `Contrast omitted its counts: ${missing.join(', ')}`;
-      return /\b(more|fewer|less|bigger|smaller|same|equal|left over|extra|partner)\b/i.test(text)
-        ? null : 'Contrast did not state the relationship between the two rows';
-    },
-    probes: { mounted: { selector: '[data-pip-dock]' },
-      promptFocused: { selector: '[aria-label="Current instruction"]', kind: 'focused' },
-      contrastRows: { selector: '[data-contrast-row]', kind: 'count' } },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
   'compare-objects': {
     execution: 'workspace',

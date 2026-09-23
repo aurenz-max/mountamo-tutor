@@ -89,8 +89,9 @@ still hold. Examples, smallest first: `compareObjectsWorkspace.ts` + `CompareObj
 Copy the controller block from `PlaceValueChart.tsx` (it keeps `onFinished` out of both option types
 and declares the finish shape it reads; `CompareObjects.tsx` predates that step).
 
-This recipe is for a *runner-era* component, one that calls `useJudgedScriptRunner`. A component
-with its own Check/Next and no runner (ROLLOUT shape P) has no recipe yet; batch A2 writes it.
+Steps 1-5 are for a *runner-era* component (ROLLOUT shape R), one that calls
+`useJudgedScriptRunner`. A component with its own Check and Next (shape P) follows "Plain shape"
+below instead of step 2; steps 1, 3, 4, 5 and the checks are the same.
 
 1. **Domain module** `<x>Workspace.ts`, pure:
    - `workspaceAssignment(item)` returns `{ id, task, response }`. The runner calls it with the
@@ -160,9 +161,51 @@ with its own Check/Next and no runner (ROLLOUT shape P) has no recipe yet; batch
    answer. A phase the row cannot drive throws with its name.
 
 Grep `components/live-activity` tests (including `runtime/`) for the id. Expected-id lists
-(`lessonWorkspacePlan.test.ts`) gain it. Since batch A1 no live adapter is runner-owned, so a test
-that needs "a family the catalog does not declare" uses a tool-lab family such as `number-line`,
-and a test of the runner-owned sandbox handoff has nothing left to mount.
+(`lessonWorkspacePlan.test.ts`) gain it. Since batch A2 every live adapter is
+catalog-declared, so a test that needs "a family the catalog does not declare" uses a non-live
+catalog id such as `hundreds-chart`.
+
+**Plain shape (P).** The lever is `useChallengeProgress`, which most plain primitives call.
+`runtime/useWorkspaceProgress.ts` returns the same shape backed by the workspace. Examples:
+`NumberLine.tsx` (one Check), `ComparisonBuilder.tsx` (four check functions, taps without a Check),
+`NumberTracer.tsx` (async check), each beside its `<x>Workspace.ts` and `<X>.workspace.test.tsx`.
+- `workspaceAssignment(challenge)` usually returns `{ id, task: challenge.instruction, response:
+  'gesture' }`; the primitive's own check stays the judge, so no `expectedAnswer`.
+- Rename the component `<X>Surface` with props `tutorOwned` and `useController`, add the
+  `workspace` ref, and replace `useChallengeProgress({ challenges, getChallengeId })` with
+  `const progress = useController({ challenges, getChallengeId, instanceId, objectiveId,
+  planItemId, evalMode, workspace, assignment: workspaceAssignment, onItemOpened })`. Move the
+  instance-id lines above it if needed. `onItemOpened(index, retry)` clears the working surface on
+  the workspace path (fresh item and Try again); it may call setters declared further down, since
+  it only runs after render. Keep the reset in the Next handler too: the scripted path
+  (`useScriptedProgress` = `useChallengeProgress`) never calls `onItemOpened`.
+- Wherever a check reaches its verdict (a Check handler, or a tap handler that grades without a
+  Check button), call `progress.commitCheck?.(describe(...), correct)`, with `describe` from the
+  domain module (the learner's work in words, never the key). Keep the primitive's rule for which
+  moves are checked at all.
+- On the workspace path (`tutorOwned`):
+  - Hide the primitive's Next button and any read-aloud button that sends text to the tutor.
+  - Close learner input while `progress.canAttempt === false`: a `learnerBlocked()` gate on every
+    tap, placement, undo, Clear and Check, never on the completion path.
+  - Wrap the scripted `sendText` once so it sends nothing when `tutorOwned`, and pass
+    `useLuminaAI({ enabled: !tutorOwned })`: its context carries the answers, and its `sendText`
+    still sends when disabled.
+  - Give the primitive's tool-lab `use<X>Runtime` hook a `disabled` option if it lacks one (hand
+    `usePrimitiveRuntime` a `null` mount, skip `requestCompletion`) and pass `tutorOwned`. Keep
+    sandbox controls (the harness reads their `getState`) but refuse their `advance`.
+- Submit the evaluation only when `progress.recordsEvaluation !== false`: the live host has no
+  evaluation provider, and the smoke drive fails on any submission there. `progress.advance()`
+  returns `false` on the workspace path, so an existing "advance returned false → submit"
+  completion path still runs once the last challenge is correct.
+- Publish the scene in a `useLayoutEffect` as in step 2, calling `progress.publishWorkspace?.()`.
+  Derive every scene input during render (`useMemo`), never in an effect that sets state after an
+  item opens: that extra revision supersedes the advance's visible receipt and the lesson stalls
+  (comparison-builder's card shuffle).
+- Export `withWorkspaceController('<id>', <X>Surface, useScriptedProgress,
+  useWorkspaceProgressFor('<id>'))`.
+- Harness: `choose` presses the FIRST button whose text or `aria-label` matches, so labels a row
+  presses must be unique on screen. A mode or band the driver has no input for throws with its
+  name in the row; record it in the report as undriven, including any guidance written for it.
 
 **Checks.** (a) `<X>.workspace.test.tsx`, modelled on `CompareObjects.workspace.test.tsx`: the
 real component under `LiveLessonRuntime`, an `it.each` over every catalog mode showing it mounts

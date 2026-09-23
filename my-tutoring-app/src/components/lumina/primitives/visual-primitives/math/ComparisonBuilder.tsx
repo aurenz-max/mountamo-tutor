@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -25,7 +25,6 @@ import {
 } from '../../../evaluation';
 import type { ComparisonBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { ReadMeButton } from '../../shared/ReadMeButton';
@@ -36,6 +35,11 @@ import { comparisonBuilderPipPose } from '../../../pip/comparisonBuilderPipPose'
 import { useSpeechScope } from '../../../pip/useSpeechScope';
 import { useComparisonBuilderRuntime } from './useComparisonBuilderRuntime';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { describeComparison, workspaceAssignment, workspaceScene } from './comparisonBuilderWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -301,7 +305,9 @@ interface ComparisonBuilderProps {
 // Component
 // ============================================================================
 
-const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
+const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
+  ComparisonBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ComparisonBuilderChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -325,8 +331,19 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
   } = data;
 
   // -------------------------------------------------------------------------
-  // Shared challenge progress
+  // Shared challenge progress. On the workspace path the runtime moves the index.
   // -------------------------------------------------------------------------
+  const stableInstanceIdRef = useRef(instanceId || `comparison-builder-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  // A fresh challenge and Try again both start from an empty answer (bound below, once the setters exist).
+  const openItem = useRef<(retry: boolean) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || challenges[0]?.type || 'compare', workspace, assignment: workspaceAssignment,
+    onItemOpened: (_index, retry) => openItem.current(retry),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
@@ -335,10 +352,14 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
     recordResult,
     incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => workspaceClosed.current;
+  // The primitive's own check is the workspace's checked gesture. A ref, so the check callbacks keep their deps.
+  const commitCheck = useRef(progress.commitCheck);
+  commitCheck.current = progress.commitCheck;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -358,9 +379,6 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
   const [showLines, setShowLines] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-
-  // Shuffled numbers for order challenges
-  const [shuffledNumbers, setShuffledNumbers] = useState<number[]>([]);
 
   // Transient grading flash for the order slots — drives the shared drop-zone
   // motion (pop/shake) off the same checkOrder result, then settles to filled.
@@ -405,27 +423,24 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
   const disambiguatedMoreRef = useRef(false);
   const disambiguatedLessRef = useRef(false);
 
-  // Refs
-  const stableInstanceIdRef = useRef(instanceId || `comparison-builder-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
   // Current challenge
   const currentChallenge = useMemo(
     () => challenges[currentChallengeIndex] || null,
     [challenges, currentChallengeIndex],
   );
 
-  // Shuffle numbers when entering an order challenge
-  useEffect(() => {
-    if (currentChallenge?.type === 'order' && currentChallenge.numbers) {
-      const nums = [...currentChallenge.numbers];
-      // Simple deterministic shuffle seeded by challenge index
-      for (let i = nums.length - 1; i > 0; i--) {
-        const j = Math.abs(((currentChallengeIndex + 1) * 7 + i * 13) % (i + 1));
-        [nums[i], nums[j]] = [nums[j], nums[i]];
-      }
-      setShuffledNumbers(nums);
+  // Shuffled numbers for order challenges. Derived in render, not set from an effect: an
+  // effect painted the previous item's cards for one commit, and on the workspace path that
+  // extra scene revision superseded the advance's visible receipt.
+  const shuffledNumbers = useMemo(() => {
+    if (currentChallenge?.type !== 'order' || !currentChallenge.numbers) return [];
+    const nums = [...currentChallenge.numbers];
+    // Simple deterministic shuffle seeded by challenge index
+    for (let i = nums.length - 1; i > 0; i--) {
+      const j = Math.abs(((currentChallengeIndex + 1) * 7 + i * 13) % (i + 1));
+      [nums[i], nums[j]] = [nums[j], nums[i]];
     }
+    return nums;
   }, [currentChallenge, currentChallengeIndex]);
 
   // ── Misconception Loop S1 — session-scoped wrong-answer log ────────────────
@@ -538,12 +553,19 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
     [supportTier],
   );
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'comparison-builder',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
+    // The workspace packet replaces this context (it carries the answers).
+    enabled: !tutorOwned,
   });
+  // Every scripted cue ([ACTIVITY_START], [ANSWER_*], [DISAMBIGUATE], [NEXT_ITEM], [ALL_COMPLETE])
+  // goes through here; on the workspace path the tutor teaches from the packet instead.
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Under the live runtime the tutor OWNS progression, and the `[ANSWER_CORRECT]`
   // text below is a complete instruction on its own ("Congratulate briefly"). Sent
@@ -585,6 +607,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
     const leftCount = currentChallenge.leftGroup?.count ?? 0;
     const rightCount = currentChallenge.rightGroup?.count ?? 0;
     incrementAttempts();
+    commitCheck.current?.(describeComparison(currentChallenge,
+      { selected: answer, ordered: [], oneMore: null, oneLess: null }), correct);
 
     if (correct) {
       const answerWord = currentChallenge.correctAnswer === 'equal' ? 'the same as' : `${currentChallenge.correctAnswer === 'more' ? 'more' : 'fewer'} than`;
@@ -640,7 +664,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
       const alreadySolved = challengeResults.some(
         (r) => r.challengeId === currentChallenge?.id && r.correct,
       );
-      if (!currentChallenge || alreadySolved || allChallengesComplete) return;
+      if (learnerBlocked() || !currentChallenge || alreadySolved || allChallengesComplete) return;
       setSelectedAnswer(answer);
       const correct = checkCompareGroups(answer);
       if (correct) {
@@ -673,6 +697,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
     if (!currentChallenge || !selected) return false;
     const correct = selected === currentChallenge.correctSymbol;
     incrementAttempts();
+    commitCheck.current?.(describeComparison(currentChallenge,
+      { selected, ordered: [], oneMore: null, oneLess: null }), correct);
 
     if (correct) {
       setFeedback(
@@ -723,7 +749,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
       const alreadySolved = challengeResults.some(
         (r) => r.challengeId === currentChallenge?.id && r.correct,
       );
-      if (!currentChallenge || alreadySolved || allChallengesComplete) return;
+      if (learnerBlocked() || !currentChallenge || alreadySolved || allChallengesComplete) return;
       setSelectedAnswer(symbol);
       const correct = checkCompareNumbers(symbol);
       if (correct) {
@@ -756,6 +782,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
       orderedNumbers.length === expected.length &&
       orderedNumbers.every((n, i) => n === expected[i]);
     incrementAttempts();
+    commitCheck.current?.(describeComparison(currentChallenge,
+      { selected: null, ordered: orderedNumbers, oneMore: null, oneLess: null }), correct);
 
     // Zone-state flash off the same grading result (visual only). Settles at 900 ms.
     if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current);
@@ -813,6 +841,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
     } else {
       correct = moreVal === target + 1 && lessVal === target - 1;
     }
+    commitCheck.current?.(describeComparison(currentChallenge,
+      { selected: null, ordered: [], oneMore: moreVal, oneLess: lessVal }), correct);
 
     if (correct) {
       const parts: string[] = [];
@@ -897,7 +927,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
       const alreadySolved = challengeResults.some(
         (r) => r.challengeId === currentChallenge?.id && r.correct,
       );
-      if (!currentChallenge || currentChallenge.type !== 'one-more-one-less'
+      if (learnerBlocked() || !currentChallenge || currentChallenge.type !== 'one-more-one-less'
         || alreadySolved || allChallengesComplete) return;
       const target = currentChallenge.targetNumber ?? 0;
       const askFor = currentChallenge.askFor ?? 'both';
@@ -950,7 +980,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
   // Master check handler
   // -------------------------------------------------------------------------
   const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge) return;
+    if (learnerBlocked() || !currentChallenge) return;
 
     let correct = false;
     switch (currentChallenge.type) {
@@ -991,6 +1021,25 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
     (r) => r.challengeId === currentChallenge?.id && r.correct,
   );
 
+  /** Everything a fresh challenge starts without, including the per-challenge DISAMBIGUATE latches. */
+  const resetForNewChallenge = () => {
+    setSelectedAnswer(null);
+    setOrderedNumbers([]);
+    setOneMoreAnswer(null);
+    setOneLessAnswer(null);
+    setShowLines(false);
+    setFeedback('');
+    setFeedbackType('');
+    setOrderFlash(null);
+    if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current);
+    setWrongFlash(null);
+    if (wrongFlashTimer.current) clearTimeout(wrongFlashTimer.current);
+    // Clear the per-challenge DISAMBIGUATE latches so the next one-more-one-less
+    // voices both sub-questions fresh.
+    disambiguatedMoreRef.current = false;
+    disambiguatedLessRef.current = false;
+  };
+
   const advanceToNextChallenge = useCallback(() => {
     if (!advanceProgress()) {
       // All challenges complete
@@ -1007,8 +1056,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
         { silent: true },
       );
 
-      // Submit evaluation
-      if (!hasSubmittedEvaluation) {
+      // Submit evaluation (the live host has no evaluation provider on the workspace path)
+      if (!hasSubmittedEvaluation && progress.recordsEvaluation !== false) {
         const totalCorrect = challengeResults.filter((r) => r.correct).length;
         const overallAccuracy = Math.round(
           (totalCorrect / challenges.length) * 100,
@@ -1075,22 +1124,9 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
       return;
     }
 
-    // Reset domain-specific state for next challenge
-    setSelectedAnswer(null);
-    setOrderedNumbers([]);
-    setOneMoreAnswer(null);
-    setOneLessAnswer(null);
-    setShowLines(false);
-    setFeedback('');
-    setFeedbackType('');
-    setOrderFlash(null);
-    if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current);
-    setWrongFlash(null);
-    if (wrongFlashTimer.current) clearTimeout(wrongFlashTimer.current);
-    // Clear the per-challenge DISAMBIGUATE latches so the next one-more-one-less
-    // voices both sub-questions fresh.
-    disambiguatedMoreRef.current = false;
-    disambiguatedLessRef.current = false;
+    // Reset domain-specific state for next challenge (the scripted path; the
+    // workspace path runs the same reset from `onItemOpened`).
+    resetForNewChallenge();
 
     const nextChallenge = challenges[currentChallengeIndex + 1];
     sendText(
@@ -1101,7 +1137,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
     );
   }, [
     advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex,
+    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex, progress.recordsEvaluation,
   ]);
 
   /**
@@ -1121,6 +1157,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
     setWrongFlash(null);
     if (wrongFlashTimer.current) clearTimeout(wrongFlashTimer.current);
   }, []);
+  // Workspace path: Try again clears this response; a fresh challenge clears everything.
+  openItem.current = retry => { if (retry) clearResponse(); else resetForNewChallenge(); };
 
   // ── Live tutor runtime ──────────────────────────────────────────────
   // The tutor drives the learner's OWN handlers; grading and progression are
@@ -1145,6 +1183,18 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
       if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current);
       if (wrongFlashTimer.current) clearTimeout(wrongFlashTimer.current);
     },
+    // The teaching workspace owns this mount instead: no tool-lab registration, no completion request.
+    disabled: tutorOwned,
+  });
+
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge) return;
+    workspace.current = { ...workspaceScene(currentChallenge, { selected: selectedAnswer, ordered: orderedNumbers,
+      oneMore: oneMoreAnswer, oneLess: oneLessAnswer, shuffled: shuffledNumbers, countsShown: showCountBadges && !isK }),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    progress.publishWorkspace?.();
   });
 
   // Auto-submit when all complete
@@ -1408,6 +1458,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
                     selectedAnswer === answer ? 'selected' : 'idle',
                   )}`}
                   onClick={() => {
+                    if (learnerBlocked()) return;
                     SoundManager.select();
                     setSelectedAnswer(answer);
                   }}
@@ -1537,6 +1588,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
                   selectedAnswer === symbol ? 'selected' : 'idle',
                 )}`}
                 onClick={() => {
+                  if (learnerBlocked()) return;
                   SoundManager.select();
                   setSelectedAnswer(symbol);
                 }}
@@ -1641,7 +1693,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
               onClick={() => {
                 if (
                   i === orderedNumbers.length - 1 &&
-                  !isCurrentChallengeComplete
+                  !isCurrentChallengeComplete && !learnerBlocked()
                 ) {
                   setOrderedNumbers((prev) => prev.slice(0, -1));
                 }
@@ -1670,6 +1722,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
                 type="button"
                 className={`w-14 h-14 rounded-xl border text-xl font-bold transition-all ${answerStateClass('idle')}`}
                 onClick={() => {
+                  if (learnerBlocked()) return;
                   SoundManager.snap();
                   setOrderedNumbers((prev) => [...prev, num]);
                 }}
@@ -1686,7 +1739,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
             <LuminaButton
               tone="subtle"
               className="text-xs"
-              onClick={() => { setOrderedNumbers([]); setOrderFlash(null); }}
+              onClick={() => { if (learnerBlocked()) return; setOrderedNumbers([]); setOrderFlash(null); }}
             >
               Start Over
             </LuminaButton>
@@ -1768,7 +1821,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
                     : answerStateClass(cellState)
                 } ${isWrong ? motion.shake : ''}`}
                 onClick={() => {
-                  if (isCurrentChallengeComplete) return;
+                  if (isCurrentChallengeComplete || learnerBlocked()) return;
                   if (isK) {
                     // tap=choose: the handler owns SFX + evaluation + advance.
                     handleTapOneMoreLess(which, i);
@@ -1917,7 +1970,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
             <div ref={promptRef} tabIndex={-1} aria-label="Current instruction" className="flex-1 outline-none">
               <LuminaPrompt>{currentChallenge.instruction}</LuminaPrompt>
             </div>
-            {isK && (
+            {/* Workspace path: the learner asks the tutor to repeat instead. */}
+            {isK && !tutorOwned && (
               <ReadMeButton
                 instruction={currentChallenge.instruction}
                 ask={readMeAskClause(currentChallenge)}
@@ -1972,10 +2026,10 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
               <LuminaActionButton
                 action="check"
                 onClick={handleCheckAnswer}
-                disabled={!canCheck || hasSubmittedEvaluation}
+                disabled={!canCheck || hasSubmittedEvaluation || (tutorOwned && progress.canAttempt === false)}
               />
             )}
-            {isCurrentChallengeComplete && !allChallengesComplete && (
+            {!tutorOwned && isCurrentChallengeComplete && !allChallengesComplete && (
               <LuminaActionButton
                 action="next"
                 onClick={advanceToNextChallenge}
@@ -2011,5 +2065,9 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className, 
     </LuminaCard>
   );
 };
+
+// The workspace path never registers the tool-lab mount, whose advance command would compete with the observer.
+const ComparisonBuilder = withWorkspaceController<ComparisonBuilderProps, ProgressOptions<ComparisonBuilderChallenge>, Progress>(
+  'comparison-builder', ComparisonBuilderSurface, useScriptedProgress, useWorkspaceProgressFor('comparison-builder'));
 
 export default ComparisonBuilder;
