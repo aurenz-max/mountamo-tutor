@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -21,11 +21,15 @@ import {
 } from '../../../evaluation';
 import type { BalanceScaleMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { describeVerify, plainAssignment, plainScene } from './balanceScaleWorkspace';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import BalanceScaleEquality from './BalanceScaleEquality';
+import BalanceScaleEquality, { type BalanceSurfaceProps } from './BalanceScaleEquality';
 import { usesEqualityPilot } from './balanceEqualityModel';
 import BalanceScaleWorkshop from './BalanceScaleWorkshop';
 import { usesBalanceWorkshop } from './balanceWorkshopModel';
@@ -185,12 +189,11 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 // Component
 // ============================================================================
 
-interface BalanceScaleProps {
-  data: BalanceScaleData;
-  className?: string;
-}
+type BalanceScaleProps = BalanceSurfaceProps;
 
-const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
+const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
+  BalanceScaleProps & { tutorOwned: boolean; useController: (options: ProgressOptions<BalanceScaleChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -232,7 +235,27 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
   const [verifyInput, setVerifyInput] = useState('');
 
-  // Challenge state (multi-phase hooks)
+  const stableInstanceIdRef = useRef(instanceId || `balance-scale-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
+  // Challenge state (multi-phase hooks). On the workspace path the runtime moves the index.
+  const challengeIdOf = (ch: BalanceScaleChallenge) => `bs-${challenges.indexOf(ch) + 1}`;
+  const progress = useController({
+    challenges,
+    getChallengeId: challengeIdOf,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || firstChallenge?.type || 'one_step', workspace,
+    assignment: (ch) => plainAssignment(ch, challengeIdOf(ch)),
+    // Workspace only: a fresh equation resets the scale; Try again clears the typed value.
+    onItemOpened: (index, retry) => {
+      if (retry) { setVerifyInput(''); setFeedback(''); setFeedbackType(''); recordedRef.current = false; return; }
+      const next = challenges[index];
+      if (!next) return;
+      setCurrentLeft(next.leftSide); setCurrentRight(next.rightSide); setPhase('explore'); setUserSteps([]);
+      setFeedback(''); setFeedbackType(''); setVerifyInput(''); setShowSolution(false); setSelectedOp(null); setOpValue('');
+      recordedRef.current = false; hintViewedRef.current = false;
+    },
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
@@ -241,18 +264,17 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
     recordResult,
     incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => `bs-${challenges.indexOf(ch) + 1}`,
-  });
+  } = progress;
+  // A checked answer on the workspace waits for Try again or Next challenge.
+  const blockedRef = useRef(false);
+  blockedRef.current = tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => blockedRef.current;
 
   // Drag state
   const [draggedBlock, setDraggedBlock] = useState<BalanceScaleObject | null>(null);
   const [dropTarget, setDropTarget] = useState<'left' | 'right' | null>(null);
 
   // Refs
-  const stableInstanceIdRef = useRef(instanceId || `balance-scale-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   const recordedRef = useRef(false);
   const hintViewedRef = useRef(false);
   const hintsViewedRef = useRef(0);
@@ -354,12 +376,16 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
           ? ' [SUPPORT medium] Side totals are hidden but the scale still shows balance. Nudge the next move without naming the full strategy; do not reveal the answer.'
           : '';
 
-  const { sendText, isConnected } = useLuminaAI({
+  // The legacy AI context carries the answer; on the workspace path the tutor reads the published scene.
+  const { sendText: scriptedSendText, isConnected } = useLuminaAI({
+    enabled: !tutorOwned,
     primitiveType: 'balance-scale',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === 'K-2' ? 'Grade 1' : gradeBand === '3-4' ? 'Grade 3' : 'Grade 5',
   });
+  const sendText = useCallback<typeof scriptedSendText>((...args) => { if (!tutorOwned) scriptedSendText(...args); },
+    [tutorOwned, scriptedSendText]);
 
   // Introduction
   const hasIntroducedRef = useRef(false);
@@ -419,7 +445,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   }, [currentLeft, currentRight]);
 
   const removeObject = useCallback((side: 'left' | 'right', index: number) => {
-    if (hasSubmittedEvaluation) return;
+    if (hasSubmittedEvaluation || learnerBlocked()) return;
     if (phase === 'explore') setPhase('solve');
 
     const obj = side === 'left' ? currentLeft[index] : currentRight[index];
@@ -464,7 +490,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   }, [hasSubmittedEvaluation, phase, currentLeft, currentRight, addStep, sendText]);
 
   const applyOperation = useCallback(() => {
-    if (!selectedOp || !opValue || hasSubmittedEvaluation) return;
+    if (!selectedOp || !opValue || hasSubmittedEvaluation || learnerBlocked()) return;
     if (phase === 'explore') setPhase('solve');
 
     const value = parseFloat(opValue);
@@ -545,7 +571,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   const handleDrop = useCallback((e: React.DragEvent, side: 'left' | 'right') => {
     e.preventDefault();
     setDropTarget(null);
-    if (!draggedBlock || hasSubmittedEvaluation) return;
+    if (!draggedBlock || hasSubmittedEvaluation || learnerBlocked()) return;
     SoundManager.snap();
     const block = { ...draggedBlock };
     if (side === 'left') setCurrentLeft(prev => [...prev, block]);
@@ -556,7 +582,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
 
   // Verify
   const handleVerify = useCallback(() => {
-    if (recordedRef.current) return; // stale-state guard — already recorded for this challenge
+    if (recordedRef.current || learnerBlocked()) return; // stale-state guard — already recorded for this challenge
     const answer = parseFloat(verifyInput);
     if (Number.isNaN(answer)) {
       SoundManager.invalid();
@@ -566,6 +592,8 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
     }
     const correct = Math.abs(answer - activeVariableValue) < 0.01;
     incrementAttempts();
+    // Workspace only: the scale's own check is the verdict, right or wrong.
+    progress.commitCheck?.(describeVerify(answer), correct);
     const attempts = currentAttempts + 1;
 
     if (correct) {
@@ -598,7 +626,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
         { silent: true }
       );
     }
-  }, [verifyInput, activeVariableValue, currentAttempts, challenges.length, currentChallenge, currentChallengeIndex, userSteps.length, recordResult, incrementAttempts, sendText, tutorTierClause]);
+  }, [verifyInput, activeVariableValue, currentAttempts, challenges.length, currentChallenge, currentChallengeIndex, userSteps.length, recordResult, incrementAttempts, sendText, tutorTierClause, progress, tutorOwned]);
 
   // Challenge advance — per-challenge UI reset is handled by the reset useEffect.
   const advanceChallenge = useCallback(() => {
@@ -613,7 +641,8 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
 
   // Session-complete: build flattened metrics and submit exactly once.
   useEffect(() => {
-    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
+    // The live host has no evaluation provider; the workspace summary stands in for it there.
+    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0 || progress.recordsEvaluation === false) return;
 
     const total = challenges.length;
     const correctCount = challengeResults.filter((r) => r.correct).length;
@@ -645,9 +674,10 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
       `[ALL_COMPLETE] All ${total} equations done. Correct: ${correctCount}/${total}. First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give encouraging summary.`,
       { silent: true },
     );
-  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
+  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText, progress.recordsEvaluation]);
 
   const handleReset = useCallback(() => {
+    if (learnerBlocked()) return;
     const left = currentChallenge?.leftSide ?? initialLeft;
     const right = currentChallenge?.rightSide ?? initialRight;
     setCurrentLeft(left);
@@ -696,6 +726,14 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
     obj.isVariable
       ? 'bg-gradient-to-br from-purple-500/80 to-pink-500/80 border-purple-400/50'
       : 'bg-gradient-to-br from-blue-500/80 to-cyan-500/80 border-blue-400/50';
+
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge) return;
+    workspace.current = { ...plainScene(currentChallenge, { left: currentLeft, right: currentRight, phase, steps: userSteps.length }),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    progress.publishWorkspace?.();
+  });
 
   // -------------------------------------------------------------------------
   // Render
@@ -881,6 +919,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
                     className="w-14 px-2 py-1 text-center text-sm"
                     placeholder="#"
                     onKeyDown={e => e.key === 'Enter' && applyOperation()}
+                    disabled={learnerBlocked()}
                   />
                   <LuminaButton tone="primary" size="sm" className="text-xs" onClick={applyOperation}>
                     Apply
@@ -903,8 +942,10 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
                 onChange={e => setVerifyInput(e.target.value)}
                 className="w-20 px-3 py-1.5 text-center text-lg"
                 onKeyDown={e => e.key === 'Enter' && handleVerify()}
+                aria-label="Value of x"
+                disabled={learnerBlocked()}
               />
-              <LuminaActionButton action="check" onClick={handleVerify}>
+              <LuminaActionButton action="check" onClick={handleVerify} disabled={learnerBlocked()}>
                 Check
               </LuminaActionButton>
             </div>
@@ -923,7 +964,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
         )}
 
         {/* Solution reveal */}
-        {isSolved && (
+        {isSolved && !tutorOwned && (
           <div className="flex justify-center">
             <LuminaButton
               tone="subtle"
@@ -965,7 +1006,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
 
         {/* Controls */}
         <div className="flex justify-center gap-2">
-          {isCurrentComplete && !allChallengesComplete && (
+          {!tutorOwned && isCurrentComplete && !allChallengesComplete && (
             <LuminaActionButton action="next" onClick={advanceChallenge}>
               Next Equation →
             </LuminaActionButton>
@@ -975,7 +1016,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
             size="sm"
             className="text-slate-400"
             onClick={handleReset}
-            disabled={hasSubmittedEvaluation}
+            disabled={hasSubmittedEvaluation || learnerBlocked()}
           >
             Reset
           </LuminaButton>
@@ -984,7 +1025,8 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
               tone="primary"
               size="sm"
               className="text-xs"
-              onClick={() => { setPhase('solve'); sendText('[PHASE_TRANSITION] Student ready to solve. Guide first step.', { silent: true }); }}
+              disabled={learnerBlocked()}
+              onClick={() => { if (learnerBlocked()) return; setPhase('solve'); sendText('[PHASE_TRANSITION] Student ready to solve. Guide first step.', { silent: true }); }}
             >
               Start Solving
             </LuminaButton>
@@ -1013,6 +1055,15 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   );
 };
 
+// The workspace path never runs the legacy AI context or the primitive's own Next beside the tutor.
+const BalanceScale = withWorkspaceController<BalanceScaleProps, ProgressOptions<BalanceScaleChallenge>, Progress>(
+  'balance-scale', BalanceScaleSurface, useScriptedProgress, useWorkspaceProgressFor('balance-scale'));
+
+/**
+ * Three surfaces, one family: the route is by DATA, and each surface is its own
+ * `withWorkspaceController`, so every surface binds the teaching workspace under tutor
+ * ownership and keeps its scripted controller otherwise.
+ */
 const BalanceScaleWithEqualityPilot: React.FC<BalanceScaleProps> = (props) =>
   usesBalanceWorkshop(props.data) ? <BalanceScaleWorkshop {...props} />
     : usesEqualityPilot(props.data) ? <BalanceScaleEquality {...props} /> : <BalanceScale {...props} />;

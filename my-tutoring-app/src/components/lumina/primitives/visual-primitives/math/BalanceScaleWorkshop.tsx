@@ -1,14 +1,19 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import { LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardContent, LuminaBadge, LuminaButton,
   LuminaChallengeCounter, LuminaPanel } from '../../../ui';
 import DiActionPanel from '../../../components/DiActionPanel';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { BalanceScaleMetrics } from '../../../evaluation/types';
-import { useJudgedScriptRunner, type JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { useScriptedBalance, workspaceBalance, type BalanceControllerOptions, type BalanceFinish, type BalanceRun } from './balanceScaleControllers';
+import { workshopAssignment, workshopScene } from './balanceScaleWorkspace';
+import type { BalanceSurfaceProps } from './BalanceScaleEquality';
 import { SoundManager } from '../../../utils/SoundManager';
 import type { BalanceScaleData } from './BalanceScale';
 import { enterWorkshopStage, groupCounts, initialWorkshopBoard, isHands, moveWorkshopUnit,
@@ -17,7 +22,12 @@ import { enterWorkshopStage, groupCounts, initialWorkshopBoard, isHands, moveWor
 import { workshopItems, workshopItemCue, workshopMoveCue, workshopCompleteCue, workshopHearCue, workshopChangeCue,
   workshopCheckCue, workshopAsk, type WorkshopItem } from './balanceWorkshopScript';
 
-export default function BalanceScaleWorkshop({ data, className }: { data: BalanceScaleData; className?: string }) {
+type WorkshopOptions = BalanceControllerOptions<WorkshopItem>;
+
+function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
+  BalanceSurfaceProps & { tutorOwned: boolean; useController: (options: WorkshopOptions) => BalanceRun<WorkshopItem> }) {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const [affirmedIds, setAffirmedIds] = useState<ReadonlySet<string>>(new Set());
   const built = useMemo(() => {
     try { return { problems: (data.challenges ?? []).map(workshopProblem), error: '' }; }
     catch (error) { return { problems: [], error: error instanceof Error ? error.message : 'Invalid weight activity.' }; }
@@ -37,7 +47,7 @@ export default function BalanceScaleWorkshop({ data, className }: { data: Balanc
   const boardFor = (item: WorkshopItem) => boards.current[item.problem.id] ?? initialWorkshopBoard(item.problem);
   const evaluation = usePrimitiveEvaluation<BalanceScaleMetrics>({ primitiveType: 'balance-scale', instanceId: instance.current,
     skillId: data.skillId, subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId, onSubmit: data.onEvaluationSubmit });
-  const pack = useMemo<JudgedScriptPack<WorkshopItem>>(() => ({
+  const pack = useMemo<JudgedScriptPack<WorkshopItem> | undefined>(() => tutorOwned ? undefined : ({
     primitiveType: 'balance-scale', activityLine: 'build, separate and share real weights; then explain their quantities', items,
     itemCue: (item, opts) => workshopItemCue(item, opts, boardFor(item)),
     pronounceCue: (item) => workshopHearCue(item, boardFor(item)),
@@ -58,8 +68,8 @@ export default function BalanceScaleWorkshop({ data, className }: { data: Balanc
       challenge: `${item.step}: ${workshopAsk(item.problem, item.step)} On the scale: ${scene(item.problem, boardFor(item))}`,
       expected: String(workshopExpected(item.problem, item.step)),
       observed: heard ? `Heard "${heard}".` : 'No transcript was captured.' }),
-  }), [items, built.problems, data.gradeBand]);
-  const finish = (summary: JudgedRunSummary) => {
+  }), [items, built.problems, data.gradeBand, tutorOwned]);
+  const finish = (summary: BalanceFinish) => {
     const results = built.problems.map((problem) => {
       const outcomes = items.filter((item) => item.problem.id === problem.id).map((item) => ({ step: item.step,
         ...summary.outcomes.find((outcome) => outcome.id === item.id) }));
@@ -80,10 +90,14 @@ export default function BalanceScaleWorkshop({ data, className }: { data: Balanc
     // The runner owns the evidence (first-response share, kept phases); the shared capture gate decides.
     evaluation.submitResult(score >= 60, score, metrics, { interactionVersion: 'weight-workshop-di-v1', explorationIsUngraded: true,
       explanationIsCoaching: true, scoringBasis: 'minimum-of-distinct-spoken-quantities', results,
-      learningResponses: summary.learningResponses }, undefined, summary.diagnosisEvidence);
+      learningResponses: summary.learningResponses,
+      ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
+    undefined, summary.diagnosisEvidence);
   };
-  const runner = useJudgedScriptRunner({ pack, instanceId: instance.current, gradeLevel: data.gradeLevel ?? 'elementary',
-    exhibitId: data.exhibitId, silenceCloseMs: 1100, onFinished: finish,
+  const runner = useController({ pack, items, workspace, instanceId: instance.current, objectiveId: data.objectiveId,
+    planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || built.problems[0]?.mode || 'one_step',
+    gradeLevel: data.gradeLevel ?? 'elementary', exhibitId: data.exhibitId, silenceCloseMs: 1100, onFinished: finish,
+    onAffirmed: (done) => setAffirmedIds((prev) => new Set(prev).add(done.id)),
     onItemOpened: (item, index) => {
       if (index === 0) { boards.current = {}; moves.current = {}; modeled.current.clear(); }
       if (item.step === STAGES[item.problem.mode][0]) {
@@ -106,11 +120,14 @@ export default function BalanceScaleWorkshop({ data, className }: { data: Balanc
     (moves.current[item.problem.id] ??= []).push({ before: previous, after: next, description });
     boards.current[item.problem.id] = next; setBoard(next); setSelected(null);
     setFeedback(workshopFeedback(item.problem, item.step, next));
-    runner.loop.clearQueuedCue();
+    runner.loop?.clearQueuedCue();
+    // Only a completed move commits; anything else is coaching (the scripted cue, or on the
+    // workspace the published scene the tutor reads).
     runner.armStillness(() => {
       if (runner.isAwaitingGesture()) return;
-      if (stageSolved(item.problem, item.step, next)) runner.submitGestureAttempt(workshopCheckCue(item, next));
-      else runner.loop.queueCue(workshopChangeCue(item, next));
+      if (stageSolved(item.problem, item.step, next)) commitGesture(runner, { response: `${description}. Now: ${scene(item.problem, next)}`,
+        correct: true, cue: () => workshopCheckCue(item, next) });
+      else runner.loop?.queueCue(workshopChangeCue(item, next));
     }, stageSolved(item.problem, item.step, next) ? 900 : 1800);
     SoundManager.tap();
   };
@@ -118,6 +135,18 @@ export default function BalanceScaleWorkshop({ data, className }: { data: Balanc
     if (!item || !canMove) return;
     publish(moveWorkshopUnit(item.problem, boardFor(item), index, destination, item.step), `Moved unit ${index + 1} to ${destination === -2 ? 'set aside' : destination === -1 ? 'pool' : `group ${destination + 1}`}`);
   };
+  // Workspace path: what the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item) return;
+    workspace.current = { ...workshopScene(item, board), demonstration: [], canDemonstrate: false, canPresent: false,
+      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace?.();
+  });
+  // The live host has no evaluation provider, so the workspace's own summary ends the activity there.
+  const finished = evaluation.hasSubmitted || !!runner.practiceSummary;
+  const solvedIds = runner.solvedIds ?? affirmedIds;
+
   if (!item || built.error) return <LuminaCard className={className}><LuminaCardContent>{built.error || 'No weight challenges are available.'}</LuminaCardContent></LuminaCard>;
   const p = item.problem;
   const state = workshopBalance(p, board);
@@ -156,7 +185,7 @@ export default function BalanceScaleWorkshop({ data, className }: { data: Balanc
     <LuminaCardHeader><div className="flex items-center justify-between gap-3"><LuminaCardTitle>{TITLES[p.mode]}</LuminaCardTitle>
       <LuminaBadge accent="purple">Hands + voice</LuminaBadge></div></LuminaCardHeader>
     <LuminaCardContent className="space-y-5">
-      {evaluation.hasSubmitted ? <p className="text-center text-xl text-emerald-200">You built the math with weights. Nice work!</p> : <>
+      {finished ? <p className="text-center text-xl text-emerald-200">You built the math with weights. Nice work!</p> : <>
         <LuminaChallengeCounter current={built.problems.indexOf(p) + 1} total={built.problems.length} variant="dots" />
         {items.some((entry) => entry.problem.id === p.id && modeled.current.has(entry.id)) && <p className="text-center text-amber-200">Tutor's example includes a demonstrated step.</p>}
         <LayoutGroup id={instance.current}>
@@ -247,11 +276,19 @@ export default function BalanceScaleWorkshop({ data, className }: { data: Balanc
           }}>Reset this step</LuminaButton>
         </div><p className="text-center text-sm text-slate-300" aria-live="polite">{feedback}</p></div>}
         <DiActionPanel run={runner} running={runner.running} stage={runner.stage} currentItem={item}
-          steps={items.filter((step) => step.problem.id === p.id)} completedIds={runner.solvedIds}
-          carriedIds={new Set(items.filter((step, index) => index < runner.currentIndex && !runner.solvedIds.has(step.id)).map((step) => step.id))}
+          steps={items.filter((step) => step.problem.id === p.id)} completedIds={solvedIds}
+          carriedIds={new Set(items.filter((step, index) => index < runner.currentIndex && !solvedIds.has(step.id)).map((step) => step.id))}
           startInstruction="Start the tutor, then work with the weights." />
-        <button type="button" disabled={!runner.running} onClick={runner.hearStimulus} className="mx-auto block text-sm text-cyan-300 underline disabled:opacity-40">Say that again</button>
+        {/* With the tutor (no `hearStimulus`), the learner asks the tutor to repeat. */}
+        {runner.hearStimulus && <button type="button" disabled={!runner.running} onClick={runner.hearStimulus} className="mx-auto block text-sm text-cyan-300 underline disabled:opacity-40">Say that again</button>}
       </>}
     </LuminaCardContent>
   </LuminaCard>;
 }
+
+const useWorkspaceWorkshop = workspaceBalance<WorkshopItem>(workshopAssignment);
+
+// The workspace path never mounts the runner, whose context push and cue loop would run beside the tutor.
+const BalanceScaleWorkshop = withWorkspaceController<BalanceSurfaceProps, WorkshopOptions, BalanceRun<WorkshopItem>>(
+  'balance-scale', BalanceScaleWorkshopSurface, useScriptedBalance<WorkshopItem>, useWorkspaceWorkshop);
+export default BalanceScaleWorkshop;

@@ -45,6 +45,11 @@ import { getDigitPaths } from '../../primitives/visual-primitives/math/numberTra
 import { itemsFromChallenges as sortingItems, sortingStationHarnessAnswers } from '../../primitives/visual-primitives/math/sortingStationScript';
 import { placeLabel } from '../../primitives/visual-primitives/math/spokenNumberWords';
 import { itemsFromChallenges as ordinalItems, ordinalLineHarnessAnswers } from '../../primitives/visual-primitives/math/ordinalLineScript';
+import { balanceSurface, explainHarnessAnswers, weightsFor } from '../../primitives/visual-primitives/math/balanceScaleWorkspace';
+import { equalityProblem, WEIGHTS } from '../../primitives/visual-primitives/math/balanceEqualityModel';
+import { equalityItems } from '../../primitives/visual-primitives/math/balanceEqualityScript';
+import { isHands, TRAY, workshopProblem } from '../../primitives/visual-primitives/math/balanceWorkshopModel';
+import { workshopItems } from '../../primitives/visual-primitives/math/balanceWorkshopScript';
 import type { BarModelChallenge } from '../../primitives/visual-primitives/math/BarModel';
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
@@ -477,6 +482,52 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       }
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"], [data-pip-object="stimulus"]' } },
+  },
+  'balance-scale': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/BalanceScale.tsx',
+    instanceId: 'scale',
+    defaults: { grade: 'Grade 1', mode: 'equality', di: false,
+      topic: 'Balancing a mystery weight with numbered weights, then adding them' },
+    leakTokens: ['BE_', 'BW_', 'ANSWER_CORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'STEP_TAKEN'],
+    prompts: WORKSPACE_PROMPTS,
+    // Spoken steps say the published number (the explanation says the domain's sentence). Hands steps
+    // press the real controls after clearing the step. A hands step commits only when complete, so
+    // "wrong" is an incomplete move (one weight short, one group filled) that stays exploration: the
+    // program then records guidance without a verdict. The plain solver (mixed sessions) is not driven.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const data = ctx.data as any;
+      const wrong = intent === 'wrong';
+      const add = (values: number[]) => values.map((v): DriverInput => ({ type: 'choose', label: `Add ${v} weight` }));
+      // An incomplete hands move commits nothing, so the tutor gets no turn from it; the learner
+      // then claims it is done, as a child does, and the tutor answers that claim.
+      const claim = (inputs: DriverInput[]): DriverInput[] => wrong
+        ? [...inputs, { type: 'answer', text: 'I think I am done.' }] : inputs;
+      const short = (target: number, tray: readonly number[]) => weightsFor(wrong ? Math.max(0, target - 1) : target, tray);
+      if (balanceSurface(data) === 'equality') {
+        const item = equalityItems((data.challenges ?? []).map(equalityProblem)).find(i => i.id === ctx.itemId);
+        if (!item) throw new Error('No current balance-scale equality assignment');
+        if (item.step !== 'build') return spokenExpected(ctx, intent);
+        const clear: DriverInput[] = Number(ctx.demand?.weightsOnRight ?? 0) > 0 ? [{ type: 'choose', label: 'Clear weights' }] : [];
+        return claim([...clear, ...add(short(item.problem.target, WEIGHTS))]);
+      }
+      if (balanceSurface(data) !== 'workshop') throw new Error('balance-scale mixed-equation solver is not driven at W1');
+      const item = workshopItems((data.challenges ?? []).map(workshopProblem)).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current balance-scale workshop assignment');
+      const p = item.problem;
+      if (item.step === 'explain') return [{ type: 'answer', text: wrong ? explainHarnessAnswers.plainWrong : explainHarnessAnswers.correct }];
+      if (!isHands(item.step)) return spokenExpected(ctx, intent);
+      const reset: DriverInput = { type: 'choose', label: 'Reset this step' };
+      if (item.step === 'separate') return claim([reset, { type: 'choose', label: `Set aside known ${p.known} weight` },
+        ...Array.from({ length: wrong ? p.known - 1 : p.known }, (_, i): DriverInput => ({ type: 'choose', label: `Unit ${i + 1}` }))]);
+      if (item.step === 'share') return claim([reset, ...Array.from({ length: wrong ? 1 : p.parcels }, (_, g) =>
+        Array.from({ length: p.target }, (): DriverInput => ({ type: 'choose', label: `Place unit in group ${g + 1}` }))).flat()]);
+      // A second combination must differ from the first (greedy), so it is all ones.
+      if (item.step === 'recompose') return claim([reset, ...add(wrong ? short(p.target, TRAY) : Array(p.target).fill(1))]);
+      return claim([reset, ...add(short(p.target, TRAY))]);
+    },
+    probes: { mounted: { selector: '[aria-label="Balance scale workspace"]' } },
   },
   'place-value-chart': {
     execution: 'workspace',

@@ -1258,6 +1258,18 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'balance-scale',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'Hands steps and spoken steps alternate. Hands: tap numbered weights onto a pan, set a known weight aside '
+        + 'on both sides, or share weight units into one equal group per identical parcel. Spoken: a total, the weight in one '
+        + 'group, or the weight of one parcel; two_step ends with an explanation of why one equal share is x. The activity checks '
+        + 'a hands step and commits it only when the move is complete and the learner stops; an unbalanced or uneven move is '
+        + 'exploration, not a wrong answer. What the learner is finding (the unnumbered left weight, the missing part of a '
+        + 'load, the weight of one sealed parcel) has no number on screen: during a hands step never say it, the total to '
+        + 'reach, or which weights to use. Say each question aloud; the learner '
+        + 'may not read it. A mixed-equation session instead solves on the scale and types x, which the scale checks. '
+        + 'You cannot place, move, remove or share weights, or open a parcel.',
+    },
     description: 'Touch-and-voice weight workshop with six mathematical actions: match and add; compose the same weight two ways; complete a known load; share among identical parcels; separate known weight then share; and connect those moves to equations. Unknown parcels have identical opaque containers; known weights show their quantities. Each challenge includes manipulation and separate spoken interpretation. Numeric pools are code-built. Never supply numbers in the manifest.',
     audioInputByMode: {
       equality: { manual_activity: true }, equality_hard: { manual_activity: true },
