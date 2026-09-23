@@ -33,7 +33,9 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
 vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
 import ShapeSorter, { type ShapeSorterData } from './ShapeSorter';
 import { itemsFromChallenges, workspaceAssignment, workspaceScene } from './shapeSorterDomain';
-import { shapeSorterLive, validateShapeSorterData } from '../../../components/live-activity/adapters/shapeSorterLive';
+import { validateShapeSorterData } from '../../../components/live-activity/adapters/shapeSorterLive';
+import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
+const shapeSorterLive = LIVE_ADAPTERS['shape-sorter'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.voiceActive = false;
   seam.close = null; seam.evaluationContext = null;

@@ -39,28 +39,45 @@ through `direct-instruction/DiTeachingStage.tsx`: supply those two, the drawn st
 optional trail of committed answers, a recap label, metrics (`diStageMetrics`) and wording.
 `DiLetterSoundsTeaching.tsx` is the smallest example.
 
-Under `L/components/live-activity/`, inspect `adapters/countingBoardLive.ts`,
-`adapters/shapeSorterLive.ts`, `activityContract.ts`, `liveActivitySpec.ts`,
-`liveRenderers.tsx`, `livePlan.ts` and `liveJourneySpec.ts`. The registry owns supported
-modes, data validation, guidance and ownership; generated and prepared-plan mounts
-both need exact mode and objective/plan metadata. A workspace uses `canAdvance: false`
-even though its teaching owner is the tutor.
+Under `L/components/live-activity/`, inspect `adapters/tenFrameLive.ts`,
+`adapters/adapterContract.ts` (`workspaceAdapter`), `activityContract.ts`, `liveActivitySpec.ts`,
+`livePlan.ts` and `liveJourneySpec.ts`. Generated and prepared-plan mounts both need exact mode
+and objective/plan metadata. A workspace uses `canAdvance: false` even though its teaching owner
+is the tutor.
 
-Per-family facts are declared once, on the adapter, and shared helpers do the rest:
+**A workspace family is declared in the catalog, once.** The entry carries
+`teachingWorkspace: { guidance, grades }` (`service/manifest/catalog/*.ts`; the manifest prompt
+never reads it). `workspaceAdapter(id, domain)` builds the live adapter from that plus the entry's
+`evalModes`: modes, picker copy, ownership, lesson start and guidance (domain sentences +
+`WORKSPACE_DOCTRINE`). The family's `adapters/<x>Live.ts` supplies only a `WorkspaceDomain`:
+`validate` and the mount `initialState` (`workspaceOpening` for the standard one). Register it with
+one line in `activityContract.ts`. `liveRenderers.tsx` renders every family through the primitive
+registry with the lesson's mount props; it has no per-family rows.
 
-- **Ordinary lessons:** `bindsTeachingWorkspace: true` on the adapter, and then every mode in
-  `modes` binds in a lesson. `lessonWorkspacePlan.ts` names no primitive and lists no mode. Never
-  withhold a mode from lessons: a mode that misbehaves there is a defect to fix (user ruling
-  2026-09-20). Absent = an LA-04 adoption with no workspace binding.
+Shared helpers do the rest:
+
+- **Ordinary lessons:** a catalog `teachingWorkspace` declaration, and then every catalog mode binds
+  in a lesson. `lessonWorkspacePlan.ts` names no primitive and lists no mode. Never withhold a mode
+  from lessons: a mode that misbehaves there is a defect to fix (user ruling 2026-09-20). Absent =
+  an LA-04 adoption with no workspace binding.
+- **A runner-era component (W1):** keep its one surface and swap the controller.
+  `runtime/useWorkspaceRunner.ts` speaks the judged runner's own callbacks (`onItemOpened`,
+  `onCorrectionRetry`, `onAffirmed`, `onPresentStimulus`, `onFinished`, `armStillness`), so the
+  surface's reveal, reset and evaluation code runs unchanged; a placement goes through
+  `commitGesture(run, { response, correct, cue })` with the activity's own check.
+  `withWorkspaceController(id, Surface, useScripted, useWorkspace)` decides from the catalog and
+  keys the surface so hooks never change owner. `TenFrame.tsx` and `CountingBoard.tsx` are the
+  examples; the per-primitive part is the domain's `workspaceAssignment`/`workspaceScene`, a
+  `useLayoutEffect` publishing the scene, and the gesture commit.
 - **Learner's Try again / Next challenge on a checked item:** rendered by the shared shell
   `runtime/LiveRuntimeSurface.tsx` from the observer affordances; a host passes
   `learnerProgress`. Do not add a per-host or per-primitive copy.
 - **Mode -> content:** the generator owns it (schema enum or code-built `challengeType`). The
   live hosts check only that the pin names catalog modes (`pinnedModes.ts`); do not add a
   runtime re-check of generated content. An off-mode payload is a generator defect for `/oracle-test`.
-- **Scripted drill or teaching workspace:** `runtime/withTeachingWorkspace.tsx`, given the
-  family's `*_WORKSPACE_MODES` constant from its domain module — the same constant the adapter
-  publishes as `modes`. Only for a family that still has a scripted drill. The four spoken DI
+- **Scripted drill or separate teaching component:** `runtime/withTeachingWorkspace.tsx(id,
+  Teaching, Scripted)`, deciding from the catalog. Only for a family that still has a scripted
+  drill and a separate `*Teaching` component; a new binding uses `withWorkspaceController`. The four spoken DI
   packs (letter sounds, word reading, math facts, sentence reading) have none since LA-14 S5:
   `Di*.tsx` exports the teaching component, and `DiTeachingStage` renders a visible "needs the
   tutor" card for a mount with no runtime. A new DI pack follows that shape, not the wrapper.
@@ -68,9 +85,8 @@ Per-family facts are declared once, on the adapter, and shared helpers do the re
   maximum. A generator that fills past 12 by design (letter sounds' 20-item review set) must
   export that number from its domain and pass it, or those sections silently fail to bind.
 - **Evaluation submit:** `runtime/useTeachingEvaluation.ts`; the binding supplies only `metrics`.
-- **Adapter boilerplate:** `validateChallengePool`, `workspaceLessonStart` and
-  `workspaceGuidance` (domain sentences + the shared `WORKSPACE_DOCTRINE`) in
-  `adapters/adapterContract.ts`.
+- **Adapter boilerplate:** none per family; `validateChallengePool` and `workspaceOpening` in
+  `adapters/adapterContract.ts` cover the domain's two functions.
 - **A refused workspace action:** `execute` returns `false` or, better, the reason as a string;
   `LiveLessonRuntime` relays it to the tutor. A bare refusal once drew 45 identical retries.
 - **A new observation kind:** `service/typesafe/observationRoute.ts` for its route,

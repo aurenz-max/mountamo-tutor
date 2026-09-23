@@ -44,9 +44,12 @@ import {
   objectSingularFor,
   type CountingItem,
 } from './countingBoardScript';
-import { boardGroups, workspaceScene } from './countingBoardDomain';
+import { boardGroups, workspaceAssignment, workspaceScene } from './countingBoardDomain';
 import { countingBoardEvidenceSummary, countingObservation } from './countingBoardEvidence';
-import { useCountingTutorController, type CountingController, type CountingControllerOptions, type CountingWorkspace } from './useCountingTutorController';
+import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
 import HandIcon from './HandIcon';
@@ -350,26 +353,24 @@ interface CountingBoardProps {
  * the runner's option types die with the legacy branch at S3 (sunset slice S1,
  * qa/live-runtime-handoffs/07-sunset-scripted-tutoring.md).
  */
-type CountingBoardControllerOptions = CountingControllerOptions
+type CountingBoardControllerOptions = Omit<WorkspaceRunOptions<CountingItem>, 'primitiveId' | 'assignment' | 'evalMode'>
+  & { evalMode?: string }
   & Omit<JudgedScriptRunnerOptions<CountingItem>, 'pack' | 'items' | 'instanceId'>
   & { pack?: JudgedScriptPack<CountingItem> };
 
-function useScriptedController(options: CountingBoardControllerOptions): CountingController {
+function useScriptedController(options: CountingBoardControllerOptions): LiveRun<CountingItem> {
   return useJudgedScriptRunner({ ...options, pack: options.pack! });
 }
 
-// Component boundaries keep hook ownership stable. The live path never starts a DI runner.
-const CountingBoard: React.FC<CountingBoardProps> = props => {
-  const runtime = useLiveRuntime();
-  return <CountingBoardSurface key={runtime ? 'tutor' : 'scripted'} {...props}
-    useController={runtime ? useCountingTutorController : useScriptedController} tutorOwned={!!runtime} />;
-};
+const useWorkspaceController = (options: CountingBoardControllerOptions): LiveRun<CountingItem> =>
+  useWorkspaceRunner<CountingItem>({ ...options, primitiveId: 'counting-board', assignment: workspaceAssignment,
+    evalMode: options.evalMode || evalModeForKind(options.items[0].kind) });
 
 const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode,
   useController, tutorOwned }: CountingBoardProps & {
-    useController: (options: CountingBoardControllerOptions) => CountingController; tutorOwned: boolean;
+    useController: (options: CountingBoardControllerOptions) => LiveRun<CountingItem>; tutorOwned: boolean;
   }) => {
-  const workspace = useRef<CountingWorkspace | null>(null);
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const [demonstration, setDemonstration] = useState<string[]>([]);
   const {
     title,
@@ -615,16 +616,14 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
         // first ask.
         if (flashTimeoutRef.current) { clearTimeout(flashTimeoutRef.current); flashTimeoutRef.current = null; }
         setIsSubitizeFlashing(false);
-        setSubitizeAnswerReady(false);
+        // The workspace does not re-flash after a miss, so a look the learner already saw stays
+        // answerable there; re-showing stays available, as assisted (ten-frame W1 finding).
+        setSubitizeAnswerReady(ready => tutorOwned && ready);
       } else {
         resetBoardFor(item);
       }
     },
   });
-
-  useEffect(() => {
-    if (evaluationContext && runner.teachingResult && !evaluation.hasSubmitted) handleFinished(runner.teachingResult);
-  }, [evaluationContext, runner.teachingResult, evaluation.hasSubmitted, handleFinished]);
 
   // AFTER the runtime mount is registered, never before: `start()` waits for
   // `grantOwnership('runner')`, which cannot be granted until this primitive's
@@ -837,8 +836,8 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
     givenCountRef.current = countedObjects.size;
-    if (runner.submitGestureResponse) runner.submitGestureResponse(countedObjects.size);
-    else runner.submitGestureAttempt(giveVerdictCue(item, countedObjects.size));
+    commitGesture(runner, { response: String(countedObjects.size), correct: countedObjects.size === item.target,
+      cue: () => giveVerdictCue(item, countedObjects.size) });
   }, [runner, evaluation.hasSubmitted, countedObjects]);
 
   // ── The hand pick (subitize_perceptual) — the tap IS the commit ───────────
@@ -852,8 +851,8 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     SoundManager.tap();
     setHandChoice(fingers);
     handChoiceRef.current = fingers;
-    if (runner.submitGestureResponse) runner.submitGestureResponse(fingers);
-    else runner.submitGestureAttempt(handVerdictCue(item, fingers));
+    commitGesture(runner, { response: String(fingers), correct: fingers === item.target,
+      cue: () => handVerdictCue(item, fingers) });
   }, [runner, evaluation.hasSubmitted]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
@@ -1313,5 +1312,9 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     </LuminaCard>
   );
 };
+
+// The workspace path never starts a DI runner beside the tutor.
+const CountingBoard = withWorkspaceController<CountingBoardProps, CountingBoardControllerOptions, LiveRun<CountingItem>>(
+  'counting-board', CountingBoardSurface, useScriptedController, useWorkspaceController);
 
 export default CountingBoard;

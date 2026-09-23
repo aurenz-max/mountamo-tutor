@@ -91,7 +91,6 @@ import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { shapeSorterPipPose } from '../../../pip/shapeSorterPipPose';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { withTeachingWorkspace } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { SHAPE_SORTER_WORKSPACE_MODES } from './shapeSorterDomain';
 import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
 import { useShapeSorterRuntime } from './useShapeSorterRuntime';
 import { renderShapeSVG } from './shapeSorterDrawing';
@@ -614,5 +613,5 @@ const ScriptedShapeSorter: React.FC<ShapeSorterProps> = ({ data, className, auto
 
 /** The live pilot shares the actual drawing code; its lifecycle never mounts the drill runner. */
 const ShapeSorter = withTeachingWorkspace('shape-sorter',
-  SHAPE_SORTER_WORKSPACE_MODES, ShapeSorterTeaching, ScriptedShapeSorter);
+  ShapeSorterTeaching, ScriptedShapeSorter);
 export default ShapeSorter;

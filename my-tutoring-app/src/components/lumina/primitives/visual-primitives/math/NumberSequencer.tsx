@@ -13,7 +13,6 @@ import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { numberSequencerPipPose } from '../../../pip/numberSequencerPipPose';
 import { buildSequencerItems, sequencerPackBase, sequencerOrderCue, type SequencerItem } from './numberSequencerScript';
-import { NUMBER_SEQUENCER_WORKSPACE_MODES } from './numberSequencerDomain';
 import NumberSequencerTeaching from './NumberSequencerTeaching';
 import { withTeachingWorkspace } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 
@@ -79,7 +78,7 @@ export interface NumberSequencerProps {
  * move (LA-14 S3/S4).
  */
 const NumberSequencer = withTeachingWorkspace('number-sequencer',
-  NUMBER_SEQUENCER_WORKSPACE_MODES, NumberSequencerTeaching, ScriptedNumberSequencer);
+  NumberSequencerTeaching, ScriptedNumberSequencer);
 export default NumberSequencer;
 
 /** The train is the working surface. Voice fills one gap per judged turn;

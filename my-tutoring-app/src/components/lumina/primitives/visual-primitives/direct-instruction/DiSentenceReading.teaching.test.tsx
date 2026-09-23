@@ -38,8 +38,10 @@ vi.mock('../../../components/DiActionPanel', () => ({ default: () => null }));
 import DiSentenceReading, { type DiSentenceReadingData } from './DiSentenceReading';
 import { DI_SENTENCE_READING_WORKSPACE_MODES, buildSentenceReadingItems, workspaceAssignment, workspaceScene,
   type DiSentenceReadingChallenge, type DiSentenceReadingChallengeType } from './diSentenceReadingDomain';
-import { diSentenceReadingLive, validateDiSentenceReadingData }
+import { validateDiSentenceReadingData }
   from '../../../components/live-activity/adapters/diSentenceReadingLive';
+import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
+const diSentenceReadingLive = LIVE_ADAPTERS['di-sentence-reading'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.voiceActive = false;
   seam.close = null; seam.evaluationContext = null;

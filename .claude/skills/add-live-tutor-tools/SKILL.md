@@ -147,7 +147,7 @@ operations. Keep domain-specific rendering and task rules in the primitive.
   count, and a named consumer: the packet field the tutor will read, or a trace-only bench
   while it is being measured. Only `assignment_outcome` may commit.
 
-Adapter guidance is `workspaceGuidance(domain)`: write only the domain's sentences (task
+Adapter guidance is the catalog entry's `teachingWorkspace.guidance`: write only the domain's sentences (task
 constraints, which targets exist, what the tutor cannot do) and let `WORKSPACE_DOCTRINE` in
 `adapters/adapterContract.ts` carry teaching ownership, help, showing, crediting and
 progression for every adopter. A change to that doctrine is a framework correction: make it
@@ -186,10 +186,11 @@ contracts only where they can restore the same item safely; withhold unsupported
 
 ## 4. Mount only the verified surface
 
-Wire the frontend adapter registry and renderer, passing exact `objectiveId`,
-`planItemId` and resolved `runtimeEvalMode`; never infer the mode from a flattened
-interaction label. Workspace adapters use tutor ownership with `canAdvance: false`
-and avoid attaching legacy scripted tutoring. Validate generated data against the
+Declare `teachingWorkspace` in the catalog entry and register the family's `WorkspaceDomain`
+with `workspaceAdapter` (one line in `activityContract.ts`); the adapter's ownership, modes,
+copy and guidance follow from the catalog, and rendering needs no change. Pass exact
+`objectiveId`, `planItemId` and resolved `runtimeEvalMode`; never infer the mode from a flattened
+interaction label. Validate generated data against the
 actual renderer and task gates. Advertise only verified modes.
 
 Inspect the real entry point. The pilots were implemented in `/lumina/live-activity`;

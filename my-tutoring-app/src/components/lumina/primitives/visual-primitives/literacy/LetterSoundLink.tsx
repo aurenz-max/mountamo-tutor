@@ -74,7 +74,6 @@ import {
   type LetterSoundTier,
 } from './letterSoundLinkScript';
 import { withTeachingWorkspace } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { LETTER_SOUND_LINK_WORKSPACE_MODES } from './letterSoundLinkDomain';
 import LetterSoundLinkTeaching from './LetterSoundLinkTeaching';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
@@ -597,6 +596,6 @@ const ScriptedLetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, classNa
  *
  *  `withTeachingWorkspace` owns which of the two mounts. */
 export const LetterSoundLink = withTeachingWorkspace('letter-sound-link',
-  LETTER_SOUND_LINK_WORKSPACE_MODES, LetterSoundLinkTeaching, ScriptedLetterSoundLink);
+  LetterSoundLinkTeaching, ScriptedLetterSoundLink);
 
 export default LetterSoundLink;

@@ -1,11 +1,8 @@
 import type { CountingBoardData } from '../../../primitives/visual-primitives/math/CountingBoard';
 import { askFor, itemsFromChallenges as countingItemsFromChallenges, objectWordFor }
   from '../../../primitives/visual-primitives/math/countingBoardDomain';
-import { workspaceGuidance, workspaceLessonStart, type LiveActivityAdapter } from './adapterContract';
+import { type WorkspaceDomain } from './adapterContract';
 
-/** The CATALOG mode names, not the challenge types: `count_all` ships as `count` and `group_count` as `group` (CNB-3). */
-export const COUNTING_BOARD_MODES = ['count', 'subitize', 'subitize_perceptual', 'count_on', 'group', 'compare',
-  'give_me_n', 'recount_moved', 'take_away', 'add_more'] as const;
 
 /**
  * The board's spoken noun, resolved exactly as the component resolves it: a
@@ -36,25 +33,6 @@ function countingBoardState(board: CountingBoardData) {
     interaction: 'Teach from liveRuntime.task and its workspace. Judge spoken answers naturally; the host records your completed feedback and handles retry/advance. The board checks gestures.' };
 }
 
-export const countingBoardLive: LiveActivityAdapter<CountingBoardData> = {
-  tutoring: null,
-  teachingOwner: 'tutor',
-  modes: COUNTING_BOARD_MODES,
-  bindsTeachingWorkspace: true,
-  canAdvance: false, // The dialogue observer owns checked progression.
-  grades: ['Kindergarten', 'Grade 1'],
-  copy: {
-    label: 'Counting Board', checkbox: 'Counting board', title: 'Learn with the Counting Board',
-    lessons: [['count', 'Count all'], ['count_on', 'Count on'], ['take_away', 'Take away'], ['add_more', 'Add more'],
-      ['give_me_n', 'Give me this many'], ['recount_moved', 'Same after they move'], ['compare', 'Which group has more'],
-      ['group', 'Count by groups'], ['subitize', 'Quick look'], ['subitize_perceptual', 'Match the hand']],
-  },
-  lessonStart: workspaceLessonStart('counting-board', 'counting-board'),
-  // Teaching ownership, spoken verdicts, crediting, help and progression come from
-  // WORKSPACE_DOCTRINE (adapterContract.ts); this names only the board's own facts.
-  guidance: workspaceGuidance('Use demonstrate to show a selection on the actual board without changing learner work. '
-    + 'Handovers and hand choices are checked directly by the board. '
-    + 'Respect the current task constraints, including hidden quick-look objects and pre-numeric hand matching.'),
-  validate: validateCountingBoardData,
-  initialState: countingBoardState,
-};
+/** What the live adapter needs from this family; the catalog's `teachingWorkspace` declares the rest. */
+export const countingBoardLiveDomain: WorkspaceDomain<CountingBoardData> = { validate: validateCountingBoardData, initialState: countingBoardState };
+

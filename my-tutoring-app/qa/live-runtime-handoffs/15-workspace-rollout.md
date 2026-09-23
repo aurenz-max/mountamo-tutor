@@ -6,7 +6,9 @@ Date: 2026-09-22 · Owner: roadmap LA-14 · Executor: `/add-live-tutor-tools` ·
 **Status 2026-09-22:** step 1 done (`3a78cb44`). Step 2 half done: **ten-frame at W1**, all seven modes,
 smoke `build` and `subitize --audio` PASS ([report](../tutor-reports/ten-frame-w1-2026-09-22.md)).
 Shape found: controller swapped at the component boundary (Counting Board's precedent), no Teaching copy.
-Adapter still hand-written. **Next: number-bond** with the same recipe, then the generic adapter.
+**Simplified the same day:** shared `useWorkspaceRunner`, catalog `teachingWorkspace` + `workspaceAdapter`
+(questions 1-3 answered for runner-era families), registry-driven renderers; all nine adopters moved.
+**Next: number-bond** on the new recipe, recording its line count and time.
 
 ## Why this slice
 

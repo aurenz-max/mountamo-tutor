@@ -28,6 +28,7 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
 import CountingBoard, { type CountingBoardChallenge, type CountingBoardData } from './CountingBoard';
+import { evalModeForKind } from './countingBoardDomain';
 
 type Kind = CountingBoardChallenge['type'];
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.voiceActive = false; seam.close = null;
@@ -57,7 +58,7 @@ async function mount(kind: Kind = 'give_me_n', classify?: DialogueClassifier, cl
   const data: CountingBoardData = { instanceId: 'board', title: 'Counting stars', objects: { type: 'stars' }, gradeBand: 'K',
     challenges: [challenge(kind, 'one'), challenge(kind, 'two')] };
   const tree = () => <LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
-    <CountingBoard data={data} autoStart runtimePlanItemId="plan-board" />
+    <CountingBoard data={data} autoStart runtimePlanItemId="plan-board" runtimeEvalMode={evalModeForKind(kind)} />
   </LiveRuntimeSurface></LiveRuntimeContext.Provider>;
   const view = render(tree());
   const state = () => runtime.getSnapshot();

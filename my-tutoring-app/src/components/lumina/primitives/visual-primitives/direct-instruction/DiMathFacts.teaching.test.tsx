@@ -40,7 +40,9 @@ vi.mock('../../../components/DiActionPanel', () => ({ default: () => null }));
 import DiMathFacts, { type DiMathFactsData } from './DiMathFacts';
 import { DI_MATH_FACTS_WORKSPACE_MODES, buildMathFactItems, workspaceAssignment, workspaceScene,
   type DiMathFactsChallenge, type DiMathFactsChallengeType } from './diMathFactsDomain';
-import { diMathFactsLive, validateDiMathFactsData } from '../../../components/live-activity/adapters/diMathFactsLive';
+import { validateDiMathFactsData } from '../../../components/live-activity/adapters/diMathFactsLive';
+import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
+const diMathFactsLive = LIVE_ADAPTERS['di-math-facts'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.voiceActive = false;
   seam.close = null; seam.evaluationContext = null;

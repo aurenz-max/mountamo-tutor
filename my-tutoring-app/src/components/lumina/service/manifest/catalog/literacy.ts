@@ -2462,6 +2462,22 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'letter-sound-link',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'Where the learner SAYS the answer, judge the audio you hear against the assignment fact. '
+        + `A letter's NAME is not its sound. `
+        + 'Where the facts give you soundToSay, the learner answers by TAPPING one of two letters. Say that sound, '
+        + 'then stop: never say, spell or point out either letter on the screen, and judge nothing you hear — '
+        + 'the activity checks the tap and tells you what it was. '
+        + 'Where two pictures are on the stage the answer IS one of their names, so naming either picture before the '
+        + 'learner answers hands the item over: talk about the sound, or about the picture that does NOT start with '
+        + 'it. Where no picture is drawn, its keyword is withheld from you on purpose and appears only once the '
+        + 'answer is recorded. '
+        + 'Where demonstrate is offered, its targets are the ids in workspace.objects and [] clears them. '
+        + 'Marking the picture that starts with this letter\'s sound hands the '
+        + 'answer over — mark the other picture to contrast, or the printed letter. There is no other scene action: '
+        + 'you cannot change the letter, replace a picture, write, or answer for the child.',
+    },
     misconceptionScope: 'primitive',
     description:
       'Live Direct Instruction letter-sound practice with a spoken tutor. The tutor asks, waits, judges the answer '

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useLiveRuntime } from './LiveRuntimeContext';
-import { catalogBindsWorkspace, pinBindsWorkspace } from '../pinnedModes';
+import { catalogBindsWorkspace } from '../pinnedModes';
 
 /**
  * The one rule for which component a workspace family mounts: inside a live
@@ -17,10 +17,10 @@ import { catalogBindsWorkspace, pinBindsWorkspace } from '../pinnedModes';
  * adapter publishes, so the route and the mount cannot disagree.
  */
 export function withTeachingWorkspace<T, P extends T & { runtimeEvalMode?: string }>(primitiveId: string,
-  modes: readonly string[], Teaching: React.ComponentType<T>, Scripted: React.ComponentType<P>): React.FC<P> {
+  Teaching: React.ComponentType<T>, Scripted: React.ComponentType<P>): React.FC<P> {
   const Switched: React.FC<P> = props => {
     const runtime = useLiveRuntime();
-    return runtime && pinBindsWorkspace(primitiveId, modes, props.runtimeEvalMode) ? <Teaching {...props} /> : <Scripted {...props} />;
+    return runtime && catalogBindsWorkspace(primitiveId, props.runtimeEvalMode) ? <Teaching {...props} /> : <Scripted {...props} />;
   };
   Switched.displayName = `withTeachingWorkspace(${Scripted.displayName || Scripted.name || 'Primitive'})`;
   return Switched;

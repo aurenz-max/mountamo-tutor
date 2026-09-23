@@ -9,9 +9,9 @@
  * and the sandbox all widen automatically.
  */
 import { numberLineLive, validateActivityData, initialActivityState } from './adapters/numberLineLive';
-import { tenFrameLiveDomain, validateTenFrameData } from '../../primitives/visual-primitives/math/tenFrameWorkspace';
-import { countingBoardLive } from './adapters/countingBoardLive';
-import { numberSequencerLive } from './adapters/numberSequencerLive';
+import { tenFrameLiveDomain, validateTenFrameData } from './adapters/tenFrameLive';
+import { countingBoardLiveDomain } from './adapters/countingBoardLive';
+import { numberSequencerLiveDomain } from './adapters/numberSequencerLive';
 import { numberBondLive } from './adapters/numberBondLive';
 import { ordinalLineLive } from './adapters/ordinalLineLive';
 import { sortingStationLive } from './adapters/sortingStationLive';
@@ -19,12 +19,12 @@ import { numberTracerLive } from './adapters/numberTracerLive';
 import { comparisonBuilderLive } from './adapters/comparisonBuilderLive';
 import { compareObjectsLive } from './adapters/compareObjectsLive';
 import { placeValueLive } from './adapters/placeValueLive';
-import { shapeSorterLive, validateShapeSorterData } from './adapters/shapeSorterLive';
-import { diLetterSoundsLive } from './adapters/diLetterSoundsLive';
-import { diWordReadingLive } from './adapters/diWordReadingLive';
-import { diMathFactsLive } from './adapters/diMathFactsLive';
-import { diSentenceReadingLive } from './adapters/diSentenceReadingLive';
-import { letterSoundLinkLive } from './adapters/letterSoundLinkLive';
+import { shapeSorterLiveDomain, validateShapeSorterData } from './adapters/shapeSorterLive';
+import { diLetterSoundsLiveDomain } from './adapters/diLetterSoundsLive';
+import { diWordReadingLiveDomain } from './adapters/diWordReadingLive';
+import { diMathFactsLiveDomain } from './adapters/diMathFactsLive';
+import { diSentenceReadingLiveDomain } from './adapters/diSentenceReadingLive';
+import { letterSoundLinkLiveDomain } from './adapters/letterSoundLinkLive';
 import { workspaceAdapter, type LiveActivityAdapter } from './adapters/adapterContract';
 
 export type { LiveActivityAdapter } from './adapters/adapterContract';
@@ -40,8 +40,8 @@ export { validateActivityData, initialActivityState, validateTenFrameData, valid
 export const LIVE_ADAPTERS = {
   'number-line': numberLineLive,
   'ten-frame': workspaceAdapter('ten-frame', tenFrameLiveDomain),
-  'counting-board': countingBoardLive,
-  'number-sequencer': numberSequencerLive,
+  'counting-board': workspaceAdapter('counting-board', countingBoardLiveDomain),
+  'number-sequencer': workspaceAdapter('number-sequencer', numberSequencerLiveDomain),
   'number-bond': numberBondLive,
   'ordinal-line': ordinalLineLive,
   'sorting-station': sortingStationLive,
@@ -49,12 +49,12 @@ export const LIVE_ADAPTERS = {
   'comparison-builder': comparisonBuilderLive,
   'compare-objects': compareObjectsLive,
   'place-value-chart': placeValueLive,
-  'shape-sorter': shapeSorterLive,
-  'di-letter-sounds': diLetterSoundsLive,
-  'di-word-reading': diWordReadingLive,
-  'di-math-facts': diMathFactsLive,
-  'di-sentence-reading': diSentenceReadingLive,
-  'letter-sound-link': letterSoundLinkLive,
+  'shape-sorter': workspaceAdapter('shape-sorter', shapeSorterLiveDomain),
+  'di-letter-sounds': workspaceAdapter('di-letter-sounds', diLetterSoundsLiveDomain),
+  'di-word-reading': workspaceAdapter('di-word-reading', diWordReadingLiveDomain),
+  'di-math-facts': workspaceAdapter('di-math-facts', diMathFactsLiveDomain),
+  'di-sentence-reading': workspaceAdapter('di-sentence-reading', diSentenceReadingLiveDomain),
+  'letter-sound-link': workspaceAdapter('letter-sound-link', letterSoundLinkLiveDomain),
 } satisfies Record<string, LiveActivityAdapter<any>>;
 
 export type LivePrimitiveId = keyof typeof LIVE_ADAPTERS;

@@ -2425,6 +2425,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'counting-board',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'Use demonstrate to show a selection on the actual board without changing learner work. '
+        + 'Handovers and hand choices are checked directly by the board. '
+        + 'Respect the current task constraints, including hidden quick-look objects and pre-numeric hand matching.',
+    },
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: countingBoardDeliveryEligible },
@@ -3303,6 +3309,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-sequencer',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'The glowing car marks the space the current question is about; judge a spoken answer against that question. '
+        + 'On the card-ordering mode the train checks the arrangement itself once the last card is placed; '
+        + 'praise or doubt about a part-built train is teaching, not a verdict. '
+        + 'Use demonstrate with visible car or card IDs to draw purple dashed tutor marks on the cars or cards you are '
+        + 'discussing, and [] to clear them. You cannot fill an empty car, move a card into a place, reorder the train '
+        + 'or count for the learner. Counting along out loud is teaching; the number the learner says is the answer.',
+    },
     description: 'Live tutor-judged number train practice. Children say missing numbers, continue a count one number at a time, and name the printed number that breaks a sequence. Card ordering remains hands-on arrangement. The tutor asks, judges, corrects, and advances. Six existing task identities for K-1 mathematics.',
     constraints: 'Requires a microphone for spoken modes; order-cards remains hands-on arrangement. K: 1-20 range by default, widened to 1-100 when the objective explicitly names 100. Grade 1: broad practice defaults to 1-100 and may extend through 120 only when the objective/topic/intent requires it. Spot-error positions are chosen in code and never visually pre-marked. Pinned single or blended eval modes must emit only their catalog challenge types; unpinned mixed sessions may combine all six.',
     affordances: { representation: 'symbolic', reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
@@ -3989,6 +4004,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'shape-sorter',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'The gold ring (or the single object shown) fixes the assignment across every mode. Under identify, '
+        + 'accept its listed alternate names and equivalents in other languages; a color or side count is useful progress but not the '
+        + 'naming answer. Under find_real_object, the object\'s own name is never the answer — accept only the 2D shape its outline is '
+        + 'drawn as. Under count, accept counting aloud that lands on the right total; a shape name, or a count one more or one less, '
+        + 'is wrong, and sides and corners are asked separately, never both at once. Under sort, the printed mats are the groups the '
+        + 'learner names; the shape\'s own name is not a group. '
+        + 'Use demonstrate with visible shape or mat IDs to draw purple dashed tutor rings for comparison; [] clears them. Those marks '
+        + 'never change the gold-ringed assignment or move a shape onto a mat. You cannot move, rotate, count, or sort a shape for the learner.',
+    },
     description:
       'LIVE-JUDGED SPOKEN 2D geometry (Direct Instruction). The tutor points to one shape at a time and the '
       + 'student ANSWERS OUT LOUD — naming the shape, saying how many sides or corners it has, or naming the '

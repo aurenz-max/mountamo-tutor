@@ -38,7 +38,9 @@ vi.mock('../../../components/DiActionPanel', () => ({ default: () => null }));
 import DiWordReading, { type DiWordReadingData } from './DiWordReading';
 import { DI_WORD_READING_WORKSPACE_MODES, buildWordReadingItems, workspaceAssignment, workspaceScene,
   type DiWordReadingChallenge, type DiWordReadingChallengeType } from './diWordReadingDomain';
-import { diWordReadingLive, validateDiWordReadingData } from '../../../components/live-activity/adapters/diWordReadingLive';
+import { validateDiWordReadingData } from '../../../components/live-activity/adapters/diWordReadingLive';
+import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
+const diWordReadingLive = LIVE_ADAPTERS['di-word-reading'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.voiceActive = false;
   seam.close = null; seam.evaluationContext = null;

@@ -111,12 +111,19 @@ export const runnerLessonStart = (family: string) => (grade: string, mode: strin
 
 /**
  * The only per-primitive code a catalog-declared workspace family needs: reject content its
- * component cannot run, and say what the first item asks. Pure, because the server route imports it.
+ * component cannot run, and the state the tutor receives on mount. Pure, because the server route
+ * imports it.
  */
 export interface WorkspaceDomain<T> {
   validate: (value: unknown) => T;
-  opening: (data: T) => { title: string; task: string; total: number };
+  initialState: (data: T) => Record<string, unknown>;
 }
+
+/** The mount state most families send: the first task, the item count, and how the host judges. */
+export const workspaceOpening = ({ title, task, total }: { title: string; task: string; total: number }) => ({
+  title, instruction: task, teachingOwner: 'tutor', totalChallenges: total,
+  interaction: 'Teach from liveRuntime.task and its workspace. Judge spoken answers naturally; the host records '
+    + 'your completed feedback and handles retry/advance. The activity checks a placement or selection itself.' });
 
 const titleCase = (id: string) => id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
@@ -143,11 +150,6 @@ export function workspaceAdapter<T>(primitiveId: string, domain: WorkspaceDomain
     lessonStart: workspaceLessonStart(primitiveId, primitiveId),
     guidance: workspaceGuidance(declared.guidance),
     validate: domain.validate,
-    initialState: data => {
-      const { title, task, total } = domain.opening(data);
-      return { title, instruction: task, teachingOwner: 'tutor', totalChallenges: total,
-        interaction: 'Teach from liveRuntime.task and its workspace. Judge spoken answers naturally; the host records '
-          + 'your completed feedback and handles retry/advance. The activity checks a placement or selection itself.' };
-    },
+    initialState: domain.initialState,
   };
 }
