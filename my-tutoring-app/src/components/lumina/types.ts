@@ -1891,6 +1891,14 @@ export interface ComponentDefinition {
   constraints?: string; // e.g. "Max 1 per page" or "Requires numeric data"
   /** Optional AI tutoring scaffold. When present, sent to backend during WebSocket auth. */
   tutoring?: TutoringScaffold;
+  /**
+   * This primitive binds the shared tutor/JEV teaching workspace for EVERY eval mode, in the live
+   * host and in ordinary lessons. A capability fact, never a rollout gate (user ruling 2026-09-20).
+   * `guidance` is only this primitive's own sentences; `WORKSPACE_DOCTRINE` carries teaching,
+   * crediting and progression for every adopter. `grades` gates the live development host.
+   * Never read by the manifest prompt.
+   */
+  teachingWorkspace?: { guidance: string; grades: readonly string[] };
   /** Optional Gemini Live audio-input request (e.g. manual voice-activity for
    *  DI live-judged packs). Sent at WebSocket auth; a lesson session applies it
    *  when ANY of its manifest items declares one. */

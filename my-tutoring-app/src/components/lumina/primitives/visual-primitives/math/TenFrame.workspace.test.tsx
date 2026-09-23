@@ -28,7 +28,8 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
   playStreak: vi.fn(), tap: vi.fn(), snap: vi.fn(), invalid: vi.fn(), isEnabled: () => true, getVolume: () => 1 } }));
 vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
 import TenFrame, { type TenFrameChallenge, type TenFrameData } from './TenFrame';
-import { tenFrameLive } from '../../../components/live-activity/adapters/tenFrameLive';
+import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
+const tenFrameLive = LIVE_ADAPTERS['ten-frame'];
 import { getComponentById } from '../../../service/manifest/catalog';
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.evaluationContext = null;
@@ -182,7 +183,7 @@ it('subitize: a retry keeps a presented quick look answerable; a re-show is assi
 
 it('subitize: the learner can start the first look, unassisted, when the tutor has not presented', () => {
   const h = mount('subitize', [challenge('s1', 'subitize', 4, { flashDuration: 1000 })]);
-  const show = () => [...h.view.container.querySelectorAll('button')].find(b => b.textContent === 'Show me');
+  const show = () => Array.from(h.view.container.querySelectorAll('button')).find(b => b.textContent === 'Show me');
   act(() => { fireEvent.click(show()!); });
   expect(h.counters()).toBe(4);
   expect(show()).toBeUndefined();

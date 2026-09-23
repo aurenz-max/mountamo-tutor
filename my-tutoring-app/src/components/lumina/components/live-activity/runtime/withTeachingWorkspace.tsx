@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useLiveRuntime } from './LiveRuntimeContext';
-import { pinBindsWorkspace } from '../pinnedModes';
+import { catalogBindsWorkspace, pinBindsWorkspace } from '../pinnedModes';
 
 /**
  * The one rule for which component a workspace family mounts: inside a live
@@ -23,5 +23,25 @@ export function withTeachingWorkspace<T, P extends T & { runtimeEvalMode?: strin
     return runtime && pinBindsWorkspace(primitiveId, modes, props.runtimeEvalMode) ? <Teaching {...props} /> : <Scripted {...props} />;
   };
   Switched.displayName = `withTeachingWorkspace(${Scripted.displayName || Scripted.name || 'Primitive'})`;
+  return Switched;
+}
+
+/**
+ * The same rule for a primitive that keeps ONE surface and swaps its controller instead of its
+ * component: the runner-era families (workspace rollout W1). The surface receives the controller
+ * hook as a prop and is keyed by it, so hooks never change owner between renders and the
+ * workspace path never mounts the runner.
+ */
+export function withWorkspaceController<P extends { runtimeEvalMode?: string }, O, R>(primitiveId: string,
+  Surface: React.ComponentType<P & { tutorOwned: boolean; useController: (options: O) => R }>,
+  useScripted: (options: O) => R, useWorkspace: (options: O) => R): React.FC<P> {
+  const Switched: React.FC<P> = props => {
+    const runtime = useLiveRuntime();
+    // The catalog's `teachingWorkspace` declaration decides, so the route and this switch agree.
+    const tutorOwned = !!runtime && catalogBindsWorkspace(primitiveId, props.runtimeEvalMode);
+    return <Surface key={tutorOwned ? 'tutor' : 'scripted'} {...props} tutorOwned={tutorOwned}
+      useController={tutorOwned ? useWorkspace : useScripted} />;
+  };
+  Switched.displayName = `withWorkspaceController(${Surface.displayName || Surface.name || 'Primitive'})`;
   return Switched;
 }

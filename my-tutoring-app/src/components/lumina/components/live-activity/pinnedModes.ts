@@ -24,3 +24,10 @@ export function pinBindsWorkspace(primitiveId: string, workspaceModes: readonly 
   const modes = pinnedModes(primitiveId, pin);
   return !!modes && modes.every(mode => workspaceModes.includes(mode));
 }
+
+/** The catalog declares a teaching workspace and the pin names only its modes: the rule every host
+ *  and every component switch applies, read from the one declaration. */
+export function catalogBindsWorkspace(primitiveId: string, pin: string | undefined): boolean {
+  const entry = getComponentById(primitiveId);
+  return !!entry?.teachingWorkspace && pinBindsWorkspace(primitiveId, (entry.evalModes ?? []).map(m => m.evalMode), pin);
+}

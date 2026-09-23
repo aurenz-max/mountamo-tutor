@@ -9,7 +9,7 @@
  * and the sandbox all widen automatically.
  */
 import { numberLineLive, validateActivityData, initialActivityState } from './adapters/numberLineLive';
-import { tenFrameLive, validateTenFrameData } from './adapters/tenFrameLive';
+import { tenFrameLiveDomain, validateTenFrameData } from '../../primitives/visual-primitives/math/tenFrameWorkspace';
 import { countingBoardLive } from './adapters/countingBoardLive';
 import { numberSequencerLive } from './adapters/numberSequencerLive';
 import { numberBondLive } from './adapters/numberBondLive';
@@ -25,7 +25,7 @@ import { diWordReadingLive } from './adapters/diWordReadingLive';
 import { diMathFactsLive } from './adapters/diMathFactsLive';
 import { diSentenceReadingLive } from './adapters/diSentenceReadingLive';
 import { letterSoundLinkLive } from './adapters/letterSoundLinkLive';
-import type { LiveActivityAdapter } from './adapters/adapterContract';
+import { workspaceAdapter, type LiveActivityAdapter } from './adapters/adapterContract';
 
 export type { LiveActivityAdapter } from './adapters/adapterContract';
 // Re-exported for `activityContract.test.ts`; everything else reads `LIVE_ADAPTERS[id]`.
@@ -39,7 +39,7 @@ export { validateActivityData, initialActivityState, validateTenFrameData, valid
  */
 export const LIVE_ADAPTERS = {
   'number-line': numberLineLive,
-  'ten-frame': tenFrameLive,
+  'ten-frame': workspaceAdapter('ten-frame', tenFrameLiveDomain),
   'counting-board': countingBoardLive,
   'number-sequencer': numberSequencerLive,
   'number-bond': numberBondLive,

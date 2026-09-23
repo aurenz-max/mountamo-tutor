@@ -78,10 +78,12 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { pinBindsWorkspace } from '../../../components/live-activity/pinnedModes';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useTenFrameRuntime } from './useTenFrameRuntime';
-import { useTenFrameTutorController, type TenFrameController, type TenFrameControllerOptions } from './useTenFrameTutorController';
-import { TEN_FRAME_WORKSPACE_MODES, countsFlips, describeFrameResponse, evalModeForKind, workspaceScene } from './tenFrameWorkspace';
+import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { countsFlips, describeFrameResponse, evalModeForKind, workspaceAssignment, workspaceScene }
+  from './tenFrameWorkspace';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -287,36 +289,26 @@ interface TenFrameProps {
  * declared here, in the file that hosts both, so the runner's types leave with
  * the scripted branch. `frame` feeds the runner-era runtime registration only.
  */
-type TenFrameSurfaceControllerOptions = TenFrameControllerOptions
+type TenFrameControllerOptions = Omit<WorkspaceRunOptions<TenFrameItem>, 'primitiveId' | 'assignment'>
   & Omit<JudgedScriptRunnerOptions<TenFrameItem>, 'pack' | 'instanceId' | 'onItemOpened' | 'onPresentStimulus'>
   & { pack?: JudgedScriptPack<TenFrameItem>;
     frame: { filledCells: Set<number>; flippedCells: Set<number>; cancelPresentation: () => void } };
 
-function useScriptedController(options: TenFrameSurfaceControllerOptions): TenFrameController {
+function useScriptedController(options: TenFrameControllerOptions): LiveRun<TenFrameItem> {
   const runner = useJudgedScriptRunner<TenFrameItem>({ ...options, pack: options.pack! });
   useTenFrameRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
-    planItemId: options.planItemId, evalMode: options.evalMode ?? 'default', ...options.frame });
+    planItemId: options.planItemId, evalMode: options.evalMode, ...options.frame });
   return runner;
 }
 
-// Component boundaries keep hook ownership stable: the workspace path never mounts the runner,
-// whose context push and cue loop would otherwise run beside the tutor.
-const TenFrame: React.FC<TenFrameProps> = props => {
-  const runtime = useLiveRuntime();
-  const tutorOwned = !!runtime && pinBindsWorkspace('ten-frame', TEN_FRAME_WORKSPACE_MODES, props.runtimeEvalMode);
-  return <TenFrameSurface key={tutorOwned ? 'tutor' : 'scripted'} {...props} tutorOwned={tutorOwned}
-    useController={tutorOwned ? useTenFrameTutorController : useScriptedController} />;
-};
+const useWorkspaceController = (options: TenFrameControllerOptions): LiveRun<TenFrameItem> =>
+  useWorkspaceRunner<TenFrameItem>({ ...options, primitiveId: 'ten-frame', assignment: workspaceAssignment });
 
 const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
-  TenFrameProps & { tutorOwned: boolean; useController: (options: TenFrameSurfaceControllerOptions) => TenFrameController }) => {
+  TenFrameProps & { tutorOwned: boolean; useController: (options: TenFrameControllerOptions) => LiveRun<TenFrameItem> }) => {
   const live = useLuminaAIContext();
   const runtime = useLiveRuntime();
   const workspace = useRef<TeachingWorkspace | null>(null);
-  /** Workspace path: the frame's own verdict on the placement just committed, read by `checkResponse`. */
-  const placementCheckRef = useRef<{ itemId: string; correct: boolean } | null>(null);
-  /** Workspace path: the item last opened, so a retry of it is told apart from a new item. */
-  const openedItemRef = useRef<string | null>(null);
   const autoStartedRef = useRef(false);
   const {
     title,
@@ -435,19 +427,13 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
   // ── Per-item frame reset — every item owns its starting state (R6) ────────
   const resetFrameFor = useCallback((item: TenFrameItem) => {
     pip.clear();
-    // The workspace reopens the SAME item on a retry. A quick look the learner already
-    // saw stays answerable: a retry must not un-see the flash and leave a second answer
-    // unheard until the tutor re-presents. Re-showing stays available, as assisted.
-    const retried = tutorOwned && openedItemRef.current === item.id;
-    openedItemRef.current = item.id;
     if (flashTimeoutRef.current) {
       clearTimeout(flashTimeoutRef.current);
       flashTimeoutRef.current = null;
     }
     setIsFlashing(false);
-    setFlashAnswerReady(ready => retried && item.kind === 'subitize' && ready);
+    setFlashAnswerReady(false);
     splitVerdictRef.current = null;
-    placementCheckRef.current = null;
     reshowsRef.current = 0;
 
     // A completed frame never carries into the next challenge: build and add
@@ -469,7 +455,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
     // Subitize hides its counters until the flash runs; every other mode shows
     // whatever is on the frame.
     setCountersVisible(item.kind !== 'subitize');
-  }, [tutorOwned]);
+  }, []);
 
   // ── The subitize flash — WHAT is shown; the runner decides WHEN ───────────
   // Called from `onPresentStimulus` once the tutor has finished her line for
@@ -547,7 +533,6 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
   const runner = useController({
     items, workspace, objectiveId, planItemId: runtimePlanItemId,
     evalMode: runtimeEvalMode ?? (items[0] ? evalModeForKind(items[0].kind) : 'default'),
-    checkPlacement: (item) => placementCheckRef.current?.itemId === item.id ? placementCheckRef.current.correct : null,
     frame: { filledCells, flippedCells, cancelPresentation: () => {
       if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
       flashTimeoutRef.current = null;
@@ -584,7 +569,9 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
           flashTimeoutRef.current = null;
         }
         setIsFlashing(false);
-        setFlashAnswerReady(false);
+        // The runner re-flashes after its correction. The workspace does not, so a look the
+        // learner already saw stays answerable; re-showing stays available, as assisted.
+        setFlashAnswerReady(ready => tutorOwned && ready);
         setCountersVisible(false);
         return;
       }
@@ -645,10 +632,8 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
         shown.add(splitKey({ a: item.answer - onFrame, b: onFrame }));
         shownSplitsRef.current.set(item.answer, shown);
       }
-      if (runner.submitGestureResponse) {
-        placementCheckRef.current = { itemId: item.id, correct: splitVerdictRef.current === 'correct' };
-        runner.submitGestureResponse(describeFrameResponse(item, onFrame));
-      } else runner.submitGestureAttempt(frameVerdictCue(item, onFrame, { alreadyShown }));
+      commitGesture(runner, { response: describeFrameResponse(item, onFrame), correct: splitVerdictRef.current === 'correct',
+        cue: () => frameVerdictCue(item, onFrame, { alreadyShown }) });
       return;
     }
     // `make_ten` and `build_teen` both commit what the child ADDED to a seeded
@@ -657,12 +642,10 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
     const enacted = item.kind === 'make_ten' || item.kind === 'build_teen'
       ? Math.max(0, onFrame - item.shown)
       : onFrame;
-    if (runner.submitGestureResponse) {
-      // The frame checks its own placement, with the same code judge the cue path uses.
-      placementCheckRef.current = { itemId: item.id,
-        correct: isTeenKind(item.kind) ? judgeTeen(item, enacted) === 'correct' : enacted === item.answer };
-      runner.submitGestureResponse(describeFrameResponse(item, enacted));
-    } else runner.submitGestureAttempt(frameVerdictCue(item, enacted));
+    // The frame checks its own placement, with the same code judge the cue reports.
+    commitGesture(runner, { response: describeFrameResponse(item, enacted),
+      correct: isTeenKind(item.kind) ? judgeTeen(item, enacted) === 'correct' : enacted === item.answer,
+      cue: () => frameVerdictCue(item, enacted) });
   }, [runner]);
 
   /** A hands turn closes on stillness. Any further tap resets the window, and
@@ -770,14 +753,6 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
     runner.publishWorkspace?.();
   });
 
-  // Workspace path: a checked success is the first moment the number may appear (answer-leak
-  // rule), and a solved quick-look item restores its counters (R4).
-  useEffect(() => {
-    if (!tutorOwned || !runner.currentSolved || !currentItem) return;
-    if (currentItem.kind === 'subitize') setCountersVisible(true);
-    setReward(rewardFor(currentItem, pendingPlacementRef.current));
-  }, [tutorOwned, runner.currentSolved, currentItem]);
-  const showReward = tutorOwned ? runner.currentSolved : runner.revealHeld;
   // The workspace path shows its summary without an evaluation provider (the live host has none).
   const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
 
@@ -1073,7 +1048,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
                 )}
                 {/* Workspace: the first look is the learner's to start as well as the tutor's
                     (`present`), so an item never waits on a tool call to become answerable. */}
-                {tutorOwned && !flashAnswerReady && !isFlashing && runner.canAttempt && (
+                {runner.presentStimulus && !flashAnswerReady && !isFlashing && runner.canAttempt && (
                   <LuminaButton tone="primary" className="text-sm" onClick={() => runner.presentStimulus?.()}>
                     Show me
                   </LuminaButton>
@@ -1105,7 +1080,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
                 `revealHeld`, never on `currentSolved`: the runner opens the next
                 item in the same dispatch, so by the time this renders the
                 current item is the NEXT one and is not solved. */}
-            {reward && showReward && (
+            {reward && runner.revealHeld && (
               <LuminaPanel className="p-3 text-center">
                 <span className="text-emerald-300 text-lg font-black animate-bounce inline-block">
                   {reward}
@@ -1146,5 +1121,9 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the runner, whose context push and cue loop would run beside the tutor.
+const TenFrame = withWorkspaceController<TenFrameProps, TenFrameControllerOptions, LiveRun<TenFrameItem>>(
+  'ten-frame', TenFrameSurface, useScriptedController, useWorkspaceController);
 
 export default TenFrame;

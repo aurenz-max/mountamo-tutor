@@ -13,6 +13,7 @@
  * registry keyed by the same ids.
  */
 import type { TutoringScaffold } from '../../../types';
+import { getComponentById } from '../../../service/manifest/catalog';
 
 export interface LiveActivityAdapter<T = any> {
   /** Explicit null opts out of legacy catalog speech protocols in this host. */
@@ -107,3 +108,46 @@ export const runnerLessonStart = (family: string) => (grade: string, mode: strin
   `[LESSON_START] Begin a full ${family} lesson now for ${grade}, mode ${mode}. Call request_activity with `
   + `primitiveId ${family}, mode ${mode}, a matching topic and intent. Use the existing full lesson with several `
   + 'practice items. Do not ask me to choose a topic or greet first. The DI runner will deliver the opening after mounting.';
+
+/**
+ * The only per-primitive code a catalog-declared workspace family needs: reject content its
+ * component cannot run, and say what the first item asks. Pure, because the server route imports it.
+ */
+export interface WorkspaceDomain<T> {
+  validate: (value: unknown) => T;
+  opening: (data: T) => { title: string; task: string; total: number };
+}
+
+const titleCase = (id: string) => id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+/**
+ * A live adapter built from the catalog's `teachingWorkspace` declaration and `evalModes`, plus the
+ * primitive's `WorkspaceDomain`. Modes, picker copy, ownership, lesson start and guidance are
+ * never restated per primitive, so the route, the lesson plan and the component switch read one fact.
+ */
+export function workspaceAdapter<T>(primitiveId: string, domain: WorkspaceDomain<T>): LiveActivityAdapter<T> {
+  const entry = getComponentById(primitiveId);
+  const declared = entry?.teachingWorkspace;
+  if (!entry || !declared) throw new Error(`${primitiveId} declares no teachingWorkspace in the catalog`);
+  const modes = (entry.evalModes ?? []).map(m => m.evalMode);
+  const label = titleCase(primitiveId);
+  return {
+    tutoring: null,
+    teachingOwner: 'tutor',
+    modes,
+    bindsTeachingWorkspace: true,
+    canAdvance: false, // The dialogue observer owns checked progression.
+    grades: declared.grades,
+    copy: { label, checkbox: label, title: `Learn with ${label}`,
+      lessons: (entry.evalModes ?? []).map(m => [m.evalMode, m.label] as const) },
+    lessonStart: workspaceLessonStart(primitiveId, primitiveId),
+    guidance: workspaceGuidance(declared.guidance),
+    validate: domain.validate,
+    initialState: data => {
+      const { title, task, total } = domain.opening(data);
+      return { title, instruction: task, teachingOwner: 'tutor', totalChallenges: total,
+        interaction: 'Teach from liveRuntime.task and its workspace. Judge spoken answers naturally; the host records '
+          + 'your completed feedback and handles retry/advance. The activity checks a placement or selection itself.' };
+    },
+  };
+}
