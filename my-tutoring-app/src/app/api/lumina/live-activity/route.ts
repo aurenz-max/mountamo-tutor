@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateComponentContent } from '@/components/lumina/service/geminiService';
-import { LIVE_ADAPTERS, generatedActivityState, gradeRefusal, parseActivityRequest, validateGeneratedActivity } from '@/components/lumina/components/live-activity/activityContract';
+import { generatedActivityState, gradeRefusal, parseActivityRequest, validateGeneratedActivity } from '@/components/lumina/components/live-activity/activityContract';
 import { getComponentById } from '@/components/lumina/service/manifest/catalog';
 
 export async function POST(request: NextRequest) {
@@ -24,13 +24,8 @@ export async function POST(request: NextRequest) {
       config: { intent: args.intent, targetEvalMode: args.mode, difficulty: 'easy', objectiveGrade: gradeLevel },
     }, args.topic, gradeLevel);
     const data = validateGeneratedActivity(args.primitiveId, result?.data);
-    // Both judged-runner families are registered DI ports, so the probe plan is
-    // the adapter's own — never a per-primitive branch in the harness.
-    const diPlan = LIVE_ADAPTERS[args.primitiveId].teachingOwner === 'di-runner' && request.nextUrl.searchParams.get('probe') === '1'
-      ? (await import('@/components/lumina/service/qa/di/diDrivePlan')).buildDiDrivePlan(args.primitiveId, { ...data }, gradeLevel)
-      : undefined;
     return NextResponse.json({ instanceId, data: { ...data, instanceId },
-      initialState: generatedActivityState(args.primitiveId, data), tutoring: getComponentById(args.primitiveId)?.tutoring, diPlan });
+      initialState: generatedActivityState(args.primitiveId, data), tutoring: getComponentById(args.primitiveId)?.tutoring });
   } catch (error) {
     console.error('[Live activity] Generation failed:', error);
     return NextResponse.json({ error: 'The activity could not be generated. Please try again.' }, { status: 502 });
