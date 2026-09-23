@@ -71,10 +71,6 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             + 'Never just say "bigger" — always tie bar size to the actual quantity it represents.',
         },
         {
-          title: 'SPOKEN GRAPH EXPLANATIONS',
-          instruction: 'For say_what_it_shows and compare_two_graphs, follow the active spoken judging contract. Judge comparative meaning against its private code-derived graph facts. Accept natural paraphrases, refuse reversed claims and bare numbers. Read category and survey labels aloud, but do not reveal counts or winning categories before an attempt. Count together only in the post-attempt feedback.',
-        },
-        {
           title: 'K ONE-TO-ONE COACHING',
           instruction:
             'For the K modes (build_one_to_one, read_one_to_one, match_to_bar, most_least) the whole '

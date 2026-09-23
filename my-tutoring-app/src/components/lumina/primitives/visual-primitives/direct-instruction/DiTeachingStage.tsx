@@ -31,6 +31,7 @@ import { useTeachingWorkspace, type TeachingAssignment, type TeachingItem, type 
 import { useTeachingEvaluation, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useTeachingEvaluation';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import { NeedsTutor } from '../../../components/live-activity/runtime/NeedsTutor';
 import type { PrimitiveMetrics } from '../../../evaluation';
 import type { ComponentId } from '../../../types';
 
@@ -90,21 +91,6 @@ export default function DiTeachingStage<Item extends { id: string }, M extends P
     </LuminaCardContent></LuminaCard>;
   }
   return <StageWorkspace key={props.data.instanceId} {...props} />;
-}
-
-/** What an unbound mount shows. There is no fallback teaching path to run instead. */
-function NeedsTutor({ primitiveId, evalMode, title, className }:
-    { primitiveId: string; evalMode: string; title: string; className?: string }) {
-  useEffect(() => {
-    if (process.env.NODE_ENV !== 'production') console.warn(`[${primitiveId}] mounted without a teaching workspace `
-      + `(pin "${evalMode}"). Its host did not bind this section; see workspaceBinding in lessonWorkspacePlan.ts.`);
-  }, [primitiveId, evalMode]);
-  return <LuminaCard className={className} data-di-unbound={primitiveId}>
-    <LuminaCardHeader><LuminaCardTitle>{title}</LuminaCardTitle></LuminaCardHeader>
-    <LuminaCardContent>
-      <p className="text-center text-slate-300">This activity needs the tutor. Start it from a lesson or practice session.</p>
-    </LuminaCardContent>
-  </LuminaCard>;
 }
 
 function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>({ primitiveId, data, items,

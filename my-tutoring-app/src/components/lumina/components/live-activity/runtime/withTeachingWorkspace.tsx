@@ -3,6 +3,7 @@
 import React from 'react';
 import { useLiveRuntime } from './LiveRuntimeContext';
 import { catalogBindsWorkspace } from '../pinnedModes';
+import { NeedsTutor } from './NeedsTutor';
 
 /**
  * The one rule for which component a workspace family mounts: inside a live
@@ -44,4 +45,21 @@ export function withWorkspaceController<P extends { runtimeEvalMode?: string }, 
   };
   Switched.displayName = `withWorkspaceController(${Surface.displayName || Surface.name || 'Primitive'})`;
   return Switched;
+}
+
+/**
+ * A family whose ONLY teaching path is the workspace (its scripted path is deleted, LA-14): a bound
+ * mount renders the surface, which calls the workspace controller itself; anything else renders the
+ * visible "needs the tutor" card, never a fallback drill.
+ */
+export function withWorkspaceOnly<P extends { runtimeEvalMode?: string; className?: string }>(primitiveId: string,
+  Surface: React.ComponentType<P>, title: (props: P) => string | undefined): React.FC<P> {
+  const Bound: React.FC<P> = props => {
+    const runtime = useLiveRuntime();
+    return runtime && catalogBindsWorkspace(primitiveId, props.runtimeEvalMode) ? <Surface {...props} />
+      : <NeedsTutor primitiveId={primitiveId} evalMode={props.runtimeEvalMode} title={title(props) || 'Activity'}
+        className={props.className} />;
+  };
+  Bound.displayName = `withWorkspaceOnly(${Surface.displayName || Surface.name || 'Primitive'})`;
+  return Bound;
 }

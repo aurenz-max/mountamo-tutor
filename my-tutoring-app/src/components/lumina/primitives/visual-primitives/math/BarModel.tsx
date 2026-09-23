@@ -1,11 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import BarModelExplanation from './BarModelExplanation';
-import type { JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
-import type { LearningResponseEvidence } from '../../../evaluation/learningResponseEvidence';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import {
@@ -31,9 +28,8 @@ import type { PipTarget } from '../../../pip/PipSurfaceStore';
 import { barModelPipPose } from '../../../pip/barModelPipPose';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { OPTION_MODES, ROW_TAP_MODES, describeGraphWork, workspaceAssignment, workspaceScene, type BarModelView }
   from './barModelWorkspace';
 
@@ -549,30 +545,14 @@ const READ_ROW_MODES = new Set<BarModelEvalMode>([
   'read_one_to_one', 'read_scale', 'picture_graph', 'scaled_bar_graph',
 ]);
 
-/**
- * Keep the tutor's reveal level in sync with the on-screen support tier so it
- * never leaks a scaffold the tier withheld (e.g. naming which bar to read, or
- * the operation, at the hard tier). Mirrors the generator's resolveSupportStructure.
- */
-const tierTutorClause = (tier?: 'easy' | 'medium' | 'hard'): string => {
-  switch (tier) {
-    case 'easy':
-      return ' SUPPORT TIER EASY: you may name the strategy — point to which bar to read, or name the operation, and walk the student through it step by step.';
-    case 'medium':
-      return ' SUPPORT TIER MEDIUM: the strategy is on screen — nudge the student\'s execution, do not solve it for them.';
-    case 'hard':
-      return ' SUPPORT TIER HARD: on-screen aids are withdrawn — do NOT name which bar to read or which operation to use; ask what the student sees in the graph, and never reveal the answer.';
-    default:
-      return '';
-  }
-};
-
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
-const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
-  BarModelProps & { tutorOwned: boolean; useController: (options: ProgressOptions<BarModelChallenge>) => Progress }) => {
+/** The teaching workspace is bar-model's only controller: the runtime owns progression. */
+const useBarModelProgress = useWorkspaceProgressFor('bar-model');
+
+const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode }: BarModelProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -589,11 +569,11 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
   const stableInstanceIdRef = useRef(instanceId || `bar-model-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Challenge progress (shared hooks). On the workspace path the runtime moves the index. ──
+  // ── Challenge progress. The runtime moves the index. ──
   // A fresh challenge and Try again both clear the working graph (bound below, once the setters exist).
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solveSpoken = useRef<(index: number) => void>(() => {});
-  const progress = useController({
+  const progress = useBarModelProgress<BarModelChallenge>({
     challenges,
     getChallengeId: (c) => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
@@ -608,11 +588,10 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
     isComplete,
     recordResult,
     incrementAttempts,
-    advance,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current;
 
   const phaseResults = usePhaseResults({
@@ -641,8 +620,6 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
   });
 
   const currentChallenge = challenges[currentIndex] ?? null;
-  const isSpokenGraph = currentChallenge?.evalMode === 'say_what_it_shows' || currentChallenge?.evalMode === 'compare_two_graphs';
-  const [spokenFinished, setSpokenFinished] = useState(false);
   const graphStyle: BarModelGraphStyle = currentChallenge?.graphStyle ?? 'bar';
 
   // ── Per-challenge interaction state ────────────────────────────────────────
@@ -658,21 +635,9 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
   /** Every option tapped per challenge, wrong ones included — the factual response history. */
   const selectionsRef = useRef<Record<string, number[]>>({});
 
-  // Reset per-challenge state when the active challenge changes (scripted path; the workspace
-  // path runs the same reset from `onItemOpened`, so no revision lands after an item opens).
-  useEffect(() => {
-    if (tutorOwned || !currentChallenge) return;
-    setBuiltValues(currentChallenge.values);
-    setChosenStep(null);
-    setSelectedOption(null);
-    setSelectedBarIndex(null);
-    setFeedback(null);
-    setShowHint(false);
-    setSpokenFinished(false);
-    recordedRef.current = false;
-  }, [currentChallenge?.id]);
-  /** Workspace path: spoken tries on the open item that the tutor judged wrong. */
+  /** Spoken tries on the open item that the tutor judged wrong. */
   const spokenMisses = useRef(0);
+  // The runtime opens every item, fresh or after Try again, so no revision lands after it opens.
   openItem.current = (index, retry) => {
     const next = challenges[index];
     if (!next) return;
@@ -684,10 +649,9 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
     if (retry) { spokenMisses.current += 1; return; }
     spokenMisses.current = 0;
     setChosenStep(null);
-    setSpokenFinished(false);
     recordedRef.current = false;
   };
-  // Workspace path: a spoken item has no check of its own; its committed success is its result.
+  // A spoken item has no check of its own; its committed success is its result.
   solveSpoken.current = index => {
     const solved = challenges[index];
     if (!solved || (solved.evalMode !== 'say_what_it_shows' && solved.evalMode !== 'compare_two_graphs')) return;
@@ -695,79 +659,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
     recordResult({ challengeId: solved.id, evalMode: solved.evalMode, correct: true, attempts: spokenMisses.current + 1 });
   };
 
-  // ── AI tutoring ────────────────────────────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    currentChallengeIndex: currentIndex,
-    totalChallenges: challenges.length,
-    evalMode: currentChallenge?.evalMode,
-    graphStyle,
-    values: currentChallenge?.values.map((v) => `${v.label}: ${v.value}`).join(', ') ?? '',
-    value1: currentChallenge?.values[0]?.value,
-    value2: currentChallenge?.values[1]?.value,
-    barCount: currentChallenge?.values.length ?? 0,
-    scaleStep: currentChallenge?.scale?.step,
-    iconEmoji: currentChallenge?.scale?.iconEmoji,
-    iconValue: currentChallenge?.scale?.iconValue,
-    currentPrompt: currentChallenge?.prompt,
-    attemptNumber: currentAttempts,
-    supportTier: currentChallenge?.supportTier,
-  }), [title, currentIndex, challenges.length, currentChallenge, graphStyle, currentAttempts]);
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'bar-model',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: 'K-5',
-    // The workspace packet replaces this context (it carries every row's value).
-    enabled: !isSpokenGraph && !tutorOwned,
-  });
-  // Every scripted cue goes through here; on the workspace path the tutor teaches from the packet.
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Session intro — once, on the first challenge
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (isSpokenGraph || !isConnected || hasIntroducedRef.current) return;
-    if (challenges.length === 0 || !currentChallenge) return;
-    hasIntroducedRef.current = true;
-    const labels = currentChallenge.values
-      .map((v) => `${v.label}${v.value > 0 ? ` (${v.value})` : ''}`)
-      .join(', ');
-    sendText(
-      currentChallenge.narration
-        ?? `[ACTIVITY_START] ${title}. ${challenges.length} graph challenges in this session. ` +
-          `Mode: ${currentChallenge.evalMode}. First graph bars: ${labels}. ${currentChallenge.prompt}` +
-          tierTutorClause(currentChallenge.supportTier),
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, currentChallenge, title, sendText]);
-
-  // Per-challenge handoff (skips the first because intro covers it)
-  const lastAnnouncedIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (isSpokenGraph || !isConnected || !currentChallenge) return;
-    if (!hasIntroducedRef.current) return;
-    if (lastAnnouncedIdRef.current === null) {
-      lastAnnouncedIdRef.current = currentChallenge.id;
-      return;
-    }
-    if (lastAnnouncedIdRef.current === currentChallenge.id) return;
-    lastAnnouncedIdRef.current = currentChallenge.id;
-    const labels = currentChallenge.values
-      .map((v) => `${v.label}${v.value > 0 ? ` (${v.value})` : ''}`)
-      .join(', ');
-    sendText(
-      `[CHALLENGE_START] Challenge ${currentIndex + 1} of ${challenges.length}. ` +
-      `Bars: ${labels}. ${currentChallenge.prompt}` +
-      tierTutorClause(currentChallenge.supportTier),
-      { silent: true },
-    );
-  }, [currentChallenge, currentIndex, challenges.length, isConnected, sendText]);
-
-  // Session complete: AI summary + evaluation submit
+  // Session complete: evaluation submit
   useEffect(() => {
     if (!isComplete) return;
     if (sessionCompleteFiredRef.current) return;
@@ -800,24 +692,12 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
       averageAttemptsPerChallenge,
     };
 
-    const phaseStr = phaseResults
-      .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-      .join(', ');
-    if (!isSpokenGraph) sendText(
-      `[ALL_COMPLETE] Phase scores: ${phaseStr}. Overall: ${overallAccuracy}%. ` +
-      `Celebrate completion of the ${challenges.length}-challenge graph session.`,
-      { silent: true },
-    );
-
-    // The live host has no evaluation provider; a workspace family submits only under one.
-    if (!hasSubmittedEvaluation && progress.recordsEvaluation !== false) {
+    // The live host has no evaluation provider; the workspace submits only under one.
+    if (!hasSubmittedEvaluation && progress.recordsEvaluation) {
       const goalMet = correctCount === challenges.length;
       const selections = challenges.map((c) => ({ challengeId: c.id, selectedOptions: selectionsRef.current[c.id] ?? [] }));
       const diagnosisEvidence = buildPictureGraphEvidence(challenges, selections);
-      // Spoken-explanation beats record every judged attempt; the shared observation capture reads them here.
-      const learningResponses = results.flatMap((r) => (r.learningResponses as LearningResponseEvidence[] | undefined) ?? []);
       submitEvaluation(goalMet, overallAccuracy, metrics, {
-        ...(learningResponses.length ? { learningResponses } : {}),
         studentWork: {
           challengeCount: challenges.length,
           evalMode: sessionMode,
@@ -833,18 +713,17 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
       }, undefined, diagnosisEvidence);
     }
   }, [
-    isComplete, results, phaseResults, challenges,
-    sendText, submitEvaluation, hasSubmittedEvaluation, progress.recordsEvaluation,
+    isComplete, results, challenges,
+    submitEvaluation, hasSubmittedEvaluation, progress.recordsEvaluation,
   ]);
 
   // ── Submission helper ──────────────────────────────────────────────────────
   const submitResult = useCallback(
     (correct: boolean, extras: Record<string, unknown> = {}, work: Partial<BarModelView> = {}) => {
       if (!currentChallenge) return;
-      // Stale-state guard (PRD §6a #3): the reset useEffect's setBuiltValues
-      // is async — on the render immediately after advance(), `builtValues`
-      // still holds the previous challenge's bars while `currentChallenge`
-      // has already moved on. Only proceed when bar labels line up.
+      // Stale-state guard (PRD §6a #3): if `builtValues` still holds the previous
+      // challenge's bars while `currentChallenge` has already moved on, do not
+      // check. Only proceed when bar labels line up.
       const stateMatches =
         currentChallenge.values.length === 0
         || builtValues.length === 0
@@ -867,11 +746,6 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
           attempts: currentAttempts + 1,
           ...extras,
         });
-        sendText(
-          `[PHASE_COMPLETE] Challenge ${currentIndex + 1}/${challenges.length} solved on attempt ${currentAttempts + 1}. ` +
-          `Briefly acknowledge and preview the next one if there is one.`,
-          { silent: true },
-        );
       } else {
         SoundManager.playIncorrect();
         setShowHint(true);
@@ -879,22 +753,11 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
     },
     [
       currentChallenge, currentAttempts, builtValues,
-      incrementAttempts, recordResult, sendText,
-      currentIndex, challenges.length, progress, selectedOption, selectedBarIndex, chosenStep,
+      incrementAttempts, recordResult, progress, selectedOption, selectedBarIndex, chosenStep,
     ],
   );
 
   // ── Interaction handlers ───────────────────────────────────────────────────
-  const handleSpokenFinished = (summary: JudgedRunSummary) => {
-    if (!currentChallenge || recordedRef.current) return;
-    recordedRef.current = true;
-    recordResult({ challengeId: currentChallenge.id, evalMode: currentChallenge.evalMode,
-      correct: summary.solvedCount === 1, attempts: summary.attemptsCount, score: summary.accuracy,
-      spokenOutcomes: summary.outcomes, observations: summary.observations, learningResponses: summary.learningResponses,
-    });
-    setSpokenFinished(true);
-  };
-
   const handleBarClick = (i: number) => {
     if (learnerBlocked() || !currentChallenge || feedback === 'correct' || isComplete) return;
     // K sticker chart: tapping a row places one sticker in it. The row's own
@@ -958,10 +821,6 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
     });
   };
 
-  const advanceToNextChallenge = () => {
-    advance();
-  };
-
   // ── Derived render data ────────────────────────────────────────────────────
   const isStickerBuild = currentChallenge?.evalMode === 'build_one_to_one';
 
@@ -1005,6 +864,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
   // advances. Tutor audio counts only while the tutor is on this block.
   const pip = usePipTargets(currentChallenge?.id ?? null, false);
   const [pipTouched, setPipTouched] = useState<{ scopeId: string; element: Element } | null>(null);
+  const { isAudioPlaying, activePrimitiveId } = useLuminaAIContext();
   const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
   const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
   const isCurrentChallengeCorrect = !!currentChallenge
@@ -1034,17 +894,17 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
     };
   });
 
-  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge) return;
+    if (!currentChallenge) return;
     workspace.current = { ...workspaceScene(currentChallenge, { built: builtValues, selectedOption,
       selectedRow: selectedBarIndex, chosenStep }),
       demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
     progress.publishWorkspace?.();
   });
-  /** A solved answer, or (workspace) a checked one waiting for Try again or Next challenge. */
-  const answerClosed = feedback === 'correct' || (tutorOwned && progress.canAttempt === false);
+  /** A solved answer, or a checked one waiting for Try again or Next challenge. */
+  const answerClosed = feedback === 'correct' || progress.canAttempt === false;
   // The live host has no evaluation provider, so the runtime's practice summary also ends the session.
   const sessionOver = isComplete || !!progress.practiceSummary;
 
@@ -1159,8 +1019,6 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
                 <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
                   className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
               )}
-              {isSpokenGraph && !tutorOwned && <BarModelExplanation key={currentChallenge.id} challenge={currentChallenge}
-                instanceId={resolvedInstanceId} exhibitId={exhibitId} onFinished={handleSpokenFinished} />}
 
               {isStickerBuild ? (
                 <div className="space-y-4">
@@ -1248,13 +1106,6 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
                 </LuminaFeedbackCard>
               ) : null}
 
-              {!tutorOwned && (feedback === 'correct' || spokenFinished) ? (
-                <div className="text-center">
-                  <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
-                    {currentIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish Session'}
-                  </LuminaActionButton>
-                </div>
-              ) : null}
             </div>
           ) : null}
 
@@ -1275,8 +1126,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, 
   );
 };
 
-// The workspace path never mounts the spoken explanation's judged runner, and the runtime owns progression.
-const BarModel = withWorkspaceController<BarModelProps, ProgressOptions<BarModelChallenge>, Progress>(
-  'bar-model', BarModelSurface, useScriptedProgress, useWorkspaceProgressFor('bar-model'));
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const BarModel = withWorkspaceOnly<BarModelProps>('bar-model', BarModelSurface, props => props.data.title);
 
 export default BarModel;

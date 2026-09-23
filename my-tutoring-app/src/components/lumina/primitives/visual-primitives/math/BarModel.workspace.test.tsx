@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 /**
- * W1 minimal binding, plain shape: the real BarModel on the shared teaching workspace, with the real
+ * The real BarModel on the shared teaching workspace, its only teaching path, with the real
  * TeachingSession, LiveLessonRuntime, transport and rendering shell. The graph's own check commits a
  * checked gesture; a spoken explanation is judged by the tutor against its code-derived facts; the
- * runtime owns progression. Only microphone hardware, evaluation writes, sound and the legacy
- * AI-context hook are substituted. The spoken explanation's judged runner must never mount here.
+ * runtime owns progression. Only the Live context, evaluation writes and sound are substituted. An
+ * unbound mount renders the "needs the tutor" card, never a scripted fallback.
  */
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -15,19 +15,12 @@ import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/Li
 import { RuntimeTransport } from '../../../components/live-activity/runtime/runtimeTransport';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
 
-const seam = vi.hoisted(() => ({ conversation: [] as any[], send: vi.fn(), submit: vi.fn(), legacy: vi.fn(),
-  runner: vi.fn(), evaluationContext: null as unknown }));
+const seam = vi.hoisted(() => ({ conversation: [] as any[], send: vi.fn(), submit: vi.fn(), evaluationContext: null as unknown }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
   isConnected: true, isListening: true, isAudioPlaying: false, sessionMode: 'lesson', activePrimitiveId: 'graph',
   conversation: seam.conversation, sendText: seam.send,
   sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} },
 }) }));
-vi.mock('../../../hooks/useLuminaAI', () => ({ useLuminaAI: (o: { enabled?: boolean }) => {
-  if (o.enabled !== false) seam.legacy('enabled');
-  return { sendText: seam.legacy, isConnected: true, isAudioPlaying: false, activePrimitiveId: 'graph' };
-} }));
-vi.mock('../../../hooks/useJudgedScriptRunner', () => ({ useJudgedScriptRunner: () => { seam.runner(); return { hearStimulus: vi.fn() }; } }));
-vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
 vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => seam.evaluationContext,
   usePrimitiveEvaluation: () => ({ hasSubmitted: false, submittedResult: null, submitResult: seam.submit, elapsedMs: 0 }) }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
@@ -36,6 +29,7 @@ import BarModel, { type BarModelChallenge, type BarModelData, type BarModelEvalM
 import { validateBarModelData } from '../../../components/live-activity/adapters/barModelLive';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { getComponentById } from '../../../service/manifest/catalog';
+import { classifyEvidenceTier } from '../../../evaluation/diagnosis/types';
 
 beforeEach(() => { vi.clearAllMocks(); seam.conversation = []; seam.evaluationContext = null; });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
@@ -95,7 +89,7 @@ function mount(evalMode: string, challenges: BarModelChallenge[]) {
   return { runtime, transport, sent, view, state, dispatch, confirmVisible, choose, say, feedback };
 }
 
-it.each(MODES)('%s mounts under tutor ownership with no scripted cue or runner, and publishes only a spoken key', mode => {
+it.each(MODES)('%s mounts under tutor ownership with no scripted cue or Next button, and publishes only a spoken key', mode => {
   const c = challengeFor(mode);
   const h = mount(mode, [c]);
   expect(h.state().owner).toBe('tutor');
@@ -110,9 +104,58 @@ it.each(MODES)('%s mounts under tutor ownership with no scripted cue or runner, 
     // Row counts, the target row and the build keys never reach the tutor on a gesture item.
     expect(demand).not.toMatch(/Apples 4|Plums 3|expected|target/i);
   }
-  expect(seam.runner).not.toHaveBeenCalled();
-  expect(seam.legacy).not.toHaveBeenCalled();
+  expect(seam.send.mock.calls.flat().join(' ')).not.toMatch(/ACTIVITY_START|CHALLENGE_START|PHASE_COMPLETE|ALL_COMPLETE|GRAPH_/);
   expect(screen.queryByRole('button', { name: /next challenge|finish session/i })).toBeNull();
+});
+
+it('an unbound mount (no runtime, or a pin outside the catalog) renders the needs-the-tutor card', () => {
+  const data = { title: 'Our graph', description: '', instanceId: 'graph', challenges: [challengeFor('read_one_to_one')] } as BarModelData;
+  const { container } = render(<BarModel data={data} runtimeEvalMode="read_one_to_one" />);
+  expect(container.querySelector('[data-workspace-unbound="bar-model"]')).not.toBeNull();
+  expect(screen.getByText('Our graph')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: '3' })).toBeNull();
+  cleanup();
+  const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
+  const off = render(<LiveRuntimeContext.Provider value={runtime}><BarModel data={data} runtimeEvalMode="not_a_mode" /></LiveRuntimeContext.Provider>);
+  expect(off.container.querySelector('[data-workspace-unbound="bar-model"]')).not.toBeNull();
+});
+
+it('a sticker build never prints placed totals, even from an older payload', () => {
+  mount('build_one_to_one', [{ ...challengeFor('build_one_to_one'), showPlacedCount: true }]);
+  expect(screen.queryByText(/placed/)).toBeNull();
+});
+
+it('two related surveys render as countable rows, with no numeric choices', () => {
+  mount('compare_two_graphs', [challengeFor('compare_two_graphs')]);
+  expect(screen.getByText('Morning')).toBeTruthy();
+  expect(screen.getByText('Afternoon')).toBeTruthy();
+  expect(screen.getAllByText('🍎')).toHaveLength(5);
+  expect(screen.queryByRole('button', { name: '4' })).toBeNull();
+});
+
+it('picture_graph submits every tapped choice and a structured packet naming the icon count, key and total', () => {
+  seam.evaluationContext = { lesson: 'test' };
+  const graph = (id: string, target: number, options: number[]): BarModelChallenge => ({
+    id, evalMode: 'picture_graph', graphStyle: 'picture', prompt: 'Each 🐶 stands for 5. How many dogs?',
+    showTargetHighlight: true, showBarValues: false, supportTier: 'medium', targetBarIndex: 0, expectedValue: target, options,
+    values: [{ label: 'Dogs', value: target }, { label: 'Cats', value: 10 }, { label: 'Birds', value: 20 }, { label: 'Fish', value: 15 }],
+    scale: { step: 5, max: 25, iconEmoji: '🐶', iconValue: 5 },
+  });
+  const h = mount('picture_graph', [graph('g1', 25, [5, 20, 25, 30]), graph('g2', 5, [0, 1, 5, 10])]);
+  h.choose('5'); h.dispatch('retry'); h.choose('25');
+  h.dispatch('advance'); h.confirmVisible();
+  h.choose('5');
+  h.dispatch('advance'); h.confirmVisible();
+  expect(seam.submit).toHaveBeenCalledOnce();
+  const [success, , , work, , evidence] = seam.submit.mock.calls[0];
+  expect(success).toBe(true);
+  expect(work.studentWork.selections).toEqual([{ challengeId: 'g1', selectedOptions: [5, 25] }, { challengeId: 'g2', selectedOptions: [5] }]);
+  expect(work.studentWork.challengeResults[0].selectedOptions).toEqual([5, 25]);
+  expect(classifyEvidenceTier(evidence)).toBe('structured');
+  expect(evidence.phases).toHaveLength(1);
+  expect(evidence.phases[0]).toMatchObject({ itemId: 'g1', expected: '25', observed: 'Selections in order: 5, 25' });
+  expect(evidence.phases[0].challenge).toContain('shows 5 icons');
+  expect(evidence.firstResponseScore).toBe(50);
 });
 
 it('a wrong number is committed, input stays closed until Try again clears it, then a right one completes once', () => {
@@ -136,7 +179,6 @@ it('a wrong number is committed, input stays closed until Try again clears it, t
   expect(h.state().status).toBe('completed');
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0][0]).toBe(true);
-  expect(seam.legacy).not.toHaveBeenCalled();
 });
 
 it('a row is tapped by its name; a sticker chart is built row by row and checked', () => {
@@ -176,7 +218,6 @@ it('a spoken explanation is judged by the tutor, and its committed success is re
   expect(h.state().status).toBe('completed');
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0][0]).toBe(true);
-  expect(seam.runner).not.toHaveBeenCalled();
 });
 
 it('without an evaluation provider (the live host) nothing is submitted', () => {

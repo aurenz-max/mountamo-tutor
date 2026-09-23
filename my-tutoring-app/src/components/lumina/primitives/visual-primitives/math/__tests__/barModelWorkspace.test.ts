@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { graphComparisonFacts, graphExplanationPack } from '../barModelExplanationScript';
-import { validateJudgedScriptPack } from '../../../../hooks/judgedScriptContract';
+import { graphComparisonFacts, graphExplanationAsk, workspaceAssignment } from '../barModelWorkspace';
 import type { BarModelChallenge } from '../BarModel';
 import { barModelOracle } from '../../../../service/qa/oracles/bar-model';
 
@@ -30,18 +29,12 @@ describe('graph explanation meaning contract', () => {
     expect(graphComparisonFacts({ ...pair, comparisonFocus: 'same' })).toEqual(['Morning has the same number of Apples as Afternoon.']);
     expect(graphComparisonFacts({ ...pair, comparisonFocus: 'different' })).toHaveLength(2);
   });
-  it('passes the shared spoken-pack validation', () => {
-    expect(validateJudgedScriptPack(graphExplanationPack(pair))).toEqual([]);
-  });
-  it('keeps facts private in the ask and accepts meaning rather than tokens', () => {
-    const pack = graphExplanationPack(pair);
-    const cue = pack.itemCue(pack.items[0], { opening: true, howToPlay: true });
-    const performedAsk = cue.match(/Say exactly: "([^"]+)"/)![1];
-    expect(performedAsk).not.toMatch(/four|two|4|2|Apples have the most/);
-    expect(cue).toContain('Judge MEANING');
-    expect(cue).toContain('reversed or negated facts');
-    expect(cue).toContain('MUST compare the morning and afternoon');
-    expect(pack.maxCorrections).toBe(2);
+  it('keeps facts private in the ask; the facts reach the tutor only as the expected answer', () => {
+    const ask = graphExplanationAsk(pair);
+    expect(ask).not.toMatch(/[0-9]| four | two |have the most|than Afternoon/);
+    const assigned = workspaceAssignment(pair);
+    expect(assigned).toMatchObject({ response: 'speech', task: ask });
+    expect(assigned.expectedAnswer).toContain('Morning has fewer Pears than Afternoon.');
   });
 });
 

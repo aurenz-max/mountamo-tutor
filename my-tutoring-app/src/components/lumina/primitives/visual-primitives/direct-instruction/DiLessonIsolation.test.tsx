@@ -88,7 +88,7 @@ it('an unbound sentence pack consumes no verdict and leaves the CVC drill on its
   const sentencesView = within(view.getByTestId('sentences'));
   expect(sentencesView.getByText(/needs the tutor/)).toBeTruthy();
   expect(sentencesView.queryByRole('button')).toBeNull();
-  expect(view.container.querySelector('[data-di-unbound="di-sentence-reading"]')).toBeTruthy();
+  expect(view.container.querySelector('[data-workspace-unbound="di-sentence-reading"]')).toBeTruthy();
   // The unfocused CVC drill has released its subscription, and the sentence pack never takes one.
   expect(listeners.size).toBe(0);
   state.sendText.mockClear(); state.updateContext.mockClear();

@@ -55,6 +55,8 @@ vi.mock('../components/JudgedMicPanel', () => ({ default: () => null }));
 vi.mock('../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => vi.fn() }) }));
 vi.mock('../service/manifest/catalog', () => ({ getComponentById: () => undefined }));
 vi.mock('../config/primitiveRegistry', () => ({ getPrimitive: () => undefined }));
+// The catalog mock declares no workspace families, so the tester renders its own preview (TesterWorkspace passes through).
+vi.mock('../components/live-activity/TesterWorkspace', () => ({ TesterWorkspace: ({ children }: any) => children, testerBinds: () => false }));
 
 const data = {
   title: 'Count the apples', objects: { type: 'apples' }, gradeBand: 'K',

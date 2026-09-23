@@ -1,7 +1,6 @@
 import type { BarModelChallenge, BarModelData, BarModelEvalMode } from '../../../primitives/visual-primitives/math/BarModel';
-import { OPTION_MODES, ROW_TAP_MODES, isSpokenGraph, workspaceAssignment }
+import { OPTION_MODES, ROW_TAP_MODES, graphComparisonFacts, isSpokenGraph, workspaceAssignment }
   from '../../../primitives/visual-primitives/math/barModelWorkspace';
-import { graphComparisonFacts } from '../../../primitives/visual-primitives/math/barModelExplanationScript';
 import { workspaceOpening, type WorkspaceDomain } from './adapterContract';
 
 const MODES: ReadonlySet<BarModelEvalMode> = new Set<BarModelEvalMode>(['read_one_to_one', 'most_least', 'compare_bars', 'match_to_bar',

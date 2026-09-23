@@ -5,13 +5,13 @@
  * Pure: the component, the adapter and the journey read the same assignment and scene. Ten modes
  * are answered on the graph and checked by the primitive's own code, so the tutor is never handed
  * `expectedValue`, `targetBarIndex`, `expectedCounts`, `expectedDataset` or `expectedScaleStep`.
- * The two spoken modes (say_what_it_shows, compare_two_graphs) are judged by the tutor against the
- * code-derived comparison facts the retired explanation pack judged against: a bounded set of true
- * claims about the rows on screen, published as `expectedAnswer`.
+ * The two spoken modes (say_what_it_shows, compare_two_graphs) are judged by the tutor against
+ * code-derived comparison facts: a bounded set of true claims about the rows on screen, published as
+ * `expectedAnswer`. The workspace is bar-model's only teaching path (the scripted explanation runner
+ * was deleted, LA-14).
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { BarModelChallenge, BarModelEvalMode } from './BarModel';
-import { graphComparisonFacts, graphExplanationAsk } from './barModelExplanationScript';
 
 export const SPOKEN_GRAPH_MODES: ReadonlySet<BarModelEvalMode> = new Set<BarModelEvalMode>(['say_what_it_shows', 'compare_two_graphs']);
 export const ROW_TAP_MODES: ReadonlySet<BarModelEvalMode> = new Set<BarModelEvalMode>(['compare_bars', 'most_least', 'match_to_bar']);
@@ -19,6 +19,38 @@ export const OPTION_MODES: ReadonlySet<BarModelEvalMode> = new Set<BarModelEvalM
   'read_one_to_one', 'read_scale', 'picture_graph', 'scaled_bar_graph', 'graph_word_problem']);
 
 export const isSpokenGraph = (c: BarModelChallenge) => SPOKEN_GRAPH_MODES.has(c.evalMode);
+
+/** The judge gets facts computed from the displayed rows, never a generated key. */
+export function graphComparisonFacts(ch: BarModelChallenge): string[] {
+  const facts: string[] = [];
+  if (ch.evalMode === 'compare_two_graphs') {
+    if (!ch.secondValues || ch.secondValues.length !== ch.values.length) return [];
+    ch.values.forEach((row, i) => {
+      const other = ch.secondValues![i];
+      if (other.label !== row.label) return;
+      if (ch.comparisonFocus === 'same' && row.value !== other.value) return;
+      if (ch.comparisonFocus === 'different' && row.value === other.value) return;
+      const relation = row.value === other.value ? 'the same number of' : row.value > other.value ? 'more' : 'fewer';
+      facts.push(`${ch.graphLabel} has ${relation} ${row.label} ${row.value === other.value ? 'as' : 'than'} ${ch.secondGraphLabel}.`);
+    });
+  } else {
+    ch.values.forEach((a, i) => ch.values.slice(i + 1).forEach((b) => {
+      facts.push(a.value === b.value ? `${a.label} and ${b.label} have the same number.`
+        : `${a.value > b.value ? a.label : b.label} have more than ${a.value > b.value ? b.label : a.label}.`);
+    }));
+    const max = Math.max(...ch.values.map((v) => v.value));
+    const min = Math.min(...ch.values.map((v) => v.value));
+    if (ch.values.filter((v) => v.value === max).length === 1) facts.push(`${ch.values.find((v) => v.value === max)!.label} have the most.`);
+    if (ch.values.filter((v) => v.value === min).length === 1) facts.push(`${ch.values.find((v) => v.value === min)!.label} have the fewest.`);
+  }
+  return facts;
+}
+
+/** The spoken ask: the row names, the prompt, and (below the hard tier) the comparison words. */
+export const graphExplanationAsk = (ch: BarModelChallenge) => {
+  const labels = ch.values.map((v) => v.label).join(', ');
+  return `The rows show ${labels}. ${ch.prompt}${ch.supportTier !== 'hard' ? ' You can use more, fewer, or the same.' : ''}`;
+};
 
 /** What the tutor judges a spoken explanation against: every true claim, and what the ask requires of one. */
 export function spokenGraphAnswer(c: BarModelChallenge): string {
