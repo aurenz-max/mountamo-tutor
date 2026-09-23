@@ -41,6 +41,7 @@ import { buildBondItems } from '../../primitives/visual-primitives/math/numberBo
 import { expandNumberBondInteractions } from '../../primitives/visual-primitives/math/numberBondModes';
 import { buildCompareItems, compareObjectsHarnessAnswers } from '../../primitives/visual-primitives/math/compareObjectsScript';
 import { itemsFromChallenges as placeValueItems, placeValueHarnessAnswers } from '../../primitives/visual-primitives/math/placeValueScript';
+import { getDigitPaths } from '../../primitives/visual-primitives/math/numberTracerPaths';
 import { itemsFromChallenges as sortingItems, sortingStationHarnessAnswers } from '../../primitives/visual-primitives/math/sortingStationScript';
 import { placeLabel } from '../../primitives/visual-primitives/math/spokenNumberWords';
 import { itemsFromChallenges as ordinalItems, ordinalLineHarnessAnswers } from '../../primitives/visual-primitives/math/ordinalLineScript';
@@ -55,6 +56,8 @@ export type DriverInput =
   | { type: 'choose'; label: string }
   /** Text typed into the input with this `aria-label`. */
   | { type: 'write'; label: string; text: string }
+  /** Strokes drawn on the canvas, in canvas pixel coordinates. */
+  | { type: 'draw'; strokes: { x: number; y: number }[][] }
   | { type: 'answer'; text: string };
 
 /** What the program is asking the learner to do, independent of how this primitive does it. */
@@ -339,26 +342,30 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     probes: { mounted: { selector: '[data-pip-object^="tray-"]', kind: 'count' } },
   },
   'number-tracer': {
+    execution: 'workspace',
     component: 'primitives/visual-primitives/math/NumberTracer.tsx',
     instanceId: 'tracer',
     defaults: { grade: 'Kindergarten', mode: 'trace', di: false,
       topic: 'Writing the numerals zero through five' },
     leakTokens: ['ANSWER_CORRECT', 'ALL_COMPLETE', 'NEXT_ITEM'],
-    // No example or return prompt: a row of counters cannot show how a numeral is
-    // formed, so this family advertises no artifact.
-    prompts: {
-      opening: 'Please read my current writing instruction so I can begin.',
-      retry: 'Please clear my drawing so I can try this same number again.',
-      replay: 'Please repeat this same instruction using the replay action.',
-      hint: 'Please show me a reminder for how to write this.',
-      fade: 'Please hide the reminder now.',
+    prompts: WORKSPACE_PROMPTS,
+    // `trace` only: the right answer follows the challenge's own guide strokes, densified; the wrong
+    // one is the same strokes shifted off the guide. Other modes need a drawn numeral the vision
+    // judge reads, which the driver cannot produce, so they throw.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const challenge = ctx.challenge;
+      if (challenge?.type !== 'trace') throw new Error(`Number-tracer ${challenge?.type ?? 'unknown'} is not driven at W1`);
+      // The component's own fallback when a challenge carries no strokes (the generator never sends them).
+      const guide: { x: number; y: number }[][] = challenge.strokePaths?.length ? challenge.strokePaths : getDigitPaths(challenge.digit);
+      const dx = intent === 'wrong' ? 160 : 0;
+      const strokes = guide.map(stroke => stroke.slice(1).flatMap((b, k) => {
+        const a = stroke[k];
+        return Array.from({ length: 12 }, (_, i) => ({ x: a.x + ((b.x - a.x) * i) / 12 + dx, y: a.y + ((b.y - a.y) * i) / 12 }));
+      }).concat([{ x: stroke[stroke.length - 1].x + dx, y: stroke[stroke.length - 1].y }]));
+      return [{ type: 'draw', strokes }, { type: 'choose', label: 'Check' }];
     },
-    // The driver has no drawing verb, so the tracer's own intents are DOM-free:
-    // the journey certifies the command surface, and the stroke gesture is a
-    // browser gate rather than a machine one. Recorded as a limitation, not faked.
-    inputsFor: () => [],
-    probes: { mounted: { selector: 'canvas' },
-      promptFocused: { selector: '[aria-label="Current instruction"]', kind: 'focused' } },
+    probes: { mounted: { selector: 'canvas' } },
   },
   'comparison-builder': {
     execution: 'workspace',

@@ -4541,6 +4541,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-tracer',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'The learner writes the numeral on the canvas with a finger and presses Check; the canvas checks the writing '
+        + 'itself, and talk about a half-written numeral is teaching, not a verdict. On a missing-number item the missing number '
+        + 'is the answer: never say, trace or describe it. You cannot draw, trace or clear.',
+    },
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: numberTracerDeliveryEligible },

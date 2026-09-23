@@ -15,8 +15,9 @@ fact beside a spoken answer unless the board is what is asked) ([report](../tuto
 dry-run twice (a read-only plan, then a fresh session that built ordinal-line from it in ~6 minutes); queue
 [`ROLLOUT.md`](../workspace-rollout/ROLLOUT.md) covers all 212 ids; batch A1 (place-value-chart, ordinal-line,
 sorting-station) closed ([report](../tutor-reports/workspace-rollout-A1-2026-09-23.md)). The generic
-one-file contract test is still owed (each adopter has its own workspace test). **Next: ROLLOUT's DEAD row,
-then A2, which writes the recipe for primitives with no runner.**
+one-file contract test is still owed (each adopter has its own workspace test). **DEAD row done; A2 done 09-23**
+([report](../tutor-reports/workspace-rollout-A2-2026-09-23.md)): plain-shape recipe (`useWorkspaceProgress`), every live
+adapter now on the workspace. **Next: batch B1 (runner-era), then C1.**
 **Parallel, 2026-09-22: compare-objects at W1** (Tier A), recipe unchanged, about 1 hour; smokes
 `compare_two` text + `--audio` and `order_three` ×3 PASS ([report](../tutor-reports/compare-objects-w1-2026-09-22.md)).
 

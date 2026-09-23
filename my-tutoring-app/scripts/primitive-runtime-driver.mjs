@@ -2,13 +2,13 @@
 // model transcripts are supplied by Python.
 //
 // NO PRIMITIVE NAMES LIVE HERE. The driver owns a vocabulary of real learner actions
-// (place, check, touch, give, write, answer) and a generic probe reader; `liveJourneySpec.ts`
+// (place, check, touch, give, write, draw, answer) and a generic probe reader; `liveJourneySpec.ts`
 // declares which of them each primitive uses, how to derive their values from the
 // mounted content, and whether a drawn example taught what it claims. Adding a
 // primitive is a row in that spec — this file and `run_live_runtime.py` do not change.
 import readline from 'node:readline';
 import { resolve } from 'node:path';
-import { JSDOM } from 'jsdom';
+import { JSDOM, VirtualConsole } from 'jsdom';
 import React from 'react';
 import * as vite from 'vite';
 
@@ -18,7 +18,13 @@ console.log = (...args) => process.stderr.write(args.join(' ') + '\n');
 // in shared code, which is the thing this driver exists not to have.
 const primitiveId = process.argv[3];
 if (!primitiveId) throw new Error('Usage: primitive-runtime-driver.mjs <epoch> <primitive-id>');
-const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost:3000', pretendToBeVisual: true });
+// jsdom reports every canvas getContext() as "Not implemented"; a canvas primitive repaints on each
+// pointer move, and that stream filled the stderr pipe the harness does not drain, hanging the drive.
+const virtualConsole = new VirtualConsole();
+virtualConsole.forwardTo(console, { jsdomErrors: 'none' });
+virtualConsole.on('jsdomError', error => { if (!/^Not implemented: HTMLCanvasElement/.test(error.message)) process.stderr.write(`${error.stack ?? error.message}
+`); });
+const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost:3000', pretendToBeVisual: true, virtualConsole });
 const nativeFetch = globalThis.fetch;
 globalThis.fetch = (input, options) => nativeFetch(typeof input === 'string' && input.startsWith('/')
   ? new URL(input, process.env.LIVE_FRONTEND || 'http://localhost:3000') : input, options);
@@ -134,7 +140,8 @@ const PERFORM = {
   // A labelled choice: the button whose whole text is the label, exactly.
   choose: ({ label }) => {
     const button = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === label || b.getAttribute('aria-label') === label);
-    if (!button || button.disabled) throw new Error('No enabled choice labelled ' + label);
+    if (!button || button.disabled) throw new Error(`No enabled choice labelled ${label}; buttons: ${[...document.querySelectorAll('button')]
+      .map(b => `"${b.textContent.trim() || b.getAttribute('aria-label')}"${b.disabled ? ' (disabled)' : ''}`).join(', ')}`);
     flushSync(() => button.click());
   },
   // A named object (`target`, its `data-pip-object` id) or the index-th counted object.
@@ -150,6 +157,20 @@ const PERFORM = {
     if (!input || input.disabled) throw new Error('No enabled input labelled ' + label);
     const setValue = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set;
     flushSync(() => { setValue.call(input, text); input.dispatchEvent(new dom.window.Event('input', { bubbles: true })); });
+  },
+  // Strokes on the canvas, in its own pixel coordinates: its client rect is pinned to its size.
+  // `mousemove` is a continuous event, so React schedules its render rather than flushing it:
+  // each move yields a task, as a real pointer does, or `mouseup` reads a one-point stroke.
+  draw: async ({ strokes }) => {
+    const canvas = document.querySelector('canvas[data-pip-object="canvas"]') ?? document.querySelector('canvas');
+    if (!canvas) throw new Error('No canvas to draw on');
+    canvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: canvas.width, height: canvas.height, right: canvas.width, bottom: canvas.height });
+    const at = (type, p) => flushSync(() => canvas.dispatchEvent(new dom.window.MouseEvent(type, { bubbles: true, clientX: p?.x ?? 0, clientY: p?.y ?? 0 })));
+    for (const stroke of strokes) {
+      at('mousedown', stroke[0]);
+      for (const p of stroke.slice(1)) { at('mousemove', p); await new Promise(resolve => setTimeout(resolve, 0)); }
+      at('mouseup');
+    }
   },
   give: () => {
     const button = [...document.querySelectorAll('button')].find(b => /give them to me/i.test(b.textContent));
@@ -208,7 +229,7 @@ try {
         if (input.deferAnswers && action.type === 'answer') continue;
         const run = PERFORM[action.type];
         if (!run) throw new Error('Unknown learner action ' + action.type);
-        run(action);
+        await run(action);
       }
     }
     // Primitive-owned pedagogy check, run beside the primitive rather than in Python.

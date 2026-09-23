@@ -9,9 +9,9 @@ import { LiveLessonRuntime } from './LiveLessonRuntime';
 afterEach(cleanup);
 const Teaching = () => <p>teaching</p>;
 const Scripted = () => <p>scripted</p>;
-// The catalog decides: number-sequencer declares `teachingWorkspace`, number-tracer does not.
+// The catalog decides: number-sequencer declares `teachingWorkspace`, hundreds-chart does not.
 const Train = withTeachingWorkspace('number-sequencer', Teaching, Scripted);
-const Line = withTeachingWorkspace('number-tracer', Teaching, Scripted);
+const Line = withTeachingWorkspace('hundreds-chart', Teaching, Scripted);
 const mounted = (Family: React.FC<{ runtimeEvalMode?: string }>, pin?: string, runtime = true) => render(runtime
   ? <LiveRuntimeContext.Provider value={new LiveLessonRuntime('switch')}><Family runtimeEvalMode={pin} /></LiveRuntimeContext.Provider>
   : <Family runtimeEvalMode={pin} />).container.textContent;
@@ -24,7 +24,7 @@ it.each([
 });
 
 it('mounts the scripted drill for a family the catalog does not declare, and whenever there is no runtime', () => {
-  expect(mounted(Line, 'trace')).toBe('scripted');
+  expect(mounted(Line, 'count')).toBe('scripted');
   expect(mounted(Line, 'mixed')).toBe('scripted');
   expect(mounted(Train, 'before_after', false)).toBe('scripted');
 });

@@ -15,7 +15,7 @@ import { numberSequencerLiveDomain } from './adapters/numberSequencerLive';
 import { numberBondLiveDomain } from './adapters/numberBondLive';
 import { ordinalLineLiveDomain } from './adapters/ordinalLineLive';
 import { sortingStationLiveDomain } from './adapters/sortingStationLive';
-import { numberTracerLive } from './adapters/numberTracerLive';
+import { numberTracerLiveDomain } from './adapters/numberTracerLive';
 import { comparisonBuilderLiveDomain } from './adapters/comparisonBuilderLive';
 import { compareObjectsLiveDomain } from './adapters/compareObjectsLive';
 import { placeValueLiveDomain } from './adapters/placeValueLive';
@@ -45,7 +45,7 @@ export const LIVE_ADAPTERS = {
   'number-bond': workspaceAdapter('number-bond', numberBondLiveDomain),
   'ordinal-line': workspaceAdapter('ordinal-line', ordinalLineLiveDomain),
   'sorting-station': workspaceAdapter('sorting-station', sortingStationLiveDomain),
-  'number-tracer': numberTracerLive,
+  'number-tracer': workspaceAdapter('number-tracer', numberTracerLiveDomain),
   'comparison-builder': workspaceAdapter('comparison-builder', comparisonBuilderLiveDomain),
   'compare-objects': workspaceAdapter('compare-objects', compareObjectsLiveDomain),
   'place-value-chart': workspaceAdapter('place-value-chart', placeValueLiveDomain),

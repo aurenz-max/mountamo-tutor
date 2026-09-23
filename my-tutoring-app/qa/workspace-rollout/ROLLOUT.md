@@ -9,15 +9,16 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 
 ## Status (2026-09-23)
 
-- Catalog: 212 primitive ids. On the workspace: 14 (8 at W2 from the pilots, 6 at W1). Queued:
-  Tier A 3, Tier B 12, Tier C 152. Held back: 31.
+- Catalog: 212 primitive ids. On the workspace: 17 (8 at W2 from the pilots, 9 at W1). Queued:
+  Tier A 0, Tier B 12, Tier C 152. Held back: 31.
 - **Recount:** catalog ids = `id: '...'` entries in `src/components/lumina/service/manifest/catalog/*.ts`
   (skip the test fixture id `x`); on the workspace = entries with a `teachingWorkspace: {` block.
   Runner-era surfaces: `rg -l "useJudgedScriptRunner<|useJudgedSpeechLoop<|= useJudgedScriptRunner|= useJudgedSpeechLoop" src/components/lumina/primitives --glob "!*test*"`.
 - **Two shapes.** *Runner-era* (R): the component runs `useJudgedScriptRunner`; the W1 recipe
   swaps its controller and applies unchanged. *Plain* (P): no runner (its own Check/Next, or an
-  older tool-lab live adapter). No W1 recipe exists for P yet; batch A2 pilots it, and every P
-  row waits on A2.
+  older tool-lab live adapter). Recipe since A2: `useWorkspaceProgress` in place of
+  `useChallengeProgress` (skill section "Plain shape (P)"). A P primitive that does not use
+  `useChallengeProgress` needs its own look before its batch.
 - **Parallel sessions:** every adoption edits `activityContract.ts`, the catalog and
   `liveJourneySpec.ts`. Commit one primitive before the next one starts on those files.
 
@@ -30,6 +31,7 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 | number-bond | W1 | [number-bond-w1-2026-09-23.md](../tutor-reports/number-bond-w1-2026-09-23.md) |
 | compare-objects | W1 | [compare-objects-w1-2026-09-22.md](../tutor-reports/compare-objects-w1-2026-09-22.md) |
 | A1: place-value-chart, ordinal-line, sorting-station | W1 | [workspace-rollout-A1-2026-09-23.md](../tutor-reports/workspace-rollout-A1-2026-09-23.md) |
+| A2: number-line, comparison-builder, number-tracer (plain shape) | W1 | [workspace-rollout-A2-2026-09-23.md](../tutor-reports/workspace-rollout-A2-2026-09-23.md) |
 | DEAD: runner-owned sandbox handoff, `'di-runner'` owner value, `RUNNER_GUIDANCE`/`runnerLessonStart` (frontend) | — | 09-23, no report. **Residue, owned by LA-14 retirement (`07-census.md`):** the backend bridge `live_activity_tools.py` still accepts `teachingOwner: 'di-runner'` and emits `activity_ready` for it, and `run_live_runtime.py` (`judged_runner`), `run_live_lesson_plan.py` and `scripts/live-lesson-plan-fixture.mjs` still branch on it (the live route's `diPlan` probe was removed with it). No frontend adapter sends that value. |
 
 ## Queue
@@ -38,7 +40,6 @@ Order: Tier A, then runner-era K–2 (the recipe applies as written), then the r
 
 | Row | Shape | Primitives | Status |
 | --- | --- | --- | --- |
-| **A2** | P | `number-line`, `number-tracer`, `comparison-builder` (tool-lab live adapters: `teachingOwner: 'tutor'`, `canAdvance: true`, no runner). Pilots the Plain shape: the component's own check becomes a `commitGesture`, its Next is turned off under a runtime. Write the P recipe into the skill before closing | open |
 | B1 | R | `balance-scale` (equality, workshop), `base-ten-blocks` (DI modes), `bar-model` (explanation), `fraction-circles` (`touch_fraction`) — census Tier B | open |
 | B2 | R | `cvc-speller`, `phonics-blender`, `sound-swap`, `word-flip` (both runner hooks) | open |
 | B3 | R | `you-and-me`, `spatial-scene`, `di-shapes`, `ramp-lab` (investigation) | open |
@@ -50,32 +51,32 @@ Order: Tier A, then runner-era K–2 (the recipe applies as written), then the r
 | C6 | R | Spoken DI, older learners: `di-spoken-practice`, `di-dice-roll`, `di-deduction`, `di-worked-procedure`, `di-word-problem-setup` | open |
 | C7 | R | Literacy G1–5 on the runner: `genre-explorer`, `sentence-analyzer`, `text-structure-analyzer`, `oral-sentence-studio`, `read-aloud-studio` | open |
 | C8 | R | Other runner-era: `knowledge-check`, `periodic-table`, `cause-effect-chain`, `era-explorer` | open |
-| C9 | P | K math: `math-fact-fluency`, `hundreds-chart`, `equation-builder`, `pattern-builder`, `strategy-picker` | after A2 |
-| C10 | P | K measurement and time: `length-lab`, `measure-lab`, `analog-clock`, `time-sequencer`, `timeline-builder` | after A2 |
-| C11 | P | K geometry: `shape-tracer`, `shape-composer`, `shape-builder`, `fast-fact` | after A2 |
-| C12 | P | G1–2 math: `skip-counting-runner`, `regrouping-workbench`, `coin-counter`, `fraction-bar`, `area-model` | after A2 |
-| C13 | P | K–2 literacy: `letter-workshop`, `spelling-pattern-explorer`, `story-map`, `sentence-builder`, `story-planner` (the last two HOLD in Pip for `/curriculum-fit`; check first) | after A2 |
-| C14 | P | K–2 science: `light-shadow-lab`, `day-night-seasons`, `moon-phases-lab`, `life-cycle-sequencer`, `classification-sorter` | after A2 |
-| C15 | P | Math G3–5: `array-grid`, `multiplication-explorer`, `measurement-tools`, `tape-diagram` | after A2 |
-| C16 | P | Math G5–7: `percent-bar`, `ratio-table`, `double-number-line`, `factor-tree` | after A2 |
-| C17 | P | Math expressions: `function-machine`, `equation-workspace`, `formula-lab`, `formula-card`, `practice-problem` | after A2 |
-| C18 | P | Geometry G4–8: `angle-workshop`, `circle-explorer`, `polygon-area-builder`, `net-folder`, `transformation-lab` | after A2 |
-| C19 | P | Data: `histogram`, `two-way-table`, `distribution-explorer`, `coordinate-graph` | after A2 |
-| C20 | P | Algebra: `slope-triangle`, `systems-equations-visualizer`, `matrix-display`, `function-sketch`, `parameter-explorer` | after A2 |
-| C21 | P | Literacy G2–5: `character-web`, `context-clues-detective`, `evidence-finder`, `figurative-language-finder` | after A2 |
-| C22 | P | Literacy G2–5: `reading-repair-studio`, `poetry-lab`, `spatial-path` | after A2 |
-| C23 | P | Science G3+: `food-web-builder`, `adaptation-investigator`, `constellation-builder`, `planetary-explorer`, `telescope-simulator` | after A2 |
-| C24 | P | Biology: `cell-builder`, `microscope-viewer`, `bio-compare-contrast`, `bio-process-animator`, `dna-explorer` | after A2 |
-| C25 | P | Life and earth science: `energy-cycle-engine`, `evolution-timeline`, `inheritance-lab`, `protein-folder`, `orbit-mechanics-lab` | after A2 |
-| C26 | P | Chemistry: `atom-builder`, `mixing-and-dissolving`, `molecule-constructor`, `reaction-lab`, `ph-explorer` | after A2 |
-| C27 | P | Chemistry: `equation-balancer`, `energy-of-reactions`, `gas-laws-simulator`, `stoichiometry-lab` | after A2 |
-| C28 | P | Physics: `gravity-drop-tower`, `motion-diagram`, `race-track-lab`, `sound-wave-explorer`, `mission-planner` | after A2 |
-| C29 | P | Flight: `rocket-builder`, `airfoil-lab`, `flight-forces-explorer`, `paper-airplane-designer`, `propulsion-lab` | after A2 |
-| C30 | P | Engineering: `bridge-builder`, `tower-stacker`, `shape-strength-tester`, `transport-challenge`, `foundation-builder` | after A2 |
-| C31 | P | Construction sims: `dump-truck-loader`, `excavator-arm-simulator`, `hydraulics-lab`, `construction-sequence-planner` | after A2 |
-| C32 | P | Vehicles and history: `propulsion-timeline`, `engine-explorer`, `vehicle-comparison-lab`, `digital-skills-sim`, `foundation-explorer` | after A2 |
-| C33 | P | Exhibits with a check: `fact-file`, `image-panel`, `feature-exhibit`, `how-it-works` | after A2 |
-| C34 | P | Exhibits with a check: `timeline-explorer`, `vocabulary-explorer`, `comparison-panel` | after A2 |
+| C9 | P | K math: `math-fact-fluency`, `hundreds-chart`, `equation-builder`, `pattern-builder`, `strategy-picker` | open |
+| C10 | P | K measurement and time: `length-lab`, `measure-lab`, `analog-clock`, `time-sequencer`, `timeline-builder` | open |
+| C11 | P | K geometry: `shape-tracer`, `shape-composer`, `shape-builder`, `fast-fact` | open |
+| C12 | P | G1–2 math: `skip-counting-runner`, `regrouping-workbench`, `coin-counter`, `fraction-bar`, `area-model` | open |
+| C13 | P | K–2 literacy: `letter-workshop`, `spelling-pattern-explorer`, `story-map`, `sentence-builder`, `story-planner` (the last two HOLD in Pip for `/curriculum-fit`; check first) | open |
+| C14 | P | K–2 science: `light-shadow-lab`, `day-night-seasons`, `moon-phases-lab`, `life-cycle-sequencer`, `classification-sorter` | open |
+| C15 | P | Math G3–5: `array-grid`, `multiplication-explorer`, `measurement-tools`, `tape-diagram` | open |
+| C16 | P | Math G5–7: `percent-bar`, `ratio-table`, `double-number-line`, `factor-tree` | open |
+| C17 | P | Math expressions: `function-machine`, `equation-workspace`, `formula-lab`, `formula-card`, `practice-problem` | open |
+| C18 | P | Geometry G4–8: `angle-workshop`, `circle-explorer`, `polygon-area-builder`, `net-folder`, `transformation-lab` | open |
+| C19 | P | Data: `histogram`, `two-way-table`, `distribution-explorer`, `coordinate-graph` | open |
+| C20 | P | Algebra: `slope-triangle`, `systems-equations-visualizer`, `matrix-display`, `function-sketch`, `parameter-explorer` | open |
+| C21 | P | Literacy G2–5: `character-web`, `context-clues-detective`, `evidence-finder`, `figurative-language-finder` | open |
+| C22 | P | Literacy G2–5: `reading-repair-studio`, `poetry-lab`, `spatial-path` | open |
+| C23 | P | Science G3+: `food-web-builder`, `adaptation-investigator`, `constellation-builder`, `planetary-explorer`, `telescope-simulator` | open |
+| C24 | P | Biology: `cell-builder`, `microscope-viewer`, `bio-compare-contrast`, `bio-process-animator`, `dna-explorer` | open |
+| C25 | P | Life and earth science: `energy-cycle-engine`, `evolution-timeline`, `inheritance-lab`, `protein-folder`, `orbit-mechanics-lab` | open |
+| C26 | P | Chemistry: `atom-builder`, `mixing-and-dissolving`, `molecule-constructor`, `reaction-lab`, `ph-explorer` | open |
+| C27 | P | Chemistry: `equation-balancer`, `energy-of-reactions`, `gas-laws-simulator`, `stoichiometry-lab` | open |
+| C28 | P | Physics: `gravity-drop-tower`, `motion-diagram`, `race-track-lab`, `sound-wave-explorer`, `mission-planner` | open |
+| C29 | P | Flight: `rocket-builder`, `airfoil-lab`, `flight-forces-explorer`, `paper-airplane-designer`, `propulsion-lab` | open |
+| C30 | P | Engineering: `bridge-builder`, `tower-stacker`, `shape-strength-tester`, `transport-challenge`, `foundation-builder` | open |
+| C31 | P | Construction sims: `dump-truck-loader`, `excavator-arm-simulator`, `hydraulics-lab`, `construction-sequence-planner` | open |
+| C32 | P | Vehicles and history: `propulsion-timeline`, `engine-explorer`, `vehicle-comparison-lab`, `digital-skills-sim`, `foundation-explorer` | open |
+| C33 | P | Exhibits with a check: `fact-file`, `image-panel`, `feature-exhibit`, `how-it-works` | open |
+| C34 | P | Exhibits with a check: `timeline-explorer`, `vocabulary-explorer`, `comparison-panel` | open |
 
 A C row whose primitive turns out to have no answer check moves to HELD with the reason.
 
