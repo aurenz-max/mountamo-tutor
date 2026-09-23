@@ -42,6 +42,7 @@ import { expandNumberBondInteractions } from '../../primitives/visual-primitives
 import { buildCompareItems, compareObjectsHarnessAnswers } from '../../primitives/visual-primitives/math/compareObjectsScript';
 import { itemsFromChallenges as placeValueItems, placeValueHarnessAnswers } from '../../primitives/visual-primitives/math/placeValueScript';
 import { placeLabel } from '../../primitives/visual-primitives/math/spokenNumberWords';
+import { itemsFromChallenges as ordinalItems, ordinalLineHarnessAnswers } from '../../primitives/visual-primitives/math/ordinalLineScript';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -300,20 +301,29 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     probes: { mounted: { selector: '[data-pip-dock]' } },
   },
   'ordinal-line': {
+    execution: 'workspace',
     component: 'primitives/visual-primitives/math/OrdinalLine.tsx',
     instanceId: 'line-up',
-    defaults: { grade: 'Kindergarten', mode: 'identify', di: true,
+    defaults: { grade: 'Kindergarten', mode: 'identify', di: false,
       topic: 'Saying which place someone is standing in a line' },
     leakTokens: ['OL_'],
-    // No example or return prompt: the example surface states HOW MANY and every
-    // mode here teaches WHICH PLACE, so this family advertises no artifact. A
-    // journey that asked for one would score the runtime for refusing correctly.
-    prompts: {
-      hint: 'Please show me a reminder for how to work out the place.',
-      fade: 'Please hide the reminder now.',
-      replay: 'Please ask me about this same line again.',
+    prompts: WORKSPACE_PROMPTS,
+    // A spoken item says the pack's own answer (a name or a place word); a build touches
+    // each real picture and then its place, in the clued order or reversed (the wrong-end
+    // error through the hands), so a wrong line is complete.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = ordinalItems(ctx.data.challenges ?? [], { band: ctx.data.gradeBand ?? 'K', context: ctx.data.context ?? 'race' })
+        .items.find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current ordinal-line assignment');
+      if (item.answerKind === 'gesture') {
+        const order = intent === 'wrong' ? [...item.answerOrder].reverse() : item.answerOrder;
+        return order.flatMap((name, i) => [{ type: 'touch' as const, target: `picture-${name}` },
+          { type: 'touch' as const, target: `slot-${i + 1}` }]);
+      }
+      const answers = ordinalLineHarnessAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
-    inputsFor: (intent, ctx) => intent === 'warmup' ? [] : spoken(ctx, intent === 'wrong' ? 'plainWrong' : 'correct'),
     probes: { mounted: { selector: '[data-pip-object="stage"]' } },
   },
   'sorting-station': {

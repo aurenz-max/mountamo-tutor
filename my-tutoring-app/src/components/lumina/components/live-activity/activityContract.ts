@@ -13,7 +13,7 @@ import { tenFrameLiveDomain, validateTenFrameData } from './adapters/tenFrameLiv
 import { countingBoardLiveDomain } from './adapters/countingBoardLive';
 import { numberSequencerLiveDomain } from './adapters/numberSequencerLive';
 import { numberBondLiveDomain } from './adapters/numberBondLive';
-import { ordinalLineLive } from './adapters/ordinalLineLive';
+import { ordinalLineLiveDomain } from './adapters/ordinalLineLive';
 import { sortingStationLive } from './adapters/sortingStationLive';
 import { numberTracerLive } from './adapters/numberTracerLive';
 import { comparisonBuilderLive } from './adapters/comparisonBuilderLive';
@@ -43,7 +43,7 @@ export const LIVE_ADAPTERS = {
   'counting-board': workspaceAdapter('counting-board', countingBoardLiveDomain),
   'number-sequencer': workspaceAdapter('number-sequencer', numberSequencerLiveDomain),
   'number-bond': workspaceAdapter('number-bond', numberBondLiveDomain),
-  'ordinal-line': ordinalLineLive,
+  'ordinal-line': workspaceAdapter('ordinal-line', ordinalLineLiveDomain),
   'sorting-station': sortingStationLive,
   'number-tracer': numberTracerLive,
   'comparison-builder': comparisonBuilderLive,

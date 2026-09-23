@@ -131,6 +131,13 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
   /** The activity's own verdict on the placement being submitted, read by `checkResponse`. */
   const checked = useRef<{ itemId: string; correct: boolean } | null>(null);
   const opened = useRef<string | null>(null);
+  /** Once per item, when its success is committed. */
+  const affirmed = useRef(new Set<string>());
+  const affirm = useCallback((item: Item | undefined) => {
+    if (!item || affirmed.current.has(item.id)) return;
+    affirmed.current.add(item.id);
+    latest.current.onAffirmed?.(item);
+  }, []);
   const lesson = useTeachingWorkspace({
     instanceId: options.instanceId, primitiveId: options.primitiveId, objectiveId: options.objectiveId,
     planItemId: options.planItemId, evalMode, workspace: options.workspace,
@@ -145,17 +152,15 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
       else o.onItemOpened?.(item, index);
     },
     onPresentStimulus: index => latest.current.onPresentStimulus?.(latest.current.items[index], index),
+    // At the commit, while the primitive still shows this item: a verdict that also advances
+    // never renders the solved state, and the next item's reset would run first.
+    onSolved: index => affirm(latest.current.items[index]),
   });
   const { state } = lesson;
   const item = items[state.index];
   const solved = state.phase === 'checked' && !!state.lastResponse?.correct;
 
-  const affirmed = useRef(new Set<string>());
-  useEffect(() => {
-    if (!solved || affirmed.current.has(item.id)) return;
-    affirmed.current.add(item.id);
-    latest.current.onAffirmed?.(item);
-  }, [solved, item]);
+  useEffect(() => { if (solved) affirm(item); }, [solved, item, affirm]);
 
   const teachingResult = lesson.summary
     ? teachingEvaluation(items.map(i => ({ ...options.assignment(i), checkResponse: () => null })), state, lesson.summary, evalMode)

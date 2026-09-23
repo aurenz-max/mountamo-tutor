@@ -42,10 +42,12 @@ async function emit(v: Record<string, unknown>) { await act(async () => { mocks.
 async function paint() { await act(async () => { const todo = frames.splice(0); todo.forEach(f => f(0)); }); }
 
 it('initiates a full runner-owned lesson once and arms DI only after its correlated server handoff', async () => {
-  const line = [{ name: 'Rabbit', emoji: '🐰' }, { name: 'Turtle', emoji: '🐢' }, { name: 'Fox', emoji: '🦊' },
-    { name: 'Bear', emoji: '🐻' }, { name: 'Frog', emoji: '🐸' }];
-  const data = { title: 'Parade', maxPosition: 5, context: 'race', showOrdinalLabels: true, labelFormat: 'both', gradeBand: '1',
-    challenges: [{ id: 'one', type: 'identify', instruction: '', characters: line, targetPosition: 3, correctAnswer: '3' }] };
+  const fruit = (id: string, label: string, color: string) => ({ id, label, emoji: '', attributes: { color } });
+  const data = { title: 'Colors', maxCategories: 2, showCounts: false, showTallyChart: false, gradeBand: 'K', supportTier: 'medium',
+    challenges: [{ id: 'one', type: 'sort-by-one', instruction: 'Sort by color.', sortingAttribute: 'color',
+      categories: [{ label: 'Red', rule: { color: 'Red' } }, { label: 'Yellow', rule: { color: 'Yellow' } }],
+      objects: [fruit('o1', 'apple', 'Red'), fruit('o2', 'banana', 'Yellow'), fruit('o3', 'cherry', 'Red'),
+        fruit('o4', 'lemon', 'Yellow'), fruit('o5', 'strawberry', 'Red')] }] };
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ instanceId: 'frame-1', data }) }));
   render(<LiveActivitySandbox />);
   fireEvent.click(screen.getByText('Start lesson'));
@@ -53,17 +55,17 @@ it('initiates a full runner-owned lesson once and arms DI only after its correla
   await emit({ type: 'session_ready' }); await emit({ type: 'session_ready' });
   expect(mocks.ai.sendText).toHaveBeenCalledTimes(1);
   expect(mocks.ai.sendText).toHaveBeenCalledWith(expect.stringContaining('[LESSON_START]'), { silent: true });
-  await emit({ type: 'activity_request', callId: 'frame-call', args: { primitiveId: 'ordinal-line', mode: 'identify', topic: 'Ordinal positions', intent: 'Find the third animal.' } });
-  await screen.findByTestId('ordinal-line');
-  expect(screen.getByTestId('ordinal-line').getAttribute('data-auto-start')).toBe('false');
+  await emit({ type: 'activity_request', callId: 'frame-call', args: { primitiveId: 'sorting-station', mode: 'sort_one', topic: 'Sorting by color', intent: 'Sort the fruit by color.' } });
+  await screen.findByTestId('sorting-station');
+  expect(screen.getByTestId('sorting-station').getAttribute('data-auto-start')).toBe('false');
   await emit({ type: 'activity_ready', callId: 'frame-call', instanceId: 'frame-1' });
-  expect(screen.getByTestId('ordinal-line').getAttribute('data-auto-start')).toBe('false');
+  expect(screen.getByTestId('sorting-station').getAttribute('data-auto-start')).toBe('false');
   await paint(); await paint();
-  expect(mocks.ai.sendActivityMessage).toHaveBeenCalledWith(expect.objectContaining({ status: 'mounted', primitiveId: 'ordinal-line' }));
+  expect(mocks.ai.sendActivityMessage).toHaveBeenCalledWith(expect.objectContaining({ status: 'mounted', primitiveId: 'sorting-station' }));
   await emit({ type: 'activity_ready', callId: 'old', instanceId: 'frame-1' });
-  expect(screen.getByTestId('ordinal-line').getAttribute('data-auto-start')).toBe('false');
+  expect(screen.getByTestId('sorting-station').getAttribute('data-auto-start')).toBe('false');
   await emit({ type: 'activity_ready', callId: 'frame-call', instanceId: 'frame-1' });
-  expect(screen.getByTestId('ordinal-line').getAttribute('data-auto-start')).toBe('true');
+  expect(screen.getByTestId('sorting-station').getAttribute('data-auto-start')).toBe('true');
 });
 
 it('dispatches tutor advance to the mounted primitive and acknowledges the painted state, rejecting stale screens', async () => {

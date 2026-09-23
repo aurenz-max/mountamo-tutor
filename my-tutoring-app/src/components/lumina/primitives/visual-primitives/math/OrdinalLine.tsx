@@ -75,9 +75,14 @@
  * tap-to-hear re-speaks the QUESTION (and on the story mode, that is what
  * replaces re-reading it); adult chrome hidden for pre-readers; interaction is
  * gated on `runner.canAttempt`, never on `runner.stage`.
+ *
+ * Inside a live runtime with a resolved pin, the shared teaching workspace
+ * replaces the scripted runner (W1, `ordinalLineWorkspace.ts`): the tutor
+ * teaches in its own words, the observer commits outcomes, and the line still
+ * checks a built arrangement itself. Everything above describes the page both share.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -97,6 +102,7 @@ import type { OrdinalLineMetrics } from '../../../evaluation/types';
 import {
   useJudgedScriptRunner,
   type JudgedRunSummary,
+  type JudgedScriptRunnerOptions,
 } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
@@ -117,6 +123,11 @@ import { ordinalLinePipPose } from '../../../pip/ordinalLinePipPose';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
 import { useOrdinalLineRuntime } from './useOrdinalLineRuntime';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { describeLine, lineMatches, workspaceAssignment, workspaceScene } from './ordinalLineWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -247,8 +258,33 @@ interface OrdinalLineProps {
 // Component
 // ============================================================================
 
-const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode }) => {
+/**
+ * The scripted runner's options beside the workspace controller's (compare-objects' shape).
+ * `placedOrder` feeds the runner-era runtime registration only.
+ */
+type OrdinalLineControllerOptions = Omit<WorkspaceRunOptions<OrdinalLineItem>, 'primitiveId' | 'assignment' | 'onFinished'>
+  & Omit<JudgedScriptRunnerOptions<OrdinalLineItem>, 'pack' | 'instanceId' | 'onItemOpened' | 'onFinished'>
+  & { pack?: JudgedScriptPack<OrdinalLineItem>; placedOrder: string[]; onFinished: (summary: OrdinalLineFinish) => void };
+
+/** What the metrics read, from either controller's finished record. */
+type OrdinalLineFinish = Pick<JudgedRunSummary, 'outcomes' | 'accuracy' | 'attemptsCount' | 'diagnosisEvidence'
+  | 'solvedCount' | 'learningResponses'> & { teachingAttempts?: unknown; assistanceProvenance?: string };
+
+function useScriptedController(options: OrdinalLineControllerOptions): LiveRun<OrdinalLineItem> {
+  const runner = useJudgedScriptRunner<OrdinalLineItem>({ ...options, pack: options.pack! });
+  // The SESSION's mode, never `runner.currentItem`: a mount's identity must not change while the runner owns it.
+  useOrdinalLineRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
+    planItemId: options.planItemId, evalMode: options.evalMode, placedOrder: options.placedOrder });
+  return runner;
+}
+
+const useWorkspaceController = (options: OrdinalLineControllerOptions): LiveRun<OrdinalLineItem> =>
+  useWorkspaceRunner<OrdinalLineItem>({ ...options, primitiveId: 'ordinal-line', assignment: workspaceAssignment });
+
+const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
+  OrdinalLineProps & { tutorOwned: boolean; useController: (options: OrdinalLineControllerOptions) => LiveRun<OrdinalLineItem> }) => {
   const liveRuntime = useLiveRuntime();
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -332,7 +368,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className, autoStart = 
     return map;
   }, [challenges]);
 
-  const pack = useMemo<JudgedScriptPack<OrdinalLineItem>>(() => ({
+  const pack = useMemo<JudgedScriptPack<OrdinalLineItem> | undefined>(() => tutorOwned ? undefined : ({
     ...ordinalLinePackBase(items),
     // Only what DIFFERS from the runner's defaults.
     statusLines: {
@@ -390,7 +426,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className, autoStart = 
           };
       }
     },
-  }), [items]);
+  }), [items, tutorOwned]);
 
   // ── Per-item reset — every item owns its starting state ───────────────────
   const resetStageFor = useCallback(() => {
@@ -400,7 +436,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className, autoStart = 
   }, []);
 
   // ── Metrics ───────────────────────────────────────────────────────────────
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const handleFinished = useCallback((summary: OrdinalLineFinish) => {
     const scoreById = new Map(summary.outcomes.map((o) => [o.id, o.score]));
     // Per-mode accuracy off the runner's own per-item scores (100/67/33 by
     // corrections) — nothing here re-grades what the tutor already judged.
@@ -430,17 +466,23 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className, autoStart = 
       summary.solvedCount === items.length,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
   }, [items, evaluation]);
 
-  const runner = useJudgedScriptRunner<OrdinalLineItem>({
+  const runner = useController({
+    items, workspace, objectiveId, planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount, never `runner.currentItem`: a mount's
+    // identity must not change while the runner owns it.
+    evalMode: runtimeEvalMode || items[0]?.kind || 'default',
+    placedOrder,
     // Load-bearing for the live host: without it the runner's `resume()` early-returns,
     // its speech holds never settle, and the completion handoff has nothing to read.
     runtime: liveRuntime,
-    ...(runtimePlanItemId ? { completionCue: '[OL_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
+    ...(!tutorOwned && runtimePlanItemId ? { completionCue: '[OL_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
     pack,
     instanceId: resolvedInstanceId,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
@@ -487,6 +529,8 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className, autoStart = 
   const currentItem = runner.currentItem;
   const kind = currentItem?.kind;
   const currentChallenge = challengeFor(currentItem);
+  // The workspace path shows its summary without an evaluation provider (the live host has none).
+  const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
 
   // ── Pip shared surface: element registry + the child's last touch ────────
   const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt && !runner.isAwaitingGesture());
@@ -498,7 +542,11 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className, autoStart = 
     const item = runner.currentItem;
     if (!item || item.kind !== 'build_sequence') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
-    runner.submitGestureAttempt(placementVerdictCue(item, pendingOrderRef.current));
+    const placed = pendingOrderRef.current;
+    // The line checks its own arrangement, with the same code match the cue reports.
+    // A part-filled line commits too, exactly as on the runner.
+    commitGesture(runner, { response: describeLine(item, placed), correct: lineMatches(item, placed),
+      cue: () => placementVerdictCue(item, placed) });
   }, [runner]);
 
   /** A hands turn closes on stillness; a full line shortens the window but never
@@ -709,11 +757,16 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className, autoStart = 
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => (
-      PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🔢' }
-    ));
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+    if (!showSummary) return [];
+    const practice = runner.practiceSummary;
+    return phaseResultsFromSummary(items, practice ?? runner.summary, (item) => {
+      const config = PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🔢' };
+      return practice?.outcomes.find(o => o.id === item.id)?.assisted ? { ...config, label: `${config.label} (with help)` } : config;
+    }).map((phase, index) => {
+      const outcome = practice?.outcomes.find(o => o.id === items[index].id);
+      return outcome ? { ...phase, attempts: outcome.attempts, firstTry: outcome.solved && outcome.attempts === 1 } : phase;
+    });
+  }, [showSummary, runner.summary, runner.practiceSummary, items]);
 
   const celebrationMessage = useMemo(() => {
     const spoken = items.some((i) => i.answerKind === 'voice');
@@ -726,7 +779,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className, autoStart = 
   // A projection of the runner's phase and the child's own touches; Pip never
   // places a picture, answers, or advances.
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const targets = pip.targets(undefined, (id) => (id.startsWith('picture-') ? id.slice('picture-'.length) : id));
     const pose = ordinalLinePipPose({
       running: runner.running, preparing: runner.preparing,
@@ -738,12 +791,17 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className, autoStart = 
     return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Ordinal line', dock: pip.dock.current, targets, pose };
   });
 
-  const runtimeHint = useOrdinalLineRuntime({ runner, instanceId: resolvedInstanceId, objectiveId,
-    // The SESSION's mode, from the first item — never `runner.currentItem`.
-    // A mount's identity must not change while the runner owns it: an item
-    // change would rebuild the mount and re-register into an unreleased owner.
-    planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || items[0]?.kind || 'default',
-    placedOrder });
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentItem) return;
+    const markedPlace = currentItem.kind === 'relative_position' && currentChallenge?.highlightTarget !== false
+      ? currentItem.askPosition : undefined;
+    workspace.current = { ...workspaceScene(currentItem, { placedOrder, markedPlace }),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true,
+      mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace?.();
+  });
   // AFTER the runtime mount is registered, never before: `start()` waits for
   // `grantOwnership('runner')`, which cannot be granted until this primitive's
   // mount exists. Declared earlier, its effect runs first and the runner spins.
@@ -801,7 +859,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className, autoStart = 
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && currentItem && (
+        {!showSummary && currentItem && (
           <>
             <div className="flex items-center justify-center gap-4">
               {!isPreReader && (
@@ -812,17 +870,18 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className, autoStart = 
                 />
               )}
               {/* Tap-to-hear — the QUESTION again, never a hint ladder. On the
-                  story mode this is what replaces re-reading a printed story. */}
-              <button
+                  story mode this is what replaces re-reading a printed story.
+                  With the tutor (no `hearStimulus`), the learner asks the tutor instead. */}
+              {runner.hearStimulus && <button
                 type="button"
                 onClick={runner.hearStimulus}
                 className={`flex h-11 w-11 items-center justify-center rounded-full bg-amber-500/15 border-2 border-amber-500/30 hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all ${
-                  runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''
+                  (runner as { stimulusTapped?: boolean }).stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''
                 }`}
                 aria-label="Hear the question again"
               >
                 <span className="text-xl">🔁</span>
-              </button>
+              </button>}
             </div>
 
             {/* The stage. The tutor speaks the ask — no printed instruction,
@@ -863,7 +922,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className, autoStart = 
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
             overallScore={evaluation.submittedResult?.score}
@@ -877,5 +936,9 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className, autoStart = 
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the runner, whose context push and cue loop would run beside the tutor.
+const OrdinalLine = withWorkspaceController<OrdinalLineProps, OrdinalLineControllerOptions, LiveRun<OrdinalLineItem>>(
+  'ordinal-line', OrdinalLineSurface, useScriptedController, useWorkspaceController);
 
 export default OrdinalLine;

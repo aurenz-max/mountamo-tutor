@@ -1028,6 +1028,14 @@ export const itemCue = (item: OrdinalLineItem, opts: OrdinalCueOptions = {}): st
   return `[OL_ITEM] Say exactly: "${greeting}${how}${askFor(item)}" ${contractFor(item)} ${NEVER_PERFORM}`;
 };
 
+/** Every place filled. The line is SPARSE: an empty place is carried as ''. */
+export const placementComplete = (item: OrdinalLineItem, placed: readonly string[]): boolean =>
+  placed.filter(Boolean).length === item.answerOrder.length && placed.length >= item.answerOrder.length;
+
+/** The committed line is the answer line, place by place. The one code check for a build. */
+export const placementMatches = (item: OrdinalLineItem, placed: readonly string[]): boolean =>
+  placementComplete(item, placed) && item.answerOrder.every((name, i) => placed[i] === name);
+
 /**
  * The arrangement verdict — THE MATCH IS COMPUTED IN CODE against the clue
  * positions; the tutor is never asked to read the board. Not correctness-gated
@@ -1047,10 +1055,8 @@ export const placementVerdictCue = (
   // on the screen and the Tier-A evidence records the wrong error. Empty places
   // are carried as '' and named, and the match is computed positionally.
   const filled = placed.filter(Boolean);
-  const complete = filled.length === item.answerOrder.length
-    && placed.length >= item.answerOrder.length;
-  const matches = complete
-    && item.answerOrder.every((name, i) => placed[i] === name);
+  const complete = placementComplete(item, placed);
+  const matches = placementMatches(item, placed);
   const head =
     `[OL_PLACE] The learner made this line: `
     + `${filled.length ? placed.map((name) => name || 'an empty place').join(', ') : 'nothing'}; `
