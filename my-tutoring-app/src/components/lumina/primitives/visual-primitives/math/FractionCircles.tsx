@@ -1,7 +1,7 @@
 'use client';
 
 import FractionTouch from './FractionTouch';
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +21,13 @@ import {
 } from '../../../evaluation';
 import type { FractionCirclesMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { catalogBindsWorkspace } from '../../../components/live-activity/pinnedModes';
+import { describeWork, workspaceAssignment, workspaceScene } from './fractionCirclesWorkspace';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -130,6 +136,7 @@ function renderFractionCircle(
         stroke="rgba(255,255,255,0.15)"
         strokeWidth={1.5}
         className={interactive ? 'cursor-pointer hover:brightness-125 transition-all' : ''}
+        data-pip-object={interactive ? `slice-${i}` : undefined}
         onClick={interactive && onSliceClick ? () => onSliceClick(i) : undefined}
       />,
     );
@@ -194,13 +201,28 @@ interface FractionCirclesProps {
   data: FractionCirclesData;
   className?: string;
   localOnly?: boolean;
+  runtimePlanItemId?: string;
+  /** The RESOLVED pin from the mount; inside a live runtime it decides who owns the teaching. */
+  runtimeEvalMode?: string;
+  /** Workspace path only: this surface's teaching session settled (the mixed chain's cue to move on). */
+  onWorkspaceFinished?: () => void;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className, localOnly = false }) => {
+const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePlanItemId, runtimeEvalMode, onWorkspaceFinished,
+  tutorOwned, useController }: FractionCirclesProps & {
+  tutorOwned: boolean; useController: (options: ProgressOptions<FractionCirclesChallenge>) => Progress }) => {
+  const liveRuntime = useLiveRuntime();
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const componentMounted = useRef(true);
+  useLayoutEffect(() => { componentMounted.current = true; return () => { componentMounted.current = false; }; }, []);
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  const learnerBlocked = () => tutorOwned && (!componentMounted.current || workspaceClosed.current
+    || !!liveRuntime && !['empty', 'active'].includes(liveRuntime.getSnapshot().status));
   const {
     title,
     description,
@@ -215,8 +237,23 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
   } = data;
 
   // -------------------------------------------------------------------------
-  // Shared hooks
+  // Shared hooks. On the workspace path the runtime moves the index.
   // -------------------------------------------------------------------------
+  const stableInstanceIdRef = useRef(instanceId || `fraction-circles-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || (new Set(challenges.map(c => c.type)).size === 1 ? challenges[0].type : 'mixed'),
+    workspace, assignment: workspaceAssignment,
+    // A fresh challenge and Try again both start from a blank circle. The setters are declared
+    // below; this runs only after render.
+    onItemOpened: () => {
+      setShadedSlices(new Set()); setIdentifyInput(''); setCompareChoice('');
+      setFeedback(''); setFeedbackType('');
+    },
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
@@ -225,10 +262,8 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
     recordResult,
     incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -265,8 +300,6 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
   // Every compare response in order; compare advances only after a correct one,
   // so first responses are the only evidence of an unassisted comparison.
   const compareResponsesRef = useRef<FractionCompareResponse[]>([]);
-  const stableInstanceIdRef = useRef(instanceId || `fraction-circles-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -307,12 +340,18 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
     shadedSlices.size, currentAttempts,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendScriptedText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'fraction-circles',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === 'K-2' ? 'Grades K-2' : 'Grades 3-5',
+    // Its context carries the answers; with the tutor it stays off.
+    enabled: !tutorOwned,
   });
+  // The scripted cues below name the key; the tutor on the workspace hears none of them.
+  const sendText = useCallback((...args: Parameters<typeof sendScriptedText>) => {
+    if (!tutorOwned) sendScriptedText(...args);
+  }, [tutorOwned, sendScriptedText]);
 
   // Activity introduction
   const hasIntroducedRef = useRef(false);
@@ -334,7 +373,7 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
   // Slice click handler (build & equivalent modes)
   // -------------------------------------------------------------------------
   const handleSliceClick = useCallback((index: number) => {
-    if (hasSubmittedEvaluation) return;
+    if (hasSubmittedEvaluation || learnerBlocked()) return;
     const willShade = !shadedSlices.has(index);
     SoundManager.toggle(willShade);   // ← rising blip when shading, falling when clearing
     setShadedSlices(prev => {
@@ -362,6 +401,7 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
     const userDen = parseInt(parts[1], 10);
     const correct = !isNaN(userNum) && !isNaN(userDen)
       && fractionsEquivalent(userNum, userDen, currentChallenge.numerator, currentChallenge.denominator);
+    progress.commitCheck?.(describeWork(currentChallenge, { typed: identifyInput, shaded: 0, choice: '' }), correct);
 
     if (correct) {
       SoundManager.playCorrect();
@@ -384,13 +424,14 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
         { silent: true },
       );
     }
-  }, [currentChallenge, identifyInput, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, identifyInput, currentAttempts, incrementAttempts, recordResult, sendText, progress]);
 
   const checkBuild = useCallback(() => {
     if (!currentChallenge) return;
     incrementAttempts();
 
     const correct = shadedSlices.size === currentChallenge.numerator;
+    progress.commitCheck?.(describeWork(currentChallenge, { typed: '', shaded: shadedSlices.size, choice: '' }), correct);
 
     if (correct) {
       SoundManager.playCorrect();
@@ -412,7 +453,7 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
         { silent: true },
       );
     }
-  }, [currentChallenge, shadedSlices.size, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, shadedSlices.size, currentAttempts, incrementAttempts, recordResult, sendText, progress]);
 
   const checkCompare = useCallback(() => {
     if (!currentChallenge || !currentChallenge.compareFraction || !compareChoice) return;
@@ -423,6 +464,7 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
     const areEqual = Math.abs(leftVal - rightVal) < 0.001;
     const correctChoice: 'left' | 'right' | 'equal' = areEqual ? 'equal' : leftVal > rightVal ? 'left' : 'right';
     const correct = compareChoice === correctChoice;
+    progress.commitCheck?.(describeWork(currentChallenge, { typed: '', shaded: 0, choice: compareChoice }), correct);
     compareResponsesRef.current.push({
       itemId: currentChallenge.id,
       left: { numerator: currentChallenge.numerator, denominator: currentChallenge.denominator },
@@ -460,7 +502,7 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
         { silent: true },
       );
     }
-  }, [currentChallenge, compareChoice, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, compareChoice, currentAttempts, incrementAttempts, recordResult, sendText, progress]);
 
   const checkEquivalent = useCallback(() => {
     if (!currentChallenge || !currentChallenge.equivalentDenominator) return;
@@ -471,6 +513,7 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
     const equivDen = currentChallenge.equivalentDenominator;
     const builtNum = shadedSlices.size;
     const correct = fractionsEquivalent(builtNum, equivDen, targetNum, targetDen);
+    progress.commitCheck?.(describeWork(currentChallenge, { typed: '', shaded: builtNum, choice: '' }), correct);
 
     if (correct) {
       SoundManager.playCorrect();
@@ -493,13 +536,13 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
         { silent: true },
       );
     }
-  }, [currentChallenge, shadedSlices.size, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, shadedSlices.size, currentAttempts, incrementAttempts, recordResult, sendText, progress]);
 
   // -------------------------------------------------------------------------
   // Unified check answer
   // -------------------------------------------------------------------------
   const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge) return;
+    if (!currentChallenge || learnerBlocked()) return;
     switch (currentChallenge.type) {
       case 'identify': checkIdentify(); break;
       case 'build': checkBuild(); break;
@@ -526,8 +569,8 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
         { silent: true },
       );
 
-      // Submit evaluation
-      if (!hasSubmittedEvaluation) {
+      // Submit evaluation (on the workspace path, only under a lesson's evaluation provider)
+      if (!hasSubmittedEvaluation && progress.recordsEvaluation !== false) {
         const byType = (type: string) => {
           const matching = challenges.filter(c => c.type === type);
           if (matching.length === 0) return 0;
@@ -579,7 +622,7 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
     );
   }, [
     advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex,
+    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex, progress.recordsEvaluation,
   ]);
 
   // -------------------------------------------------------------------------
@@ -617,6 +660,22 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
     const correct = challengeResults.filter(r => r.correct).length;
     return Math.round((correct / challenges.length) * 100);
   }, [allChallengesComplete, challenges, challengeResults]);
+
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge) return;
+    workspace.current = { ...workspaceScene(currentChallenge, { typed: identifyInput, shaded: shadedSlices.size, choice: compareChoice }),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    progress.publishWorkspace?.();
+  });
+  const finishedRef = useRef(onWorkspaceFinished); finishedRef.current = onWorkspaceFinished;
+  const reportedFinish = useRef(false);
+  useEffect(() => {
+    if (!progress.practiceSummary || reportedFinish.current) return;
+    reportedFinish.current = true;
+    finishedRef.current?.();
+  }, [progress.practiceSummary]);
 
   const canCheck = useMemo(() => {
     if (!currentChallenge || hasSubmittedEvaluation) return false;
@@ -658,7 +717,8 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
                 type="text"
                 placeholder="e.g. 3/4"
                 value={identifyInput}
-                onChange={e => setIdentifyInput(e.target.value)}
+                onChange={e => { if (!learnerBlocked()) setIdentifyInput(e.target.value); }}
+                aria-label="Fraction answer"
                 className="w-24 text-center text-lg"
                 autoFocus
                 onKeyDown={e => e.key === 'Enter' && canCheck && handleCheckAnswer()}
@@ -736,7 +796,7 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
                     ? 'bg-blue-500/20 border-blue-400/50 text-blue-300'
                     : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                 }`}
-                onClick={() => { SoundManager.select(); setCompareChoice('left'); setFeedback(''); setFeedbackType(''); }}
+                onClick={() => { if (learnerBlocked()) return; SoundManager.select(); setCompareChoice('left'); setFeedback(''); setFeedbackType(''); }}
               >
                 {showLabels ? `Left (${currentChallenge.numerator}/${currentChallenge.denominator}) is larger` : 'Left is larger'}
               </Button>
@@ -747,7 +807,7 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
                     ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300'
                     : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                 }`}
-                onClick={() => { SoundManager.select(); setCompareChoice('equal'); setFeedback(''); setFeedbackType(''); }}
+                onClick={() => { if (learnerBlocked()) return; SoundManager.select(); setCompareChoice('equal'); setFeedback(''); setFeedbackType(''); }}
               >
                 They are equal
               </Button>
@@ -758,7 +818,7 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
                     ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
                     : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                 }`}
-                onClick={() => { SoundManager.select(); setCompareChoice('right'); setFeedback(''); setFeedbackType(''); }}
+                onClick={() => { if (learnerBlocked()) return; SoundManager.select(); setCompareChoice('right'); setFeedback(''); setFeedbackType(''); }}
               >
                 {showLabels ? `Right (${cmp.numerator}/${cmp.denominator}) is larger` : 'Right is larger'}
               </Button>
@@ -892,10 +952,10 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
               <LuminaActionButton
                 action="check"
                 onClick={handleCheckAnswer}
-                disabled={!canCheck}
+                disabled={!canCheck || (tutorOwned && progress.canAttempt === false)}
               />
             )}
-            {isCurrentChallengeCorrect && (
+            {!tutorOwned && isCurrentChallengeCorrect && (
               <LuminaButton
                 tone="primary"
                 className="bg-emerald-500/10 border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/20"
@@ -942,14 +1002,28 @@ const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className
   );
 };
 
+// The workspace path never registers a scripted context or cue loop beside the tutor.
+const PlainFractionCircles = withWorkspaceController<FractionCirclesProps, ProgressOptions<FractionCirclesChallenge>, Progress>(
+  'fraction-circles', FractionCirclesSurface, useScriptedProgress, useWorkspaceProgressFor('fraction-circles'));
+
 // Keep each teaching flow intact; local child results feed one session submission.
 const FractionCircles: React.FC<FractionCirclesProps> = (props) => {
   const hasTouch = props.data.challenges.some(c => c.type === 'touch_fraction');
-  if (!hasTouch) return <LegacyFractionCircles {...props} />;
+  if (!hasTouch) return <PlainFractionCircles {...props} />;
   if (props.data.challenges.every(c => c.type === 'touch_fraction')) return <FractionTouch key={`${props.data.instanceId ?? ''}:${props.data.challenges.map(c => `${c.id}-${c.numerator}-${c.denominator}`).join('|')}`} {...props} />;
   return <MixedFractionCircles key={props.data.instanceId ?? props.data.challenges.map(c => c.id).join('|')} {...props} />;
 };
-const MixedFractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) => {
+/**
+ * Touch and non-touch challenges in one session run as a chain of blocks, one surface each.
+ *
+ * Scripted: a block's local evaluation closes it and the next block mounts. With the tutor, each
+ * block is its own workspace session (one per mounted surface): its evaluation only records (it
+ * exists only under a lesson's evaluation provider), and the block's settled teaching session moves
+ * the chain on. The first block keeps the section's instance id so the lesson host introduces it;
+ * later blocks need their own, since a new session reading the previous block's completed runtime
+ * under the same id would settle at once. Either way the family submits one aggregate evaluation.
+ */
+const MixedFractionCircles: React.FC<FractionCirclesProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const groups = useMemo(() => {
     const blocks: FractionCirclesChallenge[][] = [];
     for (const c of data.challenges) {
@@ -959,18 +1033,18 @@ const MixedFractionCircles: React.FC<FractionCirclesProps> = ({ data, className 
     }
     return blocks;
   }, [data.challenges]);
+  const liveRuntime = useLiveRuntime();
+  const tutorOwned = !!liveRuntime && catalogBindsWorkspace('fraction-circles', runtimeEvalMode);
   const [index, setIndex] = useState(0);
   const results = useRef<PrimitiveEvaluationResult<FractionCirclesMetrics>[]>([]);
+  const finishedBlocks = useRef(0);
   const instance = useRef(data.instanceId ?? `fraction-mixed-${Date.now()}`);
   const evaluation = usePrimitiveEvaluation<FractionCirclesMetrics>({
     primitiveType: 'fraction-circles', instanceId: instance.current, skillId: data.skillId,
     subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId,
     onSubmit: data.onEvaluationSubmit,
   });
-  const completeBlock = (result: PrimitiveEvaluationResult<FractionCirclesMetrics>) => {
-    if (results.current.length !== index) return;
-    results.current.push(result);
-    if (index + 1 < groups.length) { setIndex(index + 1); return; }
+  const submitAggregate = () => {
     const blocks = results.current;
     const total = data.challenges.length;
     const accuracy = blocks.reduce((sum, r) => sum + r.score * r.metrics.totalChallenges, 0) / total;
@@ -987,10 +1061,27 @@ const MixedFractionCircles: React.FC<FractionCirclesProps> = ({ data, className 
       touchFractionAccuracy: modeAccuracy('touch_fraction', 'touchFractionAccuracy'),
     }, { blocks: blocks.map(r => ({ metrics: r.metrics, studentWork: r.studentWork, diagnosisEvidence: r.diagnosisEvidence })) });
   };
-  if (evaluation.hasSubmitted) return <LuminaPanel><p>You finished your fraction activities.</p></LuminaPanel>;
-  const childData = { ...data, challenges: groups[index], instanceId: `${instance.current}-block-${index}`, onEvaluationSubmit: completeBlock };
+  /** Close the current block: mount the next one, or submit once every block has a result. */
+  const finishBlock = () => {
+    if (finishedBlocks.current !== index) return;
+    finishedBlocks.current = index + 1;
+    if (index + 1 < groups.length) { setIndex(index + 1); return; }
+    // With the tutor and no evaluation provider (the live host) no block recorded; nothing is submitted.
+    if (results.current.length === groups.length) submitAggregate();
+  };
+  const completeBlock = (result: PrimitiveEvaluationResult<FractionCirclesMetrics>) => {
+    if (results.current.length !== index) return;
+    results.current.push(result);
+    if (!tutorOwned) finishBlock();
+  };
+  // With the tutor the last block stays mounted with its own summary: its settled session is what the host completed.
+  if (evaluation.hasSubmitted && !tutorOwned) return <LuminaPanel><p>You finished your fraction activities.</p></LuminaPanel>;
+  const childData = { ...data, challenges: groups[index],
+    instanceId: tutorOwned && index === 0 ? instance.current : `${instance.current}-block-${index}`,
+    onEvaluationSubmit: completeBlock };
+  const mount = { runtimePlanItemId, runtimeEvalMode, ...(tutorOwned ? { onWorkspaceFinished: finishBlock } : {}) };
   return groups[index][0].type === 'touch_fraction'
-    ? <FractionTouch key={index} data={childData} className={className} localOnly />
-    : <LegacyFractionCircles key={index} data={childData} className={className} localOnly />;
+    ? <FractionTouch key={index} data={childData} className={className} localOnly {...mount} />
+    : <PlainFractionCircles key={index} data={childData} className={className} localOnly {...mount} />;
 };
 export default FractionCircles;

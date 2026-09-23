@@ -382,6 +382,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'fraction-circles',
+    teachingWorkspace: {
+      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'Circles are cut into equal slices. The learner types the fraction a shaded circle shows, shades slices to '
+        + 'build a fraction or an equal one, or picks which of two circles is larger, then presses Check; the circle checks '
+        + 'the answer and you are not told it. When the fraction labels are hidden, talk about how much of each circle is '
+        + 'shaded, never the values. In touch-the-fraction the fraction is only written in words, so say it aloud; three '
+        + 'unlabelled pictures are shown and you do not know which one matches: never point at, number or describe a picture '
+        + 'as the answer. You cannot type, shade, choose or touch for the learner.',
+    },
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: fractionCompareDeliveryEligible },

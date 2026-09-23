@@ -18,6 +18,7 @@ import { sortingStationLiveDomain } from './adapters/sortingStationLive';
 import { numberTracerLiveDomain } from './adapters/numberTracerLive';
 import { comparisonBuilderLiveDomain } from './adapters/comparisonBuilderLive';
 import { compareObjectsLiveDomain } from './adapters/compareObjectsLive';
+import { fractionCirclesLiveDomain } from './adapters/fractionCirclesLive';
 import { placeValueLiveDomain } from './adapters/placeValueLive';
 import { shapeSorterLiveDomain, validateShapeSorterData } from './adapters/shapeSorterLive';
 import { diLetterSoundsLiveDomain } from './adapters/diLetterSoundsLive';
@@ -49,6 +50,7 @@ export const LIVE_ADAPTERS = {
   'number-tracer': workspaceAdapter('number-tracer', numberTracerLiveDomain),
   'comparison-builder': workspaceAdapter('comparison-builder', comparisonBuilderLiveDomain),
   'compare-objects': workspaceAdapter('compare-objects', compareObjectsLiveDomain),
+  'fraction-circles': workspaceAdapter('fraction-circles', fractionCirclesLiveDomain),
   'place-value-chart': workspaceAdapter('place-value-chart', placeValueLiveDomain),
   'shape-sorter': workspaceAdapter('shape-sorter', shapeSorterLiveDomain),
   'di-letter-sounds': workspaceAdapter('di-letter-sounds', diLetterSoundsLiveDomain),

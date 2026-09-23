@@ -434,6 +434,50 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="drawing"]' } },
   },
+  'fraction-circles': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/FractionCircles.tsx',
+    instanceId: 'circles',
+    defaults: { grade: 'Grade 2', mode: 'build', di: false, topic: 'Building halves, thirds and fourths by shading equal slices' },
+    leakTokens: ['FT_', 'IDENTIFY_', 'BUILD_', 'COMPARE_', 'EQUIVALENT_', 'ALL_COMPLETE', 'PHASE_TRANSITION'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is a gesture through the circle's own controls: typed text, shaded slices or a
+    // choice, then Check. A wrong answer is one slice or one numerator off, or another choice.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((ch: { id: string }) => ch.id === ctx.itemId);
+      if (!c) throw new Error('No current fraction-circles assignment');
+      const wrong = intent === 'wrong';
+      const off = (n: number, max: number) => (n + 1 <= max ? n + 1 : n - 1);
+      const check: DriverInput = { type: 'check' };
+      const shade = (n: number) => Array.from({ length: n }, (_, i) => ({ type: 'touch' as const, target: `slice-${i}` }));
+      switch (c.type) {
+        case 'identify':
+          return [{ type: 'write', label: 'Fraction answer', text: `${wrong ? off(c.numerator, c.denominator) : c.numerator}/${c.denominator}` }, check];
+        case 'build': return [...shade(wrong ? off(c.numerator, c.denominator) : c.numerator), check];
+        case 'equivalent': {
+          const built = c.numerator * c.equivalentDenominator / c.denominator;
+          return [...shade(wrong ? off(built, c.equivalentDenominator) : built), check];
+        }
+        case 'compare': {
+          const left = c.numerator / c.denominator, right = c.compareFraction.numerator / c.compareFraction.denominator;
+          const key = Math.abs(left - right) < 0.001 ? 'equal' : left > right ? 'left' : 'right';
+          const choice = wrong ? (key === 'left' ? 'right' : 'left') : key;
+          const labels = c.showFractionLabels !== false;
+          const label = choice === 'equal' ? 'They are equal'
+            : choice === 'left' ? (labels ? `Left (${c.numerator}/${c.denominator}) is larger` : 'Left is larger')
+              : (labels ? `Right (${c.compareFraction.numerator}/${c.compareFraction.denominator}) is larger` : 'Right is larger');
+          return [{ type: 'choose', label }, check];
+        }
+        case 'touch_fraction':
+          // The two wrong pictures are drawn at random on mount, so the row cannot name one.
+          if (wrong) throw new Error('fraction-circles touch_fraction: the wrong pictures are random per mount; no driver input for a wrong touch');
+          return [{ type: 'touch', target: `picture-${c.numerator}-of-${c.denominator}` }];
+        default: throw new Error(`fraction-circles ${c.type}: no driver input`);
+      }
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"], [data-pip-object="stimulus"]' } },
+  },
   'place-value-chart': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/PlaceValueChart.tsx',
