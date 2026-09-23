@@ -30,6 +30,7 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 | number-bond | W1 | [number-bond-w1-2026-09-23.md](../tutor-reports/number-bond-w1-2026-09-23.md) |
 | compare-objects | W1 | [compare-objects-w1-2026-09-22.md](../tutor-reports/compare-objects-w1-2026-09-22.md) |
 | A1: place-value-chart, ordinal-line, sorting-station | W1 | [workspace-rollout-A1-2026-09-23.md](../tutor-reports/workspace-rollout-A1-2026-09-23.md) |
+| DEAD: runner-owned sandbox handoff, `'di-runner'` owner value, `RUNNER_GUIDANCE`/`runnerLessonStart` (frontend) | — | 09-23, no report. **Residue, owned by LA-14 retirement (`07-census.md`):** the backend bridge `live_activity_tools.py` still accepts `teachingOwner: 'di-runner'` and emits `activity_ready` for it, and `run_live_runtime.py` (`judged_runner`) / `run_live_lesson_plan.py` still branch on it. No frontend adapter sends that value. |
 
 ## Queue
 
@@ -37,7 +38,6 @@ Order: Tier A, then runner-era K–2 (the recipe applies as written), then the r
 
 | Row | Shape | Primitives | Status |
 | --- | --- | --- | --- |
-| DEAD | — | The runner-owned sandbox handoff (`LiveActivitySandbox.tsx`, both `teachingOwner === 'di-runner'` branches) and the `'di-runner'` owner value in `adapterContract.ts`: no live adapter is runner-owned since A1. Delete them. Executor: `/add-live-tutor-tools` (LA-14) | open |
 | **A2** | P | `number-line`, `number-tracer`, `comparison-builder` (tool-lab live adapters: `teachingOwner: 'tutor'`, `canAdvance: true`, no runner). Pilots the Plain shape: the component's own check becomes a `commitGesture`, its Next is turned off under a runtime. Write the P recipe into the skill before closing | open |
 | B1 | R | `balance-scale` (equality, workshop), `base-ten-blocks` (DI modes), `bar-model` (explanation), `fraction-circles` (`touch_fraction`) — census Tier B | open |
 | B2 | R | `cvc-speller`, `phonics-blender`, `sound-swap`, `word-flip` (both runner hooks) | open |

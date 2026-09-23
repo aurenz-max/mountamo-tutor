@@ -20,17 +20,13 @@ export interface LiveActivityAdapter<T = any> {
   tutoring?: TutoringScaffold | null;
   /** The CATALOG eval modes the route accepts for this family. */
   modes: readonly string[];
-  /**
-   * Whether the tutor may own progression. A `di-runner` family MUST be false —
-   * a tutor clock beside the runner's is the defect the judged family prevents,
-   * and the Python envelope validator rejects the pairing.
-   */
+  /** Whether the tutor may advance by tool call. Workspace families are false: the observer advances. */
   canAdvance: boolean;
   /** Grade levels this lesson supports. The route gate reads this, not a branch. */
   grades: readonly string[];
   /** What the model is told it may and may not claim. */
   guidance: string;
-  teachingOwner: 'tutor' | 'di-runner';
+  teachingOwner: 'tutor';
   /** Picker copy for the development host. Data, not rendering. */
   copy: {
     label: string;
@@ -97,17 +93,6 @@ export const workspaceLessonStart = (noun: string, primitiveId: string) => (grad
   `[LESSON_START] Begin a ${noun} lesson for ${grade}, mode ${mode}. `
   + `Call request_activity with primitiveId ${primitiveId} and the requested mode. `
   + 'After mounting, teach from the current workspace.';
-
-/** The judged families share one opening contract; only the closing sentence differs. */
-export const RUNNER_GUIDANCE = 'The mounted runner supplies the exact opening, question, correction, '
-  + 'affirmation and closing cues. Follow those cues and their judging contract. Wait for its opening cue; '
-  + 'do not invent a greeting, answer, verdict or progression.';
-
-/** The `[LESSON_START]` wording every judged family uses; the runner delivers the opening. */
-export const runnerLessonStart = (family: string) => (grade: string, mode: string) =>
-  `[LESSON_START] Begin a full ${family} lesson now for ${grade}, mode ${mode}. Call request_activity with `
-  + `primitiveId ${family}, mode ${mode}, a matching topic and intent. Use the existing full lesson with several `
-  + 'practice items. Do not ask me to choose a topic or greet first. The DI runner will deliver the opening after mounting.';
 
 /**
  * The only per-primitive code a catalog-declared workspace family needs: reject content its

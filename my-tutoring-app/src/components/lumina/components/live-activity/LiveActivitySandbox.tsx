@@ -37,10 +37,9 @@ class ActivityBoundary extends React.Component<{
 }
 
 /** Mounted receipt comes after child effects and a paint, never after fetch alone. */
-function VisibleActivity({ activity, onVisible, onControls, autoStart }: {
+function VisibleActivity({ activity, onVisible, onControls }: {
   activity: MountedActivity; onVisible: (activity: MountedActivity) => void;
   onControls: (instanceId: string, controls: NumberLineControls | null) => void;
-  autoStart: boolean;
 }) {
   const registerControls = useCallback((controls: NumberLineControls | null) => {
     onControls(activity.instanceId, controls);
@@ -52,7 +51,7 @@ function VisibleActivity({ activity, onVisible, onControls, autoStart }: {
   }, [activity, onVisible]);
   const id = activity.request.primitiveId;
   return <div data-testid="live-activity" data-instance-id={activity.instanceId}>
-    {LIVE_RENDERERS[id]({ data: activity.data, autoStart, planItemId: activity.planItemId,
+    {LIVE_RENDERERS[id]({ data: activity.data, autoStart: false, planItemId: activity.planItemId,
       evalMode: activity.resolvedEvalMode ?? activity.request.mode ?? '', onControls: registerControls })}
   </div>;
 }
@@ -118,7 +117,6 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
   // The session_ready log reads the family after the connect closure was built.
   const lessonPrimitiveRef = useRef(lessonPrimitive); lessonPrimitiveRef.current = lessonPrimitive;
   const openingRef = useRef<string | null>(null);
-  const [lessonReadyId, setLessonReadyId] = useState<string | null>(null);
   const [directVisuals, setDirectVisuals] = useState(true);
   const [generatedPictures, setGeneratedPictures] = useState(true);
   const [drawing, setDrawing] = useState(false);
@@ -330,14 +328,6 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
         }
         return;
       }
-      if (event.type === 'activity_ready') {
-        const job = current.current, shown = activityRef.current;
-        if (job && shown && job.id === event.callId && job.mounted
-            && shown.instanceId === event.instanceId && LIVE_ADAPTERS[shown.request.primitiveId].teachingOwner === 'di-runner') {
-          setLessonReadyId(event.instanceId); log('The activity runner owns the lesson; starting its opening cue.');
-        }
-        return;
-      }
       if (event.type === 'activity_session_closed') {
         runtime.stop(); transport?.close();
         openingRef.current = null;
@@ -482,7 +472,7 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
     const nextRuntime = resetRuntime();
     const runtimeSandbox = { sessionEpoch: nextRuntime.sessionEpoch, initialState: runtimePacket(nextRuntime.getSnapshot()), teachingMoves: generatedPictures };
     commandRef.current = null;
-    setError(''); setConnecting(true); setActivity(null); setVisual(null); setLessonReadyId(null); setLogs([]);
+    setError(''); setConnecting(true); setActivity(null); setVisual(null); setLogs([]);
     outcomesRef.current = {}; setOutcomes({}); pendingCompletion.current = null;
     current.current?.abort.abort(); current.current = null;
     const plan = projected.plan;
@@ -508,7 +498,7 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
       },
     });
   };
-  const stop = () => { runtime.stop(); transportRef.current?.close(); openingRef.current = null; commandRef.current = null; cancel(); ai.disconnect(); setReady(false); setConnecting(false); setActivity(null); setVisual(null); setLessonReadyId(null); setPending(null); setSessionPlan(null); };
+  const stop = () => { runtime.stop(); transportRef.current?.close(); openingRef.current = null; commandRef.current = null; cancel(); ai.disconnect(); setReady(false); setConnecting(false); setActivity(null); setVisual(null); setPending(null); setSessionPlan(null); };
   const send = (message: string) => { if (message.trim() && ready) ai.sendText(message.trim(), { interrupt: true }); };
   const button = 'rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-40 hover:bg-indigo-400';
   const shownPlan = sessionPlan ?? projected.plan;
@@ -557,7 +547,7 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
         </div>
       </details>}
       {error && <p role="alert" className="rounded-lg bg-red-950 p-3 text-red-200">{error}</p>}
-      {ready && !ai.isListening && (lessonReadyId || sessionPlan) && <p role="status" className="rounded-lg bg-indigo-950 p-3">Enable the microphone above to begin the lesson. Your tutor will start as soon as it is ready.</p>}
+      {ready && !ai.isListening && sessionPlan && <p role="status" className="rounded-lg bg-indigo-950 p-3">Enable the microphone above to begin the lesson. Your tutor will start as soon as it is ready.</p>}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <section className="min-w-0 space-y-4">
           {sessionPlan && <ol aria-label="Lesson plan" className="flex flex-wrap gap-2 text-sm">
@@ -574,7 +564,7 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
             <VisibleDirectVisual visual={visual} onVisible={onVisualVisible} onState={onVisualState} onControls={onVisualControls} />
           </ActivityBoundary> : activity ? <ActivityBoundary key={activity.instanceId} onError={() => fail(activity.callId, 'The activity could not render.')}>
             {<LiveRuntimeSurface runtime={runtime} learnerProgress={ready ? { disabled: ai.isAudioPlaying,
-              act: type => void transportRef.current?.learnerProgress(type) } : undefined}><VisibleActivity activity={activity} onVisible={onVisible} onControls={onControls} autoStart={lessonReadyId === activity.instanceId} /></LiveRuntimeSurface>}
+              act: type => void transportRef.current?.learnerProgress(type) } : undefined}><VisibleActivity activity={activity} onVisible={onVisible} onControls={onControls} /></LiveRuntimeSurface>}
           </ActivityBoundary> : <div className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700 p-8 text-center">
             <h2 className="text-xl">{shownPlan ? 'Your planned lesson is ready' : 'Your lesson is ready'}</h2><p className="mt-3 max-w-md text-slate-400">{shownPlan ? 'Press Start lesson and allow the microphone. Your tutor opens the first activity.' : 'Choose a lesson and press Start lesson. Allow the microphone, then your tutor will begin. No opening question needed.'}</p>
           </div>}
@@ -588,7 +578,7 @@ function Workspace({ eventHandler, onBack, runtime, resetRuntime }: {
             {generatedPictures && runtimeState.moveOptions && <button className={button} disabled={drawing} onClick={() => send('I am stuck. Please help me with this in a way that is different from what is already on my screen, keeping my task saved.')}>Help me another way</button>}
             {runtimeState.status === 'support' && <button className={button} onClick={() => send('I am ready to return to my saved task. Please close the example.')}>Return to my task</button>}
           </div>}
-          {!planMode && <button className="text-sm text-indigo-300 disabled:opacity-40" disabled={!ready} onClick={() => send(activity && LIVE_ADAPTERS[activity.request.primitiveId].teachingOwner === 'di-runner' ? `Please start another full ${familyCopy(activity.request.primitiveId).label.toLowerCase()} lesson in ${lessonMode} mode.` : visual ? 'Please give me another example using the same kind of visual.' : 'Please give me another example with a new number line.')}>Ask for another example</button>}
+          {!planMode && <button className="text-sm text-indigo-300 disabled:opacity-40" disabled={!ready} onClick={() => send(visual ? 'Please give me another example using the same kind of visual.' : 'Please give me another example with a new number line.')}>Ask for another example</button>}
           {directVisuals && !planMode && <details><summary className="cursor-pointer text-sm text-slate-400">Explore another visual</summary><div className="mt-3 flex flex-wrap gap-2" aria-label="Try a visual">
             {['Show six counters and help me take away two.', 'Show three quarters as a fraction bar.', 'Help me blend the word ship using letter tiles.'].map(prompt =>
               <button key={prompt} disabled={!ready} className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-cyan-200 disabled:opacity-40" onClick={() => send(prompt)}>{prompt}</button>)}

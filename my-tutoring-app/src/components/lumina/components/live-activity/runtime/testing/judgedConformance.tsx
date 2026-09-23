@@ -62,8 +62,8 @@ export function describeJudgedConformance<Mode extends string>(spec: JudgedConfo
 
   it('classifies every mode the live registry advertises for this family', () => {
     expect([...active, ...silent].sort()).toEqual([...registered].sort());
-    // A family on the teaching workspace keeps this scripted path only for a mount with no pin.
-    if (!LIVE_ADAPTERS[spec.primitiveId].bindsTeachingWorkspace) expect(LIVE_ADAPTERS[spec.primitiveId].teachingOwner).toBe('di-runner');
+    // Every live family binds the teaching workspace; this scripted path remains only for a mount with no pin.
+    expect(LIVE_ADAPTERS[spec.primitiveId].bindsTeachingWorkspace).toBe(true);
     expect(LIVE_ADAPTERS[spec.primitiveId].canAdvance).toBe(false);
   });
 
