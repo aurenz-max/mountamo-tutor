@@ -11,6 +11,7 @@
  *   node scripts/di-drill-unbind-probe.mjs [pkg.json|dir ...]     default: every saved package under qa/
  *   node scripts/di-drill-unbind-probe.mjs --fresh "K|Topic" ...   also generate fresh packages via :3000
  *   --fresh-only skip the saved packages
+ *   --all        probe every family the catalog binds, not only the four DI packs
  *   --out FILE   write the JSON result (default: print only)
  *
  * The manifest is RE-FLATTENED with the current `flattenManifestToLayout`, so the
@@ -24,7 +25,8 @@ import { pathToFileURL } from 'node:url';
 const ROOT = process.cwd();
 if (!existsSync(join(ROOT, 'node_modules', 'vite'))) { console.error('run from my-tutoring-app'); process.exit(2); }
 
-const PACKS = new Set(['di-letter-sounds', 'di-word-reading', 'di-math-facts', 'di-sentence-reading']);
+/** `--all`: every family the catalog binds, not just the four deleted drills (lesson-binding gaps). */
+let PACKS = new Set(['di-letter-sounds', 'di-word-reading', 'di-math-facts', 'di-sentence-reading']);
 const argv = process.argv.slice(2);
 const out = argv.includes('--out') ? argv[argv.indexOf('--out') + 1] : null;
 const fresh = [];
@@ -32,7 +34,7 @@ const paths = [];
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === '--out') { i++; continue; }
   if (argv[i] === '--fresh') { fresh.push(argv[++i]); continue; }
-  if (argv[i] === '--fresh-only') continue;
+  if (argv[i] === '--fresh-only' || argv[i] === '--all') continue;
   paths.push(argv[i]);
 }
 
@@ -56,6 +58,7 @@ const { assembleExhibitFromContent } = await runner.import('/src/components/lumi
 const plan = await runner.import('/src/components/lumina/components/live-activity/lessonWorkspacePlan.ts');
 const { LIVE_ADAPTERS, isLivePrimitive } = await runner.import('/src/components/lumina/components/live-activity/activityContract.ts');
 const { pinBindsWorkspace } = await runner.import('/src/components/lumina/components/live-activity/pinnedModes.ts');
+if (argv.includes('--all')) PACKS = new Set(Object.keys(LIVE_ADAPTERS).filter(id => LIVE_ADAPTERS[id].bindsTeachingWorkspace));
 
 /** The first `workspaceBinding` gate a section fails, in the order the rule checks them. */
 function unbindReason(section, pin) {

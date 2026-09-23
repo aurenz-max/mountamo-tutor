@@ -181,8 +181,14 @@ it('mounts a bound item on the workspace with one lesson session, and never the 
     objectiveId: 'sub-counting-board', evalMode: 'count' });
 });
 
+it('binds an item with no resolved mode (a frontier probe) as mixed, on the workspace', async () => {
+  await mount([{ family: 'counting-board', mode: undefined } as ItemInput]);
+  expect(workspace()).toBeTruthy();
+  expect(seam.ai.connectLesson).toHaveBeenCalledTimes(1);
+  expect(seam.runtime.getSnapshot()).toMatchObject({ owner: 'tutor', evalMode: 'mixed' });
+});
+
 it.each([
-  ['no resolved mode (a frontier probe)', { family: 'counting-board', mode: undefined }],
   ['a mode the family does not have', { family: 'counting-board', mode: 'identify' }],
 ] as const)('keeps the scripted drill and the per-item AI helper for %s', async (_, input) => {
   await mount([input as ItemInput]);

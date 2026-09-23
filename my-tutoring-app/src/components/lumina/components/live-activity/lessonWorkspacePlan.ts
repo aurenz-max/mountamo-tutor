@@ -12,7 +12,7 @@ export interface LessonWorkspaceItem {
 }
 
 /** One mounted primitive a host is deciding about. `pin` is the host's RESOLVED eval-mode pin:
- *  a lesson section's manifest `targetEvalMode`, a Pulse item's IRT-chosen `eval_mode_name`. */
+ *  a lesson section's manifest `targetEvalMode`, a Pulse item's IRT-chosen `eval_mode_name`. None binds as `mixed`. */
 export interface WorkspaceCandidate {
   instanceId: string;
   primitiveId: string;
@@ -30,14 +30,16 @@ export interface WorkspaceCandidate {
 export function workspaceBinding({ instanceId, primitiveId, pin, objectiveIds, data }: WorkspaceCandidate): LessonWorkspaceItem | null {
   if (!isLivePrimitive(primitiveId)) return null;
   const adapter = LIVE_ADAPTERS[primitiveId] as LiveActivityAdapter;
+  // No pin means the generator chose freely across the family's modes: that content is `mixed`.
   // A blend (`a|b`) or `mixed` pin binds when every mode it names is one the family binds.
-  if (typeof pin !== 'string' || !adapter.bindsTeachingWorkspace || !pinBindsWorkspace(primitiveId, adapter.modes, pin)
+  const mode = typeof pin === 'string' && pin ? pin : 'mixed';
+  if (!adapter.bindsTeachingWorkspace || !pinBindsWorkspace(primitiveId, adapter.modes, mode)
     || objectiveIds.length !== 1) return null;
   try {
     const validated = adapter.validate(data);
     if (!validated.challenges?.length) return null;
   } catch { return null; }
-  return { instanceId, primitiveId, evalMode: pin, objectiveId: objectiveIds[0], planItemId: instanceId, guidance: adapter.guidance };
+  return { instanceId, primitiveId, evalMode: mode, objectiveId: objectiveIds[0], planItemId: instanceId, guidance: adapter.guidance };
 }
 
 /** Which sections of an ordinary lesson reach the shared teaching workspace. */

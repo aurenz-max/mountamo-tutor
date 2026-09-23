@@ -12,13 +12,20 @@ describe('ordinary lesson workspace eligibility', () => {
     expect(binding).toMatchObject({ objectiveId: 'objective', evalMode: 'count', planItemId: 'one' });
     expect(lessonPrimitiveContext(section as any, binding)).toMatchObject({ tutoring: null, owns_opening: true });
   });
-  it.each([undefined, '', 'count|not_a_mode'])('does not guess a missing or unknown mode %s', mode => {
+  it.each(['count|not_a_mode', 'not_a_mode'])('does not bind an unknown mode %s', mode => {
     const data = exhibit(); data.manifest.layout[0].config.targetEvalMode = mode;
     expect(lessonWorkspaceItems(data).size).toBe(0);
   });
   it.each(['count|compare', 'mixed'])('binds a %s pin whose every mode the family binds, keeping the pin verbatim', mode => {
     expect(lessonWorkspaceItems(exhibit(mode)).get('one')).toMatchObject({ evalMode: mode, objectiveId: 'objective' });
   });
+  it('binds a section with no pin as mixed: the generator chose across the family, as an Auto tester does', () => {
+    for (const mode of [undefined, '']) {
+      const data = exhibit(); data.manifest.layout[0].config.targetEvalMode = mode;
+      expect(lessonWorkspaceItems(data).get('one')).toMatchObject({ evalMode: 'mixed' });
+    }
+  });
+
   it('leaves a blend on the scripted drill when its generated content does not match the pin', () => {
     // Shape Sorter binds every catalog mode now, but this fixture's `data` is still
     // `section`'s counting-board challenges, so validation fails and it stays scripted.

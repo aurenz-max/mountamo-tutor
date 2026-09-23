@@ -12,7 +12,7 @@ export const TESTER_OBJECTIVE = 'tester';
 interface TesterWorkspaceProps {
   primitiveId: string;
   instanceId: string;
-  /** The tester's chosen mode; `null` (Auto) pins `mixed`, which binds when every mode binds. */
+  /** The tester's chosen mode; `null` (Auto) binds as `mixed`, as an unpinned lesson section does. */
   evalMode: string | null;
   data: unknown;
   topic: string;
@@ -29,7 +29,7 @@ interface TesterWorkspaceProps {
  */
 export function TesterWorkspace({ primitiveId, instanceId, evalMode, data, topic, gradeLevel,
   onEvaluationSubmit, children }: TesterWorkspaceProps) {
-  const binding = useMemo(() => workspaceBinding({ instanceId, primitiveId, pin: evalMode ?? 'mixed',
+  const binding = useMemo(() => workspaceBinding({ instanceId, primitiveId, pin: evalMode ?? undefined,
     objectiveIds: [TESTER_OBJECTIVE], data }), [instanceId, primitiveId, evalMode, data]);
   if (!binding) return <>{children}</>;
   const Component = getPrimitive(primitiveId as never)?.component as React.ComponentType<any> | undefined;
@@ -44,4 +44,4 @@ export function TesterWorkspace({ primitiveId, instanceId, evalMode, data, topic
 
 /** Whether a tester preview binds the workspace, so the tester can drop its own tutor panel. */
 export const testerBinds = (primitiveId: string, instanceId: string, evalMode: string | null, data: unknown) =>
-  !!workspaceBinding({ instanceId, primitiveId, pin: evalMode ?? 'mixed', objectiveIds: [TESTER_OBJECTIVE], data });
+  !!workspaceBinding({ instanceId, primitiveId, pin: evalMode ?? undefined, objectiveIds: [TESTER_OBJECTIVE], data });
