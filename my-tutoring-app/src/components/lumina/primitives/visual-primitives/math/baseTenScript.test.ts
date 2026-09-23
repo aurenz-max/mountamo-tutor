@@ -639,8 +639,8 @@ describe('baseTenScript · drive-harness answers', () => {
     const answers = baseTenHarnessAnswers(worth);
     expect(answers.correct).toBe('ten');
     // The answer word is inside the block NAME in the ask, and nowhere else.
-    expect(worth.actionContract.instruction).toContain('ten-sticks');
-    expect(answers.leakExemptSpan).toBe('ten-sticks');
+    expect(worth.actionContract.instruction).toContain('ten-stick');
+    expect(answers.leakExemptSpan).toBe('ten-stick');
   });
 
   it('a hands item commits a PLACE, and the wrong one is another block on the mat', () => {

@@ -20,7 +20,7 @@
  * block responded, the hands turn could never be wrong and the tutor would
  * never teach.
  */
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import {
   LuminaBadge,
@@ -34,8 +34,13 @@ import {
 import DiActionPanel from '../../../components/DiActionPanel';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { BaseTenBlocksMetrics } from '../../../evaluation/types';
-import { useJudgedScriptRunner, type JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
+import { useJudgedScriptRunner, type JudgedRunSummary, type JudgedScriptRunnerOptions } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { describeTrade, diWorkspaceAssignment, diWorkspaceScene } from './baseTenWorkspace';
 import { SoundManager } from '../../../utils/SoundManager';
 import type { BaseTenBlocksData } from './BaseTenBlocks';
 import { placeWord } from './spokenNumberWords';
@@ -79,7 +84,39 @@ const readBlocksTask = (item: BaseTenItem) => ({
   expected: item.step === 'worth' ? readWorthWord(item.problem) : wordFor(readCount(item.problem)),
 });
 
-export default function BaseTenBlocksDi({ data, className }: { data: BaseTenBlocksData; className?: string }) {
+interface BaseTenBlocksDiProps {
+  data: BaseTenBlocksData;
+  className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
+}
+
+/** What the metrics read, from either controller's finished record. */
+type BaseTenFinish = Pick<JudgedRunSummary, 'outcomes' | 'learningResponses' | 'diagnosisEvidence'>
+  & { teachingAttempts?: unknown; assistanceProvenance?: string };
+
+/** The runner-only members this stage reads, absent on the workspace path. */
+type BaseTenRun = LiveRun<BaseTenItem> & {
+  solvedIds?: ReadonlySet<string>;
+  loop?: { clearQueuedCue: () => void; queueCue: (cue: string) => void };
+};
+
+type BaseTenControllerOptions = Omit<WorkspaceRunOptions<BaseTenItem>, 'primitiveId' | 'assignment' | 'onFinished'>
+  & Omit<JudgedScriptRunnerOptions<BaseTenItem>, 'pack' | 'instanceId' | 'onItemOpened' | 'onFinished' | 'onCorrectionRetry' | 'onAffirmed'>
+  & { pack?: JudgedScriptPack<BaseTenItem>; onFinished: (summary: BaseTenFinish) => void };
+
+const useScriptedController = (options: BaseTenControllerOptions): BaseTenRun =>
+  useJudgedScriptRunner<BaseTenItem>({ ...options, pack: options.pack! });
+
+const useWorkspaceController = (options: BaseTenControllerOptions): BaseTenRun =>
+  useWorkspaceRunner<BaseTenItem>({ ...options, primitiveId: 'base-ten-blocks', assignment: diWorkspaceAssignment });
+
+function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
+  BaseTenBlocksDiProps & { tutorOwned: boolean; useController: (options: BaseTenControllerOptions) => BaseTenRun }) {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  /** Workspace path: the items whose success was committed (the runner keeps its own `solvedIds`). */
+  const [affirmedIds, setAffirmedIds] = useState<ReadonlySet<string>>(new Set());
   const mode = (data.challenges?.[0]?.type ?? 'read_blocks') as BtMode;
   const problems = useMemo(
     () => problemsFromChallenges(data.challenges ?? [], mode),
@@ -106,7 +143,7 @@ export default function BaseTenBlocksDi({ data, className }: { data: BaseTenBloc
     onSubmit: data.onEvaluationSubmit,
   });
 
-  const pack = useMemo<JudgedScriptPack<BaseTenItem>>(() => ({
+  const pack = useMemo<JudgedScriptPack<BaseTenItem> | undefined>(() => tutorOwned ? undefined : ({
     primitiveType: 'base-ten-blocks',
     activityLine: 'read a block mat aloud and trade blocks between places',
     items,
@@ -132,9 +169,9 @@ export default function BaseTenBlocksDi({ data, className }: { data: BaseTenBloc
     // evidence, so capture skips it without a model call.
     observation: (item, { heard }) => (mode === 'read_blocks'
       ? { ...readBlocksTask(item), observed: heard ?? 'No intelligible answer.' } : null),
-  }), [items]);
+  }), [items, tutorOwned]);
 
-  const finish = (summary: JudgedRunSummary) => {
+  const finish = (summary: BaseTenFinish) => {
     const results = problems.map((problem) => {
       const own = summary.outcomes.filter((outcome) => outcome.id.startsWith(`${problem.id}-`));
       const score = own.length ? Math.min(...own.map((outcome) => outcome.score)) : 0;
@@ -174,14 +211,21 @@ export default function BaseTenBlocksDi({ data, className }: { data: BaseTenBloc
       metrics,
       { interactionVersion: 'base-ten-di-v1', scoringBasis: 'spoken-place-value-and-traded-mat', results,
         ...(mode === 'read_blocks' ? { learningResponses: summary.learningResponses, diagnosisEvidence,
-          problem: { challenges: data.challenges, supportTier: data.supportTier } } : {}) },
+          problem: { challenges: data.challenges, supportTier: data.supportTier } } : {}),
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined,
       diagnosisEvidence,
     );
   };
 
-  const runner = useJudgedScriptRunner({
+  const runner = useController({
     pack,
+    items,
+    workspace,
+    objectiveId: data.objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while a controller owns it.
+    evalMode: runtimeEvalMode || mode,
     instanceId: instance.current,
     gradeLevel: data.gradeBand === 'K-1' ? 'kindergarten' : 'elementary',
     exhibitId: data.exhibitId,
@@ -198,7 +242,22 @@ export default function BaseTenBlocksDi({ data, className }: { data: BaseTenBloc
       setMat([...matFor(item)]);
       setFeedback('');
     },
+    // Workspace path: Try again on a checked trade starts from the untraded mat.
+    ...(tutorOwned ? {
+      onCorrectionRetry: (item: BaseTenItem) => {
+        if (item.step === 'trade') {
+          mats.current[item.problem.id] = [...item.problem.start];
+          (moves.current[item.problem.id] ??= []).push('put the blocks back');
+        }
+        setMat([...matFor(item)]);
+        setFeedback('');
+      },
+      onAffirmed: (item: BaseTenItem) => setAffirmedIds(prev => new Set(prev).add(item.id)),
+    } : {}),
   });
+  const solvedIds = runner.solvedIds ?? affirmedIds;
+  // The workspace path shows its finish without an evaluation provider (the live host has none).
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
   const item = runner.currentItem;
   const canTrade = !!item
@@ -216,14 +275,14 @@ export default function BaseTenBlocksDi({ data, className }: { data: BaseTenBloc
     (moves.current[item.problem.id] ??= []).push(`traded one ${blockNoun(place, 1)}`);
     setMat(next);
     SoundManager.tap();
-    runner.loop.clearQueuedCue();
+    runner.loop?.clearQueuedCue();
     const solved = tradeSolved(item.problem, next);
     setFeedback(solved ? '' : 'That is a different block from the one we are trading.');
     // Not correctness-gated: a wrong trade commits exactly as readily as the
     // right one, or the close is a Check button wearing a costume.
     runner.armStillness(() => {
       if (runner.isAwaitingGesture()) return;
-      runner.submitGestureAttempt(baseTenCheckCue(item, next));
+      commitGesture(runner, { response: describeTrade(next), correct: solved, cue: () => baseTenCheckCue(item, next) });
     }, solved ? 900 : 1500);
   };
 
@@ -235,9 +294,18 @@ export default function BaseTenBlocksDi({ data, className }: { data: BaseTenBloc
     setMat(reset);
     setFeedback('');
     runner.clearStillness();
-    runner.loop.clearQueuedCue();
-    runner.loop.queueCue(baseTenChangeCue(item, reset));
+    runner.loop?.clearQueuedCue();
+    runner.loop?.queueCue(baseTenChangeCue(item, reset));
   };
+
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item) return;
+    workspace.current = { ...diWorkspaceScene(item, { mat }), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace?.();
+  });
 
   if (!item) {
     return (
@@ -307,7 +375,7 @@ export default function BaseTenBlocksDi({ data, className }: { data: BaseTenBloc
         </div>
       </LuminaCardHeader>
       <LuminaCardContent className="space-y-5">
-        {evaluation.hasSubmitted ? (
+        {showSummary ? (
           <div className="space-y-3 text-center">
             <p className="text-xl font-semibold text-emerald-200">Nice work with the blocks!</p>
             <p className="text-slate-300">
@@ -320,7 +388,7 @@ export default function BaseTenBlocksDi({ data, className }: { data: BaseTenBloc
           <>
             <LuminaChallengeCounter current={problemIndex + 1} total={problems.length} variant="dots" />
             <LayoutGroup id={instance.current}>
-              <div className="flex items-end justify-center gap-3" aria-label="Block mat">
+              <div className="flex items-end justify-center gap-3" aria-label="Block mat" data-base-ten-mat="judged">
                 {places.map(column)}
               </div>
             </LayoutGroup>
@@ -342,27 +410,36 @@ export default function BaseTenBlocksDi({ data, className }: { data: BaseTenBloc
               stage={runner.stage}
               currentItem={item}
               steps={stepsOfProblem(items, item)}
-              completedIds={runner.solvedIds}
+              completedIds={solvedIds as Set<string>}
               carriedIds={new Set(
                 items
-                  .filter((step, index) => index < runner.currentIndex && !runner.solvedIds.has(step.id))
+                  .filter((step, index) => index < runner.currentIndex && !solvedIds.has(step.id))
                   .map((step) => step.id),
               )}
               startInstruction={item.problem.mode === 'regroup'
                 ? 'Start the tutor, then listen for the trade you are going to make.'
                 : 'Start the tutor, then listen for which blocks to read.'}
             />
-            <button
-              type="button"
-              disabled={!runner.running}
-              onClick={runner.hearStimulus}
-              className="mx-auto block text-sm text-cyan-300 underline disabled:opacity-40"
-            >
-              Say that again
-            </button>
+            {/* With the tutor (no `hearStimulus`), the learner asks the tutor to repeat. */}
+            {runner.hearStimulus && (
+              <button
+                type="button"
+                disabled={!runner.running}
+                onClick={runner.hearStimulus}
+                className="mx-auto block text-sm text-cyan-300 underline disabled:opacity-40"
+              >
+                Say that again
+              </button>
+            )}
           </>
         )}
       </LuminaCardContent>
     </LuminaCard>
   );
 }
+
+// The workspace path never mounts the runner, whose context push and cue loop would run beside the tutor.
+const BaseTenBlocksDi = withWorkspaceController<BaseTenBlocksDiProps, BaseTenControllerOptions, BaseTenRun>(
+  'base-ten-blocks', BaseTenBlocksDiSurface, useScriptedController, useWorkspaceController);
+
+export default BaseTenBlocksDi;

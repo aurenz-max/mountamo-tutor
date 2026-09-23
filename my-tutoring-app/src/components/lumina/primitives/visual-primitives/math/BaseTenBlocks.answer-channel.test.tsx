@@ -66,9 +66,9 @@ const BUILD_12: BaseTenBlocksChallenge = {
   hint: '12 is one ten and two ones.',
 };
 
-/** Column order is hundreds, tens, ones — ones is the last +/- pair. */
+/** Each column's + button is named for its column ("Add one to Tens"). */
 const plus = (place: 'hundreds' | 'tens' | 'ones') =>
-  screen.getAllByRole('button', { name: '+' })[{ hundreds: 0, tens: 1, ones: 2 }[place]];
+  screen.getByRole('button', { name: `Add one to ${place[0].toUpperCase()}${place.slice(1)}` });
 
 describe('build_number — judged from the blocks, not a keypad', () => {
   it('shows a Check My Blocks button and NO number keypad', () => {

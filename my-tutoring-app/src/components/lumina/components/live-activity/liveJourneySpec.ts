@@ -44,6 +44,9 @@ import { itemsFromChallenges as placeValueItems, placeValueHarnessAnswers } from
 import { getDigitPaths } from '../../primitives/visual-primitives/math/numberTracerPaths';
 import { itemsFromChallenges as sortingItems, sortingStationHarnessAnswers } from '../../primitives/visual-primitives/math/sortingStationScript';
 import { placeLabel } from '../../primitives/visual-primitives/math/spokenNumberWords';
+import { baseTenHarnessAnswers, itemsFromChallenges as baseTenItems, usesBaseTenDi, wrongTradePlace }
+  from '../../primitives/visual-primitives/math/baseTenScript';
+import { blockNoun, blockNounPlural, readCount } from '../../primitives/visual-primitives/math/baseTenModel';
 import { itemsFromChallenges as ordinalItems, ordinalLineHarnessAnswers } from '../../primitives/visual-primitives/math/ordinalLineScript';
 import { balanceSurface, explainHarnessAnswers, weightsFor } from '../../primitives/visual-primitives/math/balanceScaleWorkspace';
 import { equalityProblem, WEIGHTS } from '../../primitives/visual-primitives/math/balanceEqualityModel';
@@ -482,6 +485,51 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       }
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"], [data-pip-object="stimulus"]' } },
+  },
+  'base-ten-blocks': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/BaseTenBlocks.tsx',
+    instanceId: 'blocks',
+    defaults: { grade: 'Grade 1', mode: 'build_number', di: false, topic: 'Building two-digit numbers with tens and ones' },
+    leakTokens: ['BT_', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'BUILD_', 'TRADE_', 'ALL_COMPLETE', 'NEXT_ITEM', 'ACTIVITY_START'],
+    prompts: WORKSPACE_PROMPTS,
+    // Two surfaces, chosen by the payload. The judged mat (read_blocks, regroup): a spoken step says the
+    // pack's own answer; a trade taps a block (wrong: another size, or the asked size twice). The click mat:
+    // build_number presses each column's "Add one to ..." (wrong: one ones cube too many), then Check My Blocks;
+    // operate types the result on the keypad (wrong: one more), then the check key.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const challenges = ctx.data.challenges ?? [];
+      const wrong = intent === 'wrong';
+      if (usesBaseTenDi(challenges)) {
+        const item = baseTenItems(challenges, challenges[0].type).find(i => i.id === ctx.itemId);
+        if (!item) throw new Error('No current base-ten-blocks assignment');
+        if (item.answerKind !== 'gesture') {
+          const answers = baseTenHarnessAnswers(item);
+          return [{ type: 'answer', text: wrong ? answers.plainWrong : answers.correct }];
+        }
+        const tap = (place: number): DriverInput => ({ type: 'choose', label: `Trade one ${blockNoun(place, 1)} for ten ${blockNounPlural(place - 1)}` });
+        if (!wrong) return [tap(item.problem.place)];
+        const other = wrongTradePlace(item.problem);
+        if (other >= 1) return [tap(other)];
+        if (readCount(item.problem) >= 2) return [tap(item.problem.place), tap(item.problem.place)];
+        throw new Error('base-ten-blocks regroup: this mat has no wrong trade the driver can tap');
+      }
+      // The click mat's challenge ids are `${type}-${index}` (assigned by the component).
+      const c = challenges[Number(ctx.itemId?.split('-').pop())];
+      if (!c) throw new Error('No current base-ten-blocks challenge');
+      if (ctx.data.decimalMode) throw new Error(`base-ten-blocks ${c.type}: decimal mats are not driven at W1`);
+      if (c.type === 'build_number') {
+        const digits = String(c.targetNumber).padStart(4, '0').split('').map(Number);
+        const presses = ['Thousands', 'Hundreds', 'Tens', 'Ones'].flatMap((column, i) =>
+          Array.from({ length: digits[i] + (wrong && column === 'Ones' ? 1 : 0) }, (): DriverInput => ({ type: 'choose', label: `Add one to ${column}` })));
+        return [...presses, { type: 'choose', label: 'Check My Blocks' }];
+      }
+      if (c.type === 'regroup') throw new Error('base-ten-blocks regroup on the click mat (a mixed payload) is not driven at W1');
+      const typed = String(wrong ? c.targetNumber + 1 : c.targetNumber);
+      return [...typed.split('').map((key): DriverInput => ({ type: 'choose', label: key })), { type: 'choose', label: '✓' }];
+    },
+    probes: { mounted: { selector: '[data-base-ten-mat]' } },
   },
   'balance-scale': {
     execution: 'workspace',

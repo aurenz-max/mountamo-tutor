@@ -21,6 +21,7 @@ import { compareObjectsLiveDomain } from './adapters/compareObjectsLive';
 import { balanceScaleLiveDomain } from './adapters/balanceScaleLive';
 import { fractionCirclesLiveDomain } from './adapters/fractionCirclesLive';
 import { placeValueLiveDomain } from './adapters/placeValueLive';
+import { baseTenBlocksLiveDomain } from './adapters/baseTenBlocksLive';
 import { shapeSorterLiveDomain, validateShapeSorterData } from './adapters/shapeSorterLive';
 import { diLetterSoundsLiveDomain } from './adapters/diLetterSoundsLive';
 import { diWordReadingLiveDomain } from './adapters/diWordReadingLive';
@@ -54,6 +55,7 @@ export const LIVE_ADAPTERS = {
   'balance-scale': workspaceAdapter('balance-scale', balanceScaleLiveDomain),
   'fraction-circles': workspaceAdapter('fraction-circles', fractionCirclesLiveDomain),
   'place-value-chart': workspaceAdapter('place-value-chart', placeValueLiveDomain),
+  'base-ten-blocks': workspaceAdapter('base-ten-blocks', baseTenBlocksLiveDomain),
   'shape-sorter': workspaceAdapter('shape-sorter', shapeSorterLiveDomain),
   'di-letter-sounds': workspaceAdapter('di-letter-sounds', diLetterSoundsLiveDomain),
   'di-word-reading': workspaceAdapter('di-word-reading', diWordReadingLiveDomain),

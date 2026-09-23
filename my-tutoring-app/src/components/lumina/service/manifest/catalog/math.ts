@@ -292,6 +292,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'base-ten-blocks',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'On read-the-blocks the mat prints no counts or totals, because they are the answers: the learner says '
+        + 'how many blocks of the asked size there are, then what they are worth, and the count said where the value was '
+        + 'asked (four for forty) is not the value. On a trade the learner first predicts aloud how many smaller blocks '
+        + 'there will be, while the mat is untraded, then taps one block to break it into ten; the mat checks the trade '
+        + 'itself once the learner stops. On build and operate the learner adds, removes or trades blocks and presses '
+        + 'Check My Blocks or Check My Trade, or types a result on the keypad, and the activity checks it; blocks that '
+        + 'make the number without the fewest blocks are not yet a build. Never say a column count, a total, a '
+        + 'prediction or a result before the learner answers. You cannot add, remove, trade or type anything.',
+    },
     // Only read_blocks emits correction evidence; the other modes supply none,
     // so capture skips them without a model call.
     misconceptionScope: 'skill',

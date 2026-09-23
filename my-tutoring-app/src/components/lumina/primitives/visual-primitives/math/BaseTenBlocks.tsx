@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   LuminaCard,
@@ -18,7 +18,12 @@ import {
 } from '../../../evaluation';
 import type { BaseTenBlocksMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { describePlainCheck, plainWorkspaceAssignment, plainWorkspaceScene } from './baseTenWorkspace';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -220,9 +225,21 @@ function findTradeablePlace(
 interface BaseTenBlocksProps {
   data: BaseTenBlocksData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
-const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
+type PlainChallenge = BaseTenBlocksChallenge & { id: string };
+
+const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
+  BaseTenBlocksProps & { tutorOwned: boolean; useController: (options: ProgressOptions<PlainChallenge>) => Progress }) => {
+  const liveRuntime = useLiveRuntime();
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  const learnerBlocked = () => tutorOwned && (workspaceClosed.current
+    || (!!liveRuntime && !['empty', 'active'].includes(liveRuntime.getSnapshot().status)));
   const {
     title,
     description,
@@ -282,7 +299,33 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   const [typedAnswer, setTypedAnswer] = useState('');
   const [regroupCount, setRegroupCount] = useState(0);
 
-  // Challenge progress (replaces manual index/attempts/results state)
+  // Refs
+  const stableInstanceIdRef = useRef(instanceId || `base-ten-blocks-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
+  /** The mat a challenge starts from: pre-placed for read/regroup, empty otherwise. */
+  const startColumnsFor = (challenge: BaseTenBlocksChallenge | null | undefined): Record<PlaceValue, number> => {
+    if (challenge && (challenge.type === 'read_blocks' || challenge.type === 'regroup')) {
+      return decomposeNumber(challenge.targetNumber, activePlaces);
+    }
+    const empty: Record<string, number> = {};
+    activePlaces.forEach(p => { empty[p] = 0; });
+    return empty as Record<PlaceValue, number>;
+  };
+
+  // Challenge progress. On the workspace path the runtime moves the index.
+  const progress = useController({
+    challenges: challengesWithIds,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || challenges[0]?.type || interactionMode,
+    workspace, assignment: plainWorkspaceAssignment,
+    // A fresh challenge and Try again both start from the challenge's own mat.
+    onItemOpened: (index) => {
+      setColumns(startColumnsFor(challengesWithIds[index]));
+      setRegroupCount(0); setFeedback(''); setFeedbackType(''); setTypedAnswer('');
+    },
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
@@ -291,22 +334,18 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
     recordResult,
     incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges: challengesWithIds,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  // The workspace path finishes without an evaluation provider, and a skipped item still ends the run.
+  const showSummary = allChallengesComplete || !!progress.practiceSummary;
 
   const phaseResults = usePhaseResults({
     challenges: challengesWithIds,
     results: challengeResults,
-    isComplete: allChallengesComplete,
+    isComplete: showSummary,
     getChallengeType: (ch) => ch.type,
     phaseConfig: PHASE_TYPE_CONFIG,
   });
-
-  // Refs
-  const stableInstanceIdRef = useRef(instanceId || `base-ten-blocks-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   const currentChallenge = challengesWithIds[currentChallengeIndex] || null;
   const currentTotal = useMemo(() => computeTotal(columns, activePlaces), [columns, activePlaces]);
@@ -364,12 +403,18 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
     supportTier: supportTier ?? 'medium',
   }), [numberValue, interactionMode, decimalMode, gradeBand, currentTotal, activePlaces, columns, currentChallenge, currentAttempts, regroupCount, description, supportTier]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'base-ten-blocks',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === 'K-1' ? 'Kindergarten' : gradeBand === '2-3' ? 'Grade 2' : 'Grade 4',
+    // The workspace packet replaces this context (it carries the target and the column counts).
+    enabled: !tutorOwned,
   });
+  // Every scripted cue goes through here; on the workspace path the tutor teaches from the packet instead.
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Activity introduction
   const hasIntroducedRef = useRef(false);
@@ -395,13 +440,13 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   // Interaction Handlers
   // -------------------------------------------------------------------------
   const addBlock = useCallback((place: PlaceValue) => {
-    if (hasSubmittedEvaluation) return;
+    if (hasSubmittedEvaluation || learnerBlocked()) return;
     SoundManager.tick();
     setColumns(prev => ({ ...prev, [place]: (prev[place] || 0) + 1 }));
   }, [hasSubmittedEvaluation]);
 
   const removeBlock = useCallback((place: PlaceValue) => {
-    if (hasSubmittedEvaluation) return;
+    if (hasSubmittedEvaluation || learnerBlocked()) return;
     SoundManager.tick();
     setColumns(prev => {
       if ((prev[place] || 0) <= 0) return prev;
@@ -411,7 +456,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
 
   // Regroup: merge 10 smaller units into 1 larger unit
   const regroupUp = useCallback((place: PlaceValue) => {
-    if (hasSubmittedEvaluation) return;
+    if (hasSubmittedEvaluation || learnerBlocked()) return;
     const placeIdx = activePlaces.indexOf(place);
     if (placeIdx <= 0) return; // Can't regroup up from the largest place
     const higherPlace = activePlaces[placeIdx - 1];
@@ -442,7 +487,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
 
   // Regroup: break 1 larger unit into 10 smaller units
   const regroupDown = useCallback((place: PlaceValue) => {
-    if (hasSubmittedEvaluation) return;
+    if (hasSubmittedEvaluation || learnerBlocked()) return;
     const placeIdx = activePlaces.indexOf(place);
     if (placeIdx >= activePlaces.length - 1) return; // Can't break down the smallest
     const lowerPlace = activePlaces[placeIdx + 1];
@@ -472,19 +517,30 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   }, [hasSubmittedEvaluation, activePlaces, columns, sendText]);
 
   const resetColumns = useCallback(() => {
-    setColumns(initialColumns);
+    if (learnerBlocked()) return;
+    // The workspace path resets to the CURRENT challenge's mat; the scripted path keeps its first-challenge reset.
+    setColumns(tutorOwned ? startColumnsFor(currentChallenge) : initialColumns);
     setFeedback('');
     setFeedbackType('');
     setRegroupCount(0);
     setTypedAnswer('');
-  }, [initialColumns]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialColumns, tutorOwned, currentChallenge]);
 
   // -------------------------------------------------------------------------
   // Challenge Checking
   // -------------------------------------------------------------------------
   /** Shared success path for both answer channels. */
+  /** The mat's own check is the workspace's checked gesture: the learner's work in words, never the key. */
+  const commitCheck = (correct: boolean) => {
+    if (!currentChallenge) return;
+    progress.commitCheck?.(describePlainCheck(currentChallenge, { blocks: describeDecomposition(columns, activePlaces),
+      typed: typedAnswer, trades: regroupCount }), correct);
+  };
+
   const markCorrect = useCallback((message: string, tutorLine: string) => {
     if (!currentChallenge) return;
+    commitCheck(true);
     SoundManager.playCorrect();
     setFeedback(message);
     setFeedbackType('success');
@@ -495,18 +551,21 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
       regroupsUsed: regroupCount,
     });
     sendText(tutorLine, { silent: true });
-  }, [currentChallenge, currentAttempts, regroupCount, recordResult, sendText]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge, currentAttempts, regroupCount, recordResult, sendText, progress, columns, typedAnswer]);
 
   const markWrong = useCallback((message: string, tutorLine: string) => {
+    commitCheck(false);
     SoundManager.playIncorrect();
     setFeedback(message);
     setFeedbackType('error');
     sendText(tutorLine, { silent: true });
-  }, [sendText]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sendText, currentChallenge, progress, columns, typedAnswer, regroupCount]);
 
   // ── Channel A: the blocks are the answer (build_number, regroup) ──
   const checkBlocks = useCallback(() => {
-    if (!currentChallenge) return;
+    if (!currentChallenge || learnerBlocked()) return;
     const target = currentChallenge.targetNumber;
     incrementAttempts();
 
@@ -573,7 +632,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   // ── Channel B: the student types a number the screen does not state
   //    (read_blocks, add_with_blocks, subtract_with_blocks) ──
   const checkAnswer = useCallback(() => {
-    if (!currentChallenge) return;
+    if (!currentChallenge || learnerBlocked()) return;
     const target = currentChallenge.targetNumber;
     const parsed = parseFloat(typedAnswer);
     if (isNaN(parsed)) return;
@@ -603,7 +662,8 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
 
   // Auto-submit evaluation when all challenges complete
   useEffect(() => {
-    if (!allChallengesComplete || hasSubmittedEvaluation) return;
+    // The live host has no evaluation provider; a workspace family submits only under one.
+    if (!allChallengesComplete || hasSubmittedEvaluation || progress.recordsEvaluation === false) return;
 
     const phaseScoreStr = phaseResults
       .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
@@ -634,7 +694,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
       attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
     };
     submitEvaluation(correctCount === challengesWithIds.length, accuracy, metrics, { challengeResults });
-  }, [allChallengesComplete, hasSubmittedEvaluation, phaseResults, challengeResults, challengesWithIds, activePlaces, decimalMode, submitEvaluation, sendText]);
+  }, [allChallengesComplete, hasSubmittedEvaluation, phaseResults, challengeResults, challengesWithIds, activePlaces, decimalMode, submitEvaluation, sendText, progress.recordsEvaluation]);
 
   const advanceChallenge = useCallback(() => {
     if (!advanceProgress()) return;
@@ -675,7 +735,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   // chooses, checks, or advances.
   const pip = useWorkspacePipSurface({
     instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? (challengesWithIds.length === 0 ? 'explore' : null),
+    scopeId: showSummary || hasSubmittedEvaluation ? null : currentChallenge?.id ?? (challengesWithIds.length === 0 ? 'explore' : null),
     label: 'The place value mat',
     solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
@@ -686,6 +746,16 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
     const correct = challengeResults.filter(r => r.correct).length;
     return Math.round((correct / challengesWithIds.length) * 100);
   }, [allChallengesComplete, challengesWithIds, challengeResults]);
+
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge) return;
+    workspace.current = { ...plainWorkspaceScene(currentChallenge, { blocks: describeDecomposition(columns, activePlaces),
+      typed: typedAnswer, trades: regroupCount }), demonstration: [], canDemonstrate: false, canPresent: false,
+      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    progress.publishWorkspace?.();
+  });
 
   // -------------------------------------------------------------------------
   // Block Rendering Helpers
@@ -780,7 +850,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
         )}
 
         {/* Instruction */}
-        {currentChallenge && !allChallengesComplete && (
+        {currentChallenge && !showSummary && (
           <LuminaPanel className="p-3">
             <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
           </LuminaPanel>
@@ -788,10 +858,10 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
 
         {/* Pip's dock sits above the place value mat, which it outlines as the
             workspace — never one column or one block. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+        {pip.store && !showSummary && <div {...pip.dock} />}
 
         {/* Place Value Columns */}
-        <div {...pip.workspace} className="grid gap-3" style={{ gridTemplateColumns: `repeat(${activePlaces.length}, 1fr)` }}>
+        <div {...pip.workspace} data-base-ten-mat="click" className="grid gap-3" style={{ gridTemplateColumns: `repeat(${activePlaces.length}, 1fr)` }}>
           {activePlaces.map(place => {
             const config = PLACE_CONFIG[place];
             const count = columns[place] || 0;
@@ -822,7 +892,8 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
                       size="sm"
                       className="h-7 w-7 p-0 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
                       onClick={() => removeBlock(place)}
-                      disabled={count <= 0 || hasSubmittedEvaluation}
+                      aria-label={`Take one from ${config.label}`}
+                      disabled={count <= 0 || hasSubmittedEvaluation || workspaceClosed.current}
                     >
                       -
                     </Button>
@@ -831,7 +902,8 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
                       size="sm"
                       className="h-7 w-7 p-0 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
                       onClick={() => addBlock(place)}
-                      disabled={hasSubmittedEvaluation}
+                      aria-label={`Add one to ${config.label}`}
+                      disabled={hasSubmittedEvaluation || workspaceClosed.current}
                     >
                       +
                     </Button>
@@ -847,7 +919,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
                         size="sm"
                         className={`h-6 text-[10px] ${config.bgColor}/10 border ${config.borderColor}/30 hover:${config.bgColor}/20 ${config.color} w-full`}
                         onClick={() => regroupUp(place)}
-                        disabled={hasSubmittedEvaluation}
+                        disabled={hasSubmittedEvaluation || workspaceClosed.current}
                       >
                         10 &rarr; 1 {PLACE_CONFIG[activePlaces[placeIdx - 1]].label.slice(0, 4)}
                       </Button>
@@ -858,7 +930,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
                         size="sm"
                         className={`h-6 text-[10px] ${config.bgColor}/10 border ${config.borderColor}/30 hover:${config.bgColor}/20 ${config.color} w-full`}
                         onClick={() => regroupDown(place)}
-                        disabled={hasSubmittedEvaluation}
+                        disabled={hasSubmittedEvaluation || workspaceClosed.current}
                       >
                         1 &rarr; 10 {PLACE_CONFIG[activePlaces[placeIdx + 1]].label.slice(0, 4)}
                       </Button>
@@ -882,13 +954,13 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
             build_number / regroup are judged from the blocks (the target value is
             already on screen, so a keypad would just be transcription); only
             read_blocks and the operate modes ask for a typed number. */}
-        {challengesWithIds.length > 0 && !allChallengesComplete && (
+        {challengesWithIds.length > 0 && !showSummary && (
           isBlockJudged ? (
             <div className="flex justify-center">
               <LuminaActionButton
                 action="check"
                 onClick={checkBlocks}
-                disabled={hasSubmittedEvaluation || isCurrentComplete}
+                disabled={hasSubmittedEvaluation || isCurrentComplete || workspaceClosed.current}
               >
                 {currentChallenge?.type === 'regroup' ? 'Check My Trade' : 'Check My Blocks'}
               </LuminaActionButton>
@@ -901,7 +973,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
               onSubmit={!isCurrentComplete ? checkAnswer : undefined}
               allowDecimal={decimalMode}
               allowNegative={false}
-              disabled={hasSubmittedEvaluation || isCurrentComplete}
+              disabled={hasSubmittedEvaluation || isCurrentComplete || workspaceClosed.current}
               showSubmitButton={!isCurrentComplete}
             />
           )
@@ -918,8 +990,8 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Next Challenge Button */}
-        {isCurrentComplete && !allChallengesComplete && (
+        {/* Next Challenge Button — the runtime owns progression on the workspace path */}
+        {!tutorOwned && isCurrentComplete && !allChallengesComplete && (
           <div className="flex justify-center">
             <LuminaActionButton action="next" onClick={advanceChallenge}>
               Next Challenge
@@ -932,14 +1004,14 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
           <LuminaButton
             tone="subtle"
             onClick={resetColumns}
-            disabled={hasSubmittedEvaluation}
+            disabled={hasSubmittedEvaluation || workspaceClosed.current}
           >
             Reset
           </LuminaButton>
         </div>
 
         {/* Phase Summary Panel (replaces manual "All challenges complete!" text) */}
-        {allChallengesComplete && phaseResults.length > 0 && (
+        {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
             overallScore={submittedResult?.score ?? localOverallScore}
@@ -974,6 +1046,11 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
  * the catalog's `audioInputByMode` resolver exactly, so the transport declared
  * at connect and the component the child gets can never disagree.
  */
+// Each surface binds the workspace on its own (withWorkspaceController); the router stays a pure
+// function of the payload, so a mount never switches surface.
+const BaseTenBlocks = withWorkspaceController<BaseTenBlocksProps, ProgressOptions<PlainChallenge>, Progress>(
+  'base-ten-blocks', BaseTenBlocksSurface, useScriptedProgress, useWorkspaceProgressFor('base-ten-blocks'));
+
 const BaseTenBlocksWithDiPilot: React.FC<BaseTenBlocksProps> = (props) =>
   usesBaseTenDi(props.data.challenges) ? <BaseTenBlocksDi {...props} /> : <BaseTenBlocks {...props} />;
 

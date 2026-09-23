@@ -70,8 +70,10 @@ const mode = defineDiMode<BaseTenPlanItem>();
 export const countAsk = (problem: BtProblem): string =>
   `How many ${blockNounPlural(problem.place)} do you see?`;
 
-export const worthAsk = (problem: BtProblem): string =>
-  `What are those ${blockNounPlural(problem.place)} worth altogether?`;
+/** Asked after the count is answered, so a single block is named in the singular. */
+export const worthAsk = (problem: BtProblem): string => (problem.start[problem.place] === 1
+  ? `What is that ${blockNoun(problem.place, 1)} worth?`
+  : `What are those ${blockNounPlural(problem.place)} worth altogether?`);
 
 /**
  * The prediction names the starting mat because the child must reason FROM it —

@@ -463,7 +463,7 @@ export function baseTenHarnessAnswers(item: BaseTenItem): BaseTenHarnessAnswers 
         // the answer word sits inside the noun and nowhere else. Subtracting
         // the noun keeps the scan STRONGER than emptying `leakTokens` would:
         // the value said anywhere else in the turn is still a leak.
-        leakExemptSpan: blockNounPlural(problem.place),
+        leakExemptSpan: blockNoun(problem.place, count),
       };
     case 'predict': {
       const expected = predictedCount(problem);
