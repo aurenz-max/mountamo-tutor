@@ -32,11 +32,12 @@ export function graphComparisonFacts(ch: BarModelChallenge): string[] {
   return facts;
 }
 
-const ask = (item: GraphExplanationItem) => {
-  const ch = item.challenge;
+/** The spoken ask, shared with the teaching workspace's assignment. */
+export const graphExplanationAsk = (ch: BarModelChallenge) => {
   const labels = ch.values.map((v) => v.label).join(', ');
   return `The rows show ${labels}. ${ch.prompt}${ch.supportTier !== 'hard' ? ' You can use more, fewer, or the same.' : ''}`;
 };
+const ask = (item: GraphExplanationItem) => graphExplanationAsk(item.challenge);
 
 /** Count together only in the post-attempt affirmation, never in an ask. */
 const countTogether = (item: GraphExplanationItem) => {

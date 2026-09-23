@@ -24,6 +24,19 @@ import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
 export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'bar-model',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'Most modes are answered on the graph: a tapped number, a tapped row, stickers placed row by row and then '
+        + 'Check my chart, or bars and a scale step set and then Submit graph. The graph checks those answers itself. The '
+        + 'number a row stands for, which row has the most or fewest, the sticker counts and the right step are each the '
+        + 'answer on their mode: never say one before the check. One-picture-for-one-thing rows print no numbers; counting '
+        + 'a row with the learner, one picture at a time, is teaching, and saying its total is not. The two spoken modes '
+        + '(say what the graph shows, compare two graphs) are answered aloud: the learner tells one true comparison (more, '
+        + 'fewer, the same, most, fewest) in their own words, judged against the comparisons in the expected answer. A '
+        + 'reversed claim, a bare number or a row name alone is not a comparison, and comparing two graphs must compare the '
+        + 'two surveys. Do not say a comparison before the learner tries. A Kindergarten learner cannot read: read the '
+        + 'question and the row names aloud. You cannot tap, place stickers, set bars or choose a step for the learner.',
+    },
     // Only picture_graph emits selection evidence; other modes supply none, so capture skips them.
     misconceptionScope: 'skill',
     observationDelivery: 'server',

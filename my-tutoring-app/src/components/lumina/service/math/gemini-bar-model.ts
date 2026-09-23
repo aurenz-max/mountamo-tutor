@@ -1681,7 +1681,7 @@ ${kSettingLine(variant)}`,
   const comparisonFocus = variant % 2 === 0 ? 'same' : 'different';
   const prompt = paired
     ? `Look at the morning and afternoon graphs. Tell me something that is ${comparisonFocus}.`
-    : 'Tell me what this graph shows. Compare the groups in your own words.';
+    : 'Tell me one thing this graph shows: compare two groups, in your own words.';
   return { title: paired ? 'Our Morning and Afternoon Surveys' : 'Tell Me About Our Graph',
     description: 'Each picture stands for one choice.',
     challenge: { id: '', evalMode: paired ? 'compare_two_graphs' : 'say_what_it_shows',

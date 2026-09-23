@@ -45,6 +45,9 @@ import { getDigitPaths } from '../../primitives/visual-primitives/math/numberTra
 import { itemsFromChallenges as sortingItems, sortingStationHarnessAnswers } from '../../primitives/visual-primitives/math/sortingStationScript';
 import { placeLabel } from '../../primitives/visual-primitives/math/spokenNumberWords';
 import { itemsFromChallenges as ordinalItems, ordinalLineHarnessAnswers } from '../../primitives/visual-primitives/math/ordinalLineScript';
+import type { BarModelChallenge } from '../../primitives/visual-primitives/math/BarModel';
+import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
+  from '../../primitives/visual-primitives/math/barModelWorkspace';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -565,6 +568,51 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       // The keyword anchor, so a transcript inspection can check mechanically
       // that no picture or word appeared before a committed success.
       reward: { selector: '[data-letter-revealed]', kind: 'count' } },
+  },
+  'bar-model': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/BarModel.tsx',
+    instanceId: 'graph',
+    defaults: { grade: 'Kindergarten', mode: 'read_one_to_one', di: false,
+      topic: 'Reading a picture graph where one picture stands for one thing' },
+    leakTokens: ['ACTIVITY_START', 'CHALLENGE_START', 'PHASE_COMPLETE', 'ALL_COMPLETE', 'GRAPH_'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls, derived from the mounted challenge. A spoken item says a
+    // true comparison from the rows or the same claim reversed; a number or row choice picks the key
+    // or another; a sticker chart or built graph is complete, with one row a sticker off or the wrong step.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId) as BarModelChallenge | undefined;
+      if (!c) throw new Error('No current bar-model challenge');
+      const wrong = intent === 'wrong';
+      if (isSpokenGraph(c)) {
+        const answers = barModelHarnessAnswers(c);
+        return [{ type: 'answer', text: wrong ? answers.plainWrong : answers.correct }];
+      }
+      if (OPTION_MODES.has(c.evalMode)) {
+        const pick = wrong ? (c.options ?? []).find(o => o !== c.expectedValue) : c.expectedValue;
+        return [{ type: 'choose', label: String(pick) }];
+      }
+      const row = (i: number) => `${c.values[i].label} row`;
+      if (ROW_TAP_MODES.has(c.evalMode)) {
+        const target = c.targetBarIndex ?? 0;
+        return [{ type: 'choose', label: row(wrong ? (target + 1) % c.values.length : target) }];
+      }
+      const presses = (label: string, n: number): DriverInput[] => {
+        if (n < 0) throw new Error(`bar-model ${c.evalMode}: the chart starts above its target`);
+        return Array.from({ length: n }, () => ({ type: 'choose' as const, label }));
+      };
+      if (c.evalMode === 'build_one_to_one') {
+        const counts = (c.expectedCounts ?? []).map((n, i) => wrong && i === 0 ? (n === 0 ? 1 : n - 1) : n);
+        return [...counts.flatMap((n, i) => presses(row(i), n - c.values[i].value)), { type: 'check' }];
+      }
+      const steps = c.availableScaleSteps ?? [1, 2, 5, 10];
+      const step = wrong ? steps.find(s => s !== c.expectedScaleStep) : c.expectedScaleStep;
+      return [...(c.expectedDataset ?? []).flatMap(e => presses(`Increase ${e.label}`,
+        e.value - (c.values.find(v => v.label === e.label)?.value ?? 0))),
+        { type: 'choose', label: `Step of ${step}` }, { type: 'choose', label: 'Submit graph' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="graph"]' } },
   },
 };
 

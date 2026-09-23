@@ -31,6 +31,11 @@ export interface ProgressOptions<C> extends UseChallengeProgressOptions<C> {
   assignment: (challenge: C) => TeachingAssignment;
   /** A fresh challenge opened (`retry` false) or the same one reopened after a checked miss (`retry` true). */
   onItemOpened?: (index: number, retry: boolean) => void;
+  /**
+   * Once per challenge, when its success is committed. A spoken item has no check of the
+   * primitive's own, so this is where the primitive records its result.
+   */
+  onSolved?: (index: number) => void;
   /** Once, with the finished record, and only under an evaluation provider. */
   onFinished?: (result: TeachingEvaluationResult) => void;
 }
@@ -69,6 +74,8 @@ export function useWorkspaceProgressFor(primitiveId: string) {
       assignment: item => latest.current.assignment(item.challenge),
       onItemOpened: (_item, index) => { setAttempts(0); latest.current.onItemOpened?.(index, false); },
       onCorrectionRetry: () => latest.current.onItemOpened?.(run.currentIndex, true),
+      onAffirmed: item => latest.current.onSolved?.(latest.current.challenges
+        .findIndex(c => latest.current.getChallengeId(c) === item.id)),
       onFinished: result => latest.current.onFinished?.(result),
     });
     const recordResult = useCallback((result: ChallengeResult) => setResults(prev => {

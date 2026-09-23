@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import BarModelExplanation from './BarModelExplanation';
 import type { JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
@@ -31,6 +30,12 @@ import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import type { PipTarget } from '../../../pip/PipSurfaceStore';
 import { barModelPipPose } from '../../../pip/barModelPipPose';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { OPTION_MODES, ROW_TAP_MODES, describeGraphWork, workspaceAssignment, workspaceScene, type BarModelView }
+  from './barModelWorkspace';
 
 // ---------------------------------------------------------------------------
 // Public types (mirrored by the generator)
@@ -126,6 +131,9 @@ export interface BarModelData {
 interface BarModelProps {
   data: BarModelData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED eval-mode pin from a live mount. */
+  runtimeEvalMode?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -287,6 +295,7 @@ const BarsArea: React.FC<BarsAreaProps> = ({
                     axisMax={axisMax}
                     ringClass={ringClass}
                     showEmptySlots={showEmptySlots}
+                    label={item.label}
                     onClick={clickable && onBarClick ? () => onBarClick(i) : undefined}
                   />
                 ) : (
@@ -294,6 +303,7 @@ const BarsArea: React.FC<BarsAreaProps> = ({
                     <button
                       type="button"
                       disabled={!(clickable && onBarClick)}
+                      aria-label={clickable && onBarClick ? `${item.label} row` : undefined}
                       onClick={clickable && onBarClick ? () => onBarClick(i) : undefined}
                       className={`relative h-10 w-full bg-black/20 rounded-xl overflow-hidden border ${ringClass} ${clickable ? 'cursor-pointer hover:border-white/30' : 'cursor-default'} transition`}
                     >
@@ -351,10 +361,12 @@ interface PictureBarProps {
   axisMax: number;
   ringClass: string;
   showEmptySlots?: boolean;
+  /** The row's name, the tappable button's label. */
+  label?: string;
   onClick?: () => void;
 }
 
-const PictureBar: React.FC<PictureBarProps> = ({ value, iconEmoji, iconValue, axisMax, ringClass, showEmptySlots = false, onClick }) => {
+const PictureBar: React.FC<PictureBarProps> = ({ value, iconEmoji, iconValue, axisMax, ringClass, showEmptySlots = false, label, onClick }) => {
   const iconCount = Math.max(0, Math.round(value / iconValue));
   const maxIconCount = Math.max(1, Math.ceil(axisMax / iconValue));
 
@@ -362,6 +374,7 @@ const PictureBar: React.FC<PictureBarProps> = ({ value, iconEmoji, iconValue, ax
     <button
       type="button"
       disabled={!onClick}
+      aria-label={onClick && label ? `${label} row` : undefined}
       onClick={onClick}
       className={`grid gap-1 w-full px-2 py-1.5 rounded-lg border ${ringClass} bg-slate-800/30 ${onClick ? 'cursor-pointer hover:border-white/30' : 'cursor-default'} transition`}
       style={{ gridTemplateColumns: `repeat(${maxIconCount}, minmax(0, 1fr))` }}
@@ -529,13 +542,7 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 const scoreGraphResult = (result: { correct: boolean; attempts: number; score?: number }) =>
   result.score ?? (result.correct ? Math.max(20, 100 - (result.attempts - 1) * 20) : 0);
 
-/** Modes answered by tapping a row: the answer key is targetBarIndex. */
-const ROW_TAP_MODES = new Set<BarModelEvalMode>(['compare_bars', 'most_least', 'match_to_bar']);
-
-/** Modes answered by picking a number from the options row. */
-const OPTION_MODES = new Set<BarModelEvalMode>([
-  'read_one_to_one', 'read_scale', 'picture_graph', 'scaled_bar_graph', 'graph_word_problem',
-]);
+// Row-tap modes (key: targetBarIndex) and number-choice modes live in barModelWorkspace.ts.
 
 /** Modes whose answer IS a row's own count, so that row never shows its number. */
 const READ_ROW_MODES = new Set<BarModelEvalMode>([
@@ -564,7 +571,9 @@ const tierTutorClause = (tier?: 'easy' | 'medium' | 'hard'): string => {
 // Main component
 // ---------------------------------------------------------------------------
 
-const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
+const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
+  BarModelProps & { tutorOwned: boolean; useController: (options: ProgressOptions<BarModelChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -580,7 +589,18 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
   const stableInstanceIdRef = useRef(instanceId || `bar-model-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Challenge progress (shared hooks) ──────────────────────────────────────
+  // ── Challenge progress (shared hooks). On the workspace path the runtime moves the index. ──
+  // A fresh challenge and Try again both clear the working graph (bound below, once the setters exist).
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solveSpoken = useRef<(index: number) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (c) => c.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || challenges[0]?.evalMode || 'bar-model', workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solveSpoken.current(index),
+  });
   const {
     currentIndex,
     currentAttempts,
@@ -589,15 +609,16 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     recordResult,
     incrementAttempts,
     advance,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (c) => c.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => workspaceClosed.current;
 
   const phaseResults = usePhaseResults({
     challenges,
     results,
-    isComplete,
+    isComplete: isComplete || !!progress.practiceSummary,
     getChallengeType: () => 'graph',
     phaseConfig: PHASE_TYPE_CONFIG,
     getScore: (rs) => Math.round(rs.reduce((sum, r) => sum + scoreGraphResult(r), 0) / Math.max(1, rs.length)),
@@ -637,9 +658,10 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
   /** Every option tapped per challenge, wrong ones included — the factual response history. */
   const selectionsRef = useRef<Record<string, number[]>>({});
 
-  // Reset per-challenge state when the active challenge changes.
+  // Reset per-challenge state when the active challenge changes (scripted path; the workspace
+  // path runs the same reset from `onItemOpened`, so no revision lands after an item opens).
   useEffect(() => {
-    if (!currentChallenge) return;
+    if (tutorOwned || !currentChallenge) return;
     setBuiltValues(currentChallenge.values);
     setChosenStep(null);
     setSelectedOption(null);
@@ -649,6 +671,29 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     setSpokenFinished(false);
     recordedRef.current = false;
   }, [currentChallenge?.id]);
+  /** Workspace path: spoken tries on the open item that the tutor judged wrong. */
+  const spokenMisses = useRef(0);
+  openItem.current = (index, retry) => {
+    const next = challenges[index];
+    if (!next) return;
+    setSelectedOption(null);
+    setSelectedBarIndex(null);
+    setFeedback(null);
+    setShowHint(false);
+    setBuiltValues(next.values);
+    if (retry) { spokenMisses.current += 1; return; }
+    spokenMisses.current = 0;
+    setChosenStep(null);
+    setSpokenFinished(false);
+    recordedRef.current = false;
+  };
+  // Workspace path: a spoken item has no check of its own; its committed success is its result.
+  solveSpoken.current = index => {
+    const solved = challenges[index];
+    if (!solved || (solved.evalMode !== 'say_what_it_shows' && solved.evalMode !== 'compare_two_graphs')) return;
+    if (results.some(r => r.challengeId === solved.id)) return;
+    recordResult({ challengeId: solved.id, evalMode: solved.evalMode, correct: true, attempts: spokenMisses.current + 1 });
+  };
 
   // ── AI tutoring ────────────────────────────────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
@@ -669,13 +714,18 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     supportTier: currentChallenge?.supportTier,
   }), [title, currentIndex, challenges.length, currentChallenge, graphStyle, currentAttempts]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'bar-model',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: 'K-5',
-    enabled: !isSpokenGraph,
+    // The workspace packet replaces this context (it carries every row's value).
+    enabled: !isSpokenGraph && !tutorOwned,
   });
+  // Every scripted cue goes through here; on the workspace path the tutor teaches from the packet.
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Session intro — once, on the first challenge
   const hasIntroducedRef = useRef(false);
@@ -759,7 +809,8 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
       { silent: true },
     );
 
-    if (!hasSubmittedEvaluation) {
+    // The live host has no evaluation provider; a workspace family submits only under one.
+    if (!hasSubmittedEvaluation && progress.recordsEvaluation !== false) {
       const goalMet = correctCount === challenges.length;
       const selections = challenges.map((c) => ({ challengeId: c.id, selectedOptions: selectionsRef.current[c.id] ?? [] }));
       const diagnosisEvidence = buildPictureGraphEvidence(challenges, selections);
@@ -783,12 +834,12 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     }
   }, [
     isComplete, results, phaseResults, challenges,
-    sendText, submitEvaluation, hasSubmittedEvaluation,
+    sendText, submitEvaluation, hasSubmittedEvaluation, progress.recordsEvaluation,
   ]);
 
   // ── Submission helper ──────────────────────────────────────────────────────
   const submitResult = useCallback(
-    (correct: boolean, extras: Record<string, unknown> = {}) => {
+    (correct: boolean, extras: Record<string, unknown> = {}, work: Partial<BarModelView> = {}) => {
       if (!currentChallenge) return;
       // Stale-state guard (PRD §6a #3): the reset useEffect's setBuiltValues
       // is async — on the render immediately after advance(), `builtValues`
@@ -800,6 +851,9 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
         || builtValues[0]?.label === currentChallenge.values[0]?.label;
       if (!stateMatches) return;
 
+      // The graph's own check is the workspace's checked gesture.
+      progress.commitCheck?.(describeGraphWork(currentChallenge, { built: builtValues, selectedOption,
+        selectedRow: selectedBarIndex, chosenStep, ...work }), correct);
       incrementAttempts();
       setFeedback(correct ? 'correct' : 'incorrect');
       if (correct) {
@@ -826,7 +880,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     [
       currentChallenge, currentAttempts, builtValues,
       incrementAttempts, recordResult, sendText,
-      currentIndex, challenges.length,
+      currentIndex, challenges.length, progress, selectedOption, selectedBarIndex, chosenStep,
     ],
   );
 
@@ -842,7 +896,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
   };
 
   const handleBarClick = (i: number) => {
-    if (!currentChallenge || feedback === 'correct' || isComplete) return;
+    if (learnerBlocked() || !currentChallenge || feedback === 'correct' || isComplete) return;
     // K sticker chart: tapping a row places one sticker in it. The row's own
     // capacity is two cells longer than the answer, so running out of room can
     // never tell the child they are finished.
@@ -858,12 +912,12 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     if (ROW_TAP_MODES.has(currentChallenge.evalMode)) {
       const correct = currentChallenge.targetBarIndex === i;
       setSelectedBarIndex(i);
-      submitResult(correct, { selectedIndex: i });
+      submitResult(correct, { selectedIndex: i }, { selectedRow: i });
     }
   };
 
   const handleStickerRemove = (i: number) => {
-    if (!currentChallenge || feedback === 'correct' || isComplete) return;
+    if (learnerBlocked() || !currentChallenge || feedback === 'correct' || isComplete) return;
     setBuiltValues((prev) => prev.map((v, idx) => (
       idx === i ? { ...v, value: Math.max(0, v.value - 1) } : v
     )));
@@ -871,7 +925,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
   };
 
   const handleStickerSubmit = () => {
-    if (!currentChallenge || feedback === 'correct' || isComplete) return;
+    if (learnerBlocked() || !currentChallenge || feedback === 'correct' || isComplete) return;
     const expected = currentChallenge.expectedCounts ?? [];
     const correct = expected.length === builtValues.length
       && expected.every((n, i) => builtValues[i]?.value === n);
@@ -879,16 +933,16 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
   };
 
   const handleOptionClick = (opt: number) => {
-    if (!currentChallenge || feedback === 'correct' || isComplete) return;
+    if (learnerBlocked() || !currentChallenge || feedback === 'correct' || isComplete) return;
     setSelectedOption(opt);
     const correct = opt === currentChallenge.expectedValue;
     const tapped = [...(selectionsRef.current[currentChallenge.id] ?? []), opt];
     selectionsRef.current[currentChallenge.id] = tapped;
-    submitResult(correct, { selectedOption: opt, selectedOptions: tapped });
+    submitResult(correct, { selectedOption: opt, selectedOptions: tapped }, { selectedOption: opt });
   };
 
   const handleBuildSubmit = () => {
-    if (!currentChallenge || feedback === 'correct' || isComplete) return;
+    if (learnerBlocked() || !currentChallenge || feedback === 'correct' || isComplete) return;
     if (chosenStep == null) return;
     const expected = currentChallenge.expectedDataset ?? [];
     const datasetCorrect = expected.length === builtValues.length
@@ -980,6 +1034,20 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     };
   });
 
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge) return;
+    workspace.current = { ...workspaceScene(currentChallenge, { built: builtValues, selectedOption,
+      selectedRow: selectedBarIndex, chosenStep }),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    progress.publishWorkspace?.();
+  });
+  /** A solved answer, or (workspace) a checked one waiting for Try again or Next challenge. */
+  const answerClosed = feedback === 'correct' || (tutorOwned && progress.canAttempt === false);
+  // The live host has no evaluation provider, so the runtime's practice summary also ends the session.
+  const sessionOver = isComplete || !!progress.practiceSummary;
+
   // ── Empty state ────────────────────────────────────────────────────────────
   if (challenges.length === 0) {
     return (
@@ -1024,7 +1092,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
           </div>
 
           {/* Progress bar */}
-          {!isComplete && challenges.length > 1 ? (
+          {!sessionOver && challenges.length > 1 ? (
             <div className="flex justify-center">
               <LuminaChallengeCounter
                 current={Math.min(currentIndex + 1, challenges.length)}
@@ -1036,7 +1104,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
           ) : null}
 
           {/* Per-challenge UI */}
-          {!isComplete && currentChallenge ? (
+          {!sessionOver && currentChallenge ? (
             <div className="space-y-6" onPointerDownCapture={(event) => pipTouch(event.target)}
               onFocusCapture={(event) => pipTouch(event.target)}>
               <LuminaPrompt accent="cyan" center>
@@ -1070,7 +1138,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                     }
                     clickable={
                       (isStickerBuild || ROW_TAP_MODES.has(currentChallenge.evalMode))
-                      && feedback !== 'correct'
+                      && !answerClosed
                     }
                     feedbackIndex={rowTapFeedback}
                     showBarValues={currentChallenge.showBarValues ?? true}
@@ -1091,7 +1159,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                 <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
                   className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
               )}
-              {isSpokenGraph && <BarModelExplanation key={currentChallenge.id} challenge={currentChallenge}
+              {isSpokenGraph && !tutorOwned && <BarModelExplanation key={currentChallenge.id} challenge={currentChallenge}
                 instanceId={resolvedInstanceId} exhibitId={exhibitId} onFinished={handleSpokenFinished} />}
 
               {isStickerBuild ? (
@@ -1099,12 +1167,12 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                   <StickerControls
                     values={builtValues}
                     onRemove={handleStickerRemove}
-                    disabled={feedback === 'correct'}
+                    disabled={answerClosed}
                   />
                   <div className="flex justify-center">
                     <LuminaActionButton
                       action="check"
-                      disabled={feedback === 'correct'}
+                      disabled={answerClosed}
                       onClick={handleStickerSubmit}
                     >
                       Check my chart
@@ -1129,7 +1197,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                       <LuminaAnswerChoice
                         key={opt}
                         state={choiceState}
-                        disabled={feedback === 'correct'}
+                        disabled={answerClosed}
                         onClick={() => handleOptionClick(opt)}
                         className="w-auto min-w-[72px] pl-5 pr-9 py-3 text-center font-mono text-lg"
                       >
@@ -1149,13 +1217,13 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                       scaleSteps={currentChallenge.availableScaleSteps ?? [1, 2, 5, 10]}
                       chosenStep={chosenStep}
                       onChooseStep={setChosenStep}
-                      disabled={feedback === 'correct'}
+                      disabled={answerClosed}
                     />
                   </div>
                   <div className="flex justify-center">
                     <LuminaActionButton
                       action="check"
-                      disabled={feedback === 'correct' || chosenStep == null}
+                      disabled={answerClosed || chosenStep == null}
                       onClick={handleBuildSubmit}
                     >
                       Submit graph
@@ -1180,7 +1248,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                 </LuminaFeedbackCard>
               ) : null}
 
-              {feedback === 'correct' || spokenFinished ? (
+              {!tutorOwned && (feedback === 'correct' || spokenFinished) ? (
                 <div className="text-center">
                   <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
                     {currentIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish Session'}
@@ -1191,7 +1259,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
           ) : null}
 
           {/* Phase summary panel */}
-          {isComplete && phaseResults.length > 0 ? (
+          {sessionOver && phaseResults.length > 0 ? (
             <PhaseSummaryPanel
               phases={phaseResults}
               overallScore={submittedResult?.score}
@@ -1206,5 +1274,9 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     </div>
   );
 };
+
+// The workspace path never mounts the spoken explanation's judged runner, and the runtime owns progression.
+const BarModel = withWorkspaceController<BarModelProps, ProgressOptions<BarModelChallenge>, Progress>(
+  'bar-model', BarModelSurface, useScriptedProgress, useWorkspaceProgressFor('bar-model'));
 
 export default BarModel;
