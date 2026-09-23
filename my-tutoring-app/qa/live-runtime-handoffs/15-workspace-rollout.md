@@ -17,7 +17,9 @@ dry-run twice (a read-only plan, then a fresh session that built ordinal-line fr
 sorting-station) closed ([report](../tutor-reports/workspace-rollout-A1-2026-09-23.md)). The generic
 one-file contract test is still owed (each adopter has its own workspace test). **DEAD row done; A2 done 09-23**
 ([report](../tutor-reports/workspace-rollout-A2-2026-09-23.md)): plain-shape recipe (`useWorkspaceProgress`), every live
-adapter now on the workspace. **Next: batch B1 (runner-era), then C1.**
+adapter now on the workspace. **B1 done 09-23** ([report](../tutor-reports/workspace-rollout-B1-2026-09-23.md)): balance-scale, base-ten-blocks, bar-model,
+fraction-circles, every mode (9 surfaces, the plain ones too); one ruling owed (balance-scale `two_step` explanation
+is now scored). **Next: the generic W1 contract test, then batch B2.**
 **Parallel, 2026-09-22: compare-objects at W1** (Tier A), recipe unchanged, about 1 hour; smokes
 `compare_two` text + `--audio` and `order_three` ×3 PASS ([report](../tutor-reports/compare-objects-w1-2026-09-22.md)).
 

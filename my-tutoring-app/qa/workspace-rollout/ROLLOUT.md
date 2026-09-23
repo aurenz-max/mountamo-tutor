@@ -9,8 +9,8 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 
 ## Status (2026-09-23)
 
-- Catalog: 212 primitive ids. On the workspace: 17 (8 at W2 from the pilots, 9 at W1). Queued:
-  Tier A 0, Tier B 12, Tier C 152. Held back: 31.
+- Catalog: 212 primitive ids. On the workspace: 21 (8 at W2 from the pilots, 13 at W1). Queued:
+  Tier A 0, Tier B 8, Tier C 152. Held back: 31.
 - **Recount:** catalog ids = `id: '...'` entries in `src/components/lumina/service/manifest/catalog/*.ts`
   (skip the test fixture id `x`); on the workspace = entries with a `teachingWorkspace: {` block.
   Runner-era surfaces: `rg -l "useJudgedScriptRunner<|useJudgedSpeechLoop<|= useJudgedScriptRunner|= useJudgedSpeechLoop" src/components/lumina/primitives --glob "!*test*"`.
@@ -32,6 +32,7 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 | compare-objects | W1 | [compare-objects-w1-2026-09-22.md](../tutor-reports/compare-objects-w1-2026-09-22.md) |
 | A1: place-value-chart, ordinal-line, sorting-station | W1 | [workspace-rollout-A1-2026-09-23.md](../tutor-reports/workspace-rollout-A1-2026-09-23.md) |
 | A2: number-line, comparison-builder, number-tracer (plain shape) | W1 | [workspace-rollout-A2-2026-09-23.md](../tutor-reports/workspace-rollout-A2-2026-09-23.md) |
+| B1: balance-scale, base-ten-blocks, bar-model, fraction-circles (every mode, runner-era and plain surfaces) | W1 | [workspace-rollout-B1-2026-09-23.md](../tutor-reports/workspace-rollout-B1-2026-09-23.md). **Ruling owed:** balance-scale `two_step` explanation is now scored |
 | DEAD: runner-owned sandbox handoff, `'di-runner'` owner value, `RUNNER_GUIDANCE`/`runnerLessonStart` (frontend) | — | 09-23, no report. **Residue, owned by LA-14 retirement (`07-census.md`):** the backend bridge `live_activity_tools.py` still accepts `teachingOwner: 'di-runner'` and emits `activity_ready` for it, and `run_live_runtime.py` (`judged_runner`), `run_live_lesson_plan.py` and `scripts/live-lesson-plan-fixture.mjs` still branch on it (the live route's `diPlan` probe was removed with it). No frontend adapter sends that value. |
 
 ## Queue
@@ -40,7 +41,7 @@ Order: Tier A, then runner-era K–2 (the recipe applies as written), then the r
 
 | Row | Shape | Primitives | Status |
 | --- | --- | --- | --- |
-| B1 | R | `balance-scale` (equality, workshop), `base-ten-blocks` (DI modes), `bar-model` (explanation), `fraction-circles` (`touch_fraction`) — census Tier B | open |
+| B1 | R | `balance-scale` (equality, workshop), `base-ten-blocks` (DI modes), `bar-model` (explanation), `fraction-circles` (`touch_fraction`) — census Tier B | done 09-23 (every mode, plain surfaces too) |
 | B2 | R | `cvc-speller`, `phonics-blender`, `sound-swap`, `word-flip` (both runner hooks) | open |
 | B3 | R | `you-and-me`, `spatial-scene`, `di-shapes`, `ramp-lab` (investigation) | open |
 | C1 | R | K literacy sounds: `rhyme-studio`, `word-workout`, `phoneme-explorer`, `syllable-clapper` | open |
@@ -105,4 +106,6 @@ A C row whose primitive turns out to have no answer check moves to HELD with the
   tests plus `src/components/lumina/components/live-activity`.
 - Owed and not built: handoff 15's single generic contract test for every W1 primitive. Each
   adopter has its own `<X>.workspace.test.tsx` instead. Build the generic one when the per-primitive
-  files start repeating their harness (likely during A1–A2).
+  files start repeating their harness. They do now (13 files, ~200 lines each): build it before B2.
+- A family binds every catalog mode, so a row naming one sub-surface moves the family's plain
+  component too (B1: 9 surfaces for 4 ids). Size a batch by surfaces, not ids.
