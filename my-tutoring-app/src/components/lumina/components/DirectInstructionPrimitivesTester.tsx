@@ -17,8 +17,7 @@ import DiDeduction, { type DiDeductionData } from '../primitives/visual-primitiv
 import DiWordProblemSetup, { type DiWordProblemSetupData } from '../primitives/visual-primitives/direct-instruction/DiWordProblemSetup';
 import { DiRunLogPanel } from '../primitives/visual-primitives/direct-instruction/DiRunLogPanel';
 import { CuratorCompanion } from './CuratorCompanion';
-import { workspaceBinding, type LessonWorkspaceItem } from './live-activity/lessonWorkspacePlan';
-import { PulseWorkspace } from '../pulse/PulseWorkspace';
+import { TesterWorkspace } from './live-activity/TesterWorkspace';
 import {
   DI_TESTER_PRESETS,
   DI_TESTER_PRIMITIVES,
@@ -89,38 +88,28 @@ const formatBytes = (bytes: number | undefined) => {
   return `${(bytes / 1024).toFixed(1)} KB`;
 };
 
-/** The packs whose only teaching path is the tutor/JEV workspace (LA-14 S5). They mount
- *  inside a one-item workspace host, pinned to the generated mode, exactly as a Pulse item does. */
-const WORKSPACE_PACKS = new Set<DiPrimitiveId>(['di-letter-sounds', 'di-word-reading', 'di-math-facts', 'di-sentence-reading']);
+/** A bound family renders through `TesterWorkspace`; this switch is the unbound tester's own render. */
+const logEvaluation = (result: unknown) => console.log('[DI tester evaluation]', result);
 
-const testerBinding = (generated: DiData, evalMode: string, runKey: number): LessonWorkspaceItem | null =>
-  WORKSPACE_PACKS.has(generated.id)
-    ? workspaceBinding({ instanceId: `di-tester-${runKey}`, primitiveId: generated.id, pin: evalMode,
-      objectiveIds: ['di-tester'], data: generated.data })
-    : null;
-
-const RenderedPrimitive: React.FC<{ generated: DiData; runKey: number; binding: LessonWorkspaceItem | null }> =
-    ({ generated, runKey, binding }) => {
+const RenderedPrimitive: React.FC<{ generated: DiData; runKey: number }> = ({ generated, runKey }) => {
   const evaluationProps = {
     instanceId: `di-tester-${runKey}`,
-    onEvaluationSubmit: (result: unknown) => console.log('[DI tester evaluation]', result),
-    ...(binding ? { objectiveId: binding.objectiveId } : {}),
+    onEvaluationSubmit: logEvaluation,
   };
-  const mount = binding ? { runtimePlanItemId: binding.planItemId, runtimeEvalMode: binding.evalMode } : {};
 
   switch (generated.id) {
     case 'di-dice-roll':
       return <DiDiceRoll key={runKey} data={{ ...generated.data, ...evaluationProps }} />;
     case 'di-letter-sounds':
-      return <DiLetterSounds key={runKey} data={{ ...generated.data, ...evaluationProps }} {...mount} />;
+      return <DiLetterSounds key={runKey} data={{ ...generated.data, ...evaluationProps }} />;
     case 'di-word-reading':
-      return <DiWordReading key={runKey} data={{ ...generated.data, ...evaluationProps }} {...mount} />;
+      return <DiWordReading key={runKey} data={{ ...generated.data, ...evaluationProps }} />;
     case 'di-math-facts':
-      return <DiMathFacts key={runKey} data={{ ...generated.data, ...evaluationProps }} {...mount} />;
+      return <DiMathFacts key={runKey} data={{ ...generated.data, ...evaluationProps }} />;
     case 'di-shapes':
       return <DiShapes key={runKey} data={{ ...generated.data, ...evaluationProps }} />;
     case 'di-sentence-reading':
-      return <DiSentenceReading key={runKey} data={{ ...generated.data, ...evaluationProps }} {...mount} />;
+      return <DiSentenceReading key={runKey} data={{ ...generated.data, ...evaluationProps }} />;
     case 'di-spoken-practice':
       return (
         <>
@@ -418,17 +407,13 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
 
             {/* Pip joins a primitive that publishes a surface, as in a lesson; no session needed. */}
             <div data-primitive-instance-id={`di-tester-${runKey}`}>
-              {(() => {
-                const binding = testerBinding(generated, completedRun.evalMode, runKey);
-                const rendered = <RenderedPrimitive generated={generated} runKey={runKey} binding={binding} />;
-                // A bound pack gets its own Live session and tutor face from the host.
-                return binding
-                  ? <PulseWorkspace key={runKey} binding={binding} data={generated.data as unknown as Record<string, unknown>}
-                      sessionId={`di-tester-${runKey}`} topic={completedRun.objective} gradeLevel={completedRun.gradeLevel}>
-                      {rendered}
-                    </PulseWorkspace>
-                  : <>{rendered}<CuratorCompanion /></>;
-              })()}
+              {/* A bound pack gets its own Live session and tutor face from the host. */}
+              <TesterWorkspace key={runKey} primitiveId={generated.id} instanceId={`di-tester-${runKey}`}
+                evalMode={completedRun.evalMode} data={generated.data} topic={completedRun.objective}
+                gradeLevel={completedRun.gradeLevel} onEvaluationSubmit={logEvaluation}>
+                <RenderedPrimitive generated={generated} runKey={runKey} />
+                <CuratorCompanion />
+              </TesterWorkspace>
             </div>
             <DiRunLogPanel />
 

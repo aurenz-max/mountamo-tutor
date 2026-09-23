@@ -55,6 +55,7 @@ import {
 import { ExhibitProvider } from '../contexts/ExhibitContext';
 import { LuminaAIProvider, useLuminaAIContext, shownConversation } from '@/contexts/LuminaAIContext';
 import { CuratorCompanion } from './CuratorCompanion';
+import { TesterWorkspace, testerBinds } from './live-activity/TesterWorkspace';
 import { getComponentById } from '../service/manifest/catalog';
 import { LITERACY_CATALOG } from '../service/manifest/catalog/literacy';
 import type { ComponentId, EvalModeDefinition } from '../types';
@@ -1156,20 +1157,26 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
                 no session needed. Others keep the companion's perch. */}
             {generatedData != null && (
               <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId} className="space-y-6">
-                <PrimitiveRenderer
-                  componentId={selectedPrimitive}
-                  data={generatedData}
-                  instanceId={previewInstanceId}
-                  onEvaluationSubmit={handleEvaluationSubmit}
-                />
-                <CuratorCompanion />
+                <TesterWorkspace primitiveId={selectedPrimitive} instanceId={previewInstanceId} evalMode={selectedEvalMode}
+                  data={generatedData} topic={topic || selectedOption?.topic || ''} gradeLevel={selectedGrade}
+                  onEvaluationSubmit={handleEvaluationSubmit}>
+                  <PrimitiveRenderer
+                    componentId={selectedPrimitive}
+                    data={generatedData}
+                    instanceId={previewInstanceId}
+                    onEvaluationSubmit={handleEvaluationSubmit}
+                  />
+                  <CuratorCompanion />
+                </TesterWorkspace>
               </div>
             )}
           </div>
         </div>
 
         {/* Right Panel - AI Tutor */}
-        {tutorPanelOpen && selectedPrimitive !== 'reading-repair-studio' && (
+        {/* A bound family's preview opens its own workspace session; a second tutor would talk over it. */}
+        {tutorPanelOpen && selectedPrimitive !== 'reading-repair-studio'
+          && !(generatedData != null && testerBinds(selectedPrimitive, previewInstanceId, selectedEvalMode, generatedData)) && (
           <div className="w-full lg:w-80 border-l border-slate-800 bg-slate-900/30 backdrop-blur flex-shrink-0 flex flex-col">
             <AITutorPanel
               primitiveType={selectedPrimitive}

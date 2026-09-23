@@ -2,6 +2,7 @@
 
 import React, { useEffect, useId, useState } from 'react';
 import { CuratorCompanion } from './CuratorCompanion';
+import { TesterWorkspace } from './live-activity/TesterWorkspace';
 import FractionBar from '../primitives/visual-primitives/math/FractionBar';
 import PlaceValueChart from '../primitives/visual-primitives/math/PlaceValueChart';
 import AreaModel from '../primitives/visual-primitives/math/AreaModel';
@@ -1717,13 +1718,16 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
 
               {generatedData ? (
                 <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId}>
-                  <PrimitiveRenderer
-                    componentId={selectedPrimitive}
-                    instanceId={previewInstanceId}
-                    data={generatedData}
-                    onEvaluationSubmit={handleEvaluationSubmit}
-                  />
-                  <PreviewTutor />
+                  <TesterWorkspace primitiveId={selectedPrimitive} instanceId={previewInstanceId} evalMode={selectedEvalMode}
+                    data={generatedData} topic={selectedOption.topic} gradeLevel={gradeLevel} onEvaluationSubmit={handleEvaluationSubmit}>
+                    <PrimitiveRenderer
+                      componentId={selectedPrimitive}
+                      instanceId={previewInstanceId}
+                      data={generatedData}
+                      onEvaluationSubmit={handleEvaluationSubmit}
+                    />
+                    <PreviewTutor />
+                  </TesterWorkspace>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-[400px] text-slate-500">
