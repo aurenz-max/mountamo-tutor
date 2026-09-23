@@ -4,6 +4,11 @@
  * CompareObjects — DI modality. The Live tutor owns the clock in every mode
  * (qa/di/BACKLOG.md item 18 P4; the FOURTH math port).
  *
+ * Inside a live runtime with a resolved pin, the shared teaching workspace
+ * replaces the scripted runner (W1, `compareObjectsWorkspace.ts`): the tutor
+ * teaches in its own words, the observer commits outcomes, and the board still
+ * checks an ordering itself. Everything below describes the page both share.
+ *
  * WHAT THE CHILD DOES, PER MODE.
  *  - identify_attribute (K + 1): the tutor names the objects and the closed
  *    menu aloud; the child SAYS what the picture lets us measure. The four
@@ -53,7 +58,7 @@
  * interaction is gated on `runner.canAttempt`, never on `runner.stage`.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -72,6 +77,7 @@ import type { CompareObjectsMetrics } from '../../../evaluation/types';
 import {
   useJudgedScriptRunner,
   type JudgedRunSummary,
+  type JudgedScriptRunnerOptions,
 } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
@@ -91,6 +97,11 @@ import { compareObjectsPipPose } from '../../../pip/compareObjectsPipPose';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
 import { useCompareObjectsRuntime } from './useCompareObjectsRuntime';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { describeOrder, orderMatches, workspaceAssignment, workspaceScene } from './compareObjectsWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -365,8 +376,28 @@ interface CompareObjectsProps {
   runtimeEvalMode?: string;
 }
 
-const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode }) => {
+/**
+ * The scripted runner's options beside the workspace controller's (ten-frame's shape).
+ * `placedOrder` feeds the runner-era runtime registration only.
+ */
+type CompareObjectsControllerOptions = Omit<WorkspaceRunOptions<CompareObjectsItem>, 'primitiveId' | 'assignment'>
+  & Omit<JudgedScriptRunnerOptions<CompareObjectsItem>, 'pack' | 'instanceId' | 'onItemOpened'>
+  & { pack?: JudgedScriptPack<CompareObjectsItem>; placedOrder: string[] };
+
+function useScriptedController(options: CompareObjectsControllerOptions): LiveRun<CompareObjectsItem> {
+  const runner = useJudgedScriptRunner<CompareObjectsItem>({ ...options, pack: options.pack! });
+  useCompareObjectsRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
+    planItemId: options.planItemId, evalMode: options.evalMode, placedOrder: options.placedOrder });
+  return runner;
+}
+
+const useWorkspaceController = (options: CompareObjectsControllerOptions): LiveRun<CompareObjectsItem> =>
+  useWorkspaceRunner<CompareObjectsItem>({ ...options, primitiveId: 'compare-objects', assignment: workspaceAssignment });
+
+const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
+  CompareObjectsProps & { tutorOwned: boolean; useController: (options: CompareObjectsControllerOptions) => LiveRun<CompareObjectsItem> }) => {
   const liveRuntime = useLiveRuntime();
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -423,7 +454,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className, autoSt
     return map;
   }, [challenges]);
 
-  const pack = useMemo<JudgedScriptPack<CompareObjectsItem>>(() => ({
+  const pack = useMemo<JudgedScriptPack<CompareObjectsItem> | undefined>(() => tutorOwned ? undefined : ({
     ...compareObjectsPackBase(items),
     // Only what DIFFERS from the runner's defaults.
     statusLines: {
@@ -461,7 +492,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className, autoSt
           };
       }
     },
-  }), [items]);
+  }), [items, tutorOwned]);
 
   // ── Per-item reset — every item owns its starting state ───────────────────
   const resetStageFor = useCallback(() => {
@@ -470,7 +501,8 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className, autoSt
   }, []);
 
   // ── Metrics ───────────────────────────────────────────────────────────────
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const handleFinished = useCallback((summary: Pick<JudgedRunSummary, 'outcomes' | 'accuracy' | 'attemptsCount' | 'diagnosisEvidence' | 'solvedCount' | 'learningResponses'>
+    & { teachingAttempts?: unknown; assistanceProvenance?: string }) => {
     const metrics: CompareObjectsMetrics = {
       type: 'compare-objects',
       accuracy: summary.accuracy,
@@ -484,18 +516,24 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className, autoSt
       summary.solvedCount === items.length,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
   }, [items, evaluation]);
 
-  const runner = useJudgedScriptRunner<CompareObjectsItem>({
+  const runner = useController({
+    items, workspace, objectiveId, planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount, never `runner.currentItem`: a mount's
+    // identity must not change while the runner owns it.
+    evalMode: runtimeEvalMode || items[0]?.kind || 'default',
+    placedOrder,
     pack,
     // Load-bearing for the live host: without it the runner's `resume()` early-returns,
     // its speech holds never settle, and the completion handoff has nothing to read.
     runtime: liveRuntime,
-    ...(runtimePlanItemId ? { completionCue: '[CO_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
+    ...(!tutorOwned && runtimePlanItemId ? { completionCue: '[CO_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
     instanceId: resolvedInstanceId,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
     exhibitId,
@@ -539,7 +577,10 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className, autoSt
     const item = runner.currentItem;
     if (!item || item.kind !== 'order_three') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
-    runner.submitGestureAttempt(orderVerdictCue(item, pendingOrderRef.current));
+    const placed = pendingOrderRef.current;
+    // The board checks its own arrangement, with the same code match the cue reports.
+    commitGesture(runner, { response: describeOrder(item, placed), correct: orderMatches(item, placed),
+      cue: () => orderVerdictCue(item, placed) });
   }, [runner]);
 
   /** A hands turn closes on stillness; a complete order shortens the window but
@@ -618,13 +659,31 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className, autoSt
     }
   }, [currentItem, currentChallenge, runner.revealHeld]);
 
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentItem) return;
+    workspace.current = { ...workspaceScene(currentItem, { placedOrder }),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true,
+      mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace?.();
+  });
+
+  // The workspace path shows its summary without an evaluation provider (the live host has none).
+  const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
+
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => (
-      PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '📐' }
-    ));
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+    if (!showSummary) return [];
+    const practice = runner.practiceSummary;
+    return phaseResultsFromSummary(items, practice ?? runner.summary, (item) => {
+      const config = PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '📐' };
+      return practice?.outcomes.find(o => o.id === item.id)?.assisted ? { ...config, label: `${config.label} (with help)` } : config;
+    }).map((phase, index) => {
+      const outcome = practice?.outcomes.find(o => o.id === items[index].id);
+      return outcome ? { ...phase, attempts: outcome.attempts, firstTry: outcome.solved && outcome.attempts === 1 } : phase;
+    });
+  }, [showSummary, runner.summary, runner.practiceSummary, items]);
 
   const celebrationMessage = useMemo(() => {
     const spoken = items.some((i) => i.answerKind === 'voice');
@@ -639,7 +698,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className, autoSt
   // orders, answers, or advances.
   const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt && !runner.isAwaitingGesture());
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const targets = pip.targets(undefined, (id) => (id.startsWith('pick-') ? id.slice('pick-'.length) : id));
     const pose = compareObjectsPipPose({
       running: runner.running, preparing: runner.preparing,
@@ -655,12 +714,6 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className, autoSt
   // Render
   // ============================================================================
 
-  const runtimeHint = useCompareObjectsRuntime({ runner, instanceId: resolvedInstanceId, objectiveId,
-    // The SESSION's mode, from the first item — never `runner.currentItem`.
-    // A mount's identity must not change while the runner owns it: an item
-    // change would rebuild the mount and re-register into an unreleased owner.
-    planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || items[0]?.kind || 'default',
-    placedOrder });
   // AFTER the runtime mount is registered, never before: `start()` waits for
   // `grantOwnership('runner')`, which cannot be granted until this primitive's
   // mount exists. Declared earlier, its effect runs first and the runner spins.
@@ -717,7 +770,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className, autoSt
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && currentItem && (
+        {!showSummary && currentItem && (
           <>
             {!isPreReader && (
               <div className="flex justify-center">
@@ -807,7 +860,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className, autoSt
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
             overallScore={evaluation.submittedResult?.score}
@@ -821,5 +874,9 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className, autoSt
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the runner, whose context push and cue loop would run beside the tutor.
+const CompareObjects = withWorkspaceController<CompareObjectsProps, CompareObjectsControllerOptions, LiveRun<CompareObjectsItem>>(
+  'compare-objects', CompareObjectsSurface, useScriptedController, useWorkspaceController);
 
 export default CompareObjects;

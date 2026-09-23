@@ -3342,6 +3342,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-bond',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'Counters move between the whole and two parts, and tiles build number sentences. The activity checks a '
+        + 'finished split, move or equation itself once the learner stops; talk about a half-built one is teaching, not a '
+        + 'verdict. A spoken question asks about the split or move now on the board. You cannot move counters, place '
+        + 'tiles, or say a part before the learner does.',
+    },
     description: 'DI-native Number Bond. Students transform one persistent counter model, then express its relationship: Split and Say and Ten and Ones pair hand construction with one spoken count; Missing Part keeps the unknown covered and offers counters as optional support; Related Facts joins, speaks, separates, and speaks again; Build Equation matches a student-chosen action with symbols; Fact Family transforms the same groups through every distinct related form. Students SAY the missing part OUT LOUD where speech is assessed and construct equations where symbolic form is assessed.',
     constraints: 'Wholes are capped at 5 for Kindergarten and 10 for Grade 1, except Ten and Ones uses teen wholes 11-19. Requires a microphone for spoken turns; there is no Check button and no typed numeric substitute for speech. Counter and equation work closes on stillness. Missing Part records independent, counter-supported, and revealed paths. Related Facts requires unequal positive parts and preserves its two linked spoken outcomes. Build Equation requires arithmetic validity, the bond numbers, and a match to the committed action. Fact Family requires four distinct forms for unequal parts and two for equal parts; reversing the sides of = is equivalent notation, not an extra form. Kindergarten supports decompose, missing-part, related-fact and ten-and-ones; symbolic modes remain Grade 1.',
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken', 'build', 'type'], role: 'apply', minutes: 5 },
@@ -5300,8 +5307,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'compare-objects',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'The board checks an ordering itself once the learner stops touching; talk about a part-built order is '
+        + 'teaching, not a verdict. Under identify_attribute, the learner\'s own words for the attribute (how long, how tall, '
+        + 'how heavy, how much it holds) are as right as the grown-up word. Under compare_two the answer is one object\'s name; '
+        + 'a pointing word such as "that one" is not an answer. Under non_standard, counting aloud is working; the number the '
+        + 'learner lands on is the answer. You cannot touch, reorder or measure the objects.',
+    },
     misconceptionScope: 'primitive',
-    description: 'Live tutor-judged measurement comparison (DI modality) on drawings of real-world objects. The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY OUT LOUD what the picture lets us measure — how long, how tall, how heavy, or how much it holds (identify-attribute, both grades); they SAY THE NAME of the object that is longer, taller, heavier or holds more (compare-two, both grades); they SAY THE COUNT of non-standard units laid along an object (non-standard, Grade 1); and they answer WITH THEIR HANDS by touching three objects in order (order-three, Grade 1) — there the arrangement IS the answer. Builds the measurement vocabulary K.MD.1 asks children to SPEAK. ESSENTIAL for Kindergarten and Grade 1 measurement and data (K.MD.1-2).',
+    description: 'Live tutor-taught measurement comparison on drawings of real-world objects. The Live tutor teaches each item in its own words; the child\'s answer is checked (an ordering by the board itself, a spoken answer from the tutor\'s feedback) and a checked answer advances the lesson. What the child produces depends on the skill: they SAY OUT LOUD what the picture lets us measure — how long, how tall, how heavy, or how much it holds (identify-attribute, both grades); they SAY THE NAME of the object that is longer, taller, heavier or holds more (compare-two, both grades); they SAY THE COUNT of non-standard units laid along an object (non-standard, Grade 1); and they answer WITH THEIR HANDS by touching three objects in order (order-three, Grade 1) — there the arrangement IS the answer. Builds the measurement vocabulary K.MD.1 asks children to SPEAK. ESSENTIAL for Kindergarten and Grade 1 measurement and data (K.MD.1-2).',
     constraints: 'Best for grades K-1. Requires a microphone: three of the four answers are spoken and judged by the Live tutor, and there is no Check button, no attribute chips, no object buttons and no typed number anywhere. Kindergarten uses identify-attribute, compare-two and order-three; non-standard is Grade 1. order-three came down to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): the objects are drawings scaled by visualSize and the answer is the order the child touches them in, so nothing on that path is read. Unit counts run 1-20, so every spoken number is a single word. A comparison whose drawing disagrees with its answer, whose two object names cannot be told apart by ear, or whose attribute menu offers both length and height is discarded before the child ever sees it.',
     // reader: 'none' — "no Check button, no attribute chips, no object buttons and no typed
     // number anywhere" (constraints above); three of four modes are spoken, order_three is hands.

@@ -482,7 +482,6 @@ describe('compare-objects · catalog', () => {
   it('steering names the microphone and no longer points at buttons', () => {
     const steering = `${catalogEntry.description} ${catalogEntry.constraints}`;
     expect(steering).toContain('microphone');
-    expect(steering).toContain('DI modality');
     expect(steering).not.toMatch(/Point to it|tap the|attribute chips are shown/i);
   });
 

@@ -12,12 +12,12 @@ import { numberLineLive, validateActivityData, initialActivityState } from './ad
 import { tenFrameLiveDomain, validateTenFrameData } from './adapters/tenFrameLive';
 import { countingBoardLiveDomain } from './adapters/countingBoardLive';
 import { numberSequencerLiveDomain } from './adapters/numberSequencerLive';
-import { numberBondLive } from './adapters/numberBondLive';
+import { numberBondLiveDomain } from './adapters/numberBondLive';
 import { ordinalLineLive } from './adapters/ordinalLineLive';
 import { sortingStationLive } from './adapters/sortingStationLive';
 import { numberTracerLive } from './adapters/numberTracerLive';
 import { comparisonBuilderLive } from './adapters/comparisonBuilderLive';
-import { compareObjectsLive } from './adapters/compareObjectsLive';
+import { compareObjectsLiveDomain } from './adapters/compareObjectsLive';
 import { placeValueLive } from './adapters/placeValueLive';
 import { shapeSorterLiveDomain, validateShapeSorterData } from './adapters/shapeSorterLive';
 import { diLetterSoundsLiveDomain } from './adapters/diLetterSoundsLive';
@@ -42,12 +42,12 @@ export const LIVE_ADAPTERS = {
   'ten-frame': workspaceAdapter('ten-frame', tenFrameLiveDomain),
   'counting-board': workspaceAdapter('counting-board', countingBoardLiveDomain),
   'number-sequencer': workspaceAdapter('number-sequencer', numberSequencerLiveDomain),
-  'number-bond': numberBondLive,
+  'number-bond': workspaceAdapter('number-bond', numberBondLiveDomain),
   'ordinal-line': ordinalLineLive,
   'sorting-station': sortingStationLive,
   'number-tracer': numberTracerLive,
   'comparison-builder': comparisonBuilderLive,
-  'compare-objects': compareObjectsLive,
+  'compare-objects': workspaceAdapter('compare-objects', compareObjectsLiveDomain),
   'place-value-chart': placeValueLive,
   'shape-sorter': workspaceAdapter('shape-sorter', shapeSorterLiveDomain),
   'di-letter-sounds': workspaceAdapter('di-letter-sounds', diLetterSoundsLiveDomain),

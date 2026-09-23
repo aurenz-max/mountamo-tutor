@@ -147,6 +147,11 @@ operations. Keep domain-specific rendering and task rules in the primitive.
   count, and a named consumer: the packet field the tutor will read, or a trace-only bench
   while it is being measured. Only `assignment_outcome` may commit.
 
+Scene facts state what is drawn and asked, never a count that is not the asked quantity beside a
+spoken answer: "0 in each part" or "0 on the frame" beside a credited "three" reads to the observer as a
+contradiction and drops a clear credit under the gate (number-bond and ten-frame W1, 2026-09-23; LA-13's
+`counted: 0`). Publish board counts only where the board is what the item asks about.
+
 Adapter guidance is the catalog entry's `teachingWorkspace.guidance`: write only the domain's sentences (task
 constraints, which targets exist, what the tutor cannot do) and let `WORKSPACE_DOCTRINE` in
 `adapters/adapterContract.ts` carry teaching ownership, help, showing, crediting and

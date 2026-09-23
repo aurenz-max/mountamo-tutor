@@ -42,8 +42,10 @@ async function emit(v: Record<string, unknown>) { await act(async () => { mocks.
 async function paint() { await act(async () => { const todo = frames.splice(0); todo.forEach(f => f(0)); }); }
 
 it('initiates a full runner-owned lesson once and arms DI only after its correlated server handoff', async () => {
-  const data = { title: 'Split five together', gradeBand: 'K', maxNumber: 10,
-    challenges: [{ id: 'one', type: 'decompose', whole: 5, instruction: 'Split five.' }] };
+  const line = [{ name: 'Rabbit', emoji: '🐰' }, { name: 'Turtle', emoji: '🐢' }, { name: 'Fox', emoji: '🦊' },
+    { name: 'Bear', emoji: '🐻' }, { name: 'Frog', emoji: '🐸' }];
+  const data = { title: 'Parade', maxPosition: 5, context: 'race', showOrdinalLabels: true, labelFormat: 'both', gradeBand: '1',
+    challenges: [{ id: 'one', type: 'identify', instruction: '', characters: line, targetPosition: 3, correctAnswer: '3' }] };
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ instanceId: 'frame-1', data }) }));
   render(<LiveActivitySandbox />);
   fireEvent.click(screen.getByText('Start lesson'));
@@ -51,17 +53,17 @@ it('initiates a full runner-owned lesson once and arms DI only after its correla
   await emit({ type: 'session_ready' }); await emit({ type: 'session_ready' });
   expect(mocks.ai.sendText).toHaveBeenCalledTimes(1);
   expect(mocks.ai.sendText).toHaveBeenCalledWith(expect.stringContaining('[LESSON_START]'), { silent: true });
-  await emit({ type: 'activity_request', callId: 'frame-call', args: { primitiveId: 'number-bond', mode: 'decompose', topic: 'Split five', intent: 'Find two parts of five.' } });
-  await screen.findByTestId('number-bond');
-  expect(screen.getByTestId('number-bond').getAttribute('data-auto-start')).toBe('false');
+  await emit({ type: 'activity_request', callId: 'frame-call', args: { primitiveId: 'ordinal-line', mode: 'identify', topic: 'Ordinal positions', intent: 'Find the third animal.' } });
+  await screen.findByTestId('ordinal-line');
+  expect(screen.getByTestId('ordinal-line').getAttribute('data-auto-start')).toBe('false');
   await emit({ type: 'activity_ready', callId: 'frame-call', instanceId: 'frame-1' });
-  expect(screen.getByTestId('number-bond').getAttribute('data-auto-start')).toBe('false');
+  expect(screen.getByTestId('ordinal-line').getAttribute('data-auto-start')).toBe('false');
   await paint(); await paint();
-  expect(mocks.ai.sendActivityMessage).toHaveBeenCalledWith(expect.objectContaining({ status: 'mounted', primitiveId: 'number-bond' }));
+  expect(mocks.ai.sendActivityMessage).toHaveBeenCalledWith(expect.objectContaining({ status: 'mounted', primitiveId: 'ordinal-line' }));
   await emit({ type: 'activity_ready', callId: 'old', instanceId: 'frame-1' });
-  expect(screen.getByTestId('number-bond').getAttribute('data-auto-start')).toBe('false');
+  expect(screen.getByTestId('ordinal-line').getAttribute('data-auto-start')).toBe('false');
   await emit({ type: 'activity_ready', callId: 'frame-call', instanceId: 'frame-1' });
-  expect(screen.getByTestId('number-bond').getAttribute('data-auto-start')).toBe('true');
+  expect(screen.getByTestId('ordinal-line').getAttribute('data-auto-start')).toBe('true');
 });
 
 it('dispatches tutor advance to the mounted primitive and acknowledges the painted state, rejecting stale screens', async () => {

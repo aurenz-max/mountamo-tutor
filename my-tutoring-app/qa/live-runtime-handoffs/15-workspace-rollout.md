@@ -8,7 +8,12 @@ smoke `build` and `subitize --audio` PASS ([report](../tutor-reports/ten-frame-w
 Shape found: controller swapped at the component boundary (Counting Board's precedent), no Teaching copy.
 **Simplified the same day:** shared `useWorkspaceRunner`, catalog `teachingWorkspace` + `workspaceAdapter`
 (questions 1-3 answered for runner-era families), registry-driven renderers; all nine adopters moved.
-**Next: number-bond** on the new recipe, recording its line count and time.
+**Number-bond at W1 2026-09-23** on the new recipe: ~75-line domain, +84/−30 component, ~5 minutes to clean
+typecheck; smokes `ten_and_ones` + `missing_part --audio` PASS after one fix shared with ten-frame (no count
+fact beside a spoken answer unless the board is what is asked) ([report](../tutor-reports/number-bond-w1-2026-09-23.md)).
+**Step 2 is done. Next: step 3 dry-run of the recipe, step 4 `ROLLOUT.md`, then batch A1.**
+**Parallel, 2026-09-22: compare-objects at W1** (Tier A), recipe unchanged, about 1 hour; smokes
+`compare_two` text + `--audio` and `order_three` ×3 PASS ([report](../tutor-reports/compare-objects-w1-2026-09-22.md)).
 
 ## Why this slice
 

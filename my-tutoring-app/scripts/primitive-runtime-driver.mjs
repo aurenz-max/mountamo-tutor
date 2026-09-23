@@ -131,7 +131,7 @@ const PERFORM = {
   },
   // A labelled choice: the button whose whole text is the label, exactly.
   choose: ({ label }) => {
-    const button = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === label);
+    const button = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === label || b.getAttribute('aria-label') === label);
     if (!button || button.disabled) throw new Error('No enabled choice labelled ' + label);
     flushSync(() => button.click());
   },
@@ -193,7 +193,8 @@ try {
     if (input.type === 'learner') {
       performed = journey.inputsFor(input.intent,
         { data, challenge: currentChallenge(), diItems, itemId: runtime.getSnapshot().task?.itemId ?? null,
-          demand: runtime.getSnapshot().task?.demand ?? null });
+          demand: runtime.getSnapshot().task?.demand ?? null,
+          expectedAnswer: runtime.getSnapshot().task?.workspace?.expectedAnswer ?? null });
       for (const action of performed) {
         if (input.deferAnswers && action.type === 'answer') continue;
         const run = PERFORM[action.type];

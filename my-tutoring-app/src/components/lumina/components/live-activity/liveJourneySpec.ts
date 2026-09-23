@@ -37,6 +37,9 @@ import { buildLetterSoundLinkItems, letterSoundLinkWorkspaceAnswers }
 import { itemsFromChallenges as frameItems, tenFrameHarnessAnswers, type TenFrameItem }
   from '../../primitives/visual-primitives/math/tenFrameScript';
 import { countsFlips } from '../../primitives/visual-primitives/math/tenFrameWorkspace';
+import { buildBondItems } from '../../primitives/visual-primitives/math/numberBondScript';
+import { expandNumberBondInteractions } from '../../primitives/visual-primitives/math/numberBondModes';
+import { buildCompareItems, compareObjectsHarnessAnswers } from '../../primitives/visual-primitives/math/compareObjectsScript';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -66,6 +69,8 @@ export interface JourneyContext {
   itemId: string | null;
   /** The runtime's current `task.demand`: scene facts and whether the stimulus is ready. */
   demand?: Record<string, unknown> | null;
+  /** What the workspace tells the tutor the spoken answer is. */
+  expectedAnswer?: string | null;
 }
 
 export interface JourneyProbe {
@@ -140,6 +145,14 @@ const frameCells = (item: TenFrameItem): number[] => {
   const seeded = item.seedCells ?? Array.from({ length: item.kind === 'subitize' ? 0 : item.shown }, (_, i) => i);
   return countsFlips(item) ? seeded
     : Array.from({ length: item.capacity }, (_, i) => i).filter(cell => !seeded.includes(cell));
+};
+
+/** A spoken workspace item answered with the number the workspace publishes, or one more. */
+const spokenExpected = (ctx: JourneyContext, intent: LearnerIntent): DriverInput[] => {
+  const n = Number(ctx.expectedAnswer);
+  if (!Number.isInteger(n)) throw new Error('No published numeric answer for this spoken item');
+  const said = intent === 'wrong' ? n + 1 : n;
+  return [{ type: 'answer', text: NUMBER_WORDS[said] ?? String(said) }];
 };
 
 /** A judged runner's spoken answer comes from the port's own DI plan, never from the harness. */
@@ -256,23 +269,29 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   },
 
   'number-bond': {
+    execution: 'workspace',
     component: 'primitives/visual-primitives/math/NumberBond.tsx',
     instanceId: 'bond',
-    defaults: { grade: 'Grade 1', mode: 'missing_part', di: true,
-      topic: 'Finding the missing part of a number bond within ten' },
-    leakTokens: ['NB_', 'NS_HEAR'],
-    prompts: {
-      hint: 'Please show me a reminder for how to find this part.',
-      fade: 'Please hide the reminder now.',
-      replay: 'Please ask me about this same bond again.',
-      example: 'Please show the worked example and save my unfinished bond.',
-      return: 'Please close the example and return to my saved bond.',
-    },
-    inputsFor: (intent, ctx) => intent === 'warmup' ? [] : spoken(ctx, intent === 'wrong' ? 'plainWrong' : 'correct'),
-    // A bond example IS its three numbers: part, part and whole. A turn that
-    // announces an example without saying them has not taught the relationship.
-    exampleTaught: (artifact, text) => {
-      return omittedQuantities(artifact, text);
+    defaults: { grade: 'Kindergarten', mode: 'ten_and_ones', di: false, topic: 'Teen numbers as a ten and some ones' },
+    leakTokens: ['NB_', 'NS_'],
+    prompts: WORKSPACE_PROMPTS,
+    // A spoken phase says the number the workspace publishes; a split phase presses the board's own
+    // move buttons: everything back to the whole, then a complete split (an incomplete one never
+    // commits). Wrong is a split with no full ten, or a decompose pair already made. Model and
+    // equation phases are not driven at W1.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = expandNumberBondInteractions(buildBondItems(ctx.data.challenges ?? [],
+        { band: ctx.data.gradeBand ?? 'K', maxNumber: ctx.data.maxNumber ?? 10 }).items).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current number-bond assignment');
+      if (item.answerKind !== 'gesture') return spokenExpected(ctx, intent);
+      if (item.splitPhase !== 'build') throw new Error(`Number-bond ${item.interactionPhase ?? item.kind} hands phase is not driven at W1`);
+      const placed = Number(ctx.demand?.countersInLeftPart ?? 0) + Number(ctx.demand?.countersInRightPart ?? 0);
+      const wrong = intent === 'wrong';
+      const left = item.kind === 'ten-and-ones' ? (wrong ? 9 : 10) : wrong && item.pairIndex > 0 ? 0 : item.pairIndex;
+      const right = item.whole - left;
+      const press = (place: string, n: number) => Array.from({ length: n }, () => ({ type: 'choose' as const, label: `Move counter to ${place}` }));
+      return [...press('whole', placed), ...press('left', left), ...press('right', right)];
     },
     probes: { mounted: { selector: '[data-pip-dock]' } },
   },
@@ -374,19 +393,27 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       contrastRows: { selector: '[data-contrast-row]', kind: 'count' } },
   },
   'compare-objects': {
+    execution: 'workspace',
     component: 'primitives/visual-primitives/math/CompareObjects.tsx',
     instanceId: 'measure',
-    defaults: { grade: 'Kindergarten', mode: 'compare_two', di: true,
+    defaults: { grade: 'Kindergarten', mode: 'compare_two', di: false,
       topic: 'Deciding which of two objects is longer' },
     leakTokens: ['CO_'],
-    // No example or return prompt: the example surface states HOW MANY and every
-    // mode here compares a continuous attribute, so no artifact is advertised.
-    prompts: {
-      hint: 'Please show me a reminder for how to work this out.',
-      fade: 'Please hide the reminder now.',
-      replay: 'Please ask me this same comparison again.',
+    prompts: WORKSPACE_PROMPTS,
+    // A spoken item says the pack's own answer; an ordering touches the real object
+    // buttons, in the right order or reversed (the mode's signature error).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = buildCompareItems(ctx.data.challenges ?? [], { band: ctx.data.gradeBand ?? 'K' }).items
+        .find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current compare-objects assignment');
+      if (item.answerKind === 'gesture') {
+        const order = intent === 'wrong' ? [...item.answerNames].reverse() : item.answerNames;
+        return order.map(name => ({ type: 'touch' as const, target: `pick-${name}` }));
+      }
+      const answers = compareObjectsHarnessAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
-    inputsFor: (intent, ctx) => intent === 'warmup' ? [] : spoken(ctx, intent === 'wrong' ? 'plainWrong' : 'correct'),
     probes: { mounted: { selector: '[data-pip-object="drawing"]' } },
   },
   'place-value-chart': {

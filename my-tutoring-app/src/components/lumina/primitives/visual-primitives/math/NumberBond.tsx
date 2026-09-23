@@ -12,7 +12,7 @@
  * and logical-outcome aggregation.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import {
   LuminaCard,
@@ -33,9 +33,16 @@ import type { NumberBondMetrics } from '../../../evaluation/types';
 import {
   useJudgedScriptRunner,
   type JudgedRunSummary,
+  type JudgedScriptRunnerOptions,
 } from '../../../hooks/useJudgedScriptRunner';
+import { commitGesture, useWorkspaceRunner, type LiveRun, type TeachingEvaluationResult, type WorkspaceRunOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { evalModeForKind, workspaceAssignment, workspaceScene, type NumberBondView } from './numberBondWorkspace';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
+  bondEquationFaultOf,
   bondEquationVerdictCue,
   buildBondItems,
   factFamilyForms,
@@ -43,6 +50,7 @@ import {
   numberBondPackBase,
   parseBondEquation,
   splitVerdictCue,
+  tenAndOnesFaultOf,
   tenAndOnesVerdictCue,
   BOND_TEN,
   type BondModelAction,
@@ -57,13 +65,14 @@ import SplitAndSayBoard from './SplitAndSayBoard';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { numberBondPipPose } from '../../../pip/numberBondPipPose';
 import { hasPair, moveBondCounter, prepareSplit, sortedPair, splitAndSayCue,
-  splitAndSayVerdict, splitCounts, splitQuestion, wholeCounters,
+  splitAndSayVerdict, splitCounts, splitQuestion, validSplit, wholeCounters,
   type BondCounters, type BondPlace } from './numberBondSplit';
 import {
   bondActionOf,
   countersForAction,
   equationEvidenceFor,
   expandNumberBondInteractions,
+  familyEquationFaultOf,
   familyEquationVerdictCue,
   groupsForBond,
   initialCountersForInteraction,
@@ -408,8 +417,30 @@ interface NumberBondProps {
   runtimeEvalMode?: string;
 }
 
-const NumberBond: React.FC<NumberBondProps> = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode }) => {
+/**
+ * The scripted runner's options beside the workspace controller's, declared in the one file
+ * that hosts both. `frame` feeds the runner-era runtime registration only.
+ */
+type NumberBondControllerOptions = Omit<WorkspaceRunOptions<NumberBondItem>, 'primitiveId'>
+  & Omit<JudgedScriptRunnerOptions<NumberBondItem>, 'instanceId' | 'onItemOpened' | 'onPresentStimulus' | 'onFinished'>
+  & { onFinished: (summary: JudgedRunSummary | TeachingEvaluationResult) => void;
+    frame: Omit<Parameters<typeof useNumberBondRuntime>[0], 'runner' | 'instanceId' | 'objectiveId' | 'planItemId' | 'evalMode'> };
+
+function useScriptedController(options: NumberBondControllerOptions): LiveRun<NumberBondItem> {
+  const runner = useJudgedScriptRunner<NumberBondItem>(options);
+  // The SESSION's mode, never the current item: a mount's identity must not change while the runner owns it.
+  useNumberBondRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
+    planItemId: options.planItemId, evalMode: options.evalMode, ...options.frame });
+  return runner;
+}
+
+const useWorkspaceController = (options: NumberBondControllerOptions): LiveRun<NumberBondItem> =>
+  useWorkspaceRunner<NumberBondItem>({ ...options, primitiveId: 'number-bond' });
+
+const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
+  NumberBondProps & { tutorOwned: boolean; useController: (options: NumberBondControllerOptions) => LiveRun<NumberBondItem> }) => {
   const runtime = useLiveRuntime();
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -697,7 +728,9 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className, autoStart = fa
   }, []);
 
   // ── Metrics ───────────────────────────────────────────────────────────────
-  const handleFinished = useCallback((rawSummary: JudgedRunSummary) => {
+  const handleFinished = useCallback((finished: JudgedRunSummary | TeachingEvaluationResult) => {
+    // The workspace record carries the same outcome and evidence fields the aggregator reads.
+    const rawSummary = finished as JudgedRunSummary;
     const summary = numberBondInteractionSummary(items, rawSummary);
     const itemOf = (id: string) => items.find((i) => i.id === id || i.logicalId === id);
     const solvedOf = (kind: NumberBondItem['kind']) =>
@@ -718,18 +751,25 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className, autoStart = fa
       { interactionVersion: 'number-bond-model-v2', challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
         turnOutcomes: rawSummary.outcomes, splitEvidence: splitEvidence.current, splitMoves: splitMoves.current,
         actionEvidence: actionEvidence.current, equationEvidence: equationEvidence.current,
-        missingPartEvidence: missingEvidence.current, assistedRelations: Array.from(assistedRelations.current) },
+        missingPartEvidence: missingEvidence.current, assistedRelations: Array.from(assistedRelations.current),
+        ...('teachingAttempts' in finished ? { teachingAttempts: finished.teachingAttempts, assistanceProvenance: finished.assistanceProvenance } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
   }, [items, evaluation]);
 
-  const runner = useJudgedScriptRunner<NumberBondItem>({
+  // What the tutor is told about an item reads the board as it stands (a spoken phase asks about the child's own split).
+  const view = (): NumberBondView => ({ counters: splitCountersRef.current, found: foundPairsRef.current, tiles: equationSlots });
+  const runner = useController({
+    items, workspace, objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || (items[0] ? evalModeForKind(items[0].kind) : 'default'),
+    assignment: item => workspaceAssignment(item, view()),
+    frame: { leftCount, rightCount, foundPairs, tiles: equationSlots, builtSentences: familyRecord.map(entry => entry.equation) },
     pack,
     // Load-bearing for the live host: without it the runner's `resume()` early-returns,
     // its speech holds never settle, and the completion handoff has nothing to read.
     runtime,
-    ...(runtimePlanItemId ? { completionCue: '[NB_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
+    ...(!tutorOwned && runtimePlanItemId ? { completionCue: '[NB_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
     instanceId: resolvedInstanceId,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
     exhibitId,
@@ -875,17 +915,20 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className, autoStart = fa
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     if (item.splitPhase) {
       if (item.splitPhase !== 'build') return;
-      runner.submitGestureAttempt(splitAndSayVerdict(item, splitCountersRef.current, foundPairsRef.current));
+      const counters = splitCountersRef.current, found = foundPairsRef.current;
+      const { left, right, whole } = splitCounts(counters);
+      commitGesture(runner, { response: `${left} in one part and ${right} in the other${whole ? `, ${whole} still in the whole` : ''}`,
+        correct: validSplit(item, counters, found), cue: () => splitAndSayVerdict(item, counters, found) });
       return;
     }
     const { left, right } = pendingSplitRef.current;
     // One gesture, two accept sets: decompose wants a pair it has not banked
     // yet, ten-and-ones wants the one pair that contains a full ten.
-    runner.submitGestureAttempt(
-      item.kind === 'ten-and-ones'
-        ? tenAndOnesVerdictCue(item, left, right)
-        : splitVerdictCue(item, left, right, foundPairs),
-    );
+    const pair = [Math.min(left, right), Math.max(left, right)];
+    commitGesture(runner, { response: `${left} and ${right}`,
+      correct: item.kind === 'ten-and-ones' ? tenAndOnesFaultOf(item, left, right) === 'match'
+        : left + right === item.whole && !foundPairs.some(p => p[0] === pair[0] && p[1] === pair[1]),
+      cue: () => item.kind === 'ten-and-ones' ? tenAndOnesVerdictCue(item, left, right) : splitVerdictCue(item, left, right, foundPairs) });
   }, [runner, foundPairs]);
 
   const commitModeAction = useCallback(() => {
@@ -909,7 +952,8 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className, autoStart = fa
       before: splitUndo.current[0] ? [...splitUndo.current[0]] : initialCountersForInteraction(item),
       after: [...splitCountersRef.current],
     });
-    runner.submitGestureAttempt(result.cue);
+    commitGesture(runner, { response: result.committed ? `made the move "${result.committed}"` : 'no complete whole-group move',
+      correct: result.matched, cue: () => result.cue });
   }, [runner]);
 
   const commitEquation = useCallback(() => {
@@ -917,9 +961,11 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className, autoStart = fa
     if (!item || (item.interactionPhase !== 'equation-build' && item.interactionPhase !== 'family-build')) return;
     if (!runner.canAttempt || runner.isAwaitingGesture() || runner.cuedItemId !== item.id) return;
     if (pendingTilesRef.current.length === 0) return;
-    runner.submitGestureAttempt(item.interactionPhase === 'family-build'
-      ? familyEquationVerdictCue(item, pendingTilesRef.current)
-      : bondEquationVerdictCue(item, pendingTilesRef.current, committedActions.current[interactionKeyFor(item)]));
+    const tiles = pendingTilesRef.current, action = committedActions.current[interactionKeyFor(item)];
+    commitGesture(runner, { response: `built "${tiles.join(' ')}"`,
+      correct: item.interactionPhase === 'family-build' ? familyEquationFaultOf(item, tiles.join('')) === 'match'
+        : bondEquationFaultOf(item, tiles, action) === 'match',
+      cue: () => item.interactionPhase === 'family-build' ? familyEquationVerdictCue(item, tiles) : bondEquationVerdictCue(item, tiles, action) });
   }, [runner]);
 
   /** A hands turn closes on stillness; further touches reset the window, and
@@ -1059,8 +1105,11 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className, autoStart = fa
   }, [currentItem, showEquation, leftCount, rightCount, currentSolved]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
+  // The workspace shows its summary without an evaluation provider (the live host has none).
+  const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
+  const finishedSummary = runner.summary ?? (runner.practiceSummary as unknown as JudgedRunSummary | null | undefined) ?? null;
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
+    if (!showSummary) return [];
     const seen = new Set<string>();
     const logicalItems = items.flatMap((item) => {
       const isResult = item.splitPhase !== 'build'
@@ -1076,10 +1125,10 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className, autoStart = fa
       seen.add(id);
       return [{ ...item, id }];
     });
-    return phaseResultsFromSummary(logicalItems, runner.summary ? numberBondInteractionSummary(items, runner.summary) : runner.summary, (item) => (
+    return phaseResultsFromSummary(logicalItems, finishedSummary ? numberBondInteractionSummary(items, finishedSummary) : null, (item) => (
       PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🔢' }
     ));
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [showSummary, finishedSummary, items]);
 
   const celebrationMessage = useMemo(() => {
     const spoken = items.some((i) => i.answerKind === 'voice');
@@ -1094,7 +1143,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className, autoStart = fa
   // never moves counters, places tiles, or answers.
   const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const labels: Record<string, string> = { board: 'Number bond', covered: 'Covered part', equation: 'Equation slots' };
     const targets = pip.targets(['board', 'covered', 'equation'], (id) => labels[id]);
     const pose = numberBondPipPose({
@@ -1110,13 +1159,14 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className, autoStart = fa
     return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Number bond workspace', dock: pip.dock.current, targets, pose };
   });
 
-  const runtimeHint = useNumberBondRuntime({ runner, instanceId: resolvedInstanceId, objectiveId,
-    // The SESSION's mode, from the first item — never `runner.currentItem`.
-    // A mount's identity must not change while the runner owns it: an item
-    // change would rebuild the mount and re-register into an unreleased owner.
-    planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || (items[0] ? items[0].kind.replace(/-/g, '_') : 'default'),
-    leftCount, rightCount, foundPairs, tiles: equationSlots,
-    builtSentences: familyRecord.map(entry => entry.equation) });
+  // Workspace path: what the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no timed stimulus.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentItem) return;
+    workspace.current = { ...workspaceScene(currentItem, view()), demonstration: [], canDemonstrate: false, canPresent: false,
+      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace?.();
+  });
   // AFTER the runtime mount is registered, never before: `start()` waits for
   // `grantOwnership('runner')`, which cannot be granted until this primitive's
   // mount exists. Declared earlier, its effect runs first and the runner spins.
@@ -1174,7 +1224,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className, autoStart = fa
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && currentItem && (
+        {!showSummary && currentItem && (
           <>
             {!isPreReader && (
               <div className="flex justify-center">
@@ -1477,7 +1527,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className, autoStart = fa
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
             overallScore={evaluation.submittedResult?.score}
@@ -1491,5 +1541,9 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className, autoStart = fa
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the runner, whose context push and cue loop would run beside the tutor.
+const NumberBond = withWorkspaceController<NumberBondProps, NumberBondControllerOptions, LiveRun<NumberBondItem>>(
+  'number-bond', NumberBondSurface, useScriptedController, useWorkspaceController);
 
 export default NumberBond;

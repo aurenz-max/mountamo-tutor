@@ -47,8 +47,12 @@ export function workspaceScene(item: TenFrameItem, view: TenFrameView): Workspac
   return {
     objects: [],
     facts: {
-      kind: item.kind, frameSize: item.capacity, countersAtStart: item.kind === 'subitize' ? 0 : item.shown,
-      countersOnFrame: view.hidden ? 'hidden' : view.onFrame,
+      kind: item.kind, frameSize: item.capacity,
+      // Counts only where the frame is what is asked about. Beside a spoken sum, "0 on the frame"
+      // reads to the observer as contradicting a credited answer (the LA-13 `counted: 0` finding).
+      ...(item.shown > 0 && item.kind !== 'subitize' ? { countersAtStart: item.shown } : {}),
+      ...(item.answerKind === 'gesture' || item.kind === 'subitize'
+        ? { countersOnFrame: view.hidden ? 'hidden' : view.onFrame } : {}),
       ...(countsFlips(item) ? { turnedYellow: view.yellow } : {}),
       ...(isTeenKind(item.kind) ? { teenNumber: item.teenTotal ?? item.answer } : {}),
       ...(item.kind === 'add' ? { addends: `${item.addend1} and ${item.addend2}` } : {}),
