@@ -86,13 +86,17 @@ kinds. For a W1 row, follow this section in place of §1-§2 and §5's probes; �
 still hold. Examples, smallest first: `compareObjectsWorkspace.ts` + `CompareObjects.tsx`,
 `placeValueWorkspace.ts` + `PlaceValueChart.tsx`, `numberBondWorkspace.ts` + `NumberBond.tsx`
 (all under `L/primitives/visual-primitives/math/`, `L` = `my-tutoring-app/src/components/lumina`).
-Copy the controller block from `CompareObjects.tsx` or `PlaceValueChart.tsx`; it is the same in each.
+Copy the controller block from `PlaceValueChart.tsx` (it keeps `onFinished` out of both option types
+and declares the finish shape it reads; `CompareObjects.tsx` predates that step).
 
 This recipe is for a *runner-era* component, one that calls `useJudgedScriptRunner`. A component
 with its own Check/Next and no runner (ROLLOUT shape P) has no recipe yet; batch A2 writes it.
 
 1. **Domain module** `<x>Workspace.ts`, pure:
-   - `workspaceAssignment(item, view?)` returns `{ id, task, response }`. `response` is
+   - `workspaceAssignment(item)` returns `{ id, task, response }`. The runner calls it with the
+     item alone; when the task depends on the board (number-bond's spoken phases ask about the
+     split the child built), pass `assignment: item => workspaceAssignment(item, view())` with a
+     `view()` that reads the component's current refs. `response` is
      `'speech'` when the item's `answerKind` is `'voice'`, else `'gesture'`. A spoken item adds
      `expectedAnswer` (the observer judges against it); a gesture item does not, because its check
      is code and the key must not reach the tutor. `task` is the pack's own ask (`askFor(item)`,
@@ -142,10 +146,12 @@ with its own Check/Next and no runner (ROLLOUT shape P) has no recipe yet; batch
    with `initialState` from `workspaceOpening({ title, task, total })`. Delete the old mode list,
    copy and `RUNNER_GUIDANCE`. Register `workspaceAdapter('<id>', <x>LiveDomain)` in
    `activityContract.ts`.
-4. **Catalog**: `teachingWorkspace: { grades, guidance }` on the entry. Guidance is the
+4. **Catalog**: `teachingWorkspace: { grades, guidance }` on the entry. Leave the entry's
+   `description`, `constraints` and `tutoring` alone unless the workspace makes a sentence false
+   (the manifest reads the description; the workspace adapter sets `tutoring: null`). Guidance is the
    domain's sentences only: what checks the answer, what is hidden and why, what the tutor must
    say that the screen does not show, and what the tutor cannot do.
-5. **Journey row** in `liveJourneySpec.ts`: `execution: 'workspace'`, `prompts:
+5. **Journey row** in `liveJourneySpec.ts`: `execution: 'workspace'`, `defaults.di: false`, `prompts:
    WORKSPACE_PROMPTS`, and `inputsFor` that finds the current item by `ctx.itemId`. A spoken item
    answers with `spokenExpected(ctx, intent)` when the answer is a number, otherwise with the
    domain's `*HarnessAnswers(item).correct` / `.plainWrong`. A gesture item goes through the real
@@ -153,9 +159,10 @@ with its own Check/Next and no runner (ROLLOUT shape P) has no recipe yet; batch
    `write` (text into the input with that `aria-label`). A wrong gesture is a complete wrong
    answer. A phase the row cannot drive throws with its name.
 
-Tests that use this primitive as "the runner-era family" example move to a family still on the
-runner: grep `components/live-activity` (including `runtime/`) tests for its id. Expected-id lists
-(`lessonWorkspacePlan.test.ts`) gain the id.
+Grep `components/live-activity` tests (including `runtime/`) for the id. Expected-id lists
+(`lessonWorkspacePlan.test.ts`) gain it. Since batch A1 no live adapter is runner-owned, so a test
+that needs "a family the catalog does not declare" uses a tool-lab family such as `number-line`,
+and a test of the runner-owned sandbox handoff has nothing left to mount.
 
 **Checks.** (a) `<X>.workspace.test.tsx`, modelled on `CompareObjects.workspace.test.tsx`: the
 real component under `LiveLessonRuntime`, an `it.each` over every catalog mode showing it mounts
@@ -174,7 +181,9 @@ pass one row.
 
 **Shared files.** Every adoption edits `activityContract.ts`, the catalog and
 `liveJourneySpec.ts`. With two sessions running, commit one primitive before the next one
-starts editing those files.
+starts editing those files. A subagent that may not commit leaves its work for the orchestrator,
+who commits it before the next primitive touches those files; the other session keeps its
+component and domain edits local until then.
 
 ## 1. Define the domain boundary
 

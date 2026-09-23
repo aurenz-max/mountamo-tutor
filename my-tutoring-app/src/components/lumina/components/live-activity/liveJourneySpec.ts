@@ -41,6 +41,7 @@ import { buildBondItems } from '../../primitives/visual-primitives/math/numberBo
 import { expandNumberBondInteractions } from '../../primitives/visual-primitives/math/numberBondModes';
 import { buildCompareItems, compareObjectsHarnessAnswers } from '../../primitives/visual-primitives/math/compareObjectsScript';
 import { itemsFromChallenges as placeValueItems, placeValueHarnessAnswers } from '../../primitives/visual-primitives/math/placeValueScript';
+import { itemsFromChallenges as sortingItems, sortingStationHarnessAnswers } from '../../primitives/visual-primitives/math/sortingStationScript';
 import { placeLabel } from '../../primitives/visual-primitives/math/spokenNumberWords';
 import { itemsFromChallenges as ordinalItems, ordinalLineHarnessAnswers } from '../../primitives/visual-primitives/math/ordinalLineScript';
 
@@ -327,19 +328,22 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     probes: { mounted: { selector: '[data-pip-object="stage"]' } },
   },
   'sorting-station': {
+    execution: 'workspace',
     component: 'primitives/visual-primitives/math/SortingStation.tsx',
     instanceId: 'station',
-    defaults: { grade: 'Kindergarten', mode: 'sort_one', di: true,
+    defaults: { grade: 'Kindergarten', mode: 'sort_one', di: false,
       topic: 'Sorting objects into groups by one attribute' },
     leakTokens: ['SS_'],
-    // No example or return prompt: the example surface draws identical counters,
-    // which have no attribute to sort by, so this family advertises no artifact.
-    prompts: {
-      hint: 'Please show me a reminder for how to work this out.',
-      fade: 'Please hide the reminder now.',
-      replay: 'Please ask me this same sorting question again.',
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is spoken: the pack's own right answer, or its plain wrong one.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = sortingItems(ctx.data.challenges ?? [], { tier: ctx.data.supportTier,
+        isPreReader: (ctx.data.gradeBand ?? 'K') === 'K' }).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current sorting-station assignment');
+      const answers = sortingStationHarnessAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
-    inputsFor: (intent, ctx) => intent === 'warmup' ? [] : spoken(ctx, intent === 'wrong' ? 'plainWrong' : 'correct'),
     probes: { mounted: { selector: '[data-pip-object^="tray-"]', kind: 'count' } },
   },
   'number-tracer': {

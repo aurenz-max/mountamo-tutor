@@ -41,33 +41,6 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 async function emit(v: Record<string, unknown>) { await act(async () => { mocks.event!(v); }); }
 async function paint() { await act(async () => { const todo = frames.splice(0); todo.forEach(f => f(0)); }); }
 
-it('initiates a full runner-owned lesson once and arms DI only after its correlated server handoff', async () => {
-  const fruit = (id: string, label: string, color: string) => ({ id, label, emoji: '', attributes: { color } });
-  const data = { title: 'Colors', maxCategories: 2, showCounts: false, showTallyChart: false, gradeBand: 'K', supportTier: 'medium',
-    challenges: [{ id: 'one', type: 'sort-by-one', instruction: 'Sort by color.', sortingAttribute: 'color',
-      categories: [{ label: 'Red', rule: { color: 'Red' } }, { label: 'Yellow', rule: { color: 'Yellow' } }],
-      objects: [fruit('o1', 'apple', 'Red'), fruit('o2', 'banana', 'Yellow'), fruit('o3', 'cherry', 'Red'),
-        fruit('o4', 'lemon', 'Yellow'), fruit('o5', 'strawberry', 'Red')] }] };
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ instanceId: 'frame-1', data }) }));
-  render(<LiveActivitySandbox />);
-  fireEvent.click(screen.getByText('Start lesson'));
-  expect(mocks.ai.sendText).not.toHaveBeenCalled();
-  await emit({ type: 'session_ready' }); await emit({ type: 'session_ready' });
-  expect(mocks.ai.sendText).toHaveBeenCalledTimes(1);
-  expect(mocks.ai.sendText).toHaveBeenCalledWith(expect.stringContaining('[LESSON_START]'), { silent: true });
-  await emit({ type: 'activity_request', callId: 'frame-call', args: { primitiveId: 'sorting-station', mode: 'sort_one', topic: 'Sorting by color', intent: 'Sort the fruit by color.' } });
-  await screen.findByTestId('sorting-station');
-  expect(screen.getByTestId('sorting-station').getAttribute('data-auto-start')).toBe('false');
-  await emit({ type: 'activity_ready', callId: 'frame-call', instanceId: 'frame-1' });
-  expect(screen.getByTestId('sorting-station').getAttribute('data-auto-start')).toBe('false');
-  await paint(); await paint();
-  expect(mocks.ai.sendActivityMessage).toHaveBeenCalledWith(expect.objectContaining({ status: 'mounted', primitiveId: 'sorting-station' }));
-  await emit({ type: 'activity_ready', callId: 'old', instanceId: 'frame-1' });
-  expect(screen.getByTestId('sorting-station').getAttribute('data-auto-start')).toBe('false');
-  await emit({ type: 'activity_ready', callId: 'frame-call', instanceId: 'frame-1' });
-  expect(screen.getByTestId('sorting-station').getAttribute('data-auto-start')).toBe('true');
-});
-
 it('dispatches tutor advance to the mounted primitive and acknowledges the painted state, rejecting stale screens', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => result('one') }));
   render(<LiveActivitySandbox />);

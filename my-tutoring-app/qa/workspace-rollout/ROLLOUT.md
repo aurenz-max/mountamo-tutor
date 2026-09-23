@@ -9,8 +9,8 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 
 ## Status (2026-09-23)
 
-- Catalog: 212 primitive ids. On the workspace: 12 (8 at W2 from the pilots, 4 at W1). Queued:
-  Tier A 5, Tier B 12, Tier C 152. Held back: 31.
+- Catalog: 212 primitive ids. On the workspace: 14 (8 at W2 from the pilots, 6 at W1). Queued:
+  Tier A 3, Tier B 12, Tier C 152. Held back: 31.
 - **Recount:** catalog ids = `id: '...'` entries in `src/components/lumina/service/manifest/catalog/*.ts`
   (skip the test fixture id `x`); on the workspace = entries with a `teachingWorkspace: {` block.
   Runner-era surfaces: `rg -l "useJudgedScriptRunner<|useJudgedSpeechLoop<|= useJudgedScriptRunner|= useJudgedSpeechLoop" src/components/lumina/primitives --glob "!*test*"`.
@@ -29,6 +29,7 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 | ten-frame (W1 pilot) | W1 | [ten-frame-w1-2026-09-22.md](../tutor-reports/ten-frame-w1-2026-09-22.md) |
 | number-bond | W1 | [number-bond-w1-2026-09-23.md](../tutor-reports/number-bond-w1-2026-09-23.md) |
 | compare-objects | W1 | [compare-objects-w1-2026-09-22.md](../tutor-reports/compare-objects-w1-2026-09-22.md) |
+| A1: place-value-chart, ordinal-line, sorting-station | W1 | [workspace-rollout-A1-2026-09-23.md](../tutor-reports/workspace-rollout-A1-2026-09-23.md) |
 
 ## Queue
 
@@ -36,7 +37,7 @@ Order: Tier A, then runner-era K–2 (the recipe applies as written), then the r
 
 | Row | Shape | Primitives | Status |
 | --- | --- | --- | --- |
-| **A1** | R | `ordinal-line`, `place-value-chart`, `sorting-station` (the remaining runner-owned live adapters, `teachingOwner: 'di-runner'`) | in progress: `place-value-chart` W1 done 09-23 (smokes `build` text + `identify --audio` PASS) |
+| DEAD | — | The runner-owned sandbox handoff (`LiveActivitySandbox.tsx`, both `teachingOwner === 'di-runner'` branches) and the `'di-runner'` owner value in `adapterContract.ts`: no live adapter is runner-owned since A1. Delete them. Executor: `/add-live-tutor-tools` (LA-14) | open |
 | **A2** | P | `number-line`, `number-tracer`, `comparison-builder` (tool-lab live adapters: `teachingOwner: 'tutor'`, `canAdvance: true`, no runner). Pilots the Plain shape: the component's own check becomes a `commitGesture`, its Next is turned off under a runtime. Write the P recipe into the skill before closing | open |
 | B1 | R | `balance-scale` (equality, workshop), `base-ten-blocks` (DI modes), `bar-model` (explanation), `fraction-circles` (`touch_fraction`) — census Tier B | open |
 | B2 | R | `cvc-speller`, `phonics-blender`, `sound-swap`, `word-flip` (both runner hooks) | open |

@@ -11,7 +11,12 @@ Shape found: controller swapped at the component boundary (Counting Board's prec
 **Number-bond at W1 2026-09-23** on the new recipe: ~75-line domain, +84/−30 component, ~5 minutes to clean
 typecheck; smokes `ten_and_ones` + `missing_part --audio` PASS after one fix shared with ten-frame (no count
 fact beside a spoken answer unless the board is what is asked) ([report](../tutor-reports/number-bond-w1-2026-09-23.md)).
-**Step 2 is done. Next: step 3 dry-run of the recipe, step 4 `ROLLOUT.md`, then batch A1.**
+**Steps 3-5 done 2026-09-23.** Recipe written into `/add-live-tutor-tools` ("W1 minimal binding") and
+dry-run twice (a read-only plan, then a fresh session that built ordinal-line from it in ~6 minutes); queue
+[`ROLLOUT.md`](../workspace-rollout/ROLLOUT.md) covers all 212 ids; batch A1 (place-value-chart, ordinal-line,
+sorting-station) closed ([report](../tutor-reports/workspace-rollout-A1-2026-09-23.md)). The generic
+one-file contract test is still owed (each adopter has its own workspace test). **Next: ROLLOUT's DEAD row,
+then A2, which writes the recipe for primitives with no runner.**
 **Parallel, 2026-09-22: compare-objects at W1** (Tier A), recipe unchanged, about 1 hour; smokes
 `compare_two` text + `--audio` and `order_three` ×3 PASS ([report](../tutor-reports/compare-objects-w1-2026-09-22.md)).
 

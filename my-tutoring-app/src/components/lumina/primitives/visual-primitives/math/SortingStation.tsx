@@ -57,7 +57,7 @@
  * animation always meant.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -75,6 +75,7 @@ import type { SortingStationMetrics } from '../../../evaluation/types';
 import {
   useJudgedScriptRunner,
   type JudgedRunSummary,
+  type JudgedScriptRunnerOptions,
 } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
@@ -91,6 +92,11 @@ import { sortingStationPipPose } from '../../../pip/sortingStationPipPose';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
 import { useSortingStationRuntime } from './useSortingStationRuntime';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { workspaceAssignment, workspaceScene } from './sortingStationWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -212,8 +218,30 @@ interface SortingStationProps {
   runtimeEvalMode?: string;
 }
 
-const SortingStation: React.FC<SortingStationProps> = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode }) => {
+/** The scripted runner's options beside the workspace controller's (compare-objects' shape). */
+type SortingStationControllerOptions = Omit<WorkspaceRunOptions<SortingStationItem>, 'primitiveId' | 'assignment' | 'onFinished'>
+  & Omit<JudgedScriptRunnerOptions<SortingStationItem>, 'pack' | 'instanceId' | 'onItemOpened' | 'onFinished'>
+  & { pack?: JudgedScriptPack<SortingStationItem>; onFinished: (summary: SortingFinish) => void };
+
+/** What the metrics read, from either controller's finished record. */
+type SortingFinish = Pick<JudgedRunSummary, 'outcomes' | 'accuracy' | 'attemptsCount' | 'diagnosisEvidence' | 'solvedCount' | 'learningResponses'>
+  & { teachingAttempts?: unknown; assistanceProvenance?: string };
+
+function useScriptedController(options: SortingStationControllerOptions): LiveRun<SortingStationItem> {
+  const runner = useJudgedScriptRunner<SortingStationItem>({ ...options, pack: options.pack! });
+  // The SESSION's mode, never `runner.currentItem`: a mount's identity must not change while the runner owns it.
+  useSortingStationRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
+    planItemId: options.planItemId, evalMode: options.evalMode });
+  return runner;
+}
+
+const useWorkspaceController = (options: SortingStationControllerOptions): LiveRun<SortingStationItem> =>
+  useWorkspaceRunner<SortingStationItem>({ ...options, primitiveId: 'sorting-station', assignment: workspaceAssignment });
+
+const SortingStationSurface = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
+  SortingStationProps & { tutorOwned: boolean; useController: (options: SortingStationControllerOptions) => LiveRun<SortingStationItem> }) => {
   const liveRuntime = useLiveRuntime();
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -279,7 +307,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className, autoSt
     return map;
   }, [challenges]);
 
-  const pack = useMemo<JudgedScriptPack<SortingStationItem>>(() => ({
+  const pack = useMemo<JudgedScriptPack<SortingStationItem> | undefined>(() => tutorOwned ? undefined : ({
     ...sortingStationPackBase(items),
     // Only what DIFFERS from the runner's defaults.
     statusLines: {
@@ -331,10 +359,10 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className, autoSt
           };
       }
     },
-  }), [items]);
+  }), [items, tutorOwned]);
 
   // ── Metrics ───────────────────────────────────────────────────────────────
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const handleFinished = useCallback((summary: SortingFinish) => {
     const metrics: SortingStationMetrics = {
       type: 'sorting-station',
       sortingAccuracy: summary.accuracy,
@@ -348,17 +376,22 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className, autoSt
       summary.solvedCount === items.length,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
   }, [items, evaluation]);
 
-  const runner = useJudgedScriptRunner<SortingStationItem>({
+  const runner = useController({
+    items, workspace, objectiveId, planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount, never `runner.currentItem`: a mount's
+    // identity must not change while the runner owns it.
+    evalMode: runtimeEvalMode || items[0]?.mode || 'default',
     // Load-bearing for the live host: without it the runner's `resume()` early-returns,
     // its speech holds never settle, and the completion handoff has nothing to read.
     runtime: liveRuntime,
-    ...(runtimePlanItemId ? { completionCue: '[SS_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
+    ...(!tutorOwned && runtimePlanItemId ? { completionCue: '[SS_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
     pack,
     instanceId: resolvedInstanceId,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
@@ -384,6 +417,8 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className, autoSt
   });
 
   const currentItem = runner.currentItem;
+  // The workspace path shows its summary without an evaluation provider (the live host has none).
+  const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
   const currentChallenge = currentItem
     ? challengeById.get(currentItem.challengeId) ?? null
     : null;
@@ -419,18 +454,23 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className, autoSt
   }, [boardObjects, currentItem]);
 
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => (
-      PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🎨' }
-    ));
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+    if (!showSummary) return [];
+    const practice = runner.practiceSummary;
+    return phaseResultsFromSummary(items, practice ?? runner.summary, (item) => {
+      const config = PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🎨' };
+      return practice?.outcomes.find(o => o.id === item.id)?.assisted ? { ...config, label: `${config.label} (with help)` } : config;
+    }).map((phase, index) => {
+      const outcome = practice?.outcomes.find(o => o.id === items[index].id);
+      return outcome ? { ...phase, attempts: outcome.attempts, firstTry: outcome.solved && outcome.attempts === 1 } : phase;
+    });
+  }, [showSummary, runner.summary, runner.practiceSummary, items]);
 
   // ── Pip shared surface ────────────────────────────────────────────────────
   // A projection of the runner's phase onto what the ask names; Pip never
   // answers, files a card, or advances.
   const pip = usePipTargets(currentItem?.id ?? null, false);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const targets = pip.targets(undefined, (id) => (id.startsWith('tray-') ? id.slice('tray-'.length) : id));
     const pose = sortingStationPipPose({
       running: runner.running, preparing: runner.preparing,
@@ -448,11 +488,14 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className, autoSt
   // Render
   // ============================================================================
 
-  const runtimeHint = useSortingStationRuntime({ runner, instanceId: resolvedInstanceId, objectiveId,
-    // The SESSION's mode, from the first item — never `runner.currentItem`.
-    // A mount's identity must not change while the runner owns it: an item
-    // change would rebuild the mount and re-register into an unreleased owner.
-    planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || items[0]?.mode || 'default' });
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentItem) return;
+    workspace.current = { ...workspaceScene(currentItem), demonstration: [], canDemonstrate: false, canPresent: false,
+      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace?.();
+  });
   // AFTER the runtime mount is registered, never before: `start()` waits for
   // `grantOwnership('runner')`, which cannot be granted until this primitive's
   // mount exists. Declared earlier, its effect runs first and the runner spins.
@@ -510,7 +553,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className, autoSt
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && currentItem && (
+        {!showSummary && currentItem && (
           <>
             {!isPreReader && (
               <div className="flex justify-center">
@@ -675,7 +718,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className, autoSt
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
             overallScore={evaluation.submittedResult?.score}
@@ -689,5 +732,9 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className, autoSt
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the runner, whose context push and cue loop would run beside the tutor.
+const SortingStation = withWorkspaceController<SortingStationProps, SortingStationControllerOptions, LiveRun<SortingStationItem>>(
+  'sorting-station', SortingStationSurface, useScriptedController, useWorkspaceController);
 
 export default SortingStation;
