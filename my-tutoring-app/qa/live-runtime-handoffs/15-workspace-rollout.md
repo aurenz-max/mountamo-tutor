@@ -3,6 +3,11 @@
 Date: 2026-09-22 · Owner: roadmap LA-14 · Executor: `/add-live-tutor-tools` · Queue this creates:
 `qa/workspace-rollout/ROLLOUT.md` (modelled on [`qa/pip-surface/ROLLOUT.md`](../pip-surface/ROLLOUT.md))
 
+**Status 2026-09-22:** step 1 done (`3a78cb44`). Step 2 half done: **ten-frame at W1**, all seven modes,
+smoke `build` and `subitize --audio` PASS ([report](../tutor-reports/ten-frame-w1-2026-09-22.md)).
+Shape found: controller swapped at the component boundary (Counting Board's precedent), no Teaching copy.
+Adapter still hand-written. **Next: number-bond** with the same recipe, then the generic adapter.
+
 ## Why this slice
 
 8 of about 212 catalog primitives are on the teaching workspace (counting-board, shape-sorter,

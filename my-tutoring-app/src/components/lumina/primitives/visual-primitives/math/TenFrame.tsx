@@ -74,10 +74,14 @@
  * answer; adult chrome is hidden for pre-readers.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { pinBindsWorkspace } from '../../../components/live-activity/pinnedModes';
 import { useTenFrameRuntime } from './useTenFrameRuntime';
+import { useTenFrameTutorController, type TenFrameController, type TenFrameControllerOptions } from './useTenFrameTutorController';
+import { TEN_FRAME_WORKSPACE_MODES, countsFlips, describeFrameResponse, evalModeForKind, workspaceScene } from './tenFrameWorkspace';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -97,6 +101,7 @@ import type { TenFrameMetrics } from '../../../evaluation/types';
 import {
   useJudgedScriptRunner,
   type JudgedRunSummary,
+  type JudgedScriptRunnerOptions,
 } from '../../../hooks/useJudgedScriptRunner';
 import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
@@ -104,6 +109,7 @@ import {
   isTeenKind,
   itemsFromChallenges,
   judgeSplit,
+  judgeTeen,
   splitKey,
   teenTotalFor,
   tenFramePackBase,
@@ -206,19 +212,38 @@ const CHALLENGE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
   subtract: { label: 'Subtract', icon: '➖' },
 };
 
-/** Challenge types whose catalog eval mode has a different name; every other type is its own mode. */
-const EVAL_MODE_FOR_KIND: Partial<Record<TenFrameChallenge['type'], string>> = {
-  split: 'decompose',
-  add: 'operate',
-  subtract: 'operate',
-};
-
 const COUNTER_COLORS: Record<string, string> = {
   red: '#ef4444',
   yellow: '#eab308',
   blue: '#3b82f6',
   green: '#22c55e',
 };
+
+/**
+ * The number that may appear on screen once an item is solved, and never before
+ * (answer-leak rule). `yellow` is the flip count the child committed on `split`.
+ */
+function rewardFor(item: TenFrameItem, yellow: number): string {
+  return item.kind === 'subitize'
+    ? `${item.answer} — ${numberWordFor(item.answer)} ${item.answer === 1 ? 'counter' : 'counters'}!`
+    : item.kind === 'split'
+      // The pair the CHILD produced, not a target — this is the only moment
+      // either part may appear on screen, and it appears as a record of their
+      // own work.
+      ? `${item.answer - yellow} + ${yellow} = ${item.answer}`
+    : isTeenKind(item.kind)
+      // The decomposition the child just built. On both teen modes it reads the
+      // same way — ten and the ones — which is the sentence K.NBT.1 asks them
+      // to be able to see.
+      ? `${TEEN_TEN} + ${teenTotalFor(item) - TEEN_TEN} = ${teenTotalFor(item)}`
+    : item.kind === 'make_ten'
+      ? `${item.shown} + ${item.answer} = ${item.capacity}`
+      : item.kind === 'add'
+        ? `${item.addend1} + ${item.addend2} = ${item.answer}`
+        : item.kind === 'subtract'
+          ? `${item.shown} − ${item.removed} = ${item.answer}`
+          : `${item.answer} ${item.answer === 1 ? 'counter' : 'counters'}!`;
+}
 
 const CELL_SIZE = 56;
 const CELL_GAP = 4;
@@ -249,15 +274,49 @@ interface TenFrameProps {
   /** The live sandbox opts in only after its correlated mount handoff. */
   autoStart?: boolean;
   runtimePlanItemId?: string;
+  /** The RESOLVED eval mode from the mount; selects the teaching workspace inside a live runtime. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false, runtimePlanItemId }) => {
+/**
+ * The scripted runner's options beside the workspace controller's. The union is
+ * declared here, in the file that hosts both, so the runner's types leave with
+ * the scripted branch. `frame` feeds the runner-era runtime registration only.
+ */
+type TenFrameSurfaceControllerOptions = TenFrameControllerOptions
+  & Omit<JudgedScriptRunnerOptions<TenFrameItem>, 'pack' | 'instanceId' | 'onItemOpened' | 'onPresentStimulus'>
+  & { pack?: JudgedScriptPack<TenFrameItem>;
+    frame: { filledCells: Set<number>; flippedCells: Set<number>; cancelPresentation: () => void } };
+
+function useScriptedController(options: TenFrameSurfaceControllerOptions): TenFrameController {
+  const runner = useJudgedScriptRunner<TenFrameItem>({ ...options, pack: options.pack! });
+  useTenFrameRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
+    planItemId: options.planItemId, evalMode: options.evalMode ?? 'default', ...options.frame });
+  return runner;
+}
+
+// Component boundaries keep hook ownership stable: the workspace path never mounts the runner,
+// whose context push and cue loop would otherwise run beside the tutor.
+const TenFrame: React.FC<TenFrameProps> = props => {
+  const runtime = useLiveRuntime();
+  const tutorOwned = !!runtime && pinBindsWorkspace('ten-frame', TEN_FRAME_WORKSPACE_MODES, props.runtimeEvalMode);
+  return <TenFrameSurface key={tutorOwned ? 'tutor' : 'scripted'} {...props} tutorOwned={tutorOwned}
+    useController={tutorOwned ? useTenFrameTutorController : useScriptedController} />;
+};
+
+const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
+  TenFrameProps & { tutorOwned: boolean; useController: (options: TenFrameSurfaceControllerOptions) => TenFrameController }) => {
   const live = useLuminaAIContext();
   const runtime = useLiveRuntime();
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  /** Workspace path: the frame's own verdict on the placement just committed, read by `checkResponse`. */
+  const placementCheckRef = useRef<{ itemId: string; correct: boolean } | null>(null);
+  /** Workspace path: the item last opened, so a retry of it is told apart from a new item. */
+  const openedItemRef = useRef<string | null>(null);
   const autoStartedRef = useRef(false);
   const {
     title,
@@ -355,7 +414,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
   // The cue surface (everything the tutor is ever sent) comes from the script
   // module, so the headless judged-loop harness drives the SAME cues this
   // screen does. Below it: what only a mounted component can own.
-  const pack = useMemo<JudgedScriptPack<TenFrameItem>>(() => ({
+  const pack = useMemo<JudgedScriptPack<TenFrameItem> | undefined>(() => tutorOwned ? undefined : ({
     ...tenFramePackBase(items),
     // Only what DIFFERS from the runner's defaults.
     statusLines: {
@@ -371,18 +430,24 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
     // right answers reach student work too. Read before the verdict resets the frame.
     observation: (item, { heard }) => observe(item, heard),
     evidenceSummary: tenFrameEvidenceSummary,
-  }), [items, observe]);
+  }), [items, observe, tutorOwned]);
 
   // ── Per-item frame reset — every item owns its starting state (R6) ────────
   const resetFrameFor = useCallback((item: TenFrameItem) => {
     pip.clear();
+    // The workspace reopens the SAME item on a retry. A quick look the learner already
+    // saw stays answerable: a retry must not un-see the flash and leave a second answer
+    // unheard until the tutor re-presents. Re-showing stays available, as assisted.
+    const retried = tutorOwned && openedItemRef.current === item.id;
+    openedItemRef.current = item.id;
     if (flashTimeoutRef.current) {
       clearTimeout(flashTimeoutRef.current);
       flashTimeoutRef.current = null;
     }
     setIsFlashing(false);
-    setFlashAnswerReady(false);
+    setFlashAnswerReady(ready => retried && item.kind === 'subitize' && ready);
     splitVerdictRef.current = null;
+    placementCheckRef.current = null;
     reshowsRef.current = 0;
 
     // A completed frame never carries into the next challenge: build and add
@@ -404,7 +469,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
     // Subitize hides its counters until the flash runs; every other mode shows
     // whatever is on the frame.
     setCountersVisible(item.kind !== 'subitize');
-  }, []);
+  }, [tutorOwned]);
 
   // ── The subitize flash — WHAT is shown; the runner decides WHEN ───────────
   // Called from `onPresentStimulus` once the tutor has finished her line for
@@ -430,7 +495,8 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
   }, [challengeById, totalCells]);
 
   // ── Metrics ───────────────────────────────────────────────────────────────
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const handleFinished = useCallback((summary: Pick<JudgedRunSummary, 'outcomes' | 'accuracy' | 'attemptsCount' | 'diagnosisEvidence' | 'solvedCount' | 'learningResponses'>
+    & { teachingAttempts?: unknown; assistanceProvenance?: string }) => {
     const kindOf = (id: string) => items.find((i) => i.id === id)?.kind;
     const subitizeOutcomes = summary.outcomes.filter((o) => kindOf(o.id) === 'subitize');
     const makeTenOutcomes = summary.outcomes.filter((o) => kindOf(o.id) === 'make_ten');
@@ -440,7 +506,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
       type: 'ten-frame',
       // The catalog's mode name, not the challenge type: `split`, `add` and `subtract` are the modes
       // `decompose` and `operate` everywhere difficulty is tracked.
-      evalMode: items[0] ? EVAL_MODE_FOR_KIND[items[0].kind] ?? items[0].kind : 'default',
+      evalMode: items[0] ? evalModeForKind(items[0].kind) : 'default',
       challengesCompleted: summary.solvedCount,
       challengesTotal: items.length,
       subitizeAccuracy: subitizeOutcomes.length > 0
@@ -471,15 +537,23 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
       summary.solvedCount === items.length,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses, diagnosisEvidence },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses, diagnosisEvidence,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined,
       diagnosisEvidence,
     );
   }, [items, evaluation]);
 
-  const runner = useJudgedScriptRunner<TenFrameItem>({
+  const runner = useController({
+    items, workspace, objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode ?? (items[0] ? evalModeForKind(items[0].kind) : 'default'),
+    checkPlacement: (item) => placementCheckRef.current?.itemId === item.id ? placementCheckRef.current.correct : null,
+    frame: { filledCells, flippedCells, cancelPresentation: () => {
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = null;
+    } },
     runtime,
-    ...(runtimePlanItemId ? { completionCue: '[TF_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
+    ...(!tutorOwned && runtimePlanItemId ? { completionCue: '[TF_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
     pack,
     instanceId: resolvedInstanceId,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1-2',
@@ -498,28 +572,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
       // moment R4's "a correct response restores the counters" now hangs off
       // (it used to hang off a Check click that no longer exists).
       if (item.kind === 'subitize') setCountersVisible(true);
-      setReward(
-        item.kind === 'subitize'
-          ? `${item.answer} — ${numberWordFor(item.answer)} ${item.answer === 1 ? 'counter' : 'counters'}!`
-          : item.kind === 'split'
-            // The pair the CHILD produced, not a target — this is the only
-            // moment either part may appear on screen, and it appears as a
-            // record of their own work (`pendingPlacementRef` is the yellow
-            // count they committed).
-            ? `${item.answer - pendingPlacementRef.current} + ${pendingPlacementRef.current} = ${item.answer}`
-          : isTeenKind(item.kind)
-            // The decomposition the child just built. On both teen modes it
-            // reads the same way — ten and the ones — which is the sentence
-            // K.NBT.1 asks them to be able to see.
-            ? `${TEEN_TEN} + ${teenTotalFor(item) - TEEN_TEN} = ${teenTotalFor(item)}`
-          : item.kind === 'make_ten'
-            ? `${item.shown} + ${item.answer} = ${item.capacity}`
-            : item.kind === 'add'
-              ? `${item.addend1} + ${item.addend2} = ${item.answer}`
-              : item.kind === 'subtract'
-                ? `${item.shown} − ${item.removed} = ${item.answer}`
-                : `${item.answer} ${item.answer === 1 ? 'counter' : 'counters'}!`,
-      );
+      setReward(rewardFor(item, pendingPlacementRef.current));
     },
     onCorrectionRetry: (item) => {
       // The tutor's correction re-modeled and re-asked in-band; restore the
@@ -554,12 +607,6 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
     },
   });
 
-  const runtimeHint = useTenFrameRuntime({ runner, instanceId: resolvedInstanceId, objectiveId,
-    planItemId: runtimePlanItemId, evalMode: items[0] ? EVAL_MODE_FOR_KIND[items[0].kind] ?? items[0].kind : 'default',
-    filledCells, flippedCells, cancelPresentation: () => {
-      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
-      flashTimeoutRef.current = null;
-    } });
   const currentItem = runner.currentItem;
   const startRunnerRef = useRef(runner.start); startRunnerRef.current = runner.start;
   useEffect(() => {
@@ -598,7 +645,10 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
         shown.add(splitKey({ a: item.answer - onFrame, b: onFrame }));
         shownSplitsRef.current.set(item.answer, shown);
       }
-      runner.submitGestureAttempt(frameVerdictCue(item, onFrame, { alreadyShown }));
+      if (runner.submitGestureResponse) {
+        placementCheckRef.current = { itemId: item.id, correct: splitVerdictRef.current === 'correct' };
+        runner.submitGestureResponse(describeFrameResponse(item, onFrame));
+      } else runner.submitGestureAttempt(frameVerdictCue(item, onFrame, { alreadyShown }));
       return;
     }
     // `make_ten` and `build_teen` both commit what the child ADDED to a seeded
@@ -607,7 +657,12 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
     const enacted = item.kind === 'make_ten' || item.kind === 'build_teen'
       ? Math.max(0, onFrame - item.shown)
       : onFrame;
-    runner.submitGestureAttempt(frameVerdictCue(item, enacted));
+    if (runner.submitGestureResponse) {
+      // The frame checks its own placement, with the same code judge the cue path uses.
+      placementCheckRef.current = { itemId: item.id,
+        correct: isTeenKind(item.kind) ? judgeTeen(item, enacted) === 'correct' : enacted === item.answer };
+      runner.submitGestureResponse(describeFrameResponse(item, enacted));
+    } else runner.submitGestureAttempt(frameVerdictCue(item, enacted));
   }, [runner]);
 
   /** A hands turn closes on stillness. Any further tap resets the window, and
@@ -621,7 +676,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
 
   // ── Frame taps ────────────────────────────────────────────────────────────
   const handleCellClick = useCallback((cellIndex: number) => {
-    if (runtime && runner.runtimeControls.getState().suspended) return;
+    if (runtime && runner.runtimeControls?.getState().suspended) return;
     const item = runner.currentItem;
     // NEVER gate interaction on the stage word — the runner sets `affirmed` and
     // opens the next item in the same dispatch, so a stage-gated frame ships
@@ -697,6 +752,35 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
 
   const isSubitize = currentItem?.kind === 'subitize';
 
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets; `present` runs the subitize flash.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentItem) return;
+    workspace.current = {
+      ...workspaceScene(currentItem, { onFrame: filledCells.size, yellow: countsFlips(currentItem) ? flippedCells.size : 0,
+        hidden: isSubitize && !countersVisible }),
+      demonstration: [], canDemonstrate: false, canPresent: isSubitize,
+      readyForResponse: !isSubitize || flashAnswerReady,
+      mark: () => {},
+      clearPresentation: () => {
+        if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+        flashTimeoutRef.current = null;
+      },
+    };
+    runner.publishWorkspace?.();
+  });
+
+  // Workspace path: a checked success is the first moment the number may appear (answer-leak
+  // rule), and a solved quick-look item restores its counters (R4).
+  useEffect(() => {
+    if (!tutorOwned || !runner.currentSolved || !currentItem) return;
+    if (currentItem.kind === 'subitize') setCountersVisible(true);
+    setReward(rewardFor(currentItem, pendingPlacementRef.current));
+  }, [tutorOwned, runner.currentSolved, currentItem]);
+  const showReward = tutorOwned ? runner.currentSolved : runner.revealHeld;
+  // The workspace path shows its summary without an evaluation provider (the live host has none).
+  const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
+
   // WHEN the flash runs is the runner's `onPresentStimulus` gate (19c): she has
   // to have spoken for THIS item and stopped. The ~40 lines that used to live
   // here — a `tutorHasSpoken` latch, a fallback timer, a prep-beat effect and
@@ -709,7 +793,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
   }, []);
 
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     // Subitize publishes the frame only: its boxes sit over counters that are
     // hidden, and Pip does not single out anything the child cannot see.
     const subitize = currentItem.kind === 'subitize';
@@ -834,11 +918,16 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
   }, [items]);
 
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => (
-      CHALLENGE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🔢' }
-    ));
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+    if (!showSummary) return [];
+    const practice = runner.practiceSummary;
+    return phaseResultsFromSummary(items, practice ?? runner.summary, (item) => {
+      const config = CHALLENGE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🔢' };
+      return practice?.outcomes.find(o => o.id === item.id)?.assisted ? { ...config, label: `${config.label} (with help)` } : config;
+    }).map((phase, index) => {
+      const outcome = practice?.outcomes.find(o => o.id === items[index].id);
+      return outcome ? { ...phase, attempts: outcome.attempts, firstTry: outcome.solved && outcome.attempts === 1 } : phase;
+    });
+  }, [showSummary, runner.summary, runner.practiceSummary, items]);
 
   // ============================================================================
   // Render
@@ -914,7 +1003,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && currentItem && (
+        {!showSummary && currentItem && (
           <>
             {!isPreReader && (
               <div className="flex justify-center">
@@ -982,6 +1071,13 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
                     👀 {isFlashing ? 'Look quick!' : 'Get ready to look…'}
                   </span>
                 )}
+                {/* Workspace: the first look is the learner's to start as well as the tutor's
+                    (`present`), so an item never waits on a tool call to become answerable. */}
+                {tutorOwned && !flashAnswerReady && !isFlashing && runner.canAttempt && (
+                  <LuminaButton tone="primary" className="text-sm" onClick={() => runner.presentStimulus?.()}>
+                    Show me
+                  </LuminaButton>
+                )}
                 {flashAnswerReady && runner.running && !currentSolved && (
                   <LuminaButton
                     tone="subtle"
@@ -991,8 +1087,10 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
                       // contract's successor to the old reflash penalty).
                       // Direct, not gated: the CHILD asked for this one, so it
                       // is not waiting on anybody's voice.
-                      runner.hearStimulus();
                       reshowsRef.current += 1;
+                      // Workspace: a repeat through the shared lifecycle records assistance.
+                      if (runner.presentStimulus) { runner.presentStimulus(); return; }
+                      runner.hearStimulus?.();
                       if (currentItem) presentFlash(currentItem);
                     }}
                   >
@@ -1007,7 +1105,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
                 `revealHeld`, never on `currentSolved`: the runner opens the next
                 item in the same dispatch, so by the time this renders the
                 current item is the NEXT one and is not solved. */}
-            {reward && runner.revealHeld && (
+            {reward && showReward && (
               <LuminaPanel className="p-3 text-center">
                 <span className="text-emerald-300 text-lg font-black animate-bounce inline-block">
                   {reward}
@@ -1034,7 +1132,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className, autoStart = false,
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
             overallScore={evaluation.submittedResult?.score}

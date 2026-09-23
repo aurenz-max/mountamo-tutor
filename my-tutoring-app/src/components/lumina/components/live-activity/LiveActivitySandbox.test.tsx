@@ -41,9 +41,9 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 async function emit(v: Record<string, unknown>) { await act(async () => { mocks.event!(v); }); }
 async function paint() { await act(async () => { const todo = frames.splice(0); todo.forEach(f => f(0)); }); }
 
-it('initiates the full ten-frame lesson once and arms DI only after its correlated server handoff', async () => {
-  const data = { title: 'Make ten together', mode: 'single', gradeBand: '1-2', counters: { count: 0, color: 'red', positions: [] },
-    challenges: [{ id: 'one', type: 'make_ten', targetCount: 6, instruction: 'How many more?', hint: 'Look at the empty spaces.', narration: '' }] };
+it('initiates a full runner-owned lesson once and arms DI only after its correlated server handoff', async () => {
+  const data = { title: 'Split five together', gradeBand: 'K', maxNumber: 10,
+    challenges: [{ id: 'one', type: 'decompose', whole: 5, instruction: 'Split five.' }] };
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ instanceId: 'frame-1', data }) }));
   render(<LiveActivitySandbox />);
   fireEvent.click(screen.getByText('Start lesson'));
@@ -51,17 +51,17 @@ it('initiates the full ten-frame lesson once and arms DI only after its correlat
   await emit({ type: 'session_ready' }); await emit({ type: 'session_ready' });
   expect(mocks.ai.sendText).toHaveBeenCalledTimes(1);
   expect(mocks.ai.sendText).toHaveBeenCalledWith(expect.stringContaining('[LESSON_START]'), { silent: true });
-  await emit({ type: 'activity_request', callId: 'frame-call', args: { primitiveId: 'ten-frame', mode: 'make_ten', topic: 'Make ten', intent: 'Find complements to ten.' } });
-  await screen.findByTestId('ten-frame');
-  expect(screen.getByTestId('ten-frame').getAttribute('data-auto-start')).toBe('false');
+  await emit({ type: 'activity_request', callId: 'frame-call', args: { primitiveId: 'number-bond', mode: 'decompose', topic: 'Split five', intent: 'Find two parts of five.' } });
+  await screen.findByTestId('number-bond');
+  expect(screen.getByTestId('number-bond').getAttribute('data-auto-start')).toBe('false');
   await emit({ type: 'activity_ready', callId: 'frame-call', instanceId: 'frame-1' });
-  expect(screen.getByTestId('ten-frame').getAttribute('data-auto-start')).toBe('false');
+  expect(screen.getByTestId('number-bond').getAttribute('data-auto-start')).toBe('false');
   await paint(); await paint();
-  expect(mocks.ai.sendActivityMessage).toHaveBeenCalledWith(expect.objectContaining({ status: 'mounted', primitiveId: 'ten-frame' }));
+  expect(mocks.ai.sendActivityMessage).toHaveBeenCalledWith(expect.objectContaining({ status: 'mounted', primitiveId: 'number-bond' }));
   await emit({ type: 'activity_ready', callId: 'old', instanceId: 'frame-1' });
-  expect(screen.getByTestId('ten-frame').getAttribute('data-auto-start')).toBe('false');
+  expect(screen.getByTestId('number-bond').getAttribute('data-auto-start')).toBe('false');
   await emit({ type: 'activity_ready', callId: 'frame-call', instanceId: 'frame-1' });
-  expect(screen.getByTestId('ten-frame').getAttribute('data-auto-start')).toBe('true');
+  expect(screen.getByTestId('number-bond').getAttribute('data-auto-start')).toBe('true');
 });
 
 it('dispatches tutor advance to the mounted primitive and acknowledges the painted state, rejecting stale screens', async () => {
@@ -146,7 +146,7 @@ it('shows direct visuals without fetching, streams taps, and acknowledges highli
   }
   fireEvent.click(screen.getByText('Start lesson'));
   expect(mocks.ai.connectLesson).toHaveBeenCalledWith(expect.objectContaining({
-    activitySandbox: expect.objectContaining({ activities: [expect.objectContaining({ primitiveId: 'ten-frame', teachingOwner: 'di-runner' })], visuals: expect.arrayContaining([expect.objectContaining({ name: 'show_counters' })]) }),
+    activitySandbox: expect.objectContaining({ activities: [expect.objectContaining({ primitiveId: 'ten-frame', teachingOwner: 'tutor' })], visuals: expect.arrayContaining([expect.objectContaining({ name: 'show_counters' })]) }),
   }));
   await emit({ type: 'session_ready' });
   await emit({ type: 'activity_visual', callId: 'direct', instanceId: 'counters', toolName: 'show_counters', args: { count: 6, layout: 'ten_frame', instruction: 'Take away two.', removedIndices: [], highlightedIndices: [],

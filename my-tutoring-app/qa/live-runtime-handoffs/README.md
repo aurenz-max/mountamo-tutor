@@ -4,6 +4,7 @@
 (`/add-live-tutor-tools`). 8 of ~212 primitives are on the workspace. Pilot a minimal binding (W1) on
 ten-frame and one more primitive, write the recipe into the skill, build `qa/workspace-rollout/ROLLOUT.md`,
 run batch A1. Custom scaffolding (W2) comes after, per primitive, only where testing shows a need.
+**Ten-frame W1 done 2026-09-22** ([report](../tutor-reports/ten-frame-w1-2026-09-22.md)); next is number-bond.
 The LA-13 follow-ups (shape-sorter `sort` wording, sentence reading's `incorrect` weight, statement-of-fact
 credit) are parked W2 work.
 

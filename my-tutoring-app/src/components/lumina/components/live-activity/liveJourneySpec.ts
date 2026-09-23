@@ -34,12 +34,16 @@ import { buildSentenceReadingItems, sentenceReadingHarnessAnswers }
   from '../../primitives/visual-primitives/direct-instruction/diSentenceReadingDomain';
 import { buildLetterSoundLinkItems, letterSoundLinkWorkspaceAnswers }
   from '../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
+import { itemsFromChallenges as frameItems, tenFrameHarnessAnswers, type TenFrameItem }
+  from '../../primitives/visual-primitives/math/tenFrameScript';
+import { countsFlips } from '../../primitives/visual-primitives/math/tenFrameWorkspace';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
   | { type: 'place'; value: number }
   | { type: 'check' }
-  | { type: 'touch'; index: number }
+  /** The index-th `object-N`, or the object whose `data-pip-object` id is `target`. */
+  | { type: 'touch'; index?: number; target?: string }
   | { type: 'give' }
   | { type: 'choose'; label: string }
   | { type: 'answer'; text: string };
@@ -60,6 +64,8 @@ export interface JourneyContext {
    * so `challenge` is null for them and this is the only handle on "which ask is open".
    */
   itemId: string | null;
+  /** The runtime's current `task.demand`: scene facts and whether the stimulus is ready. */
+  demand?: Record<string, unknown> | null;
 }
 
 export interface JourneyProbe {
@@ -129,6 +135,13 @@ const omittedQuantities = (artifact: SupportArtifact, text: string): string | nu
   return missing.length ? `Worked example omitted its actual quantities: ${missing.join(', ')}` : null;
 };
 
+/** The cells a ten-frame placement touches, in order: the seeded counters to flip, or the empty boxes to fill. */
+const frameCells = (item: TenFrameItem): number[] => {
+  const seeded = item.seedCells ?? Array.from({ length: item.kind === 'subitize' ? 0 : item.shown }, (_, i) => i);
+  return countsFlips(item) ? seeded
+    : Array.from({ length: item.capacity }, (_, i) => i).filter(cell => !seeded.includes(cell));
+};
+
 /** A judged runner's spoken answer comes from the port's own DI plan, never from the harness. */
 const spoken = (ctx: JourneyContext, key: 'correct' | 'plainWrong'): DriverInput[] => {
   // Match the JUDGED ITEM first. Falling straight back to `diItems[0]` meant every
@@ -169,21 +182,26 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   },
 
   'ten-frame': {
+    execution: 'workspace',
     component: 'primitives/visual-primitives/math/TenFrame.tsx',
     instanceId: 'frame',
-    defaults: { grade: 'Grade 1', mode: 'make_ten', di: true,
-      topic: 'Make ten: how many more counters are needed' },
+    defaults: { grade: 'Kindergarten', mode: 'build', di: false, topic: 'Build numbers to 10 on a ten frame' },
     leakTokens: ['TF_'],
-    prompts: {
-      hint: 'Please show me a counting hint for this task.',
-      example: 'Please show the worked example and save my unfinished frame.',
-      return: 'Please close the example and return to my saved frame.',
-    },
-    inputsFor: (intent, ctx) => intent === 'warmup' ? [] : spoken(ctx, intent === 'wrong' ? 'plainWrong' : 'correct'),
-    // A make-ten or take-away example IS its quantities; a turn that omits them has
-    // announced an example rather than taught one.
-    exampleTaught: (artifact, text) => {
-      return omittedQuantities(artifact, text);
+    prompts: WORKSPACE_PROMPTS,
+    // A spoken item says the pack's own answer; a placement taps the frame's real cells:
+    // empty ones on a placing mode, seeded counters on a flipping mode.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const d = ctx.data;
+      const item = frameItems(d.challenges ?? [], { capacity: d.mode === 'double' ? 20 : 10, band: d.gradeBand ?? 'K' })
+        .find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current ten-frame assignment');
+      const answers = tenFrameHarnessAnswers(item);
+      // A quick look not yet shown is the learner's to start: they press Show me, then answer.
+      const look: DriverInput[] = item.kind === 'subitize' && ctx.demand?.presentation !== 'ready' ? [{ type: 'choose', label: 'Show me' }] : [];
+      if (item.answerKind !== 'gesture' || !answers.placed) return [...look, { type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+      return frameCells(item).slice(0, intent === 'wrong' ? answers.placed.wrong : answers.placed.correct)
+        .map(cell => ({ type: 'touch' as const, target: `cell-${cell}` }));
     },
     probes: { mounted: { selector: '[data-pip-object="frame"]' } },
   },

@@ -376,6 +376,13 @@ async def judged_runner(s):
         'The model was offered progression this runner owns'
 
 
+def spoken_words(text):
+    """A tutor turn holds speech, not only provider markup such as `<no speech>{pause}`, which can
+    also arrive cut off (`<no `). The frontend observer skips markup-only turns (DialogueObserver);
+    a journey that took one as the tutor's reply answered twice before the tutor spoke."""
+    return bool(re.search(r'\w', re.sub(r'<[^>]*(?:>|$)|\{[^}]*(?:\}|$)', '', text)))
+
+
 async def teaching_workspace(s):
     """Natural learner requests against shared workspace facts, without requested tool names."""
     async def turn(label, prompt=None, until=lambda state: True):
@@ -406,8 +413,8 @@ async def teaching_workspace(s):
                     await s.step({'type': 'output', 'text': event.get('content', '')})
                 elif kind == 'ai_turn_end':
                     await s.step({'type': 'end'})
-                    ended = ended or bool(transcript.strip())
-                    if transcript.strip():
+                    ended = ended or spoken_words(transcript)
+                    if spoken_words(transcript):
                         s.record('tutor', phase=label, text=transcript, state=s.state)
                         print(f'Run {s.index} {label}: {transcript[:200]}', flush=True)
                         s.waiting_intro = False
@@ -470,12 +477,23 @@ async def teaching_workspace(s):
     assert s.state['task']['evidence']['correctness'] != 'correct', 'Incorrect answer received success credit'
     s.record('checked_wrong' if s.state['task']['evidence']['correctness'] == 'incorrect'
              else 'guidance_without_verdict', state=s.state)
+    async def press(action, until):
+        # A checked item stays closed until feedback reopens it or the learner uses the shell's
+        # own Try again / Next challenge button, as a child does on screen. Recorded apart from
+        # observer transitions so a report can tell the two apart.
+        await s.step({'type': 'learner_progress', 'action': action})
+        s.record('learner_pressed', action=action, state=s.state)
+        await turn(action + '-pressed', until=until)
     if s.state['task']['phase'] != 'working':
-        await turn('retry', 'Let me try that again.', lambda st: st['task']['phase'] == 'working')
+        await turn('retry', 'Let me try that again.')
+        if s.state['task']['phase'] != 'working':
+            await press('retry', lambda st: st['task']['phase'] == 'working')
     await s.learner('correct')
     await turn('correct', until=lambda st: st['task']['itemId'] != first or st['task']['evidence']['correctness'] == 'correct')
     if s.state['task']['itemId'] == first:
-        await turn('advance', 'I am ready for the next one.', lambda st: st['task']['itemId'] != first)
+        await turn('advance', 'I am ready for the next one.')
+        if s.state['task']['itemId'] == first:
+            await press('advance', lambda st: st['task']['itemId'] != first)
     assert s.state['task']['evidence']['attemptNumber'] == 0, 'Fresh item inherited an attempt'
     second = s.state['task']['itemId']
     await s.learner('correct')

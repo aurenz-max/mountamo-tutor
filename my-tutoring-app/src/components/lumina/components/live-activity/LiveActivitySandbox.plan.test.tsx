@@ -71,7 +71,7 @@ it('runs a loaded package as a planned lesson: in order, prepared content, one c
   await waitFor(() => expect(mocks.ai.connectLesson).toHaveBeenCalledTimes(1));
   const connect = mocks.ai.connectLesson.mock.calls[0][0];
   expect(connect.grade_level).toBe('Grade 1');
-  expect(connect.activitySandbox).toMatchObject({ activities: [{ primitiveId: 'ten-frame', teachingOwner: 'di-runner' }, { primitiveId: 'number-line', teachingOwner: 'tutor' }], visuals: [], plan: { topic: 'Take-away stories', items: [
+  expect(connect.activitySandbox).toMatchObject({ activities: [{ primitiveId: 'ten-frame', teachingOwner: 'tutor' }, { primitiveId: 'number-line', teachingOwner: 'tutor' }], visuals: [], plan: { topic: 'Take-away stories', items: [
     { itemId: 'item-1', primitiveId: 'ten-frame', title: 'Take away on a frame', evalMode: 'operate', objective: 'Act out take-away stories' },
     { itemId: 'item-2', primitiveId: 'number-line', title: 'Hop back', evalMode: 'jump', objective: 'Subtract by hopping left' }] } });
   expect(JSON.stringify(connect)).not.toContain('targetCount');
@@ -91,10 +91,11 @@ it('runs a loaded package as a planned lesson: in order, prepared content, one c
   const mounted = sent('activity_result').at(-1);
   expect(mounted).toMatchObject({ callId: 'start-1', status: 'mounted', primitiveId: 'ten-frame',
     planItem: { itemId: 'item-1', evalMode: 'operate', objective: 'Act out take-away stories', intent: 'Remove counters' } });
-  expect(mounted.data).toMatchObject({ challengeType: 'subtract', teachingOwner: 'ten-frame-di' });
+  expect(mounted.data).toMatchObject({ instruction: expect.stringContaining('How many are left?'), teachingOwner: 'tutor' });
   expect(fetch).not.toHaveBeenCalled();
+  // A tutor-owned workspace has no runner to arm: the handoff leaves autoStart off.
   await emit({ type: 'activity_ready', callId: 'start-1', instanceId: mounted.instanceId });
-  expect(screen.getByTestId('ten-frame').getAttribute('data-auto-start')).toBe('true');
+  expect(screen.getByTestId('ten-frame').getAttribute('data-auto-start')).toBe('false');
 
   fireEvent.click(screen.getByText('finish ten-frame'));
   fireEvent.click(screen.getByText('finish ten-frame'));

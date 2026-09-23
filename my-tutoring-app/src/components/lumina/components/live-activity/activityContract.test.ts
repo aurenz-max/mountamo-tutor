@@ -33,11 +33,11 @@ describe('live activity boundary', () => {
     }
     expect(() => parseActivityRequest({ primitiveId: 'shape-sorter', mode: 'not_a_real_mode', topic: 'Shapes', intent: 'Practice' })).toThrow();
   });
-  it('validates ten-frame content through the real DI item gates and resolves the first scaffold state', () => {
+  it('validates ten-frame content through the real item gates and mounts it on the teaching workspace', () => {
     const data = { title: 'Make ten', mode: 'single', gradeBand: '1-2',
       challenges: [{ id: 'a', type: 'make_ten', targetCount: 6, instruction: 'How many more?' }] };
     const valid = validateTenFrameData(data);
-    expect(generatedActivityState('ten-frame', valid)).toMatchObject({ challengeType: 'make_ten', teachingOwner: 'ten-frame-di', totalChallenges: 1 });
+    expect(generatedActivityState('ten-frame', valid)).toMatchObject({ instruction: expect.stringContaining('How many more counters make ten?'), teachingOwner: 'tutor', totalChallenges: 1 });
     expect(() => validateTenFrameData({ ...data, challenges: [{ ...data.challenges[0], targetCount: 10 }] })).toThrow();
     expect(() => parseActivityRequest({ primitiveId: 'ten-frame', topic: 'Make ten', intent: 'Practice', mode: 'jump' })).toThrow();
   });

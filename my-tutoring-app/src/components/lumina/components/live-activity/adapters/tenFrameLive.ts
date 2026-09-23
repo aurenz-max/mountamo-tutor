@@ -1,8 +1,9 @@
 import type { TenFrameData } from '../../../primitives/visual-primitives/math/TenFrame';
-import { itemsFromChallenges, tenFramePackBase } from '../../../primitives/visual-primitives/math/tenFrameScript';
-import { RUNNER_GUIDANCE, runnerLessonStart, type LiveActivityAdapter } from './adapterContract';
+import { askFor, itemsFromChallenges } from '../../../primitives/visual-primitives/math/tenFrameScript';
+import { TEN_FRAME_WORKSPACE_MODES } from '../../../primitives/visual-primitives/math/tenFrameWorkspace';
+import { workspaceGuidance, workspaceLessonStart, type LiveActivityAdapter } from './adapterContract';
 
-export const TEN_FRAME_MODES = ['build', 'make_ten', 'subitize', 'decompose', 'build_teen', 'decompose_teen', 'operate'] as const;
+export const TEN_FRAME_MODES = TEN_FRAME_WORKSPACE_MODES;
 
 export function validateTenFrameData(value: unknown): TenFrameData {
   const d = value as TenFrameData;
@@ -12,27 +13,34 @@ export function validateTenFrameData(value: unknown): TenFrameData {
       || d.challenges.some(c => !c || typeof c.id !== 'string' || !c.id || typeof c.instruction !== 'string'))
     throw new Error('Generated ten frame has invalid lesson content.');
   const items = itemsFromChallenges(d.challenges, { capacity: d.mode === 'double' ? 20 : 10, band: d.gradeBand! });
-  if (items.length !== d.challenges.length) throw new Error('A ten-frame challenge cannot run in the DI lesson.');
+  if (items.length !== d.challenges.length) throw new Error('A ten-frame challenge cannot run in the lesson.');
   return d;
 }
 
 function tenFrameState(frame: TenFrameData) {
   const items = itemsFromChallenges(frame.challenges, { capacity: frame.mode === 'double' ? 20 : 10, band: frame.gradeBand! });
-  return { ...frame, ...tenFramePackBase(items).contextFor(items[0]), teachingOwner: 'ten-frame-di', totalChallenges: items.length };
+  return { title: frame.title, instruction: askFor(items[0]), teachingOwner: 'tutor', totalChallenges: items.length,
+    interaction: 'Teach from liveRuntime.task and its workspace. Judge spoken answers naturally; the host records '
+      + 'your completed feedback and handles retry/advance. The frame checks a placement itself.' };
 }
 
 export const tenFrameLive: LiveActivityAdapter<TenFrameData> = {
-  teachingOwner: 'di-runner',
+  tutoring: null,
+  teachingOwner: 'tutor',
   modes: TEN_FRAME_MODES,
-  canAdvance: false,
+  bindsTeachingWorkspace: true,
+  canAdvance: false, // The dialogue observer owns checked progression.
   grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
   copy: {
     label: 'Ten Frame', checkbox: 'Ten Frame', title: 'Learn with Ten Frame',
     lessons: [['make_ten', 'Make ten'], ['build', 'Build numbers'], ['subitize', 'Recognize quantities'], ['operate', 'Add and subtract'],
       ['decompose', 'Split into two groups'], ['build_teen', 'Build teen numbers'], ['decompose_teen', 'Find the ten']],
   },
-  lessonStart: runnerLessonStart('ten-frame'),
-  guidance: RUNNER_GUIDANCE,
+  lessonStart: workspaceLessonStart('ten-frame', 'ten-frame'),
+  // W1 minimal binding: the domain's own facts only; WORKSPACE_DOCTRINE carries the rest.
+  guidance: workspaceGuidance('The frame checks placed or flipped counters itself once the learner stops; '
+    + 'talk about a part-built frame is teaching, not a verdict. On a quick-look item, call present when the learner '
+    + 'is ready: the counters show briefly, then hide. Never count them out. You cannot place, remove or flip counters.'),
   validate: validateTenFrameData,
   initialState: tenFrameState,
 };

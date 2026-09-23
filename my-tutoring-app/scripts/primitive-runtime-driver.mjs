@@ -135,9 +135,11 @@ const PERFORM = {
     if (!button || button.disabled) throw new Error('No enabled choice labelled ' + label);
     flushSync(() => button.click());
   },
-  touch: ({ index }) => {
-    const target = [...document.querySelectorAll('[data-pip-object^="object-"]')][index ?? 0];
-    if (!target) throw new Error('No tappable object at index ' + index);
+  // A named object (`target`, its `data-pip-object` id) or the index-th counted object.
+  touch: ({ index, target: id }) => {
+    const target = id ? document.querySelector(`[data-pip-object="${id}"]`)
+      : [...document.querySelectorAll('[data-pip-object^="object-"]')][index ?? 0];
+    if (!target) throw new Error('No tappable object ' + (id ?? 'at index ' + index));
     flushSync(() => target.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })));
   },
   give: () => {
@@ -185,10 +187,13 @@ try {
       render();
     }
     if (input.type === 'command') await transport.command(input.command);
+    // The learner's own Try again / Next challenge on the shared shell (LiveRuntimeSurface).
+    if (input.type === 'learner_progress') await transport.learnerProgress(input.action);
     // ONE learner opcode. The spec turns an intent into this primitive's real actions.
     if (input.type === 'learner') {
       performed = journey.inputsFor(input.intent,
-        { data, challenge: currentChallenge(), diItems, itemId: runtime.getSnapshot().task?.itemId ?? null });
+        { data, challenge: currentChallenge(), diItems, itemId: runtime.getSnapshot().task?.itemId ?? null,
+          demand: runtime.getSnapshot().task?.demand ?? null });
       for (const action of performed) {
         if (input.deferAnswers && action.type === 'answer') continue;
         const run = PERFORM[action.type];

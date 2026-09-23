@@ -43,7 +43,8 @@ export interface MountProps {
 export const LIVE_RENDERERS: Record<LivePrimitiveId, (p: MountProps) => React.ReactElement> = {
   'number-line': p => <NumberLine data={p.data as NumberLineData} onControlsReady={p.onControls}
     runtimePlanItemId={p.planItemId} runtimeEvalMode={p.evalMode} />,
-  'ten-frame': p => <TenFrame data={p.data as TenFrameData} autoStart={p.autoStart} runtimePlanItemId={p.planItemId} />,
+  'ten-frame': p => <TenFrame data={p.data as TenFrameData} autoStart={p.autoStart} runtimePlanItemId={p.planItemId}
+    runtimeEvalMode={p.evalMode} />,
   'counting-board': p => <CountingBoard data={p.data as CountingBoardData} autoStart={p.autoStart} runtimePlanItemId={p.planItemId} runtimeEvalMode={p.evalMode} />,
   'number-sequencer': p => <NumberSequencer data={p.data as NumberSequencerData} autoStart={p.autoStart}
     runtimePlanItemId={p.planItemId} runtimeEvalMode={p.evalMode} />,
