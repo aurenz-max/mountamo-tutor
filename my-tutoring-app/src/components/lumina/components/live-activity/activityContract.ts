@@ -8,7 +8,7 @@
  * new adapter file plus one line here, and the server route, the capabilities route
  * and the sandbox all widen automatically.
  */
-import { numberLineLive, validateActivityData, initialActivityState } from './adapters/numberLineLive';
+import { numberLineLiveDomain, validateActivityData, initialActivityState } from './adapters/numberLineLive';
 import { tenFrameLiveDomain, validateTenFrameData } from './adapters/tenFrameLive';
 import { countingBoardLiveDomain } from './adapters/countingBoardLive';
 import { numberSequencerLiveDomain } from './adapters/numberSequencerLive';
@@ -38,7 +38,7 @@ export { validateActivityData, initialActivityState, validateTenFrameData, valid
  * union of the keys and a missed registration is a type error at every consumer.
  */
 export const LIVE_ADAPTERS = {
-  'number-line': numberLineLive,
+  'number-line': workspaceAdapter('number-line', numberLineLiveDomain),
   'ten-frame': workspaceAdapter('ten-frame', tenFrameLiveDomain),
   'counting-board': workspaceAdapter('counting-board', countingBoardLiveDomain),
   'number-sequencer': workspaceAdapter('number-sequencer', numberSequencerLiveDomain),

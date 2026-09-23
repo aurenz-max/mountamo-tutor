@@ -185,6 +185,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-line',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'The learner places points or jumps on the line and presses Check; the line checks the work itself, and '
+        + 'talk about a half-placed line is teaching, not a verdict. The target values are not yours to say. You cannot '
+        + 'place, move, clear or highlight points.',
+    },
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: numberLineDeliveryEligible },

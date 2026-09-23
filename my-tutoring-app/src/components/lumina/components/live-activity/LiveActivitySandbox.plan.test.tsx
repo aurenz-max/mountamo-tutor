@@ -113,7 +113,7 @@ it('runs a loaded package as a planned lesson: in order, prepared content, one c
   await paint(); await paint();
   const second = sent('activity_result').at(-1);
   expect(second).toMatchObject({ callId: 'start-2', status: 'mounted', primitiveId: 'number-line', planItem: { itemId: 'item-2', evalMode: 'jump' } });
-  expect(second.data).toMatchObject({ instruction: 'Start at 7 and hop back 3.', currentChallengeIndex: 0 });
+  expect(second.data).toMatchObject({ instruction: 'Start at 7 and hop back 3.' });
   fireEvent.click(screen.getByText('finish number-line'));
   expect(sent('plan_item_complete').at(-1)).toMatchObject({ callId: 'start-2', itemId: 'item-2', nextItemId: '' });
 

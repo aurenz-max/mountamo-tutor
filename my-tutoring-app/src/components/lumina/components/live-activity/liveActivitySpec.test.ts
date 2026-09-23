@@ -6,7 +6,7 @@ import { LIVE_ADAPTERS } from './activityContract';
 it('publishes the registered adapter modes and owners without exposing task answers', () => {
   const spec = buildLiveActivitySpec(['ten-frame', 'number-line']);
   expect(spec.activities[0]).toMatchObject({ teachingOwner: 'tutor', canAdvance: false, modes: [...LIVE_ADAPTERS['ten-frame'].modes] });
-  expect(spec.activities[1]).toMatchObject({ teachingOwner: 'tutor', canAdvance: true });
+  expect(spec.activities[1]).toMatchObject({ teachingOwner: 'tutor', canAdvance: false });
   expect(spec.visuals).toEqual([]);
   expect(JSON.stringify(spec)).not.toContain('targetCount');
   expect(() => buildLiveActivitySpec(['unknown' as any])).toThrow();

@@ -175,29 +175,21 @@ const spoken = (ctx: JourneyContext, key: 'correct' | 'plainWrong'): DriverInput
 
 export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'number-line': {
+    execution: 'workspace',
     component: 'primitives/visual-primitives/math/NumberLine.tsx',
     instanceId: 'line',
     defaults: { grade: 'Grade 1', mode: 'jump', di: false,
       topic: 'Subtract within 10: two independent single backward jumps, each taking away 1 to 4, starting at 5 to 9. No addition.' },
-    leakTokens: ['ANSWER_CORRECT', 'ALL_COMPLETE'],
-    prompts: {
-      opening: 'Please read my current number-line instruction so I can begin.',
-      retry: 'Please clear my incorrect response so I can try this same problem again.',
-      replay: 'Please repeat this same instruction using the replay action.',
-      hint: 'Please show the spaces reminder on my screen.',
-      fade: 'Please hide the reminder now.',
-      example: 'Please open the worked example and save my unfinished number line.',
-      return: 'Please close the example and return to my saved number line.',
-    },
+    leakTokens: ['ANSWER_CORRECT', 'ALL_COMPLETE', 'NEXT_ITEM'],
+    prompts: WORKSPACE_PROMPTS,
     // The landing the jump actually reaches; one past it is the wrong placement the
-    // real component must reject. Derived from the mounted challenge, not from Python.
+    // line's own Check rejects. Derived from the mounted challenge, not from Python.
     inputsFor: (intent, ctx) => {
       const landing = ctx.challenge?.targetValues?.[0];
       if (intent === 'warmup' || typeof landing !== 'number') return [];
       return [{ type: 'place', value: intent === 'wrong' ? landing + 1 : landing }, { type: 'check' }];
     },
-    probes: { mounted: { selector: 'svg[viewBox="0 0 760 240"]' },
-      promptFocused: { selector: '[aria-label="Current instruction"]', kind: 'focused' } },
+    probes: { mounted: { selector: 'svg[viewBox="0 0 760 240"]' } },
   },
 
   'ten-frame': {

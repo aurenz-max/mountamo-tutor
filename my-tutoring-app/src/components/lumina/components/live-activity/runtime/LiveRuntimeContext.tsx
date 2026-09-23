@@ -16,14 +16,17 @@ export function useRuntimeSnapshot(runtime: LiveLessonRuntime) {
   return useSyncExternalStore(runtime.subscribe, runtime.getSnapshot, runtime.getSnapshot);
 }
 
-/** Pass a stable mount/adapter. The returned runtime routes commands, never primitive-specific mutations. */
-export function usePrimitiveRuntime(mount: RuntimeMount) {
+/**
+ * Pass a stable mount/adapter. The returned runtime routes commands, never primitive-specific mutations.
+ * `null` registers nothing: a primitive whose teaching-workspace path replaces this mount passes it there.
+ */
+export function usePrimitiveRuntime(mount: RuntimeMount | null) {
   const runtime = useLiveRuntime();
   const active = useLiveRuntimeActive();
   const connection = useContext(LiveRuntimeConnectionContext);
   const current = useRef<ReturnType<LiveLessonRuntime['register']> | null>(null);
   useEffect(() => {
-    if (!runtime || !active) return;
+    if (!runtime || !active || !mount) return;
     const registration = runtime.register(mount);
     current.current = registration;
     return () => { current.current = null; registration.dispose(); };

@@ -21,7 +21,6 @@ import {
 } from '../../../evaluation';
 import type { NumberLineMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -32,6 +31,11 @@ import { numberLinePipPose } from '../../../pip/numberLinePipPose';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { useNumberLineRuntime } from './useNumberLineRuntime';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { describeLine, workspaceAssignment, workspaceScene, type NumberLineView } from './numberLineWorkspace';
 import { flushSync } from 'react-dom';
 
 // ============================================================================
@@ -267,11 +271,16 @@ interface NumberLineProps {
   runtimeEvalMode?: string;
 }
 
-const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsReady, runtimePlanItemId, runtimeEvalMode }) => {
+const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
+  NumberLineProps & { tutorOwned: boolean; useController: (options: ProgressOptions<NumberLineChallenge>) => Progress }) => {
   const liveRuntime = useLiveRuntime();
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const componentMounted = useRef(true);
   useLayoutEffect(() => { componentMounted.current = true; return () => { componentMounted.current = false; }; }, []);
   const inputBlocked = () => !componentMounted.current || !!liveRuntime && !['empty', 'active'].includes(liveRuntime.getSnapshot().status);
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  const learnerBlocked = () => inputBlocked() || workspaceClosed.current;
   const {
     title,
     description,
@@ -316,7 +325,20 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
   // Every Check on a jump, including tries later corrected. Evidence only; grading is unchanged.
   const jumpResponsesRef = useRef<JumpResponse[]>([]);
 
-  // Challenge tracking (shared hooks)
+  // Challenge tracking (shared hooks). On the workspace path the runtime moves the index.
+  const stableInstanceIdRef = useRef(instanceId || `number-line-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || interactionMode, workspace, assignment: workspaceAssignment,
+    // A fresh challenge and Try again both start from an empty line.
+    onItemOpened: () => {
+      setFeedback(''); setFeedbackType('');
+      setPlacedPoints([]); setJumpEndPoints([]); setOrderedPlacements(new Map()); setSelectedOrderValue(null);
+    },
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
@@ -325,10 +347,8 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
     recordResult,
     incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -346,9 +366,6 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
   // Refs
   const promptRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const stableInstanceIdRef = useRef(instanceId || `number-line-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
   const currentChallenge = challenges[currentChallengeIndex] || null;
   const currentPhase: InteractionPhase = currentChallenge
     ? challengeTypeToPhase(currentChallenge.type)
@@ -463,6 +480,8 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: isK2 ? 'K-2' : '3-5',
+    // The workspace packet replaces this context (it carries the target values).
+    enabled: !tutorOwned,
   });
 
   // Activity introduction
@@ -485,7 +504,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
   // -------------------------------------------------------------------------
 
   const handleLineClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    if (inputBlocked() || hasSubmittedEvaluation || !isInteractive || challengeResults.some(r => r.challengeId === currentChallenge?.id && r.correct)) return;
+    if (learnerBlocked() || hasSubmittedEvaluation || !isInteractive || challengeResults.some(r => r.challengeId === currentChallenge?.id && r.correct)) return;
     if (draggingIndex !== null) return;
 
     const rawValue = xToValue(e.clientX);
@@ -537,7 +556,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
       zoomLevel, visibleMin, visibleMax, currentChallenge, selectedOrderValue, challengeResults, liveRuntime]);
 
   const handlePointerDown = useCallback((index: number, e: React.PointerEvent) => {
-    if (inputBlocked() || challengeResults.some(r => r.challengeId === currentChallenge?.id && r.correct)) return;
+    if (learnerBlocked() || challengeResults.some(r => r.challengeId === currentChallenge?.id && r.correct)) return;
     e.stopPropagation();
     e.preventDefault();
     setDraggingIndex(index);
@@ -545,7 +564,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
   }, [challengeResults, currentChallenge, liveRuntime]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (inputBlocked() || draggingIndex === null || challengeResults.some(r => r.challengeId === currentChallenge?.id && r.correct)) return;
+    if (learnerBlocked() || draggingIndex === null || challengeResults.some(r => r.challengeId === currentChallenge?.id && r.correct)) return;
     const rawValue = xToValue(e.clientX);
     const snappedValue = snapToValue(rawValue, activeNumberType, visibleMin, visibleMax);
     setPlacedPoints(prev => {
@@ -601,7 +620,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
   // Challenge Checking
   // -------------------------------------------------------------------------
   const checkAnswer = useCallback(() => {
-    if (inputBlocked() || !currentChallenge || challengeResults.some(r => r.challengeId === currentChallenge.id && r.correct)) return;
+    if (learnerBlocked() || !currentChallenge || challengeResults.some(r => r.challengeId === currentChallenge.id && r.correct)) return;
     incrementAttempts();
 
     const targets = currentChallenge.targetValues;
@@ -676,6 +695,9 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
       }
     }
 
+    // The line's own check is the workspace's checked gesture.
+    progress.commitCheck?.(describeLine(currentChallenge, { rangeMin, rangeMax, numberType: activeNumberType,
+      operations: activeOperations, points: placedPoints, endpoints: jumpEndPoints, ordered: orderedPlacements }), correct);
     if (correct) {
       SoundManager.playCorrect();
       setFeedback(isK2 ? 'Great job!' : 'Correct!');
@@ -687,7 +709,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
         score: Math.round(accuracy),
         accuracy: Math.round(accuracy),
       });
-      if (!runtimePlanItemId || !challenges.every(c => c.id === currentChallenge.id || challengeResults.some(r => r.challengeId === c.id && r.correct))) sendText(
+      if (!tutorOwned && (!runtimePlanItemId || !challenges.every(c => c.id === currentChallenge.id || challengeResults.some(r => r.challengeId === c.id && r.correct)))) sendText(
         `[ANSWER_CORRECT] Student correctly completed "${currentChallenge.instruction}". `
         + `Attempts: ${currentAttempts + 1}. Congratulate briefly.`
         + (liveRuntime && currentChallengeIndex < challenges.length - 1
@@ -699,7 +721,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
       SoundManager.playIncorrect();
       setFeedback(currentChallenge.hint || 'Not quite. Try again!');
       setFeedbackType('error');
-      sendText(
+      if (!tutorOwned) sendText(
         `[ANSWER_INCORRECT] Challenge: "${currentChallenge.instruction}". `
         + `Student placed: [${(currentChallenge.type === 'show_jump' ? jumpEndPoints : placedPoints).join(', ')}]. Target: [${targets.join(', ')}]. `
         + `${currentChallenge.exactTargetValue != null ? `Exact missing value: ${currentChallenge.exactTargetValue}. ` : ''}`
@@ -710,7 +732,8 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
     }
   }, [currentChallenge, placedPoints, jumpEndPoints, orderedPlacements, activeOperations,
       activeNumberType, zoomLevel, rangeMin, rangeMax, isK2, currentAttempts, sendText,
-      incrementAttempts, recordResult, supportTier, challengeResults, runtimePlanItemId, challenges, liveRuntime, currentChallengeIndex]);
+      incrementAttempts, recordResult, supportTier, challengeResults, runtimePlanItemId, challenges, liveRuntime, currentChallengeIndex,
+      progress, tutorOwned]);
 
   const advanceToNextChallenge = useCallback((fromTutor = false) => {
     if (inputBlocked() || !challengeResults.some(r => r.challengeId === currentChallenge?.id && r.correct)) return;
@@ -729,7 +752,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
         { silent: true }
       );
 
-      if (!hasSubmittedEvaluation) {
+      if (!hasSubmittedEvaluation && progress.recordsEvaluation !== false) {
         const totalCorrect = challengeResults.filter(r => r.correct).length;
         const avgAccuracy = challengeResults.length > 0
           ? Math.round(challengeResults.reduce((s, r) => s + ((r.score as number) ?? (r.correct ? 100 : 0)), 0) / challengeResults.length)
@@ -787,7 +810,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
 
     const nextChallenge = challenges[currentChallengeIndex + 1];
 
-    if (!fromTutor) sendText(
+    if (!fromTutor && !tutorOwned) sendText(
       `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
       + `"${nextChallenge.instruction}". Introduce it briefly.`,
       { silent: true }
@@ -816,7 +839,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
   );
 
   const clearResponse = () => {
-    if (inputBlocked() || isCurrentChallengeComplete) return;
+    if (learnerBlocked() || isCurrentChallengeComplete) return;
     setPlacedPoints([]); setJumpEndPoints([]); setOrderedPlacements(new Map());
     setSelectedOrderValue(null); setFeedback(''); setFeedbackType('');
   };
@@ -828,6 +851,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
     advance: () => { promptRef.current?.blur(); advanceToNextChallenge(true); }, clear: clearResponse,
     replay: () => { promptRef.current?.focus(); return !!promptRef.current && document.activeElement === promptRef.current; },
     cancelGesture: () => setDraggingIndex(null),
+    disabled: tutorOwned,
   });
 
   // Optional sandbox controls reuse the same progression and grading as Next.
@@ -838,7 +862,8 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
     onControlsReady({
       getState: () => aiPrimitiveData,
       advance: expectedIndex => {
-        if (inputBlocked() || (liveRuntime && liveRuntime.getSnapshot().blockedReason) || expectedIndex !== currentChallengeIndex || !isCurrentChallengeComplete
+        // The tool-lab advance is a tutor command; on the workspace the observer advances.
+        if (tutorOwned || inputBlocked() || (liveRuntime && liveRuntime.getSnapshot().blockedReason) || expectedIndex !== currentChallengeIndex || !isCurrentChallengeComplete
             || lastControlledIndex.current === expectedIndex) return 'rejected';
         lastControlledIndex.current = expectedIndex;
         if (allChallengesComplete) return 'complete';
@@ -848,7 +873,17 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
     });
     return () => onControlsReady(null);
   }, [onControlsReady, aiPrimitiveData, currentChallengeIndex, isCurrentChallengeComplete,
-      allChallengesComplete, advanceToNextChallenge, challenges.length, liveRuntime]);
+      allChallengesComplete, advanceToNextChallenge, challenges.length, liveRuntime, tutorOwned]);
+
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge) return;
+    workspace.current = { ...workspaceScene(currentChallenge, { rangeMin, rangeMax, numberType: activeNumberType,
+      operations: activeOperations, points: placedPoints, endpoints: jumpEndPoints, ordered: orderedPlacements }),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    progress.publishWorkspace?.();
+  });
 
   const canCheck = (() => {
     if (!currentChallenge || hasSubmittedEvaluation || isCurrentChallengeComplete) return false;
@@ -1296,7 +1331,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
                 <LuminaActionButton
                   action="check"
                   onClick={checkAnswer}
-                  disabled={!canCheck}
+                  disabled={!canCheck || (tutorOwned && progress.canAttempt === false)}
                 />
                 {(placedPoints.length > 0 || jumpEndPoints.length > 0 || orderedPlacements.size > 0) && (
                   <LuminaButton
@@ -1308,7 +1343,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
                 )}
               </>
             )}
-            {isCurrentChallengeComplete && !allChallengesComplete && (
+            {!tutorOwned && isCurrentChallengeComplete && !allChallengesComplete && (
               <LuminaActionButton action="next" onClick={() => advanceToNextChallenge()}>
                 Next Challenge
               </LuminaActionButton>
@@ -1345,5 +1380,9 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className, onControlsRead
     </LuminaCard>
   );
 };
+
+// The workspace path never registers the tool-lab mount, whose advance command would compete with the observer.
+const NumberLine = withWorkspaceController<NumberLineProps, ProgressOptions<NumberLineChallenge>, Progress>(
+  'number-line', NumberLineSurface, useScriptedProgress, useWorkspaceProgressFor('number-line'));
 
 export default NumberLine;

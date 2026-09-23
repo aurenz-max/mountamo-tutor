@@ -28,6 +28,8 @@ interface Options {
   index: number; attempts: number; correct: boolean; incorrect: boolean; completed: boolean;
   points: number[]; endpoints: number[]; ordered: Map<number, number>;
   advance: () => void; clear: () => void; replay: () => boolean; cancelGesture: () => void;
+  /** The teaching workspace owns this mount instead: register nothing and never request completion. */
+  disabled?: boolean;
 }
 
 export function useNumberLineRuntime(options: Options) {
@@ -85,9 +87,9 @@ export function useNumberLineRuntime(options: Options) {
   }), [options.instanceId, options.objectiveId, options.planItemId, options.evalMode]);
   // Layout cleanup refuses stale controls before passive unregister runs.
   useLayoutEffect(() => { mounted.current = true; suspended.current = false; return () => { mounted.current = false; suspended.current = true; }; }, [mount]);
-  const { runtime, changed } = usePrimitiveRuntime(mount);
+  const { runtime, changed } = usePrimitiveRuntime(options.disabled ? null : mount);
   useLayoutEffect(() => { changed(); });
-  useEffect(() => { if (options.completed) runtime?.requestCompletion(); }, [runtime, options.completed]);
+  useEffect(() => { if (options.completed && !options.disabled) runtime?.requestCompletion(); }, [runtime, options.completed, options.disabled]);
   useEffect(() => { hintRef.current = false; setHint(false); }, [options.index]);
   return runtime && hint ? reminder : null;
 }

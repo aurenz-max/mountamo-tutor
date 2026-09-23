@@ -181,10 +181,10 @@ it('rejects invalid visual parameters without replacing the mounted visual or lo
 it('starts the selected Number Line lesson with its mode and shared runtime enabled', async () => {
   render(<LiveActivitySandbox />);
   fireEvent.change(screen.getByLabelText('Activity'), { target: { value: 'number-line' } });
-  expect((screen.getByLabelText('Lesson') as HTMLSelectElement).value).toBe('jump');
+  expect((screen.getByLabelText('Lesson') as HTMLSelectElement).value).toBe('identify');
   expect(screen.getByText('Learn with Number Line')).toBeTruthy();
   fireEvent.click(screen.getByText('Start lesson'));
   expect(mocks.ai.connectLesson).toHaveBeenCalledWith(expect.objectContaining({ runtimeSandbox: expect.any(Object) }));
   await emit({ type: 'session_ready' });
-  expect(mocks.ai.sendText).toHaveBeenCalledWith(expect.stringContaining('primitiveId number-line, mode jump'), { silent: true });
+  expect(mocks.ai.sendText).toHaveBeenCalledWith(expect.stringContaining('mode identify. Call request_activity with primitiveId number-line'), { silent: true });
 });

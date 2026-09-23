@@ -1,7 +1,6 @@
 import type { NumberLineData } from '../../../primitives/visual-primitives/math/NumberLine';
-import type { LiveActivityAdapter } from './adapterContract';
+import { workspaceOpening, type WorkspaceDomain } from './adapterContract';
 
-export const ACTIVITY_MODES = ['identify', 'plot', 'jump', 'order', 'between'] as const;
 
 /** Validate the renderer contract at the service boundary, including jump arithmetic. */
 export function validateActivityData(value: unknown): NumberLineData {
@@ -48,20 +47,8 @@ export function initialActivityState(data: NumberLineData) {
   };
 }
 
-export const numberLineLive: LiveActivityAdapter<NumberLineData> = {
-  teachingOwner: 'tutor',
-  modes: ACTIVITY_MODES,
-  canAdvance: true,
-  grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-  copy: {
-    label: 'Number Line', checkbox: 'Number line', title: 'Learn with Number Line',
-    lessons: [['jump', 'Subtraction jumps'], ['plot', 'Plot points'], ['order', 'Order values'], ['between', 'Find between']],
-  },
-  lessonStart: (grade, mode) => `[LESSON_START] Begin a number-line lesson now for ${grade}, mode ${mode}. `
-    + `Call request_activity with primitiveId number-line, mode ${mode}, topic subtraction on a number line, and matching intent. `
-    + 'Use two practice challenges. Do not greet before mounting. Teach from the mounted instruction and use the advertised '
-    + 'runtime actions for help and progression.',
-  guidance: 'Use the first challenge instruction. Targets and operations are tutor reference: do not reveal answers. After [ANSWER_CORRECT], use the advertised runtime advance action when available; wait for its visible receipt before asking the next challenge. The final checked item completes automatically. Use replay to repeat the instruction, retry to clear an incorrect response, and advertised reminders or examples when the learner asks for help. Return keeps the original work. Never claim to move or highlight points. Legacy advance_activity is only for hosts without runtime choices. Component feedback is correctness evidence.',
+/** What the live adapter needs from the number line; the catalog's `teachingWorkspace` declares the rest. */
+export const numberLineLiveDomain: WorkspaceDomain<NumberLineData> = {
   validate: validateActivityData,
-  initialState: initialActivityState,
+  initialState: d => workspaceOpening({ title: d.title, task: d.challenges![0].instruction, total: d.challenges!.length }),
 };
