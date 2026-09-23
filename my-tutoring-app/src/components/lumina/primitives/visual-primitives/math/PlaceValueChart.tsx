@@ -44,9 +44,14 @@
  * number — which is what replaces the printed target); interaction is gated on
  * `runner.canAttempt`, never on `runner.stage`; the reveal renders on
  * `runner.revealHeld` and is never cleared in `onItemOpened` (18b).
+ *
+ * Inside a live runtime with a resolved pin, the shared teaching workspace
+ * replaces the scripted runner (W1, `placeValueWorkspace.ts`): the tutor
+ * teaches in its own words, the observer commits outcomes, and the chart still
+ * checks a written number itself. Everything above describes the page both share.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { placeValueVoiceObservation } from './placeValueEvidence';
 import { placeValueContentIdentity } from '../../../service/math/placeValueOpportunityContract';
 import {
@@ -66,6 +71,7 @@ import type { PlaceValueChartMetrics } from '../../../evaluation/types';
 import {
   useJudgedScriptRunner,
   type JudgedRunSummary,
+  type JudgedScriptRunnerOptions,
 } from '../../../hooks/useJudgedScriptRunner';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { placeValueChartPipPose } from '../../../pip/placeValueChartPipPose';
@@ -115,6 +121,11 @@ import type { LearningAdaptation } from '../../../service/generation/learningAda
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
 import { usePlaceValueRuntime } from './usePlaceValueRuntime';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { chartComplete, chartMatches, describeChart, workspaceAssignment, workspaceScene } from './placeValueWorkspace';
 export interface PlaceValueChartData {
   title: string;
   description: string;
@@ -178,8 +189,39 @@ const multiplierLabel = (place: number): string => `×${Math.pow(10, place).toLo
 // Component
 // ============================================================================
 
-const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode }) => {
+/**
+ * The scripted runner's options beside the workspace controller's (compare-objects' shape).
+ * `digitsByPlace` feeds the runner-era runtime registration only.
+ */
+type PlaceValueControllerOptions = Omit<WorkspaceRunOptions<PlaceValueItem>, 'primitiveId' | 'assignment' | 'onFinished'>
+  & Omit<JudgedScriptRunnerOptions<PlaceValueItem>, 'pack' | 'instanceId' | 'onItemOpened' | 'onFinished'>
+  & { pack?: JudgedScriptPack<PlaceValueItem>; digitsByPlace: Record<number, string>;
+    onFinished: (summary: PlaceValueFinish) => void };
+
+/** What the metrics read, from either controller's finished record. */
+type PlaceValueFinish = Pick<JudgedRunSummary, 'outcomes' | 'accuracy' | 'attemptsCount' | 'firstTryCount' | 'diagnosisEvidence'
+  | 'solvedCount' | 'learningResponses'> & Partial<Pick<JudgedRunSummary, 'hearTaps' | 'opportunityEvents'>>
+  & { teachingAttempts?: unknown; assistanceProvenance?: string };
+
+function useScriptedController(options: PlaceValueControllerOptions): LiveRun<PlaceValueItem> {
+  const runner = useJudgedScriptRunner<PlaceValueItem>({ ...options, pack: options.pack! });
+  // The SESSION's mode, never `runner.currentItem`: a mount's identity must not change while the runner owns it.
+  usePlaceValueRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
+    planItemId: options.planItemId, evalMode: options.evalMode, digitsByPlace: options.digitsByPlace });
+  return runner;
+}
+
+const useWorkspaceController = (options: PlaceValueControllerOptions): LiveRun<PlaceValueItem> =>
+  useWorkspaceRunner<PlaceValueItem>({ ...options, primitiveId: 'place-value-chart', assignment: workspaceAssignment });
+
+/** The chart as written, one entry per column HIGH -> LOW. */
+const writtenOf = (item: PlaceValueItem, digits: Record<number, string>) =>
+  item.chartPlaces.map((p) => { const d = digits[p]; return d === undefined || d === '' ? null : Number(d); });
+
+const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
+  PlaceValueChartProps & { tutorOwned: boolean; useController: (options: PlaceValueControllerOptions) => LiveRun<PlaceValueItem> }) => {
   const liveRuntime = useLiveRuntime();
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -233,7 +275,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, auto
   });
 
   // ── The pack: the exported cue surface + what only a mounted component owns ─
-  const pack = useMemo<JudgedScriptPack<PlaceValueItem>>(() => ({
+  const pack = useMemo<JudgedScriptPack<PlaceValueItem> | undefined>(() => tutorOwned ? undefined : ({
     ...placeValuePackBase(items),
     statusLines: {
       ready: (item) =>
@@ -252,7 +294,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, auto
       const task = placeValueVoiceObservation(item, heard);
       return verdict === 'corrected' ? task : heard ? { ...task, observed: heard } : null;
     },
-  }), [items]);
+  }), [items, tutorOwned]);
 
   // ── Per-item reset — every item owns its starting state ───────────────────
   const resetStageFor = useCallback(() => {
@@ -261,7 +303,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, auto
   }, []);
 
   // ── Metrics ───────────────────────────────────────────────────────────────
-  const handleFinished = useCallback(async (summary: JudgedRunSummary) => {
+  const handleFinished = useCallback(async (summary: PlaceValueFinish) => {
     const metrics: PlaceValueChartMetrics = {
       type: 'place-value-chart',
       challengeType,
@@ -269,7 +311,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, auto
       correctCount: summary.solvedCount,
       attemptsCount: summary.attemptsCount,
       firstTryCount: summary.firstTryCount,
-      hintsViewed: summary.hearTaps,
+      hintsViewed: summary.hearTaps ?? 0,
       overallAccuracy: summary.accuracy,
       averageAttemptsPerChallenge:
         Math.round((summary.attemptsCount / Math.max(1, items.length)) * 10) / 10,
@@ -297,17 +339,23 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, auto
         problem: { challengeType, supportTier: data.supportTier, challenges: data.challenges },
         diagnosisEvidence: summary.diagnosisEvidence,
         learningResponses: summary.learningResponses,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}),
         ...(opportunityEvidence ? { misconception_opportunity: opportunityEvidence } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
   }, [items, challengeType, evaluation, data]);
 
-  const runner = useJudgedScriptRunner<PlaceValueItem>({
+  const runner = useController({
+    items, workspace, objectiveId, planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount, never `runner.currentItem`: a mount's
+    // identity must not change while the runner owns it.
+    evalMode: runtimeEvalMode || items[0]?.kind || 'default',
+    digitsByPlace,
     // Load-bearing for the live host: without it the runner's `resume()` early-returns,
     // its speech holds never settle, and the completion handoff has nothing to read.
     runtime: liveRuntime,
-    ...(runtimePlanItemId ? { completionCue: '[PV_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
+    ...(!tutorOwned && runtimePlanItemId ? { completionCue: '[PV_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
     recordOpportunityEvents: !!data.misconceptionOpportunity,
     pack,
     instanceId: resolvedInstanceId,
@@ -348,13 +396,15 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, auto
   });
 
   const currentItem = runner.currentItem;
+  // The workspace path shows its summary without an evaluation provider (the live host has none).
+  const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
 
   // ── Pip shared surface ────────────────────────────────────────────────────
   // A projection of the runner's phase onto the stage and the column the child
   // is writing in; Pip never writes a digit, judges, or advances.
   const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const targets = pip.targets();
     const pose = placeValueChartPipPose({
       gesture: currentItem.answerKind === 'gesture',
@@ -374,11 +424,10 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, auto
     const item = runner.currentItem;
     if (!item || item.kind !== 'build_number') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
-    const written = item.chartPlaces.map((p) => {
-      const d = writtenRef.current[p];
-      return d === undefined || d === '' ? null : Number(d);
-    });
-    runner.submitGestureAttempt(buildVerdictCue(item, written));
+    const written = writtenOf(item, writtenRef.current);
+    // The chart checks its own number, with the same code match the cue reports.
+    commitGesture(runner, { response: describeChart(item, written), correct: chartMatches(item, written),
+      cue: () => buildVerdictCue(item, written) });
   }, [runner]);
 
   /** A hands turn closes on stillness; a full chart shortens the window but
@@ -389,8 +438,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, auto
     const item = runner.currentItem;
     writtenRef.current = next;
     if (!item || item.kind !== 'build_number') return;
-    const filled = item.chartPlaces.filter((p) => (next[p] ?? '') !== '').length;
-    const complete = filled === item.chartPlaces.length;
+    const complete = chartComplete(item, writtenOf(item, next));
     runner.armStillness(commitChart, complete ? WRITE_COMPLETE_SETTLE_MS : WRITE_SETTLE_MS);
   }, [runner, commitChart]);
 
@@ -529,11 +577,16 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, auto
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => (
-      PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🔢' }
-    ));
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+    if (!showSummary) return [];
+    const practice = runner.practiceSummary;
+    return phaseResultsFromSummary(items, practice ?? runner.summary, (item) => {
+      const config = PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🔢' };
+      return practice?.outcomes.find(o => o.id === item.id)?.assisted ? { ...config, label: `${config.label} (with help)` } : config;
+    }).map((phase, index) => {
+      const outcome = practice?.outcomes.find(o => o.id === items[index].id);
+      return outcome ? { ...phase, attempts: outcome.attempts, firstTry: outcome.solved && outcome.attempts === 1 } : phase;
+    });
+  }, [showSummary, runner.summary, runner.practiceSummary, items]);
 
   const celebrationMessage = useMemo(() => {
     const spoken = items.some((i) => i.answerKind === 'voice');
@@ -547,12 +600,15 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, auto
   // Render
   // ============================================================================
 
-  const runtimeHint = usePlaceValueRuntime({ runner, instanceId: resolvedInstanceId, objectiveId,
-    // The SESSION's mode, from the first item — never `runner.currentItem`.
-    // A mount's identity must not change while the runner owns it: an item
-    // change would rebuild the mount and re-register into an unreleased owner.
-    planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || items[0]?.kind || 'default',
-    digitsByPlace });
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentItem) return;
+    workspace.current = { ...workspaceScene(currentItem, { written: writtenOf(currentItem, digitsByPlace) }),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true,
+      mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace?.();
+  });
   // AFTER the runtime mount is registered, never before: `start()` waits for
   // `grantOwnership('runner')`, which cannot be granted until this primitive's
   // mount exists. Declared earlier, its effect runs first and the runner spins.
@@ -605,7 +661,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, auto
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && currentItem && (
+        {!showSummary && currentItem && (
           <>
             <div className="flex items-center justify-center gap-4">
               <LuminaChallengeCounter
@@ -615,17 +671,18 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, auto
               />
               {/* Tap-to-hear — the QUESTION again, never a hint ladder. On a
                   build item this re-dictates the number, which is what
-                  replaces the printed target the click era showed. */}
-              <button
+                  replaces the printed target the click era showed. With the
+                  tutor (no `hearStimulus`), the learner asks the tutor instead. */}
+              {runner.hearStimulus && <button
                 type="button"
                 onClick={runner.hearStimulus}
                 className={`flex h-11 w-11 items-center justify-center rounded-full bg-amber-500/15 border-2 border-amber-500/30 hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all ${
-                  runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''
+                  (runner as { stimulusTapped?: boolean }).stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''
                 }`}
                 aria-label="Hear the question again"
               >
                 <span className="text-xl">🔁</span>
-              </button>
+              </button>}
             </div>
 
             {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId} className={PIP_DOCK_CLASS} />}
@@ -659,7 +716,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, auto
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
             overallScore={evaluation.submittedResult?.score}
@@ -673,5 +730,9 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className, auto
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the runner, whose context push and cue loop would run beside the tutor.
+const PlaceValueChart = withWorkspaceController<PlaceValueChartProps, PlaceValueControllerOptions, LiveRun<PlaceValueItem>>(
+  'place-value-chart', PlaceValueChartSurface, useScriptedController, useWorkspaceController);
 
 export default PlaceValueChart;

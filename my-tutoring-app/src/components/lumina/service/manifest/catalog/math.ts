@@ -606,6 +606,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       ],
     },
     audioInput: { manual_activity: true },
+    teachingWorkspace: {
+      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'A printed number shows no column labels, because on a which-place item the label is the answer. '
+        + 'On a write-the-number item the number is never printed, so say it aloud before the learner writes; the chart checks the written digits itself once every column '
+        + 'is filled and the learner stops. You cannot write, clear or highlight digits.',
+    },
     evalModes: [
       {
         evalMode: 'identify',

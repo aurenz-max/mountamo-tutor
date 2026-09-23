@@ -2,7 +2,7 @@
 // model transcripts are supplied by Python.
 //
 // NO PRIMITIVE NAMES LIVE HERE. The driver owns a vocabulary of real learner actions
-// (place, check, touch, give, answer) and a generic probe reader; `liveJourneySpec.ts`
+// (place, check, touch, give, write, answer) and a generic probe reader; `liveJourneySpec.ts`
 // declares which of them each primitive uses, how to derive their values from the
 // mounted content, and whether a drawn example taught what it claims. Adding a
 // primitive is a row in that spec — this file and `run_live_runtime.py` do not change.
@@ -10,8 +10,6 @@ import readline from 'node:readline';
 import { resolve } from 'node:path';
 import { JSDOM } from 'jsdom';
 import React from 'react';
-import { createRoot } from 'react-dom/client';
-import { flushSync } from 'react-dom';
 import * as vite from 'vite';
 
 // Keep the line protocol separate from component diagnostics.
@@ -27,6 +25,10 @@ globalThis.fetch = (input, options) => nativeFetch(typeof input === 'string' && 
 for (const key of ['window', 'document', 'HTMLElement', 'Element', 'SVGElement', 'MutationObserver', 'localStorage']) globalThis[key] = dom.window[key];
 globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window);
 globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window);
+// react-dom detects DOM features (the `input` event among them) when it first loads, so it loads
+// only once the JSDOM globals exist. A static import ran first and left React on its legacy IE path.
+const { createRoot } = await import('react-dom/client');
+const { flushSync } = await import('react-dom');
 const seams = resolve('scripts/primitive-runtime-seams.tsx');
 const server = await vite.createServer({ root: process.cwd(), configFile: false, appType: 'custom', logLevel: 'error',
   plugins: [{ name: 'driver-hardware-boundaries', enforce: 'pre', load(id) {
@@ -141,6 +143,13 @@ const PERFORM = {
       : [...document.querySelectorAll('[data-pip-object^="object-"]')][index ?? 0];
     if (!target) throw new Error('No tappable object ' + (id ?? 'at index ' + index));
     flushSync(() => target.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })));
+  },
+  // Typed text into the input with this `aria-label`, through the value setter React tracks.
+  write: ({ label, text }) => {
+    const input = [...document.querySelectorAll('input')].find(i => i.getAttribute('aria-label') === label);
+    if (!input || input.disabled) throw new Error('No enabled input labelled ' + label);
+    const setValue = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set;
+    flushSync(() => { setValue.call(input, text); input.dispatchEvent(new dom.window.Event('input', { bubbles: true })); });
   },
   give: () => {
     const button = [...document.querySelectorAll('button')].find(b => /give them to me/i.test(b.textContent));

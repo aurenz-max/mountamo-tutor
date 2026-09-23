@@ -483,7 +483,10 @@ async def teaching_workspace(s):
         # observer transitions so a report can tell the two apart.
         await s.step({'type': 'learner_progress', 'action': action})
         s.record('learner_pressed', action=action, state=s.state)
-        await turn(action + '-pressed', until=until)
+        # The press itself reopens or advances the item; a child then just acts. Waiting for the
+        # tutor to speak again hangs when it has already re-asked (the retry-path timeout).
+        if not until(s.state):
+            await turn(action + '-pressed', until=until)
     if s.state['task']['phase'] != 'working':
         await turn('retry', 'Let me try that again.')
         if s.state['task']['phase'] != 'working':

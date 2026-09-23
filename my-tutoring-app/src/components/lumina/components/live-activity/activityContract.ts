@@ -18,7 +18,7 @@ import { sortingStationLive } from './adapters/sortingStationLive';
 import { numberTracerLive } from './adapters/numberTracerLive';
 import { comparisonBuilderLive } from './adapters/comparisonBuilderLive';
 import { compareObjectsLiveDomain } from './adapters/compareObjectsLive';
-import { placeValueLive } from './adapters/placeValueLive';
+import { placeValueLiveDomain } from './adapters/placeValueLive';
 import { shapeSorterLiveDomain, validateShapeSorterData } from './adapters/shapeSorterLive';
 import { diLetterSoundsLiveDomain } from './adapters/diLetterSoundsLive';
 import { diWordReadingLiveDomain } from './adapters/diWordReadingLive';
@@ -48,7 +48,7 @@ export const LIVE_ADAPTERS = {
   'number-tracer': numberTracerLive,
   'comparison-builder': comparisonBuilderLive,
   'compare-objects': workspaceAdapter('compare-objects', compareObjectsLiveDomain),
-  'place-value-chart': placeValueLive,
+  'place-value-chart': workspaceAdapter('place-value-chart', placeValueLiveDomain),
   'shape-sorter': workspaceAdapter('shape-sorter', shapeSorterLiveDomain),
   'di-letter-sounds': workspaceAdapter('di-letter-sounds', diLetterSoundsLiveDomain),
   'di-word-reading': workspaceAdapter('di-word-reading', diWordReadingLiveDomain),

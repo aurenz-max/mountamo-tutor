@@ -77,6 +77,105 @@ For a repair that must stay on an existing controller, also read
 or sentinel rules to a workspace adoption. Catalog scaffolds, support tiers and Pip
 remain separate concerns; they are not prerequisites for wiring a real workspace.
 
+## W1 minimal binding (workspace rollout)
+
+A row in `my-tutoring-app/qa/workspace-rollout/ROLLOUT.md` asks for W1: the tutor is present
+and told the task, the child answers through the primitive's own UI or by voice, the observer
+commits, the runtime owns progression. No demonstrations, marks, `present` or new observation
+kinds. For a W1 row, follow this section in place of §1-§2 and §5's probes; §3's invariants
+still hold. Examples, smallest first: `compareObjectsWorkspace.ts` + `CompareObjects.tsx`,
+`placeValueWorkspace.ts` + `PlaceValueChart.tsx`, `numberBondWorkspace.ts` + `NumberBond.tsx`
+(all under `L/primitives/visual-primitives/math/`, `L` = `my-tutoring-app/src/components/lumina`).
+Copy the controller block from `CompareObjects.tsx` or `PlaceValueChart.tsx`; it is the same in each.
+
+This recipe is for a *runner-era* component, one that calls `useJudgedScriptRunner`. A component
+with its own Check/Next and no runner (ROLLOUT shape P) has no recipe yet; batch A2 writes it.
+
+1. **Domain module** `<x>Workspace.ts`, pure:
+   - `workspaceAssignment(item, view?)` returns `{ id, task, response }`. `response` is
+     `'speech'` when the item's `answerKind` is `'voice'`, else `'gesture'`. A spoken item adds
+     `expectedAnswer` (the observer judges against it); a gesture item does not, because its check
+     is code and the key must not reach the tutor. `task` is the pack's own ask (`askFor(item)`,
+     or the quoted `Say exactly: "..."` line of its cue), never cue protocol text.
+   - `workspaceScene(item, view)` returns `{ objects: [], facts }`: what is drawn and asked, plus a
+     `constraints` sentence naming the answer channel. Board counts only where the board is what
+     the item asks about (§2, count-fact rule). Facts reach the tutor as `task.demand`.
+   - The gesture's code check and its description (`orderMatches`/`describeOrder`,
+     `chartMatches`/`describeChart`), reusing the logic the cue builder already runs.
+2. **Component**:
+   - Rename it `<X>Surface` with two extra props, `tutorOwned` and `useController`, and add a
+     `workspace = useRef<TeachingWorkspace | null>(null)`.
+   - Declare a `<X>ControllerOptions` type (the runner's options beside `WorkspaceRunOptions`,
+     plus whatever the runner-era `use<X>Runtime` hook reads), `useScriptedController` (the
+     existing `useJudgedScriptRunner` call plus that `use<X>Runtime` call, moved out of the
+     surface) and `useWorkspaceController` (`useWorkspaceRunner` with `primitiveId` and
+     `assignment: workspaceAssignment`).
+   - Call `useController({ ...runnerOptions, items, workspace, objectiveId, planItemId, evalMode })`
+     in the surface. Build `pack` only when `!tutorOwned` (`undefined` otherwise), and gate
+     `completionCue` on `!tutorOwned`.
+   - `onFinished` also receives the workspace's `teachingEvaluation` result: widen its parameter
+     to the fields it reads, default the runner-only ones (`hearTaps ?? 0`), and pass
+     `teachingAttempts` and `assistanceProvenance` through to the submission.
+   - Export `withWorkspaceController('<id>', <X>Surface, useScriptedController,
+     useWorkspaceController)` as the default. It keys the surface so the runner never mounts on
+     the workspace path.
+   - Every `runner.submitGestureAttempt(cue)` becomes `commitGesture(runner, { response,
+     correct, cue: () => cue })`, with `correct` from the domain module's code check. Keep the
+     primitive's own commit rule: whatever the runner committed (a partial order, a half-written
+     chart) still commits, and what it treated as exploration still does not.
+   - A `useLayoutEffect` with no dependency list, guarded by `tutorOwned`, sets
+     `workspace.current = { ...workspaceScene(item, view), demonstration: [], canDemonstrate:
+     false, canPresent: false, readyForResponse, mark: () => {}, clearPresentation: () => {} }`
+     and calls `runner.publishWorkspace?.()`. `readyForResponse` is `true` unless a stimulus is
+     still pending. Put `useLiveAutoStart` after it.
+   - **One progression owner.** Reveal, reset and evaluation stay in the runner callbacks
+     (`onItemOpened`, `onCorrectionRetry`, `onAffirmed`, `onFinished`), which the workspace fires
+     from committed outcomes; answer-leak holds keep reading `revealHeld`. Turn off anything else
+     that advances the activity (a timer, the primitive's own Next or Check). The summary stays:
+     gate `PhaseSummaryPanel`, the stage and the Pip surface on `showSummary =
+     !!runner.practiceSummary || evaluation.hasSubmitted`, because the live host has no evaluation
+     provider, and build its phases from `runner.practiceSummary ?? runner.summary`.
+   - `LiveRun` has no runner-only members (`stimulusTapped`, and `hearStimulus` or
+     `runtimeControls` are optional). Hide a control that calls one when it is absent: with the
+     tutor, the learner asks the tutor to repeat.
+3. **Adapter** `adapters/<x>Live.ts`: only a `WorkspaceDomain`, `{ validate, initialState }`,
+   with `initialState` from `workspaceOpening({ title, task, total })`. Delete the old mode list,
+   copy and `RUNNER_GUIDANCE`. Register `workspaceAdapter('<id>', <x>LiveDomain)` in
+   `activityContract.ts`.
+4. **Catalog**: `teachingWorkspace: { grades, guidance }` on the entry. Guidance is the
+   domain's sentences only: what checks the answer, what is hidden and why, what the tutor must
+   say that the screen does not show, and what the tutor cannot do.
+5. **Journey row** in `liveJourneySpec.ts`: `execution: 'workspace'`, `prompts:
+   WORKSPACE_PROMPTS`, and `inputsFor` that finds the current item by `ctx.itemId`. A spoken item
+   answers with `spokenExpected(ctx, intent)` when the answer is a number, otherwise with the
+   domain's `*HarnessAnswers(item).correct` / `.plainWrong`. A gesture item goes through the real
+   controls: `choose` (button text or `aria-label`), `touch` (`data-pip-object`), `place`, or
+   `write` (text into the input with that `aria-label`). A wrong gesture is a complete wrong
+   answer. A phase the row cannot drive throws with its name.
+
+Tests that use this primitive as "the runner-era family" example move to a family still on the
+runner: grep `components/live-activity` (including `runtime/`) tests for its id. Expected-id lists
+(`lessonWorkspacePlan.test.ts`) gain the id.
+
+**Checks.** (a) `<X>.workspace.test.tsx`, modelled on `CompareObjects.workspace.test.tsx`: the
+real component under `LiveLessonRuntime`, an `it.each` over every catalog mode showing it mounts
+under tutor ownership with no runner cue, the spoken key published and the gesture key not, a
+wrong commit that Try again reopens, a right one that completes once, the packet's `learner`, and
+the adapter's modes equal to the catalog's. (b) The primitive's existing tests and
+`components/live-activity`, `typecheck:lumina` 0, full `tsc` not above baseline. (c) One smoke
+drive, frontend and backend running:
+`backend/venv/Scripts/python.exe backend/tests/tutor_live/run_live_runtime.py --primitive <id>
+--mode <m> --runs 1 --lesson-entry --progression-only --output my-tutoring-app/qa/tutor-reports/<id>-w1-<m>-<date>.json`,
+on a gesture mode, plus `--audio` on one spoken mode if it has any. Read the tutor lines, not only
+PASS: a tutor that never says what the screen withholds is a finding. Editing any file under
+`backend/` reloads uvicorn and closes a running drive with ws 1012; rerun it. A failed smoke is
+recorded in the queue row, then fixed, or the row moves to W2 or BLOCKED. Do not widen W1 to
+pass one row.
+
+**Shared files.** Every adoption edits `activityContract.ts`, the catalog and
+`liveJourneySpec.ts`. With two sessions running, commit one primitive before the next one
+starts editing those files.
+
 ## 1. Define the domain boundary
 
 Record the original assignment, complete success condition, accepted alternatives,
@@ -211,6 +310,9 @@ Practice summaries and their scores are not automatically mastery evidence. This
 alone does not authorize shipping or changing student-record semantics.
 
 ## 5. Verify behavior and report the boundary
+
+A W1 row needs only the W1 section's checks: its workspace test, the existing tests and type gates,
+and one smoke drive. The steps below are for W2 and for new DI or framework work.
 
 1. Test the real component, shared runtime, transport and rendering shell for each
    advertised mode. Exercise the TW behavioral matrix: intermediate vs final praise,

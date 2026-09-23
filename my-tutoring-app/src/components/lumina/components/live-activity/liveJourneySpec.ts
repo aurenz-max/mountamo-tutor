@@ -40,6 +40,8 @@ import { countsFlips } from '../../primitives/visual-primitives/math/tenFrameWor
 import { buildBondItems } from '../../primitives/visual-primitives/math/numberBondScript';
 import { expandNumberBondInteractions } from '../../primitives/visual-primitives/math/numberBondModes';
 import { buildCompareItems, compareObjectsHarnessAnswers } from '../../primitives/visual-primitives/math/compareObjectsScript';
+import { itemsFromChallenges as placeValueItems, placeValueHarnessAnswers } from '../../primitives/visual-primitives/math/placeValueScript';
+import { placeLabel } from '../../primitives/visual-primitives/math/spokenNumberWords';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -49,6 +51,8 @@ export type DriverInput =
   | { type: 'touch'; index?: number; target?: string }
   | { type: 'give' }
   | { type: 'choose'; label: string }
+  /** Text typed into the input with this `aria-label`. */
+  | { type: 'write'; label: string; text: string }
   | { type: 'answer'; text: string };
 
 /** What the program is asking the learner to do, independent of how this primitive does it. */
@@ -417,19 +421,28 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     probes: { mounted: { selector: '[data-pip-object="drawing"]' } },
   },
   'place-value-chart': {
+    execution: 'workspace',
     component: 'primitives/visual-primitives/math/PlaceValueChart.tsx',
     instanceId: 'chart',
-    defaults: { grade: 'Grade 2', mode: 'compare', di: true,
+    defaults: { grade: 'Grade 2', mode: 'compare', di: false,
       topic: 'What a digit is worth in the tens and ones places' },
-    leakTokens: ['PV_'],
-    // No example or return prompt: one flat row of counters has no positions, and
-    // position carrying magnitude is the whole of this primitive's teaching.
-    prompts: {
-      hint: 'Please show me a reminder for how to work this out.',
-      fade: 'Please hide the reminder now.',
-      replay: 'Please ask me about this same chart again.',
+    leakTokens: ['PV_', 'PVC_'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode alternates a printed number (spoken answer) with a dictated one, written
+    // into the chart's labelled columns. A wrong chart is complete, with its ones digit off
+    // by one; a half-written chart never commits.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = placeValueItems(ctx.data.challenges ?? [], { mode: ctx.data.challengeType,
+        tier: ctx.data.supportTier ?? 'medium' }).items.find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current place-value assignment');
+      if (item.answerKind === 'gesture') return item.chartPlaces.map((p, i) => {
+        const d = item.expectedDigits[i];
+        return { type: 'write' as const, label: placeLabel(p), text: String(intent === 'wrong' && p === 0 ? (d + 1) % 10 : d) };
+      });
+      const answers = placeValueHarnessAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
-    inputsFor: (intent, ctx) => intent === 'warmup' ? [] : spoken(ctx, intent === 'wrong' ? 'plainWrong' : 'correct'),
     probes: { mounted: { selector: '[data-pip-object="stage"]' } },
   },
   'shape-sorter': {
