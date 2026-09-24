@@ -10,7 +10,7 @@
  *     vowel option buttons and the two sort buckets are asserted GONE, not
  *     merely unused: each printed one of two options that INCLUDED the answer.
  *  3. Adult chrome is hidden at grade K; the reader hint line appears at G1.
- *  4. Tap-to-hear says the WORD via [SAY_WORD] and nothing else — its old
+ *  4. Tap-to-hear asks the tutor for the WORD and nothing else — its old
  *     escalate-to-stretch ladder isolated the middle sound on demand, which on
  *     two of three modes is the answer.
  *  5. spell-word: the letter bank honors the generator's distractor tier
@@ -33,7 +33,8 @@ const ctxState = vi.hoisted(() => ({
   isConnected: true,
   isListening: false,
   isAudioPlaying: false,
-  sessionMode: 'idle' as 'idle' | 'lesson',
+  sessionMode: 'lesson' as 'idle' | 'lesson',
+  activePrimitiveId: 'cvc',
   sessionResumeCount: 0,
   conversation: [] as Array<{ role: string; content: string }>,
 }));
@@ -50,22 +51,7 @@ vi.mock('@/contexts/LuminaAIContext', () => ({
     startListening: vi.fn(() => { ctxState.isListening = true; }),
     stopListening: vi.fn(),
     updateContext: vi.fn(),
-  }),
-}));
-
-const submitGestureAttempt = vi.hoisted(() => vi.fn());
-vi.mock('../../../../hooks/useJudgedSpeechLoop', () => ({
-  useJudgedSpeechLoop: () => ({
-    voiceTurns: { isVoiceActive: () => false, reset: vi.fn() },
-    queueCue: vi.fn(),
-    submitGestureAttempt,
-    sendCueNow: vi.fn(),
-    clearQueuedCue: vi.fn(),
-    arm: vi.fn(),
-    disarm: vi.fn(),
-    reset: vi.fn(),
-    isAwaitingJudgment: () => false,
-    config: {},
+    sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} },
   }),
 }));
 
@@ -85,6 +71,18 @@ vi.mock('../../../../utils/SoundManager', () => ({
 
 import CvcSpeller, { type CvcSpellerData, type CvcSpellerChallenge } from '../CvcSpeller';
 
+import { LiveLessonRuntime } from '../../../../components/live-activity/runtime/LiveLessonRuntime';
+import { LiveRuntimeContext } from '../../../../components/live-activity/runtime/LiveRuntimeContext';
+import { LiveRuntimeSurface } from '../../../../components/live-activity/runtime/LiveRuntimeSurface';
+
+/** CvcSpeller runs only on the teaching workspace, so it is mounted the way a lesson mounts it. */
+const bound = (data: CvcSpellerData) => {
+  const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
+  return <LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
+    <CvcSpeller data={data} runtimePlanItemId="plan-cvc" runtimeEvalMode="mixed" />
+  </LiveRuntimeSurface></LiveRuntimeContext.Provider>;
+};
+
 const challenge = (over: Partial<CvcSpellerChallenge> = {}): CvcSpellerChallenge => ({
   id: 'c1', taskType: 'spell-word', targetWord: 'sat',
   targetLetters: ['s', 'a', 't'], targetPhonemes: ['/s/', '/æ/', '/t/'],
@@ -97,6 +95,7 @@ const makeData = (
   over: Partial<CvcSpellerData> = {},
 ): CvcSpellerData => ({
   title: 'Short A Word Fun!',
+  instanceId: 'cvc',
   vowelFocus: 'short-a',
   letterGroup: 1,
   // 9 letters — the old union rendered ALL of these; the cap must keep b/g/d out
@@ -111,7 +110,6 @@ const tagged = (tag: string) =>
 
 beforeEach(() => {
   sendText.mockClear();
-  submitGestureAttempt.mockClear();
   ctxState.isListening = false;
 });
 afterEach(cleanup);
@@ -119,7 +117,7 @@ afterEach(cleanup);
 describe('CvcSpeller · §1 gate A — nothing on screen carries the child forward', () => {
   for (const taskType of ['fill-vowel', 'spell-word', 'word-sort'] as const) {
     it(`${taskType}: no Check / Next / Finish / Skip / Clear / Stretch`, () => {
-      render(<CvcSpeller data={makeData([challenge({ taskType })])} />);
+      render(bound(makeData([challenge({ taskType })])));
       for (const label of [/check/i, /next/i, /finish/i, /skip/i, /clear/i, /stretch/i]) {
         expect(screen.queryByRole('button', { name: label })).toBeNull();
       }
@@ -132,7 +130,7 @@ describe('CvcSpeller · §1 gate B — nothing names the answer first', () => {
     // They were the costume and the leak in one object: one of the two printed
     // letters IS the answer, captioned with its keyword, and a Grade 1 child
     // can read it.
-    render(<CvcSpeller data={makeData([challenge({ taskType: 'fill-vowel' })], { gradeLevel: '1' })} />);
+    render(bound(makeData([challenge({ taskType: 'fill-vowel' })], { gradeLevel: '1' })));
     expect(screen.queryByRole('button', { name: 'a' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'e' })).toBeNull();
     expect(screen.queryByText(/apple/i)).toBeNull();
@@ -144,7 +142,7 @@ describe('CvcSpeller · §1 gate B — nothing names the answer first', () => {
   });
 
   it('word-sort: the two vowel BUCKETS are gone and no column exists before an answer', () => {
-    render(<CvcSpeller data={makeData([challenge({ taskType: 'word-sort' })], { gradeLevel: '1' })} />);
+    render(bound(makeData([challenge({ taskType: 'word-sort' })], { gradeLevel: '1' })));
     expect(screen.queryByRole('button', { name: /like apple/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /like egg/i })).toBeNull();
     expect(screen.queryByText(/like apple/i)).toBeNull();
@@ -153,7 +151,7 @@ describe('CvcSpeller · §1 gate B — nothing names the answer first', () => {
   });
 
   it('spell-word: the boxes start empty and the bank never marks the answer', () => {
-    render(<CvcSpeller data={makeData([challenge()])} />);
+    render(bound(makeData([challenge()])));
     for (let i = 1; i <= 3; i++) {
       expect(screen.getByRole('button', { name: `box ${i}` }).textContent).toBe('?');
     }
@@ -164,30 +162,30 @@ describe('CvcSpeller · §1 gate B — nothing names the answer first', () => {
 
 describe('CvcSpeller · pre-reader band', () => {
   it('hides adult chrome at grade K', () => {
-    render(<CvcSpeller data={makeData([challenge()])} />);
+    render(bound(makeData([challenge()])));
     expect(screen.queryByText('Short A')).toBeNull();
     expect(screen.queryByText(/Spell It/)).toBeNull();
     expect(screen.queryByText(/put a letter in each box\./i)).toBeNull();
   });
 
   it('shows the reader hint line at grade 1', () => {
-    render(<CvcSpeller data={makeData([challenge()], { gradeLevel: '1' })} />);
+    render(bound(makeData([challenge()], { gradeLevel: '1' })));
     expect(screen.getByText(/put a letter in each box/i)).toBeTruthy();
   });
 });
 
 describe('CvcSpeller · tap-to-hear says the WORD and stops', () => {
-  it('emits [SAY_WORD] once per tap and never escalates into a stretch', () => {
-    render(<CvcSpeller data={makeData([challenge()])} />);
+  it('asks the tutor for the whole word once per tap and never escalates into a stretch', () => {
+    render(bound(makeData([challenge()])));
     const hear = screen.getByRole('button', { name: /hear the word/i });
     fireEvent.click(hear);
     fireEvent.click(hear);
     fireEvent.click(hear);
-    const said = tagged('[SAY_WORD]');
+    const said = tagged('The learner pressed Hear It');
     expect(said).toHaveLength(3);
     for (const message of said) {
       expect(message).toContain('"sat"');
-      expect(message).toContain('do NOT break it into separate sounds');
+      expect(message).toContain('whole, and nothing else');
     }
     // The deleted ladder's tags must not exist anywhere in this component.
     expect(tagged('[REPEAT_WORD]')).toHaveLength(0);
@@ -199,25 +197,22 @@ describe('CvcSpeller · tap-to-hear says the WORD and stops', () => {
 
 describe('CvcSpeller · spell-word is the GESTURE anchor’s first caller', () => {
   it('the letter bank honors the generator tier — availableLetters only tops up to 5', () => {
-    render(<CvcSpeller data={makeData([challenge()])} />);
+    render(bound(makeData([challenge()])));
     for (const l of ['s', 'a', 't', 'm', 'p', 'e']) {
-      expect(screen.getByRole('button', { name: l })).toBeTruthy();
+      expect(screen.getByRole('button', { name: `letter ${l}` })).toBeTruthy();
     }
     for (const l of ['b', 'g', 'd']) {
-      expect(screen.queryByRole('button', { name: l })).toBeNull();
+      expect(screen.queryByRole('button', { name: `letter ${l}` })).toBeNull();
     }
   });
 
-  it('the bank and the boxes are DISABLED until the run starts', () => {
-    // The gate that actually holds here is the disabled attribute, so that is
-    // what this asserts — a click assertion alone passes for the wrong reason
-    // (a disabled button never reaches the handler) and would go green even
-    // with the handler's own guard deleted.
-    render(<CvcSpeller data={makeData([challenge()])} />);
-    expect(screen.getByRole('button', { name: 's' })).toHaveProperty('disabled', true);
-    expect(screen.getByRole('button', { name: 'box 1' })).toHaveProperty('disabled', true);
-    fireEvent.click(screen.getByRole('button', { name: 's' }));
+  it('on the workspace the board is open at once: a letter lands in the first box, and a tapped box empties', () => {
+    // No start button: the tutor owns the session, so the learner's hands are live from the first render.
+    render(bound(makeData([challenge()])));
+    expect(screen.queryByRole('button', { name: /start/i })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'letter s' }));
+    expect(screen.getByRole('button', { name: 'box 1' }).textContent).toBe('s');
+    fireEvent.click(screen.getByRole('button', { name: 'box 1' }));
     expect(screen.getByRole('button', { name: 'box 1' }).textContent).toBe('?');
-    expect(submitGestureAttempt).not.toHaveBeenCalled();
   });
 });

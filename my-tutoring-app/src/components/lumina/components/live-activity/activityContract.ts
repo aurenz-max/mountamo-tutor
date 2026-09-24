@@ -32,6 +32,7 @@ import { barModelLiveDomain } from './adapters/barModelLive';
 import { phonicsBlenderLiveDomain } from './adapters/phonicsBlenderLive';
 import { wordFlipLiveDomain } from './adapters/wordFlipLive';
 import { soundSwapLiveDomain } from './adapters/soundSwapLive';
+import { cvcSpellerLiveDomain } from './adapters/cvcSpellerLive';
 import { workspaceAdapter, type LiveActivityAdapter } from './adapters/adapterContract';
 
 export type { LiveActivityAdapter } from './adapters/adapterContract';
@@ -69,6 +70,7 @@ export const LIVE_ADAPTERS = {
   'phonics-blender': workspaceAdapter('phonics-blender', phonicsBlenderLiveDomain),
   'word-flip': workspaceAdapter('word-flip', wordFlipLiveDomain),
   'sound-swap': workspaceAdapter('sound-swap', soundSwapLiveDomain),
+  'cvc-speller': workspaceAdapter('cvc-speller', cvcSpellerLiveDomain),
 } satisfies Record<string, LiveActivityAdapter<any>>;
 
 export type LivePrimitiveId = keyof typeof LIVE_ADAPTERS;

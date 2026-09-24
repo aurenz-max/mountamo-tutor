@@ -3149,6 +3149,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'Each item is a short word. On middle sound and sound groups the learner says the sound in the middle of '
+        + 'the word aloud and it is judged against that sound; the whole word said back, an outside sound, or a letter '
+        + 'name is not yet the answer. On spell it the learner taps a letter into each of three boxes and the activity '
+        + 'checks the third letter itself: never name, sound out or spell a letter of the word for them. Hear It asks '
+        + 'you to say the whole word only. You cannot place letters or fill the blank.',
+    },
   },
   {
     id: 'word-workout',

@@ -1,0 +1,147 @@
+{
+ "source": "qa/tutor-reports/cvc-speller-runtime-spell_word-payload-2026-09-24.json",
+ "primitiveId": "cvc-speller",
+ "evalMode": "spell_word",
+ "data": {
+  "title": "Spell Short Vowel Words",
+  "letterGroup": 3,
+  "availableLetters": [
+   "s",
+   "a",
+   "t",
+   "i",
+   "p",
+   "n",
+   "c",
+   "k",
+   "e",
+   "h",
+   "r",
+   "m",
+   "d",
+   "g",
+   "o",
+   "u",
+   "l",
+   "f",
+   "b"
+  ],
+  "challenges": [
+   {
+    "id": "c1",
+    "taskType": "spell-word",
+    "targetWord": "cat",
+    "targetLetters": [
+     "c",
+     "a",
+     "t"
+    ],
+    "targetPhonemes": [
+     "/k/",
+     "/æ/",
+     "/t/"
+    ],
+    "emoji": "🐱",
+    "imageDescription": "A cute cat sitting",
+    "distractorLetters": [
+     "p",
+     "s",
+     "n",
+     "i"
+    ]
+   },
+   {
+    "id": "c2",
+    "taskType": "spell-word",
+    "targetWord": "pen",
+    "targetLetters": [
+     "p",
+     "e",
+     "n"
+    ],
+    "targetPhonemes": [
+     "/p/",
+     "/ɛ/",
+     "/n/"
+    ],
+    "emoji": "🖊️",
+    "imageDescription": "An ink pen for writing",
+    "distractorLetters": [
+     "t",
+     "s",
+     "a",
+     "d"
+    ]
+   },
+   {
+    "id": "c3",
+    "taskType": "spell-word",
+    "targetWord": "pig",
+    "targetLetters": [
+     "p",
+     "i",
+     "g"
+    ],
+    "targetPhonemes": [
+     "/p/",
+     "/ɪ/",
+     "/g/"
+    ],
+    "emoji": "🐷",
+    "imageDescription": "A happy pink pig",
+    "distractorLetters": [
+     "m",
+     "t",
+     "a",
+     "o"
+    ]
+   },
+   {
+    "id": "c4",
+    "taskType": "spell-word",
+    "targetWord": "dog",
+    "targetLetters": [
+     "d",
+     "o",
+     "g"
+    ],
+    "targetPhonemes": [
+     "/d/",
+     "/ɒ/",
+     "/g/"
+    ],
+    "emoji": "🐶",
+    "imageDescription": "A friendly dog",
+    "distractorLetters": [
+     "p",
+     "n",
+     "a",
+     "t"
+    ]
+   },
+   {
+    "id": "c5",
+    "taskType": "spell-word",
+    "targetWord": "cup",
+    "targetLetters": [
+     "c",
+     "u",
+     "p"
+    ],
+    "targetPhonemes": [
+     "/k/",
+     "/ʌ/",
+     "/p/"
+    ],
+    "emoji": "🥤",
+    "imageDescription": "A drinking cup",
+    "distractorLetters": [
+     "s",
+     "t",
+     "n",
+     "i"
+    ]
+   }
+  ]
+ }
+}

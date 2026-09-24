@@ -1,0 +1,122 @@
+{
+ "source": "qa/tutor-reports/cvc-speller-runtime-fill_vowel-payload-2026-09-24.json",
+ "primitiveId": "cvc-speller",
+ "evalMode": "fill_vowel",
+ "data": {
+  "title": "Spell Short Vowel Words",
+  "letterGroup": 3,
+  "availableLetters": [
+   "s",
+   "a",
+   "t",
+   "i",
+   "p",
+   "n",
+   "c",
+   "k",
+   "e",
+   "h",
+   "r",
+   "m",
+   "d",
+   "g",
+   "o",
+   "u",
+   "l",
+   "f",
+   "b"
+  ],
+  "challenges": [
+   {
+    "id": "c1",
+    "taskType": "fill-vowel",
+    "targetWord": "cat",
+    "targetLetters": [
+     "c",
+     "a",
+     "t"
+    ],
+    "targetPhonemes": [
+     "/k/",
+     "/æ/",
+     "/t/"
+    ],
+    "emoji": "🐱",
+    "imageDescription": "A cute cat sitting down.",
+    "distractorLetters": []
+   },
+   {
+    "id": "c2",
+    "taskType": "fill-vowel",
+    "targetWord": "pen",
+    "targetLetters": [
+     "p",
+     "e",
+     "n"
+    ],
+    "targetPhonemes": [
+     "/p/",
+     "/ɛ/",
+     "/n/"
+    ],
+    "emoji": "🖊️",
+    "imageDescription": "A blue ink pen.",
+    "distractorLetters": []
+   },
+   {
+    "id": "c3",
+    "taskType": "fill-vowel",
+    "targetWord": "pig",
+    "targetLetters": [
+     "p",
+     "i",
+     "g"
+    ],
+    "targetPhonemes": [
+     "/p/",
+     "/ɪ/",
+     "/g/"
+    ],
+    "emoji": "🐷",
+    "imageDescription": "A pink pig smiling.",
+    "distractorLetters": []
+   },
+   {
+    "id": "c4",
+    "taskType": "fill-vowel",
+    "targetWord": "dog",
+    "targetLetters": [
+     "d",
+     "o",
+     "g"
+    ],
+    "targetPhonemes": [
+     "/d/",
+     "/ɒ/",
+     "/g/"
+    ],
+    "emoji": "🐶",
+    "imageDescription": "A friendly puppy dog.",
+    "distractorLetters": []
+   },
+   {
+    "id": "c5",
+    "taskType": "fill-vowel",
+    "targetWord": "cup",
+    "targetLetters": [
+     "c",
+     "u",
+     "p"
+    ],
+    "targetPhonemes": [
+     "/k/",
+     "/ʌ/",
+     "/p/"
+    ],
+    "emoji": "🥤",
+    "imageDescription": "A drinking cup.",
+    "distractorLetters": []
+   }
+  ]
+ }
+}

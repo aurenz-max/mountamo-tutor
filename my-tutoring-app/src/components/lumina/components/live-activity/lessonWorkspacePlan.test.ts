@@ -79,7 +79,7 @@ describe('ordinary lesson workspace eligibility', () => {
 
   it('every family that binds the workspace admits every one of its modes; no mode is withheld from lessons', () => {
     const bound = Object.entries(LIVE_ADAPTERS).filter(([, adapter]) => (adapter as LiveActivityAdapter).bindsTeachingWorkspace);
-    expect(bound.map(([id]) => id).sort()).toEqual(['balance-scale', 'bar-model', 'base-ten-blocks', 'compare-objects', 'comparison-builder', 'counting-board', 'di-letter-sounds', 'di-math-facts',
+    expect(bound.map(([id]) => id).sort()).toEqual(['balance-scale', 'bar-model', 'base-ten-blocks', 'compare-objects', 'comparison-builder', 'counting-board', 'cvc-speller', 'di-letter-sounds', 'di-math-facts',
       'di-sentence-reading', 'di-word-reading', 'fraction-circles', 'letter-sound-link', 'number-bond', 'number-line', 'number-sequencer', 'number-tracer', 'ordinal-line', 'phonics-blender', 'place-value-chart', 'shape-sorter', 'sorting-station', 'sound-swap', 'ten-frame', 'word-flip']);
     // A component with no workspace binding keeps its lesson path and its catalog tutoring.
     const chart = { componentId: 'hundreds-chart', instanceId: 'one', title: 'Chart', objectiveIds: ['objective'], data: {} };

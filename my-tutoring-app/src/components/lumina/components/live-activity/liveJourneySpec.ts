@@ -55,6 +55,7 @@ import type { BarModelChallenge } from '../../primitives/visual-primitives/math/
 import { blendHarnessAnswers, blendItems } from '../../primitives/visual-primitives/literacy/phonicsBlenderWorkspace';
 import { flipHarnessAnswers } from '../../primitives/visual-primitives/literacy/wordFlipWorkspace';
 import { swapHarnessAnswers } from '../../primitives/visual-primitives/literacy/soundSwapWorkspace';
+import { cvcHarnessAnswers } from '../../primitives/visual-primitives/literacy/cvcSpellerWorkspace';
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
 
@@ -812,6 +813,26 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="word"]' }, reward: { selector: '[data-swap-reward]', kind: 'count' } },
+  },
+  'cvc-speller': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/CvcSpeller.tsx',
+    instanceId: 'cvc',
+    defaults: { grade: 'Kindergarten', mode: 'spell_word', di: false,
+      topic: 'Spelling short-vowel CVC words by putting a letter in each sound box' },
+    leakTokens: ['DI_CVC_ITEM', 'DI_CVC_MOVE_ON', 'DI_CVC_COMPLETE', 'DI_CVC_BUILD', 'SAY_WORD'],
+    prompts: WORKSPACE_PROMPTS,
+    // A spoken item says the middle sound or the whole word back; a spelling presses bank letters
+    // into the boxes, the right word or its first letter swapped. The third letter is the commit.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current cvc-speller challenge');
+      const answers = cvcHarnessAnswers(c, ctx.demand?.boxes as string | undefined)[intent === 'wrong' ? 'plainWrong' : 'correct'];
+      return c.taskType === 'spell-word' ? answers.map(l => ({ type: 'choose' as const, label: `letter ${l}` }))
+        : [{ type: 'answer', text: answers[0] }];
+    },
+    probes: { mounted: { selector: '[aria-label="hear the word"]' }, reward: { selector: '[data-cvc-reward]', kind: 'count' } },
   },
 };
 
