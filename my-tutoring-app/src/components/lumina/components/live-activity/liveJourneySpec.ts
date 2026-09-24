@@ -54,6 +54,7 @@ import { isHands, TRAY, workshopItems, workshopProblem } from '../../primitives/
 import type { BarModelChallenge } from '../../primitives/visual-primitives/math/BarModel';
 import { blendHarnessAnswers, blendItems } from '../../primitives/visual-primitives/literacy/phonicsBlenderWorkspace';
 import { flipHarnessAnswers } from '../../primitives/visual-primitives/literacy/wordFlipWorkspace';
+import { swapHarnessAnswers } from '../../primitives/visual-primitives/literacy/soundSwapWorkspace';
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
 
@@ -793,6 +794,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="frame"]' }, reward: { selector: '[data-flip-reward]', kind: 'count' } },
+  },
+  'sound-swap': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/SoundSwap.tsx',
+    instanceId: 'swap',
+    defaults: { grade: 'Kindergarten', mode: 'addition', di: false,
+      topic: 'Adding one sound to the beginning of a word to make a new word' },
+    leakTokens: ['DI_SWAP_ITEM', 'DI_SWAP_MOVE_ON', 'DI_SWAP_COMPLETE', 'PRONOUNCE_SOUND'],
+    prompts: WORKSPACE_PROMPTS,
+    // One spoken word per item: the new word, or the starting word said back unchanged.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current sound-swap challenge');
+      const answers = swapHarnessAnswers(c);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="word"]' }, reward: { selector: '[data-swap-reward]', kind: 'count' } },
   },
 };
 

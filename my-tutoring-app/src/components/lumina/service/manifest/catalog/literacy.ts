@@ -2084,6 +2084,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
+      guidance: 'The learner sees a starting word and its sounds, hears one sound to add, take away or change, and says '
+        + 'the new word aloud; it is judged against the word you are given. The starting word said back, or a different '
+        + 'word, is not yet the answer. Always name the sound to change: without it the ask has many right answers. A '
+        + 'tapped sound asks you for that sound only. The new word is not shown until credited: never say it before the '
+        + 'learner has tried. You cannot tap sounds or show the new word.',
+    },
     // \u2500\u2500 DI MODALITY, PURELY VERBAL (2026-08-09) \u2014 second literacy port after
     // phonics-blender, same two user rulings. The tutor owns the clock and the
     // task is spoken end to end: it says the starting word, names the one sound

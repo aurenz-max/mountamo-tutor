@@ -1,0 +1,182 @@
+{
+ "source": "qa/tutor-reports/sound-swap-runtime-addition-payload-2026-09-24.json",
+ "primitiveId": "sound-swap",
+ "evalMode": "addition",
+ "data": {
+  "title": "Sound Addition Magic: Beginning Sounds!",
+  "gradeLevel": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "operation": "addition",
+    "originalWord": "at",
+    "originalPhonemes": [
+     "/æ/",
+     "/t/"
+    ],
+    "originalImage": "The letters spelling out at",
+    "resultWord": "cat",
+    "resultPhonemes": [
+     "/k/",
+     "/æ/",
+     "/t/"
+    ],
+    "resultImage": "A cute furry cat sitting",
+    "addPhoneme": "/k/",
+    "addPosition": "beginning"
+   },
+   {
+    "id": "c2",
+    "operation": "addition",
+    "originalWord": "at",
+    "originalPhonemes": [
+     "/æ/",
+     "/t/"
+    ],
+    "originalImage": "The letters spelling out at",
+    "resultWord": "bat",
+    "resultPhonemes": [
+     "/b/",
+     "/æ/",
+     "/t/"
+    ],
+    "resultImage": "A wooden baseball bat ready",
+    "addPhoneme": "/b/",
+    "addPosition": "beginning"
+   },
+   {
+    "id": "c3",
+    "operation": "addition",
+    "originalWord": "at",
+    "originalPhonemes": [
+     "/æ/",
+     "/t/"
+    ],
+    "originalImage": "The letters spelling out at",
+    "resultWord": "hat",
+    "resultPhonemes": [
+     "/h/",
+     "/æ/",
+     "/t/"
+    ],
+    "resultImage": "A colorful winter winter hat",
+    "addPhoneme": "/h/",
+    "addPosition": "beginning"
+   },
+   {
+    "id": "c4",
+    "operation": "addition",
+    "originalWord": "at",
+    "originalPhonemes": [
+     "/æ/",
+     "/t/"
+    ],
+    "originalImage": "The letters spelling out at",
+    "resultWord": "mat",
+    "resultPhonemes": [
+     "/m/",
+     "/æ/",
+     "/t/"
+    ],
+    "resultImage": "A welcome mat on floor",
+    "addPhoneme": "/m/",
+    "addPosition": "beginning"
+   },
+   {
+    "id": "c5",
+    "operation": "addition",
+    "originalWord": "an",
+    "originalPhonemes": [
+     "/æ/",
+     "/n/"
+    ],
+    "originalImage": "The letters spelling out an",
+    "resultWord": "can",
+    "resultPhonemes": [
+     "/k/",
+     "/æ/",
+     "/n/"
+    ],
+    "resultImage": "A metal soup can",
+    "addPhoneme": "/k/",
+    "addPosition": "beginning"
+   },
+   {
+    "id": "c6",
+    "operation": "addition",
+    "originalWord": "an",
+    "originalPhonemes": [
+     "/æ/",
+     "/n/"
+    ],
+    "originalImage": "The letters spelling out an",
+    "resultWord": "fan",
+    "resultPhonemes": [
+     "/f/",
+     "/æ/",
+     "/n/"
+    ],
+    "resultImage": "An electric cooling fan",
+    "addPhoneme": "/f/",
+    "addPosition": "beginning"
+   },
+   {
+    "id": "c7",
+    "operation": "addition",
+    "originalWord": "it",
+    "originalPhonemes": [
+     "/ɪ/",
+     "/t/"
+    ],
+    "originalImage": "The letters spelling out it",
+    "resultWord": "bit",
+    "resultPhonemes": [
+     "/b/",
+     "/ɪ/",
+     "/t/"
+    ],
+    "resultImage": "A little bite of apple",
+    "addPhoneme": "/b/",
+    "addPosition": "beginning"
+   },
+   {
+    "id": "c8",
+    "operation": "addition",
+    "originalWord": "it",
+    "originalPhonemes": [
+     "/ɪ/",
+     "/t/"
+    ],
+    "originalImage": "The letters spelling out it",
+    "resultWord": "hit",
+    "resultPhonemes": [
+     "/h/",
+     "/ɪ/",
+     "/t/"
+    ],
+    "resultImage": "A baseball hit with bat",
+    "addPhoneme": "/h/",
+    "addPosition": "beginning"
+   },
+   {
+    "id": "c9",
+    "operation": "addition",
+    "originalWord": "it",
+    "originalPhonemes": [
+     "/ɪ/",
+     "/t/"
+    ],
+    "originalImage": "The letters spelling out it",
+    "resultWord": "sit",
+    "resultPhonemes": [
+     "/s/",
+     "/ɪ/",
+     "/t/"
+    ],
+    "resultImage": "A kid sitting in chair",
+    "addPhoneme": "/s/",
+    "addPosition": "beginning"
+   }
+  ]
+ }
+}
