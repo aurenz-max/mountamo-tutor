@@ -34,6 +34,12 @@ export interface DialogueDecision {
    * the layer that produced it: a finished reply that recorded nothing is a
    * settled turn the runtime left open, not an unfinished tutor turn. */
   feedbackComplete?: boolean;
+  /** A finished reply to a spoken answer below the verdict gate whose likeliest reading is "not
+   *  credited": it resolves to a retry rather than stranding the learner (user ruling 09-24). */
+  resolution?: 'not_credited';
+  /** The reply's likeliest reading is finished feedback (below the feedback gate too). A finished reply that
+   *  records nothing gets one plain-verdict request, so no answered item is left waiting in silence. */
+  replyFinished?: boolean;
   grounded: number;
   accepted: boolean;
   reason: string;

@@ -107,9 +107,11 @@ export class DialogueObserver {
       const current = sameItemScope(state, request.scope) && state.revision === request.scope.revision && state.status === 'active';
       let status: string | undefined = current ? 'abstained' : 'stale';
       const spoken = !!request.pendingResponse && request.activity?.facts.response === 'speech';
-      const verdictValid = ['correct', 'incorrect'].includes(decision.verdict) && Number.isFinite(decision.verdictConfidence)
+      // A below-gate "not credited" resolution may only ever reopen the item, never credit it.
+      const notCredited = decision.resolution === 'not_credited' && decision.verdict === 'incorrect' && decision.transition === 'retry';
+      const verdictValid = notCredited || ['correct', 'incorrect'].includes(decision.verdict) && Number.isFinite(decision.verdictConfidence)
         && decision.verdictConfidence! >= .9 && decision.verdictConfidence! <= 1;
-      const transitionValid = ['advance', 'retry'].includes(decision.transition) && Number.isFinite(decision.confidence)
+      const transitionValid = notCredited || ['advance', 'retry'].includes(decision.transition) && Number.isFinite(decision.confidence)
         && decision.confidence >= .9 && decision.confidence <= 1;
       const transition = transitionValid ? decision.transition : 'none';
       const action = spoken ? { type: 'workspace' as const, operation: 'apply_tutor_verdict', input: { dialogue: {
@@ -143,15 +145,16 @@ export class DialogueObserver {
               content: 'The next task is now visible in liveRuntime. Introduce that task naturally and wait for the learner.' });
         }
       }
-      // A settled tutor turn that recorded nothing leaves the assignment open with
-      // nobody holding the conversation: the tutor believes it finished, and the
-      // runtime knows it did not. Say that once per learner turn and let the tutor
-      // choose what to do. This grants no credit and prescribes no wording.
-      if (current && spoken && decision.feedbackComplete === true && status !== 'visible'
+      // A settled tutor turn that recorded nothing leaves the assignment open with nobody holding the
+      // conversation: the tutor believes it finished, and the runtime knows it did not. USER RULING 09-24:
+      // no answered item waits in silence. Once per learner turn, ask the tutor to say plainly whether the
+      // answer is right; that reply is judged at the gate. This grants no credit and prescribes no wording.
+      if (current && spoken && (decision.replyFinished ?? decision.feedbackComplete) === true && status !== 'visible'
           && this.cuedResponse !== request.pendingResponse!.id && generation === this.generation && !this.closed) {
         this.cuedResponse = request.pendingResponse!.id;
         this.report({ type: 'text', scripted: false, source: 'dialogue_open_assignment',
-          content: 'liveRuntime recorded no answer for that turn, and its current task is still open. Read the current task in liveRuntime and continue with the learner from there.' });
+          content: "liveRuntime did not record your last reply as a verdict on the learner's answer, so the current task is "
+            + "still open. Tell the learner plainly, in your own words, whether they have solved the current task." });
       }
       if (!this.closed) this.report({ type: 'dialogue_observation', scope: request.scope, input: request, ...decision, status, runtimeReason });
     } catch { if (generation === this.generation && !this.closed) this.report({ type: 'dialogue_observation',

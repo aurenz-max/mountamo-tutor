@@ -47,13 +47,28 @@ export function decideDialogue(input: DialogueRequest, answers: any, ms: number,
   // Speech is judged from tutor feedback; gesture checks remain authoritative.
   const spoken = !!input.pendingResponse && input.activity?.facts.response === 'speech';
   const hasCheckedResponse = !!input.lastResponse && input.phase === 'checked';
-  const verdictCertain = certain(verdict, ['correct', 'incorrect', 'none']);
+  const feedback = answers?.feedback;
+  const feedbackComplete = certain(feedback, ['finished', 'open']) && feedback.choice === 'finished';
+  const replyFinished = validChoice(feedback, ['finished', 'open']) && feedback.probabilities.finished > feedback.probabilities.open;
+  // USER RULING 09-24: a finished tutor reply to a spoken answer never ends in a dead end. Below the
+  // gate, the likelier outcome decides WHICH way it resolves, never whether: not credited reopens the
+  // item for a retry now; credited is not granted silently (sub-step praise such as "Exactly right!"
+  // after "how many sides?" scores there too) but asks the tutor to say plainly whether the learner is
+  // right (`confirm_credit`), and that reply is judged at the gate. A reply most likely to be no
+  // verdict at all (help, a question) leaves the item open while the dialogue goes on.
+  const gated = certain(verdict, ['correct', 'incorrect', 'none']);
+  const likeliest = (c: string) => ['correct', 'incorrect', 'none'].filter(o => o !== c)
+    .every(o => verdict.probabilities[c] > verdict.probabilities[o]);
+  const belowGate = spoken && replyFinished && !gated;
+  const notCredited = belowGate && likeliest('incorrect');
+  if (belowGate && likeliest('correct'))
+    return { ...abstain('confirm_credit', ms), feedbackComplete, replyFinished, verdictConfidence: 0, model };
+  if (notCredited) verdict.choice = 'incorrect';
+  const verdictCertain = notCredited || gated;
   const transitionCertain = certain(transition, ['advance', 'retry', 'none']);
   const spokenVerdict = spoken && verdictCertain && ['correct', 'incorrect'].includes(verdict.choice);
   const grounded = spoken ? spokenVerdict ? 1 : 0 : hasCheckedResponse ? 1 : 0;
   const correct = spoken ? verdict.choice === 'correct' : input.lastResponse?.correct;
-  const feedback = answers?.feedback;
-  const feedbackComplete = certain(feedback, ['finished', 'open']) && feedback.choice === 'finished';
   const finishedSuccess = grounded === 1 && correct && verdictCertain && verdict.choice === 'correct' && feedbackComplete;
   // The mirror of finishedSuccess, and the reason it exists: a confidently wrong
   // answer leaves the item unfinished, and reopening it is the only thing that can
@@ -66,13 +81,14 @@ export function decideDialogue(input: DialogueRequest, answers: any, ms: number,
   const settledFailure = grounded === 1 && !correct && verdictCertain && verdict.choice === 'incorrect';
   // These observations are independent: "Let's try again" can clearly invite a
   // retry without clearly declaring the previous answer wrong. Do not couple them.
-  if (!verdictCertain && !transitionCertain) return abstain('uncertain_or_invalid', ms);
+  if (!verdictCertain && !transitionCertain) return { ...abstain('uncertain_or_invalid', ms), feedbackComplete, replyFinished };
   const base = { verdict: verdictCertain ? verdict.choice : 'none',
     transition: finishedSuccess ? 'advance' : settledFailure ? 'retry' : transitionCertain ? transition.choice : 'none',
     confidence: finishedSuccess ? Math.min(verdict.probabilities.correct, feedback.probabilities.finished)
       : settledFailure ? verdict.probabilities.incorrect
       : transitionCertain ? transition.probabilities[transition.choice] : 0,
-    verdictConfidence: verdictCertain ? verdict.probabilities[verdict.choice] : 0, feedbackComplete, grounded, ms, model };
+    verdictConfidence: verdictCertain ? verdict.probabilities[verdict.choice] : 0, feedbackComplete, replyFinished, grounded, ms, model,
+    ...(notCredited ? { resolution: 'not_credited' as const } : {}) };
   // A refused observation reports no score. Carrying the transition probability
   // through a refusal read as proof the answer was recognized; it never was.
   if (grounded < .9) return { ...base, confidence: 0, accepted: false, transition: 'none', reason: 'unsupported' };
@@ -80,7 +96,7 @@ export function decideDialogue(input: DialogueRequest, answers: any, ms: number,
       || (!spoken && base.verdict === 'incorrect' && correct)
       || (base.transition === 'advance' && !correct)) return { ...base, confidence: 0, grounded: 0, accepted: false, transition: 'none', reason: 'contradiction' };
   return { ...base, accepted: true, reason: finishedSuccess ? spoken ? 'tutor_success_feedback_finished' : 'checked_success_feedback_finished'
-    : settledFailure ? 'tutor_incorrect_reopen'
+    : settledFailure ? notCredited ? 'not_credited_below_gate' : 'tutor_incorrect_reopen'
     : base.transition === 'none' ? transitionCertain ? 'no_transition' : 'transition_uncertain' : 'supported' };
 }
 

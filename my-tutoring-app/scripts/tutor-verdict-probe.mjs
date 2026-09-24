@@ -470,7 +470,11 @@ try {
       const expected = name === 'indirect_retry'
         ? [{ verdict: 'incorrect', transition: 'retry' }, { verdict: 'none', transition: 'none' }]
         : [{ verdict, transition }];
-      const passed = expected.some(e => actualVerdict === e.verdict && actualTransition === e.transition);
+      // USER RULING 09-24 (no dead end after an answer): where no credit is expected, a below-gate
+      // "not credited" retry and a confirm-credit request both grant nothing, so both pass.
+      const noCredit = expected.every(e => e.verdict === 'none')
+        && (result.reason === 'confirm_credit' || result.resolution === 'not_credited');
+      const passed = noCredit || expected.some(e => actualVerdict === e.verdict && actualTransition === e.transition);
       results.push({ repetition, name, input, expected, result, passed });
       console.log(repetition, name, actualVerdict, actualTransition, result.verdictConfidence, passed ? 'PASS' : 'FAIL');
     }

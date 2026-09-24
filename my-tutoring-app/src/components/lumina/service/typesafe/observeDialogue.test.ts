@@ -79,12 +79,34 @@ it('reports no score for a refused observation and exposes feedback completion o
   const uncertain = { verdict: { type: 'choice', choice: 'correct', confidence: .66, probabilities: { correct: .77, none: .14, incorrect: .09 } },
     feedback: choice('finished', ['finished', 'open'], 1),
     transition: { type: 'choice', choice: 'advance', confidence: .94, probabilities: { advance: .95, none: .04, retry: .01 } } };
-  expect(decideDialogue(spoken, uncertain, 412)).toMatchObject({ accepted: false, reason: 'unsupported',
-    verdict: 'none', transition: 'none', confidence: 0, verdictConfidence: 0, feedbackComplete: true });
+  // Since 09-24 (no dead end after an answer) a likely credit below the gate asks the tutor to confirm
+  // instead of refusing in silence; it still grants nothing and reports no score.
+  expect(decideDialogue(spoken, uncertain, 412)).toMatchObject({ accepted: false, reason: 'confirm_credit',
+    verdict: 'none', transition: 'none', confidence: 0, verdictConfidence: 0, feedbackComplete: true, replyFinished: true });
   // A contradicted observation reports no score either.
   expect(decideDialogue({ ...input, lastResponse: { ...input.lastResponse!, correct: false } },
     { ...answers(), feedback: choice('finished', ['finished', 'open']) }, 200))
     .toMatchObject({ accepted: false, reason: 'contradiction', confidence: 0 });
   // An unfinished reply is a different disposition from a refused verdict.
   expect(decideDialogue(spoken, { ...uncertain, feedback: choice('open', ['finished', 'open']) }, 200).feedbackComplete).toBe(false);
+});
+
+it('never leaves a finished reply to a spoken answer in a dead end (user ruling 09-24)', () => {
+  const spoken = { ...input, phase: 'working', lastResponse: null, learner: 'fewer apples than bananas',
+    pendingResponse: { id: 'speech:7', text: 'fewer apples than bananas' },
+    activity: { responseSource: null, attemptNumber: 0, objects: [], demonstration: [], facts: { response: 'speech' },
+      assistance: { level: 0, answerExposure: 'none' as const } } };
+  const reply = (p: Record<string, number>, finished = .83) => ({
+    verdict: { type: 'choice', choice: Object.entries(p).sort((a, b) => b[1] - a[1])[0][0], confidence: .5, probabilities: p },
+    feedback: { type: 'choice', choice: finished > .5 ? 'finished' : 'open', confidence: .8, probabilities: { finished, open: 1 - finished } },
+    transition: { type: 'choice', choice: 'none', confidence: .5, probabilities: { advance: .4, none: .5, retry: .1 } } });
+  // Likeliest "not credited" below the gate reopens the item for a retry; it can never credit.
+  expect(decideDialogue(spoken, reply({ incorrect: .63, none: .35, correct: .02 }), 1)).toMatchObject({
+    accepted: true, verdict: 'incorrect', transition: 'retry', resolution: 'not_credited', reason: 'not_credited_below_gate' });
+  // Likeliest "credited" below the gate grants nothing and asks the tutor to say plainly (the 09-24 sitting: .89).
+  expect(decideDialogue(spoken, reply({ correct: .89, none: .08, incorrect: .03 }), 1)).toMatchObject({
+    accepted: false, reason: 'confirm_credit', verdict: 'none', transition: 'none', replyFinished: true });
+  // An open reply (a question, the next step) is dialogue, not a verdict: nothing resolves and nothing is asked.
+  expect(decideDialogue(spoken, reply({ correct: .56, none: .4, incorrect: .04 }, .2), 1)).toMatchObject({
+    accepted: false, replyFinished: false });
 });
