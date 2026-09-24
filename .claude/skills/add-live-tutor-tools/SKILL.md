@@ -207,6 +207,16 @@ catalog id such as `hundreds-chart`.
   presses must be unique on screen. A mode or band the driver has no input for throws with its
   name in the row; record it in the report as undriven, including any guidance written for it.
 
+**Speech-loop shape (L).** A component that calls `useJudgedSpeechLoop` owns its own index, verdict
+handling and correction cap, so there is no runner to swap. Go straight to one path: rewrite its
+progression onto `useWorkspaceRunner` inside `<X>Surface` and export `withWorkspaceOnly('<id>', ...)`.
+Delete the loop, the cap, the mic panel and the Live connect; keep the render, the tier levers and Pip
+(re-driven from `runner.revealHeld`, `runner.cuedItemId`). Templates: `PhonicsBlender.tsx` (spoken
+only), `CvcSpeller.tsx` (a checked gesture beside speech; Try again keeps the right letters). A
+tap-to-hear control sends a silent host message asking for the sound or word, never the answer. The
+shared lifecycle plays the success sound: do not play it again in `onAffirmed`. Mount-based tests move
+under a runtime (a render outside one shows the needs-the-tutor card). Report: B2.
+
 **Checks.** (a) The generic W1 contract, `runtime/workspaceContract.test.tsx`, covers what every
 binding owes (lesson binds the content, tutor owns it with no cue, a task, the packet's item and
 `learner`, no observer-only tool, nothing moves or submits on its own, adapter modes equal the

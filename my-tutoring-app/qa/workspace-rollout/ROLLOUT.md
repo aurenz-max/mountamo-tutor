@@ -7,10 +7,11 @@ Pull the top `open` batch, close it here with its report link, and update the WO
 the same slice. W2 (demonstrations, scene facts, JEV and learner-intent cases, `--audio`
 journeys) is pulled per primitive only when a W1 smoke drive or a human sitting shows the need.
 
-## Status (2026-09-23)
+## Status (2026-09-24)
 
-- Catalog: 212 primitive ids. On the workspace: 21 (8 at W2 from the pilots, 13 at W1). Queued:
-  Tier A 0, Tier B 8, Tier C 152. Held back: 31.
+- Catalog: 212 primitive ids. On the workspace: 25 (8 at W2 from the pilots, 17 at W1). Queued:
+  Tier A 0, Tier B 4, Tier C 152. Held back: 31. (09-24; a concurrent session is binding
+  `adaptation-investigator` from C23.)
 - **Recount:** catalog ids = `id: '...'` entries in `src/components/lumina/service/manifest/catalog/*.ts`
   (skip the test fixture id `x`); on the workspace = entries with a `teachingWorkspace: {` block.
   Runner-era surfaces: `rg -l "useJudgedScriptRunner<|useJudgedSpeechLoop<|= useJudgedScriptRunner|= useJudgedSpeechLoop" src/components/lumina/primitives --glob "!*test*"`.
@@ -33,6 +34,7 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 | A1: place-value-chart, ordinal-line, sorting-station | W1 | [workspace-rollout-A1-2026-09-23.md](../tutor-reports/workspace-rollout-A1-2026-09-23.md) |
 | A2: number-line, comparison-builder, number-tracer (plain shape) | W1 | [workspace-rollout-A2-2026-09-23.md](../tutor-reports/workspace-rollout-A2-2026-09-23.md) |
 | B1: balance-scale, base-ten-blocks, bar-model, fraction-circles (every mode, runner-era and plain surfaces) | W1 | [workspace-rollout-B1-2026-09-23.md](../tutor-reports/workspace-rollout-B1-2026-09-23.md). **Ruling owed:** balance-scale `two_step` explanation is now scored. **Scripted paths deleted 09-23** (1c82649c, 22d40e6c): workspace-only |
+| B2: cvc-speller, phonics-blender, sound-swap, word-flip (speech-loop shape, straight to workspace only) | W1 | [workspace-rollout-B2-2026-09-24.md](../tutor-reports/workspace-rollout-B2-2026-09-24.md). 8 smokes PASS; **open:** the harness fails a drive on a transparent Live resume (Gemini 1011) |
 | DEAD: runner-owned sandbox handoff, `'di-runner'` owner value, `RUNNER_GUIDANCE`/`runnerLessonStart` (frontend) | — | 09-23, no report. **Residue, owned by LA-14 retirement (`07-census.md`):** the backend bridge `live_activity_tools.py` still accepts `teachingOwner: 'di-runner'` and emits `activity_ready` for it, and `run_live_runtime.py` (`judged_runner`), `run_live_lesson_plan.py` and `scripts/live-lesson-plan-fixture.mjs` still branch on it (the live route's `diPlan` probe was removed with it). No frontend adapter sends that value. |
 
 ## Queue
@@ -42,7 +44,7 @@ Order: Tier A, then runner-era K–2 (the recipe applies as written), then the r
 | Row | Shape | Primitives | Status |
 | --- | --- | --- | --- |
 | B1 | R | `balance-scale` (equality, workshop), `base-ten-blocks` (DI modes), `bar-model` (explanation), `fraction-circles` (`touch_fraction`) — census Tier B | done 09-23 (every mode, plain surfaces too) |
-| B2 | R | `cvc-speller`, `phonics-blender`, `sound-swap`, `word-flip` (both runner hooks) | open |
+| B2 | R | `cvc-speller`, `phonics-blender`, `sound-swap`, `word-flip` (speech-loop shape) | done 09-24 (workspace only, every mode) |
 | B3 | R | `you-and-me`, `spatial-scene`, `di-shapes`, `ramp-lab` (investigation) | open |
 | C1 | R | K literacy sounds: `rhyme-studio`, `word-workout`, `phoneme-explorer`, `syllable-clapper` | open |
 | C2 | R | K literacy words: `letter-spotter`, `word-sorter`, `word-builder`, `picture-vocabulary` | open |
@@ -105,6 +107,9 @@ A C row whose primitive turns out to have no answer check moves to HELD with the
 - Never edit a component while a drive runs against it: the edit reloads the page and the drive fails.
 - Gates per batch: `typecheck:lumina` 0, full `tsc` not above baseline (770 on 09-23), the batch's
   tests plus `src/components/lumina/components/live-activity`.
+- *Speech-loop shape* (B2): a component that calls `useJudgedSpeechLoop` and owns its own index and
+  verdict handling has no runner to swap. Rewrite its progression onto `useWorkspaceRunner` behind
+  `withWorkspaceOnly` (templates: `PhonicsBlender.tsx`; `CvcSpeller.tsx` for a gesture beside speech).
 - Generic W1 contract test BUILT 09-24: `runtime/workspaceContract.test.tsx` runs all 21 bound
   families on 53 saved generated payloads (`runtime/testing/w1-payloads/`, 181 cases). A new family
   fails it until its smoke payload is copied there. Per-primitive files keep only the primitive's
