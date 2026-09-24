@@ -170,7 +170,9 @@ async def tutor_led(s):
                         print(f'Run {s.index} {label}: {transcript[:170]}', flush=True)
                         if until(s.state): return transcript
                         transcript = ''
-                elif kind in ('error', 'session_ended', 'session_resuming'):
+                elif kind in ('session_resuming', 'session_resumed'):
+                    s.record('provider_resume', event=kind, message=event.get('message'))
+                elif kind in ('error', 'session_ended'):
                     raise RuntimeError(event.get('message', kind))
                 elif kind in ('activity_command', 'activity_request'):
                     raise AssertionError('Model bypassed the mounted runtime: ' + kind)
@@ -365,7 +367,9 @@ async def judged_runner(s):
                     assert answered <= 12, 'Session did not close within its item cap'
                     if s.state['task'] and not s.state['task']['completed']:
                         await s.learner('correct')
-            elif kind in ('error', 'session_ended', 'session_resuming'):
+            elif kind in ('session_resuming', 'session_resumed'):
+                s.record('provider_resume', event=kind, message=event.get('message'))
+            elif kind in ('error', 'session_ended'):
                 raise RuntimeError(event.get('message', kind))
     if s.journey['prompts'].get('example'):
         assert saved is not None, 'The prepared example never opened'
@@ -421,7 +425,9 @@ async def teaching_workspace(s):
                         if not s.observing and until(s.state):
                             return
                         transcript = ''
-                elif kind in ('error', 'session_ended', 'session_resuming'):
+                elif kind in ('session_resuming', 'session_resumed'):
+                    s.record('provider_resume', event=kind, message=event.get('message'))
+                elif kind in ('error', 'session_ended'):
                     raise RuntimeError(event.get('message', kind))
                 elif kind == 'activity_request' and s.args.startup:
                     assert not s.state.get('task'), 'Tutor replaced the unfinished workspace'
@@ -591,10 +597,12 @@ async def drive(args, token, live, index):
         leak = re.compile('|'.join([SHARED_LEAK, *(re.escape(t) for t in journey['leakTokens'])]), re.I)
         for turn in [e['text'] for e in s.events if e['type'] == 'tutor']:
             assert not leak.search(turn), 'Protocol leakage or button-only grading: ' + turn[:120]
-        return {'passed': True, 'primitiveId': args.primitive, 'events': s.events}
+        return {'passed': True, 'primitiveId': args.primitive, 'events': s.events,
+                'providerResumes': sum(e['type'] == 'provider_resume' and e.get('event') == 'session_resuming' for e in s.events)}
     except Exception as error:
         s.record('failure', reason=repr(error), state=s.state)
-        return {'passed': False, 'primitiveId': args.primitive, 'events': s.events}
+        return {'passed': False, 'primitiveId': args.primitive, 'events': s.events,
+                'providerResumes': sum(e['type'] == 'provider_resume' and e.get('event') == 'session_resuming' for e in s.events)}
     finally:
         s.process.stdin.close()
         try: await asyncio.to_thread(s.process.wait, timeout=5)
@@ -645,7 +653,8 @@ async def main():
     for index in range(1, args.runs + 1):
         result = await drive(args, token, live, index); runs.append(result)
         report.write_text(json.dumps(runs, indent=2), encoding='utf-8')
-        print(f'Run {index}: {"PASS" if result["passed"] else "FAIL"}', flush=True)
+        resumed = f' ({result["providerResumes"]} Live resume)' if result['providerResumes'] else ''
+        print(f'Run {index}: {"PASS" if result["passed"] else "FAIL"}{resumed}', flush=True)
     print(report, flush=True)
     return 0 if all(run['passed'] for run in runs) else 1
 

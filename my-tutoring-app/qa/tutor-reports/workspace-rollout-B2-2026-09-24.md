@@ -61,9 +61,11 @@ failure is that session's family, which has no saved payload yet).
 
 ## Not done / follow-ups
 
-- **Harness: a transparent Live resume fails the drive** (3 of 11 runs today). Executor
-  `/add-live-tutor-tools` (shared harness). Either ride through `session_resuming` and re-send the
-  pending turn, or report it as a provider fault distinct from FAIL.
+- ~~Harness: a transparent Live resume fails the drive~~ DONE 09-24: the drive records the resume and
+  keeps going; forced-drop baseline FAIL → fixed PASS (1 Live resume)
+  (`resume-fault-baseline-2026-09-24.json`, `resume-fault-fixed-2026-09-24-r2.json`). Still open: when
+  the resume itself fails (1011) the backend reconnects cold with no `session_resumed` and no steering,
+  and the tutor goes silent (`resume-fault-fixed-2026-09-24.json`).
 - The script modules stay for their pure helpers and pure script tests; their cue builders now have
   no student-facing caller. `service/qa/lessonBench/journey/extract.ts` still models the retired
   phonics-blender cue (`itemCue`) for the lesson bench; queue with the lesson-bench owner.
