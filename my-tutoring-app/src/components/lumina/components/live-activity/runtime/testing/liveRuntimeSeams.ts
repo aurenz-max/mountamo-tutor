@@ -14,7 +14,7 @@
  * `resetSeams()` from a `beforeEach` with a BLOCK body, never an arrow that
  * returns it, or vitest runs the return value as teardown.
  */
-import { vi } from 'vitest';
+import { vi, type Mock } from 'vitest';
 import { DEFAULT_VOICE_TURN_CONFIG } from '@/components/lumina/hooks/voiceTurnMachine';
 
 export interface SeamState {
@@ -36,11 +36,17 @@ export interface SeamState {
    * `mountJudged` sets it from the data, so a test never sets it by hand.
    */
   activePrimitiveId: string;
+  /** What `useEvaluationContext` returns. `null` is the live host, which has no evaluation provider. */
+  evaluationContext: unknown;
+  /** Every `SoundManager` method, stable per name, so a test can assert `seam.sound.playCorrect`. */
+  sound: Record<string, Mock<(...args: unknown[]) => unknown>>;
+  /** Calls to the legacy `useLuminaAI` hook while enabled, and to its `sendText`. */
+  legacyAI: Mock<(...args: unknown[]) => unknown>;
 }
 
 export const seam: SeamState = {
   conversation: [], audio: false, close: null, send: vi.fn(), submit: vi.fn(), held: 0,
-  activePrimitiveId: '',
+  activePrimitiveId: '', evaluationContext: null, sound: {}, legacyAI: vi.fn(),
 };
 
 /** Returns void deliberately: a `beforeEach` arrow returning a value runs it as teardown. */
@@ -49,6 +55,7 @@ export function resetSeams(): void {
   seam.audio = false;
   seam.close = null;
   seam.held = 0;
+  seam.evaluationContext = null;
 }
 
 /**
@@ -97,9 +104,25 @@ export const voiceTurnsSeam = async (original: () => Promise<Record<string, unkn
 });
 
 export const evaluationSeam = () => ({
-  usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: seam.submit, elapsedMs: 0 }),
+  useEvaluationContext: () => seam.evaluationContext,
+  usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: seam.submit, elapsedMs: 0, resetAttempt: vi.fn() }),
 });
 
-export const soundSeam = () => ({ SoundManager: new Proxy({}, { get: () => vi.fn() }) });
+/** Getters answer like a live SoundManager (`isEnabled` true, volume 1); everything else is a stable spy. */
+export const soundSeam = () => ({ SoundManager: new Proxy({}, { get: (_, name: string) => {
+  if (name === 'isEnabled') return () => true;
+  if (name === 'getVolume') return () => 1;
+  return (seam.sound[name] ??= vi.fn());
+} }) });
+
+/**
+ * The legacy per-primitive AI hook. A workspace-bound surface must pass `enabled: false` (its context
+ * carries the answers) and never call its `sendText`; either one lands in `seam.legacyAI`.
+ */
+export const legacyAISeam = () => ({ useLuminaAI: (o: { enabled?: boolean }) => {
+  if (o?.enabled !== false) seam.legacyAI('enabled');
+  return { sendText: (...args: unknown[]) => seam.legacyAI('sendText', ...args), isConnected: true,
+    isAudioPlaying: false, activePrimitiveId: seam.activePrimitiveId, updateContext: vi.fn() };
+} });
 
 export const micPanelSeam = () => ({ default: () => null });

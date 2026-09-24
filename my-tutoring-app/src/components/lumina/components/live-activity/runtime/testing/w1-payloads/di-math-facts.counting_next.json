@@ -1,0 +1,96 @@
+{
+ "source": "qa/tutor-reports/di-math-facts-runtime-counting_next-payload-2026-09-20.json",
+ "primitiveId": "di-math-facts",
+ "evalMode": "counting_next",
+ "data": {
+  "title": "Fun Math Quest",
+  "description": "Get ready to say math facts out loud and show what you can do.",
+  "challengeType": "counting_next",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "challengeType": "counting_next",
+    "answerWord": "four",
+    "answerNumeral": 4,
+    "asrAliases": [
+     "four",
+     "4",
+     "for",
+     "fore"
+    ],
+    "id": "dimf-1-n3",
+    "a": 3,
+    "b": 1,
+    "display": "3 →",
+    "problem": "the number after three",
+    "solvedDisplay": "3 → 4"
+   },
+   {
+    "challengeType": "counting_next",
+    "answerWord": "three",
+    "answerNumeral": 3,
+    "asrAliases": [
+     "three",
+     "3",
+     "free",
+     "tree"
+    ],
+    "id": "dimf-2-n2",
+    "a": 2,
+    "b": 1,
+    "display": "2 →",
+    "problem": "the number after two",
+    "solvedDisplay": "2 → 3"
+   },
+   {
+    "challengeType": "counting_next",
+    "answerWord": "one",
+    "answerNumeral": 1,
+    "asrAliases": [
+     "one",
+     "1",
+     "won"
+    ],
+    "id": "dimf-3-n0",
+    "a": 0,
+    "b": 1,
+    "display": "0 →",
+    "problem": "the number after zero",
+    "solvedDisplay": "0 → 1"
+   },
+   {
+    "challengeType": "counting_next",
+    "answerWord": "five",
+    "answerNumeral": 5,
+    "asrAliases": [
+     "five",
+     "5"
+    ],
+    "id": "dimf-4-n4",
+    "a": 4,
+    "b": 1,
+    "display": "4 →",
+    "problem": "the number after four",
+    "solvedDisplay": "4 → 5"
+   },
+   {
+    "challengeType": "counting_next",
+    "answerWord": "two",
+    "answerNumeral": 2,
+    "asrAliases": [
+     "two",
+     "2",
+     "to",
+     "too"
+    ],
+    "id": "dimf-5-n1",
+    "a": 1,
+    "b": 1,
+    "display": "1 →",
+    "problem": "the number after one",
+    "solvedDisplay": "1 → 2"
+   }
+  ],
+  "facts": "3 →, 2 →, 0 →, 4 →, 1 →"
+ }
+}

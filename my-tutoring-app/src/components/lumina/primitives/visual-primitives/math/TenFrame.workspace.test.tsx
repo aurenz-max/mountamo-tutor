@@ -28,9 +28,6 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
   playStreak: vi.fn(), tap: vi.fn(), snap: vi.fn(), invalid: vi.fn(), isEnabled: () => true, getVolume: () => 1 } }));
 vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
 import TenFrame, { type TenFrameChallenge, type TenFrameData } from './TenFrame';
-import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
-const tenFrameLive = LIVE_ADAPTERS['ten-frame'];
-import { getComponentById } from '../../../service/manifest/catalog';
 /** The submission waits for the scoring pass (a fetch that rejects in jsdom, so every spoken attempt keeps its flow verdict). */
 const flushScoring = () => act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
 
@@ -222,19 +219,4 @@ it.each(['mixed', 'build|subitize|decompose'])('a %s pin binds, and each item ke
   await flushScoring();
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0].slice(0, 2)).toEqual([true, 100]);
-});
-
-it('the packet carries learner signals for the current item', () => {
-  const h = mount('build', [challenge('b1', 'build', 4)]);
-  act(() => h.transport.publish());
-  const packet = h.sent.filter(m => m.type === 'runtime_state').at(-1).state;
-  expect(packet.learner.signals).toMatchObject({ itemId: 'b1', attempts: 0, learnerTurns: 0, helpRequests: 0 });
-  h.transport.close();
-});
-
-it('advertises every catalog mode under tutor ownership, inside the guidance cap', () => {
-  expect([...tenFrameLive.modes].sort()).toEqual((getComponentById('ten-frame')?.evalModes ?? []).map(m => m.evalMode).sort());
-  expect(tenFrameLive).toMatchObject({ teachingOwner: 'tutor', canAdvance: false, tutoring: null, bindsTeachingWorkspace: true });
-  expect(tenFrameLive.guidance.length).toBeLessThanOrEqual(2000);
-  expect(tenFrameLive.guidance).not.toMatch(/say exactly/i);
 });

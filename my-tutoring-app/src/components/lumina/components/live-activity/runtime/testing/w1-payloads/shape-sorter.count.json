@@ -1,0 +1,72 @@
+{
+ "source": "qa/tutor-reports/shape-sorter-runtime-count-payload-2026-09-22.json",
+ "primitiveId": "shape-sorter",
+ "evalMode": "count",
+ "data": {
+  "title": "Sides and Corners Safari",
+  "description": "Practice counting the sides and corners of flat shapes aloud with fun visual examples.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "count",
+    "instruction": "Look at this shape and listen for the question.",
+    "ruleAttribute": "shape",
+    "shapes": [
+     {
+      "shape": "triangle",
+      "color": "red",
+      "size": "medium",
+      "rotation": 0
+     }
+    ],
+    "targetValue": "triangle"
+   },
+   {
+    "id": "c2",
+    "type": "count",
+    "instruction": "Look at this shape and listen for the question.",
+    "ruleAttribute": "shape",
+    "shapes": [
+     {
+      "shape": "square",
+      "color": "blue",
+      "size": "large",
+      "rotation": 0
+     }
+    ],
+    "targetValue": "square"
+   },
+   {
+    "id": "c3",
+    "type": "count",
+    "instruction": "Look at this shape and listen for the question.",
+    "ruleAttribute": "shape",
+    "shapes": [
+     {
+      "shape": "hexagon",
+      "color": "green",
+      "size": "small",
+      "rotation": 15
+     }
+    ],
+    "targetValue": "hexagon"
+   },
+   {
+    "id": "c4",
+    "type": "count",
+    "instruction": "Look at this shape and listen for the question.",
+    "ruleAttribute": "shape",
+    "shapes": [
+     {
+      "shape": "rectangle",
+      "color": "purple",
+      "size": "medium",
+      "rotation": 90
+     }
+    ],
+    "targetValue": "rectangle"
+   }
+  ],
+  "gradeBand": "K"
+ }
+}

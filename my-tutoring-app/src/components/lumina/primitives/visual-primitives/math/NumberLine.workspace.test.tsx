@@ -29,8 +29,6 @@ vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => seam.evaluat
   usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: seam.submit, elapsedMs: 0, resetAttempt: vi.fn() }) }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
 import NumberLine, { type NumberLineData } from './NumberLine';
-import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
-import { getComponentById } from '../../../service/manifest/catalog';
 
 beforeEach(() => { vi.clearAllMocks();
   vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: 760, height: 240, right: 760, bottom: 240, x: 0, y: 0, toJSON: () => ({}) });
@@ -101,19 +99,4 @@ it('Check commits a wrong line, the line stays closed until Try again clears it,
   expect(h.state().status).toBe('completed');
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0].slice(0, 2)).toEqual([true, 100]);
-});
-
-it('the packet carries learner signals for the current item', () => {
-  const h = mount();
-  act(() => h.transport.publish());
-  const packet = h.sent.filter(m => m.type === 'runtime_state').at(-1).state;
-  expect(packet.learner.signals).toMatchObject({ attempts: 0, learnerTurns: 0, helpRequests: 0 });
-  h.transport.close();
-});
-
-it('advertises every catalog mode under tutor ownership, inside the guidance cap', () => {
-  const live = LIVE_ADAPTERS['number-line'];
-  expect([...live.modes].sort()).toEqual((getComponentById('number-line')?.evalModes ?? []).map(m => m.evalMode).sort());
-  expect(live).toMatchObject({ teachingOwner: 'tutor', canAdvance: false, tutoring: null, bindsTeachingWorkspace: true });
-  expect(live.guidance.length).toBeLessThanOrEqual(2000);
 });

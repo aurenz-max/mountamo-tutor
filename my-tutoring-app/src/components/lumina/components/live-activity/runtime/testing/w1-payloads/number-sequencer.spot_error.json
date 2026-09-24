@@ -1,0 +1,118 @@
+{
+ "source": "qa/tutor-reports/number-sequencer-runtime-spot_error-payload-2026-09-19.json",
+ "primitiveId": "number-sequencer",
+ "evalMode": "spot_error",
+ "data": {
+  "title": "Spot the Sneaky Number!",
+  "description": "Help find the one silly number that is out of order in our forward counting trains.",
+  "challenges": [
+   {
+    "id": "seq1",
+    "type": "spot-error",
+    "instruction": "Which printed number does not belong? Say that number.",
+    "sequence": [
+     3,
+     9,
+     5,
+     6,
+     7
+    ],
+    "correctAnswers": [
+     4
+    ],
+    "rangeMin": 3,
+    "rangeMax": 9,
+    "wrongIndex": 1,
+    "startNumber": 3,
+    "direction": "forward"
+   },
+   {
+    "id": "seq2",
+    "type": "spot-error",
+    "instruction": "Which printed number does not belong? Say that number.",
+    "sequence": [
+     12,
+     13,
+     14,
+     15,
+     22,
+     17
+    ],
+    "correctAnswers": [
+     16
+    ],
+    "rangeMin": 12,
+    "rangeMax": 22,
+    "wrongIndex": 4,
+    "startNumber": 12,
+    "direction": "forward"
+   },
+   {
+    "id": "seq3",
+    "type": "spot-error",
+    "instruction": "Which printed number does not belong? Say that number.",
+    "sequence": [
+     28,
+     29,
+     30,
+     37,
+     32,
+     33
+    ],
+    "correctAnswers": [
+     31
+    ],
+    "rangeMin": 28,
+    "rangeMax": 37,
+    "wrongIndex": 3,
+    "startNumber": 28,
+    "direction": "forward"
+   },
+   {
+    "id": "seq4",
+    "type": "spot-error",
+    "instruction": "Which printed number does not belong? Say that number.",
+    "sequence": [
+     54,
+     55,
+     62,
+     57,
+     58,
+     59
+    ],
+    "correctAnswers": [
+     56
+    ],
+    "rangeMin": 54,
+    "rangeMax": 62,
+    "wrongIndex": 2,
+    "startNumber": 54,
+    "direction": "forward"
+   },
+   {
+    "id": "seq5",
+    "type": "spot-error",
+    "instruction": "Which printed number does not belong? Say that number.",
+    "sequence": [
+     85,
+     92,
+     87,
+     88,
+     89,
+     90
+    ],
+    "correctAnswers": [
+     86
+    ],
+    "rangeMin": 85,
+    "rangeMax": 92,
+    "wrongIndex": 1,
+    "startNumber": 85,
+    "direction": "forward"
+   }
+  ],
+  "gradeBand": "1",
+  "showNumberLine": true,
+  "showDotArrays": false
+ }
+}

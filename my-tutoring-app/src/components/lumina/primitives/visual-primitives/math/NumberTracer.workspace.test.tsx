@@ -27,8 +27,6 @@ vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => seam.evaluat
   usePrimitiveEvaluation: () => ({ hasSubmitted: false, submittedResult: null, submitResult: seam.submit, elapsedMs: 0 }) }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
 import NumberTracer, { type NumberTracerData } from './NumberTracer';
-import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
-import { getComponentById } from '../../../service/manifest/catalog';
 
 beforeEach(() => { vi.clearAllMocks();
   vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: 500, height: 400,
@@ -111,11 +109,4 @@ it('submits nothing without an evaluation provider (the live host)', async () =>
   draw(ONE); await h.check(); h.dispatch('advance'); h.confirmVisible();
   expect(h.state().status).toBe('completed');
   expect(seam.submit).not.toHaveBeenCalled();
-});
-
-it('advertises every catalog mode under tutor ownership, inside the guidance cap', () => {
-  const live = LIVE_ADAPTERS['number-tracer'];
-  expect([...live.modes].sort()).toEqual((getComponentById('number-tracer')?.evalModes ?? []).map(m => m.evalMode).sort());
-  expect(live).toMatchObject({ teachingOwner: 'tutor', canAdvance: false, tutoring: null, bindsTeachingWorkspace: true });
-  expect(live.guidance.length).toBeLessThanOrEqual(2000);
 });

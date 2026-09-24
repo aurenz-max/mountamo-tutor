@@ -1,0 +1,54 @@
+{
+ "source": "qa/tutor-reports/di-word-reading-runtime-sight_word-payload-2026-09-20.json",
+ "primitiveId": "di-word-reading",
+ "evalMode": "sight_word",
+ "data": {
+  "title": "Super Word Power!",
+  "description": "Let us practice reading some new words together out loud!",
+  "challengeType": "sight_word",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "diwr-1-and",
+    "challengeType": "sight_word",
+    "word": "and",
+    "wordType": "sight",
+    "asrAliases": [
+     "and"
+    ]
+   },
+   {
+    "id": "diwr-2-the",
+    "challengeType": "sight_word",
+    "word": "the",
+    "wordType": "sight",
+    "asrAliases": [
+     "the",
+     "thee",
+     "duh"
+    ]
+   },
+   {
+    "id": "diwr-3-see",
+    "challengeType": "sight_word",
+    "word": "see",
+    "wordType": "sight",
+    "asrAliases": [
+     "see",
+     "sea",
+     "c"
+    ]
+   },
+   {
+    "id": "diwr-4-go",
+    "challengeType": "sight_word",
+    "word": "go",
+    "wordType": "sight",
+    "asrAliases": [
+     "go"
+    ]
+   }
+  ],
+  "words": "and, the, see, go"
+ }
+}

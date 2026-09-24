@@ -29,8 +29,6 @@ vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => seam.evaluat
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
 vi.mock('../../../components/PhaseSummaryPanel', () => ({ default: () => <div>summary</div> }));
 import ComparisonBuilder, { type ComparisonBuilderChallenge, type ComparisonBuilderData } from './ComparisonBuilder';
-import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
-import { getComponentById } from '../../../service/manifest/catalog';
 
 beforeEach(() => { vi.clearAllMocks(); });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); seam.evaluationContext = null; });
@@ -127,19 +125,4 @@ it('without an evaluation provider (the live host) nothing is submitted', () => 
   h.dispatch('advance'); h.confirmVisible();
   expect(h.state().status).toBe('completed');
   expect(seam.submit).not.toHaveBeenCalled();
-});
-
-it('the packet carries learner signals for the current item', () => {
-  const h = mount('compare_groups', [challengeFor('compare-groups')]);
-  act(() => h.transport.publish());
-  const packet = h.sent.filter(m => m.type === 'runtime_state').at(-1).state;
-  expect(packet.learner.signals).toMatchObject({ attempts: 0, learnerTurns: 0, helpRequests: 0 });
-  h.transport.close();
-});
-
-it('advertises every catalog mode under tutor ownership, inside the guidance cap', () => {
-  const live = LIVE_ADAPTERS['comparison-builder'];
-  expect([...live.modes].sort()).toEqual((getComponentById('comparison-builder')?.evalModes ?? []).map(m => m.evalMode).sort());
-  expect(live).toMatchObject({ teachingOwner: 'tutor', canAdvance: false, tutoring: null, bindsTeachingWorkspace: true });
-  expect(live.guidance.length).toBeLessThanOrEqual(2000);
 });

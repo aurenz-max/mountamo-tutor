@@ -1,0 +1,92 @@
+{
+ "source": "qa/tutor-reports/letter-sound-link-runtime-keyword_match-payload-2026-09-20.json",
+ "primitiveId": "letter-sound-link",
+ "evalMode": "keyword_match",
+ "data": {
+  "title": "Letter Sounds - Group 1!",
+  "letterGroup": 1,
+  "cumulativeLetters": [
+   "s",
+   "a",
+   "t",
+   "i",
+   "p",
+   "n"
+  ],
+  "challenges": [
+   {
+    "id": "ch1",
+    "mode": "keyword-match",
+    "targetLetter": "s",
+    "targetSound": "/s/",
+    "keywordWord": "sun",
+    "keywordImage": "sun",
+    "options": [
+     {
+      "sound": "tent",
+      "isCorrect": false
+     },
+     {
+      "sound": "sun",
+      "isCorrect": true
+     }
+    ]
+   },
+   {
+    "id": "ch2",
+    "mode": "keyword-match",
+    "targetLetter": "a",
+    "targetSound": "/ă/",
+    "keywordWord": "apple",
+    "keywordImage": "apple",
+    "options": [
+     {
+      "sound": "apple",
+      "isCorrect": true
+     },
+     {
+      "sound": "net",
+      "isCorrect": false
+     }
+    ]
+   },
+   {
+    "id": "ch3",
+    "mode": "keyword-match",
+    "targetLetter": "p",
+    "targetSound": "/p/",
+    "keywordWord": "pig",
+    "keywordImage": "pig",
+    "options": [
+     {
+      "sound": "tent",
+      "isCorrect": false
+     },
+     {
+      "sound": "pig",
+      "isCorrect": true
+     }
+    ]
+   },
+   {
+    "id": "ch4",
+    "mode": "keyword-match",
+    "targetLetter": "n",
+    "targetSound": "/n/",
+    "keywordWord": "net",
+    "keywordImage": "net",
+    "options": [
+     {
+      "sound": "tent",
+      "isCorrect": false
+     },
+     {
+      "sound": "net",
+      "isCorrect": true
+     }
+    ]
+   }
+  ],
+  "gradeLevel": "K"
+ }
+}

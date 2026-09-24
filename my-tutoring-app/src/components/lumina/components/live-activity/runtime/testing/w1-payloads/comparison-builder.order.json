@@ -1,0 +1,85 @@
+{
+ "source": "qa/tutor-reports/comparison-builder-runtime-order-payload-2026-09-23.json",
+ "primitiveId": "comparison-builder",
+ "evalMode": "order",
+ "data": {
+  "title": "Super Number Ordering!",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "order",
+    "instruction": "Can you put these three numbers in order from smallest to biggest?",
+    "numbers": [
+     4,
+     2,
+     5
+    ],
+    "rightNumber": 0,
+    "targetNumber": 0,
+    "direction": "ascending"
+   },
+   {
+    "id": "c2",
+    "type": "order",
+    "instruction": "Great job! Now let's try ordering four numbers from smallest to biggest.",
+    "numbers": [
+     7,
+     3,
+     9,
+     1
+    ],
+    "rightNumber": 0,
+    "targetNumber": 0,
+    "direction": "ascending"
+   },
+   {
+    "id": "c3",
+    "type": "order",
+    "instruction": "You are doing wonderful! Let's arrange these numbers in order from biggest to smallest.",
+    "numbers": [
+     4,
+     8,
+     2,
+     6
+    ],
+    "rightNumber": 0,
+    "targetNumber": 0,
+    "direction": "ascending"
+   },
+   {
+    "id": "c4",
+    "type": "order",
+    "instruction": "Fantastic! Can you order these five numbers from smallest to biggest?",
+    "numbers": [
+     12,
+     5,
+     18,
+     3,
+     10
+    ],
+    "rightNumber": 0,
+    "targetNumber": 0,
+    "direction": "ascending"
+   },
+   {
+    "id": "c5",
+    "type": "order",
+    "instruction": "Here is the final challenge! Arrange these five numbers from biggest to smallest.",
+    "numbers": [
+     11,
+     19,
+     7,
+     15,
+     20
+    ],
+    "rightNumber": 0,
+    "targetNumber": 0,
+    "direction": "ascending"
+   }
+  ],
+  "gradeBand": "1",
+  "showCorrespondenceLines": true,
+  "useAlligatorMnemonic": true,
+  "description": "Students practice ordering sets of numbers in ascending and descending order to build strong number sense."
+ }
+}

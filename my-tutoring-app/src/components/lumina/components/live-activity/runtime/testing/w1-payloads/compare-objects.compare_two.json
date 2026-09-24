@@ -1,0 +1,138 @@
+{
+ "source": "qa/tutor-reports/compare-objects-runtime-compare_two-payload-2026-09-22.json",
+ "primitiveId": "compare-objects",
+ "evalMode": "compare_two",
+ "data": {
+  "title": "Compare Objects: Deciding which of two objects is longer",
+  "description": "Compare and measure real-world objects by their attributes",
+  "challenges": [
+   {
+    "id": "co-1",
+    "type": "compare_two",
+    "instruction": "Which of these is longer?",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "blue ribbon",
+      "visualSize": 75,
+      "actualValue": 30
+     },
+     {
+      "name": "yellow pencil",
+      "visualSize": 35,
+      "actualValue": 15
+     }
+    ],
+    "correctAnswer": "blue ribbon",
+    "comparisonWord": "longer",
+    "hint": "Try placing them side by side. Which one stretches out further?"
+   },
+   {
+    "id": "co-2",
+    "type": "compare_two",
+    "instruction": "Which one is shorter?",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "red straw",
+      "visualSize": 80,
+      "actualValue": 25
+     },
+     {
+      "name": "green marker",
+      "visualSize": 40,
+      "actualValue": 10
+     }
+    ],
+    "correctAnswer": "green marker",
+    "comparisonWord": "shorter",
+    "hint": "Look for the one that takes up less space end to end."
+   },
+   {
+    "id": "co-3",
+    "type": "compare_two",
+    "instruction": "Which of these is longer?",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "snake toy",
+      "visualSize": 85,
+      "actualValue": 40
+     },
+     {
+      "name": "wooden spoon",
+      "visualSize": 45,
+      "actualValue": 20
+     }
+    ],
+    "correctAnswer": "snake toy",
+    "comparisonWord": "longer",
+    "hint": "Trace your finger along each one from start to finish."
+   },
+   {
+    "id": "co-4",
+    "type": "compare_two",
+    "instruction": "Which one is taller?",
+    "attribute": "height",
+    "objects": [
+     {
+      "name": "giraffe plush",
+      "visualSize": 80,
+      "actualValue": 50
+     },
+     {
+      "name": "teddy bear",
+      "visualSize": 40,
+      "actualValue": 20
+     }
+    ],
+    "correctAnswer": "giraffe plush",
+    "comparisonWord": "taller",
+    "hint": "See which one reaches higher up toward the sky!"
+   },
+   {
+    "id": "co-5",
+    "type": "compare_two",
+    "instruction": "Which one holds more water?",
+    "attribute": "capacity",
+    "objects": [
+     {
+      "name": "plastic bucket",
+      "visualSize": 80,
+      "actualValue": 60
+     },
+     {
+      "name": "teacup",
+      "visualSize": 35,
+      "actualValue": 15
+     }
+    ],
+    "correctAnswer": "plastic bucket",
+    "comparisonWord": "holds_more",
+    "hint": "Think about which one can fit more liquid inside it."
+   },
+   {
+    "id": "co-6",
+    "type": "compare_two",
+    "instruction": "Which one is shorter?",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "paper clip",
+      "visualSize": 20,
+      "actualValue": 5
+     },
+     {
+      "name": "paint brush",
+      "visualSize": 70,
+      "actualValue": 25
+     }
+    ],
+    "correctAnswer": "paper clip",
+    "comparisonWord": "shorter",
+    "hint": "Compare the two items carefully to find the smaller length."
+   }
+  ],
+  "gradeBand": "K"
+ }
+}

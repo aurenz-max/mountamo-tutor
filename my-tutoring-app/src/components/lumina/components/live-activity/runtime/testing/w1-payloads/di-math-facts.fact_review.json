@@ -1,0 +1,95 @@
+{
+ "source": "qa/tutor-reports/di-math-facts-runtime-fact_review-payload-2026-09-20.json",
+ "primitiveId": "di-math-facts",
+ "evalMode": "fact_review",
+ "data": {
+  "title": "Super Star Practice",
+  "description": "Get ready to say your fun math facts out loud!",
+  "challengeType": "fact_review",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "challengeType": "fact_review",
+    "answerWord": "four",
+    "answerNumeral": 4,
+    "asrAliases": [
+     "four",
+     "4",
+     "for",
+     "fore"
+    ],
+    "id": "dimf-1-1p3",
+    "a": 1,
+    "b": 3,
+    "display": "1 + 3",
+    "problem": "one plus three",
+    "solvedDisplay": "1 + 3 = 4"
+   },
+   {
+    "challengeType": "fact_review",
+    "answerWord": "two",
+    "answerNumeral": 2,
+    "asrAliases": [
+     "two",
+     "2",
+     "to",
+     "too"
+    ],
+    "id": "dimf-2-1p1",
+    "a": 1,
+    "b": 1,
+    "display": "1 + 1",
+    "problem": "one plus one",
+    "solvedDisplay": "1 + 1 = 2"
+   },
+   {
+    "challengeType": "fact_review",
+    "answerWord": "five",
+    "answerNumeral": 5,
+    "asrAliases": [
+     "five",
+     "5"
+    ],
+    "id": "dimf-3-0p5",
+    "a": 0,
+    "b": 5,
+    "display": "0 + 5",
+    "problem": "zero plus five",
+    "solvedDisplay": "0 + 5 = 5"
+   },
+   {
+    "challengeType": "fact_review",
+    "answerWord": "three",
+    "answerNumeral": 3,
+    "asrAliases": [
+     "three",
+     "3",
+     "free",
+     "tree"
+    ],
+    "id": "dimf-4-1p2",
+    "a": 1,
+    "b": 2,
+    "display": "1 + 2",
+    "problem": "one plus two",
+    "solvedDisplay": "1 + 2 = 3"
+   },
+   {
+    "challengeType": "fact_review",
+    "answerWord": "five",
+    "answerNumeral": 5,
+    "asrAliases": [
+     "five",
+     "5"
+    ],
+    "id": "dimf-5-1p4",
+    "a": 1,
+    "b": 4,
+    "display": "1 + 4",
+    "problem": "one plus four",
+    "solvedDisplay": "1 + 4 = 5"
+   }
+  ],
+  "facts": "1 + 3, 1 + 1, 0 + 5, 1 + 2, 1 + 4"
+ }
+}

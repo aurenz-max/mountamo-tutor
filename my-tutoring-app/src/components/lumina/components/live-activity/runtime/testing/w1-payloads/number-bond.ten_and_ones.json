@@ -1,0 +1,70 @@
+{
+ "source": "qa/tutor-reports/number-bond-runtime-ten_and_ones-payload-2026-09-22.json",
+ "primitiveId": "number-bond",
+ "evalMode": "ten_and_ones",
+ "data": {
+  "title": "Super Teen Numbers!",
+  "description": "Learn how teen numbers are made of a group of ten and some extra ones.",
+  "maxNumber": 19,
+  "showCounters": true,
+  "showEquation": true,
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "ten-and-ones",
+    "instruction": "Can you break 11 into a group of ten and some ones?",
+    "whole": 11,
+    "part1": null,
+    "part2": null,
+    "allPairs": null,
+    "factFamily": null,
+    "targetEquation": null
+   },
+   {
+    "id": "c2",
+    "type": "ten-and-ones",
+    "instruction": "The whole is 12. Break it into a ten and some more!",
+    "whole": 12,
+    "part1": null,
+    "part2": null,
+    "allPairs": null,
+    "factFamily": null,
+    "targetEquation": null
+   },
+   {
+    "id": "c3",
+    "type": "ten-and-ones",
+    "instruction": "The whole is 13. Break it into a ten and some more!",
+    "whole": 13,
+    "part1": null,
+    "part2": null,
+    "allPairs": null,
+    "factFamily": null,
+    "targetEquation": null
+   },
+   {
+    "id": "c4",
+    "type": "ten-and-ones",
+    "instruction": "The whole is 14. Break it into a ten and some more!",
+    "whole": 14,
+    "part1": null,
+    "part2": null,
+    "allPairs": null,
+    "factFamily": null,
+    "targetEquation": null
+   },
+   {
+    "id": "c5",
+    "type": "ten-and-ones",
+    "instruction": "The whole is 15. Break it into a ten and some more!",
+    "whole": 15,
+    "part1": null,
+    "part2": null,
+    "allPairs": null,
+    "factFamily": null,
+    "targetEquation": null
+   }
+  ]
+ }
+}

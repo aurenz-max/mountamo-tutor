@@ -26,11 +26,8 @@ vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => seam.evaluat
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
 vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
 import BalanceScale, { type BalanceScaleChallenge, type BalanceScaleData } from './BalanceScale';
-import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
-import { getComponentById } from '../../../service/manifest/catalog';
 /** The submission waits for the scoring pass (a fetch that rejects in jsdom, so every spoken attempt keeps its flow verdict). */
 const flushScoring = () => act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
-const balanceLive = LIVE_ADAPTERS['balance-scale'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.evaluationContext = null; });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -174,21 +171,6 @@ it('the plain solver (mixed session): a wrong typed x is checked, Try again clea
   expect(screen.queryByRole('button', { name: /Next Equation/ })).toBeNull();
   h.next();
   expect(h.state().task!.itemId).toBe('bs-2');
-});
-
-it('the packet carries learner signals for the current item', () => {
-  const h = mount('equality', [CHALLENGE.equality]);
-  act(() => h.transport.publish());
-  const packet = h.sent.filter(m => m.type === 'runtime_state').at(-1).state;
-  expect(packet.learner.signals).toMatchObject({ itemId: 'balance-1-build', attempts: 0, learnerTurns: 0, helpRequests: 0 });
-  h.transport.close();
-});
-
-it('advertises every catalog mode under tutor ownership, inside the guidance cap', () => {
-  expect([...balanceLive.modes].sort()).toEqual((getComponentById('balance-scale')?.evalModes ?? []).map(m => m.evalMode).sort());
-  expect(balanceLive).toMatchObject({ teachingOwner: 'tutor', canAdvance: false, tutoring: null, bindsTeachingWorkspace: true });
-  expect(balanceLive.guidance.length).toBeLessThanOrEqual(2000);
-  expect(balanceLive.guidance).not.toMatch(/say exactly/i);
 });
 
 // ── Unbound mounts ──────────────────────────────────────────────────────────

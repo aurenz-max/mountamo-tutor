@@ -1,0 +1,97 @@
+{
+ "source": "qa/tutor-reports/di-math-facts-runtime-answer_fact-payload-2026-09-22.json",
+ "primitiveId": "di-math-facts",
+ "evalMode": "answer_fact",
+ "data": {
+  "title": "Math Magic Time!",
+  "description": "Get ready to say your addition answers out loud as you practice.",
+  "challengeType": "answer_fact",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "challengeType": "answer_fact",
+    "answerWord": "five",
+    "answerNumeral": 5,
+    "asrAliases": [
+     "five",
+     "5"
+    ],
+    "id": "dimf-1-4p1",
+    "a": 4,
+    "b": 1,
+    "display": "4 + 1",
+    "problem": "four plus one",
+    "solvedDisplay": "4 + 1 = 5"
+   },
+   {
+    "challengeType": "answer_fact",
+    "answerWord": "three",
+    "answerNumeral": 3,
+    "asrAliases": [
+     "three",
+     "3",
+     "free",
+     "tree"
+    ],
+    "id": "dimf-2-0p3",
+    "a": 0,
+    "b": 3,
+    "display": "0 + 3",
+    "problem": "zero plus three",
+    "solvedDisplay": "0 + 3 = 3"
+   },
+   {
+    "challengeType": "answer_fact",
+    "answerWord": "two",
+    "answerNumeral": 2,
+    "asrAliases": [
+     "two",
+     "2",
+     "to",
+     "too"
+    ],
+    "id": "dimf-3-1p1",
+    "a": 1,
+    "b": 1,
+    "display": "1 + 1",
+    "problem": "one plus one",
+    "solvedDisplay": "1 + 1 = 2"
+   },
+   {
+    "challengeType": "answer_fact",
+    "answerWord": "four",
+    "answerNumeral": 4,
+    "asrAliases": [
+     "four",
+     "4",
+     "for",
+     "fore"
+    ],
+    "id": "dimf-4-3p1",
+    "a": 3,
+    "b": 1,
+    "display": "3 + 1",
+    "problem": "three plus one",
+    "solvedDisplay": "3 + 1 = 4"
+   },
+   {
+    "challengeType": "answer_fact",
+    "answerWord": "three",
+    "answerNumeral": 3,
+    "asrAliases": [
+     "three",
+     "3",
+     "free",
+     "tree"
+    ],
+    "id": "dimf-5-2p1",
+    "a": 2,
+    "b": 1,
+    "display": "2 + 1",
+    "problem": "two plus one",
+    "solvedDisplay": "2 + 1 = 3"
+   }
+  ],
+  "facts": "4 + 1, 0 + 3, 1 + 1, 3 + 1, 2 + 1"
+ }
+}

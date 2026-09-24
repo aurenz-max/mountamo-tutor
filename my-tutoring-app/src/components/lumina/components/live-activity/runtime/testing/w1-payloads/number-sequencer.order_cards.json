@@ -1,0 +1,107 @@
+{
+ "source": "qa/tutor-reports/number-sequencer-runtime-order_cards-payload-2026-09-21.json",
+ "primitiveId": "number-sequencer",
+ "evalMode": "order_cards",
+ "data": {
+  "title": "Before and After Number Fun",
+  "description": "Practice finding the number that comes just before or just after a given number with fun card ordering challenges.",
+  "challenges": [
+   {
+    "id": "seq1",
+    "type": "order-cards",
+    "instruction": "Can you put these number cards in order from smallest to largest?",
+    "sequence": [
+     3,
+     1,
+     2
+    ],
+    "correctAnswers": [
+     1,
+     2,
+     3
+    ],
+    "rangeMin": 1,
+    "rangeMax": 3
+   },
+   {
+    "id": "seq2",
+    "type": "order-cards",
+    "instruction": "Order these number cards from smallest to largest!",
+    "sequence": [
+     5,
+     6,
+     4
+    ],
+    "correctAnswers": [
+     4,
+     5,
+     6
+    ],
+    "rangeMin": 4,
+    "rangeMax": 6
+   },
+   {
+    "id": "seq3",
+    "type": "order-cards",
+    "instruction": "Arrange these cards from the smallest number to the biggest number.",
+    "sequence": [
+     9,
+     10,
+     7,
+     8
+    ],
+    "correctAnswers": [
+     7,
+     8,
+     9,
+     10
+    ],
+    "rangeMin": 7,
+    "rangeMax": 10
+   },
+   {
+    "id": "seq4",
+    "type": "order-cards",
+    "instruction": "Sort the cards from smallest to largest to find the right order!",
+    "sequence": [
+     13,
+     11,
+     14,
+     12
+    ],
+    "correctAnswers": [
+     11,
+     12,
+     13,
+     14
+    ],
+    "rangeMin": 11,
+    "rangeMax": 14
+   },
+   {
+    "id": "seq5",
+    "type": "order-cards",
+    "instruction": "Line up all these number cards nicely from smallest to largest!",
+    "sequence": [
+     17,
+     18,
+     16,
+     20,
+     19
+    ],
+    "correctAnswers": [
+     16,
+     17,
+     18,
+     19,
+     20
+    ],
+    "rangeMin": 16,
+    "rangeMax": 20
+   }
+  ],
+  "gradeBand": "K",
+  "showNumberLine": true,
+  "showDotArrays": true
+ }
+}

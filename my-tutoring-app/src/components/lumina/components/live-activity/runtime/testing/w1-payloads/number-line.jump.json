@@ -1,0 +1,99 @@
+{
+ "source": "qa/tutor-reports/number-line-runtime-jump-payload-2026-09-23.json",
+ "primitiveId": "number-line",
+ "evalMode": "jump",
+ "data": {
+  "title": "Hop Back on the Number Line",
+  "description": "Learn how to subtract numbers by making backward jumps on the number line.",
+  "range": {
+   "min": 0,
+   "max": 10
+  },
+  "gradeBand": "K-2",
+  "numberType": "integer",
+  "interactionMode": "jump",
+  "challenges": [
+   {
+    "id": "show_jump-0",
+    "type": "show_jump",
+    "instruction": "Put your finger on the number 6. Hop backward 2 spaces to the left to see where you land!",
+    "targetValues": [
+     4
+    ],
+    "hint": "Count your backward hops one by one: start at 6 and hop 2 times.",
+    "startValue": 6,
+    "operations": [
+     {
+      "type": "subtract",
+      "startValue": 6,
+      "changeValue": 2,
+      "showJumpArc": false
+     }
+    ]
+   },
+   {
+    "id": "show_jump-1",
+    "type": "show_jump",
+    "instruction": "Let us start at the number 9 and hop backward 5 spaces to see where we land!",
+    "targetValues": [
+     4
+    ],
+    "hint": "Put your finger on 9 and count backward hop by hop until you have taken 5 jumps to the left.",
+    "startValue": 9,
+    "operations": [
+     {
+      "type": "subtract",
+      "startValue": 9,
+      "changeValue": 5,
+      "showJumpArc": false
+     }
+    ]
+   },
+   {
+    "id": "show_jump-2",
+    "type": "show_jump",
+    "instruction": "Put your finger on 3, and hop backward 1 space to the left.",
+    "targetValues": [
+     2
+    ],
+    "hint": "Start at 3 and count 1 hop backward to see where you land.",
+    "startValue": 3,
+    "operations": [
+     {
+      "type": "subtract",
+      "startValue": 3,
+      "changeValue": 1,
+      "showJumpArc": false
+     }
+    ]
+   },
+   {
+    "id": "show_jump-3",
+    "type": "show_jump",
+    "instruction": "Ready for your final big hop? Start at 5 and hop backward 5 spaces to see where you land!",
+    "targetValues": [
+     0
+    ],
+    "hint": "Try placing your finger on 5 and counting backward 5 hops to the left one by one.",
+    "startValue": 5,
+    "operations": [
+     {
+      "type": "subtract",
+      "startValue": 5,
+      "changeValue": 5,
+      "showJumpArc": false
+     }
+    ]
+   }
+  ],
+  "highlights": [],
+  "operations": [
+   {
+    "type": "subtract",
+    "startValue": 6,
+    "changeValue": 2,
+    "showJumpArc": false
+   }
+  ]
+ }
+}

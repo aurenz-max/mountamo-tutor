@@ -28,9 +28,6 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
   playStreak: vi.fn(), tap: vi.fn(), tick: vi.fn(), snap: vi.fn(), invalid: vi.fn(), isEnabled: () => true, getVolume: () => 1 } }));
 vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
 import OrdinalLine, { type OrdinalLineData } from './OrdinalLine';
-import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
-import { getComponentById } from '../../../service/manifest/catalog';
-const ordinalLineLive = LIVE_ADAPTERS['ordinal-line'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.evaluationContext = null;
   vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => setTimeout(() => fn(performance.now()), 16));
@@ -163,19 +160,4 @@ it('identify: the place labels wait for the credited answer; a wrong answer reop
   expect(h.view.container.textContent).toMatch(/3rd/);
   h.dispatch('advance'); h.confirmVisible();
   expect(h.state().status).toBe('completed');
-});
-
-it('the packet carries learner signals for the current item', () => {
-  const h = mount('relative_position');
-  act(() => h.transport.publish());
-  const packet = h.sent.filter(m => m.type === 'runtime_state').at(-1).state;
-  expect(packet.learner.signals).toMatchObject({ attempts: 0, learnerTurns: 0, helpRequests: 0 });
-  h.transport.close();
-});
-
-it('advertises every catalog mode under tutor ownership, inside the guidance cap', () => {
-  expect([...ordinalLineLive.modes].sort()).toEqual((getComponentById('ordinal-line')?.evalModes ?? []).map(m => m.evalMode).sort());
-  expect(ordinalLineLive).toMatchObject({ teachingOwner: 'tutor', canAdvance: false, tutoring: null, bindsTeachingWorkspace: true });
-  expect(ordinalLineLive.guidance.length).toBeLessThanOrEqual(2000);
-  expect(ordinalLineLive.guidance).not.toMatch(/say exactly/i);
 });

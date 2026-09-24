@@ -1,0 +1,52 @@
+{
+ "source": "qa/tutor-reports/base-ten-blocks-runtime-build_number-payload-2026-09-23.json",
+ "primitiveId": "base-ten-blocks",
+ "evalMode": "build_number",
+ "data": {
+  "title": "Super Tens and Ones Builder",
+  "description": "Practice building two-digit numbers using base-ten rods and unit cubes to master place value.",
+  "numberValue": 20,
+  "challenges": [
+   {
+    "type": "build_number",
+    "instruction": "Build the number 24 with blocks!",
+    "targetNumber": 24,
+    "secondNumber": null,
+    "hint": "Look at the digits. The number 24 has 2 tens and 4 ones."
+   },
+   {
+    "type": "build_number",
+    "instruction": "Build the number 35 with blocks!",
+    "targetNumber": 35,
+    "secondNumber": null,
+    "hint": "Remember that tens rods represent groups of ten, and unit cubes represent ones."
+   },
+   {
+    "type": "build_number",
+    "instruction": "Build the number 42 with blocks!",
+    "targetNumber": 42,
+    "secondNumber": null,
+    "hint": "Check the tens place first to find out how many rods you need."
+   },
+   {
+    "type": "build_number",
+    "instruction": "Build the number 60 with blocks!",
+    "targetNumber": 60,
+    "secondNumber": null,
+    "hint": "Sixty has six tens and zero ones. You will only need rods for this number!"
+   },
+   {
+    "type": "build_number",
+    "instruction": "Build the number 87 with blocks!",
+    "targetNumber": 87,
+    "secondNumber": null,
+    "hint": "Count out 8 ten-rods and 7 unit cubes to make 87."
+   }
+  ],
+  "gradeBand": "K-1",
+  "interactionMode": "build",
+  "decimalMode": false,
+  "maxPlace": "tens",
+  "supplyTray": true
+ }
+}

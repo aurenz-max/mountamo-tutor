@@ -1,0 +1,246 @@
+{
+ "source": "qa/tutor-reports/bar-model-runtime-read_one_to_one-payload-2026-09-23.json",
+ "primitiveId": "bar-model",
+ "evalMode": "read_one_to_one",
+ "data": {
+  "title": "Our Toy Bin",
+  "description": "Let us count the toys in the big bin",
+  "challenges": [
+   {
+    "id": "bm-1",
+    "evalMode": "read_one_to_one",
+    "values": [
+     {
+      "label": "Blocks",
+      "value": 8,
+      "color": "blue",
+      "emoji": "🧱"
+     },
+     {
+      "label": "Bears",
+      "value": 3,
+      "color": "green",
+      "emoji": "🧸"
+     },
+     {
+      "label": "Balls",
+      "value": 6,
+      "color": "purple",
+      "emoji": "⚽"
+     },
+     {
+      "label": "Cars",
+      "value": 5,
+      "color": "orange",
+      "emoji": "🚗"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 8,
+     "iconEmoji": "🧱",
+     "iconValue": 1
+    },
+    "prompt": "How many blocks are in the toy bin?",
+    "hint": "Touch each block as you count them one by one",
+    "expectedValue": 8,
+    "options": [
+     7,
+     8,
+     9,
+     10
+    ],
+    "targetBarIndex": 0
+   },
+   {
+    "id": "bm-2",
+    "evalMode": "read_one_to_one",
+    "values": [
+     {
+      "label": "Apples",
+      "value": 9,
+      "color": "blue",
+      "emoji": "🍎"
+     },
+     {
+      "label": "Bananas",
+      "value": 4,
+      "color": "green",
+      "emoji": "🍌"
+     },
+     {
+      "label": "Crackers",
+      "value": 6,
+      "color": "purple",
+      "emoji": "🍘"
+     },
+     {
+      "label": "Cheese",
+      "value": 3,
+      "color": "orange",
+      "emoji": "🧀"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 9,
+     "iconEmoji": "🍎",
+     "iconValue": 1
+    },
+    "prompt": "How many friends picked apples?",
+    "hint": "Touch each apple as you count.",
+    "expectedValue": 9,
+    "options": [
+     8,
+     9,
+     10,
+     11
+    ],
+    "targetBarIndex": 0
+   },
+   {
+    "id": "bm-3",
+    "evalMode": "read_one_to_one",
+    "values": [
+     {
+      "label": "Swings",
+      "value": 9,
+      "color": "blue",
+      "emoji": "🛝"
+     },
+     {
+      "label": "Slides",
+      "value": 8,
+      "color": "green",
+      "emoji": "🎢"
+     },
+     {
+      "label": "Balls",
+      "value": 2,
+      "color": "purple",
+      "emoji": "⚽"
+     },
+     {
+      "label": "Bikes",
+      "value": 7,
+      "color": "orange",
+      "emoji": "🚲"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 9,
+     "iconEmoji": "🛝",
+     "iconValue": 1
+    },
+    "prompt": "How many children are on the swings?",
+    "hint": "Touch each picture as you count them one by one.",
+    "expectedValue": 9,
+    "options": [
+     8,
+     9,
+     10,
+     11
+    ],
+    "targetBarIndex": 0
+   },
+   {
+    "id": "bm-4",
+    "evalMode": "read_one_to_one",
+    "values": [
+     {
+      "label": "Carrots",
+      "value": 3,
+      "color": "blue",
+      "emoji": "🥕"
+     },
+     {
+      "label": "Tomatoes",
+      "value": 8,
+      "color": "green",
+      "emoji": "🍅"
+     },
+     {
+      "label": "Peas",
+      "value": 5,
+      "color": "purple",
+      "emoji": "🟢"
+     },
+     {
+      "label": "Corn",
+      "value": 2,
+      "color": "orange",
+      "emoji": "🌽"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 8,
+     "iconEmoji": "🥕",
+     "iconValue": 1
+    },
+    "prompt": "How many carrots are growing in the garden?",
+    "hint": "Touch each carrot with your finger as you count them one by one.",
+    "expectedValue": 3,
+    "options": [
+     2,
+     3,
+     4,
+     5
+    ],
+    "targetBarIndex": 0
+   },
+   {
+    "id": "bm-5",
+    "evalMode": "read_one_to_one",
+    "values": [
+     {
+      "label": "Puppies",
+      "value": 9,
+      "color": "blue",
+      "emoji": "🐶"
+     },
+     {
+      "label": "Kittens",
+      "value": 6,
+      "color": "green",
+      "emoji": "🐱"
+     },
+     {
+      "label": "Bunnies",
+      "value": 4,
+      "color": "purple",
+      "emoji": "🐰"
+     },
+     {
+      "label": "Parrots",
+      "value": 2,
+      "color": "orange",
+      "emoji": "🦜"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 9,
+     "iconEmoji": "🐰",
+     "iconValue": 1
+    },
+    "prompt": "How many bunnies are looking out the window?",
+    "hint": "Touch each bunny as you count them one by one.",
+    "expectedValue": 4,
+    "options": [
+     3,
+     4,
+     5,
+     6
+    ],
+    "targetBarIndex": 2
+   }
+  ]
+ }
+}

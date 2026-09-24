@@ -1,0 +1,263 @@
+{
+ "source": "qa/tutor-reports/sorting-station-runtime-count_compare-payload-2026-09-23.json",
+ "primitiveId": "sorting-station",
+ "evalMode": "count_compare",
+ "data": {
+  "title": "Sorting Superstars",
+  "description": "Count and compare grouped objects to practice sorting by category!",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "count-and-compare",
+    "instruction": "Count the animals and the fruits. Which group has more?",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj1",
+      "label": "Cute Dog",
+      "emoji": "🐶",
+      "attributes": {
+       "category": "animal"
+      }
+     },
+     {
+      "id": "obj2",
+      "label": "Happy Cat",
+      "emoji": "🐱",
+      "attributes": {
+       "category": "animal"
+      }
+     },
+     {
+      "id": "obj3",
+      "label": "Sweet Bunny",
+      "emoji": "🐰",
+      "attributes": {
+       "category": "animal"
+      }
+     },
+     {
+      "id": "obj4",
+      "label": "Red Apple",
+      "emoji": "🍎",
+      "attributes": {
+       "category": "fruit"
+      }
+     },
+     {
+      "id": "obj5",
+      "label": "Yummy Banana",
+      "emoji": "🍌",
+      "attributes": {
+       "category": "fruit"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Animal",
+      "rule": {
+       "category": "animal"
+      },
+      "bucketEmoji": "🐾"
+     },
+     {
+      "label": "Fruit",
+      "rule": {
+       "category": "fruit"
+      },
+      "bucketEmoji": "🥗"
+     }
+    ],
+    "comparisonQuestion": "Are there more animals or fruits?",
+    "correctComparison": "more"
+   },
+   {
+    "id": "c2",
+    "type": "count-and-compare",
+    "instruction": "Count the toys and the school supplies. Which group has fewer?",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj6",
+      "label": "Teddy Bear",
+      "emoji": "🧸",
+      "attributes": {
+       "category": "toy"
+      }
+     },
+     {
+      "id": "obj7",
+      "label": "Building Block",
+      "emoji": "🧱",
+      "attributes": {
+       "category": "toy"
+      }
+     },
+     {
+      "id": "obj8",
+      "label": "Pencil",
+      "emoji": "✏️",
+      "attributes": {
+       "category": "school"
+      }
+     },
+     {
+      "id": "obj9",
+      "label": "Crayon",
+      "emoji": "🖍️",
+      "attributes": {
+       "category": "school"
+      }
+     },
+     {
+      "id": "obj10",
+      "label": "Scissors",
+      "emoji": "✂️",
+      "attributes": {
+       "category": "school"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Toy",
+      "rule": {
+       "category": "toy"
+      },
+      "bucketEmoji": "🎮"
+     },
+     {
+      "label": "School",
+      "rule": {
+       "category": "school"
+      },
+      "bucketEmoji": "📚"
+     }
+    ],
+    "comparisonQuestion": "Are there fewer toys or school supplies?",
+    "correctComparison": "fewer"
+   },
+   {
+    "id": "c3",
+    "type": "count-and-compare",
+    "instruction": "Count the sea creatures and the bugs. Which group has more?",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj11",
+      "label": "Friendly Fish",
+      "emoji": "🐠",
+      "attributes": {
+       "category": "sea"
+      }
+     },
+     {
+      "id": "obj12",
+      "label": "Cute Crab",
+      "emoji": "🦀",
+      "attributes": {
+       "category": "sea"
+      }
+     },
+     {
+      "id": "obj13",
+      "label": "Little Octopus",
+      "emoji": "🐙",
+      "attributes": {
+       "category": "sea"
+      }
+     },
+     {
+      "id": "obj14",
+      "label": "Wriggly Worm",
+      "emoji": "🪱",
+      "attributes": {
+       "category": "bug"
+      }
+     },
+     {
+      "id": "obj15",
+      "label": "Busy Ant",
+      "emoji": "🐜",
+      "attributes": {
+       "category": "bug"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Sea",
+      "rule": {
+       "category": "sea"
+      },
+      "bucketEmoji": "🌊"
+     },
+     {
+      "label": "Bug",
+      "rule": {
+       "category": "bug"
+      },
+      "bucketEmoji": "🌿"
+     }
+    ],
+    "comparisonQuestion": "Are there more sea creatures or bugs?",
+    "correctComparison": "more"
+   },
+   {
+    "id": "c4",
+    "type": "count-and-compare",
+    "instruction": "Count the clothes and the shoes. Which group has fewer?",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj16",
+      "label": "Warm Shirt",
+      "emoji": "👕",
+      "attributes": {
+       "category": "clothing"
+      }
+     },
+     {
+      "id": "obj17",
+      "label": "Cozy Dress",
+      "emoji": "👗",
+      "attributes": {
+       "category": "clothing"
+      }
+     },
+     {
+      "id": "obj18",
+      "label": "Sneaker",
+      "emoji": "👟",
+      "attributes": {
+       "category": "footwear"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Clothing",
+      "rule": {
+       "category": "clothing"
+      },
+      "bucketEmoji": "👔"
+     },
+     {
+      "label": "Footwear",
+      "rule": {
+       "category": "footwear"
+      },
+      "bucketEmoji": "🧦"
+     }
+    ],
+    "comparisonQuestion": "Are there fewer clothes or shoes?",
+    "correctComparison": "fewer"
+   }
+  ],
+  "maxCategories": 2,
+  "showCounts": true,
+  "showTallyChart": false,
+  "gradeBand": "K"
+ }
+}

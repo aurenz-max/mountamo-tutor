@@ -1,0 +1,80 @@
+{
+ "source": "qa/tutor-reports/di-letter-sounds-runtime-letter_sound_review-payload-2026-09-19.json",
+ "primitiveId": "di-letter-sounds",
+ "evalMode": "letter_sound_review",
+ "data": {
+  "title": "Sound Safari!",
+  "description": "Get ready to use your super listening ears and say some fun sounds out loud!",
+  "challengeType": "letter_sound_review",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "dils-1-m",
+    "challengeType": "letter_sound_review",
+    "letter": "m",
+    "spoken": "mmm",
+    "keyword": "moon",
+    "emoji": "🌙",
+    "elicitation": "isolated",
+    "asrAliases": [
+     "m",
+     "mm",
+     "mmm",
+     "hm",
+     "hmm",
+     "mhm",
+     "um"
+    ]
+   },
+   {
+    "id": "dils-2-s",
+    "challengeType": "letter_sound_review",
+    "letter": "s",
+    "spoken": "sss",
+    "keyword": "sun",
+    "emoji": "☀️",
+    "elicitation": "isolated",
+    "asrAliases": [
+     "s",
+     "ss",
+     "sss",
+     "ess",
+     "sh",
+     "shh",
+     "hiss"
+    ]
+   },
+   {
+    "id": "dils-3-r",
+    "challengeType": "letter_sound_review",
+    "letter": "r",
+    "spoken": "rrr",
+    "keyword": "ring",
+    "emoji": "💍",
+    "elicitation": "isolated",
+    "asrAliases": [
+     "r",
+     "rr",
+     "rrr",
+     "ar",
+     "are",
+     "er"
+    ]
+   },
+   {
+    "id": "dils-4-i",
+    "challengeType": "letter_sound_review",
+    "letter": "i",
+    "spoken": "iii",
+    "keyword": "igloo",
+    "emoji": "🧊",
+    "elicitation": "keyword",
+    "asrAliases": [
+     "igloo",
+     "i"
+    ]
+   }
+  ],
+  "letters": "m, s, r, i"
+ }
+}

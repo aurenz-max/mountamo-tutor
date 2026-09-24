@@ -1,0 +1,62 @@
+{
+ "source": "qa/tutor-reports/number-tracer-runtime-trace-payload-2026-09-23.json",
+ "primitiveId": "number-tracer",
+ "evalMode": "trace",
+ "data": {
+  "title": "Writing Numerals Zero to Five",
+  "description": "Practice tracing numbers from zero to five with helpful directional arrows.",
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "trace",
+    "digit": 0,
+    "showModel": false,
+    "showArrows": true,
+    "hint": "Start at the top and curve all the way around like a circle.",
+    "strokePaths": [],
+    "instruction": "Trace the number 0!"
+   },
+   {
+    "id": "c2",
+    "type": "trace",
+    "digit": 1,
+    "showModel": false,
+    "showArrows": true,
+    "hint": "Pull straight down to make a simple line.",
+    "strokePaths": [],
+    "instruction": "Trace the number 1!"
+   },
+   {
+    "id": "c3",
+    "type": "trace",
+    "digit": 2,
+    "showModel": false,
+    "showArrows": true,
+    "hint": "Curve around the top, then slide straight across the bottom.",
+    "strokePaths": [],
+    "instruction": "Trace the number 2!"
+   },
+   {
+    "id": "c4",
+    "type": "trace",
+    "digit": 3,
+    "showModel": false,
+    "showArrows": true,
+    "hint": "Curve around the top, then curve around again to make a three.",
+    "strokePaths": [],
+    "instruction": "Trace the number 3!"
+   },
+   {
+    "id": "c5",
+    "type": "trace",
+    "digit": 4,
+    "showModel": false,
+    "showArrows": true,
+    "hint": "Go down, slide right, then lift and pull straight down.",
+    "strokePaths": [],
+    "instruction": "Trace the number 4!"
+   }
+  ]
+ }
+}

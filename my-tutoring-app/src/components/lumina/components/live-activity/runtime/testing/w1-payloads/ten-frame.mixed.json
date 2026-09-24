@@ -1,0 +1,81 @@
+{
+ "source": "qa/tutor-reports/ten-frame-runtime-mixed-payload-2026-09-22-reordered.json",
+ "primitiveId": "ten-frame",
+ "evalMode": "mixed",
+ "data": {
+  "title": "Numbers to 10 on a Ten Frame",
+  "description": "Explore numbers up to 10 by building, subitizing, and making ten on the ten frame.",
+  "mode": "single",
+  "counters": {
+   "count": 0,
+   "color": "red",
+   "positions": []
+  },
+  "challenges": [
+   {
+    "id": "c5",
+    "type": "make_ten",
+    "targetCount": 6,
+    "hint": "Count the empty spaces left to reach ten.",
+    "narration": "How many more counters do we need to make ten?",
+    "instruction": "There are 6 counters on the frame. How many more do you need to make 10?"
+   },
+   {
+    "id": "c6",
+    "type": "split",
+    "targetCount": 5,
+    "hint": "Change some of the red counters to yellow to show two parts.",
+    "narration": "Let us split five into two different colors.",
+    "instruction": "Turn some of the 5 counters yellow to make two groups!"
+   },
+   {
+    "id": "c1",
+    "type": "build",
+    "targetCount": 4,
+    "hint": "Count out four counters one by one.",
+    "narration": "Can you put four counters on the ten frame?",
+    "instruction": "Put 4 counters on the ten frame!"
+   },
+   {
+    "id": "c2",
+    "type": "subitize",
+    "targetCount": 3,
+    "hint": "Look closely at the pattern before it hides.",
+    "narration": "How many counters do you see?",
+    "flashDuration": 1800,
+    "instruction": "How many counters did you see?"
+   },
+   {
+    "id": "c3",
+    "type": "build",
+    "targetCount": 7,
+    "hint": "Fill the top row completely and add two more on the bottom.",
+    "narration": "Let us build the number seven on the frame.",
+    "instruction": "Put 7 counters on the ten frame!"
+   },
+   {
+    "id": "c4",
+    "type": "subitize",
+    "targetCount": 5,
+    "hint": "Notice how the top row is completely filled.",
+    "narration": "Quickly, how many dots flashed on the screen?",
+    "flashDuration": 1500,
+    "instruction": "How many counters did you see?"
+   }
+  ],
+  "showOptions": {
+   "showCount": true,
+   "showEquation": false,
+   "showEmptyCount": false,
+   "allowFlip": true
+  },
+  "gradeBand": "K",
+  "twoColorMode": {
+   "enabled": false,
+   "color1Count": 0,
+   "color2Count": 0,
+   "color1": "red",
+   "color2": "yellow"
+  }
+ }
+}

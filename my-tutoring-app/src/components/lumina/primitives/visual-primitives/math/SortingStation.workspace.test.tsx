@@ -28,11 +28,8 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
   playStreak: vi.fn(), tap: vi.fn(), tick: vi.fn(), snap: vi.fn(), invalid: vi.fn(), isEnabled: () => true, getVolume: () => 1 } }));
 vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
 import SortingStation, { type SortingStationData } from './SortingStation';
-import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
-import { getComponentById } from '../../../service/manifest/catalog';
 /** The submission waits for the scoring pass (a fetch that rejects in jsdom, so every spoken attempt keeps its flow verdict). */
 const flushScoring = () => act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
-const sortingStationLive = LIVE_ADAPTERS['sorting-station'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.evaluationContext = null;
   vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => setTimeout(() => fn(performance.now()), 16));
@@ -139,19 +136,4 @@ it('a verdict that credits and advances in one step still files the card (onAffi
   h.say(group); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task!.itemId).not.toBe(first.itemId);
   expect(cards(group)).toBe(1);
-});
-
-it('the packet carries learner signals for the current item', () => {
-  const h = mount('sort_one', 'sort-by-one');
-  act(() => h.transport.publish());
-  const packet = h.sent.filter(m => m.type === 'runtime_state').at(-1).state;
-  expect(packet.learner.signals).toMatchObject({ attempts: 0, learnerTurns: 0, helpRequests: 0 });
-  h.transport.close();
-});
-
-it('advertises every catalog mode under tutor ownership, inside the guidance cap', () => {
-  expect([...sortingStationLive.modes].sort()).toEqual((getComponentById('sorting-station')?.evalModes ?? []).map(m => m.evalMode).sort());
-  expect(sortingStationLive).toMatchObject({ teachingOwner: 'tutor', canAdvance: false, tutoring: null, bindsTeachingWorkspace: true });
-  expect(sortingStationLive.guidance.length).toBeLessThanOrEqual(2000);
-  expect(sortingStationLive.guidance).not.toMatch(/say exactly/i);
 });

@@ -1,0 +1,84 @@
+{
+ "source": "qa/tutor-reports/number-sequencer-runtime-before_after-payload-2026-09-21.json",
+ "primitiveId": "number-sequencer",
+ "evalMode": "before_after",
+ "data": {
+  "title": "Before and After Explorers",
+  "description": "Practice finding the number that comes just before or just after a given number within 1 to 20.",
+  "challenges": [
+   {
+    "id": "seq1",
+    "type": "before-after",
+    "instruction": "Can you find the missing number?",
+    "sequence": [
+     null,
+     2
+    ],
+    "correctAnswers": [
+     1
+    ],
+    "rangeMin": 1,
+    "rangeMax": 2
+   },
+   {
+    "id": "seq2",
+    "type": "before-after",
+    "instruction": "Can you find the missing number?",
+    "sequence": [
+     4,
+     null
+    ],
+    "correctAnswers": [
+     5
+    ],
+    "rangeMin": 4,
+    "rangeMax": 5
+   },
+   {
+    "id": "seq3",
+    "type": "before-after",
+    "instruction": "Can you find the missing number?",
+    "sequence": [
+     null,
+     8
+    ],
+    "correctAnswers": [
+     7
+    ],
+    "rangeMin": 7,
+    "rangeMax": 8
+   },
+   {
+    "id": "seq4",
+    "type": "before-after",
+    "instruction": "Can you find the missing number?",
+    "sequence": [
+     12,
+     null
+    ],
+    "correctAnswers": [
+     13
+    ],
+    "rangeMin": 12,
+    "rangeMax": 13
+   },
+   {
+    "id": "seq5",
+    "type": "before-after",
+    "instruction": "Can you find the missing number?",
+    "sequence": [
+     null,
+     20
+    ],
+    "correctAnswers": [
+     19
+    ],
+    "rangeMin": 19,
+    "rangeMax": 20
+   }
+  ],
+  "gradeBand": "K",
+  "showNumberLine": true,
+  "showDotArrays": true
+ }
+}

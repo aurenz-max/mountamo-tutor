@@ -1,0 +1,80 @@
+{
+ "source": "qa/tutor-reports/ten-frame-runtime-make_ten-payload-2026-09-18.json",
+ "primitiveId": "ten-frame",
+ "evalMode": "make_ten",
+ "data": {
+  "title": "Making Ten Race",
+  "description": "Practice finding the missing part to make a complete ten frame.",
+  "mode": "single",
+  "counters": {
+   "count": 0,
+   "color": "red",
+   "positions": []
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "make_ten",
+    "targetCount": 9,
+    "hint": "Look at how many empty spaces are left in the ten frame.",
+    "narration": "I put nine counters on the frame. How many more do we need to make ten?",
+    "instruction": "There are 9 counters on the frame. How many more do you need to make 10?"
+   },
+   {
+    "id": "c2",
+    "type": "make_ten",
+    "targetCount": 8,
+    "hint": "Count the empty squares to find your answer.",
+    "narration": "There are eight counters here. How many empty spaces are waiting to be filled?",
+    "instruction": "There are 8 counters on the frame. How many more do you need to make 10?"
+   },
+   {
+    "id": "c3",
+    "type": "make_ten",
+    "targetCount": 7,
+    "hint": "Think about your number bonds for ten.",
+    "narration": "We have seven counters on the board. How many more to reach ten?",
+    "instruction": "There are 7 counters on the frame. How many more do you need to make 10?"
+   },
+   {
+    "id": "c4",
+    "type": "make_ten",
+    "targetCount": 6,
+    "hint": "Fill the top row and see what is missing on the bottom row.",
+    "narration": "Here are six counters. How many more do we need to make a full ten?",
+    "instruction": "There are 6 counters on the frame. How many more do you need to make 10?"
+   },
+   {
+    "id": "c5",
+    "type": "make_ten",
+    "targetCount": 5,
+    "hint": "Half of the frame is full. How many empty spaces are left?",
+    "narration": "Five counters are showing. How many more to make ten?",
+    "instruction": "There are 5 counters on the frame. How many more do you need to make 10?"
+   },
+   {
+    "id": "c6",
+    "type": "make_ten",
+    "targetCount": 4,
+    "hint": "Count the blank spots carefully.",
+    "narration": "I placed four counters on the frame. How many more are needed to fill it up?",
+    "instruction": "There are 4 counters on the frame. How many more do you need to make 10?"
+   },
+   {
+    "id": "c7",
+    "type": "make_ten",
+    "targetCount": 3,
+    "hint": "Look closely at the empty squares.",
+    "narration": "We start with three counters. How many more do we need to make ten?",
+    "instruction": "There are 3 counters on the frame. How many more do you need to make 10?"
+   }
+  ],
+  "showOptions": {
+   "showCount": false,
+   "showEquation": false,
+   "showEmptyCount": false,
+   "allowFlip": false
+  },
+  "gradeBand": "1-2"
+ }
+}

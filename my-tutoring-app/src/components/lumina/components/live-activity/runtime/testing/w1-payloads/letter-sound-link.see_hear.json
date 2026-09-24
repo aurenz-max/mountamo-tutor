@@ -1,0 +1,74 @@
+{
+ "source": "qa/tutor-reports/letter-sound-link-runtime-see_hear-payload-2026-09-20.json",
+ "primitiveId": "letter-sound-link",
+ "evalMode": "see_hear",
+ "data": {
+  "title": "Letter Sounds - Group 1!",
+  "letterGroup": 1,
+  "cumulativeLetters": [
+   "s",
+   "a",
+   "t",
+   "i",
+   "p",
+   "n"
+  ],
+  "challenges": [
+   {
+    "id": "ch1",
+    "mode": "see-hear",
+    "targetLetter": "s",
+    "targetSound": "/s/",
+    "keywordWord": "sun",
+    "keywordImage": "sun",
+    "options": []
+   },
+   {
+    "id": "ch2",
+    "mode": "see-hear",
+    "targetLetter": "a",
+    "targetSound": "/ă/",
+    "keywordWord": "apple",
+    "keywordImage": "apple",
+    "options": []
+   },
+   {
+    "id": "ch3",
+    "mode": "see-hear",
+    "targetLetter": "t",
+    "targetSound": "/t/",
+    "keywordWord": "tent",
+    "keywordImage": "tent",
+    "options": []
+   },
+   {
+    "id": "ch4",
+    "mode": "see-hear",
+    "targetLetter": "i",
+    "targetSound": "/ĭ/",
+    "keywordWord": "itch",
+    "keywordImage": "itch",
+    "options": []
+   },
+   {
+    "id": "ch5",
+    "mode": "see-hear",
+    "targetLetter": "p",
+    "targetSound": "/p/",
+    "keywordWord": "pig",
+    "keywordImage": "pig",
+    "options": []
+   },
+   {
+    "id": "ch6",
+    "mode": "see-hear",
+    "targetLetter": "n",
+    "targetSound": "/n/",
+    "keywordWord": "net",
+    "keywordImage": "net",
+    "options": []
+   }
+  ],
+  "gradeLevel": "K"
+ }
+}

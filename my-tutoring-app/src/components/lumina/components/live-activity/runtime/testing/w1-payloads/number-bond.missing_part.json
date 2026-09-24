@@ -1,0 +1,70 @@
+{
+ "source": "qa/tutor-reports/number-bond-runtime-missing_part-payload-2026-09-23.json",
+ "primitiveId": "number-bond",
+ "evalMode": "missing_part",
+ "data": {
+  "title": "Find the Missing Part with 5!",
+  "description": "Practice finding the missing part of a number bond within five to build addition and subtraction fluency.",
+  "maxNumber": 5,
+  "showCounters": true,
+  "showEquation": true,
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "missing-part",
+    "instruction": "We have 3 apples in all. If 1 apple is in the first basket, how many are in the second basket to make 3?",
+    "whole": 3,
+    "part1": 1,
+    "part2": null,
+    "allPairs": null,
+    "factFamily": null,
+    "targetEquation": null
+   },
+   {
+    "id": "c2",
+    "type": "missing-part",
+    "instruction": "Our whole group has 4 stars. If 2 stars are shining bright, how many more stars do we need to make 4?",
+    "whole": 4,
+    "part1": 2,
+    "part2": null,
+    "allPairs": null,
+    "factFamily": null,
+    "targetEquation": null
+   },
+   {
+    "id": "c3",
+    "type": "missing-part",
+    "instruction": "There are 5 blocks in total. If 1 block is hiding, how many blocks can you see to make 5?",
+    "whole": 5,
+    "part1": 1,
+    "part2": null,
+    "allPairs": null,
+    "factFamily": null,
+    "targetEquation": null
+   },
+   {
+    "id": "c4",
+    "type": "missing-part",
+    "instruction": "We counted 4 flowers altogether. If 3 flowers are red, how many yellow flowers make 4?",
+    "whole": 4,
+    "part1": 3,
+    "part2": null,
+    "allPairs": null,
+    "factFamily": null,
+    "targetEquation": null
+   },
+   {
+    "id": "c5",
+    "type": "missing-part",
+    "instruction": "Let us make 5! If we have 2 bouncy balls, how many more bouncy balls do we need to make 5?",
+    "whole": 5,
+    "part1": 2,
+    "part2": null,
+    "allPairs": null,
+    "factFamily": null,
+    "targetEquation": null
+   }
+  ]
+ }
+}

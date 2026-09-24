@@ -40,7 +40,6 @@ vi.mock('../../../components/PhaseSummaryPanel', () => ({ default: () => <div>su
 vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
 import FractionCircles, { type FractionCirclesChallenge, type FractionCirclesData } from './FractionCircles';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
-import { getComponentById } from '../../../service/manifest/catalog';
 import { isDiagnosableFailure } from '../../../evaluation/diagnosis/types';
 const live = LIVE_ADAPTERS['fraction-circles'];
 
@@ -187,14 +186,6 @@ it('a mixed pin without an evaluation provider still moves on to the next block'
   expect(seam.writes).toHaveLength(0);
 });
 
-it('the packet carries learner signals for the current item', () => {
-  const h = mount('build', [challengeFor('build')]);
-  act(() => h.transport.publish());
-  const packet = h.sent.filter(m => m.type === 'runtime_state').at(-1).state;
-  expect(packet.learner.signals).toMatchObject({ itemId: 'build', attempts: 0, learnerTurns: 0, helpRequests: 0 });
-  h.transport.close();
-});
-
 it.each([
   ['plain', [challengeFor('build')]],
   ['touch', [challengeFor('touch_fraction')]],
@@ -302,12 +293,8 @@ it('a mixed chain weights each block by its challenges and keeps the touch score
   expect(seam.writes[0].studentWork.blocks).toHaveLength(2);
 });
 
-it('advertises every catalog mode under tutor ownership, inside the guidance cap', () => {
-  expect([...live.modes].sort()).toEqual((getComponentById('fraction-circles')?.evalModes ?? []).map(m => m.evalMode).sort());
+it('its fixture list covers every catalog mode, and validation holds', () => {
   expect([...live.modes].sort()).toEqual([...MODES].sort());
-  expect(live).toMatchObject({ teachingOwner: 'tutor', canAdvance: false, tutoring: null, bindsTeachingWorkspace: true });
-  expect(live.guidance.length).toBeLessThanOrEqual(2000);
-  expect(live.guidance).not.toMatch(/say exactly/i);
   expect(() => live.validate({ title: 'x', challenges: MODES.map(m => challengeFor(m)) })).not.toThrow();
   expect(() => live.validate({ title: 'x', challenges: [{ ...challengeFor('equivalent'), equivalentDenominator: 3 }] })).toThrow();
 });

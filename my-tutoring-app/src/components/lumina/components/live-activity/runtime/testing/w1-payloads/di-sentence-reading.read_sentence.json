@@ -1,0 +1,66 @@
+{
+ "source": "qa/tutor-reports/di-sentence-reading-runtime-read_sentence-payload-2026-09-22.json",
+ "primitiveId": "di-sentence-reading",
+ "evalMode": "read_sentence",
+ "data": {
+  "title": "Sentence Reading Fun",
+  "description": "Let us practice reading some fun sentences out loud together!",
+  "challengeType": "read_sentence",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "disr-1-here-it-is",
+    "challengeType": "read_sentence",
+    "text": "Here it is.",
+    "wordCount": 3,
+    "vowels": [
+     "i"
+    ],
+    "asrAliases": [
+     "here it is"
+    ]
+   },
+   {
+    "id": "disr-2-cat-sat",
+    "challengeType": "read_sentence",
+    "text": "The cat sat.",
+    "wordCount": 3,
+    "vowels": [
+     "a"
+    ],
+    "emoji": "🐱",
+    "asrAliases": [
+     "the cat sat"
+    ]
+   },
+   {
+    "id": "disr-3-red-hen",
+    "challengeType": "read_sentence",
+    "text": "The red hen ran.",
+    "wordCount": 4,
+    "vowels": [
+     "e",
+     "a"
+    ],
+    "emoji": "🐔",
+    "asrAliases": [
+     "the red hen ran"
+    ]
+   },
+   {
+    "id": "disr-4-dog-hot",
+    "challengeType": "read_sentence",
+    "text": "The dog is hot.",
+    "wordCount": 4,
+    "vowels": [
+     "o"
+    ],
+    "emoji": "🐶",
+    "asrAliases": [
+     "the dog is hot"
+    ]
+   }
+  ],
+  "sentences": "Here it is. | The cat sat. | The red hen ran. | The dog is hot."
+ }
+}

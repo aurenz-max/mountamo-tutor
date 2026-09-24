@@ -1,0 +1,143 @@
+{
+ "source": "qa/tutor-reports/compare-objects-runtime-order_three-payload-2026-09-22.json",
+ "primitiveId": "compare-objects",
+ "evalMode": "order_three",
+ "data": {
+  "title": "Compare Objects: Putting three objects in order from longest to shortest",
+  "description": "Compare and measure real-world objects by their attributes",
+  "challenges": [
+   {
+    "id": "co-1",
+    "type": "order_three",
+    "instruction": "Put these in order from longest to shortest.",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "yellow pencil",
+      "visualSize": 50,
+      "actualValue": 7
+     },
+     {
+      "name": "blue string",
+      "visualSize": 20,
+      "actualValue": 3
+     },
+     {
+      "name": "red ribbon",
+      "visualSize": 80,
+      "actualValue": 12
+     }
+    ],
+    "correctAnswer": "red ribbon, yellow pencil, blue string",
+    "comparisonWord": "longer",
+    "hint": "Put the longest object first, and the shortest object last."
+   },
+   {
+    "id": "co-2",
+    "type": "order_three",
+    "instruction": "Put these in order from shortest to longest.",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "green crayon",
+      "visualSize": 45,
+      "actualValue": 6
+     },
+     {
+      "name": "paint brush",
+      "visualSize": 85,
+      "actualValue": 10
+     },
+     {
+      "name": "paper clip",
+      "visualSize": 15,
+      "actualValue": 2
+     }
+    ],
+    "correctAnswer": "paper clip, green crayon, paint brush",
+    "comparisonWord": "shorter",
+    "hint": "Start with the shortest object and end with the longest."
+   },
+   {
+    "id": "co-3",
+    "type": "order_three",
+    "instruction": "Put these in order from tallest to shortest.",
+    "attribute": "height",
+    "objects": [
+     {
+      "name": "kitchen chair",
+      "visualSize": 55,
+      "actualValue": 35
+     },
+     {
+      "name": "wooden door",
+      "visualSize": 90,
+      "actualValue": 80
+     },
+     {
+      "name": "step stool",
+      "visualSize": 25,
+      "actualValue": 15
+     }
+    ],
+    "correctAnswer": "wooden door, kitchen chair, step stool",
+    "comparisonWord": "taller",
+    "hint": "Order the objects starting with the tallest down to the shortest."
+   },
+   {
+    "id": "co-4",
+    "type": "order_three",
+    "instruction": "Put these in order from shortest to tallest.",
+    "attribute": "height",
+    "objects": [
+     {
+      "name": "rubber duck",
+      "visualSize": 20,
+      "actualValue": 4
+     },
+     {
+      "name": "desk lamp",
+      "visualSize": 85,
+      "actualValue": 18
+     },
+     {
+      "name": "soccer ball",
+      "visualSize": 50,
+      "actualValue": 9
+     }
+    ],
+    "correctAnswer": "rubber duck, soccer ball, desk lamp",
+    "comparisonWord": "shorter_height",
+    "hint": "Start with the shortest object in height and go up to the tallest."
+   },
+   {
+    "id": "co-5",
+    "type": "order_three",
+    "instruction": "Put these in order from lightest to heaviest.",
+    "attribute": "weight",
+    "objects": [
+     {
+      "name": "hardcover book",
+      "visualSize": 80,
+      "actualValue": 14
+     },
+     {
+      "name": "metal paperclip",
+      "visualSize": 15,
+      "actualValue": 2
+     },
+     {
+      "name": "apple fruit",
+      "visualSize": 50,
+      "actualValue": 6
+     }
+    ],
+    "correctAnswer": "metal paperclip, apple fruit, hardcover book",
+    "comparisonWord": "lighter",
+    "hint": "Start with the lightest object and end with the heaviest.",
+    "weightUnit": "oz"
+   }
+  ],
+  "gradeBand": "1"
+ }
+}

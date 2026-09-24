@@ -1,0 +1,176 @@
+{
+ "source": "qa/tutor-reports/shape-sorter-runtime-find_real_object-payload-2026-09-22.json",
+ "primitiveId": "shape-sorter",
+ "evalMode": "find_real_object",
+ "data": {
+  "title": "Shape Safari Adventures!",
+  "description": "Discover the 2D shapes hiding inside everyday objects by looking at their sides and corners.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "identify-real-object",
+    "instruction": "Look at each thing. What shape do you see in it?",
+    "ruleAttribute": "shape",
+    "shapes": [
+     {
+      "shape": "oval",
+      "color": "blue",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "egg",
+      "realObjectId": "egg"
+     },
+     {
+      "shape": "square",
+      "color": "green",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "window",
+      "realObjectId": "window"
+     },
+     {
+      "shape": "diamond",
+      "color": "purple",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "kite",
+      "realObjectId": "kite"
+     },
+     {
+      "shape": "rectangle",
+      "color": "orange",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "door",
+      "realObjectId": "door"
+     }
+    ],
+    "targetValue": "circle"
+   },
+   {
+    "id": "c2",
+    "type": "identify-real-object",
+    "instruction": "Look at each thing. What shape do you see in it?",
+    "ruleAttribute": "shape",
+    "shapes": [
+     {
+      "shape": "rectangle",
+      "color": "blue",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "door",
+      "realObjectId": "door"
+     },
+     {
+      "shape": "oval",
+      "color": "green",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "egg",
+      "realObjectId": "egg"
+     },
+     {
+      "shape": "circle",
+      "color": "purple",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "clock face",
+      "realObjectId": "clock"
+     },
+     {
+      "shape": "diamond",
+      "color": "orange",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "kite",
+      "realObjectId": "kite"
+     }
+    ],
+    "targetValue": "square"
+   },
+   {
+    "id": "c3",
+    "type": "identify-real-object",
+    "instruction": "Look at each thing. What shape do you see in it?",
+    "ruleAttribute": "shape",
+    "shapes": [
+     {
+      "shape": "square",
+      "color": "blue",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "window",
+      "realObjectId": "window"
+     },
+     {
+      "shape": "circle",
+      "color": "green",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "clock face",
+      "realObjectId": "clock"
+     },
+     {
+      "shape": "triangle",
+      "color": "purple",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "yield sign",
+      "realObjectId": "yield-sign"
+     },
+     {
+      "shape": "diamond",
+      "color": "orange",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "kite",
+      "realObjectId": "kite"
+     }
+    ],
+    "targetValue": "triangle"
+   },
+   {
+    "id": "c4",
+    "type": "identify-real-object",
+    "instruction": "Look at each thing. What shape do you see in it?",
+    "ruleAttribute": "shape",
+    "shapes": [
+     {
+      "shape": "oval",
+      "color": "blue",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "egg",
+      "realObjectId": "egg"
+     },
+     {
+      "shape": "diamond",
+      "color": "green",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "kite",
+      "realObjectId": "kite"
+     },
+     {
+      "shape": "circle",
+      "color": "purple",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "clock face",
+      "realObjectId": "clock"
+     },
+     {
+      "shape": "triangle",
+      "color": "orange",
+      "size": "large",
+      "rotation": 0,
+      "realObject": "yield sign",
+      "realObjectId": "yield-sign"
+     }
+    ],
+    "targetValue": "rectangle"
+   }
+  ],
+  "gradeBand": "K"
+ }
+}

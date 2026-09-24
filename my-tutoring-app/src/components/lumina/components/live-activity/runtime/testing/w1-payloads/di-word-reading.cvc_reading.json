@@ -1,0 +1,74 @@
+{
+ "source": "qa/tutor-reports/di-word-reading-runtime-cvc_reading-payload-2026-09-22.json",
+ "primitiveId": "di-word-reading",
+ "evalMode": "cvc_reading",
+ "data": {
+  "title": "Fun Sound Safari",
+  "description": "Let us practice blending and reading some new sounds together out loud.",
+  "challengeType": "cvc_reading",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "diwr-1-cat",
+    "challengeType": "cvc_reading",
+    "word": "cat",
+    "wordType": "cvc",
+    "graphemes": [
+     "c",
+     "a",
+     "t"
+    ],
+    "emoji": "🐱",
+    "asrAliases": [
+     "cat"
+    ]
+   },
+   {
+    "id": "diwr-2-mat",
+    "challengeType": "cvc_reading",
+    "word": "mat",
+    "wordType": "cvc",
+    "graphemes": [
+     "m",
+     "a",
+     "t"
+    ],
+    "asrAliases": [
+     "mat",
+     "matt"
+    ]
+   },
+   {
+    "id": "diwr-3-pan",
+    "challengeType": "cvc_reading",
+    "word": "pan",
+    "wordType": "cvc",
+    "graphemes": [
+     "p",
+     "a",
+     "n"
+    ],
+    "emoji": "🍳",
+    "asrAliases": [
+     "pan"
+    ]
+   },
+   {
+    "id": "diwr-4-hat",
+    "challengeType": "cvc_reading",
+    "word": "hat",
+    "wordType": "cvc",
+    "graphemes": [
+     "h",
+     "a",
+     "t"
+    ],
+    "emoji": "🎩",
+    "asrAliases": [
+     "hat"
+    ]
+   }
+  ],
+  "words": "cat, mat, pan, hat"
+ }
+}

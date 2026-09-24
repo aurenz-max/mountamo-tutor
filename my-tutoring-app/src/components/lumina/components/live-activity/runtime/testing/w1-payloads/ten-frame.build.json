@@ -1,0 +1,87 @@
+{
+ "source": "qa/tutor-reports/ten-frame-runtime-build-payload-2026-09-22.json",
+ "primitiveId": "ten-frame",
+ "evalMode": "build",
+ "data": {
+  "title": "Building Numbers to 10",
+  "description": "Practice building numbers from 1 to 7 on a single ten frame to develop early number sense.",
+  "mode": "single",
+  "counters": {
+   "count": 0,
+   "color": "red",
+   "positions": []
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "build",
+    "targetCount": 2,
+    "hint": "Try placing 2 counters in the top row of your ten frame.",
+    "narration": "Let's start by building the number 2 on our ten frame.",
+    "instruction": "Put 2 counters on the ten frame!"
+   },
+   {
+    "id": "c2",
+    "type": "build",
+    "targetCount": 3,
+    "hint": "Count out 3 red counters to fill the spaces.",
+    "narration": "Great job! Now, can you build the number 3?",
+    "instruction": "Put 3 counters on the ten frame!"
+   },
+   {
+    "id": "c3",
+    "type": "build",
+    "targetCount": 4,
+    "hint": "Place 4 counters in a row starting from the top left.",
+    "narration": "You are doing wonderful. Let's make the number 4 next.",
+    "instruction": "Put 4 counters on the ten frame!"
+   },
+   {
+    "id": "c4",
+    "type": "build",
+    "targetCount": 5,
+    "hint": "Fill the entire top row to make 5!",
+    "narration": "Look at that! Can you fill the whole top row to show 5?",
+    "instruction": "Put 5 counters on the ten frame!"
+   },
+   {
+    "id": "c5",
+    "type": "build",
+    "targetCount": 6,
+    "hint": "Fill the top row of 5, then add 1 more in the bottom row.",
+    "narration": "Now let's build 6. Remember, 5 is the top row plus one more underneath.",
+    "instruction": "Put 6 counters on the ten frame!"
+   },
+   {
+    "id": "c6",
+    "type": "build",
+    "targetCount": 7,
+    "hint": "Put 5 in the top row and 2 in the bottom row.",
+    "narration": "You're getting so good at this. Let's build 7 counters on the frame!",
+    "instruction": "Put 7 counters on the ten frame!"
+   },
+   {
+    "id": "c7",
+    "type": "build",
+    "targetCount": 7,
+    "hint": "Double check your counters to make sure you have exactly 7 placed.",
+    "narration": "For our last challenge, let's build 7 one more time to show how fast you can do it!",
+    "instruction": "Put 7 counters on the ten frame!"
+   }
+  ],
+  "showOptions": {
+   "showCount": true,
+   "showEquation": false,
+   "showEmptyCount": false,
+   "allowFlip": false
+  },
+  "gradeBand": "K",
+  "twoColorMode": {
+   "enabled": false,
+   "color1Count": 0,
+   "color2Count": 0,
+   "color1": "red",
+   "color2": "yellow"
+  }
+ }
+}

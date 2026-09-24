@@ -1,0 +1,144 @@
+{
+ "source": "qa/tutor-reports/shape-sorter-runtime-identify-payload-2026-09-21.json",
+ "primitiveId": "shape-sorter",
+ "evalMode": "identify",
+ "data": {
+  "title": "Shape Side Safari",
+  "description": "Learn to identify flat shapes by looking at their sides and corners.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "identify",
+    "instruction": "Look at the shape that is marked and listen for the question.",
+    "ruleAttribute": "shape",
+    "shapes": [
+     {
+      "shape": "circle",
+      "color": "red",
+      "size": "medium",
+      "rotation": 0
+     },
+     {
+      "shape": "square",
+      "color": "blue",
+      "size": "small",
+      "rotation": 0
+     },
+     {
+      "shape": "triangle",
+      "color": "green",
+      "size": "large",
+      "rotation": 15
+     },
+     {
+      "shape": "rectangle",
+      "color": "yellow",
+      "size": "medium",
+      "rotation": 90
+     }
+    ],
+    "targetValue": "circle"
+   },
+   {
+    "id": "c2",
+    "type": "identify",
+    "instruction": "Look at the shape that is marked and listen for the question.",
+    "ruleAttribute": "shape",
+    "shapes": [
+     {
+      "shape": "square",
+      "color": "blue",
+      "size": "large",
+      "rotation": 0
+     },
+     {
+      "shape": "triangle",
+      "color": "purple",
+      "size": "medium",
+      "rotation": 45
+     },
+     {
+      "shape": "rectangle",
+      "color": "orange",
+      "size": "small",
+      "rotation": 0
+     },
+     {
+      "shape": "circle",
+      "color": "pink",
+      "size": "medium",
+      "rotation": 0
+     }
+    ],
+    "targetValue": "square"
+   },
+   {
+    "id": "c3",
+    "type": "identify",
+    "instruction": "Look at the shape that is marked and listen for the question.",
+    "ruleAttribute": "shape",
+    "shapes": [
+     {
+      "shape": "triangle",
+      "color": "green",
+      "size": "medium",
+      "rotation": 120
+     },
+     {
+      "shape": "rectangle",
+      "color": "cyan",
+      "size": "large",
+      "rotation": 0
+     },
+     {
+      "shape": "circle",
+      "color": "red",
+      "size": "small",
+      "rotation": 0
+     },
+     {
+      "shape": "square",
+      "color": "yellow",
+      "size": "medium",
+      "rotation": 90
+     }
+    ],
+    "targetValue": "triangle"
+   },
+   {
+    "id": "c4",
+    "type": "identify",
+    "instruction": "Look at the shape that is marked and listen for the question.",
+    "ruleAttribute": "shape",
+    "shapes": [
+     {
+      "shape": "rectangle",
+      "color": "orange",
+      "size": "large",
+      "rotation": 90
+     },
+     {
+      "shape": "triangle",
+      "color": "blue",
+      "size": "small",
+      "rotation": 200
+     },
+     {
+      "shape": "square",
+      "color": "purple",
+      "size": "medium",
+      "rotation": 180
+     },
+     {
+      "shape": "circle",
+      "color": "green",
+      "size": "small",
+      "rotation": 0
+     }
+    ],
+    "targetValue": "rectangle"
+   }
+  ],
+  "gradeBand": "K"
+ }
+}

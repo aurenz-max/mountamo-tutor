@@ -1,0 +1,47 @@
+{
+ "source": "qa/tutor-reports/base-ten-blocks-runtime-read_blocks-payload-2026-09-23.json",
+ "primitiveId": "base-ten-blocks",
+ "evalMode": "read_blocks",
+ "data": {
+  "title": "Ten-Frame Trackers: Reading the Blocks",
+  "description": "Practice reading base-ten blocks place by place to understand the total value of tens and ones.",
+  "numberValue": 20,
+  "challenges": [
+   {
+    "type": "read_blocks",
+    "instruction": "Look at the tens column. How many tens are there, and what is their total value?",
+    "targetNumber": 40,
+    "hint": "Count the long rods by tens: 10, 20, 30, 40."
+   },
+   {
+    "type": "read_blocks",
+    "instruction": "What number is shown by these blocks?",
+    "targetNumber": 60,
+    "hint": "Each rod equals ten. Count the rods carefully."
+   },
+   {
+    "type": "read_blocks",
+    "instruction": "Count the blocks above. What number do they make?",
+    "targetNumber": 30,
+    "hint": "Count by tens for each rod you see."
+   },
+   {
+    "type": "read_blocks",
+    "instruction": "Check the tens place on the mat and state their total worth.",
+    "targetNumber": 80,
+    "hint": "There are eight rods. Count by tens up to eight times."
+   },
+   {
+    "type": "read_blocks",
+    "instruction": "Read the blocks in the tens column for this final challenge.",
+    "targetNumber": 50,
+    "hint": "Count the five rods by tens."
+   }
+  ],
+  "gradeBand": "K-1",
+  "interactionMode": "decompose",
+  "decimalMode": false,
+  "maxPlace": "tens",
+  "supplyTray": true
+ }
+}

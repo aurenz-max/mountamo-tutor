@@ -207,11 +207,16 @@ catalog id such as `hundreds-chart`.
   presses must be unique on screen. A mode or band the driver has no input for throws with its
   name in the row; record it in the report as undriven, including any guidance written for it.
 
-**Checks.** (a) `<X>.workspace.test.tsx`, modelled on `CompareObjects.workspace.test.tsx`: the
-real component under `LiveLessonRuntime`, an `it.each` over every catalog mode showing it mounts
-under tutor ownership with no runner cue, the spoken key published and the gesture key not, a
-wrong commit that Try again reopens, a right one that completes once, the packet's `learner`, and
-the adapter's modes equal to the catalog's. (b) The primitive's existing tests and
+**Checks.** (a) The generic W1 contract, `runtime/workspaceContract.test.tsx`, covers what every
+binding owes (lesson binds the content, tutor owns it with no cue, a task, the packet's item and
+`learner`, no observer-only tool, nothing moves or submits on its own, adapter modes equal the
+catalog's). It FAILS until the family has a payload: after the smoke drive, copy its saved
+`generatedData` into `runtime/testing/w1-payloads/<id>.<mode>.json` as `{ source, primitiveId,
+evalMode, data }`, one file per mode driven. Then `<X>.workspace.test.tsx` tests only what is the
+primitive's own, mounting through `mountWorkspace` (`runtime/testing/workspaceHarness.tsx`, seams
+from `liveRuntimeSeams`): an `it.each` over every catalog mode on hand-built items (the payloads
+rarely cover every mode), the spoken key published and the gesture key not, a wrong commit that Try
+again reopens and what it clears, a right one that completes once. (b) The primitive's existing tests and
 `components/live-activity`, `typecheck:lumina` 0, full `tsc` not above baseline. (c) One smoke
 drive, frontend and backend running:
 `backend/venv/Scripts/python.exe backend/tests/tutor_live/run_live_runtime.py --primitive <id>

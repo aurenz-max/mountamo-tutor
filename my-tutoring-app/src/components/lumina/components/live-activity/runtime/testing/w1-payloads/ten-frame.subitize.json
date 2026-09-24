@@ -1,0 +1,87 @@
+{
+ "source": "qa/tutor-reports/ten-frame-runtime-subitize-payload-2026-09-22.json",
+ "primitiveId": "ten-frame",
+ "evalMode": "subitize",
+ "data": {
+  "title": "Subitizing Numbers to 10",
+  "description": "Practice recognizing quantities quickly on a ten frame using flash subitizing.",
+  "mode": "single",
+  "counters": {
+   "count": 0,
+   "color": "red",
+   "positions": []
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "subitize",
+    "targetCount": 2,
+    "hint": "Look quickly at the top row. How many dots did you see?",
+    "narration": "Get ready to flash and tell me how many red counters you see!",
+    "flashDuration": 2000,
+    "instruction": "How many counters did you see?"
+   },
+   {
+    "id": "c2",
+    "type": "subitize",
+    "targetCount": 3,
+    "hint": "Try to see the group all at once without counting one by one.",
+    "narration": "Here comes another flash. How many are there?",
+    "flashDuration": 1800,
+    "instruction": "How many counters did you see?"
+   },
+   {
+    "id": "c3",
+    "type": "subitize",
+    "targetCount": 4,
+    "hint": "Notice how many spaces are left empty in the top row.",
+    "narration": "Watch closely and catch the number!",
+    "flashDuration": 1800,
+    "instruction": "How many counters did you see?"
+   },
+   {
+    "id": "c4",
+    "type": "subitize",
+    "targetCount": 5,
+    "hint": "A full top row always means five!",
+    "narration": "A whole row just flashed! How many?",
+    "flashDuration": 1500,
+    "instruction": "How many counters did you see?"
+   },
+   {
+    "id": "c5",
+    "type": "subitize",
+    "targetCount": 6,
+    "hint": "Five on top and one more on the bottom row.",
+    "narration": "Keep your eyes open for this quick flash.",
+    "flashDuration": 1500,
+    "instruction": "How many counters did you see?"
+   },
+   {
+    "id": "c6",
+    "type": "subitize",
+    "targetCount": 8,
+    "hint": "Look at the empty spaces to help you figure it out.",
+    "narration": "Almost a full frame! How many did you see?",
+    "flashDuration": 1500,
+    "instruction": "How many counters did you see?"
+   },
+   {
+    "id": "c7",
+    "type": "subitize",
+    "targetCount": 10,
+    "hint": "A completely full ten frame is always ten!",
+    "narration": "The final flash! Tell me the total number.",
+    "flashDuration": 1200,
+    "instruction": "How many counters did you see?"
+   }
+  ],
+  "showOptions": {
+   "showCount": false,
+   "showEquation": false,
+   "showEmptyCount": false,
+   "allowFlip": false
+  },
+  "gradeBand": "K"
+ }
+}

@@ -1,0 +1,91 @@
+{
+ "source": "qa/tutor-reports/counting-board-runtime-count-payload-2026-09-23.json",
+ "primitiveId": "counting-board",
+ "evalMode": "count",
+ "data": {
+  "title": "Fluttering Butterflies",
+  "description": "Practice giving a requested number of objects from a larger collection by counting out butterflies carefully.",
+  "objects": {
+   "type": "butterflies"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "count_all",
+    "instruction": "Can you count out some beautiful butterflies? Touch each one as you count!",
+    "targetAnswer": 4,
+    "count": 4,
+    "arrangement": "line",
+    "hint": "Try touching each butterfly one at a time so you don't miss any!",
+    "narration": "Let's count these lovely butterflies together in a row!"
+   },
+   {
+    "id": "c2",
+    "type": "count_all",
+    "instruction": "Here are some more butterflies! Can you count them all?",
+    "targetAnswer": 6,
+    "count": 6,
+    "arrangement": "scattered",
+    "hint": "Take your time and tap every butterfly as you count them.",
+    "narration": "Look at all these butterflies scattered around! Can you count them?"
+   },
+   {
+    "id": "c3",
+    "type": "count_all",
+    "instruction": "Time for another butterfly count! How many can you find?",
+    "targetAnswer": 5,
+    "count": 5,
+    "arrangement": "circle",
+    "hint": "Go around the circle and touch each butterfly one by one.",
+    "narration": "They are flying in a circle! Let's count them all."
+   },
+   {
+    "id": "c4",
+    "type": "count_all",
+    "instruction": "Let's count this lovely group of butterflies!",
+    "targetAnswer": 7,
+    "count": 7,
+    "arrangement": "scattered",
+    "hint": "Count slowly and make sure to tap each butterfly just once.",
+    "narration": "Another group of butterflies appeared! Let's count them together."
+   },
+   {
+    "id": "c5",
+    "type": "count_all",
+    "instruction": "Can you find and count all of these butterflies?",
+    "targetAnswer": 6,
+    "count": 6,
+    "arrangement": "line",
+    "hint": "They are lined up! Count them from one end to the other.",
+    "narration": "Here they are in a nice straight line. Ready, set, count!"
+   },
+   {
+    "id": "c6",
+    "type": "count_all",
+    "instruction": "Keep up the great counting! How many butterflies do you see here?",
+    "targetAnswer": 8,
+    "count": 8,
+    "arrangement": "scattered",
+    "hint": "Try counting them in small groups so it is easier to keep track.",
+    "narration": "That is a bigger collection of butterflies! Let's count them carefully."
+   },
+   {
+    "id": "c7",
+    "type": "count_all",
+    "instruction": "This is our last butterfly challenge! Can you count them all?",
+    "targetAnswer": 9,
+    "count": 9,
+    "arrangement": "scattered",
+    "hint": "You are doing wonderful! Touch each butterfly to count to the final number.",
+    "narration": "Let's finish strong by counting our final group of butterflies!"
+   }
+  ],
+  "showOptions": {
+   "showRunningCount": true,
+   "showGroupCircles": false,
+   "highlightOnTap": true,
+   "showLastNumber": true
+  },
+  "gradeBand": "K"
+ }
+}

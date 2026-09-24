@@ -1,0 +1,71 @@
+{
+ "source": "qa/tutor-reports/counting-board-runtime-give_me_n-payload-2026-09-22.json",
+ "primitiveId": "counting-board",
+ "evalMode": "give_me_n",
+ "data": {
+  "title": "Apple Basket Challenge!",
+  "description": "Practice giving a requested number of apples from a bigger pile.",
+  "objects": {
+   "type": "apples"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "give_me_n",
+    "instruction": "Give me four apples.",
+    "targetAnswer": 4,
+    "count": 6,
+    "arrangement": "circle",
+    "hint": "Try tapping the apples one by one as you count them out.",
+    "narration": "Let's work together to count out some delicious apples from the pile!"
+   },
+   {
+    "id": "c2",
+    "type": "give_me_n",
+    "instruction": "Give me three apples.",
+    "targetAnswer": 3,
+    "count": 8,
+    "arrangement": "scattered",
+    "hint": "Take your time and tap each apple slowly so you don't miss any.",
+    "narration": "Here is a bigger pile of apples. Let's see how many we can count out."
+   },
+   {
+    "id": "c3",
+    "type": "give_me_n",
+    "instruction": "Give me five apples.",
+    "targetAnswer": 5,
+    "count": 7,
+    "arrangement": "line",
+    "hint": "Count them in a straight line from left to right.",
+    "narration": "Look at these apples in a row! Let's count them carefully."
+   },
+   {
+    "id": "c4",
+    "type": "give_me_n",
+    "instruction": "Give me six apples.",
+    "targetAnswer": 6,
+    "count": 10,
+    "arrangement": "scattered",
+    "hint": "You can touch each apple as you count to keep track.",
+    "narration": "This pile has even more apples! Can you help me count them?"
+   },
+   {
+    "id": "c5",
+    "type": "give_me_n",
+    "instruction": "Give me two apples.",
+    "targetAnswer": 2,
+    "count": 9,
+    "arrangement": "circle",
+    "hint": "Go all the way around the circle and count each one.",
+    "narration": "You are doing wonderful counting! Let's finish up with this circle of apples."
+   }
+  ],
+  "showOptions": {
+   "showRunningCount": true,
+   "showGroupCircles": false,
+   "highlightOnTap": true,
+   "showLastNumber": true
+  },
+  "gradeBand": "K"
+ }
+}

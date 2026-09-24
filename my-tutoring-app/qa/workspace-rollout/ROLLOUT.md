@@ -95,7 +95,8 @@ A C row whose primitive turns out to have no answer check moves to HELD with the
 
 - Follow `/add-live-tutor-tools` "W1 minimal binding". Per primitive: domain module, controller
   swap, adapter reduced to a `WorkspaceDomain`, catalog `teachingWorkspace`, journey row,
-  `<X>.workspace.test.tsx`, one smoke drive (gesture mode, plus `--audio` on one spoken mode).
+  `<X>.workspace.test.tsx`, one smoke drive (gesture mode, plus `--audio` on one spoken mode), its
+  payload copied into `w1-payloads/`.
 - Record per primitive in the batch report: production lines, time to clean typecheck, smoke
   results with raw file names, withheld modes and why.
 - A failed smoke is written into the row, then fixed, or the primitive moves to W2 or BLOCKED.
@@ -104,8 +105,9 @@ A C row whose primitive turns out to have no answer check moves to HELD with the
 - Never edit a component while a drive runs against it: the edit reloads the page and the drive fails.
 - Gates per batch: `typecheck:lumina` 0, full `tsc` not above baseline (770 on 09-23), the batch's
   tests plus `src/components/lumina/components/live-activity`.
-- Owed and not built: handoff 15's single generic contract test for every W1 primitive. Each
-  adopter has its own `<X>.workspace.test.tsx` instead. Build the generic one when the per-primitive
-  files start repeating their harness. They do now (13 files, ~200 lines each): build it before B2.
+- Generic W1 contract test BUILT 09-24: `runtime/workspaceContract.test.tsx` runs all 21 bound
+  families on 53 saved generated payloads (`runtime/testing/w1-payloads/`, 181 cases). A new family
+  fails it until its smoke payload is copied there. Per-primitive files keep only the primitive's
+  own behaviour (skill, W1 Checks (a)); 144 duplicated lines removed from the 12 existing ones.
 - A family binds every catalog mode, so a row naming one sub-surface moves the family's plain
   component too (B1: 9 surfaces for 4 ids). Size a batch by surfaces, not ids.

@@ -1,0 +1,65 @@
+{
+ "source": "qa/tutor-reports/di-word-reading-runtime-word_reading_review-payload-2026-09-20.json",
+ "primitiveId": "di-word-reading",
+ "evalMode": "word_reading_review",
+ "data": {
+  "title": "Super Sound Practice",
+  "description": "Get ready to sound out some fun new words out loud!",
+  "challengeType": "word_reading_review",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "diwr-1-and",
+    "challengeType": "word_reading_review",
+    "word": "and",
+    "wordType": "sight",
+    "asrAliases": [
+     "and"
+    ]
+   },
+   {
+    "id": "diwr-2-cat",
+    "challengeType": "word_reading_review",
+    "word": "cat",
+    "wordType": "cvc",
+    "graphemes": [
+     "c",
+     "a",
+     "t"
+    ],
+    "emoji": "🐱",
+    "asrAliases": [
+     "cat"
+    ]
+   },
+   {
+    "id": "diwr-3-the",
+    "challengeType": "word_reading_review",
+    "word": "the",
+    "wordType": "sight",
+    "asrAliases": [
+     "the",
+     "thee",
+     "duh"
+    ]
+   },
+   {
+    "id": "diwr-4-red",
+    "challengeType": "word_reading_review",
+    "word": "red",
+    "wordType": "cvc",
+    "graphemes": [
+     "r",
+     "e",
+     "d"
+    ],
+    "emoji": "🔴",
+    "asrAliases": [
+     "red",
+     "read"
+    ]
+   }
+  ],
+  "words": "and, cat, the, red"
+ }
+}

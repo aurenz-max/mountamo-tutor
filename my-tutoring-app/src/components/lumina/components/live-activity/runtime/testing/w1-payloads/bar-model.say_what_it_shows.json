@@ -1,0 +1,155 @@
+{
+ "source": "qa/tutor-reports/bar-model-runtime-say_what_it_shows-payload-2026-09-23.json",
+ "primitiveId": "bar-model",
+ "evalMode": "say_what_it_shows",
+ "data": {
+  "title": "Tell Me About Our Graph",
+  "description": "Each picture stands for one choice.",
+  "challenges": [
+   {
+    "id": "bm-1",
+    "evalMode": "say_what_it_shows",
+    "values": [
+     {
+      "label": "Blocks",
+      "value": 8,
+      "color": "blue",
+      "emoji": "🧱"
+     },
+     {
+      "label": "Cars",
+      "value": 3,
+      "color": "green",
+      "emoji": "🚗"
+     },
+     {
+      "label": "Dolls",
+      "value": 7,
+      "color": "purple",
+      "emoji": "🧸"
+     }
+    ],
+    "graphLabel": "Our survey",
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 10,
+     "iconEmoji": "🧱",
+     "iconValue": 1
+    },
+    "prompt": "Tell me one thing this graph shows: compare two groups, in your own words.",
+    "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+    "showBarValues": false,
+    "showTargetHighlight": false
+   },
+   {
+    "id": "bm-2",
+    "evalMode": "say_what_it_shows",
+    "values": [
+     {
+      "label": "Apples",
+      "value": 8,
+      "color": "blue",
+      "emoji": "🍎"
+     },
+     {
+      "label": "Crackers",
+      "value": 3,
+      "color": "green",
+      "emoji": "🍘"
+     },
+     {
+      "label": "Juices",
+      "value": 4,
+      "color": "purple",
+      "emoji": "🧃"
+     }
+    ],
+    "graphLabel": "Our survey",
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 10,
+     "iconEmoji": "🍎",
+     "iconValue": 1
+    },
+    "prompt": "Tell me one thing this graph shows: compare two groups, in your own words.",
+    "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+    "showBarValues": false,
+    "showTargetHighlight": false
+   },
+   {
+    "id": "bm-3",
+    "evalMode": "say_what_it_shows",
+    "values": [
+     {
+      "label": "Slides",
+      "value": 8,
+      "color": "blue",
+      "emoji": "🛝"
+     },
+     {
+      "label": "Swings",
+      "value": 2,
+      "color": "green",
+      "emoji": "🪂"
+     },
+     {
+      "label": "Balls",
+      "value": 7,
+      "color": "purple",
+      "emoji": "⚽"
+     }
+    ],
+    "graphLabel": "Our survey",
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 10,
+     "iconEmoji": "🛝",
+     "iconValue": 1
+    },
+    "prompt": "Tell me one thing this graph shows: compare two groups, in your own words.",
+    "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+    "showBarValues": false,
+    "showTargetHighlight": false
+   },
+   {
+    "id": "bm-4",
+    "evalMode": "say_what_it_shows",
+    "values": [
+     {
+      "label": "Carrots",
+      "value": 2,
+      "color": "blue",
+      "emoji": "🥕"
+     },
+     {
+      "label": "Tomatoes",
+      "value": 7,
+      "color": "green",
+      "emoji": "🍅"
+     },
+     {
+      "label": "Peppers",
+      "value": 6,
+      "color": "purple",
+      "emoji": "🫑"
+     }
+    ],
+    "graphLabel": "Our survey",
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 10,
+     "iconEmoji": "🥕",
+     "iconValue": 1
+    },
+    "prompt": "Tell me one thing this graph shows: compare two groups, in your own words.",
+    "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+    "showBarValues": false,
+    "showTargetHighlight": false
+   }
+  ]
+ }
+}

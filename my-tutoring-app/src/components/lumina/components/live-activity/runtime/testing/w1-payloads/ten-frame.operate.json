@@ -1,0 +1,79 @@
+{
+ "source": "qa/tutor-reports/ten-frame-runtime-operate-payload-2026-09-23.json",
+ "primitiveId": "ten-frame",
+ "evalMode": "operate",
+ "data": {
+  "title": "Adding and Subtracting on a Ten Frame",
+  "description": "Practice addition and subtraction within 10 using the ten frame to bridge concrete counters and abstract equations.",
+  "mode": "single",
+  "counters": {
+   "count": 0,
+   "color": "red",
+   "positions": []
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "add",
+    "targetCount": 6,
+    "hint": "Try placing 4 counters first, then add 2 more.",
+    "narration": "Let's add 4 and 2 together on the ten frame.",
+    "addend1": 4,
+    "addend2": 2,
+    "instruction": "Show 4 + 2 on the frame!"
+   },
+   {
+    "id": "c2",
+    "type": "add",
+    "targetCount": 8,
+    "hint": "Start with 5 counters on the top row, then add 3 on the bottom.",
+    "narration": "Can you show 5 plus 3 on the ten frame?",
+    "addend1": 5,
+    "addend2": 3,
+    "instruction": "Show 5 + 3 on the frame!"
+   },
+   {
+    "id": "c3",
+    "type": "add",
+    "targetCount": 9,
+    "hint": "Think about how many spaces are left empty when you make 9.",
+    "narration": "Let's add 6 and 3 together.",
+    "addend1": 6,
+    "addend2": 3,
+    "instruction": "Show 6 + 3 on the frame!"
+   },
+   {
+    "id": "c4",
+    "type": "subtract",
+    "targetCount": 4,
+    "hint": "Start with 7 counters, then take away 3.",
+    "narration": "Start with 7 counters and take away 3. How many are left?",
+    "startCount": 7,
+    "instruction": "The frame starts with 7 counters. Take away 3. How many are left?"
+   },
+   {
+    "id": "c5",
+    "type": "subtract",
+    "targetCount": 5,
+    "hint": "Begin with 9 counters and remove 4 of them.",
+    "narration": "Start with 9 counters and take away 4. How many remain?",
+    "startCount": 9,
+    "instruction": "The frame starts with 9 counters. Take away 4. How many are left?"
+   }
+  ],
+  "showOptions": {
+   "showCount": false,
+   "showEquation": true,
+   "showEmptyCount": false,
+   "allowFlip": true
+  },
+  "gradeBand": "1-2",
+  "twoColorMode": {
+   "enabled": false,
+   "color1Count": 0,
+   "color2Count": 0,
+   "color1": "red",
+   "color2": "yellow"
+  }
+ }
+}

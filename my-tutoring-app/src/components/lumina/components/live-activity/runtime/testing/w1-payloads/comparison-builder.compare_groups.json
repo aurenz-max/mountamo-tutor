@@ -1,0 +1,84 @@
+{
+ "source": "qa/tutor-reports/comparison-builder-runtime-compare_groups-payload-2026-09-23.json",
+ "primitiveId": "comparison-builder",
+ "evalMode": "compare_groups",
+ "data": {
+  "title": "Which Group Has More?",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "compare-groups",
+    "instruction": "Does the left group have more, fewer, or the same number of stars compared to the right group?",
+    "correctAnswer": "less",
+    "leftGroup": {
+     "count": 17,
+     "objectType": "stars"
+    },
+    "rightGroup": {
+     "count": 19,
+     "objectType": "stars"
+    }
+   },
+   {
+    "id": "c2",
+    "type": "compare-groups",
+    "instruction": "Does the left group have more, fewer, or the same number of apples compared to the right group?",
+    "correctAnswer": "more",
+    "leftGroup": {
+     "count": 5,
+     "objectType": "apples"
+    },
+    "rightGroup": {
+     "count": 1,
+     "objectType": "apples"
+    }
+   },
+   {
+    "id": "c3",
+    "type": "compare-groups",
+    "instruction": "Does the left group have more, fewer, or the same number of fish compared to the right group?",
+    "correctAnswer": "more",
+    "leftGroup": {
+     "count": 6,
+     "objectType": "fish"
+    },
+    "rightGroup": {
+     "count": 2,
+     "objectType": "fish"
+    }
+   },
+   {
+    "id": "c4",
+    "type": "compare-groups",
+    "instruction": "Does the left group have more, fewer, or the same number of bears compared to the right group?",
+    "correctAnswer": "more",
+    "leftGroup": {
+     "count": 2,
+     "objectType": "bears"
+    },
+    "rightGroup": {
+     "count": 1,
+     "objectType": "bears"
+    }
+   },
+   {
+    "id": "c5",
+    "type": "compare-groups",
+    "instruction": "Does the left group have more, fewer, or the same number of cookies compared to the right group?",
+    "correctAnswer": "equal",
+    "leftGroup": {
+     "count": 16,
+     "objectType": "cookies"
+    },
+    "rightGroup": {
+     "count": 16,
+     "objectType": "cookies"
+    }
+   }
+  ],
+  "gradeBand": "1",
+  "showCorrespondenceLines": true,
+  "useAlligatorMnemonic": false,
+  "description": "Students practice deciding which of two groups has more by comparing visual quantities side by side."
+ }
+}

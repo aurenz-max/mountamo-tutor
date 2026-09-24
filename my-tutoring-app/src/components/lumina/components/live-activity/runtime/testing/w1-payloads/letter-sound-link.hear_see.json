@@ -1,0 +1,110 @@
+{
+ "source": "qa/tutor-reports/letter-sound-link-runtime-hear_see-payload-2026-09-21.json",
+ "primitiveId": "letter-sound-link",
+ "evalMode": "hear_see",
+ "data": {
+  "title": "Letter Sounds - Group 1!",
+  "letterGroup": 1,
+  "cumulativeLetters": [
+   "s",
+   "a",
+   "t",
+   "i",
+   "p",
+   "n"
+  ],
+  "challenges": [
+   {
+    "id": "ch1",
+    "mode": "hear-see",
+    "targetLetter": "s",
+    "targetSound": "/s/",
+    "keywordWord": "sun",
+    "keywordImage": "sun",
+    "options": [
+     {
+      "letter": "s",
+      "isCorrect": true
+     },
+     {
+      "letter": "n",
+      "isCorrect": false
+     }
+    ]
+   },
+   {
+    "id": "ch2",
+    "mode": "hear-see",
+    "targetLetter": "a",
+    "targetSound": "/ă/",
+    "keywordWord": "apple",
+    "keywordImage": "apple",
+    "options": [
+     {
+      "letter": "a",
+      "isCorrect": true
+     },
+     {
+      "letter": "i",
+      "isCorrect": false
+     }
+    ]
+   },
+   {
+    "id": "ch3",
+    "mode": "hear-see",
+    "targetLetter": "t",
+    "targetSound": "/t/",
+    "keywordWord": "tent",
+    "keywordImage": "tent",
+    "options": [
+     {
+      "letter": "t",
+      "isCorrect": true
+     },
+     {
+      "letter": "p",
+      "isCorrect": false
+     }
+    ]
+   },
+   {
+    "id": "ch4",
+    "mode": "hear-see",
+    "targetLetter": "i",
+    "targetSound": "/ĭ/",
+    "keywordWord": "itch",
+    "keywordImage": "itch",
+    "options": [
+     {
+      "letter": "i",
+      "isCorrect": true
+     },
+     {
+      "letter": "p",
+      "isCorrect": false
+     }
+    ]
+   },
+   {
+    "id": "ch5",
+    "mode": "hear-see",
+    "targetLetter": "p",
+    "targetSound": "/p/",
+    "keywordWord": "pig",
+    "keywordImage": "pig",
+    "options": [
+     {
+      "letter": "n",
+      "isCorrect": false
+     },
+     {
+      "letter": "p",
+      "isCorrect": true
+     }
+    ]
+   }
+  ],
+  "gradeLevel": "K"
+ }
+}

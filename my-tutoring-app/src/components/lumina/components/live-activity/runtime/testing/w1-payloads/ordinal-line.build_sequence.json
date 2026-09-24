@@ -1,0 +1,184 @@
+{
+ "source": "qa/tutor-reports/ordinal-line-runtime-build_sequence-payload-2026-09-23.json",
+ "primitiveId": "ordinal-line",
+ "evalMode": "build_sequence",
+ "data": {
+  "title": "Animal Parade: Who Is First?",
+  "description": "Join the fun animal parade and learn how to use ordinal words like first, second, third, fourth, and fifth to tell who is standing in line!",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "build-sequence",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "🐰"
+     },
+     {
+      "name": "Bear",
+      "emoji": "🐻"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "🐢"
+     },
+     {
+      "name": "Fox",
+      "emoji": "🦊"
+     },
+     {
+      "name": "Owl",
+      "emoji": "🦉"
+     }
+    ],
+    "instruction": "Put the animals in their places.",
+    "clues": [
+     {
+      "character": "Owl",
+      "position": 1
+     },
+     {
+      "character": "Turtle",
+      "position": 2
+     },
+     {
+      "character": "Fox",
+      "position": 3
+     }
+    ],
+    "correctAnswer": "sequence_complete"
+   },
+   {
+    "id": "c2",
+    "type": "build-sequence",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "🐰"
+     },
+     {
+      "name": "Bear",
+      "emoji": "🐻"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "🐢"
+     },
+     {
+      "name": "Fox",
+      "emoji": "🦊"
+     },
+     {
+      "name": "Owl",
+      "emoji": "🦉"
+     }
+    ],
+    "instruction": "Put the animals in their places.",
+    "clues": [
+     {
+      "character": "Fox",
+      "position": 1
+     },
+     {
+      "character": "Turtle",
+      "position": 2
+     },
+     {
+      "character": "Bear",
+      "position": 3
+     }
+    ],
+    "correctAnswer": "sequence_complete"
+   },
+   {
+    "id": "c3",
+    "type": "build-sequence",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "🐰"
+     },
+     {
+      "name": "Bear",
+      "emoji": "🐻"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "🐢"
+     },
+     {
+      "name": "Fox",
+      "emoji": "🦊"
+     },
+     {
+      "name": "Owl",
+      "emoji": "🦉"
+     }
+    ],
+    "instruction": "Put the animals in their places.",
+    "clues": [
+     {
+      "character": "Turtle",
+      "position": 1
+     },
+     {
+      "character": "Fox",
+      "position": 2
+     },
+     {
+      "character": "Bear",
+      "position": 3
+     }
+    ],
+    "correctAnswer": "sequence_complete"
+   },
+   {
+    "id": "c4",
+    "type": "build-sequence",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "🐰"
+     },
+     {
+      "name": "Bear",
+      "emoji": "🐻"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "🐢"
+     },
+     {
+      "name": "Fox",
+      "emoji": "🦊"
+     },
+     {
+      "name": "Owl",
+      "emoji": "🦉"
+     }
+    ],
+    "instruction": "Put the animals in their places.",
+    "clues": [
+     {
+      "character": "Bear",
+      "position": 1
+     },
+     {
+      "character": "Turtle",
+      "position": 2
+     },
+     {
+      "character": "Rabbit",
+      "position": 3
+     }
+    ],
+    "correctAnswer": "sequence_complete"
+   }
+  ],
+  "maxPosition": 5,
+  "context": "parade",
+  "showOrdinalLabels": true,
+  "labelFormat": "word",
+  "gradeBand": "K"
+ }
+}

@@ -1,0 +1,96 @@
+{
+ "source": "qa/tutor-reports/di-math-facts-runtime-subtraction_fact-payload-2026-09-20.json",
+ "primitiveId": "di-math-facts",
+ "evalMode": "subtraction_fact",
+ "data": {
+  "title": "Fun Math Time",
+  "description": "Get ready to say math answers out loud!",
+  "challengeType": "subtraction_fact",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "challengeType": "subtraction_fact",
+    "answerWord": "one",
+    "answerNumeral": 1,
+    "asrAliases": [
+     "one",
+     "1",
+     "won"
+    ],
+    "id": "dimf-1-2m1",
+    "a": 2,
+    "b": 1,
+    "display": "2 - 1",
+    "problem": "two minus one",
+    "solvedDisplay": "2 - 1 = 1"
+   },
+   {
+    "challengeType": "subtraction_fact",
+    "answerWord": "three",
+    "answerNumeral": 3,
+    "asrAliases": [
+     "three",
+     "3",
+     "free",
+     "tree"
+    ],
+    "id": "dimf-2-5m2",
+    "a": 5,
+    "b": 2,
+    "display": "5 - 2",
+    "problem": "five minus two",
+    "solvedDisplay": "5 - 2 = 3"
+   },
+   {
+    "challengeType": "subtraction_fact",
+    "answerWord": "two",
+    "answerNumeral": 2,
+    "asrAliases": [
+     "two",
+     "2",
+     "to",
+     "too"
+    ],
+    "id": "dimf-3-4m2",
+    "a": 4,
+    "b": 2,
+    "display": "4 - 2",
+    "problem": "four minus two",
+    "solvedDisplay": "4 - 2 = 2"
+   },
+   {
+    "challengeType": "subtraction_fact",
+    "answerWord": "four",
+    "answerNumeral": 4,
+    "asrAliases": [
+     "four",
+     "4",
+     "for",
+     "fore"
+    ],
+    "id": "dimf-4-5m1",
+    "a": 5,
+    "b": 1,
+    "display": "5 - 1",
+    "problem": "five minus one",
+    "solvedDisplay": "5 - 1 = 4"
+   },
+   {
+    "challengeType": "subtraction_fact",
+    "answerWord": "five",
+    "answerNumeral": 5,
+    "asrAliases": [
+     "five",
+     "5"
+    ],
+    "id": "dimf-5-5m0",
+    "a": 5,
+    "b": 0,
+    "display": "5 - 0",
+    "problem": "five minus zero",
+    "solvedDisplay": "5 - 0 = 5"
+   }
+  ],
+  "facts": "2 - 1, 5 - 2, 4 - 2, 5 - 1, 5 - 0"
+ }
+}

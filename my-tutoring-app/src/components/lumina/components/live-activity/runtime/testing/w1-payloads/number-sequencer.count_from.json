@@ -1,0 +1,99 @@
+{
+ "source": "qa/tutor-reports/number-sequencer-runtime-count_from-payload-2026-09-18.json",
+ "primitiveId": "number-sequencer",
+ "evalMode": "count_from",
+ "data": {
+  "title": "Counting On from Different Numbers",
+  "description": "Practice counting forward from a given starting number instead of always starting at one.",
+  "challenges": [
+   {
+    "id": "seq1",
+    "type": "count-from",
+    "instruction": "Start at 12 and count forward!",
+    "sequence": [
+     12
+    ],
+    "correctAnswers": [
+     13,
+     14,
+     15
+    ],
+    "rangeMin": 12,
+    "rangeMax": 15,
+    "direction": "forward",
+    "startNumber": 12
+   },
+   {
+    "id": "seq2",
+    "type": "count-from",
+    "instruction": "Ready, set, go! Start at 24 and count forward.",
+    "sequence": [
+     24
+    ],
+    "correctAnswers": [
+     25,
+     26,
+     27
+    ],
+    "rangeMin": 24,
+    "rangeMax": 27,
+    "direction": "forward",
+    "startNumber": 24
+   },
+   {
+    "id": "seq3",
+    "type": "count-from",
+    "instruction": "Can you start at 45 and keep counting forward?",
+    "sequence": [
+     45
+    ],
+    "correctAnswers": [
+     46,
+     47,
+     48
+    ],
+    "rangeMin": 45,
+    "rangeMax": 48,
+    "direction": "forward",
+    "startNumber": 45
+   },
+   {
+    "id": "seq4",
+    "type": "count-from",
+    "instruction": "Take a deep breath and start counting forward from 68!",
+    "sequence": [
+     68
+    ],
+    "correctAnswers": [
+     69,
+     70,
+     71
+    ],
+    "rangeMin": 68,
+    "rangeMax": 71,
+    "direction": "forward",
+    "startNumber": 68
+   },
+   {
+    "id": "seq5",
+    "type": "count-from",
+    "instruction": "You are doing great! Start at 87 and count forward to finish strong.",
+    "sequence": [
+     87
+    ],
+    "correctAnswers": [
+     88,
+     89,
+     90
+    ],
+    "rangeMin": 87,
+    "rangeMax": 90,
+    "direction": "forward",
+    "startNumber": 87
+   }
+  ],
+  "gradeBand": "1",
+  "showNumberLine": true,
+  "showDotArrays": false
+ }
+}

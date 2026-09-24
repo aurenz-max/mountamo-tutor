@@ -1,0 +1,79 @@
+{
+ "source": "qa/tutor-reports/di-letter-sounds-runtime-letter_sound-payload-2026-09-23.json",
+ "primitiveId": "di-letter-sounds",
+ "evalMode": "letter_sound",
+ "data": {
+  "title": "Super Sound Time!",
+  "description": "Get ready to look at some letters and say their sounds out loud with me!",
+  "challengeType": "letter_sound",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "dils-1-m",
+    "challengeType": "letter_sound",
+    "letter": "m",
+    "spoken": "mmm",
+    "keyword": "moon",
+    "emoji": "🌙",
+    "elicitation": "isolated",
+    "asrAliases": [
+     "m",
+     "mm",
+     "mmm",
+     "hm",
+     "hmm",
+     "mhm",
+     "um"
+    ]
+   },
+   {
+    "id": "dils-2-s",
+    "challengeType": "letter_sound",
+    "letter": "s",
+    "spoken": "sss",
+    "keyword": "sun",
+    "emoji": "☀️",
+    "elicitation": "isolated",
+    "asrAliases": [
+     "s",
+     "ss",
+     "sss",
+     "ess",
+     "sh",
+     "shh",
+     "hiss"
+    ]
+   },
+   {
+    "id": "dils-3-f",
+    "challengeType": "letter_sound",
+    "letter": "f",
+    "spoken": "fff",
+    "keyword": "fish",
+    "emoji": "🐟",
+    "elicitation": "isolated",
+    "asrAliases": [
+     "f",
+     "ff",
+     "fff",
+     "ef",
+     "huff"
+    ]
+   },
+   {
+    "id": "dils-4-a",
+    "challengeType": "letter_sound",
+    "letter": "a",
+    "spoken": "aaa",
+    "keyword": "apple",
+    "emoji": "🍎",
+    "elicitation": "keyword",
+    "asrAliases": [
+     "apple",
+     "a"
+    ]
+   }
+  ],
+  "letters": "m, s, f, a"
+ }
+}

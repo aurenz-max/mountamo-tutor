@@ -1,0 +1,108 @@
+{
+ "source": "qa/tutor-reports/place-value-chart-runtime-build-payload-2026-09-23.json",
+ "primitiveId": "place-value-chart",
+ "evalMode": "build",
+ "data": {
+  "title": "Tens and Ones: Discover Digit Values",
+  "description": "Welcome! Together with your voice tutor, you will explore multiple numbers to name places, state what digits are worth, and write numbers directly into the chart.",
+  "challenges": [
+   {
+    "id": "pvc-1",
+    "targetNumber": 988,
+    "highlightedDigitPlace": 1,
+    "minPlace": 0,
+    "maxPlace": 2,
+    "placeNameChoices": [
+     "Ones",
+     "Hundreds",
+     "Tens",
+     "Thousands"
+    ],
+    "digitValueChoices": [
+     {
+      "value": 8,
+      "wordForm": "Eight"
+     },
+     {
+      "value": 800,
+      "wordForm": "Eight Hundred"
+     },
+     {
+      "value": 80,
+      "wordForm": "Eighty"
+     },
+     {
+      "value": 0.8,
+      "wordForm": "Eight Tenths"
+     }
+    ]
+   },
+   {
+    "id": "pvc-2",
+    "targetNumber": 887,
+    "highlightedDigitPlace": 1,
+    "minPlace": 0,
+    "maxPlace": 2,
+    "placeNameChoices": [
+     "Ones",
+     "Hundreds",
+     "Thousands",
+     "Tens"
+    ],
+    "digitValueChoices": [
+     {
+      "value": 8,
+      "wordForm": "Eight"
+     },
+     {
+      "value": 800,
+      "wordForm": "Eight Hundred"
+     },
+     {
+      "value": 80,
+      "wordForm": "Eighty"
+     },
+     {
+      "value": 0.8,
+      "wordForm": "Eight Tenths"
+     }
+    ]
+   },
+   {
+    "id": "pvc-3",
+    "targetNumber": 501,
+    "highlightedDigitPlace": 0,
+    "minPlace": 0,
+    "maxPlace": 2,
+    "placeNameChoices": [
+     "Tens",
+     "Tenths",
+     "Ones",
+     "Hundreds"
+    ],
+    "digitValueChoices": [
+     {
+      "value": 1,
+      "wordForm": "One"
+     },
+     {
+      "value": 0.1,
+      "wordForm": "One Tenth"
+     },
+     {
+      "value": 10,
+      "wordForm": "Ten"
+     },
+     {
+      "value": 0.01,
+      "wordForm": "One Hundredth"
+     }
+    ]
+   }
+  ],
+  "challengeType": "build",
+  "showExpandedForm": true,
+  "showMultipliers": true,
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

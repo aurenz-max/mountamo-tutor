@@ -1,0 +1,96 @@
+{
+ "source": "qa/tutor-reports/di-math-facts-runtime-name_numeral-payload-2026-09-20.json",
+ "primitiveId": "di-math-facts",
+ "evalMode": "name_numeral",
+ "data": {
+  "title": "Math Fun",
+  "description": "Get ready to say your addition facts out loud!",
+  "challengeType": "name_numeral",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "challengeType": "name_numeral",
+    "answerWord": "five",
+    "answerNumeral": 5,
+    "asrAliases": [
+     "five",
+     "5"
+    ],
+    "id": "dimf-1-id5",
+    "a": 5,
+    "b": 0,
+    "display": "5",
+    "problem": "this number",
+    "solvedDisplay": "5 = five"
+   },
+   {
+    "challengeType": "name_numeral",
+    "answerWord": "one",
+    "answerNumeral": 1,
+    "asrAliases": [
+     "one",
+     "1",
+     "won"
+    ],
+    "id": "dimf-2-id1",
+    "a": 1,
+    "b": 0,
+    "display": "1",
+    "problem": "this number",
+    "solvedDisplay": "1 = one"
+   },
+   {
+    "challengeType": "name_numeral",
+    "answerWord": "four",
+    "answerNumeral": 4,
+    "asrAliases": [
+     "four",
+     "4",
+     "for",
+     "fore"
+    ],
+    "id": "dimf-3-id4",
+    "a": 4,
+    "b": 0,
+    "display": "4",
+    "problem": "this number",
+    "solvedDisplay": "4 = four"
+   },
+   {
+    "challengeType": "name_numeral",
+    "answerWord": "three",
+    "answerNumeral": 3,
+    "asrAliases": [
+     "three",
+     "3",
+     "free",
+     "tree"
+    ],
+    "id": "dimf-4-id3",
+    "a": 3,
+    "b": 0,
+    "display": "3",
+    "problem": "this number",
+    "solvedDisplay": "3 = three"
+   },
+   {
+    "challengeType": "name_numeral",
+    "answerWord": "two",
+    "answerNumeral": 2,
+    "asrAliases": [
+     "two",
+     "2",
+     "to",
+     "too"
+    ],
+    "id": "dimf-5-id2",
+    "a": 2,
+    "b": 0,
+    "display": "2",
+    "problem": "this number",
+    "solvedDisplay": "2 = two"
+   }
+  ],
+  "facts": "5, 1, 4, 3, 2"
+ }
+}
