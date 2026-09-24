@@ -38,7 +38,7 @@ export interface WorkspaceRunOptions<Item extends WorkspaceRunItem> {
   onCorrectionRetry?: (item: Item) => void;
   onPresentStimulus?: (item: Item, index: number) => void;
   /** Once per item, when its success is committed: the first moment an answer may appear. */
-  onAffirmed?: (item: Item) => void;
+  onAffirmed?: (item: Item, response?: string) => void;
   /** Once, with the finished record, and only under an evaluation provider. */
   onFinished?: (result: TeachingEvaluationResult) => void;
 }
@@ -133,10 +133,10 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
   const opened = useRef<string | null>(null);
   /** Once per item, when its success is committed. */
   const affirmed = useRef(new Set<string>());
-  const affirm = useCallback((item: Item | undefined) => {
+  const affirm = useCallback((item: Item | undefined, response?: string) => {
     if (!item || affirmed.current.has(item.id)) return;
     affirmed.current.add(item.id);
-    latest.current.onAffirmed?.(item);
+    latest.current.onAffirmed?.(item, response);
   }, []);
   const lesson = useTeachingWorkspace({
     instanceId: options.instanceId, primitiveId: options.primitiveId, objectiveId: options.objectiveId,
@@ -154,13 +154,13 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
     onPresentStimulus: index => latest.current.onPresentStimulus?.(latest.current.items[index], index),
     // At the commit, while the primitive still shows this item: a verdict that also advances
     // never renders the solved state, and the next item's reset would run first.
-    onSolved: index => affirm(latest.current.items[index]),
+    onSolved: (index, response) => affirm(latest.current.items[index], response),
   });
   const { state } = lesson;
   const item = items[state.index];
   const solved = state.phase === 'checked' && !!state.lastResponse?.correct;
 
-  useEffect(() => { if (solved) affirm(item); }, [solved, item, affirm]);
+  useEffect(() => { if (solved) affirm(item, state.lastResponse?.response); }, [solved, item, affirm, state.lastResponse]);
 
   // Built from the scored session, so `onFinished` (the submission) waits for the scoring pass.
   const teachingResult = lesson.scored

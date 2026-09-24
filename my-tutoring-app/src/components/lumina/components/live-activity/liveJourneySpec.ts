@@ -59,6 +59,8 @@ import { cvcHarnessAnswers } from '../../primitives/visual-primitives/literacy/c
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
 import { youAndMeHarnessAnswers } from '../../primitives/visual-primitives/literacy/youAndMeWorkspace';
+import { itemsFromChallenge as rhymeItems } from '../../primitives/visual-primitives/literacy/rhymeStudioScript';
+import { rhymeHarnessAnswers } from '../../primitives/visual-primitives/literacy/rhymeStudioWorkspace';
 import { itemsFromChallenges as syllableItems } from '../../primitives/visual-primitives/literacy/syllableClapperScript';
 import { syllableHarnessAnswers } from '../../primitives/visual-primitives/literacy/syllableClapperWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
@@ -939,6 +941,20 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // One spoken answer per item: the count, the blended word or the word left, or the pack's plain wrong answer.
     inputsFor: spokenWorkspaceInputs(syllableItems, syllableHarnessAnswers, 'syllable-clapper'),
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' }, reward: { selector: '[data-testid="reveal"]', kind: 'count' } },
+  },
+  'rhyme-studio': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/RhymeStudio.tsx',
+    instanceId: 'rhymes',
+    defaults: { grade: 'Kindergarten', mode: 'recognition', di: false,
+      topic: 'Hearing whether two short words rhyme' },
+    leakTokens: ['RS_ITEM', 'RS_MOVE', 'RS_COMPLETE', 'RS_HEAR'],
+    prompts: WORKSPACE_PROMPTS,
+    // One spoken answer per item: yes or no, or the rhyming choice. Production and collection have no
+    // code-owned answer, so their rows throw with the mode name (undriven at W1).
+    inputsFor: spokenWorkspaceInputs(
+      (challenges: any[]) => challenges.flatMap(c => rhymeItems(c)), rhymeHarnessAnswers, 'rhyme-studio'),
+    probes: { mounted: { selector: '[data-pip-object="target"], [data-pip-object="pair"]' } },
   },
 };
 

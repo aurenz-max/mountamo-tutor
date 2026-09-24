@@ -50,7 +50,7 @@ export interface TeachingWorkspaceOptions {
    * advance. A verdict that also advances never renders the checked phase, so a primitive that
    * reveals or records on success reads its own state here rather than from a later render.
    */
-  onSolved?: (index: number) => void;
+  onSolved?: (index: number, response: string) => void;
 }
 const noSubscription = () => () => {};
 const scoreAttempt = postObservation<ItemScoreRequest, ItemScoreDecision>('/api/lumina/observe-item-score', abstainItemScore);
@@ -156,7 +156,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
             return commit(() => {
               if (!session.submit(speech.id, speech.text, 'speech', d.verdict === 'correct', true, d.tutor)) return false;
               pendingSpeech.current = null;
-              if (d.verdict === 'correct') latest.current.onSolved?.(session.getSnapshot().index);
+              if (d.verdict === 'correct') latest.current.onSolved?.(session.getSnapshot().index, speech.text);
               if (d.transition === 'retry') { session.retry(); reset(); }
               if (d.transition === 'advance') {
                 session.advance();
@@ -271,7 +271,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     if (!mounted.current || !activeRef.current || suspended.current || currentItem().id !== item.id || currentItem().response !== 'gesture') return;
     const correct = checkResponse(response);
     if (correct === null || !session.submit(`gesture:${++gestureSequence.current}`, response, 'gesture', correct)) return;
-    if (correct) latest.current.onSolved?.(session.getSnapshot().index);
+    if (correct) latest.current.onSolved?.(session.getSnapshot().index, response);
     // Facts trigger the live conversation. No prescribed words; the browser has already checked the response.
     const facts = `The learner submitted their selection. Current workspace response: ${JSON.stringify(session.getSnapshot().lastResponse)}. Respond to the learner using the current task and workspace.`;
     aiRef.current.sendText(facts, { scripted: false, author: 'host' });

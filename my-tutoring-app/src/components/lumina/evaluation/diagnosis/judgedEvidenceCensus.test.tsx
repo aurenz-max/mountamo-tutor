@@ -72,7 +72,6 @@ const COMPONENTS: Record<string, Loader> = {
   'phoneme-explorer': () => import('../../primitives/visual-primitives/literacy/PhonemeExplorer'),
   'picture-vocabulary': () => import('../../primitives/visual-primitives/literacy/PictureVocabulary'),
   'place-value-chart': () => import('../../primitives/visual-primitives/math/PlaceValueChart'),
-  'rhyme-studio': () => import('../../primitives/visual-primitives/literacy/RhymeStudio'),
   'sentence-analyzer': () => import('../../primitives/visual-primitives/literacy/SentenceAnalyzer'),
   'sorting-station': () => import('../../primitives/visual-primitives/math/SortingStation'),
   'word-builder': () => import('../../primitives/WordBuilder'),

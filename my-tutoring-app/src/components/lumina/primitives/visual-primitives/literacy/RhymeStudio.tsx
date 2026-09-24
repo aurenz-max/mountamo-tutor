@@ -1,10 +1,12 @@
 'use client';
 
 /**
- * RhymeStudio — DI modality (eighth literacy port, 2026-08-12). The Live tutor
- * owns the clock in every mode: it asks, waits, judges, corrects contrastively,
- * and its OWN verdict is the advance. There is no advance timer, no
- * push-to-talk mic, no Next button and no Start-Activity gate in this file.
+ * RhymeStudio — every mode is answered out loud. It runs only on the shared
+ * tutor/JEV teaching workspace (workspace rollout C1; the scripted runner was
+ * retired, LA-14, user ruling 09-23: one path). The tutor teaches in its own words,
+ * the observer judges each spoken answer and the runtime owns progression. An
+ * unbound mount shows the shared "needs the tutor" card. There is no advance timer,
+ * no Next button and no Start-Activity gate in this file.
  *
  * WHAT THE CHILD DOES: every mode is answered ALOUD. Nothing here is tappable
  * except the cards, which repeat the question.
@@ -31,11 +33,11 @@
  * would have opened a sentence the engine reads as a judgment.
  *
  * ANSWER-LEAK RULE: the rime highlight and the correct-choice ring appear only
- * after the tutor has affirmed. Tap-to-hear re-speaks the QUESTION, never the
+ * after the answer is credited. Tap-to-hear re-speaks the QUESTION, never the
  * answer.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -51,28 +53,22 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { RhymeStudioMetrics } from '../../../evaluation/types';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
-import {
-  completeCue,
-  itemCue,
   itemsFromChallenge,
-  moveOnCue,
   recordCollectedRhyme,
-  pickModelRhymePair,
-  pronounceCue,
-  stimulusFor,
   type RhymeItem,
   type RhymeMode,
   type RhymeTier,
 } from './rhymeStudioScript';
+import { hearRhymeRequest, rhymeAssignment, rhymeScene } from './rhymeStudioWorkspace';
 import { SoundManager } from '../../../utils/SoundManager';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { stableShuffle } from '../../../utils/choiceOrder';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
@@ -143,6 +139,9 @@ export interface RhymeStudioData {
 interface RhymeStudioProps {
   data: RhymeStudioData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -178,7 +177,7 @@ function splitByRhymeFamily(word: string, rhymeFamily: string): [string, string]
 // Component
 // ============================================================================
 
-const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
+function RhymeStudioSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: RhymeStudioProps) {
   const {
     title,
     gradeLevel,
@@ -199,7 +198,10 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
   const stableInstanceIdRef = useRef(instanceId || `rhyme-studio-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Items + the code-owned rule-model pair ────────────────────────────────
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
+
+  // ── Items ─────────────────────────────────────────────────────────────────
   const items = useMemo<RhymeItem[]>(
     () => challenges
       .flatMap((ch) => itemsFromChallenge(ch, supportTier ?? 'medium'))
@@ -214,16 +216,12 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
           }),
     [challenges, supportTier, resolvedInstanceId],
   );
-  const modelPair = useMemo(() => pickModelRhymePair(items), [items]);
-  const lastHeardRef = useRef('');
   const [collectedFamilies, setCollectedFamilies] = useState<Record<string, string[]>>({});
   useEffect(() => {
-    lastHeardRef.current = '';
     setCollectedFamilies({});
   }, [items]);
-
-  // ── Per-item stage state ──────────────────────────────────────────────────
-  /** Affirmed: the first moment the rime / correct choice may appear on screen. */
+  const collectedFor = (item: RhymeItem) =>
+    collectedFamilies[item.collectionId ?? item.challengeId] ?? item.priorAcceptedWords;
 
   // ── Evaluation ────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<RhymeStudioMetrics>({
@@ -236,7 +234,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     // Per-mode accuracy: join the run's outcomes back onto the challenges that
     // produced them. The IRT ladder reads these three fields per eval mode, so
     // they survive the port unchanged in shape.
@@ -271,104 +269,54 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [challenges, evaluation, items]);
+  };
 
-  const handleAffirmed = useCallback((item: RhymeItem) => {
+  /** A credited collection answer fills the family's next spot with the word the learner said. */
+  const handleAffirmed = (item: RhymeItem, response?: string) => {
     if (item.mode !== 'collection' || !item.collectionId) return;
-    const words = recordCollectedRhyme(items, item, lastHeardRef.current);
+    const words = recordCollectedRhyme(items, item, response ?? '');
     setCollectedFamilies((current) => ({ ...current, [item.collectionId!]: words }));
-  }, [items]);
+  };
 
-  // ── The pack — wording lives in rhymeStudioScript.ts ──────────────────────
-  const pack = useMemo<JudgedScriptPack<RhymeItem>>(() => ({
-    primitiveType: 'rhyme-studio',
-    activityLine: 'live direct instruction rhyming practice',
+  const runner = useWorkspaceRunner<RhymeItem>({
+    primitiveId: 'rhyme-studio',
+    // A collection slot must not repeat a rhyme the family already holds.
+    assignment: item => rhymeAssignment(item, collectedFor(item)),
     items,
-    itemCue: (item, opts) => itemCue(item, opts, { modelPair }),
-    moveOnCue: (item, next, opts) => moveOnCue(item, next, opts, { modelPair }),
-    completeCue,
-    pronounceCue,
-    contextFor: (item) => ({
-      challengeMode: item.mode,
-      stimulus: stimulusFor(item),
-    }),
-    // Only what DIFFERS from the runner's defaults.
-    statusLines: {
-      ready: (item) => item.mode === 'recognition'
-        ? 'Listen, then say yes or no.'
-        : 'Listen, then say your answer out loud.',
-      retry: (item) => item.mode === 'recognition'
-        ? 'Listen again — then say yes or no.'
-        : 'Have another go — say your answer.',
-      done: 'Great rhyming work today!',
-    },
-    // One record per attempt, right or corrected: the words given (with the choices or the rhymes already
-    // collected) and what was heard. Never the verdict, because the same text is kept for right answers.
-    observation: (item, { heard: transcript }) => {
-      const heard = transcript ? `Heard "${transcript}".` : 'No transcript was captured.';
-      return item.mode === 'recognition'
-        ? {
-            challenge: `Decide whether "${item.targetWord}" and "${item.comparisonWord}" rhyme.`,
-            expected: `Say ${item.doesRhyme ? 'yes' : 'no'}, from the ending sound.`,
-            observed: heard,
-          }
-        : {
-            challenge: item.mode === 'identification'
-              ? `Say the word that rhymes with "${item.targetWord}" (choices: ${item.choices.map((c) => c.word).join(', ')}).`
-              : item.mode === 'collection'
-                ? `Say a new rhyme for "${item.targetWord}" for slot ${item.collectionSlot ?? 1} of 3`
-                  + `${item.priorAcceptedWords.length ? ` (already collected: ${item.priorAcceptedWords.join(', ')})` : ''}.`
-                : `Say any word that rhymes with "${item.targetWord}".`,
-            // Production names NO example: it has no code-owned answer since the
-            // bank was deleted, and `item.answer` is empty there. An "for example
-            // ''" string would have shipped straight into the misconception record.
-            expected: item.mode === 'identification'
-              ? `A word ending in "${item.rime}" — for example "${item.answer}".`
-              : item.mode === 'collection'
-                ? `Any real word ending in "${item.rime}" that is not already accepted.`
-                : `Any real word ending in "${item.rime}".`,
-            observed: heard,
-          };
-    },
-  }), [items, modelPair]);
-
-  const runner = useJudgedScriptRunner<RhymeItem>({
-    pack,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || items[0]?.mode || 'recognition',
     instanceId: resolvedInstanceId,
-    gradeLevel,
-    exhibitId,
-    onFinished: handleFinished,
+    onFinished: finish,
     onAffirmed: handleAffirmed,
-    onEmission: (emission, item) => {
-      if (emission.kind === 'attempt-open') lastHeardRef.current = '';
-      if (emission.kind === 'attempt-transcript' && item?.mode === 'collection') {
-        lastHeardRef.current = emission.text;
-      }
-    },
   });
 
   const currentItem = runner.currentItem;
-  /** Affirmed: the first moment the answer may appear on screen. The runner
-   *  owns this latch now (it replaces the `onItemOpened`/`onAffirmed` pair). */
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
+  /** Credited: the first moment the answer may appear on screen. */
   const revealed = runner.currentSolved;
   const currentChallenge = challenges.find((challenge) => challenge.id === currentItem?.challengeId);
 
   // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the runner's phase onto the card the ask names; Pip never
+  // A projection of the workspace's committed state onto the card the ask names; Pip never
   // answers, judges, or advances.
   const pip = usePipTargets(currentItem?.id ?? null, false);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const targets = pip.targets(undefined, (id) => (id === 'pair' ? 'The two words' : 'The word card'));
     const pose = rhymeStudioPipPose({
       mode: currentItem.mode,
-      running: runner.running, preparing: runner.preparing,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      running: runner.running, preparing: false,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld, judging: false,
+      // Audio belongs to this block only while the lesson is pointed at it.
+      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
       cueMatchesItem: runner.cuedItemId === currentItem.id,
       visibleIds: targets.map((target) => target.id),
     });
@@ -380,14 +328,30 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
   const showRhymeFamilyHighlight = currentChallenge?.showRhymeFamilyHighlight !== false;
   const showWordImage = isPreReader || currentChallenge?.showWordImage !== false;
 
+  // What the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...rhymeScene(currentItem, { collected: collectedFor(currentItem), familyShown: showRhymeFamilyHighlight && !isPreReader }),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
+  /** Tapping a card asks the tutor for the question again: a silent host request, never the answer. */
+  const hearQuestion = useCallback(() => {
+    if (!currentItem) return;
+    SoundManager.tap();
+    ctx.sendText(hearRhymeRequest(currentItem), { silent: true, author: 'host' });
+  }, [ctx, currentItem]);
+
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => {
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => {
       const meta = MODE_META[item.mode];
       return { label: meta.badge, icon: meta.icon };
     });
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
   // ============================================================================
   // Render helpers
@@ -447,8 +411,8 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
         data-pip-object="target"
         role="button"
         tabIndex={0}
-        onClick={runner.hearStimulus}
-        className={`cursor-pointer select-none rounded-2xl transition-all ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}`}
+        onClick={hearQuestion}
+        className="cursor-pointer select-none rounded-2xl transition-all"
       >
         {renderWordCard(
           item.targetWord,
@@ -536,8 +500,8 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
             data-pip-object="pair"
             role="button"
             tabIndex={0}
-            onClick={runner.hearStimulus}
-            className={`grid grid-cols-2 gap-4 cursor-pointer select-none rounded-2xl transition-all ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}`}
+            onClick={hearQuestion}
+            className="grid grid-cols-2 gap-4 cursor-pointer select-none rounded-2xl transition-all"
           >
             {renderWordCard(
               item.targetWord,
@@ -585,7 +549,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
   // Main render
   // ============================================================================
 
-  if (challenges.length === 0) {
+  if (challenges.length === 0 || !currentItem) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-6">
@@ -595,7 +559,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     );
   }
 
-  const modeMeta = MODE_META[currentItem?.mode ?? 'recognition'];
+  const modeMeta = MODE_META[currentItem.mode];
 
   return (
     <LuminaCard className={className}>
@@ -608,7 +572,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
               <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
               <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
             </div>
-            {!evaluation.hasSubmitted && currentItem && (
+            {!showSummary && (
               <LuminaBadge accent={modeMeta.accent} className="text-xs">
                 {modeMeta.icon} {modeMeta.badge}
               </LuminaBadge>
@@ -618,7 +582,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
       )}
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             {!isPreReader && (
               <div className="flex justify-center">
@@ -637,17 +601,14 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
                 className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
             )}
 
-            {currentItem && renderChallenge(currentItem)}
-
-            {/* Every mode here is answered out loud. */}
-            <JudgedMicPanel run={runner} />
+            {renderChallenge(currentItem)}
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Rhyme Studio Complete!"
             celebrationMessage={`You listened for rhymes in ${items.length} rounds — with your own ears and your own voice!`}
@@ -657,6 +618,9 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
       </LuminaCardContent>
     </LuminaCard>
   );
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const RhymeStudio = withWorkspaceOnly<RhymeStudioProps>('rhyme-studio', RhymeStudioSurface, props => props.data.title);
 
 export default RhymeStudio;

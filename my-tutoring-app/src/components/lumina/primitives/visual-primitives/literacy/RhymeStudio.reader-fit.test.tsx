@@ -6,8 +6,7 @@
  *
  * What this locks in:
  *  1. §1 GATE A — nothing on screen carries the child forward: no Start
- *     Activity, Next, Finish, Skip or Check. The tutor's verdict is the only
- *     advance.
+ *     Activity, Next, Finish, Skip or Check. The runtime owns progression.
  *  2. §1 GATE B — nothing names the answer before the child gives it. The rime
  *     highlight and the correct-card ring are post-verdict only, and the
  *     recognition pair shows no highlight on either card (the old surface
@@ -16,76 +15,26 @@
  *  3. The spoken modes keep their choices ON SCREEN but make nothing tappable:
  *     the cards are the closed set the child speaks from — the thing that keeps
  *     a spoken rhyme a benched response class — not a tap surface.
- *  4. Recognition keeps 👍 / 👎. They are DISABLED until the run starts, so no
- *     tap can commit before the tutor has asked.
+ *  4. Recognition has no thumbs: yes or no is said aloud.
  *  5. Pre-reader presentation: every word is picture-primary, adult chrome is
  *     hidden at K and present at a reader grade.
  *
- * The live loop itself is NOT driven here. It cannot be driven honestly in
- * jsdom (the mic never opens, the context refs never re-render), and a green
- * test that never fired the path is worse than no test — the pedagogy is
- * pinned in __tests__/RhymeStudio.di-script.test.ts instead.
+ * Mounted under a runtime (the studio runs only on the teaching workspace); the workspace
+ * behaviour itself is in RhymeStudio.workspace.test.tsx.
  */
-import React from 'react';
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { screen, fireEvent, cleanup } from '@testing-library/react';
+import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
+import type { RhymeStudioData } from './RhymeStudio';
 
-const sendText = vi.hoisted(() => vi.fn());
-const ctxState = vi.hoisted(() => ({
-  isConnected: true,
-  isListening: false,
-  isAudioPlaying: false,
-  sessionMode: 'idle' as 'idle' | 'lesson',
-  sessionResumeCount: 0,
-  conversation: [] as Array<{ role: string; content: string }>,
-}));
-vi.mock('@/contexts/LuminaAIContext', () => ({
-  // 19b: the mic level is a SUBSCRIPTION now, not a context field. Stubbed
-  // flat because nothing here asserts on the orb's spike ring.
-  useMicLevel: () => 0,
-  useLuminaAIContext: () => ({
-    ...ctxState,
-    sendText,
-    connect: vi.fn(async () => {}),
-    disconnect: vi.fn(),
-    reconnect: vi.fn(),
-    startListening: vi.fn(() => { ctxState.isListening = true; }),
-    stopListening: vi.fn(),
-    updateContext: vi.fn(),
-  }),
-}));
-
-const submitGestureAttempt = vi.hoisted(() => vi.fn());
-vi.mock('../../../hooks/useJudgedSpeechLoop', () => ({
-  useJudgedSpeechLoop: () => ({
-    voiceTurns: { isVoiceActive: () => false, reset: vi.fn() },
-    queueCue: vi.fn(),
-    submitGestureAttempt,
-    sendCueNow: vi.fn(),
-    clearQueuedCue: vi.fn(),
-    arm: vi.fn(),
-    disarm: vi.fn(),
-    reset: vi.fn(),
-    isAwaitingJudgment: () => false,
-    config: {},
-  }),
-}));
-
-vi.mock('../../../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({
-    submitResult: vi.fn(),
-    hasSubmitted: false,
-    submittedResult: null,
-    elapsedMs: 0,
-  }),
-  useEvaluationContext: () => null,
-}));
-
-vi.mock('../../../utils/SoundManager', () => ({
-  SoundManager: new Proxy({}, { get: () => vi.fn() }),
-}));
-
-import RhymeStudio, { type RhymeStudioData } from './RhymeStudio';
+const render = (data: RhymeStudioData) =>
+  mountWorkspace({ primitiveId: 'rhyme-studio', evalMode: data.challenges[0].mode, data: data as unknown as Record<string, unknown> }).view;
 
 const recognition = (gradeLevel: 'K' | '1'): RhymeStudioData => ({
   title: 'Rhyme Time',
@@ -148,25 +97,21 @@ const collection = (): RhymeStudioData => ({
   }],
 });
 
-beforeEach(() => {
-  sendText.mockClear();
-  submitGestureAttempt.mockClear();
-  ctxState.isListening = false;
-});
-afterEach(cleanup);
+beforeEach(() => { installRuntimeTimers(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); });
 
 // ── GATE A: nothing on screen carries the child forward ─────────────────────
 
 describe('RhymeStudio · the tutor owns the clock', () => {
   it('offers no Start, Next, Finish, Skip or Check anywhere', () => {
-    render(<RhymeStudio data={recognition('K')} />);
+    render(recognition('K'));
     for (const label of [/^start activity$/i, /next/i, /finish/i, /skip/i, /check/i, /continue/i]) {
       expect(screen.queryByRole('button', { name: label })).toBeNull();
     }
   });
 
   it('the challenge is on screen immediately — no Start gate stands in front of it', () => {
-    render(<RhymeStudio data={recognition('K')} />);
+    render(recognition('K'));
     expect(screen.getByText('🐱')).toBeTruthy();
   });
 });
@@ -175,7 +120,7 @@ describe('RhymeStudio · the tutor owns the clock', () => {
 
 describe('RhymeStudio · answer-leak', () => {
   it('recognition shows no rime highlight on either card before the verdict', () => {
-    const { container } = render(<RhymeStudio data={recognition('1')} />);
+    const { container } = render(recognition('1'));
     // The amber span is the rime split; at a reader grade it is the give-away.
     expect(container.querySelectorAll('.text-amber-300')).toHaveLength(0);
     expect(screen.getByText('cat')).toBeTruthy();
@@ -183,12 +128,12 @@ describe('RhymeStudio · answer-leak', () => {
   });
 
   it('identification rings no card before the verdict', () => {
-    const { container } = render(<RhymeStudio data={identification('1')} />);
+    const { container } = render(identification('1'));
     expect(container.querySelectorAll('.ring-emerald-400\\/40')).toHaveLength(0);
   });
 
   it('the on-screen question restatement is gone — the tutor asks it', () => {
-    render(<RhymeStudio data={identification('1')} />);
+    render(identification('1'));
     expect(screen.queryByText(/Which word rhymes with/)).toBeNull();
     expect(screen.queryByText('Do these words rhyme?')).toBeNull();
   });
@@ -198,7 +143,7 @@ describe('RhymeStudio · answer-leak', () => {
 
 describe('RhymeStudio · the choices are a closed set, not a tap surface', () => {
   it('identification shows every choice and makes none of them a button', () => {
-    render(<RhymeStudio data={identification('1')} />);
+    render(identification('1'));
     expect(screen.getByText('bat')).toBeTruthy();
     expect(screen.getByText('dog')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^bat$/ })).toBeNull();
@@ -212,7 +157,7 @@ describe('RhymeStudio · the choices are a closed set, not a tap surface', () =>
     // THINKS OF a rhyme instead of reading four words and saying one. Any word
     // rendered here would be a candidate answer, which is the whole thing this
     // mode no longer has.
-    render(<RhymeStudio data={production()} />);
+    render(production());
     for (const word of ['bun', 'run', 'dog', 'book']) {
       expect(screen.queryByText(word)).toBeNull();
     }
@@ -221,7 +166,7 @@ describe('RhymeStudio · the choices are a closed set, not a tap surface', () =>
   });
 
   it('collection starts with three empty slots and hides unused examples', () => {
-    render(<RhymeStudio data={collection()} />);
+    render(collection());
     expect(screen.getByLabelText('Empty rhyme spot 1')).toBeTruthy();
     expect(screen.getByLabelText('Empty rhyme spot 2')).toBeTruthy();
     expect(screen.getByLabelText('Empty rhyme spot 3')).toBeTruthy();
@@ -240,26 +185,26 @@ describe('RhymeStudio · every mode is answered aloud', () => {
    * for that, and the tutor improvised a verdict the engine could not read.
    */
   it('recognition offers NO thumbs — the answer is spoken', () => {
-    render(<RhymeStudio data={recognition('K')} />);
+    render(recognition('K'));
     expect(screen.queryByLabelText('Yes, they rhyme')).toBeNull();
     expect(screen.queryByLabelText('No, they do not rhyme')).toBeNull();
     expect(screen.queryByText('👍')).toBeNull();
     expect(screen.queryByText('👎')).toBeNull();
   });
 
-  it('the mic is the ONLY control on the stage, in every mode', () => {
+  it('the cards only repeat the question, in every mode: a tap never answers', () => {
     for (const data of [recognition('K'), identification('1'), production()]) {
-      const { unmount } = render(<RhymeStudio data={data} />);
-      // The cards repeat the question (role=button for tap-to-hear); no <button>
-      // on the stage commits an answer, so nothing can be gesture-submitted.
+      const { unmount } = render(data);
+      // The cards repeat the question (role=button for tap-to-hear); nothing on the stage
+      // commits an answer, so a tap sends only a silent host request.
       fireEvent.click(screen.getAllByRole('button')[0]);
-      expect(submitGestureAttempt).not.toHaveBeenCalled();
+      expect(seam.send.mock.calls.at(-1)?.[1]).toMatchObject({ silent: true, author: 'host' });
       unmount();
     }
   });
 
   it('tells the child how to answer recognition without printing the answer', () => {
-    render(<RhymeStudio data={recognition('K')} />);
+    render(recognition('K'));
     expect(screen.getByText(/say yes or no/i)).toBeTruthy();
   });
 });
@@ -268,7 +213,7 @@ describe('RhymeStudio · every mode is answered aloud', () => {
 
 describe('RhymeStudio · pre-reader band', () => {
   it('renders every word picture-primary and hides adult chrome at K', () => {
-    render(<RhymeStudio data={identification('K')} />);
+    render(identification('K'));
     expect(screen.getByText('🐱')).toBeTruthy();   // target
     expect(screen.getByText('🦇')).toBeTruthy();   // option
     expect(screen.getByText('🐶')).toBeTruthy();   // option
@@ -277,7 +222,7 @@ describe('RhymeStudio · pre-reader band', () => {
   });
 
   it('keeps the word-primary card and the chrome at a reader grade (control)', () => {
-    render(<RhymeStudio data={recognition('1')} />);
+    render(recognition('1'));
     expect(screen.getAllByText(/Grade 1/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Do They Rhyme\?/)).toBeTruthy();
     expect(screen.queryByText('🐱')).toBeNull();   // emoji is a PRE-only affordance

@@ -1400,8 +1400,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'rhyme-studio',
     misconceptionScope: 'primitive',
     description:
-      'Live Direct Instruction rhyme practice with a spoken tutor. The tutor asks, waits, judges the child’s '
-      + 'answer from the audio in-band, and its own verdict moves the lesson on. ALL FOUR MODES ARE ANSWERED '
+      'Live rhyme practice with a spoken tutor. The tutor asks, waits and responds to the child’s '
+      + 'spoken answer, and a credited answer moves the lesson on. ALL FOUR MODES ARE ANSWERED '
       + 'ALOUD — the child says yes or no to whether two spoken words rhyme (Do They Rhyme?), says the word that '
       + 'rhymes from a small set (Find the Rhyme), or THINKS OF A RHYME with nothing on screen but the target '
       + 'word (Think of a Rhyme), or fills three retained slots with three different valid rhymes (Build a Rhyme Family). '
@@ -1425,6 +1425,17 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // (qa/reader-fit/rhyme-studio-PRE-2026-07-15.md); production is purely oral
     // with nothing on screen but the target, so it carries no higher demand.
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 4 },
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
+      guidance: 'Every answer is spoken. Rhyming is about the ending sound: on recognition the learner says yes or no to '
+        + 'whether two words rhyme; on identification the learner says the choice that rhymes with the target; on '
+        + 'production the learner says any real word that rhymes; on collection the learner says a new rhyme for each '
+        + 'of three spots, never one already collected. The target said back, a word that only starts the same, or a '
+        + 'made-up word is not a rhyme. Before the learner has tried, never say which words rhyme, never name the '
+        + 'ending, and never stretch a word to point at its ending. On identification read the choices aloud only '
+        + 'when the namingChoices fact allows it. A tapped card asks you to repeat the question only. You cannot mark '
+        + 'a choice or fill a spot.',
+    },
     // ── DI MODALITY (2026-08-12) — eighth literacy port. The tutor owns the
     // clock in every mode; there is no advance timer, no push-to-talk mic, no
     // Next button and no Start gate anywhere in the path.

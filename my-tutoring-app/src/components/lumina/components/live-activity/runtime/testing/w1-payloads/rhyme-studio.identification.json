@@ -1,0 +1,191 @@
+{
+ "source": "qa/tutor-reports/rhyme-studio-runtime-identification-payload-2026-09-24.json",
+ "primitiveId": "rhyme-studio",
+ "evalMode": "identification",
+ "data": {
+  "title": "Rhyme Time: Kindergarten Fun",
+  "gradeLevel": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "mode": "identification",
+    "targetWord": "cat",
+    "targetWordImage": "a fluffy cat",
+    "rhymeFamily": "-at",
+    "options": [
+     {
+      "word": "hat",
+      "image": "🎩",
+      "isCorrect": true
+     },
+     {
+      "word": "can",
+      "image": "🥫",
+      "isCorrect": false
+     }
+    ],
+    "targetWordEmoji": "🐱"
+   },
+   {
+    "id": "c2",
+    "mode": "identification",
+    "targetWord": "pig",
+    "targetWordImage": "a pink pig",
+    "rhymeFamily": "-ig",
+    "options": [
+     {
+      "word": "wig",
+      "image": "💇",
+      "isCorrect": true
+     },
+     {
+      "word": "pot",
+      "image": "🍲",
+      "isCorrect": false
+     }
+    ],
+    "targetWordEmoji": "🐷"
+   },
+   {
+    "id": "c3",
+    "mode": "identification",
+    "targetWord": "dog",
+    "targetWordImage": "a happy dog",
+    "rhymeFamily": "-og",
+    "options": [
+     {
+      "word": "log",
+      "image": "🪵",
+      "isCorrect": true
+     },
+     {
+      "word": "sun",
+      "image": "☀️",
+      "isCorrect": false
+     }
+    ],
+    "targetWordEmoji": "🐶"
+   },
+   {
+    "id": "c4",
+    "mode": "identification",
+    "targetWord": "sun",
+    "targetWordImage": "a bright sun",
+    "rhymeFamily": "-un",
+    "options": [
+     {
+      "word": "bun",
+      "image": "🍞",
+      "isCorrect": true
+     },
+     {
+      "word": "box",
+      "image": "📦",
+      "isCorrect": false
+     }
+    ],
+    "targetWordEmoji": "☀️"
+   },
+   {
+    "id": "c5",
+    "mode": "identification",
+    "targetWord": "hen",
+    "targetWordImage": "a brown hen",
+    "rhymeFamily": "-en",
+    "options": [
+     {
+      "word": "pen",
+      "image": "🖊️",
+      "isCorrect": true
+     },
+     {
+      "word": "bug",
+      "image": "🐛",
+      "isCorrect": false
+     }
+    ],
+    "targetWordEmoji": "🐔"
+   },
+   {
+    "id": "c6",
+    "mode": "identification",
+    "targetWord": "top",
+    "targetWordImage": "a spinning top",
+    "rhymeFamily": "-op",
+    "options": [
+     {
+      "word": "mop",
+      "image": "🧹",
+      "isCorrect": true
+     },
+     {
+      "word": "lip",
+      "image": "👄",
+      "isCorrect": false
+     }
+    ],
+    "targetWordEmoji": "🔝"
+   },
+   {
+    "id": "c7",
+    "mode": "identification",
+    "targetWord": "bug",
+    "targetWordImage": "a green bug",
+    "rhymeFamily": "-ug",
+    "options": [
+     {
+      "word": "rug",
+      "image": "🧶",
+      "isCorrect": true
+     },
+     {
+      "word": "bed",
+      "image": "🛌",
+      "isCorrect": false
+     }
+    ],
+    "targetWordEmoji": "🐛"
+   },
+   {
+    "id": "c8",
+    "mode": "identification",
+    "targetWord": "lip",
+    "targetWordImage": "a smiling lip",
+    "rhymeFamily": "-ip",
+    "options": [
+     {
+      "word": "zip",
+      "image": "🤐",
+      "isCorrect": true
+     },
+     {
+      "word": "pan",
+      "image": "🍳",
+      "isCorrect": false
+     }
+    ],
+    "targetWordEmoji": "👄"
+   },
+   {
+    "id": "c9",
+    "mode": "identification",
+    "targetWord": "box",
+    "targetWordImage": "a cardboard box",
+    "rhymeFamily": "-ox",
+    "options": [
+     {
+      "word": "fox",
+      "image": "🦊",
+      "isCorrect": true
+     },
+     {
+      "word": "bat",
+      "image": "🦇",
+      "isCorrect": false
+     }
+    ],
+    "targetWordEmoji": "📦"
+   }
+  ]
+ }
+}

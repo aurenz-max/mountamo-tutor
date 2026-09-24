@@ -1,0 +1,119 @@
+{
+ "source": "qa/tutor-reports/rhyme-studio-runtime-recognition-payload-2026-09-24.json",
+ "primitiveId": "rhyme-studio",
+ "evalMode": "recognition",
+ "data": {
+  "title": "Rhyme Time: Hearing Rhymes!",
+  "gradeLevel": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "mode": "recognition",
+    "targetWord": "cat",
+    "targetWordImage": "a fluffy cat",
+    "rhymeFamily": "-at",
+    "comparisonWord": "hat",
+    "comparisonWordImage": "a warm winter hat",
+    "doesRhyme": true,
+    "targetWordEmoji": "🐱",
+    "comparisonWordEmoji": "🎩"
+   },
+   {
+    "id": "c2",
+    "mode": "recognition",
+    "targetWord": "dog",
+    "targetWordImage": "a happy brown dog",
+    "rhymeFamily": "-og",
+    "comparisonWord": "pig",
+    "comparisonWordImage": "a pink farm pig",
+    "doesRhyme": false,
+    "targetWordEmoji": "🐶",
+    "comparisonWordEmoji": "🐷"
+   },
+   {
+    "id": "c3",
+    "mode": "recognition",
+    "targetWord": "sun",
+    "targetWordImage": "a bright yellow sun",
+    "rhymeFamily": "-un",
+    "comparisonWord": "run",
+    "comparisonWordImage": "a boy running fast",
+    "doesRhyme": true,
+    "targetWordEmoji": "☀️",
+    "comparisonWordEmoji": "🏃"
+   },
+   {
+    "id": "c4",
+    "mode": "recognition",
+    "targetWord": "pen",
+    "targetWordImage": "a blue ink pen",
+    "rhymeFamily": "-en",
+    "comparisonWord": "box",
+    "comparisonWordImage": "a cardboard box",
+    "doesRhyme": false,
+    "targetWordEmoji": "🖊️",
+    "comparisonWordEmoji": "📦"
+   },
+   {
+    "id": "c5",
+    "mode": "recognition",
+    "targetWord": "bug",
+    "targetWordImage": "a small green bug",
+    "rhymeFamily": "-ug",
+    "comparisonWord": "rug",
+    "comparisonWordImage": "a cozy floor rug",
+    "doesRhyme": true,
+    "targetWordEmoji": "🐛",
+    "comparisonWordEmoji": "🧶"
+   },
+   {
+    "id": "c6",
+    "mode": "recognition",
+    "targetWord": "hot",
+    "targetWordImage": "a steaming hot pot",
+    "rhymeFamily": "-ot",
+    "comparisonWord": "lip",
+    "comparisonWordImage": "a smiling red lip",
+    "doesRhyme": false,
+    "targetWordEmoji": "🔥",
+    "comparisonWordEmoji": "👄"
+   },
+   {
+    "id": "c7",
+    "mode": "recognition",
+    "targetWord": "top",
+    "targetWordImage": "a spinning toy top",
+    "rhymeFamily": "-op",
+    "comparisonWord": "mop",
+    "comparisonWordImage": "a yellow floor mop",
+    "doesRhyme": true,
+    "targetWordEmoji": "🔝",
+    "comparisonWordEmoji": "🧹"
+   },
+   {
+    "id": "c8",
+    "mode": "recognition",
+    "targetWord": "bed",
+    "targetWordImage": "a cozy little bed",
+    "rhymeFamily": "-ed",
+    "comparisonWord": "fox",
+    "comparisonWordImage": "an orange wild fox",
+    "doesRhyme": false,
+    "targetWordEmoji": "🛌",
+    "comparisonWordEmoji": "🦊"
+   },
+   {
+    "id": "c9",
+    "mode": "recognition",
+    "targetWord": "pan",
+    "targetWordImage": "a frying cooking pan",
+    "rhymeFamily": "-an",
+    "comparisonWord": "fan",
+    "comparisonWordImage": "a blowing electric fan",
+    "doesRhyme": true,
+    "targetWordEmoji": "🍳",
+    "comparisonWordEmoji": "🪭"
+   }
+  ]
+ }
+}
