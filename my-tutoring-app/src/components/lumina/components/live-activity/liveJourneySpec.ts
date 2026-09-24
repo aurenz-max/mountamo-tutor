@@ -59,6 +59,8 @@ import { cvcHarnessAnswers } from '../../primitives/visual-primitives/literacy/c
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
 import { youAndMeHarnessAnswers } from '../../primitives/visual-primitives/literacy/youAndMeWorkspace';
+import { itemsFromChallenges as phonemeItems } from '../../primitives/visual-primitives/literacy/phonemeExplorerScript';
+import { phonemeHarnessAnswers } from '../../primitives/visual-primitives/literacy/phonemeExplorerWorkspace';
 import { itemsFromChallenge as rhymeItems } from '../../primitives/visual-primitives/literacy/rhymeStudioScript';
 import { rhymeHarnessAnswers } from '../../primitives/visual-primitives/literacy/rhymeStudioWorkspace';
 import { itemsFromChallenges as syllableItems } from '../../primitives/visual-primitives/literacy/syllableClapperScript';
@@ -955,6 +957,18 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     inputsFor: spokenWorkspaceInputs(
       (challenges: any[]) => challenges.flatMap(c => rhymeItems(c)), rhymeHarnessAnswers, 'rhyme-studio'),
     probes: { mounted: { selector: '[data-pip-object="target"], [data-pip-object="pair"]' } },
+  },
+  'phoneme-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/PhonemeExplorer.tsx',
+    instanceId: 'phonemes',
+    defaults: { grade: 'Kindergarten', mode: 'isolate', di: false,
+      topic: 'Hearing the first sound in short picture words' },
+    leakTokens: ['PE_ITEM', 'PE_MOVE', 'PE_COMPLETE', 'PE_HEAR'],
+    prompts: WORKSPACE_PROMPTS,
+    // One spoken answer per item: the pack's right answer, or a real card / plainly different word.
+    inputsFor: spokenWorkspaceInputs(phonemeItems, phonemeHarnessAnswers, 'phoneme-explorer'),
+    probes: { mounted: { selector: '[data-pip-object="stimulus"], [data-pip-object="sounds"]' } },
   },
 };
 

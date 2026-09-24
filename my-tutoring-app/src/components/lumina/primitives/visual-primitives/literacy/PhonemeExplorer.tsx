@@ -1,12 +1,12 @@
 'use client';
 
 /**
- * PhonemeExplorer — DI modality (sixth literacy port, 2026-08-11; second
- * literacy consumer of useJudgedScriptRunner). The Live tutor owns the clock
- * in every mode: it asks, waits, judges the child's spoken answer from the
- * audio in-band, corrects contrastively, and its OWN verdict is the advance.
- * There is no advance timer, no answer buttons, no Next button and no
- * push-to-talk mic anywhere in this file.
+ * PhonemeExplorer — every mode is answered out loud. It runs only on the shared
+ * tutor/JEV teaching workspace (workspace rollout C1; the scripted runner was
+ * retired, LA-14, user ruling 09-23: one path). The tutor teaches in its own
+ * words, the observer judges each spoken answer and the runtime owns progression.
+ * An unbound mount shows the shared "needs the tutor" card. There is no advance
+ * timer, no answer buttons and no Next button anywhere in this file.
  *
  * ALL SIX MODES ARE VERBAL — the old 4-choice grid was a costume on each:
  *  - isolate: the four cards STAY as the on-screen MENU (the question side,
@@ -37,8 +37,8 @@
  * scripted ask ENUMERATES the menu (phonemeExplorerScript honors it).
  *
  * ANSWER-LEAK RULE: blend/manipulate answers and segment's count appear on
- * screen only after the tutor has affirmed. Tap-to-hear re-speaks question-
- * side audio only ([PE_HEAR] cues).
+ * screen only after the answer is credited. Tap-to-hear asks for question-side
+ * audio only (a card word or a sound).
  *
  * Items that cannot be asked or judged honestly (unsayable blend walk, the
  * answer inside the operation prose, an example word sitting in the menu) are
@@ -46,7 +46,7 @@
  * ask.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -63,22 +63,14 @@ import {
 } from '../../../evaluation';
 import type { PhonemeExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
-import {
-  hearSoundCue,
-  hearWordCue,
-  itemsFromChallenges,
-  phonemeExplorerPackBase,
-  shufflePhonemeMenus,
-  type PhonemeExplorerItem,
-} from './phonemeExplorerScript';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { itemsFromChallenges, shufflePhonemeMenus, type PhonemeExplorerItem } from './phonemeExplorerScript';
+import { hearSoundRequest, hearWordRequest, phonemeAssignment, phonemeScene } from './phonemeExplorerWorkspace';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { phonemeExplorerPipPose } from '../../../pip/phonemeExplorerPipPose';
@@ -165,6 +157,9 @@ export interface PhonemeExplorerData {
 interface PhonemeExplorerProps {
   data: PhonemeExplorerData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -184,7 +179,7 @@ const MODE_META: Record<string, { badge: string; icon: string; prompt: string; a
 // Component
 // ============================================================================
 
-const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) => {
+function PhonemeExplorerSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: PhonemeExplorerProps) {
   const {
     title,
     challenges = [],
@@ -196,12 +191,11 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     onEvaluationSubmit,
   } = data;
 
-  const gradeLevel = data.gradeLevel ?? 'kindergarten';
-
   const stableInstanceIdRef = useRef(instanceId || `phoneme-explorer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   // ── Items (drop-gated) + a lookup back to the source challenge ────────────
   const items = useMemo<PhonemeExplorerItem[]>(() => {
@@ -220,9 +214,6 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     return map;
   }, [challenges]);
 
-  // ── Per-item stage state ──────────────────────────────────────────────────
-  /** Affirmed: the first moment the answer may appear on screen. */
-
   // ── Evaluation ────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<PhonemeExplorerMetrics>({
     primitiveType: 'phoneme-explorer',
@@ -234,7 +225,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const metrics: PhonemeExplorerMetrics = {
       type: 'phoneme-explorer',
       challengesCorrect: summary.solvedCount,
@@ -248,76 +239,45 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items.length, evaluation]);
+  };
 
-  // ── The pack — the tutor's whole side is `phonemeExplorerPackBase`, spread ─
-  //    from the script module so the DI drive-plan endpoint replays the SAME
-  //    cues this component sends. Only what the SCREEN owns stays here.
-  const pack = useMemo<JudgedScriptPack<PhonemeExplorerItem>>(() => ({
-    ...phonemeExplorerPackBase(items),
-    // Only what DIFFERS from the runner's defaults.
-    statusLines: {
-      ready: (item) => item.kind === 'segment'
-        ? 'Listen, then say how many sounds.'
-        : 'Listen, then say your answer out loud.',
-      retry: (item) => item.kind === 'segment'
-        ? 'Have another go — say how many sounds.'
-        : 'Have another go — say your answer.',
-      affirmedNext: 'Yes! You heard it.',
-      done: 'Great sound work today!',
-    },
-    // One record per attempt, right or corrected: the sound task, the word or picture menu, and what was heard.
-    // Never the verdict, because the same text is kept for right answers.
-    observation: (item, { heard }) => {
-      const menu = item.menu?.length ? ` (pictures: ${item.menu.map((card) => card.word).join(', ')})` : '';
-      return {
-        challenge: item.kind === 'isolate'
-          ? `Say which word starts with the ${item.phonemeSound ?? item.phoneme} sound${menu}.`
-          : item.kind === 'ending'
-          ? `Say which heard word has the same final phoneme as "${item.targetWord}"${menu}.`
-          : item.kind === 'medial'
-          ? `Say which word has the same middle sound as "${item.targetWord}"${menu}.`
-          : item.kind === 'blend'
-            ? `Blend ${item.walk} into a whole word.`
-            : item.kind === 'segment'
-              ? `Count the sounds in "${item.targetWord}".`
-              : `${item.operationSpoken ?? 'Change one sound.'} (from "${item.originalWord}")`,
-        expected: item.kind === 'segment' ? `${item.answer} (${item.soundCount})` : item.answer,
-        observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
-      };
-    },
-  }), [items]);
-
-  const runner = useJudgedScriptRunner<PhonemeExplorerItem>({
-    pack,
+  const runner = useWorkspaceRunner<PhonemeExplorerItem>({
+    primitiveId: 'phoneme-explorer',
+    assignment: phonemeAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || items[0]?.kind || 'isolate',
     instanceId: resolvedInstanceId,
-    gradeLevel,
-    exhibitId,
-    onFinished: handleFinished,
+    onFinished: finish,
   });
 
   const currentItem = runner.currentItem;
-  /** Affirmed: the first moment the answer may appear on screen. The runner
-   *  owns this latch now (it replaces the `onItemOpened`/`onAffirmed` pair). */
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
+  /** Credited: the first moment the answer may appear on screen. */
   const revealed = runner.currentSolved;
   const currentChallenge = currentItem ? challengeById.get(currentItem.id) : undefined;
 
   // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the runner's phase and the child's own tap-to-hear; Pip
+  // A projection of the workspace's committed state and the child's own tap-to-hear; Pip
   // never answers, judges, or advances.
   const pip = usePipTargets(currentItem?.id ?? null, runner.running);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const targets = pip.targets();
     const pose = phonemeExplorerPipPose({
       kind: currentItem.kind,
-      running: runner.running, preparing: runner.preparing,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      running: runner.running, preparing: false,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld, judging: false,
+      // Audio belongs to this block only while the lesson is pointed at it.
+      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
       cueMatchesItem: runner.cuedItemId === currentItem.id,
       visibleIds: targets.map((target) => target.id),
       lastTouchedId: pip.lastTouchedId,
@@ -325,31 +285,36 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Phoneme explorer', dock: pip.dock.current, targets, pose };
   });
 
-  // ── Tap-to-hear question-side audio (never a commit, never the answer) ────
+  // What the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...phonemeScene(currentItem), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
+  // ── Tap-to-hear question-side audio. Silent host requests: never a learner turn, never the answer. ──
   const hearWord = useCallback((word: string | undefined) => {
-    if (!word || !ctx.isConnected) return;
+    if (!word) return;
     SoundManager.tap();
-    ctx.sendText(hearWordCue(word), { silent: true });
-    // Context methods are stable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.isConnected]);
+    ctx.sendText(hearWordRequest(word), { silent: true, author: 'host' });
+  }, [ctx]);
 
   const hearSound = useCallback((raw: string | undefined) => {
-    if (!raw || !ctx.isConnected) return;
+    if (!raw) return;
     SoundManager.tap();
-    ctx.sendText(hearSoundCue(raw), { silent: true });
-    // Context methods are stable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.isConnected]);
+    ctx.sendText(hearSoundRequest(raw), { silent: true, author: 'host' });
+  }, [ctx]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => {
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => {
       const meta = MODE_META[item.kind];
       return { label: meta.badge, icon: meta.icon };
     });
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
   // ============================================================================
   // Render helpers per mode
@@ -635,7 +600,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
   // Main Render
   // ============================================================================
 
-  if (items.length === 0) {
+  if (items.length === 0 || !currentItem) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-6">
@@ -645,14 +610,14 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     );
   }
 
-  const modeMeta = MODE_META[currentItem?.kind ?? 'isolate'];
+  const modeMeta = MODE_META[currentItem.kind];
 
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          {!evaluation.hasSubmitted && currentItem && (
+          {!showSummary && (
             <LuminaBadge accent={modeMeta.accent} className="text-xs">
               {modeMeta.icon} {modeMeta.badge}
             </LuminaBadge>
@@ -661,7 +626,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex justify-center">
               <LuminaChallengeCounter
@@ -678,22 +643,19 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
                 className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
             )}
 
-            {currentItem && currentItem.kind === 'isolate' && renderIsolate(currentItem, currentChallenge)}
-            {currentItem && currentItem.kind === 'ending' && renderEnding(currentItem, currentChallenge)}
-            {currentItem && currentItem.kind === 'medial' && renderMedial(currentItem, currentChallenge)}
-            {currentItem && currentItem.kind === 'blend' && renderBlend(currentItem, currentChallenge)}
-            {currentItem && currentItem.kind === 'segment' && renderSegment(currentItem, currentChallenge)}
-            {currentItem && currentItem.kind === 'manipulate' && renderManipulate(currentItem, currentChallenge)}
-
-            {/* Every mode here is answered out loud. */}
-            <JudgedMicPanel run={runner} />
+            {currentItem.kind === 'isolate' && renderIsolate(currentItem, currentChallenge)}
+            {currentItem.kind === 'ending' && renderEnding(currentItem, currentChallenge)}
+            {currentItem.kind === 'medial' && renderMedial(currentItem, currentChallenge)}
+            {currentItem.kind === 'blend' && renderBlend(currentItem, currentChallenge)}
+            {currentItem.kind === 'segment' && renderSegment(currentItem, currentChallenge)}
+            {currentItem.kind === 'manipulate' && renderManipulate(currentItem, currentChallenge)}
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Phoneme Explorer Complete!"
             celebrationMessage="Great job hearing every sound!"
@@ -703,6 +665,10 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       </LuminaCardContent>
     </LuminaCard>
   );
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const PhonemeExplorer = withWorkspaceOnly<PhonemeExplorerProps>('phoneme-explorer', PhonemeExplorerSurface,
+  props => props.data.title);
 
 export default PhonemeExplorer;

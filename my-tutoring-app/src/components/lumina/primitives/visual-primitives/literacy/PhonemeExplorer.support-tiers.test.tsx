@@ -19,64 +19,19 @@
  *   - the tutor-channel tier lever (menu enumeration) moved into the scripted
  *     ask and is pinned in PhonemeExplorer.di-script.test.ts, not here.
  *
- * The runner is mocked to a static "item open, asking" state — this file tests
- * the RENDER halves only; loop behaviour has its own suites.
+ * Mounted under a runtime (the explorer runs only on the teaching workspace), on the
+ * item as it opens; the workspace behaviour is in PhonemeExplorer.workspace.test.tsx.
  */
-import React from 'react';
-import { render, screen, cleanup } from '@testing-library/react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
 
-const runnerState = vi.hoisted(() => ({ index: 0 }));
-
-vi.mock('../../../hooks/useJudgedScriptRunner', () => ({
-  useJudgedScriptRunner: (opts: { pack: { items: unknown[] } }) => ({
-    running: true,
-    preparing: false,
-    stage: 'asking',
-    statusLine: '',
-    currentIndex: runnerState.index,
-    currentItem: opts.pack.items[runnerState.index] ?? null,
-    solvedIds: new Set<string>(),
-    currentSolved: false,
-    canAttempt: true,
-    summary: null,
-    micState: 'idle' as const,
-      cancelListening: undefined,
-    start: async () => {},
-    hearStimulus: () => {},
-    stimulusTapped: false,
-    submitGestureAttempt: () => {},
-    isAwaitingGesture: () => false,
-    loop: {},
-  }),
-}));
-
-vi.mock('@/contexts/LuminaAIContext', () => ({
-  // 19b: the mic level is a SUBSCRIPTION now, not a context field. Stubbed
-  // flat because nothing here asserts on the orb's spike ring.
-  useMicLevel: () => 0,
-  useLuminaAIContext: () => ({
-    isConnected: true,
-    sendText: vi.fn(),
-  }),
-}));
-
-vi.mock('../../../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({
-    submitResult: vi.fn(), hasSubmitted: false, submittedResult: null, elapsedMs: 0,
-  }),
-  useEvaluationContext: () => null,
-}));
-
-vi.mock('../../../utils/SoundManager', () => ({
-  SoundManager: {
-    tap: vi.fn(), select: vi.fn(), pop: vi.fn(),
-    playCorrect: vi.fn(), playIncorrect: vi.fn(), playStreak: vi.fn(),
-    isEnabled: () => false, getVolume: () => 1, play: vi.fn(),
-  },
-}));
-
-import PhonemeExplorer, { type PhonemeExplorerData } from './PhonemeExplorer';
+import { screen, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
+import type { PhonemeExplorerData } from './PhonemeExplorer';
 
 // ── Fixtures — identical CONTENT at every tier; only the flags differ ────────
 type Challenge = PhonemeExplorerData['challenges'][number];
@@ -116,14 +71,11 @@ const MANIPULATE: Challenge = {
   resultWord: 'bat', resultEmoji: '🦇',
 };
 
-const renderWith = (ch: Challenge) => {
-  runnerState.index = 0;
-  return render(
-    <PhonemeExplorer data={{ title: 'Sound Safari', challenges: [ch] }} />,
-  );
-};
+const renderWith = (ch: Challenge) => mountWorkspace({ primitiveId: 'phoneme-explorer', evalMode: ch.mode,
+  data: { title: 'Sound Safari', challenges: [ch] } }).view;
 
-afterEach(cleanup);
+beforeEach(() => { installRuntimeTimers(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); });
 
 // ── Legacy default (no tier fields) — full help ─────────────────────────────
 

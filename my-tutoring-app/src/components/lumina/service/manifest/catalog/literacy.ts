@@ -1837,8 +1837,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     misconceptionScope: 'primitive',
     description:
       'Live Direct Instruction phoneme awareness with a spoken tutor — BEGINNING, ENDING, and MIDDLE (short-vowel) '
-      + 'sounds, distinct from whole-word rhyme. The tutor asks, waits, judges the child’s spoken answer '
-      + 'from the audio, and its own affirmation moves the lesson on. ALL SIX modes are ANSWERED ALOUD: Sound Match '
+      + 'sounds, distinct from whole-word rhyme. The tutor asks, waits and responds to the child’s spoken '
+      + 'answer, and a credited answer moves the lesson on. ALL SIX modes are ANSWERED ALOUD: Sound Match '
       + '(hear a sound and a 4-word menu, SAY the word that starts with it), Middle Sound Match (hear a CVC word — '
       + 'never printed — and a 4-word menu, SAY the word with the SAME MIDDLE VOWEL: "same middle sound as cat: hat '
       + 'or hot?"; THIS is the mode for "identify the short a/e/i/o/u sound in spoken words" and any medial-vowel '
@@ -1859,6 +1859,17 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // 2026-08-12 ("this passes human check"): the runner owns every cue; all modes are
     // answered aloud, and segment deliberately never prints the word.
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'Every answer is a spoken word or count, never a bare sound. On isolate, ending and medial the learner '
+        + 'says the card word that shares the beginning, ending or middle sound; your example word or the target word '
+        + 'said back is not a card. On blend the learner says the word the sounds make; the sounds with no word at the '
+        + 'end are not yet it. On segment the learner says how many sounds; a count that lands on the number counts. On '
+        + 'manipulate the learner says the new word; the starting word said back is not it. Before the learner has '
+        + 'tried, never name the ending or middle sound, never break a segment word into its sounds, and never say '
+        + 'the blended or new word. Read the cards aloud only when the namingCards fact allows it. A tapped card or '
+        + 'tile asks you for that word or sound only. You cannot mark a card or show the answer.',
+    },
     // ── DI MODALITY (2026-08-11) — sixth literacy port, second literacy
     // consumer of useJudgedScriptRunner. The 4-choice grid was a costume on
     // every mode: picking "cat" after hearing /k/ /a/ /t/ is word recognition,

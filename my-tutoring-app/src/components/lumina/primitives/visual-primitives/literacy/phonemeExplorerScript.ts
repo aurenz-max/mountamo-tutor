@@ -519,7 +519,7 @@ export const howToPlayFor = (item: PhonemeExplorerItem): string => {
 const menuSpanFor = (item: PhonemeExplorerItem): string =>
   `The words are: ${(item.menu ?? []).map((c) => c.word).join(', ')}.`;
 
-const askFor = (item: PhonemeExplorerItem): string => {
+export const askFor = (item: PhonemeExplorerItem): string => {
   switch (item.kind) {
     case 'isolate': {
       const sound = spokenSound(item.phonemeSound);

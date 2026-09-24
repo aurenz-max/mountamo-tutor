@@ -1,0 +1,160 @@
+{
+ "source": "qa/tutor-reports/phoneme-explorer-runtime-isolate-payload-2026-09-24.json",
+ "primitiveId": "phoneme-explorer",
+ "evalMode": "isolate",
+ "data": {
+  "title": "Sound Safari: Hearing the first sound in short picture words",
+  "challenges": [
+   {
+    "phoneme": "C",
+    "phonemeSound": "kuh",
+    "exampleWord": "Cat",
+    "exampleEmoji": "🐱",
+    "choices": [
+     {
+      "word": "Cup",
+      "emoji": "🥤",
+      "correct": true
+     },
+     {
+      "word": "Sun",
+      "emoji": "☀️",
+      "correct": false
+     },
+     {
+      "word": "Pig",
+      "emoji": "🐷",
+      "correct": false
+     },
+     {
+      "word": "Bus",
+      "emoji": "🚌",
+      "correct": false
+     }
+    ],
+    "mode": "isolate",
+    "id": "c1"
+   },
+   {
+    "phoneme": "D",
+    "phonemeSound": "duh",
+    "exampleWord": "Dog",
+    "exampleEmoji": "🐶",
+    "choices": [
+     {
+      "word": "Hat",
+      "emoji": "🎩",
+      "correct": false
+     },
+     {
+      "word": "Duck",
+      "emoji": "🦆",
+      "correct": true
+     },
+     {
+      "word": "Pen",
+      "emoji": "🖊️",
+      "correct": false
+     },
+     {
+      "word": "Sun",
+      "emoji": "☀️",
+      "correct": false
+     }
+    ],
+    "mode": "isolate",
+    "id": "c2"
+   },
+   {
+    "phoneme": "S",
+    "phonemeSound": "sss",
+    "exampleWord": "Sun",
+    "exampleEmoji": "☀️",
+    "choices": [
+     {
+      "word": "Box",
+      "emoji": "📦",
+      "correct": false
+     },
+     {
+      "word": "Map",
+      "emoji": "🗺️",
+      "correct": false
+     },
+     {
+      "word": "Sock",
+      "emoji": "🧦",
+      "correct": true
+     },
+     {
+      "word": "Net",
+      "emoji": "🥅",
+      "correct": false
+     }
+    ],
+    "mode": "isolate",
+    "id": "c3"
+   },
+   {
+    "phoneme": "P",
+    "phonemeSound": "puh",
+    "exampleWord": "Pen",
+    "exampleEmoji": "🖊️",
+    "choices": [
+     {
+      "word": "Pig",
+      "emoji": "🐷",
+      "correct": true
+     },
+     {
+      "word": "Log",
+      "emoji": "🪵",
+      "correct": false
+     },
+     {
+      "word": "Web",
+      "emoji": "🕸️",
+      "correct": false
+     },
+     {
+      "word": "Hat",
+      "emoji": "🎩",
+      "correct": false
+     }
+    ],
+    "mode": "isolate",
+    "id": "c4"
+   },
+   {
+    "phoneme": "M",
+    "phonemeSound": "mmm",
+    "exampleWord": "Map",
+    "exampleEmoji": "🗺️",
+    "choices": [
+     {
+      "word": "Cup",
+      "emoji": "🥤",
+      "correct": false
+     },
+     {
+      "word": "Net",
+      "emoji": "🥅",
+      "correct": false
+     },
+     {
+      "word": "Mop",
+      "emoji": "🧹",
+      "correct": true
+     },
+     {
+      "word": "Bus",
+      "emoji": "🚌",
+      "correct": false
+     }
+    ],
+    "mode": "isolate",
+    "id": "c5"
+   }
+  ]
+ }
+}

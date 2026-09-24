@@ -1,0 +1,65 @@
+{
+ "source": "qa/tutor-reports/phoneme-explorer-runtime-blend-payload-2026-09-24.json",
+ "primitiveId": "phoneme-explorer",
+ "evalMode": "blend",
+ "data": {
+  "title": "Sound Safari: Hearing the first sound in short picture words",
+  "challenges": [
+   {
+    "phonemeSequence": [
+     "d",
+     "o",
+     "g"
+    ],
+    "word": "dog",
+    "emoji": "🐕",
+    "mode": "blend",
+    "id": "c1"
+   },
+   {
+    "phonemeSequence": [
+     "s",
+     "u",
+     "n"
+    ],
+    "word": "sun",
+    "emoji": "☀️",
+    "mode": "blend",
+    "id": "c2"
+   },
+   {
+    "phonemeSequence": [
+     "b",
+     "u",
+     "s"
+    ],
+    "word": "bus",
+    "emoji": "🚌",
+    "mode": "blend",
+    "id": "c3"
+   },
+   {
+    "phonemeSequence": [
+     "p",
+     "i",
+     "g"
+    ],
+    "word": "pig",
+    "emoji": "🐖",
+    "mode": "blend",
+    "id": "c4"
+   },
+   {
+    "phonemeSequence": [
+     "h",
+     "e",
+     "n"
+    ],
+    "word": "hen",
+    "emoji": "🐔",
+    "mode": "blend",
+    "id": "c5"
+   }
+  ]
+ }
+}

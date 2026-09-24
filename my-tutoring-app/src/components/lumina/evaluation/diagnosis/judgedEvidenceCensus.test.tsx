@@ -69,7 +69,6 @@ const COMPONENTS: Record<string, Loader> = {
   'letter-spotter': () => import('../../primitives/visual-primitives/literacy/LetterSpotter'),
   'oral-sentence-studio': () => import('../../primitives/visual-primitives/literacy/OralSentenceStudio'),
   'ordinal-line': () => import('../../primitives/visual-primitives/math/OrdinalLine'),
-  'phoneme-explorer': () => import('../../primitives/visual-primitives/literacy/PhonemeExplorer'),
   'picture-vocabulary': () => import('../../primitives/visual-primitives/literacy/PictureVocabulary'),
   'place-value-chart': () => import('../../primitives/visual-primitives/math/PlaceValueChart'),
   'sentence-analyzer': () => import('../../primitives/visual-primitives/literacy/SentenceAnalyzer'),
