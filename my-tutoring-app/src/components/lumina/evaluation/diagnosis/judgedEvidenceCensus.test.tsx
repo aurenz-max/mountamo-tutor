@@ -66,7 +66,6 @@ const COMPONENTS: Record<string, Loader> = {
   'di-word-problem-setup': () => import('../../primitives/visual-primitives/direct-instruction/DiWordProblemSetup'),
   'di-worked-procedure': () => import('../../primitives/visual-primitives/direct-instruction/DiWorkedProcedure'),
   'letter-sound-link': () => import('../../primitives/visual-primitives/literacy/LetterSoundLink'),
-  'letter-spotter': () => import('../../primitives/visual-primitives/literacy/LetterSpotter'),
   'oral-sentence-studio': () => import('../../primitives/visual-primitives/literacy/OralSentenceStudio'),
   'ordinal-line': () => import('../../primitives/visual-primitives/math/OrdinalLine'),
   'place-value-chart': () => import('../../primitives/visual-primitives/math/PlaceValueChart'),

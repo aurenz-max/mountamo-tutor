@@ -1,11 +1,13 @@
 'use client';
 
 /**
- * LetterSpotter — DI modality (ELEVENTH literacy port, 2026-08-13). The Live tutor
- * owns the clock in every mode: it asks ONCE, waits, is handed the verdict for
- * what the child tapped, corrects by re-modelling, and its OWN line is the
- * advance. There is no advance timer, no Check button, no Next button, no
- * push-to-talk mic and no answer anywhere on screen before the tutor affirms.
+ * LetterSpotter — letter names and forms. It runs only on the shared tutor/JEV
+ * teaching workspace (workspace rollout C2; the scripted runner was retired,
+ * LA-14, user ruling 09-23: one path). The observer judges the spoken letter on
+ * name it, the activity checks each tap on find it and match it, and the runtime
+ * owns progression. An unbound mount shows the shared "needs the tutor" card.
+ * There is no advance timer, no Check button, no Next button and no answer
+ * anywhere on screen before it is credited.
  *
  * WHAT WENT, AND WHY (all four traced to one live session, 42edfc52e539):
  *  - **Three cue sites that each ordered the sentence re-read** — one on
@@ -43,9 +45,8 @@
  *  - **find-it and match-it are still answered with the hands** — and only
  *    because their answers are not sayable. find-it's answer is a POSITION;
  *    match-it's is which lowercase FORM matches, which saying "S" would not
- *    demonstrate. Their verdicts stay CODE-COMPUTED ([LSP_TAP]), and the runner
- *    holds the activity bracket across the item so the tutor is silent in fact
- *    and not merely under instruction.
+ *    demonstrate. Their verdicts stay CODE-COMPUTED (`commitGesture`), and the
+ *    key never reaches the tutor.
  *  - **The printed word residue.** The click-era render replaced the WHOLE
  *    target word with the marker ("I see a ⭐ walk away"), which threw away the
  *    one decodable cue and left the sentence pure decoration — the data model
@@ -57,12 +58,12 @@
  *    band that cannot read, and the tier now composes the spoken DISTAR lead-in
  *    instead (letterSpotterScript).
  *
- * Cue lines, judging contracts, build gates and the tier ladder live in
- * `letterSpotterScript.ts` (hand-authored, DISTAR). Nothing in this file writes
- * a spoken line.
+ * Build gates, the asks and the tier ladder live in `letterSpotterScript.ts`; the
+ * workspace assignment and scene in `letterSpotterWorkspace.ts`. Nothing in this
+ * file writes a spoken line.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -73,22 +74,20 @@ import {
   answerStateClass,
   type LuminaAccent,
 } from '../../../ui';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { LetterSpotterMetrics } from '../../../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { describeLetterTap, hearQuestionRequest, letterSpotterAssignment, letterSpotterScene } from './letterSpotterWorkspace';
 import {
   itemsFromChallenges,
-  letterSpotterPackBase,
-  tapVerdictCue,
   SPOTTER_EMOJI,
   type LetterSpotterItem,
   type LetterSpotterMode,
@@ -175,13 +174,16 @@ const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
 interface LetterSpotterProps {
   data: LetterSpotterData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
+function LetterSpotterSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: LetterSpotterProps) {
   const {
     title,
     letterGroup,
@@ -200,6 +202,8 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
 
   /** Pre-reader band: adult chrome is hidden, never read (reader-fit rule 7). */
   const isPreReader = gradeLevel === 'K';
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   const stableInstanceIdRef = useRef(instanceId || `letter-spotter-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -222,7 +226,6 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
   // ── Per-item stage state ───────────────────────────────────────────────────
   /** The tapped letter (name-it / match-it) — cleared on retry and item open. */
   const [tapped, setTapped] = useState<string | null>(null);
-  const tappedRef = useRef<string | null>(null);
   /** The tapped grid index (find-it) — a cell, not a letter. */
   const [tappedCell, setTappedCell] = useState<number | null>(null);
   /** [target, chosen] pairs from wrong taps — the confusion evidence this
@@ -240,7 +243,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const rate = (predicate: (item: LetterSpotterItem) => boolean) => {
       const scoped = items.filter(predicate);
       if (scoped.length === 0) return 100;
@@ -249,6 +252,14 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
       ).length;
       return Math.round((solved / scoped.length) * 100);
     };
+
+    // A spoken miss that is a single letter is a confusion pair too (name it); the taps recorded theirs as made.
+    for (const attempt of summary.teachingAttempts ?? []) {
+      const item = items.find((i) => i.id === attempt.itemId);
+      const heard = attempt.response.trim().replace(/[.!?,]/g, '').toLowerCase();
+      if (item?.mode === 'name-it' && attempt.source === 'speech' && !attempt.correct && /^[a-z]$/.test(heard)
+          && heard !== item.targetLetter.toLowerCase()) confusedPairsRef.current.push([item.targetLetter.toLowerCase(), heard]);
+    }
 
     const isNew = (item: LetterSpotterItem) =>
       newLetters.includes(item.targetLetter.toLowerCase());
@@ -278,107 +289,53 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items, letterGroup, newLetters, evaluation]);
+  };
 
-  // ── The pack — wording lives in letterSpotterScript.ts ─────────────────────
-  // The cue surface is SPREAD, not re-declared: everything the tutor is told
-  // ships from the script module so the DI drive harness reads the same bytes
-  // this component sends (19h-i-b). Only the two screen-owned fields stay.
-  const pack = useMemo<JudgedScriptPack<LetterSpotterItem>>(() => ({
-    ...letterSpotterPackBase(items),
-    // Only what DIFFERS from the runner's defaults — a line restated here reads
-    // as a deliberate pedagogic choice, so a byte-identical one is noise.
-    statusLines: {
-      // The two answer surfaces get different lines, because the child is being
-      // told what to DO: name-it is spoken, the other two are tapped.
-      ready: (item) => (item.answerKind === 'voice'
-        ? 'Listen, then say your answer.'
-        : 'Listen, then tap your answer.'),
-      retry: (item) => (item.answerKind === 'voice'
-        ? 'Listen again — then say your answer.'
-        : 'Listen again — then tap your answer.'),
-      noVerdict: () => 'One more time — say the letter.',
-      done: 'Great letter spotting today!',
-    },
-    // One factual record per attempt, right or corrected: the sentence, grid or letters shown and what was said
-    // or tapped (the tap ref is read before the retry clears it). Never the verdict, because the same text is
-    // kept for right answers.
-    observation: (item, { heard: transcript, verdict }) => {
-      const chosen = tappedRef.current;
-      switch (item.mode) {
-        case 'name-it': {
-          // Spoken mode: the evidence is what the child SAID. A heard single letter on a CORRECTED attempt is
-          // also a confusion pair, which is the signal this primitive exists to collect — the tap path used to
-          // be the only source. An affirmed attempt is never a confusion (the judge accepts the sound too).
-          const heard = transcript?.trim() ?? '';
-          const heardLetter = /^[a-z]$/i.test(heard) ? heard.toLowerCase() : null;
-          if (verdict === 'corrected' && heardLetter && heardLetter !== item.targetLetter.toLowerCase()) {
-            confusedPairsRef.current.push([item.targetLetter.toLowerCase(), heardLetter]);
-          }
-          return {
-            challenge: `Hear "${item.spokenSentence}" and say the letter "${item.targetWord}" starts with.`,
-            expected: `The letter "${item.targetLetter.toUpperCase()}".`,
-            observed: heard ? `Said "${heard}".` : 'No transcript was captured.',
-          };
-        }
-        case 'find-it':
-          return {
-            challenge: `Find the letter "${item.targetLetter.toUpperCase()}" among sixteen letters`
-              + `${item.letterGrid?.length ? ` (grid: ${item.letterGrid.join(' ')})` : ''}.`,
-            expected: `The one cell holding "${item.targetLetter.toUpperCase()}".`,
-            observed: chosen
-              ? `Tapped a cell holding "${chosen.toUpperCase()}".`
-              : 'Tapped a cell; which one was not recorded.',
-          };
-        case 'match-it':
-          return {
-            challenge: `Match big "${item.targetLetter.toUpperCase()}" to its little form (little letters shown: ${item.options.join(', ')}).`,
-            expected: `The little letter "${item.targetLetter}".`,
-            observed: chosen
-              ? `Tapped the little letter "${chosen}".`
-              : 'Tapped a little letter; which one was not recorded.',
-          };
-      }
-    },
-  }), [items]);
-
-  const runner = useJudgedScriptRunner<LetterSpotterItem>({
-    pack,
+  const runner = useWorkspaceRunner<LetterSpotterItem>({
+    primitiveId: 'letter-spotter',
+    assignment: letterSpotterAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    // Catalog modes are underscored (`name_it`); the item's mode is hyphenated (`name-it`).
+    evalMode: runtimeEvalMode || (items[0]?.mode ?? 'name-it').replace('-', '_'),
     instanceId: resolvedInstanceId,
-    gradeLevel,
-    exhibitId,
-    onFinished: handleFinished,
+    onFinished: finish,
     onItemOpened: () => {
       setTapped(null);
-      tappedRef.current = null;
       setTappedCell(null);
     },
     onCorrectionRetry: () => {
-      // The tutor's correction re-modelled in-band; free the surface for another go.
+      // Try again frees the surface for another go.
       setTapped(null);
-      tappedRef.current = null;
       setTappedCell(null);
       pip.clear();
     },
   });
 
   const currentItem = runner.currentItem;
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
   // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the runner's phase and the child's own tap; Pip never
+  // A projection of the workspace's committed state and the child's own tap; Pip never
   // answers, taps, or advances.
   const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const targets = pip.targets();
     const pose = letterSpotterPipPose({
-      running: runner.running, preparing: runner.preparing,
+      running: runner.running, preparing: false,
       currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      judging: runner.isAwaitingGesture(),
+      // Audio belongs to this block only while the lesson is pointed at it.
+      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
       cueMatchesItem: runner.cuedItemId === currentItem.id,
       mode: currentItem.mode,
       visibleIds: targets.map((target) => target.id),
@@ -391,27 +348,37 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
       className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
   );
 
-  /** Affirmed: the first moment the answer may appear on screen. The runner
-   *  owns this now — the local `revealed` latch it replaces had to be reset in
-   *  `onItemOpened` and set in `onAffirmed`, one more pair to keep in step. */
+  /** Credited: the first moment the answer may appear on screen. */
   const revealed = runner.currentSolved;
 
-  // ── The tap IS the commit, in every mode ──────────────────────────────────
+  // What the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...letterSpotterScene(currentItem), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
+  /** Asks the tutor for the question again: a silent host request, never the answer. */
+  const hearQuestion = useCallback(() => {
+    if (!currentItem) return;
+    ctx.sendText(hearQuestionRequest(currentItem), { silent: true, author: 'host' });
+  }, [ctx, currentItem]);
+
+  // ── The tap IS the commit on find it and match it, checked by the activity ──
   const commitTap = useCallback((item: LetterSpotterItem, letter: string) => {
-    if (!runner.canAttempt || evaluation.hasSubmitted) return false;
-    // `canAttempt` closes the pending window through `stage`, which is batched
-    // React state; this ref flips synchronously, so it is what stops a second
-    // tap in the same tick from recording a second confusion pair.
+    if (!runner.canAttempt || showSummary) return false;
+    // `canAttempt` closes through batched state; this stops a second tap in the same
+    // tick from recording a second confusion pair.
     if (runner.isAwaitingGesture()) return false;
     SoundManager.tap();
     setTapped(letter);
-    tappedRef.current = letter;
-    if (letter.toLowerCase() !== item.targetLetter.toLowerCase()) {
-      confusedPairsRef.current.push([item.targetLetter.toLowerCase(), letter.toLowerCase()]);
-    }
-    runner.submitGestureAttempt(tapVerdictCue(item, letter));
+    const correct = letter.toLowerCase() === item.targetLetter.toLowerCase();
+    if (!correct) confusedPairsRef.current.push([item.targetLetter.toLowerCase(), letter.toLowerCase()]);
+    commitGesture(runner, { response: describeLetterTap(letter), correct, cue: () => describeLetterTap(letter) });
     return true;
-  }, [runner, evaluation.hasSubmitted]);
+  }, [runner, showSummary]);
 
   const handleOptionTap = useCallback((letter: string) => {
     const item = runner.currentItem;
@@ -430,12 +397,12 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => {
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => {
       const meta = MODE_META[item.mode];
       return { label: meta.badge, icon: meta.icon };
     });
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
   // ============================================================================
   // Render helpers
@@ -497,12 +464,8 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
               <div
                 role="button"
                 tabIndex={0}
-                onClick={runner.hearStimulus}
-                className={`
-                  bg-white/5 border-2 border-white/15 rounded-2xl px-8 py-6 max-w-lg
-                  cursor-pointer transition-all
-                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
-                `}
+                onClick={hearQuestion}
+                className="bg-white/5 border-2 border-white/15 rounded-2xl px-8 py-6 max-w-lg cursor-pointer transition-all"
               >
                 <p className="text-3xl font-bold text-slate-100 text-center leading-relaxed">
                   {parts.map((part, i) => (
@@ -542,13 +505,10 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
           <div className="space-y-4">
             <div className="flex justify-center">
               <button
-                onClick={runner.hearStimulus}
-                className={`
-                  flex items-center justify-center w-20 h-20 rounded-full
+                onClick={hearQuestion}
+                className="flex items-center justify-center w-20 h-20 rounded-full
                   bg-amber-500/15 border-2 border-amber-500/30
-                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
-                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
-                `}
+                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all"
                 aria-label="Hear the letter again"
               >
                 <span className="text-3xl">🔊</span>
@@ -612,12 +572,11 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
                 tabIndex={0}
                 ref={pip.ref('letter')}
                 data-pip-object="letter"
-                onClick={runner.hearStimulus}
+                onClick={hearQuestion}
                 className={`
                   text-8xl font-bold ${letterColor(item.targetLetter)}
                   bg-white/5 border-2 border-white/15 rounded-2xl
                   px-12 py-8 select-none cursor-pointer transition-all
-                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
                 `}
               >
                 {item.targetLetter.toUpperCase()}
@@ -636,7 +595,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
   // Main render
   // ============================================================================
 
-  if (items.length === 0) {
+  if (items.length === 0 || !currentItem) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-6">
@@ -646,7 +605,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
     );
   }
 
-  const modeMeta = MODE_META[currentItem?.mode ?? 'name-it'];
+  const modeMeta = MODE_META[currentItem.mode];
 
   return (
     <LuminaCard className={className}>
@@ -654,7 +613,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
         <div className="flex items-start justify-between">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           {/* Pre-reader: hide adult chrome (group/mode badges) — rule 7. */}
-          {!isPreReader && !evaluation.hasSubmitted && currentItem && (
+          {!isPreReader && !showSummary && (
             <div className="flex items-center gap-2">
               <LuminaBadge className="text-xs">Group {letterGroup}</LuminaBadge>
               <LuminaBadge accent={modeMeta.accent} className="text-xs">
@@ -666,7 +625,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex justify-center">
               <LuminaChallengeCounter
@@ -676,20 +635,14 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
               />
             </div>
 
-            {currentItem && renderChallenge(currentItem)}
-
-            {/* The orb reads `answerKind` off the runner: on find-it and
-                match-it the mic is still open (the tutor is audible, the child
-                may talk) but the answer is the tap, so it must not say it is
-                listening for one. This port's wording is the panel's default. */}
-            <JudgedMicPanel run={runner} />
+            {renderChallenge(currentItem)}
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Letter Spotting Complete!"
             celebrationMessage={`You spotted letters across ${items.length} rounds — ${cumulativeLetters.length} letters in play!`}
@@ -699,6 +652,9 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
       </LuminaCardContent>
     </LuminaCard>
   );
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const LetterSpotter = withWorkspaceOnly<LetterSpotterProps>('letter-spotter', LetterSpotterSurface, props => props.data.title);
 
 export default LetterSpotter;

@@ -2305,15 +2305,15 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'letter-spotter',
     misconceptionScope: 'primitive',
     description:
-      'Live Direct Instruction letter RECOGNITION with a spoken tutor. The tutor asks, waits, judges, and its '
-      + 'own affirmation moves the lesson on. Three directions, and the answer is made of something different '
+      'Live letter RECOGNITION with a spoken tutor. The tutor asks, waits and responds, and a credited answer '
+      + 'moves the lesson on. Three directions, and the answer is made of something different '
       + 'in each: Sentence Spotter (the tutor reads a sentence with one word’s first letter hidden behind a '
       + 'star and the child SAYS the letter it hides, out loud with no answer choices on screen — initial '
       + 'sound to grapheme), Find It (the tutor names a letter and the child TAPS the one cell holding it '
       + 'among sixteen — letterform discrimination under visual search), and Match It (a capital is printed '
       + 'and the child TAPS its lowercase form — case correspondence). The two tap directions tap because '
       + 'their answers are a POSITION and a FORM, neither of which has a spoken shape. Nothing on screen '
-      + 'shows the answer before the tutor affirms. Cumulative letter groups 1-4. Requires a microphone. '
+      + 'shows the answer before it is credited. Cumulative letter groups 1-4. Requires a microphone. '
       + 'ESSENTIAL for kindergarten alphabet knowledge.',
     constraints:
       'Requires the live tutor and a microphone. Requires letterGroup (1-4). Group 1: s,a,t,i,p,n. '
@@ -2327,6 +2327,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // user ruling, drive 6ada8c0a1bcf) — voice GONE nowhere, it is the mode's
     // ONLY surface now; find_it/match_it stay tapped (position/form, unspeakable).
     affordances: { representation: 'symbolic', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'On name it you read the sentence and the learner says the letter the starred word starts with; it is '
+        + 'judged against that letter, and its name or its sound counts. The word said back is not a letter. On find it '
+        + 'you name a letter and the learner taps the one cell holding it; on match it the learner taps the little '
+        + 'letter that matches the big one. The activity checks every tap and tells you what was tapped. Never say, '
+        + 'spell or describe the shape of the answer letter before the learner has tried, and on match it never name '
+        + 'the big letter: matching its shape is the task. The hear-again control asks you to repeat the question '
+        + 'only. You cannot tap a letter.',
+    },
     // ── DI MODALITY (2026-08-13) — ELEVENTH literacy port. The tutor owns the
     // clock in all three directions: it asks once, waits, is handed a
     // CODE-COMPUTED verdict for the tap, and its own line is the advance.

@@ -1,0 +1,123 @@
+{
+ "source": "qa/tutor-reports/letter-spotter-runtime-name_it-payload-2026-09-24.json",
+ "primitiveId": "letter-spotter",
+ "evalMode": "name_it",
+ "data": {
+  "title": "Spot the Letters - Group 1!",
+  "challenges": [
+   {
+    "id": "ch1",
+    "mode": "name-it",
+    "targetLetter": "s",
+    "targetCase": "lowercase",
+    "sentence": "The ⭐un is bright.",
+    "targetWord": "sun",
+    "options": [
+     "s",
+     "a",
+     "t",
+     "i"
+    ],
+    "emoji": "⭐",
+    "spokenSentence": "The sun is bright."
+   },
+   {
+    "id": "ch2",
+    "mode": "name-it",
+    "targetLetter": "a",
+    "targetCase": "lowercase",
+    "sentence": "An ⭐nt crawls fast.",
+    "targetWord": "ant",
+    "options": [
+     "a",
+     "t",
+     "p",
+     "n"
+    ],
+    "emoji": "⭐",
+    "spokenSentence": "An ant crawls fast."
+   },
+   {
+    "id": "ch3",
+    "mode": "name-it",
+    "targetLetter": "t",
+    "targetCase": "lowercase",
+    "sentence": "Put on a ⭐op.",
+    "targetWord": "top",
+    "options": [
+     "t",
+     "i",
+     "n",
+     "s"
+    ],
+    "emoji": "⭐",
+    "spokenSentence": "Put on a top."
+   },
+   {
+    "id": "ch4",
+    "mode": "name-it",
+    "targetLetter": "i",
+    "targetCase": "lowercase",
+    "sentence": "⭐t is so fun.",
+    "targetWord": "it",
+    "options": [
+     "i",
+     "p",
+     "a",
+     "t"
+    ],
+    "emoji": "⭐",
+    "spokenSentence": "It is so fun."
+   },
+   {
+    "id": "ch5",
+    "mode": "name-it",
+    "targetLetter": "p",
+    "targetCase": "lowercase",
+    "sentence": "⭐op the red balloon.",
+    "targetWord": "pop",
+    "options": [
+     "p",
+     "n",
+     "s",
+     "i"
+    ],
+    "emoji": "⭐",
+    "spokenSentence": "Pop the red balloon."
+   },
+   {
+    "id": "ch6",
+    "mode": "name-it",
+    "targetLetter": "n",
+    "targetCase": "lowercase",
+    "sentence": "⭐ap time is here.",
+    "targetWord": "nap",
+    "options": [
+     "n",
+     "a",
+     "t",
+     "p"
+    ],
+    "emoji": "⭐",
+    "spokenSentence": "Nap time is here."
+   }
+  ],
+  "letterGroup": 1,
+  "cumulativeLetters": [
+   "s",
+   "a",
+   "t",
+   "i",
+   "p",
+   "n"
+  ],
+  "newLetters": [
+   "s",
+   "a",
+   "t",
+   "i",
+   "p",
+   "n"
+  ]
+ }
+}

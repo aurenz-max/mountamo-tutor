@@ -59,6 +59,8 @@ import { cvcHarnessAnswers } from '../../primitives/visual-primitives/literacy/c
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
 import { youAndMeHarnessAnswers } from '../../primitives/visual-primitives/literacy/youAndMeWorkspace';
+import { itemsFromChallenges as spotterItems } from '../../primitives/visual-primitives/literacy/letterSpotterScript';
+import { letterSpotterJourneyAnswers } from '../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
 import { itemsFromChallenges as vocabItems } from '../../primitives/visual-primitives/literacy/pictureVocabularyScript';
 import { pictureVocabJourneyAnswers } from '../../primitives/visual-primitives/literacy/pictureVocabularyWorkspace';
 import { itemsFromChallenges as sorterItems } from '../../primitives/visual-primitives/literacy/wordSorterScript';
@@ -1054,6 +1056,28 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"], [data-pip-object="cards"]' } },
+  },
+  'letter-spotter': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/LetterSpotter.tsx',
+    instanceId: 'spotter',
+    defaults: { grade: 'Kindergarten', mode: 'find_it', di: false, topic: 'Finding the letters s, a, t, i, p and n' },
+    leakTokens: ['LSP_ITEM', 'LSP_MOVE', 'LSP_COMPLETE', 'LSP_HEAR', 'LSP_TAP'],
+    prompts: WORKSPACE_PROMPTS,
+    // Name it answers aloud; find it taps a grid cell and match it a little letter (a wrong tap is another letter).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = spotterItems(ctx.data.challenges ?? [], ctx.data.supportTier ?? 'medium').find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current letter-spotter item');
+      const answers = letterSpotterJourneyAnswers(item);
+      if (!answers.tapped) return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+      const letter = intent === 'wrong' ? answers.tapped.wrong : answers.tapped.correct;
+      if (item.mode === 'match-it') return [{ type: 'touch', target: `option-${letter}` }];
+      const cell = (item.letterGrid ?? []).findIndex(l => l.toLowerCase() === letter.toLowerCase());
+      if (cell < 0) throw new Error(`letter-spotter find_it: no cell holds ${letter}`);
+      return [{ type: 'touch', target: `cell-${cell}` }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="grid"], [data-pip-object="letter"], [data-pip-object="marker"]' } },
   },
 };
 

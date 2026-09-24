@@ -511,7 +511,7 @@ const leadInFor = (item: LetterSpotterItem): string => {
  *  promised it). The sentence NEVER opens a sentence in the cue — it is always
  *  introduced, because a generated line beginning "Yes, …" would be read as a
  *  verdict by the engine's sentence scan. */
-const askFor = (item: LetterSpotterItem, repeat = false): string => {
+export const askFor = (item: LetterSpotterItem, repeat = false): string => {
   switch (item.mode) {
     case 'name-it': {
       // The SENTENCE varies every item, so there is nothing to shorten: the ask

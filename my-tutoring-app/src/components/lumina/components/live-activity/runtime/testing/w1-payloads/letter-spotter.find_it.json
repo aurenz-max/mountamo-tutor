@@ -1,0 +1,177 @@
+{
+ "source": "qa/tutor-reports/letter-spotter-runtime-find_it-payload-2026-09-24.json",
+ "primitiveId": "letter-spotter",
+ "evalMode": "find_it",
+ "data": {
+  "title": "Spot the Letters - Group 1!",
+  "challenges": [
+   {
+    "id": "ch1",
+    "mode": "find-it",
+    "targetLetter": "s",
+    "targetCase": "uppercase",
+    "letterGrid": [
+     "P",
+     "A",
+     "S",
+     "P",
+     "I",
+     "T",
+     "N",
+     "I",
+     "N",
+     "A",
+     "A",
+     "T",
+     "T",
+     "P",
+     "N",
+     "I"
+    ],
+    "targetCount": 1
+   },
+   {
+    "id": "ch2",
+    "mode": "find-it",
+    "targetLetter": "a",
+    "targetCase": "uppercase",
+    "letterGrid": [
+     "A",
+     "N",
+     "I",
+     "S",
+     "T",
+     "I",
+     "P",
+     "I",
+     "P",
+     "S",
+     "T",
+     "N",
+     "P",
+     "S",
+     "N",
+     "T"
+    ],
+    "targetCount": 1
+   },
+   {
+    "id": "ch3",
+    "mode": "find-it",
+    "targetLetter": "t",
+    "targetCase": "uppercase",
+    "letterGrid": [
+     "S",
+     "S",
+     "T",
+     "P",
+     "N",
+     "I",
+     "A",
+     "A",
+     "I",
+     "P",
+     "S",
+     "P",
+     "I",
+     "N",
+     "N",
+     "A"
+    ],
+    "targetCount": 1
+   },
+   {
+    "id": "ch4",
+    "mode": "find-it",
+    "targetLetter": "i",
+    "targetCase": "uppercase",
+    "letterGrid": [
+     "N",
+     "T",
+     "P",
+     "T",
+     "N",
+     "T",
+     "I",
+     "A",
+     "S",
+     "S",
+     "P",
+     "A",
+     "N",
+     "S",
+     "P",
+     "A"
+    ],
+    "targetCount": 1
+   },
+   {
+    "id": "ch5",
+    "mode": "find-it",
+    "targetLetter": "p",
+    "targetCase": "uppercase",
+    "letterGrid": [
+     "P",
+     "T",
+     "I",
+     "A",
+     "N",
+     "S",
+     "I",
+     "I",
+     "N",
+     "A",
+     "N",
+     "S",
+     "T",
+     "S",
+     "A",
+     "T"
+    ],
+    "targetCount": 1
+   },
+   {
+    "id": "ch6",
+    "mode": "find-it",
+    "targetLetter": "n",
+    "targetCase": "uppercase",
+    "letterGrid": [
+     "N",
+     "S",
+     "S",
+     "I",
+     "A",
+     "I",
+     "T",
+     "P",
+     "T",
+     "P",
+     "I",
+     "A",
+     "P",
+     "T",
+     "S",
+     "A"
+    ],
+    "targetCount": 1
+   }
+  ],
+  "letterGroup": 1,
+  "cumulativeLetters": [
+   "s",
+   "a",
+   "t",
+   "i",
+   "p",
+   "n"
+  ],
+  "newLetters": [
+   "s",
+   "a",
+   "t",
+   "i",
+   "p",
+   "n"
+  ]
+ }
+}
