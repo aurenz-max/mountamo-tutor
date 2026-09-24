@@ -4,7 +4,6 @@ import { cleanup } from '@testing-library/react';
 import { afterEach, describe, it, vi } from 'vitest';
 import fixtures from './testing/workspaceFixtures.json';
 import { expectClassicWorkspace, mountWithStore } from './testing/classicSurface';
-import RampLab from '../primitives/visual-primitives/engineering/RampLab';
 import LightShadowLab from '../primitives/visual-primitives/astronomy/LightShadowLab';
 import DayNightSeasons from '../primitives/visual-primitives/astronomy/DayNightSeasons';
 import MoonPhasesLab from '../primitives/visual-primitives/astronomy/MoonPhasesLab';
@@ -62,7 +61,8 @@ const SPEAKING: Array<[string, AnyPrimitive]> = [
   ['constellation-builder', ConstellationBuilder], ['orbit-mechanics-lab', OrbitMechanicsLab],
 ];
 const SILENT: Array<[string, AnyPrimitive]> = [
-  ['ramp-lab', RampLab], ['food-web-builder', FoodWebBuilder], ['adaptation-investigator', AdaptationInvestigator],
+  // ramp-lab runs on the teaching workspace; its Pip contract is checked in RampLab.workspace.test.tsx.
+  ['food-web-builder', FoodWebBuilder], ['adaptation-investigator', AdaptationInvestigator],
   ['cell-builder', CellBuilder], ['microscope-viewer', MicroscopeViewer], ['bio-process-animator', ProcessAnimator],
   ['dna-explorer', DnaExplorer], ['energy-cycle-engine', EnergyCycleEngine], ['telescope-simulator', TelescopeSimulator],
   ['inheritance-lab', InheritanceLab],

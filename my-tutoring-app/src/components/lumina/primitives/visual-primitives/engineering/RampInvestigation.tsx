@@ -1,12 +1,8 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { LuminaButton, LuminaFeedbackCard, LuminaPanel } from '../../../ui';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useJudgedScriptRunner, type JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
-import { rampExplanationPack } from './rampExplanationScript';
 import { isFairRampTest, measureRampTrial, type RampInvestigationChallenge, type RampInvestigationResult, type RampScenario, type RampTrial } from './rampChallenges';
 
 const surfaces = { none: 'Frictionless', low: 'Smooth', medium: 'Grippy', high: 'Rough' };
@@ -18,9 +14,14 @@ function RampTrialView({ side, setup, running, trial, onMeasured }: {
   const canvas = useRef<HTMLCanvasElement>(null);
   const callback = useRef(onMeasured); callback.current = onMeasured;
   const [push, setPush] = useState<number | null>(trial?.firstMovingForce ?? null);
-  useEffect(() => {
+  // A layout effect: with no canvas (a test DOM) the measurement lands before the next input is read.
+  useLayoutEffect(() => {
     const ctx = canvas.current?.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      // No canvas to animate (a test DOM): the measurement is deterministic, so record it at once.
+      if (running) callback.current(measureRampTrial(side, setup));
+      return;
+    }
     let frame = 0;
     let start: number | null = null;
     let finished = false;
@@ -61,55 +62,60 @@ function RampTrialView({ side, setup, running, trial, onMeasured }: {
   </div>;
 }
 
-function SpokenEvidence({ challenge, trials, instanceId, exhibitId, gradeLevel, onFinished }: {
-  challenge: RampInvestigationChallenge; trials: RampTrial[]; instanceId: string; exhibitId?: string; gradeLevel: string;
-  onFinished: (summary: JudgedRunSummary) => void;
-}) {
-  const pack = useMemo(() => rampExplanationPack(challenge, trials), [challenge, trials]);
-  const runner = useJudgedScriptRunner({ pack, instanceId, exhibitId, gradeLevel, silenceCloseMs: 1200, onFinished });
-  return <div className="space-y-3"><LuminaButton tone="ghost" onClick={runner.hearStimulus}>Hear the question</LuminaButton><JudgedMicPanel run={runner} /></div>;
-}
+export type InvestigationPhase = 'plan' | 'predict' | 'test' | 'explain' | 'done';
 
-export default function RampInvestigation({ challenge, instanceId, exhibitId, gradeLevel = '3', supportTier, onFinished }: {
-  challenge: RampInvestigationChallenge; instanceId: string; exhibitId?: string; gradeLevel?: string;
-  supportTier?: 'easy' | 'medium' | 'hard'; onFinished: (result: RampInvestigationResult) => void;
+/** The investigation's own record so far, reported up so the lab can commit it. */
+export type InvestigationEvidence = Omit<RampInvestigationResult, 'solved' | 'firstTryCorrect' | 'explanation'>;
+
+/**
+ * One investigation on the teaching workspace. The lab owns the verdicts: an unfair plan is reported
+ * as a checked miss (`onPlanChecked`), recording a planning investigation is its checked success
+ * (`onRecord`), and an explanation is spoken to the tutor once `phase` reaches `explain`.
+ */
+export default function RampInvestigation({ challenge, supportTier, canAttempt, credited, onPhase, onPlanChecked,
+  onRecord, onEvidence, onHearQuestion }: {
+  challenge: RampInvestigationChallenge; supportTier?: 'easy' | 'medium' | 'hard';
+  /** The learner may act (false while a checked miss waits for Try again). */
+  canAttempt: boolean;
+  /** The workspace credited this item. */
+  credited: boolean;
+  onPhase: (phase: InvestigationPhase) => void;
+  onPlanChecked: (fair: boolean, setupB: RampScenario) => void;
+  onRecord: (evidence: InvestigationEvidence) => void;
+  onEvidence: (evidence: InvestigationEvidence) => void;
+  onHearQuestion: () => void;
 }) {
   const planning = challenge.mode === 'plan_fair_test';
   const [setupB, setSetupB] = useState(challenge.scenarios.b);
-  const [phase, setPhase] = useState<'plan' | 'predict' | 'test' | 'explain' | 'done'>(planning ? 'plan' : 'predict');
+  const [phase, setPhase] = useState<InvestigationPhase>(planning ? 'plan' : 'predict');
   const [planAttempts, setPlanAttempts] = useState<RampInvestigationResult['planAttempts']>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [prediction, setPrediction] = useState<'a' | 'b' | 'same' | null>(null);
   const [running, setRunning] = useState<'a' | 'b' | null>(null);
   const [trials, setTrials] = useState<RampTrial[]>([]);
-  const finished = useRef(false);
-  const spoken = phase === 'explain';
-  const { sendText } = useLuminaAI({ primitiveType: 'ramp-lab', instanceId, exhibitId, gradeLevel,
-    enabled: !spoken, primitiveData: { evalMode: challenge.mode, question: challenge.brief, phase,
-      trialCount: String(trials.length), supportTier: supportTier ?? 'medium', feedback: feedback ?? 'No feedback yet' } });
+  const report = useRef({ onPhase, onEvidence }); report.current = { onPhase, onEvidence };
+
+  const evidence = (): InvestigationEvidence => {
+    const a = trials.find(t => t.side === 'a'), b = trials.find(t => t.side === 'b');
+    const expected = a && b ? (a.firstMovingForce === b.firstMovingForce ? 'same' : a.firstMovingForce < b.firstMovingForce ? 'a' : 'b') : null;
+    return { challengeId: challenge.id, mode: challenge.mode, planAttempts, prediction: prediction ?? 'same',
+      predictionCorrect: !!prediction && prediction === expected, trials };
+  };
+  // Reported before paint: the explain step's readiness must be published before the learner's next input is read.
+  useLayoutEffect(() => { report.current.onPhase(phase); }, [phase]);
+  useEffect(() => { report.current.onEvidence(evidence()); }, [planAttempts, prediction, trials]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (credited && phase === 'explain') setPhase('done'); }, [credited, phase]);
+
   function commitPlan() {
     const fair = isFairRampTest(challenge.variable, challenge.scenarios.a, setupB);
+    // Rejected attempts stay in the record; an accepted plan locks.
     setPlanAttempts(previous => [...previous, { setup: { ...setupB }, fair }]);
-    SoundManager[fair ? 'playCorrect' : 'playIncorrect']();
-    if (fair) { setPhase('predict'); setFeedback(null); }
-    else {
-      const message = 'This comparison cannot isolate the requested change yet. Check what changed and what stayed the same.';
-      setFeedback(message);
-      sendText(`[RAMP_PLAN_RETRY] The learner tried a plan that does not isolate the requested variable. Say exactly: "${message}" Do not identify which setting to change.`, { silent: true });
-    }
-  }
-  function finish(explanation?: RampInvestigationResult['explanation']) {
-    if (finished.current || trials.length !== 2 || !prediction) return;
-    finished.current = true;
-    const a = trials.find(t => t.side === 'a')!; const b = trials.find(t => t.side === 'b')!;
-    const expected = a.firstMovingForce === b.firstMovingForce ? 'same' : a.firstMovingForce < b.firstMovingForce ? 'a' : 'b';
-    onFinished({ challengeId: challenge.id, mode: challenge.mode, solved: planning || !!explanation?.solved,
-      firstTryCorrect: planning ? planAttempts.length === 1 && planAttempts[0].fair : !!explanation?.solved && explanation.corrections === 0,
-      planAttempts, prediction, predictionCorrect: prediction === expected, trials, explanation });
-    setPhase('done');
+    if (fair) { setPhase('predict'); setFeedback(null); SoundManager.playCorrect(); }
+    else setFeedback('This comparison cannot isolate the requested change yet. Check what changed and what stayed the same.');
+    onPlanChecked(fair, setupB);
   }
   const measurementsComplete = trials.length === 2;
-  return <div className="space-y-5" data-testid="ramp-investigation">
+  return <fieldset disabled={!canAttempt} className="m-0 min-w-0 space-y-5 border-0 p-0" data-testid="ramp-investigation">
     <p className="text-sm text-cyan-200">{phase === 'plan' ? '1 · Set up a fair comparison' : phase === 'predict' ? '2 · Make a prediction' : phase === 'test' ? '3 · Collect your evidence' : phase === 'explain' ? '4 · Explain from evidence' : 'Investigation recorded'}</p>
     {supportTier !== 'hard' && <p className="text-sm text-slate-300">{phase === 'plan' ? 'Keep the box type the same. Change only the condition you are investigating.' : 'The test bench raises the push in 0.5 N steps until the box moves. Record both setups before drawing a conclusion.'}</p>}
     <div className="grid gap-4 md:grid-cols-2">
@@ -142,12 +148,13 @@ export default function RampInvestigation({ challenge, instanceId, exhibitId, gr
     {trials.length > 0 && <div className="overflow-x-auto"><table className="w-full text-left text-sm text-slate-200"><caption className="mb-2 text-left font-semibold text-white">Your trial notebook</caption><thead><tr><th className="p-2">Setup</th><th className="p-2">Last still</th><th className="p-2">First moving</th></tr></thead><tbody>
       {[...trials].sort((a, b) => a.side.localeCompare(b.side)).map(trial => <tr key={trial.side} className="border-t border-white/10"><th className="p-2">{trial.side.toUpperCase()}</th><td className="p-2">{trial.lastStillForce.toFixed(1)} N</td><td className="p-2">{trial.firstMovingForce.toFixed(1)} N</td></tr>)}
     </tbody></table></div>}
-    {phase === 'test' && measurementsComplete && <LuminaButton tone="primary" onClick={() => planning ? finish() : setPhase('explain')}>{planning ? 'Record investigation' : 'Explain my results'}</LuminaButton>}
-    {spoken && <SpokenEvidence challenge={challenge} trials={trials} instanceId={instanceId} exhibitId={exhibitId} gradeLevel={gradeLevel} onFinished={summary => {
-      const outcome = summary.outcomes[0];
-      finish({ solved: outcome?.solved ?? false, corrections: outcome?.corrections ?? 2, score: outcome?.score ?? 0,
-        learningResponses: summary.learningResponses });
-    }} />}
+    {phase === 'test' && measurementsComplete && <LuminaButton tone="primary" onClick={() => {
+      if (planning) { setPhase('done'); onRecord(evidence()); } else setPhase('explain');
+    }}>{planning ? 'Record investigation' : 'Explain my results'}</LuminaButton>}
+    {phase === 'explain' && <LuminaPanel accent="cyan" className="space-y-3 p-4">
+      <p className="text-white">Tell the tutor out loud what changing the condition did to the push. Use both trial results.</p>
+      <LuminaButton tone="ghost" onClick={onHearQuestion}>Hear the question</LuminaButton>
+    </LuminaPanel>}
     {phase === 'done' && <LuminaFeedbackCard status="insight">Your plan, prediction, and measurements are saved separately. {planning ? 'A fair comparison lets you investigate one condition at a time.' : 'Use the trial notebook when you explain what changed.'}</LuminaFeedbackCard>}
-  </div>;
+  </fieldset>;
 }

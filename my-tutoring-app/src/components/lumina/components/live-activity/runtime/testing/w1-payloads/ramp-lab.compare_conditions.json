@@ -1,0 +1,127 @@
+{
+ "source": "qa/tutor-reports/ramp-lab-runtime-compare_conditions-payload-2026-09-24.json",
+ "primitiveId": "ramp-lab",
+ "evalMode": "compare_conditions",
+ "data": {
+  "investigationVariable": "mixed",
+  "title": "Ramp Explorer Challenge!",
+  "description": "Explore how changing the angle and surface of a ramp affects the push needed to move your load up safely.",
+  "rampLength": 10,
+  "rampAngle": 15,
+  "adjustableAngle": true,
+  "loadWeight": 2,
+  "loadType": "wheel",
+  "showMeasurements": true,
+  "frictionLevel": "none",
+  "theme": "loading_dock",
+  "allowPush": true,
+  "customLoadIcon": null,
+  "customLoadLabel": null,
+  "pushForce": 0,
+  "showForceArrows": false,
+  "showMA": false,
+  "challenges": [
+   {
+    "id": "compare-wheel-box",
+    "title": "Wheel or Box?",
+    "mode": "compare_conditions",
+    "changedVariable": "load",
+    "scenarios": {
+     "a": {
+      "label": "Wheel on a smooth ramp",
+      "angle": 25,
+      "loadWeight": 4,
+      "loadType": "wheel",
+      "frictionLevel": "low"
+     },
+     "b": {
+      "label": "Box on the same ramp",
+      "angle": 25,
+      "loadWeight": 4,
+      "loadType": "box",
+      "frictionLevel": "medium"
+     }
+    },
+    "brief": "The loads have the same weight and climb the same ramp. Which setup needs less push?",
+    "hint": "Rolling contact usually resists motion less than a sliding surface.",
+    "explainOnSolve": "The wheel has less resistance, so less of the push is spent overcoming friction."
+   },
+   {
+    "id": "compare-steep-gentle",
+    "title": "Steep or Gentle?",
+    "mode": "compare_conditions",
+    "changedVariable": "angle",
+    "scenarios": {
+     "a": {
+      "label": "Steep ramp",
+      "angle": 42,
+      "loadWeight": 5,
+      "loadType": "box",
+      "frictionLevel": "medium"
+     },
+     "b": {
+      "label": "Gentle ramp",
+      "angle": 20,
+      "loadWeight": 5,
+      "loadType": "box",
+      "frictionLevel": "medium"
+     }
+    },
+    "brief": "Everything is identical except the ramp angle. Which setup needs less push?",
+    "hint": "Ask how much gravity points back down each ramp.",
+    "explainOnSolve": "On the gentler ramp, a smaller part of gravity pulls the load downhill, so the required push is lower."
+   },
+   {
+    "id": "compare-rough-smooth",
+    "title": "Rough or Smooth?",
+    "mode": "compare_conditions",
+    "changedVariable": "surface",
+    "scenarios": {
+     "a": {
+      "label": "Rough surface",
+      "angle": 30,
+      "loadWeight": 4,
+      "loadType": "box",
+      "frictionLevel": "high"
+     },
+     "b": {
+      "label": "Smooth surface",
+      "angle": 30,
+      "loadWeight": 4,
+      "loadType": "box",
+      "frictionLevel": "low"
+     }
+    },
+    "brief": "The box, weight, and angle stay fixed. Which surface needs less push?",
+    "hint": "Friction pushes against sliding motion.",
+    "explainOnSolve": "The smooth surface produces less friction, leaving more of the applied force available to move the box."
+   },
+   {
+    "id": "compare-angle-reversed",
+    "title": "Choose the Easier Route",
+    "mode": "compare_conditions",
+    "changedVariable": "angle",
+    "scenarios": {
+     "a": {
+      "label": "Gentle route",
+      "angle": 18,
+      "loadWeight": 6,
+      "loadType": "barrel",
+      "frictionLevel": "low"
+     },
+     "b": {
+      "label": "Steep route",
+      "angle": 38,
+      "loadWeight": 6,
+      "loadType": "barrel",
+      "frictionLevel": "low"
+     }
+    },
+    "brief": "The barrel and surface are unchanged. Which route needs less push?",
+    "hint": "Compare the slopes, not the drawing labels or positions.",
+    "explainOnSolve": "The gentler route reduces the downhill component of gravity, so it needs less input force."
+   }
+  ],
+  "gradeLevel": "elementary"
+ }
+}

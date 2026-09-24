@@ -34,6 +34,7 @@ import { wordFlipLiveDomain } from './adapters/wordFlipLive';
 import { soundSwapLiveDomain } from './adapters/soundSwapLive';
 import { cvcSpellerLiveDomain } from './adapters/cvcSpellerLive';
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
+import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { workspaceAdapter, type LiveActivityAdapter } from './adapters/adapterContract';
 
 export type { LiveActivityAdapter } from './adapters/adapterContract';
@@ -73,6 +74,7 @@ export const LIVE_ADAPTERS = {
   'sound-swap': workspaceAdapter('sound-swap', soundSwapLiveDomain),
   'cvc-speller': workspaceAdapter('cvc-speller', cvcSpellerLiveDomain),
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),
+  'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
 } satisfies Record<string, LiveActivityAdapter<any>>;
 
 export type LivePrimitiveId = keyof typeof LIVE_ADAPTERS;

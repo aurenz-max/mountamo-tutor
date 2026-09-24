@@ -1,13 +1,19 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
   type RampLabMetrics,
 } from '../../../evaluation';
 import { SoundManager } from '../../../utils/SoundManager';
-import RampInvestigation from './RampInvestigation';
+import RampInvestigation, { type InvestigationEvidence, type InvestigationPhase } from './RampInvestigation';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult, type WorkspaceRun, type WorkspaceRunOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { describeRampCheck, hearQuestionRequest, rampAssignment, rampItems, rampScene } from './rampLabWorkspace';
 import {
   LuminaButton,
   LuminaCard,
@@ -29,6 +35,7 @@ import {
   type RampFrictionLevel,
   type RampLoadType,
   type RampScenario,
+  type RampInvestigationChallenge,
   type RampInvestigationResult,
 } from './rampChallenges';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
@@ -72,6 +79,26 @@ export interface RampLabData {
 interface RampLabProps {
   data: RampLabData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
+}
+
+type RampRun = WorkspaceRun<RampChallenge>;
+type RampRunOptions = WorkspaceRunOptions<RampChallenge>;
+
+/**
+ * Free exploration is an ungraded sandbox with no items: it gets an inert controller instead of the
+ * workspace, and never mounts a runner. Chosen once per mount by the export below.
+ */
+function useSandboxRun(options: RampRunOptions): RampRun {
+  void options;
+  return { currentIndex: 0, currentItem: undefined as unknown as RampChallenge, running: false, preparing: false,
+    stage: 'asking', currentSolved: false, canAttempt: true, revealHeld: false, tutorSpeaking: false, cuedItemId: '',
+    summary: null, practiceSummary: null, teachingResult: null, start: async () => {}, isAwaitingGesture: () => false,
+    armStillness: () => {}, clearStillness: () => {}, commitGesture: () => {}, presentStimulus: () => false,
+    publishWorkspace: () => {}, submitGestureAttempt: () => { throw new Error('The sandbox grades nothing'); },
+    micState: 'armed', statusLine: '', cancelListening: () => {} };
 }
 
 type Feedback = { correct: boolean; message: string };
@@ -129,7 +156,9 @@ const RampLoad: React.FC<{
   </g>
 );
 
-const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
+function RampLabSurface({ data, className, runtimePlanItemId, runtimeEvalMode, useRun }: RampLabProps & {
+  useRun: (options: RampRunOptions) => RampRun;
+}) {
   const {
     title,
     description,
@@ -151,13 +180,38 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
   } = data;
 
   const fallback = useMemo(() => fallbackScenario(data), [data]);
-  const challenges = useMemo(
-    () => (freeExplore ? [] : data.challenges?.length ? data.challenges : DEFAULT_RAMP_CHALLENGES),
-    [data.challenges, freeExplore],
-  );
+  const challenges = useMemo(() => rampItems({ freeExplore, challenges: data.challenges }), [data.challenges, freeExplore]);
   const isChallengeSession = challenges.length > 0;
-  const [challengeIndex, setChallengeIndex] = useState(0);
-  const currentChallenge = challenges[challengeIndex];
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  /** The investigation's step and record, reported up by RampInvestigation. */
+  /** The step RampInvestigation last reported, tagged with its item: a new item's step is derived, never reset in an
+   *  effect, so opening an item adds no revision after the advance that opened it. */
+  const [reportedPhase, setReportedPhase] = useState<{ id: string; phase: InvestigationPhase } | null>(null);
+  const evidenceRef = useRef<InvestigationEvidence | null>(null);
+  const finishRef = useRef<(summary: TeachingEvaluationResult) => void>(() => {});
+  const run = useRun({
+    primitiveId: 'ramp-lab', assignment: rampAssignment, items: challenges, workspace,
+    objectiveId, planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || 'mixed',
+    instanceId: instanceId || `ramp-lab-${challenges.map(c => c.id).join('-')}`,
+    onFinished: summary => finishRef.current(summary),
+    onItemOpened: () => { evidenceRef.current = null; },
+    // Try again keeps the learner's settings: they adjust and check again.
+    onCorrectionRetry: () => setFeedback(null),
+    // A spoken explanation, once credited, completes its investigation record.
+    onAffirmed: item => {
+      if (item.mode === 'explain_from_trials') recordInvestigation(item, true);
+      else if (item.mode !== 'plan_fair_test') markSolved(item);
+    },
+  });
+  const challengeIndex = run.currentIndex;
+  const currentChallenge = isChallengeSession ? run.currentItem : undefined;
+  const investigationPhase: InvestigationPhase | null = !currentChallenge
+    || (currentChallenge.mode !== 'plan_fair_test' && currentChallenge.mode !== 'explain_from_trials') ? null
+    : reportedPhase?.id === currentChallenge.id ? reportedPhase.phase
+      : currentChallenge.mode === 'plan_fair_test' ? 'plan' : 'predict';
   const [compareSide, setCompareSide] = useState<'a' | 'b'>('a');
   const [compareChoice, setCompareChoice] = useState<'a' | 'b' | null>(null);
   const currentScenario = scenarioForChallenge(currentChallenge, compareSide, fallback);
@@ -289,16 +343,17 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
 
   const markSolved = (challenge: RampChallenge) => {
     setCompletedIds(previous => new Set(previous).add(challenge.id));
-    if (!solvedIds.has(challenge.id)) {
-      if (!wrongChallengeIdsRef.current.has(challenge.id)) firstTryCorrectRef.current += 1;
-      setSolvedIds((previous) => new Set(previous).add(challenge.id));
-    }
-    SoundManager.playCorrect();
+    setSolvedIds((previous) => new Set(previous).add(challenge.id));
   };
 
   const recordWrong = (challenge: RampChallenge) => {
     wrongChallengeIdsRef.current.add(challenge.id);
-    SoundManager.playIncorrect();
+  };
+
+  /** The lab's own check, committed to the workspace, which decides what happens next. */
+  const commitCheck = (challenge: RampChallenge, correct: boolean, response: string) => {
+    if (correct) markSolved(challenge); else recordWrong(challenge);
+    run.commitGesture({ response, correct, cue: () => '' });
   };
 
   const handleCheck = () => {
@@ -310,13 +365,9 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
       if (!compareChoice) return;
       variablesExploredRef.current.add(currentChallenge.changedVariable);
       const correct = compareChoice === easierComparisonChoice(currentChallenge);
-      if (correct) {
-        markSolved(currentChallenge);
-        setFeedback({ correct: true, message: 'Your prediction matches the force evidence.' });
-      } else {
-        recordWrong(currentChallenge);
-        setFeedback({ correct: false, message: 'The force evidence points to the other setup. Compare only the variable that changed.' });
-      }
+      setFeedback(correct ? { correct: true, message: 'Your prediction matches the force evidence.' }
+        : { correct: false, message: 'The force evidence points to the other setup. Compare only the variable that changed.' });
+      commitCheck(currentChallenge, correct, describeRampCheck('compare_conditions', { choice: compareChoice }));
       return;
     }
     if (currentChallenge.mode === 'find_threshold') {
@@ -324,16 +375,14 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
       const answer = minimumPushSetting(currentChallenge.scenario, currentChallenge.forceStep);
       const correct = Math.abs(pushForce - answer) < 0.001;
       if (correct) {
-        markSolved(currentChallenge);
         setFeedback({ correct: true, message: `${pushForce.toFixed(1)} N is the first slider step that moves the load.` });
         setIsAnimating(true);
       } else if (pushForce <= thresholdForce) {
-        recordWrong(currentChallenge);
         setFeedback({ correct: false, message: 'That force is still below the movement threshold. Increase it and test again.' });
       } else {
-        recordWrong(currentChallenge);
         setFeedback({ correct: false, message: 'That force moves the load, but it is not the minimum. Reduce it and test again.' });
       }
+      commitCheck(currentChallenge, correct, describeRampCheck('find_threshold', { push: pushForce }));
       return;
     }
     if (currentChallenge.mode !== 'design_with_budget') return;
@@ -342,31 +391,22 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
     const answer = maxWorkableAngle(currentChallenge.scenario, currentChallenge.forceBudget, currentChallenge.angleRange);
     const correct = rampAngle === answer;
     if (correct) {
-      markSolved(currentChallenge);
       setFeedback({ correct: true, message: `${rampAngle} degrees is the steepest whole-degree design within the budget.` });
       setIsAnimating(true);
     } else if (rampAngle > answer) {
-      recordWrong(currentChallenge);
       setFeedback({ correct: false, message: 'This ramp is too steep for the available force. Make it gentler.' });
     } else {
-      recordWrong(currentChallenge);
       setFeedback({ correct: false, message: 'This design works, but a steeper workable ramp would be shorter. Keep searching.' });
     }
+    commitCheck(currentChallenge, correct, describeRampCheck('design_with_budget', { angle: rampAngle }));
   };
 
-  const handleNext = () => {
-    if (challengeIndex >= challenges.length - 1) return;
-    setChallengeIndex((index) => index + 1);
-    SoundManager.navigate();
-  };
-
-  const handleFinish = () => {
+  // The workspace's record is the grade: it fires once, with the finished session, under an evaluation provider.
+  finishRef.current = (summary: TeachingEvaluationResult) => {
     if (hasSubmitted) return;
-    const solved = solvedIds.size;
-    const score = Math.round(
-      (solved / Math.max(challenges.length, 1)) * 80
-      + (firstTryCorrectRef.current / Math.max(challenges.length, 1)) * 20,
-    );
+    firstTryCorrectRef.current = summary.firstTryCount;
+    const solved = summary.solvedCount;
+    const score = summary.accuracy;
     const sessionModes = Array.from(new Set(challenges.map((challenge) => challenge.mode)));
     const metrics: RampLabMetrics = {
       type: 'ramp-lab',
@@ -388,14 +428,14 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
     };
     // Spoken explanations record every judged attempt; the shared observation capture reads them here.
     const learningResponses = investigationsRef.current.flatMap(result => result.explanation?.learningResponses ?? []);
-    submitResult(solved === challenges.length, score, metrics, {
-      solvedChallengeIds: Array.from(solvedIds),
+    submitResult(summary.passed, score, metrics, {
+      solvedChallengeIds: summary.outcomes.filter(o => o.solved).map(o => o.id),
       modes: sessionModes,
       checksMade: totalChecksRef.current,
       investigations: investigationsRef.current,
-      ...(learningResponses.length ? { learningResponses } : {}),
-    });
-    SoundManager.playStreak();
+      learningResponses: [...learningResponses, ...summary.learningResponses],
+      ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}),
+    }, undefined, summary.diagnosisEvidence);
   };
 
   const handleCompareView = (side: 'a' | 'b') => {
@@ -411,9 +451,14 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
   const diagnosticsRevealed = !isChallengeSession || feedback?.correct === true
     || currentChallenge?.mode === 'compare_conditions' && feedback !== null;
   const currentSolved = !!currentChallenge && solvedIds.has(currentChallenge.id);
-  const allCompleted = isChallengeSession && completedIds.size === challenges.length;
   const isInvestigation = currentChallenge?.mode === 'plan_fair_test' || currentChallenge?.mode === 'explain_from_trials';
-  const recordInvestigation = (result: RampInvestigationResult) => {
+  function recordInvestigation(challenge: RampChallenge, solved: boolean) {
+    const evidence = evidenceRef.current;
+    if (!evidence || evidence.challengeId !== challenge.id) return;
+    const planning = challenge.mode === 'plan_fair_test';
+    const result: RampInvestigationResult = { ...evidence, solved,
+      firstTryCorrect: planning ? evidence.planAttempts.length === 1 && evidence.planAttempts[0].fair : solved && !wrongChallengeIdsRef.current.has(challenge.id),
+      ...(planning ? {} : { explanation: { solved, corrections: wrongChallengeIdsRef.current.has(challenge.id) ? 1 : 0, score: solved ? 100 : 0 } }) };
     if (investigationsRef.current.some(r => r.challengeId === result.challengeId)) return;
     investigationsRef.current.push(result);
     totalChecksRef.current += result.mode === 'plan_fair_test' ? result.planAttempts.length
@@ -422,8 +467,8 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
     if (result.firstTryCorrect) firstTryCorrectRef.current += 1;
     if (result.solved) setSolvedIds(previous => new Set(previous).add(result.challengeId));
     setCompletedIds(previous => new Set(previous).add(result.challengeId));
-    if (currentChallenge && 'variable' in currentChallenge) variablesExploredRef.current.add(currentChallenge.variable);
-  };
+    if ('variable' in challenge) variablesExploredRef.current.add(challenge.variable);
+  }
 
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this item's check state, the tutor's speech on it, and
@@ -434,7 +479,20 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
     scopeId: hasSubmitted || !currentChallenge || isInvestigation ? null : currentChallenge.id,
     label: 'The ramp and its controls',
     solved: currentSolved,
-    tutorSpeaking: false,
+    tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === instanceId),
+  });
+
+  // What the tutor and the observer are shown, republished every render. W1 offers no demonstration
+  // targets and no presentation. A spoken explanation can be heard only once both trials are recorded.
+  useLayoutEffect(() => {
+    if (!currentChallenge) return;
+    // Only item-scoped, render-derived facts: the lab's controls reset in an effect after an item opens, and a fact
+    // read from them would publish a revision that supersedes the advance. The checked response names the setting.
+    workspace.current = { ...rampScene(currentChallenge, { phase: investigationPhase ?? undefined }),
+      demonstration: [], canDemonstrate: false, canPresent: false,
+      readyForResponse: currentChallenge.mode !== 'explain_from_trials' || investigationPhase === 'explain',
+      mark: () => {}, clearPresentation: () => {} };
+    run.publishWorkspace();
   });
 
   return (
@@ -471,6 +529,9 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
                       <button
                         key={side}
                         type="button"
+                        aria-label={`Setup ${side.toUpperCase()}`}
+                        aria-pressed={selected}
+                        disabled={!run.canAttempt}
                         onClick={() => { setCompareChoice(side); handleCompareView(side); }}
                         className={`rounded-xl border p-4 text-left transition ${selected ? 'border-blue-400 bg-blue-500/15' : 'border-white/10 bg-black/20 hover:border-white/25'}`}
                       >
@@ -494,13 +555,23 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
           )}
 
           {isInvestigation && <>
-            <RampInvestigation key={currentChallenge.id} challenge={currentChallenge}
-              instanceId={instanceId || fallbackInstanceIdRef.current} exhibitId={exhibitId}
-              gradeLevel={data.gradeLevel} supportTier={data.supportTier} onFinished={recordInvestigation} />
-            <div className="flex gap-3">
-              {completedIds.has(currentChallenge.id) && challengeIndex < challenges.length - 1 && <LuminaButton tone="primary" onClick={handleNext}>Next Challenge</LuminaButton>}
-              {allCompleted && <LuminaButton tone="primary" onClick={handleFinish} disabled={hasSubmitted}>{hasSubmitted ? 'Session Submitted' : 'Finish Session'}</LuminaButton>}
-            </div>
+            <RampInvestigation key={currentChallenge.id} challenge={currentChallenge as RampInvestigationChallenge}
+              supportTier={data.supportTier} canAttempt={run.canAttempt} credited={run.revealHeld}
+              onPhase={phase => setReportedPhase({ id: currentChallenge.id, phase })}
+              onEvidence={evidence => { evidenceRef.current = evidence; }}
+              // An unfair plan is a checked miss; a fair one locks and the investigation continues.
+              onPlanChecked={(fair, setupB) => {
+                totalChecksRef.current += 1;
+                if (!fair) commitCheck(currentChallenge, false, describeRampCheck('plan_fair_test', { planB: setupB }));
+              }}
+              onRecord={evidence => {
+                evidenceRef.current = evidence;
+                recordInvestigation(currentChallenge, true);
+                run.commitGesture({ response: describeRampCheck('plan_fair_test', { prediction: evidence.prediction,
+                  trials: evidence.trials.length }), correct: true, cue: () => '' });
+              }}
+              onHearQuestion={() => ctx.sendText(hearQuestionRequest(currentChallenge as RampInvestigationChallenge),
+                { silent: true, author: 'host' })} />
           </>}
           {!isInvestigation && <>
           {/* Pip's dock sits above the workspace, which it outlines as a region. */}
@@ -632,13 +703,12 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
           <div className="flex flex-wrap gap-3">
             {currentChallenge ? (
               <>
-                <LuminaButton tone="primary" onClick={handleCheck} disabled={currentChallenge.mode === 'compare_conditions' && !compareChoice}>
+                <LuminaButton tone="primary" onClick={handleCheck}
+                  disabled={!run.canAttempt || currentChallenge.mode === 'compare_conditions' && !compareChoice}>
                   {currentChallenge.mode === 'compare_conditions' ? 'Reveal Force Evidence' : currentChallenge.mode === 'find_threshold' ? 'Test This Force' : 'Check This Design'}
                 </LuminaButton>
                 <LuminaButton tone="ghost" onClick={() => setHintVisible((visible) => !visible)}>{hintVisible ? 'Hide Hint' : 'Hint'}</LuminaButton>
-                <LuminaButton tone="subtle" onClick={() => resetInteraction(currentChallenge)}>Reset Challenge</LuminaButton>
-                {currentSolved && challengeIndex < challenges.length - 1 && <LuminaButton tone="primary" onClick={handleNext}>Next Challenge</LuminaButton>}
-                {allCompleted && <LuminaButton tone="primary" onClick={handleFinish} disabled={hasSubmitted}>{hasSubmitted ? 'Session Submitted' : 'Finish Session'}</LuminaButton>}
+                <LuminaButton tone="subtle" disabled={!run.canAttempt} onClick={() => resetInteraction(currentChallenge)}>Reset Challenge</LuminaButton>
               </>
             ) : (
               <>
@@ -663,6 +733,17 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
       </LuminaCard>
     </div>
   );
-};
+}
+
+const RampLabBound = withWorkspaceOnly<RampLabProps>('ramp-lab', props =>
+  <RampLabSurface {...props} useRun={useWorkspaceRunner} />, props => props.data.title);
+
+/**
+ * Challenges run only on the teaching workspace (an unbound mount shows the "needs the tutor" card).
+ * Free exploration is the curator's ungraded sandbox: it renders the lab with an inert controller.
+ */
+function RampLab(props: RampLabProps) {
+  return props.data.freeExplore ? <RampLabSurface {...props} useRun={useSandboxRun} /> : <RampLabBound {...props} />;
+}
 
 export default RampLab;

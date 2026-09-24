@@ -71,6 +71,17 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'The lab checks the comparison, threshold, design and fair-test answers itself: the learner picks or sets '
+        + 'something and presses the check button, and you are not told the answer. Never say which setup needs '
+        + 'less push, the smallest working push, the steepest workable angle, or which setting to change before the '
+        + 'learner has checked. A fair plan changes only the requested condition; the lab locks it, then the '
+        + 'learner predicts and runs both trials. On explain the learner says aloud what changing the condition did '
+        + 'to the push, using both trial results; a true comparison in their own words counts, and numbers are '
+        + 'optional. A reversed comparison, one measurement alone, a slogan, or the question echoed back does not '
+        + 'count. Never give the conclusion before an attempt. You cannot move sliders, pick setups or run trials.',
+    },
     tutoring: {
       taskDescription: 'Ramp investigation: {{evalMode}}. Current phase: {{phase}}. Question: {{question}}. Recorded trials: {{trialCount}}. Support: {{supportTier}}. Latest feedback: {{feedback}}. During explanation the active RAMP_EVIDENCE_ITEM contract owns every spoken line and verdict. During planning, guide comparison of settings without choosing them for the learner.',
       contextKeys: ['evalMode', 'phase', 'question', 'trialCount', 'supportTier', 'feedback'],

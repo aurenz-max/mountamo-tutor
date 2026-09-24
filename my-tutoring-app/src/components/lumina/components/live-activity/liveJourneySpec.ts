@@ -59,6 +59,7 @@ import { cvcHarnessAnswers } from '../../primitives/visual-primitives/literacy/c
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
 import { youAndMeHarnessAnswers } from '../../primitives/visual-primitives/literacy/youAndMeWorkspace';
+import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -852,6 +853,40 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="scene"]' } },
+  },
+  'ramp-lab': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/engineering/RampLab.tsx',
+    instanceId: 'ramp',
+    defaults: { grade: 'Grade 3', mode: 'compare_conditions', di: false,
+      topic: 'How the angle and surface of a ramp change the push needed to move a load' },
+    leakTokens: ['RAMP_EVIDENCE_ITEM', 'RAMP_EVIDENCE_HEAR', 'RAMP_EVIDENCE_MOVE', 'RAMP_EVIDENCE_DONE', 'RAMP_PLAN_RETRY'],
+    prompts: WORKSPACE_PROMPTS,
+    // Compare: pick a setup and reveal. Explain: predict and run both trials once, then speak the
+    // supported comparison or its reverse. The slider and select modes have no driver input.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const challenges = ctx.data.challenges ?? [];
+      const c = challenges.find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current ramp-lab challenge');
+      const wrong = intent === 'wrong';
+      if (c.mode === 'compare_conditions') {
+        const right = easierComparisonChoice(c);
+        const pick = wrong ? (right === 'a' ? 'b' : 'a') : right;
+        return [{ type: 'choose', label: `Setup ${pick.toUpperCase()}` }, { type: 'choose', label: 'Reveal Force Evidence' }];
+      }
+      if (c.mode === 'explain_from_trials') {
+        const conclusion = rampConclusion(c);
+        const reversed = conclusion.replace(/Setup ([AB]) needed less/, (_m: string, s: string) => `Setup ${s === 'A' ? 'B' : 'A'} needed less`);
+        const speak: DriverInput = { type: 'answer', text: wrong ? reversed : conclusion };
+        if (ctx.demand?.step === 'explain') return [speak];
+        return [{ type: 'choose', label: 'Setup A' }, { type: 'choose', label: 'Record prediction' },
+          { type: 'choose', label: 'Run trial A' }, { type: 'choose', label: 'Run trial B' },
+          { type: 'choose', label: 'Explain my results' }, speak];
+      }
+      throw new Error(`ramp-lab ${c.mode} uses a slider or select the driver cannot set; not driven at W1`);
+    },
+    probes: { mounted: { selector: '[data-testid="ramp-investigation"], svg' } },
   },
 };
 
