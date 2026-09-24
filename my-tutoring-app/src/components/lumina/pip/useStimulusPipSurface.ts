@@ -1,11 +1,22 @@
-import type { JudgedScriptItem } from '../hooks/judgedScriptContract';
-import type { JudgedScriptRun } from '../hooks/useJudgedScriptRunner';
 import { usePipSurface, usePipTargets } from './PipSurfaceContext';
 import { stimulusPipPose } from './stimulusPipPose';
 import { PIP_DOCK_CLASS } from './useWorkspacePipSurface';
 
-export interface StimulusPipOptions<Item extends JudgedScriptItem> {
-  run: JudgedScriptRun<Item>;
+/** The phases the pose reads. The scripted runner and the workspace runner both provide them. */
+export interface StimulusPipRun<Item extends { id: string }> {
+  currentItem: Item | null | undefined;
+  canAttempt: boolean;
+  running: boolean;
+  preparing: boolean;
+  currentSolved: boolean;
+  revealHeld: boolean;
+  stage: string;
+  tutorSpeaking: boolean;
+  cuedItemId: string | null;
+}
+
+export interface StimulusPipOptions<Item extends { id: string }> {
+  run: StimulusPipRun<Item>;
   instanceId: string;
   label: string;
   /** The session is over (evaluation submitted); the surface withdraws. */
@@ -23,7 +34,7 @@ export interface StimulusPipOptions<Item extends JudgedScriptItem> {
  * contract puts Pip. The runner's phases are the only inputs; the child's taps
  * reach Pip through `look(id)` in the primitive's own handlers.
  */
-export function useStimulusPipSurface<Item extends JudgedScriptItem>(options: StimulusPipOptions<Item>) {
+export function useStimulusPipSurface<Item extends { id: string }>(options: StimulusPipOptions<Item>) {
   const { run, instanceId, label } = options;
   const itemId = options.finished ? null : run.currentItem?.id ?? null;
   const pip = usePipTargets(itemId, run.canAttempt);

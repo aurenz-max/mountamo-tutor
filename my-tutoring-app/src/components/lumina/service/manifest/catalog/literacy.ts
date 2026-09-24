@@ -610,12 +610,12 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'word-builder',
     misconceptionScope: 'primitive',
     description:
-      'Live Direct Instruction MORPHOLOGY with a spoken tutor. The tutor asks, waits, judges what it '
-      + 'hears, and its own affirmation moves the lesson on. A board of word parts — prefixes, roots and '
+      'Live MORPHOLOGY practice with a spoken tutor. The tutor asks, waits and responds to what it '
+      + 'hears, and a credited answer moves the lesson on. A board of word parts — prefixes, roots and '
       + 'suffixes, each printed with its meaning — stays on screen as a reference wall; the tutor says what '
       + 'a word MEANS and the child works out which parts make it and SAYS THE WHOLE WORD out loud. Nothing '
-      + 'is assembled by hand, nothing is tapped and nothing on screen shows the word before the tutor '
-      + 'affirms it. '
+      + 'is assembled by hand, nothing is tapped and nothing on screen shows the word before it is '
+      + 'credited. '
       + 'Four complexity tiers from single affixes to Greek/Latin and multi-morpheme academic vocabulary. '
       + 'Requires a microphone. Ideal for vocabulary development, etymology and morphological analysis — and '
       + 'for the skill those exist to serve: meeting an unfamiliar academic word in text and being able to '
@@ -627,6 +627,17 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + '(happy+ly, run+ing) are excluded. The answer is SPOKEN, so pick this for objectives about building '
       + 'or unpacking word meaning, not for spelling objectives — those need a written surface.',
     affordances: { representation: 'symbolic', answers: ['spoken'], role: 'apply', minutes: 5 },
+    teachingWorkspace: {
+      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'A board of prefixes, roots and suffixes, each printed with its meaning, stays on screen. You tell the '
+        + 'learner what a word means (the clue) and the learner says the whole word out loud, built from parts on the '
+        + 'board; it is judged against the word you are given. Building it aloud part by part counts when the whole '
+        + 'word arrives at the end. Only the root, the parts never joined, the parts in the wrong order, or a word '
+        + 'from only some of the parts is not yet it. Open each word with the clue and ask for the whole word. '
+        + 'Before the learner has tried, never say the word, name which parts make it, or ask about one part; after '
+        + 'an attempt you may take the meaning apart part by part. Say the clue again '
+        + 'asks you to repeat the clue only. You cannot mark or move a part.',
+    },
     // ── DI MODALITY (2026-08-16) — the FIRST judged port above the K-2 band.
     // The tutor owns the clock: it states what the word means, waits, judges
     // the spoken word from the audio in-band, corrects contrastively, and its

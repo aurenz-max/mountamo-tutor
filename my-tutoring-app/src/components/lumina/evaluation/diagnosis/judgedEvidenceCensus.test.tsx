@@ -73,7 +73,6 @@ const COMPONENTS: Record<string, Loader> = {
   'place-value-chart': () => import('../../primitives/visual-primitives/math/PlaceValueChart'),
   'sentence-analyzer': () => import('../../primitives/visual-primitives/literacy/SentenceAnalyzer'),
   'sorting-station': () => import('../../primitives/visual-primitives/math/SortingStation'),
-  'word-builder': () => import('../../primitives/WordBuilder'),
   'di-spoken-practice': () => import('../../primitives/visual-primitives/direct-instruction/DiSpokenPractice'),
   'read-aloud-studio': () => import('../../primitives/visual-primitives/literacy/ReadAloudStudio'),
 } as unknown as Record<string, Loader>;

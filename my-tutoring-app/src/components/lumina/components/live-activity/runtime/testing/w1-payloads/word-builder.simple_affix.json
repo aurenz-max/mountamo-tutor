@@ -1,0 +1,126 @@
+{
+ "source": "qa/tutor-reports/word-builder-runtime-simple_affix-payload-2026-09-24.json",
+ "primitiveId": "word-builder",
+ "evalMode": "simple_affix",
+ "data": {
+  "title": "Building Everyday Words with Prefixes and Suffixes",
+  "complexityLevel": "simple_affix",
+  "availableParts": [
+   {
+    "id": "pre-un",
+    "text": "un",
+    "type": "prefix",
+    "meaning": "not"
+   },
+   {
+    "id": "pre-re",
+    "text": "re",
+    "type": "prefix",
+    "meaning": "again"
+   },
+   {
+    "id": "pre-pre",
+    "text": "pre",
+    "type": "prefix",
+    "meaning": "before"
+   },
+   {
+    "id": "root-play",
+    "text": "play",
+    "type": "root",
+    "meaning": "have fun"
+   },
+   {
+    "id": "root-kind",
+    "text": "kind",
+    "type": "root",
+    "meaning": "caring"
+   },
+   {
+    "id": "root-teach",
+    "text": "teach",
+    "type": "root",
+    "meaning": "show how"
+   },
+   {
+    "id": "root-start",
+    "text": "start",
+    "type": "root",
+    "meaning": "begin"
+   },
+   {
+    "id": "root-help",
+    "text": "help",
+    "type": "root",
+    "meaning": "assist"
+   },
+   {
+    "id": "suf-ful",
+    "text": "ful",
+    "type": "suffix",
+    "meaning": "full of"
+   },
+   {
+    "id": "suf-er",
+    "text": "er",
+    "type": "suffix",
+    "meaning": "one who"
+   },
+   {
+    "id": "suf-less",
+    "text": "less",
+    "type": "suffix",
+    "meaning": "without"
+   },
+   {
+    "id": "suf-ly",
+    "text": "ly",
+    "type": "suffix",
+    "meaning": "in a way"
+   }
+  ],
+  "targets": [
+   {
+    "word": "playful",
+    "parts": [
+     "root-play",
+     "suf-ful"
+    ],
+    "hint": "This describes a puppy that is full of fun and bouncy energy.",
+    "definition": "Full of fun and high spirits.",
+    "sentenceContext": "The ___ puppy chased its tail across the living room rug."
+   },
+   {
+    "word": "unkind",
+    "parts": [
+     "pre-un",
+     "root-kind"
+    ],
+    "hint": "This describes words or actions that are mean and not caring.",
+    "definition": "Not friendly, pleasant, or considerate.",
+    "sentenceContext": "It was ___ to laugh when your classmate dropped her books."
+   },
+   {
+    "word": "teacher",
+    "parts": [
+     "root-teach",
+     "suf-er"
+    ],
+    "hint": "This is a person whose job is helping students learn in school.",
+    "definition": "A person who instructs others in a school.",
+    "sentenceContext": "Our science ___ showed the class how to plant sunflower seeds."
+   },
+   {
+    "word": "restart",
+    "parts": [
+     "pre-re",
+     "root-start"
+    ],
+    "hint": "This is what you do when you turn a tablet off and begin again.",
+    "definition": "To begin something anew after stopping.",
+    "sentenceContext": "The computer froze, so Dad had to ___ the machine to fix it."
+   }
+  ],
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

@@ -33,6 +33,7 @@ import { phonicsBlenderLiveDomain } from './adapters/phonicsBlenderLive';
 import { wordFlipLiveDomain } from './adapters/wordFlipLive';
 import { soundSwapLiveDomain } from './adapters/soundSwapLive';
 import { cvcSpellerLiveDomain } from './adapters/cvcSpellerLive';
+import { wordBuilderLiveDomain } from './adapters/wordBuilderLive';
 import { wordWorkoutLiveDomain } from './adapters/wordWorkoutLive';
 import { phonemeExplorerLiveDomain } from './adapters/phonemeExplorerLive';
 import { rhymeStudioLiveDomain } from './adapters/rhymeStudioLive';
@@ -79,6 +80,7 @@ export const LIVE_ADAPTERS = {
   'word-flip': workspaceAdapter('word-flip', wordFlipLiveDomain),
   'sound-swap': workspaceAdapter('sound-swap', soundSwapLiveDomain),
   'cvc-speller': workspaceAdapter('cvc-speller', cvcSpellerLiveDomain),
+  'word-builder': workspaceAdapter('word-builder', wordBuilderLiveDomain),
   'word-workout': workspaceAdapter('word-workout', wordWorkoutLiveDomain),
   'phoneme-explorer': workspaceAdapter('phoneme-explorer', phonemeExplorerLiveDomain),
   'rhyme-studio': workspaceAdapter('rhyme-studio', rhymeStudioLiveDomain),

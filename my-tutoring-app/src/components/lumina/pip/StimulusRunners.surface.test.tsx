@@ -4,7 +4,6 @@ import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, it, vi } from 'vitest';
 import { mountWithStore } from './testing/classicSurface';
 import { expectStimulusSurface, initialRunnerPhase, type RunnerPhase } from './testing/runnerSurface';
-import WordBuilder from '../primitives/WordBuilder';
 import OralSentenceStudio from '../primitives/visual-primitives/literacy/OralSentenceStudio';
 import { DiDiceRoll } from '../primitives/visual-primitives/direct-instruction/DiDiceRoll';
 import GenreExplorer from '../primitives/visual-primitives/literacy/GenreExplorer';
@@ -45,20 +44,6 @@ beforeEach(() => { Object.assign(phase, initialRunnerPhase()); });
 afterEach(cleanup);
 
 describe('judged primitives share their stimulus panel with Pip', () => {
-  it('Word Builder points at the clue, never the word-part wall', () => {
-    const data = {
-      title: 'Build', complexityLevel: 'simple_affix' as const, instanceId: 'words',
-      availableParts: [
-        { id: 'pre-un', text: 'un', type: 'prefix' as const, meaning: 'not' },
-        { id: 'root-help', text: 'help', type: 'root' as const, meaning: 'to help' },
-        { id: 'suf-ful', text: 'ful', type: 'suffix' as const, meaning: 'full of' },
-      ],
-      targets: [{ word: 'unhelpful', parts: ['pre-un', 'root-help', 'suf-ful'], hint: 'Describing someone who does not make things any easier',
-        definition: 'Not giving any assistance.', sentenceContext: 'The broken lift was ___ for anyone pushing a pram.' }],
-    };
-    expectStimulusSurface({ mounted: mountWithStore(() => <WordBuilder data={data} />), phase, instanceId: 'words' });
-  });
-
   it('Oral Sentence Studio points at the scene', () => {
     const data = {
       title: 'Sentences', description: 'Say one', challengeType: 'describe_scene' as const, instanceId: 'oral',

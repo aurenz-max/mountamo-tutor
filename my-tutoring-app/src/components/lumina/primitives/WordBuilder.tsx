@@ -1,11 +1,12 @@
 'use client';
 
 /**
- * WordBuilder — DI modality. The Live tutor owns the clock: it states what a
- * word MEANS, waits, judges the child's spoken word from the audio in-band,
- * corrects contrastively, and its OWN affirmation is the advance. There is no
- * advance timer, no Check button, no Next button and no push-to-talk mic
- * anywhere in this file.
+ * WordBuilder — the tutor says what a word MEANS and the child says the word,
+ * built from the morpheme parts on the board. It runs only on the shared tutor/JEV
+ * teaching workspace (workspace rollout C2; the scripted runner was retired, LA-14,
+ * user ruling 09-23: one path). The observer judges the spoken word and the runtime
+ * owns progression. An unbound mount shows the shared "needs the tutor" card. There
+ * is no advance timer, no Check button and no Next button anywhere in this file.
  *
  * ── WHAT CHANGED, AND WHY THE CARDS SURVIVED THE BUTTON ─────────────────────
  * The click-era primitive was drag-to-slots + Check + Next. The port was queued
@@ -25,18 +26,17 @@
  *
  * ── ANSWER-LEAK RULE ────────────────────────────────────────────────────────
  * The word, its assembly, its definition and the completed sentence appear on
- * screen ONLY after the tutor has affirmed, and they hold for exactly as long
- * as her affirmation does (`runner.revealHeld`). The clue never contains the
+ * screen ONLY after the word is credited, and they hold while the credit does
+ * (`runner.revealHeld`). The clue never contains the
  * word and the board never shows it — both enforced at build time by
  * `itemsFromTargets`, which DROPS what cannot be asked rather than repairing it.
  *
- * The reveal is gated on `revealHeld` and NOT cleared in `onItemOpened`: the
- * runner affirms and opens the next item in the SAME dispatch, so a payload
- * cleared there (or gated on `currentSolved`) paints on the last item and
- * nowhere else — the family-wide 18b defect.
+ * The reveal is gated on `revealHeld` and NOT cleared in `onItemOpened`: a
+ * credit that also advances opens the next item in the SAME dispatch, so a
+ * payload cleared there paints on the last item and nowhere else (18b).
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaBadge,
   LuminaButton,
@@ -52,18 +52,17 @@ import {
   type PrimitiveEvaluationResult,
 } from '../evaluation';
 import type { WordBuilderMetrics } from '../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../hooks/judgedScriptContract';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import type { TeachingWorkspace } from '../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../components/live-activity/runtime/useWorkspaceRunner';
 import {
   itemsFromTargets,
-  wordBuilderPackBase,
   type WordBuilderComplexity,
   type WordBuilderItem,
 } from './visual-primitives/literacy/wordBuilderScript';
-import JudgedMicPanel from '../components/JudgedMicPanel';
+import { hearClueRequest, wordBuilderAssignment, wordBuilderScene } from './visual-primitives/literacy/wordBuilderWorkspace';
 import { useStimulusPipSurface } from '../pip/useStimulusPipSurface';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../hooks/usePhaseResults';
@@ -76,6 +75,9 @@ import type { WordBuilderData } from '../types';
 interface WordBuilderProps {
   data: WordBuilderData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -112,7 +114,7 @@ const SLOT_LABEL_COLORS: Record<string, string> = {
 // Component
 // ============================================================================
 
-const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
+function WordBuilderSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: WordBuilderProps) {
   const {
     title,
     targets = [],
@@ -126,7 +128,8 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
   } = data;
 
   const complexity: WordBuilderComplexity = data.complexityLevel ?? 'compound_affix';
-  const gradeLevel = data.gradeLevel ?? 'grade 4';
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   const stableInstanceIdRef = useRef(instanceId || `word-builder-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -156,7 +159,7 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const metrics: WordBuilderMetrics = {
       type: 'word-builder',
       complexityLevel: complexity,
@@ -170,67 +173,70 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [complexity, items.length, evaluation]);
+  };
 
   // ── The reveal payload. Set on the affirmation, rendered behind
   //    `revealHeld`, and deliberately NOT cleared when the next item opens. ──
   const [revealed, setRevealed] = useState<WordBuilderItem | null>(null);
 
-  // ── The pack — the tutor's whole side is `wordBuilderPackBase`, spread from
-  //    the script module so the DI drive-plan endpoint replays the SAME cues
-  //    this component sends. Only what the SCREEN owns stays here. ──
-  const pack = useMemo<JudgedScriptPack<WordBuilderItem>>(() => ({
-    ...wordBuilderPackBase(items),
-    statusLines: {
-      ready: () => 'Listen to what the word means, then say the whole word.',
-      retry: () => 'Have another go — say the whole word.',
-      affirmedNext: 'Yes! You built it.',
-      done: 'Great work with word parts today!',
-    },
-    // One record per attempt, right or corrected: the meaning clue and what was heard; never the verdict.
-    observation: (item, { heard }) => ({
-      challenge: `Say the word that means: ${item.clue}`,
-      expected: `${item.word} (${item.parts.map((p) => p.text).join(' + ')})`,
-      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
-    }),
-  }), [items]);
-
-  const runner = useJudgedScriptRunner<WordBuilderItem>({
-    pack,
+  const runner = useWorkspaceRunner<WordBuilderItem>({
+    primitiveId: 'word-builder',
+    assignment: wordBuilderAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || complexity,
     instanceId: resolvedInstanceId,
-    gradeLevel,
-    exhibitId,
-    onFinished: handleFinished,
+    onFinished: finish,
     onAffirmed: setRevealed,
   });
 
   const currentItem = runner.currentItem;
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   // Pip: the clue is the question side; the word-part wall is what the answer
   // is built from, so Pip points only at the clue.
   const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The clue', finished: evaluation.hasSubmitted,
+    run: runner, instanceId: resolvedInstanceId, label: 'The clue', finished: showSummary,
   });
   const showReveal = runner.revealHeld && revealed != null;
 
+  // What the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...wordBuilderScene(currentItem, availableParts), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
+  /** Asks the tutor for the clue again: a silent host request, never the word. */
+  const hearClue = useCallback(() => {
+    if (!currentItem) return;
+    ctx.sendText(hearClueRequest(currentItem), { silent: true, author: 'host' });
+  }, [ctx, currentItem]);
+
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => ({
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => ({
       label: item.word,
       icon: COMPLEXITY_META[item.complexity].icon,
       accentColor: COMPLEXITY_META[item.complexity].accent,
     }));
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
   // ============================================================================
   // Render
   // ============================================================================
 
-  if (items.length === 0) {
+  if (items.length === 0 || !currentItem) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-6">
@@ -240,14 +246,14 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
     );
   }
 
-  const meta = COMPLEXITY_META[currentItem?.complexity ?? complexity];
+  const meta = COMPLEXITY_META[currentItem.complexity];
 
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          {!evaluation.hasSubmitted && (
+          {!showSummary && (
             <LuminaBadge accent={meta.accent} className="text-xs">
               {meta.icon} {meta.badge}
             </LuminaBadge>
@@ -256,7 +262,7 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex justify-center">
               <LuminaChallengeCounter
@@ -270,7 +276,7 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
                 band reads, so print is honest stimulus; the tutor says it too
                 because every correction re-ask inherits the ask. */}
             {pip.store && <div {...pip.dock} />}
-            {currentItem && (
+            {(
               <LuminaPanel {...pip.target('stimulus')} className="text-center">
                 <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-1">
                   Build the word that means
@@ -343,26 +349,19 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
               </div>
             </div>
 
-            {/* Every answer here is spoken. */}
-            <JudgedMicPanel run={runner} voiceLabel="I’m listening">
-              {runner.running && (
-                <LuminaButton
-                  tone="subtle"
-                  size="sm"
-                  className="text-slate-400"
-                  onClick={runner.hearStimulus}
-                >
-                  {runner.stimulusTapped ? 'Listen…' : 'Say the clue again'}
-                </LuminaButton>
-              )}
-            </JudgedMicPanel>
+            {/* Every answer here is spoken; the tutor repeats the clue on request. */}
+            <div className="text-center">
+              <LuminaButton tone="subtle" size="sm" className="text-slate-400" onClick={hearClue}>
+                Say the clue again
+              </LuminaButton>
+            </div>
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Word Building Complete!"
             celebrationMessage="You built every word out loud — that is how big words come apart."
@@ -372,6 +371,9 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
       </LuminaCardContent>
     </LuminaCard>
   );
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const WordBuilder = withWorkspaceOnly<WordBuilderProps>('word-builder', WordBuilderSurface, props => props.data.title);
 
 export default WordBuilder;

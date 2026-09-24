@@ -543,8 +543,8 @@ PROGRAMS = {'tutor': tutor_led, 'di-runner': judged_runner}
 async def drive(args, token, live, index):
     journey, spec = args.journey, args.activity_spec
     activity = next(a for a in spec['activities'] if a['primitiveId'] == args.primitive)
-    # The item pool is `challenges` for most families; phonics-blender's is `words`.
-    pool = next(k for k in ('challenges', 'words') if isinstance(live['generatedData'].get(k), list))
+    # The item pool is `challenges` for most families; phonics-blender's is `words`, word-builder's `targets`.
+    pool = next(k for k in ('challenges', 'words', 'targets') if isinstance(live['generatedData'].get(k), list))
     s = Session(args, journey, spec, {**live['generatedData'], pool: live['generatedData'][pool][:2]},
         [i for i in (live.get('diPlan') or {}).get('items', [])], index)
     assert len(s.data[pool]) == 2, 'Probe needs two generated items'

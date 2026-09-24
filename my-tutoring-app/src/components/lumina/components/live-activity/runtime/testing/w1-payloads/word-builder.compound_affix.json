@@ -1,0 +1,142 @@
+{
+ "source": "qa/tutor-reports/word-builder-runtime-compound_affix-payload-2026-09-24.json",
+ "primitiveId": "word-builder",
+ "evalMode": "compound_affix",
+ "data": {
+  "title": "Master Word Builders: Prefix, Root, and Suffix",
+  "complexityLevel": "compound_affix",
+  "availableParts": [
+   {
+    "id": "pre-un",
+    "text": "un",
+    "type": "prefix",
+    "meaning": "not"
+   },
+   {
+    "id": "pre-re",
+    "text": "re",
+    "type": "prefix",
+    "meaning": "again"
+   },
+   {
+    "id": "pre-dis",
+    "text": "dis",
+    "type": "prefix",
+    "meaning": "opposite of"
+   },
+   {
+    "id": "pre-mis",
+    "text": "mis",
+    "type": "prefix",
+    "meaning": "wrongly"
+   },
+   {
+    "id": "root-help",
+    "text": "help",
+    "type": "root",
+    "meaning": "assist"
+   },
+   {
+    "id": "root-play",
+    "text": "play",
+    "type": "root",
+    "meaning": "act or perform"
+   },
+   {
+    "id": "root-agree",
+    "text": "agree",
+    "type": "root",
+    "meaning": "share an opinion"
+   },
+   {
+    "id": "root-treat",
+    "text": "treat",
+    "type": "root",
+    "meaning": "handle or care"
+   },
+   {
+    "id": "suf-ful",
+    "text": "ful",
+    "type": "suffix",
+    "meaning": "full of"
+   },
+   {
+    "id": "suf-able",
+    "text": "able",
+    "type": "suffix",
+    "meaning": "able to be"
+   },
+   {
+    "id": "suf-ment",
+    "text": "ment",
+    "type": "suffix",
+    "meaning": "state of"
+   },
+   {
+    "id": "pre-pre",
+    "text": "pre",
+    "type": "prefix",
+    "meaning": "before"
+   },
+   {
+    "id": "root-pack",
+    "text": "pack",
+    "type": "root",
+    "meaning": "put in box"
+   },
+   {
+    "id": "suf-less",
+    "text": "less",
+    "type": "suffix",
+    "meaning": "without"
+   }
+  ],
+  "targets": [
+   {
+    "word": "unhelpful",
+    "parts": [
+     "pre-un",
+     "root-help",
+     "suf-ful"
+    ],
+    "hint": "What word describes someone who is not providing assistance when you need it?",
+    "definition": "Not giving aid or making things easier for others.",
+    "sentenceContext": "The confusing map was completely ___ when we were lost in the park."
+   },
+   {
+    "word": "replayable",
+    "parts": [
+     "pre-re",
+     "root-play",
+     "suf-able"
+    ],
+    "hint": "What word describes a fun game that can be enjoyed multiple times over?",
+    "definition": "Capable of being played again.",
+    "sentenceContext": "This board game has so many different cards that it is totally ___."
+   },
+   {
+    "word": "disagreement",
+    "parts": [
+     "pre-dis",
+     "root-agree",
+     "suf-ment"
+    ],
+    "hint": "What word means an argument that happens when people do not share the same opinion?",
+    "definition": "A situation where people have differing views or argue.",
+    "sentenceContext": "The two friends had a small ___ about which movie to watch first."
+   },
+   {
+    "word": "mistreatment",
+    "parts": [
+     "pre-mis",
+     "root-treat",
+     "suf-ment"
+    ],
+    "hint": "What word means the act of handling someone or an animal in a bad or cruel way?",
+    "definition": "The act of dealing with someone or something unfairly or cruelly.",
+    "sentenceContext": "The animal shelter protects stray dogs from cruel ___ by neglectful owners."
+   }
+  ],
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}
