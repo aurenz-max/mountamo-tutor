@@ -1,0 +1,93 @@
+{
+ "source": "qa/tutor-reports/di-shapes-runtime-count_sides-payload-2026-09-24.json",
+ "primitiveId": "di-shapes",
+ "evalMode": "count_sides",
+ "data": {
+  "title": "Shape Sound-Off!",
+  "description": "Look closely at the pictures on the screen and say out loud what you see!",
+  "challengeType": "count_sides",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "dish-1-triangle",
+    "challengeType": "count_sides",
+    "shape": "triangle",
+    "shapeWord": "triangle",
+    "article": "a",
+    "sides": 3,
+    "corners": 3,
+    "rotationDeg": 15,
+    "asrAliases": [
+     "three",
+     "3"
+    ],
+    "countNumeral": 3,
+    "countWord": "three"
+   },
+   {
+    "id": "dish-2-rectangle",
+    "challengeType": "count_sides",
+    "shape": "rectangle",
+    "shapeWord": "rectangle",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": 10,
+    "asrAliases": [
+     "four",
+     "4"
+    ],
+    "countNumeral": 4,
+    "countWord": "four"
+   },
+   {
+    "id": "dish-3-square",
+    "challengeType": "count_sides",
+    "shape": "square",
+    "shapeWord": "square",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": -6,
+    "asrAliases": [
+     "four",
+     "4"
+    ],
+    "countNumeral": 4,
+    "countWord": "four"
+   },
+   {
+    "id": "dish-4-rectangle",
+    "challengeType": "count_sides",
+    "shape": "rectangle",
+    "shapeWord": "rectangle",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": -4,
+    "asrAliases": [
+     "four",
+     "4"
+    ],
+    "countNumeral": 4,
+    "countWord": "four"
+   },
+   {
+    "id": "dish-5-triangle",
+    "challengeType": "count_sides",
+    "shape": "triangle",
+    "shapeWord": "triangle",
+    "article": "a",
+    "sides": 3,
+    "corners": 3,
+    "rotationDeg": 14,
+    "asrAliases": [
+     "three",
+     "3"
+    ],
+    "countNumeral": 3,
+    "countWord": "three"
+   }
+  ]
+ }
+}

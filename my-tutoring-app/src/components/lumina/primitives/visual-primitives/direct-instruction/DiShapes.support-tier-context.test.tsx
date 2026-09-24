@@ -1,226 +1,106 @@
 // @vitest-environment jsdom
 /**
- * L3 GOTCHA #2, checked at RUNTIME rather than by static analysis: a tier that
- * the SCRIPT withholds but the TUTOR volunteers is only half applied. The tier
- * reaches the tutor through the context bag — `primitive_data.supportTier` at
- * connect, then `updateContext` per item — and the catalog's `supportTier`
- * contextKey renders that value into RUNTIME STATE.
- *
- * WHY THIS TEST EXISTS AS A RENDER TEST. The `/tutor-test` Tier-2 probe reports
- * `supportTier: unresolved` → one `(not set)` in its prompt PREVIEW for every DI
- * pack, because `scaffoldAudit.analyzeHookSite` parses `useLuminaAI({ primitiveData })`
- * hook sites and the DI family passes its bag through `ctx.connect({ primitive_data })`
- * instead — all five packs report `data-bag-unparsed`, so the probe never sees
- * the component's key space at all. That is an analyzer blind spot, not evidence
- * about the shipped prompt, and the honest way to close it is to execute the
- * component and read what it actually sent. (The analyzer gap is filed
- * cross-queue; it is not this rung's to fix.)
- *
- * The bag also stays ANSWER-FREE at every tier — the shape name and the
- * side/corner count are the answers, so this asserts their absence too.
+ * di-shapes on the teaching workspace (rollout B3): the L4 drawing reaches the screen, the support
+ * tier reaches the tutor (now as a scene fact, not a connect bag), nothing the tutor or the screen is
+ * handed before an answer names it, and the observer's credit is the only thing that labels a shape.
  */
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
+
 import React from 'react';
-import { render, screen, cleanup, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-
-const connect = vi.fn(async (_payload: Record<string, unknown>) => {});
-const updateContext = vi.fn();
-const ctxState = {
-  isConnected: false,
-  isListening: false,
-  isAudioPlaying: false,
-  sessionMode: 'idle' as 'idle' | 'lesson',
-  sessionResumeCount: 0,
-  conversation: [] as Array<{ role: string; content: string }>,
-};
-vi.mock('@/contexts/LuminaAIContext', () => ({
-  // 19b: the mic level is a SUBSCRIPTION now, not a context field. Stubbed
-  // flat because nothing here asserts on the orb's spike ring.
-  useMicLevel: () => 0,
-  useLuminaAIContext: () => ({
-    ...ctxState,
-    sendText: vi.fn(),
-    connect,
-    disconnect: vi.fn(),
-    reconnect: vi.fn(),
-    startListening: vi.fn(() => { ctxState.isListening = true; }),
-    stopListening: vi.fn(),
-    updateContext,
-  }),
-}));
-
-vi.mock('../../../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({
-    submitResult: vi.fn(), hasSubmitted: false, submittedResult: null,
-    elapsedMs: 0, resetAttempt: vi.fn(),
-  }),
-  useEvaluationContext: () => null,
-}));
-
-vi.mock('./diRunLog', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./diRunLog')>();
-  return { ...actual, flushDiRunLog: vi.fn(async () => {}) };
-});
-
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, render, screen } from '@testing-library/react';
+import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
+import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
+import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
 import { DiShapes } from './DiShapes';
 import { geometryFor, pointsAttr } from './diShapesGeometry';
 import type { DiShapesChallenge, DiShapesSupportTier } from './diShapesScript';
 
-/** A single-item pack whose drawing fields the test controls. */
-const triangleData = (over: Partial<DiShapesChallenge>) => ({
-  title: 'Shape Time',
-  description: 'Look at each shape and answer out loud!',
-  challenges: [{
-    id: 'dish-1-triangle', challengeType: 'name_shape' as const, shape: 'triangle' as const,
-    shapeWord: 'triangle', article: 'a' as const, sides: 3, corners: 3, rotationDeg: 0,
-    asrAliases: ['triangle'], ...over,
-  }],
-  challengeType: 'name_shape' as const,
-  gradeLevel: 'first grade',
-  instanceId: 'obj-l4',
+beforeEach(() => { installRuntimeTimers(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); });
+
+const flushScoring = () => act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
+const triangle = (over: Partial<DiShapesChallenge> = {}): DiShapesChallenge => ({
+  id: 'dish-1-triangle', challengeType: 'name_shape', shape: 'triangle', shapeWord: 'triangle', article: 'a',
+  sides: 3, corners: 3, rotationDeg: 0, asrAliases: ['triangle'], ...over });
+const pack = (challenges: DiShapesChallenge[], challengeType: DiShapesChallenge['challengeType'] = 'name_shape') => ({
+  title: 'Shape Time', description: 'Look at each shape and answer out loud!', challenges, challengeType, gradeLevel: 'kindergarten' });
+const counting = (supportTier?: DiShapesSupportTier): DiShapesChallenge => ({ ...triangle(), id: 'dish-2-count', challengeType: 'count_sides',
+  rotationDeg: 12, countNumeral: 3, countWord: 'three', asrAliases: ['three', '3'], ...(supportTier ? { supportTier } : {}) });
+const mount = (data: ReturnType<typeof pack>, mode: string = data.challengeType) =>
+  mountWorkspace({ primitiveId: 'di-shapes', evalMode: mode, data: data as unknown as Record<string, unknown> });
+const drawn = (container: HTMLElement) => ({
+  points: container.querySelector('[data-shape-object] svg polygon')?.getAttribute('points') ?? '',
+  transform: container.querySelector('[data-shape-object] svg g')?.getAttribute('transform') ?? '',
 });
-
-const packData = (supportTier?: DiShapesSupportTier) => {
-  const challenges: DiShapesChallenge[] = [
-    {
-      id: 'dish-1-triangle', challengeType: 'count_sides', shape: 'triangle',
-      shapeWord: 'triangle', article: 'a', sides: 3, corners: 3, rotationDeg: 12,
-      countNumeral: 3, countWord: 'three', asrAliases: ['three', '3'],
-      ...(supportTier ? { supportTier } : {}),
-    },
-    {
-      id: 'dish-2-hexagon', challengeType: 'name_shape', shape: 'hexagon',
-      shapeWord: 'hexagon', article: 'a', sides: 6, corners: 6, rotationDeg: -8,
-      asrAliases: ['hexagon'],
-      ...(supportTier ? { supportTier } : {}),
-    },
-  ];
-  return {
-    title: 'Shape Time',
-    description: 'Look at each shape and answer out loud!',
-    challenges,
-    challengeType: 'count_sides' as const,
-    gradeLevel: 'kindergarten',
-    instanceId: 'obj1-shapes',
-  };
-};
-
-/** The bag the component actually handed the tutor at connect. */
-const connectBag = (): Record<string, unknown> => {
-  const payload = connect.mock.calls[0]?.[0] as
-    { primitive_data?: Record<string, unknown> } | undefined;
-  return payload?.primitive_data ?? {};
-};
-
-const startRun = async () => {
-  await act(async () => {
-    screen.getByRole('button').click();
-    await Promise.resolve();
-  });
-};
 
 describe('DiShapes — the L4 drawing actually reaches the screen', () => {
-  // The silent no-op this closes: the generator stamps `exemplar: 'variant'`
-  // and `scalePct`, and a component that ignored them would render the textbook
-  // picture at full size while every log line and test claimed the tier moved.
-  beforeEach(() => {
-    Object.defineProperty(globalThis.navigator, 'mediaDevices', {
-      configurable: true, value: { getUserMedia: vi.fn() },
-    });
-  });
-  afterEach(cleanup);
-
-  const drawnPoints = (container: HTMLElement) =>
-    container.querySelector('svg polygon')?.getAttribute('points') ?? '';
-  const drawnTransform = (container: HTMLElement) =>
-    container.querySelector('svg g')?.getAttribute('transform') ?? '';
-
-  it('renders the VARIANT geometry when the item carries one', () => {
-    const variant = geometryFor('triangle', 'variant');
-    const prototype = geometryFor('triangle', 'prototype');
+  it('renders the VARIANT geometry when the item carries one, the PROTOTYPE otherwise', () => {
+    const variant = geometryFor('triangle', 'variant'), prototype = geometryFor('triangle', 'prototype');
     if (variant.kind !== 'polygon' || prototype.kind !== 'polygon') throw new Error('polygons');
-
-    const { container } = render(<DiShapes data={triangleData({ exemplar: 'variant' })} />);
-    expect(drawnPoints(container)).toBe(pointsAttr(variant.points));
-    expect(drawnPoints(container)).not.toBe(pointsAttr(prototype.points));
+    const a = mount(pack([triangle({ exemplar: 'variant' })]));
+    expect(drawn(a.view.container).points).toBe(pointsAttr(variant.points));
+    cleanup();
+    const b = mount(pack([triangle()]));
+    expect(drawn(b.view.container).points).toBe(pointsAttr(prototype.points));
   });
 
-  it('renders the PROTOTYPE when no exemplar is stamped (pre-L4 sessions unchanged)', () => {
-    const prototype = geometryFor('triangle', 'prototype');
-    if (prototype.kind !== 'polygon') throw new Error('polygon');
-    const { container } = render(<DiShapes data={triangleData({})} />);
-    expect(drawnPoints(container)).toBe(pointsAttr(prototype.points));
-  });
-
-  it('applies rotation AND scale to the drawing', () => {
-    const { container } = render(
-      <DiShapes data={triangleData({ exemplar: 'variant', scalePct: 70, rotationDeg: 137 })} />,
-    );
-    const t = drawnTransform(container);
-    expect(t).toContain('rotate(137 100 100)');
-    expect(t).toContain('scale(0.7)');
-  });
-
-  it('a full-size untiered item is drawn at scale 1', () => {
-    const { container } = render(<DiShapes data={triangleData({})} />);
-    expect(drawnTransform(container)).toContain('scale(1)');
+  it('applies rotation AND scale to the drawing; an untiered item is drawn at scale 1', () => {
+    const a = mount(pack([triangle({ exemplar: 'variant', scalePct: 70, rotationDeg: 137 })]));
+    expect(drawn(a.view.container).transform).toContain('rotate(137 100 100)');
+    expect(drawn(a.view.container).transform).toContain('scale(0.7)');
+    cleanup();
+    expect(drawn(mount(pack([triangle()])).view.container).transform).toContain('scale(1)');
   });
 });
 
-describe('DiShapes — the support tier reaches the tutor (L3 gotcha #2)', () => {
-  beforeEach(() => {
-    connect.mockClear();
-    updateContext.mockClear();
-    ctxState.isConnected = false;
-    ctxState.isListening = false;
-    ctxState.sessionMode = 'idle';
-    Object.defineProperty(globalThis.navigator, 'mediaDevices', {
-      configurable: true,
-      value: { getUserMedia: vi.fn() },
-    });
-  });
-  afterEach(cleanup);
-
-  it('sends the running tier in primitive_data at connect', async () => {
-    render(<DiShapes data={packData('hard')} />);
-    await startRun();
-    expect(connect).toHaveBeenCalled();
-    expect(connectBag().supportTier).toBe('hard');
+describe('DiShapes — the tutor is told the tier and the task, never the answer early', () => {
+  it.each(['name_shape', 'shape_review', 'count_sides', 'count_corners', 'mixed'])('%s binds in a lesson', mode => {
+    const data = pack([triangle(), counting()], 'name_shape');
+    expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'di-shapes', pin: mode, objectiveIds: ['o'], data })).not.toBeNull();
   });
 
-  it('an UNTIERED session still reports a real tier — never absent, so RUNTIME STATE cannot read "(not set)"', async () => {
-    // The catalog declares `supportTier` as a contextKey, so an absent value
-    // would interpolate as literal "(not set)" into the tutor's prompt. A
-    // pre-L3 session runs the easy shape, and that is what it reports.
-    render(<DiShapes data={packData(undefined)} />);
-    await startRun();
-    const bag = connectBag();
-    expect(bag).toHaveProperty('supportTier');
-    expect(bag.supportTier).toBe('easy');
+  it.each(['easy', 'medium', 'hard'] as const)('%s: the tier is a scene fact; neither the task nor the scene names the shape on a counting item', tier => {
+    const h = mount(pack([counting(tier)], 'count_sides'));
+    const task = h.state().task!;
+    expect(task.demand).toMatchObject({ supportTier: tier, kind: 'count_sides' });
+    const handed = JSON.stringify({ task: task.task, demand: task.demand, objects: task.workspace!.objects }).toLowerCase();
+    for (const leak of ['triangle', 'three']) expect(handed, `${tier} leaked "${leak}"`).not.toContain(leak);
+    expect(task.workspace!.expectedAnswer).toBe('three');
+    expect(screen.queryByText(/triangle|three/i)).toBeNull();
   });
 
-  it('keeps RUNTIME STATE truthful per item via updateContext', async () => {
-    ctxState.isConnected = true;
-    render(<DiShapes data={packData('medium')} />);
-    await act(async () => { await Promise.resolve(); });
-    expect(updateContext).toHaveBeenCalled();
-    const last = updateContext.mock.calls.at(-1)?.[0] as Record<string, unknown>;
-    expect(last.supportTier).toBe('medium');
-    expect(last.challengeType).toBe('count_sides');
+  it('a naming item publishes its spoken alternates with the key', () => {
+    const h = mount(pack([triangle({ shape: 'rhombus', shapeWord: 'rhombus', spokenAlternates: ['diamond'] })]));
+    expect(h.state().task!.workspace!.expectedAnswer).toBe('rhombus (also accept diamond)');
+  });
+});
+
+describe('DiShapes — credit labels a shape, a miss never does', () => {
+  it('a wrong name reopens; a credited name joins the trail; the lesson completes once', async () => {
+    seam.evaluationContext = { lesson: 'test' };
+    const h = mount(pack([triangle(), counting()]), 'mixed');
+    h.say('circle'); h.feedback('incorrect', 'retry');
+    expect(h.view.container.querySelector('[data-shape-credited]')).toBeNull();
+    h.say('triangle'); h.feedback('correct', 'advance'); h.confirmVisible();
+    expect(h.view.container.querySelector('[data-shape-credited="dish-1-triangle"]')?.textContent).toContain('triangle');
+    h.say('three'); h.feedback('correct', 'advance'); h.confirmVisible();
+    expect(h.state().status).toBe('completed');
+    await flushScoring();
+    expect(seam.submit).toHaveBeenCalledOnce();
+    expect(seam.submit.mock.calls[0][2]).toMatchObject({ type: 'di-shapes', correctCount: 2, firstTryCount: 1, meanResponseMs: null });
   });
 
-  it('the bag never carries an ANSWER at any tier — not the shape name, not the count', async () => {
-    for (const tier of ['easy', 'medium', 'hard'] as const) {
-      connect.mockClear();
-      cleanup();
-      render(<DiShapes data={packData(tier)} />);
-      await startRun();
-      const serialized = JSON.stringify(connectBag()).toLowerCase();
-      for (const leak of ['triangle', 'hexagon', 'three', 'six']) {
-        expect(serialized, `tier ${tier} leaked "${leak}" into the context bag`)
-          .not.toContain(leak);
-      }
-      expect(connectBag().supportTier).toBe(tier);
-    }
+  it('outside a runtime the stage shows the needs-the-tutor card, never a stalled drill', () => {
+    const view = render(<DiShapes data={pack([triangle()])} />);
+    expect(view.container.querySelector('[data-workspace-unbound]')).not.toBeNull();
+  });
+
+  it('the adapter refuses a real-object item with no object', () => {
+    expect(() => LIVE_ADAPTERS['di-shapes'].validate(pack([triangle({ challengeType: 'name_real_object' })]))).toThrow();
   });
 });

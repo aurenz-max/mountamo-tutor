@@ -35,6 +35,7 @@ import { soundSwapLiveDomain } from './adapters/soundSwapLive';
 import { cvcSpellerLiveDomain } from './adapters/cvcSpellerLive';
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
+import { diShapesLiveDomain } from './adapters/diShapesLive';
 import { workspaceAdapter, type LiveActivityAdapter } from './adapters/adapterContract';
 
 export type { LiveActivityAdapter } from './adapters/adapterContract';
@@ -75,6 +76,7 @@ export const LIVE_ADAPTERS = {
   'cvc-speller': workspaceAdapter('cvc-speller', cvcSpellerLiveDomain),
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
+  'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),
 } satisfies Record<string, LiveActivityAdapter<any>>;
 
 export type LivePrimitiveId = keyof typeof LIVE_ADAPTERS;

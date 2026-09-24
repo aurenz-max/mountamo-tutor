@@ -60,6 +60,7 @@ import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
 import { youAndMeHarnessAnswers } from '../../primitives/visual-primitives/literacy/youAndMeWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
+import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -887,6 +888,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       throw new Error(`ramp-lab ${c.mode} uses a slider or select the driver cannot set; not driven at W1`);
     },
     probes: { mounted: { selector: '[data-testid="ramp-investigation"], svg' } },
+  },
+  'di-shapes': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/direct-instruction/DiShapes.tsx',
+    instanceId: 'shapes',
+    defaults: { grade: 'Kindergarten', mode: 'name_shape', di: false,
+      topic: 'Naming flat shapes: circle, square, triangle, rectangle' },
+    leakTokens: RETIRED_DI_CUE_TAGS,
+    prompts: WORKSPACE_PROMPTS,
+    // One spoken answer per item: the shape name or count, or a plainly different one.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current di-shapes item');
+      const answers = diShapesHarnessAnswers(c);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-shape-object="shape"]' }, reward: { selector: '[data-shape-credited]', kind: 'count' } },
   },
 };
 

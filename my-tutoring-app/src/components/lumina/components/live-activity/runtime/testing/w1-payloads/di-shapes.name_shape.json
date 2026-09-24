@@ -1,0 +1,88 @@
+{
+ "source": "qa/tutor-reports/di-shapes-runtime-name_shape-payload-2026-09-24.json",
+ "primitiveId": "di-shapes",
+ "evalMode": "name_shape",
+ "data": {
+  "title": "Shape Superstars!",
+  "description": "Let us look at some wonderful flat figures on the screen and say their names out loud together!",
+  "challengeType": "name_shape",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "dish-1-square",
+    "challengeType": "name_shape",
+    "shape": "square",
+    "shapeWord": "square",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": 1,
+    "asrAliases": [
+     "square",
+     "squares",
+     "sware"
+    ]
+   },
+   {
+    "id": "dish-2-circle",
+    "challengeType": "name_shape",
+    "shape": "circle",
+    "shapeWord": "circle",
+    "article": "a",
+    "sides": null,
+    "corners": null,
+    "rotationDeg": 0,
+    "asrAliases": [
+     "circle",
+     "circles",
+     "surkle"
+    ]
+   },
+   {
+    "id": "dish-3-rectangle",
+    "challengeType": "name_shape",
+    "shape": "rectangle",
+    "shapeWord": "rectangle",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": -11,
+    "asrAliases": [
+     "rectangle",
+     "rectangles",
+     "wectangle"
+    ]
+   },
+   {
+    "id": "dish-4-triangle",
+    "challengeType": "name_shape",
+    "shape": "triangle",
+    "shapeWord": "triangle",
+    "article": "a",
+    "sides": 3,
+    "corners": 3,
+    "rotationDeg": -1,
+    "asrAliases": [
+     "triangle",
+     "triangles",
+     "twiangle"
+    ]
+   },
+   {
+    "id": "dish-5-square",
+    "challengeType": "name_shape",
+    "shape": "square",
+    "shapeWord": "square",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": -7,
+    "asrAliases": [
+     "square",
+     "squares",
+     "sware"
+    ]
+   }
+  ]
+ }
+}

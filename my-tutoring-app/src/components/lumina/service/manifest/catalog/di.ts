@@ -545,6 +545,15 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // K GEOM001-02-A "…based on their attributes (sides and vertices)" (0.786).
     evalModes: DI_SHAPES_EVAL_MODES,
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
+      guidance: 'The stage draws one flat shape, or a familiar object drawn in code. The child answers OUT LOUD: the '
+        + 'shape name, or on the counting modes how many sides or corners. A close but different name (square for a '
+        + 'rectangle, circle for an oval) is wrong; a named alternate you are given counts. On the counting modes '
+        + 'never say the shape name, because it gives the count away. On real objects the object is named but the '
+        + 'shape in it is the answer. Never say the answer before the child tries. You cannot draw, rotate or '
+        + 'resize the shape.',
+    },
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
     // Same judged-loop engine, same transport need (see di-letter-sounds).

@@ -1,107 +1,34 @@
 'use client';
 
 /**
- * DiShapes — DI family primitive #5 (born 2026-08-06). Live-judged
- * call-response shape naming: the Live tutor MODELS a drawn 2D shape's name
- * ("Listen: this shape is a triangle."), GUIDES the learner through it, then
- * TESTS ("Your turn. What shape is this?") and judges the spoken SHAPE NAME
- * from the audio it heard in-band. The learner SEES the drawn shape and
- * SPEAKS its name into an open mic; the judged-loop engine anchors each
- * attempt to the local voice turn and reads the tutor's verdict from its
- * sentinel opener.
+ * DiShapes — DI family primitive #5: the child sees a drawn 2D shape (or a familiar object
+ * drawn in code) and SAYS its name, or on the counting modes how many sides or corners it has.
+ * The Live tutor teaches it on the shared tutor/JEV workspace through `DiTeachingStage`
+ * (workspace rollout B3; the scripted DISTAR drill was retired, LA-14, user ruling 09-23: one
+ * path). An unbound mount renders the stage's visible "needs the tutor" card.
  *
- * The Live tutor IS the interaction surface (living-simulation doctrine) —
- * the committed engine (useJudgedSpeechLoop → judgedLoopModel +
- * useLiveVoiceTurns) owns the loop mechanics; this component owns DI
- * progression (advance / retry / move-on after capped corrections), the
- * kid-facing drawn-shape stage, and evaluation. Shapes are generator-scoped
- * to the objective; the script and judging contract are hand-authored
- * (diShapesScript). Separate content pack — the four sibling packs are frozen
- * and untouched.
+ * ANSWER-LEAK RULE: the stage draws the SHAPE ONLY. Under a counting mode the shape's NAME is
+ * also withheld, because it hands the count to any child who knows it (triangle → three). The
+ * labeled reward ("triangle", or "three sides") renders only for answers the observer has
+ * credited, and a missed item recaps unlabeled.
  *
- * L1 (2026-08-07) added three more task identities on the same stage:
- * `shape_review` (cumulative naming over a wide draw) and the two
- * attribute-counting skills `count_sides` / `count_corners`, whose answer is a
- * spoken NUMBER WORD. A session may blend them, so everything kid-facing —
- * the cue, the prompt line, the stage caption, the reward, the recap — reads
- * from the CURRENT challenge's `challengeType`, never the session-level one
- * (which is representative metadata on a blended session).
+ * GEOMETRY IS THE PEDAGOGY GUARD: rectangles draw clearly elongated (≥1.6:1) and ovals clearly
+ * non-circular, so each drawing has exactly ONE defensible name. Rotation, exemplar and scale are
+ * stamped per challenge by the generator (K.G.2: regardless of orientation and size).
  *
- * ANSWER-LEAK RULE: the stage draws the SHAPE ONLY — the answer never appears
- * before the child says it. Under a counting mode the shape's NAME is also
- * withheld, because it hands the count to any child who knows it
- * (triangle → three). The labeled reward ("triangle", or "three sides")
- * renders only AFTER an affirmed answer and in the completion recap for
- * affirmed items; missed items recap unlabeled.
- *
- * GEOMETRY IS THE PEDAGOGY GUARD: rectangles draw clearly elongated (≥1.6:1)
- * and ovals clearly non-circular, so square-vs-rectangle and circle-vs-oval
- * each have exactly ONE defensible name per drawing (the rule-#1 / R12
- * class). Rotation comes stamped per challenge by the generator — K.G.2 is
- * "name shapes regardless of orientation", so orientation must actually vary.
- *
- * FLUENCY: per-item response time is captured SILENTLY from the engine's
- * attempt timing into metrics (meanResponseMs). No visible timer, ever
- * (no-timer ruling).
+ * What the drill also shipped and this path does not report yet: silent per-item response
+ * timing (`meanResponseMs` is null) and the Tier-A misconception packet (queued with the other
+ * DI packs for /add-misconception-loop), and Pip (queued for /add-pip-surface on DiTeachingStage).
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import {
-  LuminaCard,
-  LuminaCardHeader,
-  LuminaCardTitle,
-  LuminaCardDescription,
-  LuminaCardContent,
-  LuminaBadge,
-  LuminaChallengeCounter,
-  motion,
-} from '../../../ui';
-import { usePrimitiveEvaluation } from '../../../evaluation';
-import type { PrimitiveEvaluationResult } from '../../../evaluation/types';
-import type { DiShapesMetrics } from '../../../evaluation/types';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { useJudgedSpeechLoop } from '../../../hooks/useJudgedSpeechLoop';
-import type { LoopEmission } from '../../../hooks/judgedLoopModel';
-import {
-  flushDiRunLog,
-  logDiCue,
-  logDiEmission,
-  logDiStage,
-  logDiTutorText,
-  logDiVoiceClose,
-  startDiRunLog,
-} from './diRunLog';
-import { mintRunId, setClientRunId } from '../../../service/clientRunId';
-import {
-  answerWordFor,
-  completeCue,
-  countNoun,
-  isCountingType,
-  itemCue,
-  moveOnCue,
-  withShapesAction,
-  type DiShapesChallenge,
-  type DiShapesChallengeType,
-  type DiShapeName,
-  type ShapeExemplar,
-} from './diShapesScript';
+import React, { useMemo } from 'react';
+import type { PrimitiveEvaluationResult, DiShapesMetrics } from '../../../evaluation/types';
+import DiTeachingStage, { diStageMetrics } from './DiTeachingStage';
+import { answerWordFor, countNoun, isCountingType, type DiShapesChallenge, type DiShapesChallengeType,
+  type DiShapeName, type ShapeExemplar } from './diShapesScript';
+import { shapesAssignment, shapesScene } from './diShapesWorkspace';
 import { geometryFor, pointsAttr } from './diShapesGeometry';
-import {
-  buildDiDiagnosisEvidence,
-  completeLatestJudgeFeedback,
-  pushFailedVerdict,
-  type DiFailedVerdict,
-} from './diDiagnosisEvidence';
-import { DiStallCard } from './DiStallCard';
-import { useDiStallRecovery } from './useDiStallRecovery';
-import { useDiPostRunDisconnect } from './useDiPostRunDisconnect';
-import DiActionPanel from '../../../components/DiActionPanel';
 import RealWorldShapeObject from '../shared/RealWorldShapeObject';
-import type { RealWorldShapeObjectId } from '../shared/realWorldShapeObjects';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { diShapesPipPose } from '../../../pip/diShapesPipPose';
-import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 export type {
   DiShapesChallenge,
@@ -130,92 +57,30 @@ export interface DiShapesData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<DiShapesMetrics>) => void;
 }
 
-/** Corrections the tutor may run on one shape before the lesson moves on. */
-const MAX_CORRECTIONS_PER_ITEM = 2;
-
-/** Manual voice-activity mode (family transport — bench run-3 ruling). */
-const DI_AUDIO_INPUT = { manual_activity: true };
-
-/** Floor/ceiling for the labeled-shape reward beat (see DiMathFacts). */
-const REWARD_BEAT_MIN_MS = 900;
-const REWARD_BEAT_MAX_MS = 3000;
-
-const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
-/** One resolved item outcome, accumulated synchronously for metrics. */
-interface ItemOutcome {
-  id: string;
-  correct: boolean;
-  attempts: number;
-  score: number;
-  /** Silent fluency signal: tutor-audio-fall → learner attempt (ms). */
-  responseMs: number | null;
+export interface DiShapesProps {
+  data: DiShapesData;
+  index?: number;
+  className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED eval mode from the live mount; never rebuilt from a label. */
+  runtimeEvalMode?: string;
 }
 
-const scoreForCorrections = (corrections: number): number =>
-  corrections <= 0 ? 100 : corrections === 1 ? 67 : 33;
-
-/** Misconception Loop S1 naming — task identity inside the summary so a
- *  primitive-scoped diagnosis stays self-limiting (family pattern). The two
- *  classes are named distinctly so a diagnosis can never generalise a counting
- *  error into a naming claim, or the reverse. */
-const challengeSummaryFor = (item: DiShapesChallenge): string =>
-  item.challengeType === 'name_real_object'
-    ? `Direct Instruction real-world shape naming — a code-drawn ${item.realObjectLabel ?? 'familiar object'} was shown and the learner was asked to say the 2D shape in its outline. `
-      + 'The object label did not contain the shape answer; the tutor judged the spoken name.'
-    : isCountingType(item.challengeType)
-    ? `Direct Instruction shape attributes — a flat 2D shape was DRAWN on screen `
-      + `(${item.shape}, rotated ${item.rotationDeg}°) and the tutor asked how many `
-      + `${countNoun(item.challengeType)} it has. `
-      + 'The learner answers by SPEAKING a number word; the tutor judges the audio.'
-    : 'Direct Instruction shape naming — a flat 2D shape was DRAWN on screen '
-      + `(${item.shape}, rotated ${item.rotationDeg}°) and the tutor asked what shape it is. `
-      + 'The learner answers by SPEAKING the shape name; the tutor judges the audio.';
-
-const expectedFor = (item: DiShapesChallenge): string =>
-  isCountingType(item.challengeType)
-    ? `Say how many ${countNoun(item.challengeType)}: "${item.countWord ?? ''}".`
-    : `Say the shape name "${item.shapeWord}".`;
-
-/** Kid-facing prompts, per task identity. The ASK never contains the answer. */
-const askLabelFor = (item: DiShapesChallenge | null): string =>
-  item && isCountingType(item.challengeType)
-    ? `say how many ${countNoun(item.challengeType)}`
-    : 'say the shape';
-
-const listenLineFor = (item: DiShapesChallenge | null): string =>
-  item && isCountingType(item.challengeType)
-    ? `Listen, then ${askLabelFor(item)}.`
-    : 'Listen, then say the shape.';
-
-/** POST-affirmation only. Mirrors what the tutor just said, so the reward the
- *  child reads is the answer they just produced — "triangle", or "three sides". */
+/** POST-credit only: "triangle", or "three sides". */
 const rewardLabelFor = (item: DiShapesChallenge): string =>
-  isCountingType(item.challengeType)
-    ? `${answerWordFor(item)} ${countNoun(item.challengeType)}`
-    : answerWordFor(item);
+  isCountingType(item.challengeType) ? `${answerWordFor(item)} ${countNoun(item.challengeType)}` : answerWordFor(item);
 
 // ── The drawn-shape stage (code-owned geometry) ─────────────────────
-// One 200×200 viewBox, shape centered at (100,100). The geometry — and the
-// pedagogy guards on it (rectangle ≥1.6:1, oval clearly non-circular, every
-// polygon's point count equal to its menu side/corner count) — lives as DATA in
-// diShapesGeometry.ts so it can be asserted; see diShapesGeometry.test.ts.
-//
-// L4 (2026-08-07): each shape has TWO drawings. `prototype` is the textbook
-// picture; `variant` is the same shape drawn against that prototype (scalene
-// obtuse triangle, irregular hexagon, portrait rectangle). Rotation and scale
-// arrive stamped per challenge. Withdrawing none of it changes the ANSWER —
-// that is exactly why it is the structural axis rather than a support tier.
-const ShapeDrawing: React.FC<{ shape: DiShapeName; exemplar?: ShapeExemplar }> = ({
-  shape, exemplar,
-}) => {
+// One 200×200 viewBox, shape centered at (100,100). The geometry and its pedagogy guards live as
+// DATA in diShapesGeometry.ts so they can be asserted; see diShapesGeometry.test.ts.
+const ShapeDrawing: React.FC<{ shape: DiShapeName; exemplar?: ShapeExemplar }> = ({ shape, exemplar }) => {
   const g = geometryFor(shape, exemplar ?? 'prototype');
   if (g.kind === 'circle') return <circle cx={100} cy={100} r={g.r} />;
   if (g.kind === 'ellipse') return <ellipse cx={100} cy={100} rx={g.rx} ry={g.ry} />;
   return <polygon points={pointsAttr(g.points)} />;
 };
 
-const ShapeStage: React.FC<{
+export const ShapeStage: React.FC<{
   shape: DiShapeName;
   rotationDeg: number;
   exemplar?: ShapeExemplar;
@@ -227,14 +92,12 @@ const ShapeStage: React.FC<{
   return (
     <svg viewBox="0 0 200 200" className={className} role="img" aria-label="shape to name">
       <g
-        // Rotate AND scale about the stage centre, so a small shape is still
-        // centred and a rotated one never clips out of the box.
+        // Rotate AND scale about the stage centre, so a small shape stays centred and a rotated one never clips.
         transform={`rotate(${rotationDeg} 100 100) translate(100 100) scale(${scale}) translate(-100 -100)`}
         fill="rgba(34,211,238,0.14)"
         stroke="#67e8f9"
-        // Keep the outline visually constant as the shape shrinks — a thicker
-        // relative stroke on a small shape would blur the corners a child is
-        // being asked to count.
+        // A constant visual outline as the shape shrinks: a thicker relative stroke would blur the corners a
+        // child is asked to count.
         strokeWidth={strokeWidth / scale}
         strokeLinejoin="round"
       >
@@ -244,684 +107,48 @@ const ShapeStage: React.FC<{
   );
 };
 
-/** PLATFORM PROP CONTRACT: every renderer mounts a registry primitive as
- *  `<Component data={…} index={…} />` (the 2026-08-06 props-are-data class is
- *  a compile error now — this pack is born on the right side of it). */
-export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ data }) => {
-  const ctx = useLuminaAIContext();
+const COPY = {
+  empty: 'These shapes are still being prepared. Try generating this practice again.',
+  title: 'Shape Time', badge: 'Say it out loud', prompt: 'Say the answer out loud, or ask for help.',
+  heading: 'Great shape work!', celebration: 'You answered every shape!',
+};
 
-  const resolvedInstanceId = useMemo(
-    () => data.instanceId || `di-shapes-${Math.round(performance.now())}`,
-    [data.instanceId],
-  );
+/** The drawing alone: no name, no count. A tutor mark outlines it. */
+function stimulus(item: DiShapesChallenge, marks: readonly string[]) {
+  const marked = marks.includes('shape');
+  return <div className="flex min-h-56 items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8">
+    <div data-shape-object="shape" data-assignment-target="true" data-tutor-demonstration={marked}
+      className={marked ? 'rounded-2xl outline outline-2 outline-dashed outline-offset-4 outline-purple-400' : ''}>
+      {item.challengeType === 'name_real_object' && item.realObjectId
+        ? <RealWorldShapeObject objectId={item.realObjectId} />
+        : <ShapeStage shape={item.shape} rotationDeg={item.rotationDeg} exemplar={item.exemplar} scalePct={item.scalePct} />}
+    </div>
+  </div>;
+}
 
-  const {
-    currentIndex,
-    results: challengeResults,
-    isComplete,
-    recordResult,
-    advance,
-  } = useChallengeProgress<DiShapesChallenge>({
-    challenges: data.challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+/** The reward trail: only answers the observer has credited, each drawn small with its label. */
+function creditedShapes(done: DiShapesChallenge[]) {
+  return done.length > 0 && <div className="flex flex-wrap justify-center gap-2" aria-label="Shapes you have answered">
+    {done.map(item => <div key={item.id} data-shape-credited={item.id}
+      className="flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-3 py-1">
+      <ShapeStage shape={item.shape} rotationDeg={item.rotationDeg} exemplar={item.exemplar} className="h-8 w-8" strokeWidth={10} />
+      <span className="text-sm font-semibold text-emerald-200">{rewardLabelFor(item)}</span>
+    </div>)}
+  </div>;
+}
 
-  const currentChallenge = data.challenges[currentIndex]
-    ? withShapesAction(data.challenges[currentIndex])
-    : null;
+/** A missed shape recaps unlabeled: the recap must not print an answer the child never produced. */
+const recapLabel = (item: DiShapesChallenge, solved: boolean) => solved ? rewardLabelFor(item) : 'a shape';
 
-  const evaluation = usePrimitiveEvaluation<DiShapesMetrics>({
-    primitiveType: 'di-shapes',
-    instanceId: resolvedInstanceId,
-    skillId: data.skillId,
-    subskillId: data.subskillId,
-    objectiveId: data.objectiveId,
-    exhibitId: data.exhibitId,
-    componentIntent: data.componentIntent,
-    objectiveText: data.objectiveText,
-    onSubmit: data.onEvaluationSubmit,
-  });
-
-  // ── Runtime state ────────────────────────────────────────────────
-  const [running, setRunning] = useState(false);
-  const [preparing, setPreparing] = useState(false);
-  const [phase, setPhase] = useState<'idle' | 'ready' | 'listening' | 'judging' | 'affirmed' | 'done'>('idle');
-  const [statusLine, setStatusLine] = useState('Tap the microphone to start.');
-  /** The shape JUST affirmed, VALUE-CAPTURED at verdict time (never derived
-   *  from currentChallenge — the sibling pack's answer-leak lesson). During
-   *  the reward beat it replaces the unnamed shape with the labeled one. */
-  const [reward, setReward] = useState<{
-    shape: DiShapeName;
-    rotationDeg: number;
-    exemplar?: ShapeExemplar;
-    scalePct?: number;
-    realObjectId?: RealWorldShapeObjectId;
-    label: string;
-  } | null>(null);
-
-  const idxRef = useRef(0);
-  idxRef.current = currentIndex;
-  const correctionsRef = useRef(new Map<string, number>());
-  const outcomesRef = useRef<ItemOutcome[]>([]);
-  const lastResponseMsRef = useRef<number | null>(null);
-  const lastHeardRef = useRef<string | null>(null);
-  const failedVerdictsRef = useRef<DiFailedVerdict[]>([]);
-  const awaitingJudgeTextRef = useRef(false);
-  const submittedRef = useRef(false);
-  const weConnectedRef = useRef(false);
-  const connectedRef = useRef(ctx.isConnected);
-  const listeningRef = useRef(ctx.isListening);
-  connectedRef.current = ctx.isConnected;
-  listeningRef.current = ctx.isListening;
-
-  const currentOf = useCallback(
-    () => data.challenges[idxRef.current] ?? null,
-    [data.challenges],
-  );
-
-  // ── Session-liveness recovery (family item 5) ────────────────────
-  const {
-    stalled,
-    noteDead: noteSessionDead,
-    noteResumed: noteSessionResumed,
-    retry: retryStall,
-    reset: resetStall,
-  } = useDiStallRecovery({
-    running,
-    currentItemId: () => currentOf()?.id ?? null,
-    onStatus: setStatusLine,
-  });
-
-  const postRun = useDiPostRunDisconnect({ done: phase === 'done', weConnectedRef });
-
-  // ── The reward beat (edge-driven; see DiMathFacts for the rationale) ──
-  const pendingAdvanceRef = useRef(false);
-  const rewardStartedAtRef = useRef(0);
-  const advanceTimerRef = useRef<number | null>(null);
-  const tutorAudioRef = useRef(ctx.isAudioPlaying);
-
-  const clearAdvanceTimer = useCallback(() => {
-    if (advanceTimerRef.current != null) {
-      window.clearTimeout(advanceTimerRef.current);
-      advanceTimerRef.current = null;
-    }
-  }, []);
-
-  const commitAdvance = useCallback(() => {
-    if (!pendingAdvanceRef.current) return;
-    pendingAdvanceRef.current = false;
-    clearAdvanceTimer();
-    idxRef.current = Math.min(idxRef.current + 1, data.challenges.length - 1);
-    setReward(null);
-    setPhase('listening');
-    // The prompt follows the NEXT item's task identity — a blended session can
-    // move from "say the shape" to "say how many sides" between items.
-    setStatusLine(listenLineFor(data.challenges[idxRef.current] ?? null));
-    advance();
-  }, [advance, clearAdvanceTimer, data.challenges]);
-
-  const scheduleAdvance = useCallback(() => {
-    pendingAdvanceRef.current = true;
-    rewardStartedAtRef.current = performance.now();
-    clearAdvanceTimer();
-    advanceTimerRef.current = window.setTimeout(() => {
-      advanceTimerRef.current = null;
-      commitAdvance();
-    }, REWARD_BEAT_MAX_MS);
-  }, [clearAdvanceTimer, commitAdvance]);
-
-  useEffect(() => {
-    const wasPlaying = tutorAudioRef.current;
-    tutorAudioRef.current = ctx.isAudioPlaying;
-    if (!wasPlaying || ctx.isAudioPlaying) return;
-    if (!pendingAdvanceRef.current) return;
-    const shown = performance.now() - rewardStartedAtRef.current;
-    if (shown >= REWARD_BEAT_MIN_MS) {
-      commitAdvance();
-      return;
-    }
-    clearAdvanceTimer();
-    advanceTimerRef.current = window.setTimeout(() => {
-      advanceTimerRef.current = null;
-      commitAdvance();
-    }, REWARD_BEAT_MIN_MS - shown);
-  }, [ctx.isAudioPlaying, clearAdvanceTimer, commitAdvance]);
-
-  useEffect(() => () => clearAdvanceTimer(), [clearAdvanceTimer]);
-
-  const finishAndSubmit = useCallback(() => {
-    if (submittedRef.current) return;
-    submittedRef.current = true;
-    pendingAdvanceRef.current = false;
-    clearAdvanceTimer();
-    const outcomes = outcomesRef.current;
-    const correctCount = outcomes.filter((o) => o.correct).length;
-    const firstTryCount = outcomes.filter((o) => o.correct && o.attempts === 1).length;
-    const attemptsCount = outcomes.reduce((sum, o) => sum + o.attempts, 0);
-    const overallAccuracy = outcomes.length
-      ? Math.round(outcomes.reduce((sum, o) => sum + o.score, 0) / outcomes.length)
-      : 0;
-    const timed = outcomes.filter((o) => o.responseMs != null) as Array<ItemOutcome & { responseMs: number }>;
-    const meanResponseMs = timed.length
-      ? Math.round(timed.reduce((sum, o) => sum + o.responseMs, 0) / timed.length)
-      : null;
-    const metrics: DiShapesMetrics = {
-      type: 'di-shapes',
-      challengeType: data.challengeType,
-      evalMode: data.challengeType,
-      totalChallenges: data.challenges.length,
-      correctCount,
-      attemptsCount,
-      firstTryCount,
-      hintsViewed: 0,
-      overallAccuracy,
-      averageAttemptsPerChallenge: outcomes.length
-        ? Math.round((attemptsCount / outcomes.length) * 10) / 10
-        : 0,
-      meanResponseMs,
-    };
-    const diagnosable = overallAccuracy < 60;
-    const diagnosisEvidence = diagnosable
-      ? buildDiDiagnosisEvidence(failedVerdictsRef.current)
-      : undefined;
-    evaluation.submitResult(
-      overallAccuracy >= 50,
-      overallAccuracy,
-      metrics,
-      { outcomes },
-      undefined,
-      diagnosisEvidence,
-    );
-    setRunning(false);
-    setPhase('done');
-    setStatusLine('Great work today!');
-    logDiStage('run-end', 'run complete — submitting + flushing run log');
-    void flushDiRunLog('run-end');
-    setTimeout(() => void flushDiRunLog('run-end-tail'), 6000);
-  }, [clearAdvanceTimer, data.challenges.length, data.challengeType, evaluation]);
-
-  // ── DI progression over an engine verdict ────────────────────────
-  const loopRef = useRef<ReturnType<typeof useJudgedSpeechLoop> | null>(null);
-
-  const applyVerdict = useCallback(
-    (judgment: 'affirmed' | 'corrected' | 'off-script', verdictText?: string) => {
-      const item = currentOf();
-      const loop = loopRef.current;
-      if (!item || !loop) return;
-
-      if (judgment === 'off-script') return;
-
-      const prevCorrections = correctionsRef.current.get(item.id) ?? 0;
-
-      if (judgment === 'corrected') {
-        const used = prevCorrections + 1;
-        correctionsRef.current.set(item.id, used);
-        failedVerdictsRef.current = pushFailedVerdict(failedVerdictsRef.current, {
-          challenge: challengeSummaryFor(item),
-          expected: expectedFor(item),
-          heard: lastHeardRef.current,
-          judgeFeedback: verdictText ?? '',
-        });
-        awaitingJudgeTextRef.current = true;
-        if (used <= MAX_CORRECTIONS_PER_ITEM) {
-          setPhase('listening');
-          setStatusLine('Let’s try that one again.');
-          return;
-        }
-        logDiStage(
-          'move-on',
-          `correction cap (${MAX_CORRECTIONS_PER_ITEM}) reached — moving on`,
-          { itemId: item.id, itemDisplay: item.shape },
-          'move-on',
-        );
-        outcomesRef.current.push({
-          id: item.id, correct: false, attempts: used, score: 0,
-          responseMs: lastResponseMsRef.current,
-        });
-        recordResult({ challengeId: item.id, correct: false, attempts: used, score: 0 });
-        const next = data.challenges[idxRef.current + 1] ?? null;
-        lastResponseMsRef.current = null;
-        if (next) {
-          setStatusLine('Good try. Let’s keep going.');
-          loop.queueCue(moveOnCue(item, next));
-          scheduleAdvance();
-        } else {
-          loop.queueCue(moveOnCue(item));
-          finishAndSubmit();
-        }
-        return;
-      }
-
-      // affirmed
-      const attempts = prevCorrections + 1;
-      const score = scoreForCorrections(prevCorrections);
-      outcomesRef.current.push({
-        id: item.id, correct: true, attempts, score,
-        responseMs: lastResponseMsRef.current,
-      });
-      recordResult({ challengeId: item.id, correct: true, attempts, score });
-      lastResponseMsRef.current = null;
-      setPhase('affirmed');
-      // Post-answer reward only — the answer never precedes the answer.
-      // The reward must show the SAME drawing the child just solved — including
-      // its variant and size. Re-rendering the prototype here would quietly
-      // teach that the textbook picture is the "real" one.
-      setReward({
-        shape: item.shape,
-        rotationDeg: item.rotationDeg,
-        exemplar: item.exemplar,
-        scalePct: item.scalePct,
-        realObjectId: item.realObjectId,
-        label: rewardLabelFor(item),
-      });
-      const next = data.challenges[idxRef.current + 1] ?? null;
-      if (next) {
-        setStatusLine(
-          isCountingType(item.challengeType) ? 'Yes! Nice counting.' : 'Yes! You know your shapes.',
-        );
-        loop.queueCue(itemCue(next));
-        scheduleAdvance();
-      } else {
-        setStatusLine('You did it!');
-        loop.queueCue(completeCue());
-        finishAndSubmit();
-      }
-    },
-    [currentOf, data.challenges, finishAndSubmit, recordResult, scheduleAdvance],
-  );
-
-  /** Item context for the run log. Diagnostics only. */
-  const logCtx = useCallback(() => {
-    const item = currentOf();
-    return { itemId: item?.id, itemDisplay: item?.shape };
-  }, [currentOf]);
-
-  const handleEmission = useCallback(
-    (emission: LoopEmission) => {
-      logDiEmission(emission, logCtx());
-
-      switch (emission.kind) {
-        case 'attempt-open':
-          commitAdvance();
-          lastHeardRef.current = null;
-          awaitingJudgeTextRef.current = false;
-          setPhase('judging');
-          setStatusLine('Listening…');
-          setReward(null);
-          return;
-        case 'attempt-transcript':
-          lastResponseMsRef.current = emission.responseMs;
-          lastHeardRef.current = emission.text;
-          return;
-        case 'verdict':
-          // THE THIRD BRANCH is opt-in (`withHelpBranch`) and this pack's cue
-          // contract has no help clause, so the loop can never classify one here.
-          // The branch is declared inert rather than omitted: if this pack adopts
-          // `helpBranch` later, the compiler stops pointing at this line and a
-          // help turn would otherwise fall through and be scored as an answer.
-          if (emission.judgment === 'helped') return;
-          if (emission.judgment === 'no-verdict') {
-            const item = currentOf();
-            setStatusLine(
-              item && isCountingType(item.challengeType)
-                ? `One more time—how many ${countNoun(item.challengeType)}?`
-                : 'One more time—what shape is it?',
-            );
-            return;
-          }
-          applyVerdict(emission.judgment, emission.verdictText);
-          return;
-        case 'verdict-text': {
-          if (emission.judgment === 'corrected' && awaitingJudgeTextRef.current) {
-            awaitingJudgeTextRef.current = false;
-            failedVerdictsRef.current = completeLatestJudgeFeedback(
-              failedVerdictsRef.current,
-              emission.text,
-            );
-          }
-          return;
-        }
-        case 'session-resumed':
-        case 'resync': {
-          if (emission.kind === 'session-resumed') noteSessionResumed();
-          if (pendingAdvanceRef.current) {
-            commitAdvance();
-            return;
-          }
-          setStatusLine('Let’s look at that one again.');
-          if (loopRef.current) {
-            const item = currentOf();
-            if (item) loopRef.current.queueCue(itemCue(item));
-          }
-          return;
-        }
-        case 'session-dead':
-          noteSessionDead();
-          return;
-        case 'loop-deaf':
-          // Family recovery (piloted on math-facts): re-arm so the NEXT thing
-          // the child says is heard; no re-cue (the tutor already asked).
-          loopRef.current?.arm();
-          return;
-        default:
-          return;
-      }
-    },
-    [applyVerdict, commitAdvance, currentOf, noteSessionDead, noteSessionResumed],
-  );
-
-  // Scroll lessons keep sibling DI runs mounted. Only this instance's
-  // activity may consume the shared judge or publish its current item.
-  const activeInLesson = ctx.sessionMode !== 'lesson'
-    || ctx.activePrimitiveId === resolvedInstanceId;
-  const loop = useJudgedSpeechLoop({
-    enabled: running,
-    active: activeInLesson,
-    onEmission: handleEmission,
-    onTutorText: (text) => logDiTutorText(text, logCtx()),
-    onVoiceTurnClose: (event) => logDiVoiceClose(event, logCtx()),
-    onCue: (event) => {
-      logDiCue(event, logCtx());
-      postRun.noteCue(event);
-    },
-  });
-  loopRef.current = loop;
-
-  // ── Connect + open mic (student gesture) ─────────────────────────
-  const prepareLive = useCallback(async () => {
-    if (preparing) return;
-    setPreparing(true);
-    setStatusLine('Getting ready…');
-    setClientRunId(mintRunId());
-    try {
-      if (!connectedRef.current && ctx.sessionMode === 'idle') {
-        weConnectedRef.current = true;
-        const first = data.challenges[0];
-        await ctx.connect({
-          primitive_type: 'di-shapes',
-          instance_id: resolvedInstanceId,
-          primitive_data: {
-            activity: 'live direct instruction shape practice',
-            challengeType: data.challengeType,
-            // Stimulus side only — the answers (shape NAMES under a naming
-            // mode, side/corner COUNTS under a counting mode) never enter
-            // RUNTIME STATE; each target reaches the tutor inside its own
-            // [DI_ITEM] contract (answer-leak rule).
-            shapeCount: String(data.challenges.length),
-            // The support tier the cue is composed at (L3), so the tutor's own
-            // scaffolding channel cannot volunteer an answer a `hard` item
-            // deliberately withheld before the attempt. Never absent — an
-            // untiered session reports the shape it actually runs, `easy`.
-            supportTier: first?.supportTier ?? 'easy',
-          },
-          grade_level: data.gradeLevel || 'kindergarten',
-          audio_input: DI_AUDIO_INPUT,
-          // DI-GREET-1: this pack's first cue is its opening line — the tutor
-          // must not improvise a greeting turn before it arrives.
-          owns_opening: true,
-        });
-        const started = performance.now();
-        while (!connectedRef.current && performance.now() - started < 12_000) await sleep(100);
-        if (!connectedRef.current) throw new Error('The tutor did not connect.');
-      }
-
-      ctx.startListening();
-      const micStarted = performance.now();
-      while (!listeningRef.current && performance.now() - micStarted < 10_000) await sleep(100);
-      if (!listeningRef.current) throw new Error('The microphone did not open.');
-
-      setPhase('ready');
-      setStatusLine('Ready! We’ll start with the first one.');
-      startRun();
-    } catch (error) {
-      setStatusLine(error instanceof Error ? error.message : 'Could not start.');
-      setPhase('idle');
-    } finally {
-      setPreparing(false);
-    }
-    // startRun is stable via ref below; deps intentionally minimal.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx, data.challenges, data.challengeType, data.gradeLevel, preparing, resolvedInstanceId]);
-
-  // RUNTIME STATE stays stimulus-side: the task identity and the support tier,
-  // both the CURRENT item's — a blended session changes identity between items
-  // (and a tier rides per challenge), so the session-level `data.challengeType`
-  // would go stale mid-run. The identity names the ASK ("count_sides") and the
-  // tier names how much help preceded it; neither the shape's name nor its
-  // count ever enters the context bag.
-  useEffect(() => {
-    if (!activeInLesson || !ctx.isConnected || !currentChallenge) return;
-    ctx.updateContext({
-      challengeType: currentChallenge.challengeType,
-      supportTier: currentChallenge.supportTier ?? 'easy',
-    });
-    // Context methods are stable; keyed on the current item + connection.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeInLesson, ctx.isConnected, currentChallenge]);
-
-  const startRun = useCallback(() => {
-    const first = data.challenges[0];
-    if (!first) return;
-    correctionsRef.current.clear();
-    outcomesRef.current = [];
-    lastResponseMsRef.current = null;
-    lastHeardRef.current = null;
-    failedVerdictsRef.current = [];
-    awaitingJudgeTextRef.current = false;
-    submittedRef.current = false;
-    pendingAdvanceRef.current = false;
-    clearAdvanceTimer();
-    setReward(null);
-    resetStall();
-    loop.reset();
-    // Fresh diagnostics timeline for this run (diagnostics only). supportTier
-    // is pinned because at `hard` the tutor must never say the answer
-    // pre-attempt — a cold ask that leaks is only readable against the tier the
-    // run actually used.
-    startDiRunLog({
-      primitiveId: 'di-shapes',
-      challengeType: data.challengeType,
-      gradeLevel: data.gradeLevel,
-      supportTier: first.supportTier ?? 'easy',
-      totalItems: data.challenges.length,
-      silenceCloseMs: loop.voiceTurns.config.silenceCloseMs,
-    });
-    setRunning(true);
-    setPhase('listening');
-    setStatusLine(listenLineFor(first));
-    loop.sendCueNow(itemCue(first, true));
-    loop.arm();
-    logDiStage('run-start', `armed with ${data.challenges.length} items`, {
-      itemId: first.id,
-      itemDisplay: first.shape,
-    });
-  }, [clearAdvanceTimer, data.challenges, data.challengeType, data.gradeLevel, loop, resetStall]);
-
-  // Unmount cleanup — never leave Live holding the mic or an open turn.
-  useEffect(() => () => {
-    if (weConnectedRef.current) {
-      ctx.stopListening();
-      ctx.disconnect();
-    }
-    void flushDiRunLog('teardown');
-    // Context methods are stable; unmount-only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this pack's own phase word onto the drawn shape; Pip never
-  // answers, judges, or moves the stage. Speech counts only when it is this
-  // instance's and began on the shape now drawn.
-  const pip = usePipTargets(currentChallenge?.id ?? null, false);
-  const tutorSpeaking = ctx.isAudioPlaying && activeInLesson;
-  const speechOnShape = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || isComplete || evaluation.hasSubmitted) return null;
-    const targets = pip.targets(['shape'], () => 'The drawn shape');
-    const pose = diShapesPipPose({
-      running, preparing, phase, tutorSpeaking, speechOnShape,
-      visibleIds: targets.map((target) => target.id),
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Shapes',
-      dock: pip.dock.current, targets, pose,
-    };
-  });
-
-  // ── Render ───────────────────────────────────────────────────────
-  const total = data.challenges.length;
-  const isSupported =
-    typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
-
-  const micState = preparing
-    ? 'opening'
-    : phase === 'idle'
-      ? 'idle'
-    : ctx.isListening
-      ? 'armed'
-      : 'idle';
-  const actionStage = phase === 'idle'
-    ? 'idle'
-    : phase === 'judging'
-      ? 'judging'
-      : phase === 'affirmed'
-        ? 'affirmed'
-        : phase === 'done'
-          ? 'done'
-          : 'asking';
-
-  return (
-    <LuminaCard surface="elevated" className="max-w-3xl mx-auto">
-      <LuminaCardHeader>
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <LuminaCardTitle>{data.title || 'Shape Time'}</LuminaCardTitle>
-            <LuminaCardDescription>{data.description}</LuminaCardDescription>
-          </div>
-          <LuminaBadge accent="cyan">Say it out loud</LuminaBadge>
-        </div>
-      </LuminaCardHeader>
-
-      <LuminaCardContent>
-        {total > 0 && !isComplete && (
-          <div className="mb-4 flex justify-center">
-            <LuminaChallengeCounter current={currentIndex + 1} total={total} variant="dots" />
-          </div>
-        )}
-
-        {!isComplete && currentChallenge && stalled && (
-          <DiStallCard onRetry={retryStall} />
-        )}
-
-        {/* The kid-facing stage holds exactly ONE shape at a time. Before the
-            answer: the drawn shape alone — no name anywhere. After the tutor
-            affirms: the SAME shape gains its name underneath (emerald + pop)
-            for the reward beat, and only when that beat releases does the next
-            shape appear. */}
-        {!isComplete && currentChallenge && !stalled && (
-          <div className="mb-6 flex min-h-56 flex-col items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
-            {reward && phase === 'affirmed' ? (
-              <div
-                key={`solved-${reward.shape}`}
-                className={`flex flex-col items-center rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-6 py-3 ${motion.pop}`}
-              >
-                {reward.realObjectId ? (
-                  <RealWorldShapeObject objectId={reward.realObjectId} />
-                ) : (
-                  <ShapeStage
-                    shape={reward.shape}
-                    rotationDeg={reward.rotationDeg}
-                    exemplar={reward.exemplar}
-                    scalePct={reward.scalePct}
-                  />
-                )}
-                <div className="mt-1 text-3xl font-bold tracking-wide text-emerald-300">
-                  {reward.label}
-                </div>
-              </div>
-            ) : (
-              <div key={`shape-${currentChallenge.id}`} ref={pip.ref('shape')} data-pip-object="shape" className={motion.reveal}>
-                {currentChallenge.realObjectId ? (
-                  <RealWorldShapeObject objectId={currentChallenge.realObjectId} />
-                ) : (
-                  <ShapeStage
-                    shape={currentChallenge.shape}
-                    rotationDeg={currentChallenge.rotationDeg}
-                    exemplar={currentChallenge.exemplar}
-                    scalePct={currentChallenge.scalePct}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Completion recap — labels are safe ONLY for affirmed shapes; a
-            missed shape recaps unnamed (it resurfaces through review, and the
-            recap must not leak what the child never produced). */}
-        {isComplete && (
-          <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-6 text-center">
-            <div className="text-2xl font-semibold text-emerald-200">Great work today!</div>
-            <div className="mt-4 flex flex-wrap justify-center gap-3">
-              {data.challenges.map((ch) => {
-                const r = challengeResults.find((res) => res.challengeId === ch.id);
-                const ok = r?.correct;
-                return (
-                  <div
-                    key={ch.id}
-                    className={`flex flex-col items-center rounded-xl border px-3 py-2 ${ok ? 'border-emerald-400/40 bg-emerald-500/10' : 'border-amber-400/30 bg-amber-500/10'}`}
-                  >
-                    {/* The recap replays each item AS IT WAS DRAWN — same
-                        variant, rotation and size — so a child looking back
-                        recognises the shape they actually met. */}
-                    {ch.realObjectId ? (
-                      <RealWorldShapeObject
-                        objectId={ch.realObjectId}
-                        className="h-14 w-14"
-                        showLabel={false}
-                      />
-                    ) : (
-                      <ShapeStage
-                        shape={ch.shape}
-                        rotationDeg={ch.rotationDeg}
-                        exemplar={ch.exemplar}
-                        scalePct={ch.scalePct}
-                        className="h-14 w-14"
-                        strokeWidth={8}
-                      />
-                    )}
-                    {ok && <span className="text-sm font-semibold text-white">{rewardLabelFor(ch)}</span>}
-                    <span className="text-lg" aria-hidden="true">{ok ? '✅' : '🔁'}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {pipStore && !isComplete && (
-          <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-            className="mx-auto mb-4 flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-        )}
-
-        {/* Voice control: the whole interaction runs through the mic. */}
-        {!isComplete && (
-          <DiActionPanel
-            running={running}
-            stage={actionStage}
-            currentItem={currentChallenge}
-            steps={currentChallenge ? [currentChallenge] : []}
-            micState={micState}
-            statusLine={statusLine}
-            onStart={() => void prepareLive()}
-            onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}
-            isSupported={isSupported}
-            startInstruction="Start the lesson, look at the shape, then answer out loud."
-          />
-        )}
-      </LuminaCardContent>
-    </LuminaCard>
-  );
+/** PLATFORM PROP CONTRACT: registry primitives mount as `<Component data={…} index={…} />`. */
+export const DiShapes: React.FC<DiShapesProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
+  const items = useMemo(() => data.challenges ?? [], [data.challenges]);
+  const evalMode = runtimeEvalMode || data.challengeType || 'name_shape';
+  return <DiTeachingStage<DiShapesChallenge, DiShapesMetrics> primitiveId="di-shapes" data={data}
+    items={items} evalMode={evalMode} className={className} runtimePlanItemId={runtimePlanItemId}
+    assignment={shapesAssignment} scene={shapesScene} copy={COPY} stimulus={stimulus} trail={creditedShapes}
+    recapLabel={recapLabel}
+    metrics={result => ({ type: 'di-shapes', ...diStageMetrics(result, items, data.challengeType), meanResponseMs: null })} />;
 };
 
 export default DiShapes;

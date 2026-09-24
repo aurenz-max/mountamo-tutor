@@ -1,11 +1,10 @@
 // @vitest-environment jsdom
 // Replays the client-side failure in f1b2ab9da15f: a sentence verdict must
-// never advance the still-mounted CVC activity from hat to wet. Since LA-14 S5
-// the sentence pack has no scripted drill: mounted without a runtime (a section
-// that did not bind) it shows a visible "needs the tutor" state, sends no cue and
-// holds no voice-turn subscription, so the CVC drill stays the only consumer.
+// never advance the still-mounted CVC activity from hat to wet. Both packs now run
+// only on the teaching workspace (LA-14 S5, rollout B2); bound, the runtime scopes
+// every command to its instance, and unbound, both stay inert (below).
 import React from 'react';
-import { act, cleanup, fireEvent, render, within } from '@testing-library/react';
+import { act, cleanup, render, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { DEFAULT_VOICE_TURN_CONFIG } from '../../../hooks/voiceTurnMachine';
 import CvcSpeller, { type CvcSpellerData } from '../literacy/CvcSpeller';
@@ -73,28 +72,18 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
-it('an unbound sentence pack consumes no verdict and leaves the CVC drill on its item', async () => {
+// Re-based 09-24 (rollout B2): the CVC speller runs only on the teaching workspace too, so neither pack
+// has a drill left to advance. Unbound, both must stay inert: a visible "needs the tutor" state, no cue,
+// no voice-turn subscription, no context push — nothing that could consume the other's verdict.
+it('two unbound workspace packs in one lesson consume no verdict and send nothing', () => {
   const view = render(<Lesson />);
-  expect(state.updateContext.mock.calls).toHaveLength(1);
-  expect(state.updateContext).toHaveBeenLastCalledWith(expect.objectContaining({ word: 'hat' }));
-  await act(async () => {
-    const buttons = within(view.getByTestId('cvc')).getAllByRole('button');
-    fireEvent.click(buttons.find(b => b.getAttribute('aria-label') !== 'hear the word')!);
-  });
-  expect(state.sendText.mock.calls.some(([text]) => text.includes('[DI_CVC_ITEM]'))).toBe(true);
-  state.activePrimitiveId = 'sentences';
-  view.rerender(<Lesson />);
-  // Visible, not blank: the pack says it needs the tutor and offers no start control.
-  const sentencesView = within(view.getByTestId('sentences'));
-  expect(sentencesView.getByText(/needs the tutor/)).toBeTruthy();
-  expect(sentencesView.queryByRole('button')).toBeNull();
-  expect(view.container.querySelector('[data-workspace-unbound="di-sentence-reading"]')).toBeTruthy();
-  // The unfocused CVC drill has released its subscription, and the sentence pack never takes one.
+  for (const id of ['cvc-speller', 'di-sentence-reading']) {
+    expect(view.container.querySelector(`[data-workspace-unbound="${id}"]`), id).toBeTruthy();
+  }
+  expect(within(view.getByTestId('sentences')).queryByRole('button')).toBeNull();
   expect(listeners.size).toBe(0);
-  state.sendText.mockClear(); state.updateContext.mockClear();
   act(() => {
-    listeners.forEach(close => close({ kind: 'close', startedAt: performance.now(),
-      durationMs: 1500, voicedMs: 1400, peak: 0.1, duringTutorAudio: false, belowMinVoice: false }));
+    state.activePrimitiveId = 'sentences';
     state.conversation = [{ role: 'user', content: 'The cat sat.' },
       { role: 'assistant', content: 'Yes, that says The cat sat.' }];
     state.isAudioPlaying = true;
@@ -103,13 +92,7 @@ it('an unbound sentence pack consumes no verdict and leaves the CVC drill on its
   state.isAudioPlaying = false;
   view.rerender(<Lesson />);
   act(() => vi.advanceTimersByTime(2500));
-  const cues = state.sendText.mock.calls.map(([text]) => text);
-  expect(cues.some(text => text.includes('I see a pig.'))).toBe(false);
-  expect(cues.some(text => text.includes('[DI_CVC_ITEM]'))).toBe(false);
-  expect(state.updateContext.mock.calls.some(([data]) => 'middleSound' in data)).toBe(false);
-  // Return to CVC: its original item remains, with fresh context for that item.
-  state.activePrimitiveId = 'cvc';
-  view.rerender(<Lesson />);
-  expect(state.updateContext).toHaveBeenLastCalledWith(expect.objectContaining({ word: 'hat' }));
-  expect(listeners.size).toBe(1);
+  expect(state.sendText).not.toHaveBeenCalled();
+  expect(state.updateContext).not.toHaveBeenCalled();
+  expect(listeners.size).toBe(0);
 });
