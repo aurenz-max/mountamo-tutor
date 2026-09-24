@@ -19,7 +19,7 @@ one-file contract test is still owed (each adopter has its own workspace test). 
 ([report](../tutor-reports/workspace-rollout-A2-2026-09-23.md)): plain-shape recipe (`useWorkspaceProgress`), every live
 adapter now on the workspace. **B1 done 09-23** ([report](../tutor-reports/workspace-rollout-B1-2026-09-23.md)): balance-scale, base-ten-blocks, bar-model,
 fraction-circles, every mode (9 surfaces, the plain ones too); one ruling owed (balance-scale `two_step` explanation
-is now scored). **Generic W1 contract test DONE 09-24** (`runtime/workspaceContract.test.tsx`, 21 families, 53 saved payloads). **B2 done 09-24** ([report](../tutor-reports/workspace-rollout-B2-2026-09-24.md)): cvc-speller, phonics-blender, sound-swap, word-flip, workspace only. **B3 done 09-24** ([report](../tutor-reports/workspace-rollout-B3-2026-09-24.md)): you-and-me, ramp-lab, di-shapes, spatial-scene. **Next: batch C1.**
+is now scored). **Generic W1 contract test DONE 09-24** (`runtime/workspaceContract.test.tsx`, 21 families, 53 saved payloads). **B2 done 09-24** ([report](../tutor-reports/workspace-rollout-B2-2026-09-24.md)): cvc-speller, phonics-blender, sound-swap, word-flip, workspace only. **B3 done 09-24** ([report](../tutor-reports/workspace-rollout-B3-2026-09-24.md)): you-and-me, ramp-lab, di-shapes, spatial-scene. **C1 done 09-24** ([report](../tutor-reports/workspace-rollout-C1-2026-09-24.md)): syllable-clapper, rhyme-studio, phoneme-explorer, word-workout, workspace only. **Next: the cold-reconnect and silent-opening findings, then batch C2.**
 **Parallel, 2026-09-22: compare-objects at W1** (Tier A), recipe unchanged, about 1 hour; smokes
 `compare_two` text + `--audio` and `order_three` ×3 PASS ([report](../tutor-reports/compare-objects-w1-2026-09-22.md)).
 
