@@ -61,6 +61,7 @@ import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
 import { youAndMeHarnessAnswers } from '../../primitives/visual-primitives/literacy/youAndMeWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
+import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -906,6 +907,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-shape-object="shape"]' }, reward: { selector: '[data-shape-credited]', kind: 'count' } },
+  },
+  'spatial-scene': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/SpatialScene.tsx',
+    instanceId: 'scene',
+    defaults: { grade: 'Kindergarten', mode: 'identify', di: false,
+      topic: 'Position words: above, below, beside and next to' },
+    leakTokens: ['ACTIVITY_START', 'NEXT_ITEM', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'STEP_CORRECT', 'ALL_COMPLETE', 'SPATIAL_DESCRIPTION_ITEM'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: a word and Check, a cell and Check, each direction step, or
+    // a spoken description. Derived from the mounted challenge, never from Python.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current spatial-scene challenge');
+      return spatialHarnessInputs(c, intent === 'wrong', ctx.data.gridSize ?? 3, ctx.demand?.step as string | undefined);
+    },
+    probes: { mounted: { selector: '[data-pip-object^="cell-"], [aria-label="Viewer position"]' } },
   },
 };
 

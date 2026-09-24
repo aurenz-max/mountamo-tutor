@@ -1,0 +1,180 @@
+{
+ "source": "qa/tutor-reports/spatial-scene-runtime-identify-payload-2026-09-24.json",
+ "primitiveId": "spatial-scene",
+ "evalMode": "identify",
+ "data": {
+  "title": "Spatial Scene: Position words: above, below, beside and next to",
+  "description": "Explore spatial relationships with a a classroom with furniture and toys",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "identify",
+    "instruction": "Look at the classroom! Where is the ball relative to the box?",
+    "hint": "Check if the ball is directly up, down, or right next to the box.",
+    "sceneObjects": [
+     {
+      "name": "box",
+      "image": "📦",
+      "position": {
+       "row": 1,
+       "col": 1
+      }
+     },
+     {
+      "name": "ball",
+      "image": "⚽",
+      "position": {
+       "row": 0,
+       "col": 1
+      }
+     },
+     {
+      "name": "chair",
+      "image": "🪑",
+      "position": {
+       "row": 2,
+       "col": 0
+      }
+     },
+     {
+      "name": "star",
+      "image": "⭐",
+      "position": {
+       "row": 2,
+       "col": 2
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "ball",
+     "image": "⚽",
+     "position": {
+      "row": 0,
+      "col": 1
+     }
+    },
+    "correctPosition": "above",
+    "referenceObjectName": "box",
+    "options": [
+     "below",
+     "beside",
+     "above",
+     "next_to"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "identify",
+    "instruction": "Look at the toys! Where is the cat relative to the dog?",
+    "hint": "Look down from the cat to find the dog.",
+    "sceneObjects": [
+     {
+      "name": "cat",
+      "image": "🐱",
+      "position": {
+       "row": 0,
+       "col": 2
+      }
+     },
+     {
+      "name": "dog",
+      "image": "🐕",
+      "position": {
+       "row": 2,
+       "col": 2
+      }
+     },
+     {
+      "name": "house",
+      "image": "🏠",
+      "position": {
+       "row": 0,
+       "col": 0
+      }
+     },
+     {
+      "name": "tree",
+      "image": "🌳",
+      "position": {
+       "row": 1,
+       "col": 0
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "cat",
+     "image": "🐱",
+     "position": {
+      "row": 0,
+      "col": 2
+     }
+    },
+    "correctPosition": "above",
+    "referenceObjectName": "dog",
+    "options": [
+     "beside",
+     "below",
+     "next_to",
+     "above"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "identify",
+    "instruction": "Look at the classroom corner! Where is the car relative to the flower?",
+    "hint": "Check if the car is right next to the flower in the same row.",
+    "sceneObjects": [
+     {
+      "name": "flower",
+      "image": "🌸",
+      "position": {
+       "row": 1,
+       "col": 1
+      }
+     },
+     {
+      "name": "car",
+      "image": "🚗",
+      "position": {
+       "row": 1,
+       "col": 2
+      }
+     },
+     {
+      "name": "chair",
+      "image": "🪑",
+      "position": {
+       "row": 0,
+       "col": 0
+      }
+     },
+     {
+      "name": "box",
+      "image": "📦",
+      "position": {
+       "row": 2,
+       "col": 0
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "car",
+     "image": "🚗",
+     "position": {
+      "row": 1,
+      "col": 2
+     }
+    },
+    "correctPosition": "beside",
+    "referenceObjectName": "flower",
+    "options": [
+     "above",
+     "beside",
+     "below"
+    ]
+   }
+  ],
+  "gridSize": 3,
+  "gradeBand": "K"
+ }
+}

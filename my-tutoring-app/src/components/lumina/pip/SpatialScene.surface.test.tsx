@@ -5,12 +5,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PipSurfaceContext } from './PipSurfaceContext';
 import { PipSurfaceStore } from './PipSurfaceStore';
 import SpatialScene, { type SpatialSceneChallenge, type SpatialSceneData } from '../primitives/visual-primitives/math/SpatialScene';
+import { LiveLessonRuntime } from '../components/live-activity/runtime/LiveLessonRuntime';
+import { LiveRuntimeContext } from '../components/live-activity/runtime/LiveRuntimeContext';
+import { LiveRuntimeSurface } from '../components/live-activity/runtime/LiveRuntimeSurface';
 
 const tutor = vi.hoisted(() => ({ isAudioPlaying: false, activePrimitiveId: 'scene' as string | null }));
 vi.mock('@/lib/firebase', () => ({ auth: { currentUser: null, onAuthStateChanged: () => () => {} }, db: {}, app: {} }));
-vi.mock('../hooks/useLuminaAI', () => ({
-  useLuminaAI: () => ({ sendText: vi.fn(), isConnected: false, isAudioPlaying: tutor.isAudioPlaying, activePrimitiveId: tutor.activePrimitiveId }),
-}));
+// Spatial scene runs only on the teaching workspace: Pip is exercised there, and hears the shared context.
+vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
+  isConnected: true, isListening: true, sessionMode: 'lesson', sendText: vi.fn(), conversation: [],
+  sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} }, ...tutor,
+}) }));
 vi.mock('../evaluation', () => ({
   usePrimitiveEvaluation: () => ({ submitResult: vi.fn(), hasSubmitted: false, submittedResult: null, elapsedMs: 0 }),
   useEvaluationContext: () => null,
@@ -41,10 +46,24 @@ const data: SpatialSceneData = { title: 'Where?', gridSize: 3, gradeBand: 'K', i
 
 function mount() {
   const store = new PipSurfaceStore();
-  const ui = () => <PipSurfaceContext.Provider value={store}><SpatialScene data={data} /></PipSurfaceContext.Provider>;
+  store.setActive('scene');
+  const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
+  const ui = () => <PipSurfaceContext.Provider value={store}><LiveRuntimeContext.Provider value={runtime}>
+    <LiveRuntimeSurface runtime={runtime}><SpatialScene data={data} runtimePlanItemId="plan-scene" runtimeEvalMode="mixed" /></LiveRuntimeSurface>
+  </LiveRuntimeContext.Provider></PipSurfaceContext.Provider>;
   const view = render(ui());
   const rerender = () => act(() => { view.rerender(ui()); });
-  return { ...view, store, rerender };
+  /** The runtime's advance after a checked answer, as the shell offers it. */
+  const advance = () => {
+    const s = runtime.getSnapshot();
+    const a = s.affordances.find(x => x.action.type === 'advance');
+    expect(a, 'no advance offered').toBeTruthy();
+    const commandId = crypto.randomUUID();
+    act(() => { runtime.dispatch({ sessionEpoch: 'test', commandId, instanceId: 'scene', itemId: s.task!.itemId,
+      expectedRevision: s.revision, action: a!.action }); });
+    act(() => { runtime.confirmVisibleResponse(commandId); });
+  };
+  return { ...view, store, rerender, advance };
 }
 const pose = (store: PipSurfaceStore) => store.getActive()?.pose;
 
@@ -68,17 +87,17 @@ describe('Spatial Scene drives Pip from its check state', () => {
     fireEvent.pointerDown(above);
     fireEvent.click(above);
     fireEvent.click(screen.getByRole('button', { name: /check/i }));
-    expect(await screen.findByText(/next challenge/i)).toBeTruthy();
+    expect(await screen.findByText(/Yes! The bird is above/i)).toBeTruthy();
     expect(pose(store)).toEqual({ phase: 'celebrating', gesture: 'none' });
   });
 
   it('place outlines the grid, never a cell; a new challenge drops the old touch; speech for another block is ignored', async () => {
-    const { store, rerender } = mount();
+    const { store, rerender, advance } = mount();
     const above = screen.getByRole('button', { name: 'Above' });
     fireEvent.pointerDown(above);
     fireEvent.click(above);
     fireEvent.click(screen.getByRole('button', { name: /check/i }));
-    fireEvent.click(await screen.findByText(/next challenge/i));
+    advance();
     expect(store.getActive()?.scopeId).toBe('pl1');
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'scene' });
     tutor.activePrimitiveId = 'someone-else';

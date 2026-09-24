@@ -5026,6 +5026,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'The scene checks the word choices, cell taps and direction steps itself: the learner picks or taps and '
+        + 'presses Check (a direction step is checked as it is placed), and you are not told the answer. The '
+        + 'position word or cell is the answer: never say it before the learner has checked. On the spoken scene '
+        + 'the learner says where the object is from the YOU arrow, naming the relation and the other object; left '
+        + 'and right are as the learner sees them, and in front of means nearer the arrow. Never give the relation '
+        + 'before an attempt. You cannot pick, tap or place for the learner.',
+    },
     evalModes: [
       {
         evalMode: 'identify',

@@ -12,30 +12,21 @@
  * Contract: `docs/contracts/spatial-scene.md` R11 (`place` → empty cell) and its
  * deliberate inversion for `place_in`.
  */
-import React from 'react';
-import { cleanup, render, screen, fireEvent } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import SpatialScene, { type SpatialSceneChallenge, type SpatialSceneData } from './SpatialScene';
+// Spatial scene runs only on the teaching workspace, so it is mounted the way a lesson mounts it.
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
 
-// The tutor socket, auth and the sound engine are not what is under test here.
-vi.mock('@/lib/firebase', () => ({
-  auth: { currentUser: null, onAuthStateChanged: () => () => {} },
-  db: {},
-  app: {},
-}));
-vi.mock('../../../hooks/useLuminaAI', () => ({
-  useLuminaAI: () => ({ sendText: vi.fn(), isConnected: false }),
-}));
-vi.mock('../../../utils/SoundManager', () => ({
-  SoundManager: {
-    playCorrect: vi.fn(), playIncorrect: vi.fn(), select: vi.fn(), tap: vi.fn(), snap: vi.fn(),
-    // The completion panel reads these on mount (a single-challenge deck finishes
-    // as soon as the answer is right).
-    isEnabled: () => false, getVolume: () => 0, celebrate: vi.fn(), play: vi.fn(),
-  },
-}));
+import { cleanup, screen, fireEvent } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
+import type { SpatialSceneChallenge, SpatialSceneData } from './SpatialScene';
 
-afterEach(cleanup);
+beforeEach(() => { installRuntimeTimers(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); });
+
 
 /** box occupies (1,1) — the containment answer cell. */
 const PLACE_IN: SpatialSceneChallenge = {
@@ -97,8 +88,8 @@ function mount(challenge: SpatialSceneChallenge) {
     gradeBand: 'K',
     instanceId: `test-${challenge.type}`,
   };
-  const { container } = render(<SpatialScene data={data} />);
-  return container;
+  return mountWorkspace({ primitiveId: 'spatial-scene', evalMode: 'mixed',
+    data: data as unknown as Record<string, unknown> }).view.container;
 }
 
 /** The 9 grid cells, in row-major order — the same order GridScene renders them. */

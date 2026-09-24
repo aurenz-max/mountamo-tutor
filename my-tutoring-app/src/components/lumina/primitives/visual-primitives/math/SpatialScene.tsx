@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { Badge } from '@/components/ui/badge';
 import {
   LuminaCard,
@@ -16,19 +17,15 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { SpatialSceneMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { describeSpatialCheck, hearSceneQuestionRequest, spatialAssignment, spatialScene } from './spatialSceneWorkspace';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useJudgedScriptRunner } from '../../../hooks/useJudgedScriptRunner';
 import type { LearningResponseEvidence } from '../../../evaluation/learningResponseEvidence';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
-import {
-  buildSpatialDescriptionItems,
-  modelSpatialDescription,
-  spatialSceneDescriptionPack,
-} from './spatialSceneDescriptionScript';
+import { modelSpatialDescription } from './spatialSceneDescriptionScript';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import type { PipTarget } from '../../../pip/PipSurfaceStore';
 import { spatialScenePipPose } from '../../../pip/spatialScenePipPose';
@@ -198,54 +195,33 @@ const PerspectiveScene: React.FC<PerspectiveSceneProps> = ({ challenge, revealRe
   );
 };
 
-const SpokenDescriptionBeat: React.FC<{
+/**
+ * `describe_scene` on the workspace: the fixed-viewpoint scene and the ask. The child says the
+ * relation and the reference object aloud; the observer judges it. The relation and its model sentence
+ * appear only once the answer is credited (contract R16).
+ */
+const SceneDescriptionStage: React.FC<{
   challenge: SpatialSceneChallenge;
-  instanceId: string;
-  gradeLevel: string;
-  onFinished: (correct: boolean, attempts: number, learningResponses?: LearningResponseEvidence[]) => void;
+  revealed: boolean;
+  onHear: () => void;
   sceneRef?: (element: Element | null) => void;
-}> = ({ challenge, instanceId, gradeLevel, onFinished, sceneRef }) => {
-  const [revealRelation, setRevealRelation] = useState(false);
-  const submittedRef = useRef(false);
-  const items = useMemo(() => buildSpatialDescriptionItems([challenge]), [challenge]);
-  const pack = useMemo(() => spatialSceneDescriptionPack(items), [items]);
-  const run = useJudgedScriptRunner({
-    pack,
-    instanceId: `${instanceId}-${challenge.id}`,
-    gradeLevel,
-    silenceCloseMs: 1200,
-    onAffirmed: () => setRevealRelation(true),
-    onCorrectionRetry: () => setRevealRelation(true),
-    onFinished: (summary) => {
-      setRevealRelation(true);
-      if (submittedRef.current) return;
-      submittedRef.current = true;
-      onFinished(summary.solvedCount === 1, summary.attemptsCount, summary.learningResponses);
-    },
-  });
-
-  const revealed = revealRelation || run.revealHeld || !!run.summary;
-  return (
-    <div className="space-y-4">
-      <PerspectiveScene challenge={challenge} revealRelation={revealed} sceneRef={sceneRef} />
-      {revealed ? (
-        <LuminaPanel accent="cyan">
-          <p className="text-center text-sm font-medium text-cyan-100">{challenge.modelDescription ?? modelSpatialDescription(challenge)}</p>
-        </LuminaPanel>
-      ) : (
-        <p className="text-center text-sm text-slate-300">Say the relation and the object you are comparing with.</p>
-      )}
-      {!run.summary && <JudgedMicPanel run={run} voiceLabel="Describe the scene" idleLabel="Start describing" />}
-      {run.running && !run.summary && (
-        <div className="text-center">
-          <button type="button" className="text-xs text-slate-400 underline underline-offset-4" onClick={run.hearStimulus}>
-            Hear the question again
-          </button>
-        </div>
-      )}
+}> = ({ challenge, revealed, onHear, sceneRef }) => (
+  <div className="space-y-4">
+    <PerspectiveScene challenge={challenge} revealRelation={revealed} sceneRef={sceneRef} />
+    {revealed ? (
+      <LuminaPanel accent="cyan">
+        <p className="text-center text-sm font-medium text-cyan-100">{challenge.modelDescription ?? modelSpatialDescription(challenge)}</p>
+      </LuminaPanel>
+    ) : (
+      <p className="text-center text-sm text-slate-300">Say the relation and the object you are comparing with.</p>
+    )}
+    <div className="text-center">
+      <button type="button" className="text-xs text-slate-400 underline underline-offset-4" onClick={onHear}>
+        Hear the question again
+      </button>
     </div>
-  );
-};
+  </div>
+);
 
 // ============================================================================
 // Grid Scene Component
@@ -331,6 +307,7 @@ const GridScene: React.FC<GridSceneProps> = ({
           <button
             key={key}
             type="button"
+            data-pip-object={`cell-${row}-${col}`}
             onClick={() => onCellClick?.(row, col)}
             disabled={!interactive}
             className={`
@@ -386,13 +363,18 @@ const GridScene: React.FC<GridSceneProps> = ({
 interface SpatialSceneProps {
   data: SpatialSceneData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
+
+const useWorkspaceProgress = useWorkspaceProgressFor('spatial-scene');
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
+function SpatialSceneSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: SpatialSceneProps) {
   const {
     title,
     description,
@@ -407,7 +389,23 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // ── Challenge Progress ─────────────────────────────────────────────
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const stableInstanceIdRef = useRef(instanceId || `spatial-scene-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  /** Handlers the progress hook calls back into, bound after the state they touch is declared. */
+  const reopen = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solvedSpoken = useRef<(index: number) => void>(() => {});
+
+  // ── Challenge Progress: the teaching workspace owns it ─────────────
+  const progress = useWorkspaceProgress({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || 'mixed', workspace, assignment: spatialAssignment,
+    onItemOpened: (index, retry) => reopen.current(index, retry),
+    onSolved: index => solvedSpoken.current(index),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
@@ -416,10 +414,8 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     recordResult,
     incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  const canAttempt = progress.canAttempt !== false;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -445,10 +441,9 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [placedObjects, setPlacedObjects] = useState<Array<{ object: SceneObject; row: number; col: number }>>([]);
   const [stepsCorrect, setStepsCorrect] = useState(0);
+  /** The item `currentStep` belongs to: the step fact reads 0 for any other, so the reset after an advance adds no revision. */
+  const stepOwner = useRef<string | null>(null);
 
-  // Refs
-  const stableInstanceIdRef = useRef(instanceId || `spatial-scene-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // ── Evaluation Hook ────────────────────────────────────────────────
   const {
@@ -466,45 +461,6 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── AI Tutoring ────────────────────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    gradeBand,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    challengeType: currentChallenge?.type ?? 'identify',
-    instruction: currentChallenge?.instruction ?? '',
-    correctPosition: currentChallenge?.correctPosition,
-    referenceObjectName: currentChallenge?.referenceObjectName,
-    referenceObjectName2: currentChallenge?.referenceObjectName2,
-    scenePerspective: currentChallenge?.scenePerspective,
-    targetObjectName: currentChallenge?.targetObject?.name,
-    attemptNumber: currentAttempts + 1,
-    supportTier: currentChallenge?.supportTier,
-  }), [gradeBand, challenges.length, currentChallengeIndex, currentChallenge, currentAttempts]);
-
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'spatial-scene',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
-  });
-
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    // The judged spoken runner owns its complete opening/question turn. A second
-    // generic activity message here can make the tutor speak over that contract.
-    if (currentChallenge?.type === 'describe_scene') return;
-    sendText(
-      `[ACTIVITY_START] Spatial Scene for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
-      + `${challenges.length} challenges about position words (above, below, beside, etc.). `
-      + `First: "${currentChallenge?.instruction}". `
-      + `Introduce warmly: "Let's look at where things are! Can you find what's above, below, and beside?"`,
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText]);
-
   // ── Reset ──────────────────────────────────────────────────────────
   const resetDomainState = useCallback(() => {
     setSelectedOption(null);
@@ -516,25 +472,19 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     setFeedbackType('');
   }, []);
 
-  // ── Tutor reveal calibration ───────────────────────────────────────
-  // The spatial RELATION (above/below/left/between) is the assessed answer, so
-  // the tutor NEVER names it at any tier — it only varies HOW MUCH it scaffolds
-  // the reasoning. easy → name a strategy/anchor; medium → nudge comparison;
-  // hard → ask only what the student sees, no strategy, no relation word.
-  const tutorRevealClause = useCallback((): string => {
-    const tier = currentChallenge?.supportTier;
-    if (tier === 'hard') {
-      return ' REVEAL POLICY (hard tier): do NOT name any position word and do NOT name a strategy. '
-        + 'Ask the student to compare the two objects\' rows/columns and say what they notice. Never reveal the answer.';
-    }
-    if (tier === 'medium') {
-      return ' REVEAL POLICY (medium tier): do NOT name the position word. '
-        + 'Nudge the student to compare the two specific objects (which is higher? which is to the side?). Never reveal the answer.';
-    }
-    // easy (or no tier): more support, but STILL never name the answer relation.
-    return ' REVEAL POLICY (easy tier): you may name a thinking strategy or anchor (sky=up, ground=down) '
-      + 'but NEVER state the correct position word — let the student say it. Never reveal the answer.';
-  }, [currentChallenge]);
+  // A fresh item starts clean. Try again clears the rejected choice; a follow-directions
+  // retry keeps the steps already placed and asks for the same step again.
+  reopen.current = (_index, retry) => {
+    if (!retry || currentChallenge?.type !== 'follow_directions') { resetDomainState(); return; }
+    setFeedback(''); setFeedbackType('');
+  };
+  // A spoken description has no check of its own: its credit is the observer's.
+  solvedSpoken.current = (index) => {
+    const challenge = challenges[index];
+    if (challenge?.type !== 'describe_scene') return;
+    recordResult({ challengeId: challenge.id, correct: true, attempts: Math.max(1, currentAttempts + 1),
+      relation: challenge.correctPosition, referenceObjectName: challenge.referenceObjectName });
+  };
 
   // ── Check Handlers ─────────────────────────────────────────────────
 
@@ -548,20 +498,13 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
       const posLabel = POSITION_LABELS[currentChallenge.correctPosition] || currentChallenge.correctPosition;
       setFeedback(`Yes! The ${currentChallenge.targetObject.name} is ${posLabel.toLowerCase()} the ${currentChallenge.referenceObjectName}!`);
       setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student identified position "${currentChallenge.correctPosition}" correctly. Congratulate!`, { silent: true });
     } else {
       SoundManager.playIncorrect();
       setFeedback('Not quite. Look at where the objects are in the scene!');
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedOption}" but correct is "${currentChallenge.correctPosition}". `
-        + `Hint: "Look at the ${currentChallenge.targetObject.name}. Is it higher or lower than the ${currentChallenge.referenceObjectName}?"`
-        + tutorRevealClause(),
-        { silent: true },
-      );
     }
     return correct;
-  }, [currentChallenge, selectedOption, incrementAttempts, sendText, tutorRevealClause]);
+  }, [currentChallenge, selectedOption, incrementAttempts]);
 
   /** Cell-judged modes: `place`, `place_in` (container's cell) and `place_between`. */
   const handleCheckPlace = useCallback(() => {
@@ -580,7 +523,6 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
           : `Perfect! You placed it in the right spot!`,
       );
       setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student placed ${currentChallenge.targetObject.name} correctly. Celebrate!`, { silent: true });
     } else {
       SoundManager.playIncorrect();
       setFeedback(
@@ -591,20 +533,10 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
           : `That's not quite the right spot. Read the instruction again carefully!`,
       );
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student placed object at (${selectedCell.row},${selectedCell.col}) but correct is (${target?.row},${target?.col}). `
-        + (currentChallenge.type === 'place_in'
-          ? `Hint: "'In' means inside the ${currentChallenge.referenceObjectName} itself — the same square it is on."`
-          : currentChallenge.type === 'place_between'
-          ? `Hint: "'Between' means one object on EACH side. Look at the ${currentChallenge.referenceObjectName} and the ${currentChallenge.referenceObjectName2}."`
-          : `Hint: "The instruction says '${currentChallenge.correctPosition}'. Think about where that means."`)
-        + tutorRevealClause(),
-        { silent: true },
-      );
       setSelectedCell(null);
     }
     return correct;
-  }, [currentChallenge, selectedCell, incrementAttempts, sendText, tutorRevealClause]);
+  }, [currentChallenge, selectedCell, incrementAttempts]);
 
   const handleCheckDescribe = useCallback(() => {
     if (!currentChallenge || !selectedOption) return false;
@@ -616,20 +548,13 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
       const posLabel = POSITION_LABELS[currentChallenge.correctPosition] || currentChallenge.correctPosition;
       setFeedback(`Correct! "${posLabel}" is the right position word!`);
       setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student described position as "${currentChallenge.correctPosition}" correctly.`, { silent: true });
     } else {
       SoundManager.playIncorrect();
       setFeedback('Not quite. Look at the objects and think about their positions.');
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student said "${selectedOption}" but correct is "${currentChallenge.correctPosition}". `
-        + `Give a hint about the spatial relationship.`
-        + tutorRevealClause(),
-        { silent: true },
-      );
     }
     return correct;
-  }, [currentChallenge, selectedOption, incrementAttempts, sendText, tutorRevealClause]);
+  }, [currentChallenge, selectedOption, incrementAttempts]);
 
   const handlePlaceStep = useCallback((row: number, col: number) => {
     if (!currentChallenge || !currentChallenge.steps) return;
@@ -637,6 +562,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     if (!step) return;
 
     const correct = row === step.correctCell.row && col === step.correctCell.col;
+    const response = describeSpatialCheck(currentChallenge, { cell: { row, col }, step: currentStep });
 
     if (correct) {
       SoundManager.snap();
@@ -644,14 +570,10 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
       setStepsCorrect((prev) => prev + 1);
 
       if (currentStep < currentChallenge.steps.length - 1) {
+        stepOwner.current = currentChallenge.id;
         setCurrentStep((prev) => prev + 1);
         setFeedback(`Step ${currentStep + 1} done!`);
         setFeedbackType('success');
-        sendText(
-          `[STEP_CORRECT] Step ${currentStep + 1}/${currentChallenge.steps.length} correct. `
-          + `Next: "${currentChallenge.steps[currentStep + 1]?.instruction}". Read it to the student.`,
-          { silent: true },
-        );
       } else {
         // All steps done
         SoundManager.playCorrect();
@@ -665,23 +587,16 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
           stepsCorrect: stepsCorrect + 1,
           stepsTotal: currentChallenge.steps.length,
         });
-        sendText(
-          `[ANSWER_CORRECT] Student completed all ${currentChallenge.steps.length} placement steps. Celebrate their spatial reasoning!`,
-          { silent: true },
-        );
+        progress.commitCheck?.(response, true);
       }
     } else {
       SoundManager.playIncorrect();
       setFeedback(`Not quite. Read step ${currentStep + 1} again and look at the scene.`);
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Step ${currentStep + 1}: placed at (${row},${col}) but correct is (${step.correctCell.row},${step.correctCell.col}). `
-        + `Hint: "${step.instruction}" — think about what "${currentChallenge.correctPosition}" means.`
-        + tutorRevealClause(),
-        { silent: true },
-      );
+      incrementAttempts();
+      progress.commitCheck?.(response, false);
     }
-  }, [currentChallenge, currentStep, stepsCorrect, currentAttempts, incrementAttempts, recordResult, sendText, tutorRevealClause]);
+  }, [currentChallenge, currentStep, stepsCorrect, currentAttempts, incrementAttempts, recordResult]);
 
   // ── Master Check ───────────────────────────────────────────────────
   const handleCheckAnswer = useCallback(() => {
@@ -694,9 +609,10 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
       case 'place_in':
       case 'place_between': correct = handleCheckPlace(); break;
       case 'describe': correct = handleCheckDescribe(); break;
-      case 'describe_scene': return; // judged spoken runner owns this response
+      case 'describe_scene': return; // spoken: the observer judges it
       case 'follow_directions': return; // handled step-by-step
     }
+    progress.commitCheck?.(describeSpatialCheck(currentChallenge, { option: selectedOption, cell: selectedCell }), correct);
 
     if (correct) {
       recordResult({
@@ -705,25 +621,13 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
         attempts: currentAttempts + 1,
       });
     }
-  }, [currentChallenge, currentAttempts, handleCheckIdentify, handleCheckPlace, handleCheckDescribe, recordResult]);
+  }, [currentChallenge, currentAttempts, handleCheckIdentify, handleCheckPlace, handleCheckDescribe, recordResult, progress, selectedOption, selectedCell]);
 
   // ── Advance ────────────────────────────────────────────────────────
   const advanceToNextChallenge = useCallback(() => {
+    // The runtime owns progression: `advance()` only reports the last item, so this is the completion path.
     if (!advanceProgress()) {
-      const phaseScoreStr = phaseResults
-        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const overallPct = Math.round(
-        (challengeResults.filter((r) => r.correct).length / challenges.length) * 100,
-      );
-
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging feedback about their understanding of positions and spatial words!`,
-        { silent: true },
-      );
-
-      if (!hasSubmittedEvaluation) {
+      if (!hasSubmittedEvaluation && progress.recordsEvaluation !== false) {
         const correctCount = challengeResults.filter((r) => r.correct).length;
         const score = Math.round((correctCount / challenges.length) * 100);
         const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
@@ -748,17 +652,8 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
       return;
     }
 
-    resetDomainState();
-    const nextChallenge = challenges[currentChallengeIndex + 1];
-    if (nextChallenge.type !== 'describe_scene') {
-      sendText(
-        `[NEXT_ITEM] Challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-        + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). Read it to the student.`,
-        { silent: true },
-      );
-    }
   }, [
-    advanceProgress, phaseResults, challengeResults, challenges, sendText,
+    advanceProgress, phaseResults, challengeResults, challenges,
     hasSubmittedEvaluation, submitEvaluation, resetDomainState, currentChallengeIndex,
   ]);
 
@@ -846,8 +741,17 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
   const pip = usePipTargets(currentChallenge?.id ?? null, false);
   const [pipTouched, setPipTouched] = useState<{ scopeId: string; element: Element } | null>(null);
   const pipWork = useRef<HTMLDivElement>(null);
-  const tutorSpeaking = isAudioPlaying && !!currentChallenge && (activePrimitiveId === resolvedInstanceId
-    || activePrimitiveId === `${resolvedInstanceId}-${currentChallenge.id}`);
+  const tutorSpeaking = ctx.isAudioPlaying && !!currentChallenge
+    && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId);
+
+  // What the tutor and the observer are shown, republished every render. Item-scoped and derived here,
+  // so opening an item adds no revision after the advance. A spoken description is always answerable.
+  useLayoutEffect(() => {
+    if (!currentChallenge) return;
+    workspace.current = { ...spatialScene(currentChallenge, { step: stepOwner.current === currentChallenge.id ? currentStep : 0 }), demonstration: [],
+      canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    progress.publishWorkspace?.();
+  });
   const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
   const pipTouch = (node: EventTarget) => {
     if (!currentChallenge || isCurrentChallengeCorrect || !(node instanceof Element)) return;
@@ -907,11 +811,11 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
                 key={opt}
                 type="button"
                 onClick={() => {
-                  if (isCurrentChallengeCorrect) return;
+                  if (isCurrentChallengeCorrect || !canAttempt) return;
                   SoundManager.select();
                   setSelectedOption(opt);
                 }}
-                disabled={isCurrentChallengeCorrect}
+                disabled={isCurrentChallengeCorrect || !canAttempt}
                 className={`
                   px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all
                   ${selectedOption === opt
@@ -973,7 +877,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
           showGrid /* place: cells are the tap surface — keep the frame, only labels withdraw */
           showLabels={currentChallenge.showObjectLabels ?? true}
           onCellClick={(row, col) => {
-            if (isCurrentChallengeCorrect) return;
+            if (isCurrentChallengeCorrect || !canAttempt) return;
             // Containment: the container's own cell IS the answer, so an occupied cell
             // must be selectable. Every other mode places into an empty cell (R11).
             const occupied = currentChallenge.sceneObjects.some(
@@ -983,7 +887,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
             SoundManager.tap();
             setSelectedCell({ row, col });
           }}
-          interactive={!isCurrentChallengeCorrect}
+          interactive={!isCurrentChallengeCorrect && canAttempt}
         />
       </div>
     );
@@ -1032,13 +936,13 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
           showGrid /* follow_directions: cells are the tap surface — keep the frame */
           showLabels={currentChallenge.showObjectLabels ?? true}
           onCellClick={(row, col) => {
-            if (allStepsDone) return;
+            if (allStepsDone || !canAttempt) return;
             const occupied = currentChallenge.sceneObjects.some(
               (o) => o.position.row === row && o.position.col === col,
             ) || placedObjects.some((p) => p.row === row && p.col === col);
             if (!occupied) handlePlaceStep(row, col);
           }}
-          interactive={!allStepsDone}
+          interactive={!allStepsDone && canAttempt}
         />
       </div>
     );
@@ -1118,22 +1022,12 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
               onPointerDownCapture={(event) => pipTouch(event.target)} onFocusCapture={(event) => pipTouch(event.target)}>
             {(currentChallenge.type === 'identify' || currentChallenge.type === 'describe') && renderIdentifyOrDescribe()}
             {currentChallenge.type === 'describe_scene' && (
-              <SpokenDescriptionBeat
+              <SceneDescriptionStage
                 key={currentChallenge.id}
                 challenge={currentChallenge}
-                instanceId={resolvedInstanceId}
-                gradeLevel={gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
+                revealed={isCurrentChallengeCorrect}
                 sceneRef={pip.ref('scene')}
-                onFinished={(correct, attempts, learningResponses) => {
-                  recordResult({
-                    challengeId: currentChallenge.id,
-                    correct,
-                    attempts: Math.max(1, attempts),
-                    learningResponses,
-                    relation: currentChallenge.correctPosition,
-                    referenceObjectName: currentChallenge.referenceObjectName,
-                  });
-                }}
+                onHear={() => ctx.sendText(hearSceneQuestionRequest(currentChallenge), { silent: true, author: 'host' })}
               />
             )}
             {CELL_JUDGED_TYPES.has(currentChallenge.type) && renderPlace()}
@@ -1153,38 +1047,12 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
               </div>
             )}
 
-            {/* Action buttons */}
-            <div className="flex items-center justify-center gap-3">
-              {currentChallenge.type !== 'follow_directions' && currentChallenge.type !== 'describe_scene' && (
-                !isCurrentChallengeCorrect ? (
-                  <LuminaActionButton
-                    action="check"
-                    onClick={handleCheckAnswer}
-                    disabled={!canCheck}
-                  />
-                ) : (
-                  <LuminaActionButton
-                    action="next"
-                    onClick={advanceToNextChallenge}
-                  >
-                    {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'See Results'}
-                  </LuminaActionButton>
-                )
-              )}
-              {currentChallenge.type === 'describe_scene' && isCurrentChallengeDone && (
-                <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
-                  {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'See Results'}
-                </LuminaActionButton>
-              )}
-              {currentChallenge.type === 'follow_directions' && isCurrentChallengeCorrect && (
-                <LuminaActionButton
-                  action="next"
-                  onClick={advanceToNextChallenge}
-                >
-                  {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'See Results'}
-                </LuminaActionButton>
-              )}
-            </div>
+            {/* The lab's own Check; the runtime advances. */}
+            {currentChallenge.type !== 'follow_directions' && currentChallenge.type !== 'describe_scene' && !isCurrentChallengeCorrect && (
+              <div className="flex items-center justify-center gap-3">
+                <LuminaActionButton action="check" onClick={handleCheckAnswer} disabled={!canCheck || !canAttempt} />
+              </div>
+            )}
           </div>
         )}
 
@@ -1198,6 +1066,9 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
       </LuminaCardContent>
     </LuminaCard>
   );
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const SpatialScene = withWorkspaceOnly<SpatialSceneProps>('spatial-scene', SpatialSceneSurface, props => props.data.title);
 
 export default SpatialScene;

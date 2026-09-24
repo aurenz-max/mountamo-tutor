@@ -1,0 +1,221 @@
+{
+ "source": "qa/tutor-reports/spatial-scene-runtime-describe_scene-payload-2026-09-24.json",
+ "primitiveId": "spatial-scene",
+ "evalMode": "describe_scene",
+ "data": {
+  "title": "Spatial Scene: Position words: above, below, beside and next to",
+  "description": "Explore spatial relationships with a a farm with animals and buildings",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "describe_scene",
+    "instruction": "Look from the YOU arrow. Describe where the cat is compared with the tree.",
+    "hint": "Name the relation and the object you are comparing with.",
+    "sceneObjects": [
+     {
+      "name": "cat",
+      "image": "🐱",
+      "position": {
+       "row": 1,
+       "col": 0
+      }
+     },
+     {
+      "name": "tree",
+      "image": "🌳",
+      "position": {
+       "row": 1,
+       "col": 2
+      }
+     },
+     {
+      "name": "bench",
+      "image": "🪑",
+      "position": {
+       "row": 0,
+       "col": 0
+      }
+     },
+     {
+      "name": "flower",
+      "image": "🌸",
+      "position": {
+       "row": 0,
+       "col": 2
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "cat",
+     "image": "🐱",
+     "position": {
+      "row": 1,
+      "col": 0
+     }
+    },
+    "correctPosition": "left_of",
+    "referenceObjectName": "tree",
+    "scenePerspective": "viewer_depth",
+    "modelDescription": "The cat is left of the tree."
+   },
+   {
+    "id": "c2",
+    "type": "describe_scene",
+    "instruction": "Look from the YOU arrow. Describe where the ball is compared with the box.",
+    "hint": "Name the relation and the object you are comparing with.",
+    "sceneObjects": [
+     {
+      "name": "ball",
+      "image": "⚽",
+      "position": {
+       "row": 1,
+       "col": 2
+      }
+     },
+     {
+      "name": "box",
+      "image": "📦",
+      "position": {
+       "row": 1,
+       "col": 0
+      }
+     },
+     {
+      "name": "house",
+      "image": "🏠",
+      "position": {
+       "row": 0,
+       "col": 0
+      }
+     },
+     {
+      "name": "star",
+      "image": "⭐",
+      "position": {
+       "row": 0,
+       "col": 2
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "ball",
+     "image": "⚽",
+     "position": {
+      "row": 1,
+      "col": 2
+     }
+    },
+    "correctPosition": "right_of",
+    "referenceObjectName": "box",
+    "scenePerspective": "viewer_depth",
+    "modelDescription": "The ball is right of the box."
+   },
+   {
+    "id": "c3",
+    "type": "describe_scene",
+    "instruction": "Look from the YOU arrow. Describe where the dog is compared with the car.",
+    "hint": "Name the relation and the object you are comparing with.",
+    "sceneObjects": [
+     {
+      "name": "dog",
+      "image": "🐕",
+      "position": {
+       "row": 2,
+       "col": 1
+      }
+     },
+     {
+      "name": "car",
+      "image": "🚗",
+      "position": {
+       "row": 0,
+       "col": 1
+      }
+     },
+     {
+      "name": "tree",
+      "image": "🌳",
+      "position": {
+       "row": 0,
+       "col": 0
+      }
+     },
+     {
+      "name": "flower",
+      "image": "🌸",
+      "position": {
+       "row": 0,
+       "col": 2
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "dog",
+     "image": "🐕",
+     "position": {
+      "row": 2,
+      "col": 1
+     }
+    },
+    "correctPosition": "in_front_of",
+    "referenceObjectName": "car",
+    "scenePerspective": "viewer_depth",
+    "modelDescription": "The dog is in front of the car."
+   },
+   {
+    "id": "c4",
+    "type": "describe_scene",
+    "instruction": "Look from the YOU arrow. Describe where the star is compared with the house.",
+    "hint": "Name the relation and the object you are comparing with.",
+    "sceneObjects": [
+     {
+      "name": "star",
+      "image": "⭐",
+      "position": {
+       "row": 0,
+       "col": 1
+      }
+     },
+     {
+      "name": "house",
+      "image": "🏠",
+      "position": {
+       "row": 2,
+       "col": 1
+      }
+     },
+     {
+      "name": "cat",
+      "image": "🐱",
+      "position": {
+       "row": 0,
+       "col": 0
+      }
+     },
+     {
+      "name": "tree",
+      "image": "🌳",
+      "position": {
+       "row": 0,
+       "col": 2
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "star",
+     "image": "⭐",
+     "position": {
+      "row": 0,
+      "col": 1
+     }
+    },
+    "correctPosition": "behind",
+    "referenceObjectName": "house",
+    "scenePerspective": "viewer_depth",
+    "modelDescription": "The star is behind the house."
+   }
+  ],
+  "gridSize": 3,
+  "gradeBand": "K"
+ }
+}
