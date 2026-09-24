@@ -28,6 +28,8 @@ vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
 import BalanceScale, { type BalanceScaleChallenge, type BalanceScaleData } from './BalanceScale';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { getComponentById } from '../../../service/manifest/catalog';
+/** The submission waits for the scoring pass (a fetch that rejects in jsdom, so every spoken attempt keeps its flow verdict). */
+const flushScoring = () => act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
 const balanceLive = LIVE_ADAPTERS['balance-scale'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.evaluationContext = null; });
@@ -98,7 +100,7 @@ it.each(Object.keys(CHALLENGE))('%s binds the workspace under tutor ownership; i
   expect(screen.queryByRole('button', { name: /Next Equation|Show Answer|Say that again/ })).toBeNull();
 });
 
-it('equality: exploration never commits, a balanced load does, and the spoken steps publish their key', () => {
+it('equality: exploration never commits, a balanced load does, and the spoken steps publish their key', async () => {
   seam.evaluationContext = { lesson: 'test' };
   const h = mount('equality', [CHALLENGE.equality]);
   h.press('Add 3 weight'); h.settle();
@@ -116,6 +118,7 @@ it('equality: exploration never commits, a balanced load does, and the spoken st
   expect(h.state().task!.itemId).toBe('balance-1-infer');
   h.say('five'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().status).toBe('completed');
+  await flushScoring();
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0][2]).toMatchObject({ evalMode: 'equality', totalChallenges: 1, correctCount: 1 });
 });
@@ -259,7 +262,7 @@ it('equality: the chosen blocks are gathered into an addition with no total, the
 
 // The workspace never leaves a spoken item unsolved (Next is offered only after a success), so a
 // weak sum shows as corrections, not as a failed item.
-it('equality: a twice-corrected sum is kept apart from a first-try inference in the submitted record', () => {
+it('equality: a twice-corrected sum is kept apart from a first-try inference in the submitted record', async () => {
   seam.evaluationContext = { lesson: 'test' };
   const h = mount('equality', [eq(5)]);
   h.press('Add 5 weight'); wait(900); h.next();
@@ -267,6 +270,7 @@ it('equality: a twice-corrected sum is kept apart from a first-try inference in 
   h.say('five'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task!.itemId).toBe('balance-1-infer');
   h.say('five'); h.feedback('correct', 'advance'); h.confirmVisible();
+  await flushScoring();
   expect(seam.submit).toHaveBeenCalledOnce();
   const [passed, score, metrics, work] = seam.submit.mock.calls[0];
   expect(passed).toBe(false); expect(score).toBe(33);
@@ -379,7 +383,7 @@ it('workshop two_step: equation lines follow the actions, and x is withheld unti
   expect(notebook().getByText('x = 2')).toBeTruthy();
 });
 
-it('workshop two_step: the score is the weakest spoken number; a corrected explanation does not lower it', () => {
+it('workshop two_step: the score is the weakest spoken number; a corrected explanation does not lower it', async () => {
   seam.evaluationContext = { lesson: 'test' };
   const h = mount('two_step', [shop('two_step', 2, 1, 2)]);
   const step = (o: { step: string }[], name: string) => o.find(x => x.step === name) as Record<string, unknown>;
@@ -393,6 +397,7 @@ it('workshop two_step: the score is the weakest spoken number; a corrected expla
   expect(h.state().task!.itemId).toBe('workshop-1-explain');
   for (const wrong of ['Because it is two.', 'I do not know.']) { h.say(wrong); h.feedback('incorrect', 'retry'); }
   h.say('Each parcel gets one equal group, so one group is x.'); h.feedback('correct', 'advance'); h.confirmVisible();
+  await flushScoring();
   expect(seam.submit).toHaveBeenCalledOnce();
   const [passed, score, metrics, work] = seam.submit.mock.calls[0];
   expect(passed).toBe(true); expect(score).toBe(67); expect(metrics.evalMode).toBe('two_step');

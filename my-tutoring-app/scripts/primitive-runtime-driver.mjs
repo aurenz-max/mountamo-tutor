@@ -258,6 +258,8 @@ try {
     emit({ observing: transport.dialogue.pending, state: runtimePacket(runtime.getSnapshot()), messages: outgoing, submissions: submissions.length,
       activityState: data ? controls?.getState() ?? generatedActivityState(primitiveId, data) : null,
       tutoring: LIVE_ADAPTERS[primitiveId].tutoring,
+      // The scoring pass's trace entries (what the record carries per attempt); empty until a session completes.
+      scoring: runtime.trace.getSnapshot().filter(entry => entry.stage === 'item_scoring'),
       ...(performed ? { performed } : {}), ...(verdict ? { verdict } : {}),
       dom: readProbes() });
   }

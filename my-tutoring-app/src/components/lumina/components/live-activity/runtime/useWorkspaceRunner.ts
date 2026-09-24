@@ -162,8 +162,9 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
 
   useEffect(() => { if (solved) affirm(item); }, [solved, item, affirm]);
 
-  const teachingResult = lesson.summary
-    ? teachingEvaluation(items.map(i => ({ ...options.assignment(i), checkResponse: () => null })), state, lesson.summary, evalMode)
+  // Built from the scored session, so `onFinished` (the submission) waits for the scoring pass.
+  const teachingResult = lesson.scored
+    ? teachingEvaluation(items.map(i => ({ ...options.assignment(i), checkResponse: () => null })), state, lesson.scored, evalMode)
     : null;
   const evaluationContext = useEvaluationContext();
   const finished = useRef(false);

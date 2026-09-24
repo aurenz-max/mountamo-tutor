@@ -30,6 +30,8 @@ vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
 import CompareObjects, { type CompareObjectsData } from './CompareObjects';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { getComponentById } from '../../../service/manifest/catalog';
+/** The submission waits for the scoring pass (a fetch that rejects in jsdom, so every spoken attempt keeps its flow verdict). */
+const flushScoring = () => act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
 const compareObjectsLive = LIVE_ADAPTERS['compare-objects'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.evaluationContext = null;
@@ -152,7 +154,7 @@ it('non_standard: the unit numbers stay hidden until the spoken count is credite
   expect(h.view.container.textContent).toContain('5 cubes');
 });
 
-it('a mixed pin binds, and each item keeps its own response channel across transitions', () => {
+it('a mixed pin binds, and each item keeps its own response channel across transitions', async () => {
   seam.evaluationContext = { lesson: 'test' };
   const h = mount('mixed', [challengeFor('compare_two'), challengeFor('order_three')]);
   expect(h.state().owner).toBe('tutor');
@@ -164,6 +166,7 @@ it('a mixed pin binds, and each item keeps its own response channel across trans
   expect(h.state().task!.evidence.correctness).toBe('correct');
   h.dispatch('advance'); h.confirmVisible();
   expect(h.state().status).toBe('completed');
+  await flushScoring();
   expect(seam.submit.mock.calls[0].slice(0, 2)).toEqual([true, 100]);
 });
 

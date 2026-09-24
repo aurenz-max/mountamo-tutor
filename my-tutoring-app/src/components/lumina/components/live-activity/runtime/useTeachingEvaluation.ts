@@ -12,7 +12,7 @@ interface TeachingEvaluationOptions<M extends PrimitiveMetrics> {
   instanceId: string;
   data: { skillId?: string; subskillId?: string; objectiveId?: string; exhibitId?: string; onEvaluationSubmit?: unknown };
   assignments: readonly TeachingItem[];
-  lesson: Pick<ReturnType<typeof useTeachingWorkspace>, 'state' | 'summary'>;
+  lesson: Pick<ReturnType<typeof useTeachingWorkspace>, 'state' | 'summary' | 'scored'>;
   evalMode: string;
   /** The only per-primitive part: this family's metrics from the shared result. */
   metrics: (result: TeachingEvaluationResult) => M;
@@ -27,14 +27,15 @@ export function useTeachingEvaluation<M extends PrimitiveMetrics>({ primitiveTyp
     subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId,
     onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined });
   useEffect(() => {
-    if (!evaluationContext || !lesson.summary || evaluation.hasSubmitted) return;
-    const result = teachingEvaluation(assignments, lesson.state, lesson.summary, evalMode);
+    // Waits for the scoring pass: the record is the re-graded session, not the flow verdicts.
+    if (!evaluationContext || !lesson.scored || evaluation.hasSubmitted) return;
+    const result = teachingEvaluation(assignments, lesson.state, lesson.scored, evalMode);
     evaluation.submitResult(result.passed, result.accuracy, metrics(result),
       { challengeResults: result.outcomes, learningResponses: result.learningResponses,
         teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
       undefined, result.diagnosisEvidence);
     // `metrics` is a fresh closure each render; the submit is gated by `hasSubmitted`, not by its identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [evaluationContext, lesson.summary, lesson.state, evaluation, assignments, evalMode]);
+  }, [evaluationContext, lesson.scored, lesson.state, evaluation, assignments, evalMode]);
   return evaluation;
 }

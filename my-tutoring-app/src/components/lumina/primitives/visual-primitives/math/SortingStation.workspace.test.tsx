@@ -30,6 +30,8 @@ vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
 import SortingStation, { type SortingStationData } from './SortingStation';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { getComponentById } from '../../../service/manifest/catalog';
+/** The submission waits for the scoring pass (a fetch that rejects in jsdom, so every spoken attempt keeps its flow verdict). */
+const flushScoring = () => act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
 const sortingStationLive = LIVE_ADAPTERS['sorting-station'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.evaluationContext = null;
@@ -109,7 +111,7 @@ it('a count item keeps its tray counts hidden, and the scene says so', () => {
   expect(JSON.stringify(demand)).not.toMatch(/"3"|"2"/);
 });
 
-it('a wrong answer reopens the item; the right one files the card and completes once', () => {
+it('a wrong answer reopens the item; the right one files the card and completes once', async () => {
   seam.evaluationContext = { lesson: 'test' };
   const h = mount('sort_one', 'sort-by-one');
   const first = h.state().task!;
@@ -123,6 +125,7 @@ it('a wrong answer reopens the item; the right one files the card and completes 
   }
   expect(h.state().status).toBe('completed');
   expect(ids.length).toBeGreaterThan(1);
+  await flushScoring();
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0][0]).toBe(true);
 });

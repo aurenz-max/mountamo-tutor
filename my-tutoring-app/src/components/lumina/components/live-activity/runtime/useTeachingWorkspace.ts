@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore, type MutableRefObject } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type MutableRefObject } from 'react';
 import { flushSync } from 'react-dom';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { useLiveRuntimeActive, usePrimitiveRuntime } from './LiveRuntimeContext';
 import { TeachingSession, teachingSummary } from './TeachingSession';
+import { abstainItemScore, gradeOf, scoreSession, type AttemptGrade, type ItemScoreDecision, type ItemScoreRequest,
+  type ScoredSession } from './itemScoringContract';
+import { postObservation } from './observationContract';
 import { SoundManager } from '../../../utils/SoundManager';
 import { latestLearnerUtterance } from './learnerUtterance';
 import type { ExecutableAffordance, RuntimeMount } from './contract';
@@ -50,6 +53,9 @@ export interface TeachingWorkspaceOptions {
   onSolved?: (index: number) => void;
 }
 const noSubscription = () => () => {};
+const scoreAttempt = postObservation<ItemScoreRequest, ItemScoreDecision>('/api/lumina/observe-item-score', abstainItemScore);
+/** The whole scoring pass waits at most this long; an attempt not graded by then keeps its flow verdict. */
+export const SCORING_BUDGET_MS = 5000;
 
 /** Shared live teaching lifecycle. Domain bindings provide tasks, scene facts and a response checker. */
 export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
@@ -188,6 +194,39 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     settledSummary.current = teachingSummary(options.items.map(i => i.id), state);
   }
   const summary = settledSummary.current;
+  // The scoring pass (user direction 09-24): the flow verdicts moved the lesson; the RECORD comes from
+  // re-grading each spoken attempt's own answer once the session completes. Submissions wait for it;
+  // the practice summary on screen does not. Gesture attempts keep their code check.
+  const [gradedScore, setGradedScore] = useState<ScoredSession | null>(null);
+  const scoringStarted = useRef(false);
+  const spokenToGrade = !!summary && state.attempts.some(a => a.source === 'speech');
+  useEffect(() => {
+    if (!summary || !spokenToGrade || scoringStarted.current) return;
+    scoringStarted.current = true;
+    const items = new Map(latest.current.items.map(i => [i.id, i]));
+    const ids = latest.current.items.map(i => i.id), attempts = state, epoch = runtime?.getSnapshot().sessionEpoch || 'session';
+    const abort = new AbortController(), timer = setTimeout(() => abort.abort(), SCORING_BUDGET_MS);
+    const grades = attempts.attempts.map((a, attemptIndex): Promise<AttemptGrade | undefined> => {
+      const item = items.get(a.itemId);
+      if (a.source !== 'speech' || item?.expectedAnswer === undefined || !a.response.trim()) return Promise.resolve(undefined);
+      return scoreAttempt({ scope: { sessionEpoch: epoch, instanceId: latest.current.instanceId, itemId: a.itemId }, attemptIndex,
+        task: item.task.slice(0, 1500), expectedAnswer: String(item.expectedAnswer).slice(0, 2000),
+        learner: a.response.slice(-2000), tutor: (a.tutorResponse ?? '').slice(-4000) }, abort.signal)
+        .then(gradeOf, () => 'unclear' as const);
+    });
+    void Promise.all(grades).then(g => {
+      const scoredSession = scoreSession(ids, attempts, g);
+      // Inspectable like every observation: what each spoken attempt was graded, and where the record departs from the flow.
+      runtime?.trace.record({ stage: 'item_scoring', status: 'context', reason: `Scoring pass: ${scoredSession.disagreements} `
+        + `attempt(s) recorded differently from the flow verdict.`, input: { grades: g.map((grade, i) => ({
+          itemId: attempts.attempts[i].itemId, source: attempts.attempts[i].source, flowCorrect: attempts.attempts[i].correct,
+          grade: grade ?? (attempts.attempts[i].source === 'speech' ? 'unclear' : 'activity_check') })) } });
+      if (mounted.current) setGradedScore(scoredSession);
+    })
+      .finally(() => clearTimeout(timer));
+  }, [summary, spokenToGrade, state, runtime]);
+  const scored = useMemo(() => !summary ? null : spokenToGrade ? gradedScore
+    : scoreSession(options.items.map(i => i.id), state, []), [summary, spokenToGrade, gradedScore, state, options.items]);
   useEffect(() => {
     if (!active || !runtime || !settledSummary.current) return;
     const restoreCompletion = () => {
@@ -237,7 +276,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     const facts = `The learner submitted their selection. Current workspace response: ${JSON.stringify(session.getSnapshot().lastResponse)}. Respond to the learner using the current task and workspace.`;
     aiRef.current.sendText(facts, { scripted: false, author: 'host' });
   };
-  return { state, item, summary, submitGestureResponse, publishWorkspace, present: () => currentItem().id === item.id && present(),
+  return { state, item, summary, scored, submitGestureResponse, publishWorkspace, present: () => currentItem().id === item.id && present(),
     canAttempt: active && state.phase === 'working' && !suspended.current,
     isBlocked: () => !mounted.current || !activeRef.current || suspended.current || currentItem().id !== item.id || session.getSnapshot().phase !== 'working',
     tutorSpeaking: ai.isAudioPlaying, stop: () => runtime?.stop() };

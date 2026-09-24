@@ -35,6 +35,8 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import { captureMisconception, resetMisconceptionCaptureLatch } from '../../../evaluation/diagnosis/captureMisconception';
 import type { PrimitiveEvaluationResult } from '../../../evaluation/types';
 import { authApi } from '@/lib/authApiClient';
+/** The submission waits for the scoring pass (a fetch that rejects in jsdom, so every spoken attempt keeps its flow verdict). */
+const flushScoring = () => act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.evaluationContext = null;
   resetMisconceptionCaptureLatch();
@@ -165,7 +167,7 @@ it('the spoken mat prints no count, total or composed number, and offers no keyp
   expect(screen.queryByRole('button', { name: /put the blocks back/i })).toBeNull();
 });
 
-it('read_blocks: a wrong count is retried, the worth step is judged against the value, and the submission counts problems', () => {
+it('read_blocks: a wrong count is retried, the worth step is judged against the value, and the submission counts problems', async () => {
   seam.evaluationContext = { lesson: 'test' };
   const h = mount('read_blocks');
   h.say('forty'); h.feedback('incorrect', 'retry');
@@ -179,6 +181,7 @@ it('read_blocks: a wrong count is retried, the worth step is judged against the 
   expect(h.state().status).toBe('completed');
   const done = screen.getByText(/Nice work with the blocks!/);
   expect(done.parentElement!.textContent).not.toMatch(/\d/);
+  await flushScoring();
   expect(seam.submit).toHaveBeenCalledOnce();
   const [success, score, metrics, work, , evidence] = seam.submit.mock.calls[0];
   expect([success, score]).toEqual([true, 67]);
@@ -204,6 +207,7 @@ it('read_blocks correction evidence reaches the skill-scoped observation capture
   }
   h.confirmVisible();
   expect(h.state().status).toBe('completed');
+  await flushScoring();
   const [success, score, metrics, studentWork, , diagnosisEvidence] = seam.submit.mock.calls[0];
   expect([success, score, diagnosisEvidence.firstResponseScore]).toEqual([true, 67, 50]);
   vi.useRealTimers();
@@ -219,7 +223,7 @@ it('read_blocks correction evidence reaches the skill-scoped observation capture
     primitive_type: 'base-ten-blocks', scope: 'skill', skill_id: 'NBT004-01', subskill_id: 'NBT004-01-b' }));
 });
 
-it('regroup: the prediction turn is untradeable; a wrong trade commits on stillness, Try again puts the blocks back, a right trade completes once', () => {
+it('regroup: the prediction turn is untradeable; a wrong trade commits on stillness, Try again puts the blocks back, a right trade completes once', async () => {
   seam.evaluationContext = { lesson: 'test' };
   const h = mount('regroup');
   expect(blocksOf(1).every(b => (b as HTMLButtonElement).disabled)).toBe(true);
@@ -246,6 +250,7 @@ it('regroup: the prediction turn is untradeable; a wrong trade commits on stilln
   expect(h.state().task!.evidence.correctness).toBe('correct');
   h.advance();
   expect(h.state().status).toBe('completed');
+  await flushScoring();
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0].slice(0, 2)).toEqual([true, 67]);
   // regroup supplies no correction evidence, so capture never calls the model.

@@ -518,9 +518,17 @@ async def teaching_workspace(s):
     if s.state['status'] != 'completed':
         await turn('finish', 'I am ready to finish.', lambda st: st['status'] == 'completed')
     reply = await s.step({'type': 'poll'})
+    # The scoring pass runs after completion (bounded at 5 s): wait for its trace entry so the report
+    # shows what the record would carry, attempt by attempt, beside the flow verdicts.
+    for _ in range(16):
+        if reply.get('scoring') or not any(a.get('source') == 'speech' for a in s.state.get('task', {}).get('workspace', {}).get('attempts', [])):
+            break
+        await asyncio.sleep(0.5)
+        reply = await s.step({'type': 'poll'})
     assert s.state['status'] == 'completed'
     assert reply['submissions'] == 0, 'The isolated driver must not write student evaluations'
-    s.record('complete', state=s.state, submissions=reply['submissions'], persistence='session-only')
+    s.record('complete', state=s.state, submissions=reply['submissions'], persistence='session-only',
+             scoring=reply.get('scoring') or [])
 
 
 PROGRAMS = {'tutor': tutor_led, 'di-runner': judged_runner}

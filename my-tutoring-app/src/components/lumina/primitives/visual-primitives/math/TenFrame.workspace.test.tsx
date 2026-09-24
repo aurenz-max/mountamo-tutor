@@ -31,6 +31,8 @@ import TenFrame, { type TenFrameChallenge, type TenFrameData } from './TenFrame'
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 const tenFrameLive = LIVE_ADAPTERS['ten-frame'];
 import { getComponentById } from '../../../service/manifest/catalog';
+/** The submission waits for the scoring pass (a fetch that rejects in jsdom, so every spoken attempt keeps its flow verdict). */
+const flushScoring = () => act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.evaluationContext = null;
   vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => setTimeout(() => fn(performance.now()), 16));
@@ -192,7 +194,7 @@ it('subitize: the learner can start the first look, unassisted, when the tutor h
   expect(h.state().task!.support.level).toBe(0);
 });
 
-it.each(['mixed', 'build|subitize|decompose'])('a %s pin binds, and each item keeps its own kind across transitions', pin => {
+it.each(['mixed', 'build|subitize|decompose'])('a %s pin binds, and each item keeps its own kind across transitions', async pin => {
   seam.evaluationContext = { lesson: 'test' };
   const h = mount(pin, [challenge('b1', 'build', 2), challenge('s1', 'subitize', 3, { flashDuration: 1000 }),
     challenge('d1', 'split', 4)]);
@@ -217,6 +219,7 @@ it.each(['mixed', 'build|subitize|decompose'])('a %s pin binds, and each item ke
   expect(h.state().task!.evidence.correctness).toBe('correct');
   h.dispatch('advance'); h.confirmVisible();
   expect(h.state().status).toBe('completed');
+  await flushScoring();
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0].slice(0, 2)).toEqual([true, 100]);
 });
