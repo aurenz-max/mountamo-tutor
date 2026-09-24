@@ -1,11 +1,12 @@
 'use client';
 
 /**
- * SyllableClapper — DI modality. The Live tutor owns the clock: it says the word
- * with purposeful enunciation, waits, judges the child's spoken count from the
- * audio in-band, corrects contrastively, and its OWN affirmation is the advance.
- * There is no advance timer, no Clap button, no Check button, no Next button and
- * no push-to-talk mic anywhere in this file.
+ * SyllableClapper — the tutor says a word (joined, in parts, or minus a part) and the
+ * child answers OUT LOUD. It runs only on the shared tutor/JEV teaching workspace
+ * (workspace rollout C1; the scripted runner was retired, LA-14, user ruling 09-23: one
+ * path). The tutor teaches in its own words, the observer judges each spoken answer and
+ * the runtime owns progression. An unbound mount shows the shared "needs the tutor" card.
+ * There is no advance timer, no Clap button, no Check button and no Next button.
  *
  * ⭐ THE CLAP MOVED OFF THE SCREEN AND INTO THE ROOM. The click era's `👏 Clap!`
  * button failed the costume test outright — a child who cannot hear a single
@@ -20,9 +21,9 @@
  * printed before the affirmation (a reader chunks it orthographically instead of
  * hearing it), and the split syllable bar — three boxes for a three-part word —
  * is literally the answer drawn as furniture. Both live behind `revealHeld`,
- * which opens on her affirmation and closes when her cue for the next item is
- * SENT. Pre-affirm the child has her voice and tap-to-hear, which is what they
- * would have at the table.
+ * which opens on a credited answer and closes when the next item opens.
+ * Before credit the child has the tutor's voice and tap-to-hear, which is what
+ * they would have at the table.
  *
  * SUPPORT TIERS SURVIVE AS ASK LEVERS (L3 contract, re-based): the on-screen
  * tally and the directional miss hint are gone with the button they measured, so
@@ -37,7 +38,7 @@
  * `itemsFromChallenges`. Ship nothing over a broken ask.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -54,21 +55,15 @@ import {
 } from '../../../evaluation';
 import type { SyllableClapperMetrics } from '../../../evaluation/types';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
-import {
-  hearPartCue,
-  itemsFromChallenges,
-  syllableClapperPackBase,
-  type SyllableClapperItem,
-} from './syllableClapperScript';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { itemsFromChallenges, type SyllableClapperItem } from './syllableClapperScript';
+import { hearPartRequest, hearQuestionRequest, syllableAssignment, syllableScene } from './syllableClapperWorkspace';
 import type { SyllableTask } from './syllableClapperModes';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { syllableClapperPipPose } from '../../../pip/syllableClapperPipPose';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
@@ -126,6 +121,9 @@ export interface SyllableClapperData {
 interface SyllableClapperProps {
   data: SyllableClapperData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -163,7 +161,7 @@ const promptLineFor = (item: SyllableClapperItem): string => {
 // Component
 // ============================================================================
 
-const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) => {
+function SyllableClapperSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: SyllableClapperProps) {
   const {
     title,
     challenges = [],
@@ -175,12 +173,11 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
     onEvaluationSubmit,
   } = data;
 
-  const gradeLevel = data.gradeLevel ?? 'kindergarten';
-
   const stableInstanceIdRef = useRef(instanceId || `syllable-clapper-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   // ── Items (drop-gated) ────────────────────────────────────────────────────
   const items = useMemo<SyllableClapperItem[]>(() => {
@@ -195,11 +192,9 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
   }, [challenges]);
 
   // ── The reveal payload (18b) ──────────────────────────────────────────────
-  // Set on the affirmation, rendered behind `runner.revealHeld`, and DELIBERATELY
-  // NOT cleared when the next item opens: the runner fires `onAffirmed` and
-  // `onItemOpened` in ONE dispatch, so a payload cleared there paints on the last
-  // item and nowhere else — the family-wide bug 18b closed. The hold is the gate;
-  // the next affirmation overwrites the payload.
+  // Set on the credit, rendered behind `runner.revealHeld`, and DELIBERATELY
+  // NOT cleared when the next item opens: the hold is the gate, and the next
+  // credit overwrites the payload.
   const [revealed, setRevealed] = useState<SyllableClapperItem | null>(null);
 
   // ── Evaluation ────────────────────────────────────────────────────────────
@@ -213,7 +208,7 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const syllableCountsEncountered: Record<number, number> = {};
     for (const item of items) {
       syllableCountsEncountered[item.partCount] =
@@ -225,11 +220,8 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
       if (!group.length) return undefined;
       return Math.round(group.reduce((sum, i) => sum + (scores.get(i.id) ?? 0), 0) / group.length);
     };
-    // ⭐ `evalMode` was ABSENT on the shipped port, which is the same defect the
-    // three older-learner DI packs carried: with no mode on the metric the
-    // backend files every attempt under 'default' and the β priors this ladder
-    // registers are never reached. A run is one act in practice (the manifest
-    // pins one mode), so the dominant act is the honest label.
+    // With no mode on the metric the backend files every attempt under 'default'. A run is
+    // one act in practice (the manifest pins one mode), so the dominant act is the label.
     const dominantTask = (['blend_syllables', 'count_parts', 'delete_compound'] as SyllableTask[])
       .map((task) => ({ task, n: items.filter((i) => i.task === task).length }))
       .sort((a, b) => b.n - a.n)[0];
@@ -249,90 +241,85 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items, evaluation]);
+  };
 
-  // ── The pack — the tutor's whole side is `syllableClapperPackBase`, spread ─
-  //    from the script module so the DI drive-plan endpoint replays the SAME
-  //    cues this component sends. Only what the SCREEN owns stays here.
-  const pack = useMemo<JudgedScriptPack<SyllableClapperItem>>(() => ({
-    ...syllableClapperPackBase(items),
-    statusLines: {
-      ready: () => 'Listen, then answer out loud.',
-      retry: () => 'Have another go — say your answer.',
-      affirmedNext: 'Yes! You heard the parts.',
-      done: 'Great listening today!',
-    },
-    // One record per attempt, right or corrected: the word and task, and what was heard; never the verdict.
-    observation: (item, { heard }) => ({
-      challenge: item.task === 'blend_syllables'
-        ? `Blend the parts of "${item.word}" into the whole word.`
-        : item.task === 'delete_compound'
-          ? `Say "${item.word}" without "${item.removePart}".`
-          : `Count the parts in "${item.word}".`,
-      expected: item.task === 'count_parts' ? `${item.answer} (${item.partCount})` : item.answer,
-      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
-    }),
-  }), [items]);
-
-  const runner = useJudgedScriptRunner<SyllableClapperItem>({
-    pack,
+  const runner = useWorkspaceRunner<SyllableClapperItem>({
+    primitiveId: 'syllable-clapper',
+    assignment: syllableAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || items[0]?.task || 'count_parts',
     instanceId: resolvedInstanceId,
-    gradeLevel,
-    exhibitId,
-    onFinished: handleFinished,
+    onFinished: finish,
     onAffirmed: setRevealed,
   });
 
   const currentItem = runner.currentItem;
-  /** The affirmed item whose reveal is still on screen. `revealHeld` — never
-   *  `currentSolved` or `stage`, both of which describe the item that has
-   *  ALREADY replaced the affirmed one by render time (18b). */
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
+  /** The credited item whose reveal is still on screen. `revealHeld`, never `currentSolved`. */
   const revealItem = runner.revealHeld ? revealed : null;
 
+  // What the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...syllableScene(currentItem), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
   // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the runner's phase onto the hear-it-again button; Pip never
+  // A projection of the workspace's committed state onto the hear-it-again button; Pip never
   // answers, judges, or advances.
   const pip = usePipTargets(currentItem?.id ?? null, false);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const targets = pip.targets(['stimulus'], () => 'Hear the question again');
     const pose = syllableClapperPipPose({
-      running: runner.running, preparing: runner.preparing,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      running: runner.running, preparing: false,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld, judging: false,
+      // Audio belongs to this block only while the lesson is pointed at it.
+      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
       cueMatchesItem: runner.cuedItemId === currentItem.id,
       visibleIds: targets.map((target) => target.id),
     });
     return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Syllable clapper', dock: pip.dock.current, targets, pose };
   });
 
-  // ── Tap ONE part of the reveal bar to hear it (post-affirm only) ──────────
-  const hearPart = useCallback((part: string) => {
-    if (!ctx.isConnected) return;
+  // ── Tap-to-hear. Silent host requests: never a learner turn, never the answer. ──
+  const hearQuestion = useCallback(() => {
+    if (!currentItem) return;
     SoundManager.tap();
-    ctx.sendText(hearPartCue(part), { silent: true, scripted: true });
-    // Context methods are stable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.isConnected]);
+    ctx.sendText(hearQuestionRequest(currentItem), { silent: true, author: 'host' });
+  }, [ctx, currentItem]);
+  /** One part of the reveal bar, which exists only after credit. */
+  const hearPart = useCallback((part: string) => {
+    SoundManager.tap();
+    ctx.sendText(hearPartRequest(part), { silent: true, author: 'host' });
+  }, [ctx]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => {
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => {
       const meta = TASK_META[item.task];
       return { label: meta.badge, icon: meta.icon };
     });
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
   // ============================================================================
   // Main Render
   // ============================================================================
 
-  if (items.length === 0) {
+  if (items.length === 0 || !currentItem) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-6">
@@ -342,14 +329,14 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
     );
   }
 
-  const taskMeta = TASK_META[currentItem?.task ?? 'count_parts'];
+  const taskMeta = TASK_META[currentItem.task];
 
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          {!evaluation.hasSubmitted && currentItem && (
+          {!showSummary && (
             <LuminaBadge accent={taskMeta.accent} className="text-xs">
               {taskMeta.icon} {taskMeta.badge}
             </LuminaBadge>
@@ -358,7 +345,7 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex justify-center">
               <LuminaChallengeCounter
@@ -368,31 +355,25 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
               />
             </div>
 
-            {/* The stimulus. The word is NEVER printed here — it arrives in her
-                voice, and a printed word lets a reader chunk it by sight instead
-                of hearing it, or read a blend's answer straight off the screen.
-                Tapping re-asks the whole question (question-side audio only;
-                every ask states its stimulus and withholds its answer). */}
+            {/* The stimulus. The word is NEVER printed here — it arrives in the tutor's
+                voice, and a printed word lets a reader chunk it by sight instead of
+                hearing it, or read a blend's answer straight off the screen. Tapping
+                asks the tutor to say the whole question again. */}
             <div className="flex flex-col items-center gap-3">
               <button
                 ref={pip.ref('stimulus')}
                 data-pip-object="stimulus"
-                onClick={runner.hearStimulus}
+                onClick={hearQuestion}
                 disabled={!runner.running}
                 data-testid="hear-word"
-                className={`
-                  rounded-2xl border-2 px-12 py-8 text-center transition-all duration-200
-                  disabled:opacity-40 disabled:cursor-default
-                  ${runner.stimulusTapped
-                    ? 'bg-emerald-500/20 border-emerald-400/50 scale-105'
-                    : 'bg-emerald-500/10 border-emerald-500/30 cursor-pointer'}
-                `}
+                className="rounded-2xl border-2 px-12 py-8 text-center transition-all duration-200
+                  disabled:opacity-40 disabled:cursor-default bg-emerald-500/10 border-emerald-500/30 cursor-pointer"
               >
                 <span className="text-6xl">🔊</span>
                 <p className="text-xs text-emerald-300/70 mt-3">Tap to hear the question again</p>
               </button>
               <p className="text-center text-base text-slate-300 font-medium">
-                {currentItem ? promptLineFor(currentItem) : 'Listen, then answer out loud.'}
+                {promptLineFor(currentItem)}
               </p>
             </div>
 
@@ -401,8 +382,7 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
               className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
 
             {/* The reveal — the first moment the word, the split and the count
-                may appear on screen, and it holds for exactly as long as she is
-                saying the affirmation. Tap a part to hear it. */}
+                may appear on screen, held while the credit is on screen. Tap a part to hear it. */}
             {revealItem && (
               <LuminaPanel className="p-4 space-y-3" data-testid="reveal">
                 <div className="flex gap-1">
@@ -435,16 +415,13 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
                 <p className="text-center text-xs text-slate-600">Tap a part to hear it</p>
               </LuminaPanel>
             )}
-
-            {/* Every answer here is spoken. */}
-            <JudgedMicPanel run={runner} />
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Syllable Clapping Complete!"
             celebrationMessage="Your ears found the parts in every word!"
@@ -454,6 +431,11 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
       </LuminaCardContent>
     </LuminaCard>
   );
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const SyllableClapper = withWorkspaceOnly<SyllableClapperProps>('syllable-clapper', SyllableClapperSurface,
+  props => props.data.title);
 
 export default SyllableClapper;
+

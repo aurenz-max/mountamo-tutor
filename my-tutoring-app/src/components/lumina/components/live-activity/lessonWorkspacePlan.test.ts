@@ -82,7 +82,7 @@ describe('ordinary lesson workspace eligibility', () => {
     expect(bound.map(([id]) => id).sort()).toEqual(['balance-scale', 'bar-model', 'base-ten-blocks', 'compare-objects', 'comparison-builder',
       'counting-board', 'cvc-speller', 'di-letter-sounds', 'di-math-facts', 'di-sentence-reading', 'di-shapes', 'di-word-reading',
       'fraction-circles', 'letter-sound-link', 'number-bond', 'number-line', 'number-sequencer', 'number-tracer', 'ordinal-line', 'phonics-blender',
-      'place-value-chart', 'ramp-lab', 'shape-sorter', 'sorting-station', 'sound-swap', 'spatial-scene', 'ten-frame', 'word-flip', 'you-and-me']);
+      'place-value-chart', 'ramp-lab', 'shape-sorter', 'sorting-station', 'sound-swap', 'spatial-scene', 'syllable-clapper', 'ten-frame', 'word-flip', 'you-and-me']);
     // A component with no workspace binding keeps its lesson path and its catalog tutoring.
     const chart = { componentId: 'hundreds-chart', instanceId: 'one', title: 'Chart', objectiveIds: ['objective'], data: {} };
     expect(lessonWorkspaceItems(exhibit('count', chart)).size).toBe(0);

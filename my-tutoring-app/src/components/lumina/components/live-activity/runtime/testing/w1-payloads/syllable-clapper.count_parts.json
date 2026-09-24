@@ -1,0 +1,107 @@
+{
+ "source": "qa/tutor-reports/syllable-clapper-runtime-count_parts-payload-2026-09-24.json",
+ "primitiveId": "syllable-clapper",
+ "evalMode": "count_parts",
+ "data": {
+  "title": "Clap It Out: Animal Edition",
+  "challenges": [
+   {
+    "id": "c1",
+    "word": "cat",
+    "challengeType": "count_parts",
+    "syllableCount": 1,
+    "syllables": [
+     "cat"
+    ],
+    "imageDescription": "a cute fluffy cat",
+    "difficulty": 3
+   },
+   {
+    "id": "c2",
+    "word": "rabbit",
+    "challengeType": "count_parts",
+    "syllableCount": 2,
+    "syllables": [
+     "rab",
+     "bit"
+    ],
+    "imageDescription": "a hopping white rabbit",
+    "difficulty": 3
+   },
+   {
+    "id": "c3",
+    "word": "penguin",
+    "challengeType": "count_parts",
+    "syllableCount": 2,
+    "syllables": [
+     "pen",
+     "guin"
+    ],
+    "imageDescription": "a funny swimming penguin",
+    "difficulty": 4
+   },
+   {
+    "id": "c4",
+    "word": "turtle",
+    "challengeType": "count_parts",
+    "syllableCount": 2,
+    "syllables": [
+     "tur",
+     "tle"
+    ],
+    "imageDescription": "a green pet turtle",
+    "difficulty": 3
+   },
+   {
+    "id": "c5",
+    "word": "elephant",
+    "challengeType": "count_parts",
+    "syllableCount": 3,
+    "syllables": [
+     "el",
+     "e",
+     "phant"
+    ],
+    "imageDescription": "a big gray elephant",
+    "difficulty": 4
+   },
+   {
+    "id": "c6",
+    "word": "monkey",
+    "challengeType": "count_parts",
+    "syllableCount": 2,
+    "syllables": [
+     "mon",
+     "key"
+    ],
+    "imageDescription": "a playful brown monkey",
+    "difficulty": 3
+   },
+   {
+    "id": "c7",
+    "word": "kangaroo",
+    "challengeType": "count_parts",
+    "syllableCount": 3,
+    "syllables": [
+     "kan",
+     "ga",
+     "roo"
+    ],
+    "imageDescription": "a jumping mother kangaroo",
+    "difficulty": 4
+   },
+   {
+    "id": "c8",
+    "word": "zebra",
+    "challengeType": "count_parts",
+    "syllableCount": 2,
+    "syllables": [
+     "ze",
+     "bra"
+    ],
+    "imageDescription": "a black and white zebra",
+    "difficulty": 3
+   }
+  ]
+ }
+}

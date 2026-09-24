@@ -1621,8 +1621,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'awareness: BLENDING (the tutor says the parts one at a time, the child says the whole word), '
       + 'COUNTING (the tutor says the word as one joined stream, the child claps the parts with their own '
       + 'hands and says how many), and DELETION (the tutor says a two-part compound and takes one part '
-      + 'away, the child says what is left). Every answer is spoken and judged from the audio, and the '
-      + 'tutor’s own affirmation moves the lesson on. Nothing is printed before the answer is affirmed, '
+      + 'away, the child says what is left). Every answer is spoken and judged from the audio, and a '
+      + 'credited answer moves the lesson on. Nothing is printed before the answer is affirmed, '
       + 'so a reader cannot solve by sight instead of by ear; the only thing on screen before then is a '
       + 'tap-to-hear button. There are no clap buttons, no counters, no answer buttons and nothing to '
       + 'click to advance. Requires a microphone. ESSENTIAL for kindergarten phonological awareness.',
@@ -1641,6 +1641,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // -signature-2026-08-16.md); the word is never printed at all, before or
     // after the answer, so there is nothing to read at any point.
     affordances: { reader: 'none', answers: ['spoken'], role: 'apply', minutes: 4 },
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'Nothing is printed: you say each word and the learner answers out loud. On blend syllables you say the '
+        + 'parts one at a time and the learner says the whole word; on count parts you say the word joined and the '
+        + 'learner says how many parts (counting aloud is fine when the count lands on the number); on delete compound '
+        + 'you say a two-part word, name the part to take away, and the learner says the word left. Say the stimulus '
+        + 'exactly as the voicing fact tells you: splitting a count or delete word into parts before the learner has '
+        + 'tried hands over the answer. The learner claps with their own hands; there is nothing to tap. The '
+        + 'hear-again button asks you to repeat the question only. You cannot show the word or its parts.',
+    },
     // ── DI MODALITY (2026-08-16) — literacy port. The click era shipped a
     // `👏 Clap!` button, six counter circles and a `Check (3 claps)` label: the
     // button failed the costume test outright (a child who cannot hear a single

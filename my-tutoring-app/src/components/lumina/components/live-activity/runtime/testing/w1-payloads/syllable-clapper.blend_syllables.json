@@ -1,0 +1,96 @@
+{
+ "source": "qa/tutor-reports/syllable-clapper-runtime-blend_syllables-payload-2026-09-24.json",
+ "primitiveId": "syllable-clapper",
+ "evalMode": "blend_syllables",
+ "data": {
+  "title": "Animal Sound Parts",
+  "challenges": [
+   {
+    "id": "c1",
+    "word": "zebra",
+    "challengeType": "blend_syllables",
+    "syllableCount": 2,
+    "syllables": [
+     "ze",
+     "bra"
+    ],
+    "imageDescription": "a black and white zebra",
+    "difficulty": 3
+   },
+   {
+    "id": "c2",
+    "word": "monkey",
+    "challengeType": "blend_syllables",
+    "syllableCount": 2,
+    "syllables": [
+     "mon",
+     "key"
+    ],
+    "imageDescription": "a brown jumping monkey",
+    "difficulty": 3
+   },
+   {
+    "id": "c3",
+    "word": "penguin",
+    "challengeType": "blend_syllables",
+    "syllableCount": 2,
+    "syllables": [
+     "pen",
+     "guin"
+    ],
+    "imageDescription": "a black and white penguin",
+    "difficulty": 3
+   },
+   {
+    "id": "c4",
+    "word": "rabbit",
+    "challengeType": "blend_syllables",
+    "syllableCount": 2,
+    "syllables": [
+     "rab",
+     "bit"
+    ],
+    "imageDescription": "a fluffy white rabbit",
+    "difficulty": 3
+   },
+   {
+    "id": "c5",
+    "word": "turtle",
+    "challengeType": "blend_syllables",
+    "syllableCount": 2,
+    "syllables": [
+     "tur",
+     "tle"
+    ],
+    "imageDescription": "a green swimming turtle",
+    "difficulty": 3
+   },
+   {
+    "id": "c7",
+    "word": "koala",
+    "challengeType": "blend_syllables",
+    "syllableCount": 3,
+    "syllables": [
+     "ko",
+     "a",
+     "la"
+    ],
+    "imageDescription": "a cute grey koala",
+    "difficulty": 4
+   },
+   {
+    "id": "c8",
+    "word": "kangaroo",
+    "challengeType": "blend_syllables",
+    "syllableCount": 3,
+    "syllables": [
+     "kan",
+     "ga",
+     "roo"
+    ],
+    "imageDescription": "a jumping brown kangaroo",
+    "difficulty": 4
+   }
+  ]
+ }
+}

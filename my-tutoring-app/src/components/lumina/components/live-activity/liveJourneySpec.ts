@@ -59,6 +59,8 @@ import { cvcHarnessAnswers } from '../../primitives/visual-primitives/literacy/c
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
 import { youAndMeHarnessAnswers } from '../../primitives/visual-primitives/literacy/youAndMeWorkspace';
+import { itemsFromChallenges as syllableItems } from '../../primitives/visual-primitives/literacy/syllableClapperScript';
+import { syllableHarnessAnswers } from '../../primitives/visual-primitives/literacy/syllableClapperWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
@@ -925,6 +927,18 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return spatialHarnessInputs(c, intent === 'wrong', ctx.data.gridSize ?? 3, ctx.demand?.step as string | undefined);
     },
     probes: { mounted: { selector: '[data-pip-object^="cell-"], [aria-label="Viewer position"]' } },
+  },
+  'syllable-clapper': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/SyllableClapper.tsx',
+    instanceId: 'syllables',
+    defaults: { grade: 'Kindergarten', mode: 'count_parts', di: false,
+      topic: 'Counting the syllables in familiar animal words' },
+    leakTokens: ['SC_ITEM', 'SC_MOVE', 'SC_COMPLETE', 'SC_HEAR'],
+    prompts: WORKSPACE_PROMPTS,
+    // One spoken answer per item: the count, the blended word or the word left, or the pack's plain wrong answer.
+    inputsFor: spokenWorkspaceInputs(syllableItems, syllableHarnessAnswers, 'syllable-clapper'),
+    probes: { mounted: { selector: '[data-pip-object="stimulus"]' }, reward: { selector: '[data-testid="reveal"]', kind: 'count' } },
   },
 };
 
