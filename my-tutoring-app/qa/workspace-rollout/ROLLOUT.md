@@ -35,6 +35,7 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 | A2: number-line, comparison-builder, number-tracer (plain shape) | W1 | [workspace-rollout-A2-2026-09-23.md](../tutor-reports/workspace-rollout-A2-2026-09-23.md) |
 | B1: balance-scale, base-ten-blocks, bar-model, fraction-circles (every mode, runner-era and plain surfaces) | W1 | [workspace-rollout-B1-2026-09-23.md](../tutor-reports/workspace-rollout-B1-2026-09-23.md). **Ruling owed:** balance-scale `two_step` explanation is now scored. **Scripted paths deleted 09-23** (1c82649c, 22d40e6c): workspace-only |
 | B2: cvc-speller, phonics-blender, sound-swap, word-flip (speech-loop shape, straight to workspace only) | W1 | [workspace-rollout-B2-2026-09-24.md](../tutor-reports/workspace-rollout-B2-2026-09-24.md). 8 smokes PASS; harness resume fix done 09-24 (a drive rides through a Live resume) |
+| B3: you-and-me, ramp-lab, di-shapes, spatial-scene (four shapes; ramp-lab free exploration stays an ungraded sandbox) | W1 | [workspace-rollout-B3-2026-09-24.md](../tutor-reports/workspace-rollout-B3-2026-09-24.md). 8 smokes PASS; ramp-lab slider/select modes undriven; **open:** cold reconnect after a failed Live resume goes silent (backend) |
 | DEAD: runner-owned sandbox handoff, `'di-runner'` owner value, `RUNNER_GUIDANCE`/`runnerLessonStart` (frontend) | — | 09-23, no report. **Residue, owned by LA-14 retirement (`07-census.md`):** the backend bridge `live_activity_tools.py` still accepts `teachingOwner: 'di-runner'` and emits `activity_ready` for it, and `run_live_runtime.py` (`judged_runner`), `run_live_lesson_plan.py` and `scripts/live-lesson-plan-fixture.mjs` still branch on it (the live route's `diPlan` probe was removed with it). No frontend adapter sends that value. |
 
 ## Queue
@@ -45,7 +46,7 @@ Order: Tier A, then runner-era K–2 (the recipe applies as written), then the r
 | --- | --- | --- | --- |
 | B1 | R | `balance-scale` (equality, workshop), `base-ten-blocks` (DI modes), `bar-model` (explanation), `fraction-circles` (`touch_fraction`) — census Tier B | done 09-23 (every mode, plain surfaces too) |
 | B2 | R | `cvc-speller`, `phonics-blender`, `sound-swap`, `word-flip` (speech-loop shape) | done 09-24 (workspace only, every mode) |
-| B3 | R | `you-and-me`, `spatial-scene`, `di-shapes`, `ramp-lab` (investigation) | open |
+| B3 | R | `you-and-me`, `spatial-scene`, `di-shapes`, `ramp-lab` (investigation) | done 09-24 (workspace only, every mode) |
 | C1 | R | K literacy sounds: `rhyme-studio`, `word-workout`, `phoneme-explorer`, `syllable-clapper` | open |
 | C2 | R | K literacy words: `letter-spotter`, `word-sorter`, `word-builder`, `picture-vocabulary` | open |
 | C3 | R | K reading and oral language: `decodable-reader`, `interactive-book`, `story-bridge`, `story-ribbon` | open |
