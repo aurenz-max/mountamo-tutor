@@ -1,0 +1,43 @@
+{
+ "source": "qa/tutor-reports/word-workout-runtime-real_vs_nonsense-payload-2026-09-24.json",
+ "primitiveId": "word-workout",
+ "evalMode": "real_vs_nonsense",
+ "data": {
+  "title": "Word Workout: Reading short-vowel CVC words and telling real words from silly ones",
+  "mode": "real-vs-nonsense",
+  "masteredVowels": [
+   "a",
+   "e",
+   "i",
+   "o",
+   "u"
+  ],
+  "gradeLevel": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "realWord": "cat",
+    "nonsenseWord": "zat",
+    "mode": "real-vs-nonsense"
+   },
+   {
+    "id": "c2",
+    "realWord": "pen",
+    "nonsenseWord": "mep",
+    "mode": "real-vs-nonsense"
+   },
+   {
+    "id": "c3",
+    "realWord": "dog",
+    "nonsenseWord": "zot",
+    "mode": "real-vs-nonsense"
+   },
+   {
+    "id": "c4",
+    "realWord": "cup",
+    "nonsenseWord": "rup",
+    "mode": "real-vs-nonsense"
+   }
+  ]
+ }
+}

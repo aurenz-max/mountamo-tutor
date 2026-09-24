@@ -1,0 +1,99 @@
+{
+ "source": "qa/tutor-reports/word-workout-runtime-picture_match-payload-2026-09-24.json",
+ "primitiveId": "word-workout",
+ "evalMode": "picture_match",
+ "data": {
+  "title": "Word Workout: Reading short-vowel CVC words and telling real words from silly ones",
+  "mode": "picture-match",
+  "masteredVowels": [
+   "a",
+   "e",
+   "i",
+   "o",
+   "u"
+  ],
+  "gradeLevel": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "targetWord": "cat",
+    "targetImage": "🐱",
+    "distractorImages": [
+     {
+      "word": "dog",
+      "image": "🐶"
+     },
+     {
+      "word": "pig",
+      "image": "🐷"
+     }
+    ],
+    "mode": "picture-match"
+   },
+   {
+    "id": "c2",
+    "targetWord": "sun",
+    "targetImage": "☀️",
+    "distractorImages": [
+     {
+      "word": "hat",
+      "image": "🎩"
+     },
+     {
+      "word": "cup",
+      "image": "🥤"
+     }
+    ],
+    "mode": "picture-match"
+   },
+   {
+    "id": "c3",
+    "targetWord": "pen",
+    "targetImage": "🖊️",
+    "distractorImages": [
+     {
+      "word": "net",
+      "image": "🥅"
+     },
+     {
+      "word": "box",
+      "image": "📦"
+     }
+    ],
+    "mode": "picture-match"
+   },
+   {
+    "id": "c4",
+    "targetWord": "lip",
+    "targetImage": "👄",
+    "distractorImages": [
+     {
+      "word": "mop",
+      "image": "🧹"
+     },
+     {
+      "word": "bug",
+      "image": "🐛"
+     }
+    ],
+    "mode": "picture-match"
+   },
+   {
+    "id": "c5",
+    "targetWord": "log",
+    "targetImage": "🪵",
+    "distractorImages": [
+     {
+      "word": "pan",
+      "image": "🍳"
+     },
+     {
+      "word": "bed",
+      "image": "🛏️"
+     }
+    ],
+    "mode": "picture-match"
+   }
+  ]
+ }
+}

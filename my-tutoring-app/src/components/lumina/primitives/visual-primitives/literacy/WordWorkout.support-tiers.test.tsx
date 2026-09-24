@@ -29,54 +29,28 @@
  * The runner is mocked to a static "item open, asking" state — this file tests
  * the RENDER halves only; loop behaviour has its own suites.
  */
-import React from 'react';
-import { render, screen, cleanup } from '@testing-library/react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
 
-const runnerState = vi.hoisted(() => ({ index: 0, solved: false }));
+import { act, screen, cleanup, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
+import type { WordWorkoutChallenge, WordWorkoutData } from './WordWorkout';
 
-vi.mock('../../../hooks/useJudgedScriptRunner', () => ({
-  useJudgedScriptRunner: (opts: { pack: { items: unknown[] } }) => ({
-    running: true,
-    preparing: false,
-    stage: 'asking',
-    statusLine: '',
-    currentIndex: runnerState.index,
-    currentItem: opts.pack.items[runnerState.index] ?? null,
-    solvedIds: new Set<string>(),
-    currentSolved: runnerState.solved,
-    canAttempt: true,
-    summary: null,
-    micState: 'idle' as const,
-    tutorSpeaking: false,
-    cuedItemId: null,
-    cancelListening: undefined,
-    start: async () => {},
-    hearStimulus: () => {},
-    stimulusTapped: false,
-    submitGestureAttempt: () => {},
-    isAwaitingGesture: () => false,
-    loop: {},
-  }),
-}));
-
-vi.mock('@/contexts/LuminaAIContext', () => ({
-  useMicLevel: () => 0,
-  useLuminaAIContext: () => ({ isConnected: true, sendText: vi.fn() }),
-}));
-
-vi.mock('../../../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({
-    submitResult: vi.fn(), hasSubmitted: false, submittedResult: null, elapsedMs: 0,
-  }),
-  useEvaluationContext: () => null,
-}));
-
-vi.mock('../../../utils/SoundManager', () => ({
-  SoundManager: new Proxy({}, { get: () => vi.fn() }),
-}));
-
-import WordWorkout, { type WordWorkoutChallenge, type WordWorkoutData } from './WordWorkout';
+const MODE_PIN: Record<string, string> = {
+  'real-vs-nonsense': 'real_vs_nonsense', 'picture-match': 'picture_match', 'word-chains': 'word_chains',
+  'sentence-reading': 'sentence_reading',
+};
+/** Mount on the workspace, then credit and advance past `answers` so the item under test is open. */
+const mountAt = (data: WordWorkoutData, answers: string[] = []) => {
+  const h = mountWorkspace({ primitiveId: 'word-workout', evalMode: MODE_PIN[data.mode], data: data as unknown as Record<string, unknown> });
+  for (const answer of answers) { h.say(answer); h.feedback('correct', 'advance'); h.confirmVisible(); }
+  return h;
+};
+const render = (data: WordWorkoutData, answers: string[] = []) => mountAt(data, answers).view;
 
 const dataOf = (challenge: WordWorkoutChallenge, mode: WordWorkoutData['mode']): WordWorkoutData => ({
   title: 'CVC Word Workout: short a',
@@ -111,17 +85,11 @@ const PICTURE: WordWorkoutChallenge = {
 
 /** Render a chain at the word whose letter change is visible (index 2 = "hot",
  *  the middle-letter step), which is where every cue lever shows. */
-const renderChainAt = (chainCueLevel: WordWorkoutChallenge['chainCueLevel'], index = 2) => {
-  runnerState.index = index;
-  runnerState.solved = false;
-  return render(<WordWorkout data={dataOf({ ...CHAIN, chainCueLevel }, 'word-chains')} />);
-};
+const renderChainAt = (chainCueLevel: WordWorkoutChallenge['chainCueLevel']) =>
+  render(dataOf({ ...CHAIN, chainCueLevel }, 'word-chains'), ['cat', 'hat']);
 
-afterEach(() => {
-  cleanup();
-  runnerState.index = 0;
-  runnerState.solved = false;
-});
+beforeEach(() => { installRuntimeTimers(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); });
 
 describe('word-workout — #1 chainCueLevel, the surviving render lever', () => {
   it("'full' (easy) keeps both the amber highlight and the delta chip", () => {
@@ -157,8 +125,7 @@ describe('word-workout — the deleted levers cannot come back at any tier', () 
   it('REGRESSION: real-vs-nonsense renders NO speaker button (allowPronounce is gone)', () => {
     // The click era let the child hear both words at easy/medium, which decides
     // "which is real" from oral vocabulary with no decoding at all.
-    runnerState.index = 0;
-    const { container } = render(<WordWorkout data={dataOf(REAL_NONSENSE, 'real-vs-nonsense')} />);
+    const { container } = render(dataOf(REAL_NONSENSE, 'real-vs-nonsense'));
     expect(screen.queryByRole('button', { name: /hear (cat|zat)/i })).toBeNull();
     // …and the two words are not tappable either: the answer is spoken.
     expect(container.querySelectorAll('[role="button"]').length).toBe(0);
@@ -167,8 +134,7 @@ describe('word-workout — the deleted levers cannot come back at any tier', () 
   });
 
   it('REGRESSION: sentence-reading renders NO model read and no per-word tap-to-hear', () => {
-    runnerState.index = 0;
-    render(<WordWorkout data={dataOf(SENTENCE, 'sentence-reading')} />);
+    render(dataOf(SENTENCE, 'sentence-reading'));
     expect(screen.queryByRole('button', { name: /hear the sentence/i })).toBeNull();
     expect(screen.queryByText(/tap any word to hear it/i)).toBeNull();
     // Every word renders as text, none of it as a button — a channel that
@@ -179,8 +145,7 @@ describe('word-workout — the deleted levers cannot come back at any tier', () 
   });
 
   it('REGRESSION: the comprehension answer menu is gone — the child says it', () => {
-    runnerState.index = 1; // the answer_question item
-    render(<WordWorkout data={dataOf(SENTENCE, 'sentence-reading')} />);
+    render(dataOf(SENTENCE, 'sentence-reading'), [SENTENCE.sentence!]); // the answer_question item
     expect(screen.getByText('Where did the cat sit?')).toBeTruthy();
     // No chips: the old menu printed the answer for any reader.
     expect(screen.queryAllByRole('button', { name: /^(mat|cat|sat)$/ })).toHaveLength(0);
@@ -195,8 +160,7 @@ describe('word-workout — the deleted levers cannot come back at any tier', () 
       [CHAIN, 'word-chains'],
       [SENTENCE, 'sentence-reading'],
     ] as const) {
-      runnerState.index = 0;
-      const { unmount } = render(<WordWorkout data={dataOf(challenge, mode)} />);
+      const { unmount } = render(dataOf(challenge, mode));
       expect(screen.queryByText(/which is a real word|which picture matches|read each word as it changes|^read this sentence$/i))
         .toBeNull();
       unmount();
@@ -204,36 +168,28 @@ describe('word-workout — the deleted levers cannot come back at any tier', () 
   });
 });
 
-describe('word-workout — the answer is never marked before the tutor affirms', () => {
-  it('picture-match rings the right picture only on the affirm', () => {
-    runnerState.index = 0;
-    runnerState.solved = false;
-    const { container, rerender } = render(<WordWorkout data={dataOf(PICTURE, 'picture-match')} />);
+describe('word-workout — the answer is never marked before it is credited', () => {
+  it('picture-match rings the right picture only once the checked tap is right', () => {
+    const { container } = render(dataOf(PICTURE, 'picture-match'));
     expect(container.querySelectorAll('.ring-emerald-400\\/40').length).toBe(0);
-    runnerState.solved = true;
-    rerender(<WordWorkout data={dataOf(PICTURE, 'picture-match')} />);
+    act(() => { fireEvent.click(container.querySelector('[data-pip-object="picture-pig"]')!); });
     expect(container.querySelectorAll('.ring-emerald-400\\/40').length).toBe(1);
   });
 
-  it('the comprehension answer is not highlighted inside the sentence before the affirm', () => {
-    runnerState.index = 1;
-    runnerState.solved = false;
-    const { rerender } = render(<WordWorkout data={dataOf(SENTENCE, 'sentence-reading')} />);
+  it('the comprehension answer is not highlighted inside the sentence before the credit', () => {
+    const h = mountAt(dataOf(SENTENCE, 'sentence-reading'), [SENTENCE.sentence!]);
     expect(screen.getByText('mat.').className).not.toMatch(/emerald/);
-    runnerState.solved = true;
-    rerender(<WordWorkout data={dataOf(SENTENCE, 'sentence-reading')} />);
+    h.say('mat'); h.feedback('correct');
     expect(screen.getByText('mat.').className).toMatch(/emerald/);
   });
 
   it('the phonics tint rides the READ only — on the question it would point at the answer', () => {
     // With few decodable words surviving the build gate, a blue-tinted CVC set
     // can be a pointer. The read needs the tint; the question must not have it.
-    runnerState.index = 0;
-    const { container, unmount } = render(<WordWorkout data={dataOf(SENTENCE, 'sentence-reading')} />);
+    const { container, unmount } = render(dataOf(SENTENCE, 'sentence-reading'));
     expect(container.querySelectorAll('.text-blue-200').length).toBeGreaterThan(0);
     unmount();
-    runnerState.index = 1;
-    const second = render(<WordWorkout data={dataOf(SENTENCE, 'sentence-reading')} />);
+    const second = render(dataOf(SENTENCE, 'sentence-reading'), [SENTENCE.sentence!]);
     expect(second.container.querySelectorAll('.text-blue-200').length).toBe(0);
   });
 });

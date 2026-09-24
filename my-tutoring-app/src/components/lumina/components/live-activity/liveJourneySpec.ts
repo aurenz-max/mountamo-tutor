@@ -59,6 +59,8 @@ import { cvcHarnessAnswers } from '../../primitives/visual-primitives/literacy/c
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
 import { youAndMeHarnessAnswers } from '../../primitives/visual-primitives/literacy/youAndMeWorkspace';
+import { itemsFromChallenges as workoutItems } from '../../primitives/visual-primitives/literacy/wordWorkoutScript';
+import { wordWorkoutJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordWorkoutWorkspace';
 import { itemsFromChallenges as phonemeItems } from '../../primitives/visual-primitives/literacy/phonemeExplorerScript';
 import { phonemeHarnessAnswers } from '../../primitives/visual-primitives/literacy/phonemeExplorerWorkspace';
 import { itemsFromChallenge as rhymeItems } from '../../primitives/visual-primitives/literacy/rhymeStudioScript';
@@ -969,6 +971,28 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // One spoken answer per item: the pack's right answer, or a real card / plainly different word.
     inputsFor: spokenWorkspaceInputs(phonemeItems, phonemeHarnessAnswers, 'phoneme-explorer'),
     probes: { mounted: { selector: '[data-pip-object="stimulus"], [data-pip-object="sounds"]' } },
+  },
+  'word-workout': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/WordWorkout.tsx',
+    instanceId: 'workout',
+    defaults: { grade: 'Grade 1', mode: 'real_vs_nonsense', di: false,
+      topic: 'Reading short-vowel CVC words and telling real words from silly ones' },
+    leakTokens: ['WW_ITEM', 'WW_MOVE', 'WW_COMPLETE', 'WW_HEAR', 'WW_TAP'],
+    prompts: WORKSPACE_PROMPTS,
+    // A spoken read or answer per item; picture match taps the picture (a wrong tap is another picture).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = workoutItems(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current word-workout item');
+      const answers = wordWorkoutJourneyAnswers(item);
+      if (answers.tapped) {
+        const word = intent === 'wrong' ? answers.tapped.wrong : answers.tapped.correct;
+        return [{ type: 'touch', target: `picture-${word}` }];
+      }
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[aria-label="Hear the question again"]' } },
   },
 };
 

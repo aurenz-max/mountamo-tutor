@@ -1,12 +1,13 @@
 'use client';
 
 /**
- * WordWorkout — DI modality (SIXTEENTH literacy port, 2026-08-14; the last of
- * Phase 1). The Live tutor owns the clock: it asks ONCE, waits, judges the
- * child's answer from the audio in-band, corrects contrastively, and its OWN
- * affirmation is the advance. There is no advance timer, no Next button, no
- * push-to-talk mic, and nothing on screen tells the child which answer is right
- * before the tutor affirms.
+ * WordWorkout — the child reads printed words aloud and answers about them. It
+ * runs only on the shared tutor/JEV teaching workspace (workspace rollout C1; the
+ * scripted runner was retired, LA-14, user ruling 09-23: one path). The tutor
+ * teaches in its own words, the observer judges each spoken answer, the activity
+ * checks each picture tap, and the runtime owns progression. An unbound mount shows
+ * the shared "needs the tutor" card. There is no advance timer, no Next button, and
+ * nothing on screen tells the child which answer is right before it is credited.
  *
  * WHAT WENT, AND WHY:
  *  - **The whole tap surface on three of four modes.** Real-vs-nonsense was a
@@ -41,8 +42,8 @@
  * evidence, not meaning evidence). Pointing at the referent is the meaning
  * evidence — picture-vocabulary's `receptive_match` precedent.
  *
- * Cue lines, judging contracts and build gates live in `wordWorkoutScript.ts`
- * (hand-authored, DISTAR). Nothing in this file writes a spoken line.
+ * Build gates and the asks live in `wordWorkoutScript.ts`; the workspace assignment
+ * and scene in `wordWorkoutWorkspace.ts`. Nothing in this file writes a spoken line.
  *
  * EXTENDED DECODING (2026-09-09): inflected and compound modes keep one word
  * visible for a cold spoken read, reveal/model its chunks only after the
@@ -52,7 +53,7 @@
  * meaning outcomes are retained in separate metrics.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaBadge,
   LuminaCard,
@@ -62,31 +63,29 @@ import {
   LuminaChallengeCounter,
   answerStateClass,
 } from '../../../ui';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { WordWorkoutMetrics } from '../../../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { judgedAnswerMix } from '../../../hooks/judgedScriptContract';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import {
-  chainWordOf,
   itemsFromChallenges,
-  pictureVerdictCue,
-  wordWorkoutPackBase,
   type ChainCueLevel,
   type WordWorkoutItem,
   type WordWorkoutItemKind,
   type WordWorkoutMode,
   type WordWorkoutPictureOption,
 } from './wordWorkoutScript';
+import { describePictureTap, hearQuestionRequest, wordWorkoutAssignment, wordWorkoutScene } from './wordWorkoutWorkspace';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { wordWorkoutPipPose } from '../../../pip/wordWorkoutPipPose';
 
@@ -166,6 +165,9 @@ export interface WordWorkoutData {
 interface WordWorkoutProps {
   data: WordWorkoutData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -193,7 +195,7 @@ const KIND_META: Record<
 // Component
 // ============================================================================
 
-const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
+function WordWorkoutSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: WordWorkoutProps) {
   const {
     title,
     challenges = [],
@@ -205,7 +207,8 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  const gradeLevel = data.gradeLevel || 'K-2';
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   const stableInstanceIdRef = useRef(instanceId || `word-workout-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -219,7 +222,9 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
   );
 
   const [tapped, setTapped] = useState<string | null>(null);
-  const tappedRef = useRef<string | null>(null);
+  /** When each item opened and how long its credited read took, for the silent chain-fluency metric. */
+  const openedAt = useRef(new Map<string, number>());
+  const seconds = useRef(new Map<string, number>());
 
   // ── Evaluation ─────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<WordWorkoutMetrics>({
@@ -232,7 +237,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const outcomeOf = (item: WordWorkoutItem) =>
       summary.outcomes.find((o) => o.id === item.id);
     const kindItems = (kind: WordWorkoutItemKind) => items.filter((i) => i.kind === kind);
@@ -244,10 +249,10 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       );
     };
 
-    // Oral-reading fluency, measured SILENTLY from the runner's per-item
+    // Oral-reading fluency, measured SILENTLY from each item's open-to-credit
     // seconds — there is no visible timer anywhere (standing doctrine).
     const chainItems = kindItems('chain_word');
-    const chainSeconds = chainItems.reduce((sum, i) => sum + (outcomeOf(i)?.seconds ?? 0), 0);
+    const chainSeconds = chainItems.reduce((sum, i) => sum + (seconds.current.get(i.id) ?? 0), 0);
     const wordChainFluency = chainSeconds > 0
       ? Math.round((chainItems.length / chainSeconds) * 60)
       : 0;
@@ -319,137 +324,59 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items, data.mode, evaluation]);
+  };
 
-  // ── The pack — wording lives in wordWorkoutScript.ts ───────────────────────
-  const pack = useMemo<JudgedScriptPack<WordWorkoutItem>>(() => ({
-    ...wordWorkoutPackBase(items),
-    statusLines: {
-      idle: 'Tap the microphone to start your word workout.',
-      ready: (item) => item.answerKind === 'gesture'
-        ? 'Read the word, then tap its picture.'
-        : item.kind === 'answer_question' || item.kind === 'answer_word_meaning' || item.kind === 'choose_context_word'
-          ? 'Say your answer when you are ready.'
-          : 'Read it out loud when you are ready.',
-      retry: (item) => item.answerKind === 'gesture'
-        ? 'Look again — then tap a picture.'
-        : item.kind === 'answer_question' || item.kind === 'answer_word_meaning' || item.kind === 'choose_context_word'
-          ? 'Have another go — say your answer.'
-          : 'Have another go — read it out loud.',
-      noVerdict: () => 'One more time — say it out loud.',
-      done: 'Great word work today!',
-    },
-    // One factual record per attempt, right or corrected: the printed word, sentence or pictures, and what was
-    // tapped, read or said (the tap ref is read before the retry clears it). Never the verdict.
-    observation: (item, { heard }) => {
-      const none = 'No transcript was captured.';
-      switch (item.kind) {
-        case 'picture_tap':
-          return {
-            challenge: `Read "${item.targetWord}" and tap its picture (pictures shown: ${(item.options ?? []).map((o) => o.word).join(', ')}).`,
-            expected: `The picture of "${item.targetWord}".`,
-            observed: tappedRef.current
-              ? `Tapped the picture of "${tappedRef.current}".`
-              : 'Tapped a picture; which one was not recorded.',
-          };
-        case 'real_word':
-          return {
-            challenge: `Read "${item.pair?.[0]}" and "${item.pair?.[1]}" and say which is a real word.`,
-            expected: `"${item.realWord}" said out loud.`,
-            observed: heard ? `Said "${heard}".` : none,
-          };
-        case 'chain_word': {
-          const previous = item.chainIndex ? item.chain?.[item.chainIndex - 1] : undefined;
-          return {
-            challenge: `Read the chain word "${chainWordOf(item)}" aloud${previous ? ` (the word before it was "${previous}")` : ''}.`,
-            expected: `"${chainWordOf(item)}" read aloud.`,
-            observed: heard ? `Read "${heard}".` : none,
-          };
-        }
-        case 'read_sentence':
-          return {
-            challenge: `Read the sentence aloud: ${item.sentence}`,
-            expected: `"${item.sentence}" read aloud, every word in order.`,
-            observed: heard ? `Read "${heard}".` : none,
-          };
-        case 'answer_question':
-          return {
-            challenge: `Read "${item.sentence}" and answer: ${item.question}`,
-            expected: `"${item.answerWord}" said out loud.`,
-            observed: heard ? `Said "${heard}".` : none,
-          };
-        case 'read_extended_word':
-        case 'read_context_word':
-          return {
-            challenge: `Read the printed word "${item.targetWord}" aloud.`,
-            expected: `"${item.targetWord}" read aloud.`,
-            observed: heard ? `Read "${heard}".` : none,
-          };
-        case 'answer_word_meaning':
-          return {
-            challenge: `Use the sentence${item.meaningSentence ? ` "${item.meaningSentence}"` : ''} and answer: ${item.question}`,
-            expected: `A meaning equivalent to "${item.answerWord}".`,
-            observed: heard ? `Said "${heard}".` : none,
-          };
-        case 'choose_context_word':
-          return {
-            challenge: `Choose the near-spelled word that fits${item.contextWords ? ` ("${item.contextWords.join('" or "')}")` : ''}: ${item.contextSentence}`,
-            expected: `"${item.answerWord}".`,
-            observed: heard ? `Said "${heard}".` : none,
-          };
-      }
-    },
-  }), [items]);
-
-  const runner = useJudgedScriptRunner<WordWorkoutItem>({
-    pack,
+  const runner = useWorkspaceRunner<WordWorkoutItem>({
+    primitiveId: 'word-workout',
+    assignment: wordWorkoutAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || data.mode,
     instanceId: resolvedInstanceId,
-    gradeLevel,
-    exhibitId,
-    // CONNECTED TEXT raises the silence close: a child reading a whole line
-    // pauses BETWEEN WORDS, and at the 500ms default three of ten probe reads
-    // split into two voice turns (di-sentence-reading bench sitting, finding 2
-    // — that pack's ship-blocking fix). A mid-line pause is part of one
-    // response, not the end of it. 600ms is that pack's resolved value, taken
-    // rather than re-tuned. Applied to the whole run: the option is read once
-    // at mount, and a session that mixes single words with a sentence must not
-    // close the sentence read early. (In a lesson the provider owns the one
-    // bracket and its policy default is longer still.)
-    silenceCloseMs: 600,
-    onFinished: handleFinished,
-    onItemOpened: () => {
+    onFinished: finish,
+    onItemOpened: (item) => {
+      if (!openedAt.current.has(item.id)) openedAt.current.set(item.id, performance.now());
       setTapped(null);
-      tappedRef.current = null;
     },
     onCorrectionRetry: () => {
-      // The tutor's correction re-modeled in-band; free the pictures again.
+      // Try again frees the pictures.
       setTapped(null);
-      tappedRef.current = null;
       pip.clear();
+    },
+    onAffirmed: (item) => {
+      const start = openedAt.current.get(item.id);
+      if (start != null) seconds.current.set(item.id, (performance.now() - start) / 1000);
     },
   });
 
   const currentItem = runner.currentItem;
-  /** Affirmed: the first moment an answer may be marked on screen. */
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
+  /** Credited: the first moment an answer may be marked on screen. */
   const revealed = runner.currentSolved;
   const meta = KIND_META[currentItem?.kind ?? 'real_word'];
 
   // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the runner's phase and the child's own picture tap; Pip
+  // A projection of the workspace's committed state and the child's own picture tap; Pip
   // never answers, taps, or advances.
   const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const targets = pip.targets();
     const pose = wordWorkoutPipPose({
       kind: currentItem.kind,
-      running: runner.running, preparing: runner.preparing,
+      running: runner.running, preparing: false,
       currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      judging: runner.isAwaitingGesture(),
+      // Audio belongs to this block only while the lesson is pointed at it.
+      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
       cueMatchesItem: runner.cuedItemId === currentItem.id,
       visibleIds: targets.map((target) => target.id),
       lastTouchedId: pip.lastTouchedId,
@@ -457,20 +384,35 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Word workout', dock: pip.dock.current, targets, pose };
   });
 
-  // ── The tap — picture-match only; the tap IS the commit ───────────────────
+  // What the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...wordWorkoutScene(currentItem), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
+  // ── The tap — picture-match only; the tap IS the commit, checked by the activity ──
   const handlePictureTap = useCallback((option: WordWorkoutPictureOption) => {
     const item = runner.currentItem;
-    if (!runner.canAttempt || evaluation.hasSubmitted) return;
+    if (!runner.canAttempt || showSummary) return;
     if (!item || item.answerKind !== 'gesture') return;
-    // Synchronous ref: `canAttempt` closes the pending window through batched
-    // state, this stops a second tap inside the same tick.
+    // `canAttempt` closes through batched state; this stops a second tap inside the same tick.
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
     pip.look(`picture-${option.word}`);
     setTapped(option.word);
-    tappedRef.current = option.word;
-    runner.submitGestureAttempt(pictureVerdictCue(item, option.word));
-  }, [runner, evaluation.hasSubmitted, pip]);
+    commitGesture(runner, { response: describePictureTap(option.word), correct: option.word === item.targetWord,
+      cue: () => describePictureTap(option.word) });
+  }, [runner, showSummary, pip]);
+
+  /** Hear-again asks the tutor for the instruction or question only: a silent host request, never the print. */
+  const hearQuestion = useCallback(() => {
+    if (!currentItem) return;
+    SoundManager.tap();
+    ctx.sendText(hearQuestionRequest(currentItem), { silent: true, author: 'host' });
+  }, [ctx, currentItem]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const celebrationMessage = useMemo(() => {
@@ -485,13 +427,13 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
   }, [items]);
 
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => ({
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => ({
       label: KIND_META[item.kind].label,
       icon: KIND_META[item.kind].icon,
       accentColor: KIND_META[item.kind].accent,
     }));
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
   // ============================================================================
   // Stage
@@ -755,7 +697,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
   // Render
   // ============================================================================
 
-  if (items.length === 0) {
+  if (items.length === 0 || !currentItem) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-8 text-center text-slate-400">
@@ -770,7 +712,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          {!evaluation.hasSubmitted && (
+          {!showSummary && (
             <LuminaBadge accent={meta.accent} className="text-xs">
               {meta.icon} {meta.label}
             </LuminaBadge>
@@ -779,7 +721,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex items-center justify-center gap-4">
               <LuminaChallengeCounter
@@ -792,13 +734,10 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
                   stage is decoded cold. */}
               <button
                 type="button"
-                onClick={runner.hearStimulus}
-                className={`
-                  flex h-11 w-11 items-center justify-center rounded-full
+                onClick={hearQuestion}
+                className="flex h-11 w-11 items-center justify-center rounded-full
                   bg-amber-500/15 border-2 border-amber-500/30
-                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
-                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
-                `}
+                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all"
                 aria-label="Hear the question again"
               >
                 <span className="text-xl">🔁</span>
@@ -813,17 +752,14 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
                 className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
             )}
 
-            {currentItem && renderStage(currentItem)}
-
-            {/* Open for the whole run — no tutor-busy gate, no push-to-talk. */}
-            <JudgedMicPanel run={runner} gestureLabel="Your turn — tap a picture" />
+            {renderStage(currentItem)}
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Word Workout Complete!"
             celebrationMessage={celebrationMessage}
@@ -832,7 +768,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       </LuminaCardContent>
     </LuminaCard>
   );
-};
+}
 
 /** Which letter changed between two chain words — render only. The pack ran the
  *  same comparison as a BUILD GATE (a step that is not a one-letter
@@ -844,5 +780,8 @@ function findChangedIndex(previous: string, word: string): number | undefined {
   }
   return undefined;
 }
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const WordWorkout = withWorkspaceOnly<WordWorkoutProps>('word-workout', WordWorkoutSurface, props => props.data.title);
 
 export default WordWorkout;

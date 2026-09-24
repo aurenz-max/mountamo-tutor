@@ -1,44 +1,24 @@
 // @vitest-environment jsdom
-import React from 'react';
-import { act, cleanup, fireEvent, render } from '@testing-library/react';
+// Word workout runs only on the teaching workspace, so Pip is exercised there: the runtime owns progression.
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { PipSurfaceContext } from './PipSurfaceContext';
+import { act, cleanup, fireEvent } from '@testing-library/react';
 import { PipSurfaceStore } from './PipSurfaceStore';
-import WordWorkout, { type WordWorkoutData } from '../primitives/visual-primitives/literacy/WordWorkout';
-import { itemsFromChallenges, type WordWorkoutItemKind } from '../primitives/visual-primitives/literacy/wordWorkoutScript';
+import { installRuntimeTimers, restoreRuntimeTimers } from '../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace } from '../components/live-activity/runtime/testing/workspaceHarness';
+import type { WordWorkoutData } from '../primitives/visual-primitives/literacy/WordWorkout';
+import { itemsFromChallenges, wordWorkoutHarnessAnswers, type WordWorkoutItemKind }
+  from '../primitives/visual-primitives/literacy/wordWorkoutScript';
 
-const phase = vi.hoisted(() => ({
-  tutorSpeaking: false, stage: 'asking', currentSolved: false, revealHeld: false, index: 0, cued: true,
-  retry: () => {}, submit: vi.fn(),
-}));
-vi.mock('../hooks/useJudgedScriptRunner', () => ({
-  useJudgedScriptRunner: ({ pack, onCorrectionRetry }: { pack: { items: Array<{ id: string }> }; onCorrectionRetry?: () => void }) => {
-    const item = pack.items[phase.index] ?? null;
-    phase.retry = () => onCorrectionRetry?.();
-    return {
-      currentItem: item, currentIndex: phase.index, stage: phase.stage, tutorSpeaking: phase.tutorSpeaking,
-      currentSolved: phase.currentSolved, revealHeld: phase.revealHeld, cuedItemId: phase.cued ? item?.id ?? null : 'elsewhere',
-      canAttempt: phase.stage !== 'judging' && !phase.currentSolved, solvedIds: new Set(),
-      running: true, preparing: false, summary: null, stimulusTapped: false, hearStimulus: vi.fn(),
-      isAwaitingGesture: () => false, submitGestureAttempt: phase.submit,
-    };
-  },
-}));
-vi.mock('../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({ submitResult: vi.fn(), hasSubmitted: false, submittedResult: null, elapsedMs: 0 }),
-  useEvaluationContext: () => null,
-}));
-vi.mock('../components/JudgedMicPanel', () => ({ default: () => null }));
-vi.mock('../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => vi.fn() }) }));
-
-beforeEach(() => {
-  Object.assign(phase, { tutorSpeaking: false, stage: 'asking', currentSolved: false, revealHeld: false, index: 0, cued: true });
-  phase.submit.mockClear();
-});
-afterEach(cleanup);
+beforeEach(() => { installRuntimeTimers(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); });
 
 const data: WordWorkoutData = {
-  title: 'Workout', mode: 'real-vs-nonsense', masteredVowels: ['a', 'o'], gradeLevel: '1', instanceId: 'workout',
+  title: 'Workout', mode: 'real-vs-nonsense', masteredVowels: ['a', 'o'], gradeLevel: '1',
   challenges: [
     { id: 'real', mode: 'real-vs-nonsense', realWord: 'cat', nonsenseWord: 'zat' },
     { id: 'pic', mode: 'picture-match', targetWord: 'pig', targetImage: '🐷',
@@ -54,60 +34,68 @@ const indexOf = (kind: WordWorkoutItemKind, nth = 0) => items.map((item, i) => [
 
 function mount() {
   const store = new PipSurfaceStore();
-  const ui = () => <PipSurfaceContext.Provider value={store}><WordWorkout data={data} /></PipSurfaceContext.Provider>;
-  const view = render(ui());
-  const update = (next: Partial<typeof phase>) => act(() => { Object.assign(phase, next); view.rerender(ui()); });
-  return { store, update, ...view };
+  store.setActive('workout');
+  const h = mountWorkspace({ primitiveId: 'word-workout', evalMode: 'mixed', data: data as unknown as Record<string, unknown>,
+    instanceId: 'workout', pipStore: store });
+  const container = h.view.container;
+  const tap = (id: string) => act(() => { fireEvent.click(container.querySelector(`[data-pip-object="${id}"]`) as HTMLElement); });
+  /** Credit every item before `index` (a picture by its right tap, the rest by the right spoken answer). */
+  const advanceTo = (index: number) => {
+    for (let i = h.state().task ? items.findIndex(x => x.id === h.state().task!.itemId) : 0; i < index; i++) {
+      const answers = wordWorkoutHarnessAnswers(items[i]);
+      if (answers.tapped) { tap(`picture-${answers.tapped.correct}`); h.dispatch('advance'); }
+      else { h.say(answers.correct); h.feedback('correct', 'advance'); }
+      h.confirmVisible();
+    }
+  };
+  return { ...h, store, container, tap, advanceTo, unmount: h.view.unmount };
 }
 const pose = (store: PipSurfaceStore) => store.getActive()?.pose;
 const ids = (store: PipSurfaceStore) => store.getActive()?.targets.map((t) => t.id);
 
-describe('Word Workout drives Pip from its judged phases', () => {
-  it('real or silly outlines both words as one region; celebrates only the affirmed answer', () => {
-    const { store, update, container } = mount();
+describe('Word Workout drives Pip from the workspace', () => {
+  it('real or silly outlines both words as one region; celebrates only the credited answer', () => {
+    const { store, speak, say, feedback, container } = mount();
     expect(container.querySelector('[data-pip-dock="workout"]')).not.toBeNull();
     expect(ids(store)).toEqual(['pair']);
-    update({ tutorSpeaking: true });
+    speak(true);
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'pair' });
-    update({ cued: false });
-    expect(pose(store)).toEqual({ phase: 'idle', gesture: 'none' });
-    update({ tutorSpeaking: false, cued: true, revealHeld: true });
+    speak(false);
+    say('cat'); feedback('correct');
     expect(pose(store)).toEqual({ phase: 'celebrating', gesture: 'none' });
   });
 
-  it('picture match points at the printed word, never a picture; watches the tapped picture while judged, without receiving it', () => {
-    const { store, update, container } = mount();
-    update({ index: indexOf('picture_tap'), tutorSpeaking: true });
+  it('picture match points at the printed word, never a picture; watches the checked picture; Try again frees it', () => {
+    const { store, speak, advanceTo, tap, dispatch, confirmVisible } = mount();
+    advanceTo(indexOf('picture_tap'));
+    speak(true);
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'word' });
-    update({ tutorSpeaking: false });
-    const picture = container.querySelector('[data-pip-object="picture-pin"]') as HTMLElement;
-    act(() => { fireEvent.click(picture); });
-    expect(phase.submit).toHaveBeenCalledTimes(1);
-    expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'picture-pin' });
-    update({ stage: 'judging' });
+    speak(false);
+    // The activity checks the tap at once, so Pip watches the tapped picture while the verdict stands.
+    tap('picture-pin');
     expect(pose(store)).toEqual({ phase: 'checking', gesture: 'look', targetId: 'picture-pin' });
-    update({ stage: 'asking' });
-    act(() => { phase.retry(); });
+    dispatch('retry'); confirmVisible();
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'word' });
   });
 
   it('a chain word points at the row the screen marks; the sentence and its question point at the whole sentence', () => {
-    const { store, update, container } = mount();
-    update({ index: indexOf('chain_word', 1), tutorSpeaking: true });
+    const { store, speak, advanceTo, container } = mount();
+    advanceTo(indexOf('chain_word', 1));
+    speak(true);
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'chain-row' });
     expect(container.querySelector('[data-pip-object="chain-row"]')?.textContent).toContain('hat');
-    update({ index: indexOf('read_sentence') });
+    advanceTo(indexOf('read_sentence'));
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'sentence' });
-    update({ index: indexOf('answer_question') });
+    advanceTo(indexOf('answer_question'));
     expect(ids(store)).toEqual(['sentence']);
-    expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'sentence' });
   });
 
   it('near words: the marked card on the read, the sentence (never a word card) on the choice; unregisters on unmount', () => {
-    const { store, update, unmount } = mount();
-    update({ index: indexOf('read_context_word'), tutorSpeaking: true });
+    const { store, speak, advanceTo, unmount } = mount();
+    advanceTo(indexOf('read_context_word'));
+    speak(true);
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'context-target' });
-    update({ index: indexOf('choose_context_word') });
+    advanceTo(indexOf('choose_context_word'));
     expect(ids(store)).toEqual(['sentence']);
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'sentence' });
     unmount();

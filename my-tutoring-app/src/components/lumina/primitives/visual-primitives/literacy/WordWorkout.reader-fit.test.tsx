@@ -1,81 +1,45 @@
 // @vitest-environment jsdom
 /**
- * Reader-fit for word-workout on the DI modality surface (sixteenth literacy
- * port). The original file pinned a PRE (Kindergarten) band gate: hide the adult
- * chrome, hide the on-screen instruction sentences, and have the tutor voice the
- * play action through [ACTIVITY_START].
+ * Reader-fit for word-workout. The original file pinned a PRE (Kindergarten) band gate:
+ * hide the adult chrome, hide the on-screen instruction sentences, and have the tutor voice
+ * the play action.
  *
- * THE PORT REPLACES THAT CONTRACT WITH A STRONGER ONE rather than dropping it.
- * Every intent the band gate protected is now unconditional:
- *   - the on-screen instruction sentences are gone at EVERY grade, because the
- *     tutor speaks the ask;
- *   - the play action is voiced by the pack's opening cue at EVERY grade, which
- *     is the same channel [ACTIVITY_START] used but scripted rather than
- *     improvised (and it can no longer arrive as a second, competing turn);
+ * The DI port replaced that with a stronger contract, kept on the workspace:
+ *   - the on-screen instruction sentences are gone at EVERY grade, because the tutor speaks
+ *     the ask (now the workspace task);
+ *   - the ask never names a printed word: everything printed is read cold;
  *   - the vowel-scope label that LEAKED the lesson scope is not rendered at all;
- *   - right/wrong is carried by the tutor's voice and the answer ring, so there
- *     is no text feedback card to band-gate.
- * So this file pins BAND INVARIANCE plus the answer surface, and the old PRE-only
- * asserts become "true at K and at Grade 1 alike".
+ *   - right/wrong is carried by the tutor's voice and the answer ring, so there is no text
+ *     feedback card to band-gate.
+ * So this file pins BAND INVARIANCE plus the answer surface.
  *
- * ONE THING THE PORT MADE HARDER, deliberately, and it belongs on this record:
- * a child who cannot yet decode CVC print has nothing to work from here, because
- * the tutor no longer reads the words aloud (that channel decided the item
- * without any decoding). The catalog says so in its constraints and routes those
- * objectives to letter-sound-link / phonics-blender; the assert lives in
- * WordWorkout.di-script.test.ts with the rest of the catalog steering.
+ * A child who cannot yet decode CVC print has nothing to work from here, because the tutor
+ * never reads the words aloud first. The catalog says so in its constraints and routes those
+ * objectives to letter-sound-link / phonics-blender.
  */
-import React from 'react';
-import { render, screen, cleanup } from '@testing-library/react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
 
-const runnerState = vi.hoisted(() => ({ index: 0, solved: false, packs: [] as Array<{ items: unknown[]; itemCue: (item: unknown, opts: unknown) => string }> }));
+import { screen, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
+import type { WordWorkoutData } from './WordWorkout';
 
-vi.mock('../../../hooks/useJudgedScriptRunner', () => ({
-  useJudgedScriptRunner: (opts: { pack: { items: unknown[]; itemCue: (item: unknown, opts: unknown) => string } }) => {
-    runnerState.packs.push(opts.pack);
-    return {
-      running: true,
-      preparing: false,
-      stage: 'asking',
-      statusLine: '',
-      currentIndex: runnerState.index,
-      currentItem: opts.pack.items[runnerState.index] ?? null,
-      solvedIds: new Set<string>(),
-      currentSolved: runnerState.solved,
-      canAttempt: true,
-      summary: null,
-      micState: 'idle' as const,
-      tutorSpeaking: false,
-      cuedItemId: null,
-      cancelListening: undefined,
-      start: async () => {},
-      hearStimulus: () => {},
-      stimulusTapped: false,
-      submitGestureAttempt: () => {},
-      isAwaitingGesture: () => false,
-      loop: {},
-    };
-  },
-}));
-
-vi.mock('@/contexts/LuminaAIContext', () => ({
-  useMicLevel: () => 0,
-  useLuminaAIContext: () => ({ isConnected: true, sendText: vi.fn() }),
-}));
-
-vi.mock('../../../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({
-    submitResult: vi.fn(), hasSubmitted: false, submittedResult: null, elapsedMs: 0,
-  }),
-  useEvaluationContext: () => null,
-}));
-
-vi.mock('../../../utils/SoundManager', () => ({
-  SoundManager: new Proxy({}, { get: () => vi.fn() }),
-}));
-
-import WordWorkout, { type WordWorkoutData } from './WordWorkout';
+const MODE_PIN: Record<string, string> = {
+  'real-vs-nonsense': 'real_vs_nonsense', 'picture-match': 'picture_match', 'word-chains': 'word_chains',
+  'inflected-word': 'read_inflected', 'compound-word': 'read_compound', 'context-discrimination': 'choose_in_context',
+  'sentence-reading': 'sentence_reading',
+};
+const mount = (data: WordWorkoutData) =>
+  mountWorkspace({ primitiveId: 'word-workout', evalMode: MODE_PIN[data.mode], data: data as unknown as Record<string, unknown> });
+const render = (data: WordWorkoutData) => mount(data).view;
+/** Credit the pending spoken answer and move to the next item. */
+const creditAndAdvance = (h: ReturnType<typeof mount>, answer: string) => {
+  h.say(answer); h.feedback('correct', 'advance'); h.confirmVisible();
+};
 
 const realNonsenseData = (gradeLevel: string): WordWorkoutData => ({
   title: 'CVC Word Workout: short a',
@@ -123,79 +87,60 @@ const contextData = (): WordWorkoutData => ({
   challenges: [{ id: 'c1', mode: 'context-discrimination', contextTrialId: 'cat-cap' }],
 });
 
-const lastPack = () => runnerState.packs[runnerState.packs.length - 1];
-const openingLine = () => {
-  const pack = lastPack();
-  return pack.itemCue(pack.items[0], { opening: true, howToPlay: true });
-};
-
-afterEach(() => {
-  cleanup();
-  runnerState.index = 0;
-  runnerState.solved = false;
-  runnerState.packs = [];
-});
+beforeEach(() => { installRuntimeTimers(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); });
 
 describe('WordWorkout extended-decoding mask and reveal', () => {
   it('shows only the inflected word before the cold read, then reveals its decoding chunks', () => {
-    runnerState.solved = false;
-    const { rerender } = render(<WordWorkout data={inflectedData()} />);
+    const h = mount(inflectedData());
     expect(screen.getByText('cats')).toBeTruthy();
     expect(screen.queryByText('/s/')).toBeNull();
     expect(screen.queryByText('The cats nap.')).toBeNull();
-
-    runnerState.solved = true;
-    rerender(<WordWorkout data={inflectedData()} />);
+    h.say('cats'); h.feedback('correct');
     expect(screen.getByText('/s/')).toBeTruthy();
   });
 
   it('withholds sentence context during both cold reads, then shows it for the separate choice', () => {
-    runnerState.index = 0;
-    const first = render(<WordWorkout data={contextData()} />);
+    const h = mount(contextData());
     expect(screen.getByText('cat')).toBeTruthy();
     expect(screen.getByText('cap')).toBeTruthy();
     expect(screen.queryByText('The ___ sat on the mat.')).toBeNull();
-    first.unmount();
-
-    runnerState.index = 2;
-    render(<WordWorkout data={contextData()} />);
+    creditAndAdvance(h, 'cat');
+    expect(screen.queryByText('The ___ sat on the mat.')).toBeNull();
+    creditAndAdvance(h, 'cap');
     expect(screen.getByText('The ___ sat on the mat.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /cat|cap/i })).toBeNull();
   });
 
   it('shows the meaning sentence only on the separately scored comprehension item', () => {
-    runnerState.index = 1;
-    render(<WordWorkout data={inflectedData()} />);
+    const h = mount(inflectedData());
+    creditAndAdvance(h, 'cats');
     expect(screen.getByText('The cats nap.')).toBeTruthy();
     expect(screen.getByText('What does cats tell you about how many cats there are?')).toBeTruthy();
   });
 });
 
-describe.each(['K', '1'])('WordWorkout DI stage @ grade %s', (grade) => {
+describe.each(['K', '1'])('WordWorkout stage @ grade %s', (grade) => {
   it('renders no on-screen instruction sentence — the tutor speaks the ask', () => {
-    render(<WordWorkout data={realNonsenseData(grade)} />);
+    render(realNonsenseData(grade));
     expect(screen.queryByText(/which is a real word/i)).toBeNull();
     expect(screen.queryByText(/sound out both words/i)).toBeNull();
   });
 
-  it('voices the play action through the pack opening cue, answer-free', () => {
-    // The successor to [ACTIVITY_START]: same channel, scripted rather than
-    // improvised, and it can no longer arrive as a second competing turn.
-    render(<WordWorkout data={realNonsenseData(grade)} />);
-    const opening = openingLine();
-    expect(opening).toContain('one is just silly sounds');
-    expect(opening).toContain('tell me the real one');
-    // Answer-free: neither printed word is spoken before the child reads them.
-    expect(opening.split('The real word is')[0]).not.toContain('cat');
+  it('the ask names neither printed word: both are read cold', () => {
+    const h = mount(realNonsenseData(grade));
+    const task = h.state().task!.task;
+    expect(task).toMatch(/real word/);
+    expect(task).not.toMatch(/\bcat\b|\bzat\b/);
   });
 
   it('never renders the vowel-scope label that leaked the lesson scope', () => {
-    render(<WordWorkout data={realNonsenseData(grade)} />);
+    render(realNonsenseData(grade));
     expect(screen.queryByText(/vowels:/i)).toBeNull();
   });
 
   it('keeps the answer surface honest: the words are printed, not tappable', () => {
-    const { container } = render(<WordWorkout data={realNonsenseData(grade)} />);
+    const { container } = render(realNonsenseData(grade));
     expect(screen.getByText('cat')).toBeTruthy();
     expect(screen.getByText('zat')).toBeTruthy();
     // A tappable word card is the costume this port deleted: the answer is said.
@@ -203,7 +148,7 @@ describe.each(['K', '1'])('WordWorkout DI stage @ grade %s', (grade) => {
   });
 
   it('picture-match is picture-primary and its pictures ARE tappable', () => {
-    render(<WordWorkout data={pictureMatchData(grade)} />);
+    render(pictureMatchData(grade));
     expect(screen.getByText('🐷')).toBeTruthy();
     expect(screen.getByText('📌')).toBeTruthy();
     // The word is printed (decoding it is the first half of the task)…
@@ -217,26 +162,26 @@ describe.each(['K', '1'])('WordWorkout DI stage @ grade %s', (grade) => {
   });
 
   it('word chains print every word with no advance button anywhere', () => {
-    render(<WordWorkout data={wordChainsData(grade)} />);
+    render(wordChainsData(grade));
     for (const word of ['cat', 'bat', 'bad']) {
       expect(screen.getByText((_, node) => node?.textContent === word)).toBeTruthy();
     }
     expect(screen.queryByRole('button', { name: /start reading|next word|finish chain/i })).toBeNull();
   });
 
-  it('has no Next / Finish control — the tutor’s verdict is the advance', () => {
-    render(<WordWorkout data={realNonsenseData(grade)} />);
+  it('has no Next / Finish control — the runtime owns progression', () => {
+    render(realNonsenseData(grade));
     expect(screen.queryByRole('button', { name: /next|finish|i read it/i })).toBeNull();
   });
 });
 
-describe('WordWorkout DI stage · band invariance', () => {
+describe('WordWorkout stage · band invariance', () => {
   it('renders the same stage at K and at Grade 1', () => {
-    // The click era hid chrome and instruction text at PRE only. The DI stage
-    // carries neither at any band, so the two renders agree.
-    const k = render(<WordWorkout data={realNonsenseData('K')} />).container.innerHTML;
+    // The click era hid chrome and instruction text at PRE only. The stage carries
+    // neither at any band, so the two renders agree.
+    const k = render(realNonsenseData('K')).container.innerHTML;
     cleanup();
-    const g1 = render(<WordWorkout data={realNonsenseData('1')} />).container.innerHTML;
+    const g1 = render(realNonsenseData('1')).container.innerHTML;
     expect(k).toBe(g1);
   });
 });

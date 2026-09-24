@@ -3203,8 +3203,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'word-workout',
     description:
-      'Live Direct Instruction CVC word reading with a spoken tutor. The tutor asks, waits, judges the child\'s '
-      + 'answer from the audio in-band, and its own affirmation moves the lesson on. THE PRINT IS DECODED COLD AND '
+      'Live CVC word reading with a spoken tutor. The tutor asks, waits and responds to the child\'s '
+      + 'answer, and a credited answer moves the lesson on. THE PRINT IS DECODED COLD AND '
       + 'MOST ANSWERS ARE SPOKEN: the child READS two printed words and SAYS the real one (Real or Silly?), reads '
       + 'each word of a one-letter-change chain OUT LOUD (Word Chain), and READS a decodable sentence ALOUD before '
       + 'SAYING the answer to a question about it (Read It). It also extends decoding beyond isolated CVC: the '
@@ -3213,8 +3213,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'is a separate judged turn only when the objective asks for comprehension, so decoding and meaning never '
       + 'share one score. Picture Match is the one hands mode — the word is '
       + 'printed, the child decodes it silently and taps the picture it means, which is what shows they know what '
-      + 'the word MEANS rather than only how it sounds. Nothing on screen marks the answer before the tutor '
-      + 'affirms, there is nothing to click to advance, and the tutor never reads the print for the child. '
+      + 'the word MEANS rather than only how it sounds. Nothing on screen marks the answer before it is '
+      + 'credited, there is nothing to click to advance, and the tutor never reads the print for the child. '
       + 'Requires a microphone. Capstone practice for CVC decoding, blending automaticity and word-in-context '
       + 'fluency. ESSENTIAL for K-2 literacy.',
     constraints:
@@ -3237,6 +3237,18 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // sentence_reading overridden 'emerging' — floored Grade 1+, the
     // decodable-reader precedent that doc invokes by name.
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 6 },
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
+      guidance: 'Everything printed is read cold: the learner reads it before you say it. Never say a printed word, a '
+        + 'part of one, or a sound in it before the learner has read it, and never read the sentence for them. On real '
+        + 'or silly the learner says the real word; the made-up one is not it. On word chains, inflected, compound and '
+        + 'near words the learner reads the lit word; the word before it in the chain or its near neighbour is not '
+        + 'it. On sentence reading the learner reads the sentence, then says the answer to the question, which is '
+        + 'a word in the sentence. On meaning and context items the learner says what the word means or which word '
+        + 'fits the blank. On picture match the learner reads the word silently and taps its picture; the activity '
+        + 'checks the tap and tells you what was tapped. After an attempt you may model the word or its parts. The '
+        + 'hear-again button asks you to repeat the instruction or question only. You cannot tap a picture.',
+    },
     // ── DI MODALITY (2026-08-14) — SIXTEENTH literacy port, the last of Phase 1.
     // The tutor owns the clock: it asks once, waits, judges the spoken answer
     // from the audio in-band, and its own line is the advance. No advance timer,
