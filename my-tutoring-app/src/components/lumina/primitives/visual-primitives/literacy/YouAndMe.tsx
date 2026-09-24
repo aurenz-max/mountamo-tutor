@@ -1,17 +1,29 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+/**
+ * You & Me — two partners, one action. The child plays the speaking partner and tells the
+ * other what happened, choosing I or you (and myself or yourself on independent actions)
+ * from that role. It runs only on the shared tutor/JEV teaching workspace (workspace
+ * rollout B3; the scripted runner was retired, LA-14, user ruling 09-23: one path). The
+ * observer judges each spoken sentence and the runtime owns progression. An unbound mount
+ * shows the shared "needs the tutor" card.
+ */
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { LuminaBadge, LuminaButton, LuminaCard, LuminaCardContent, LuminaCardHeader,
   LuminaCardTitle, LuminaChallengeCounter, LuminaPanel, LuminaPrompt } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { YouAndMeMetrics } from '../../../evaluation/types';
-import { useJudgedScriptRunner } from '../../../hooks/useJudgedScriptRunner';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
-import { youAndMePack, buildYouAndMeItems, sceneStatement, taskPrompt } from './youAndMeScript';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { sceneStatement, taskPrompt } from './youAndMeScript';
 import type { SupportTier } from '../../../service/generation/generationContext';
 import { supportFor, type YouAndMeSupportScaffold } from './youAndMeSupport';
+import { hearSceneRequest, youAndMeAssignment, youAndMeScene } from './youAndMeWorkspace';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { youAndMePipPose } from '../../../pip/youAndMePipPose';
 
@@ -47,72 +59,104 @@ export interface YouAndMeData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<YouAndMeMetrics>) => void;
 }
 
-/** A new payload remounts the runner so an old verdict cannot score regenerated scenes. */
-export default function YouAndMe({ data, className }: { data: YouAndMeData; className?: string }) {
-  return <YouAndMeSession key={JSON.stringify([data.instanceId, data.challenges])} data={data} className={className} />;
+interface YouAndMeProps {
+  data: YouAndMeData;
+  className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
-function YouAndMeSession({ data, className }: { data: YouAndMeData; className?: string }) {
+/** A new payload remounts the session so an old verdict cannot score regenerated scenes. */
+function YouAndMeSurface(props: YouAndMeProps) {
+  return <YouAndMeSession key={JSON.stringify([props.data.instanceId, props.data.challenges])} {...props} />;
+}
+
+function YouAndMeSession({ data, className, runtimePlanItemId, runtimeEvalMode }: YouAndMeProps) {
+  const ctx = useLuminaAIContext();
   const instanceId = useRef(data.instanceId ?? `you-and-me-${crypto.randomUUID()}`).current;
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const [correctedId, setCorrectedId] = useState<string | null>(null);
-  const items = useMemo(() => buildYouAndMeItems(data.challenges), [data.challenges]);
-  const pack = useMemo(() => youAndMePack(items), [items]);
+  const items = data.challenges;
   const evaluation = usePrimitiveEvaluation<YouAndMeMetrics>({
     primitiveType: 'you-and-me', instanceId, skillId: data.skillId,
     subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId,
     onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
-  // The shared spoken runner owns attempts and progression. Mirroring it through
-  // useChallengeProgress would create a second scoring/progression authority.
-  const run = useJudgedScriptRunner({
-    pack, instanceId, gradeLevel: data.gradeLevel, exhibitId: data.exhibitId,
-    silenceCloseMs: 1200,
+
+  const finish = (summary: TeachingEvaluationResult) => {
+    const modes = Array.from(new Set(items.map(item => item.type)));
+    const metrics: YouAndMeMetrics = {
+      type: 'you-and-me', challengeType: modes.length === 1 ? modes[0] : 'mixed', totalChallenges: items.length,
+      correctCount: summary.solvedCount, attemptsCount: summary.attemptsCount,
+      firstTryCount: summary.firstTryCount, hintsViewed: 0,
+      overallAccuracy: summary.accuracy, averageAttemptsPerChallenge: summary.attemptsCount / items.length,
+      modeResults: modes.map(mode => {
+        const ids = new Set(items.filter(item => item.type === mode).map(item => item.id));
+        const outcomes = summary.outcomes.filter(outcome => ids.has(outcome.id));
+        return { mode, total: ids.size, correct: outcomes.filter(outcome => outcome.solved).length,
+          accuracy: outcomes.reduce((sum, outcome) => sum + outcome.score, 0) / ids.size };
+      }),
+    };
+    evaluation.submitResult(summary.passed, summary.accuracy, metrics,
+      { outcomes: summary.outcomes, learningResponses: summary.learningResponses,
+        perspectives: items.map(({ id, sceneId, type, actor, speaker }) => ({ id, sceneId, type, actor, speaker })),
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
+      undefined, summary.diagnosisEvidence);
+  };
+
+  const run = useWorkspaceRunner<YouAndMeChallenge>({
+    primitiveId: 'you-and-me',
+    assignment: youAndMeAssignment,
+    items,
+    workspace,
+    objectiveId: data.objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || data.challengeType,
+    instanceId,
+    onFinished: finish,
     onItemOpened: () => setCorrectedId(null),
+    // After a checked miss the roles are restated on screen (the scripted correction's panel).
     onCorrectionRetry: item => setCorrectedId(item.id),
-    onFinished: summary => {
-      const modes = Array.from(new Set(items.map(item => item.type)));
-      const metrics: YouAndMeMetrics = {
-        type: 'you-and-me', challengeType: modes.length === 1 ? modes[0] : 'mixed', totalChallenges: items.length,
-        correctCount: summary.solvedCount, attemptsCount: summary.attemptsCount,
-        firstTryCount: summary.firstTryCount, hintsViewed: summary.hearTaps,
-        overallAccuracy: summary.accuracy, averageAttemptsPerChallenge: summary.attemptsCount / items.length,
-        modeResults: modes.map(mode => {
-          const ids = new Set(items.filter(item => item.type === mode).map(item => item.id));
-          const outcomes = summary.outcomes.filter(outcome => ids.has(outcome.id));
-          return { mode, total: ids.size, correct: outcomes.filter(outcome => outcome.solved).length,
-            accuracy: outcomes.reduce((sum, outcome) => sum + outcome.score, 0) / ids.size };
-        }),
-      };
-      evaluation.submitResult(summary.passed, summary.accuracy, metrics,
-        { outcomes: summary.outcomes, observations: summary.observations, learningResponses: summary.learningResponses,
-          perspectives: items.map(({ id, sceneId, type, actor, speaker }) => ({ id, sceneId, type, actor, speaker })) },
-        undefined, summary.diagnosisEvidence);
-    },
   });
-  const item = run.currentItem ?? items[0];
+  const item = run.currentItem;
+  const showSummary = evaluation.hasSubmitted || !!run.practiceSummary;
+
+  // What the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!item) return;
+    workspace.current = { ...youAndMeScene(item), demonstration: [], canDemonstrate: false, canPresent: false,
+      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    run.publishWorkspace();
+  });
 
   // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the runner's phase onto the scene as a whole; Pip never
+  // A projection of the workspace's committed state onto the scene as a whole; Pip never
   // answers, judges, or advances.
   const pip = usePipTargets(item?.id ?? null, false);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !item || run.summary) return null;
+    if (!pip.dock.current || !item || showSummary) return null;
     const targets = pip.targets(['scene'], () => 'The partners and the scene');
     const pose = youAndMePipPose({
-      running: run.running, preparing: run.preparing,
-      currentSolved: run.currentSolved, revealHeld: run.revealHeld,
-      judging: run.stage === 'judging', tutorSpeaking: run.tutorSpeaking,
+      running: run.running, preparing: false,
+      currentSolved: run.currentSolved, revealHeld: run.revealHeld, judging: false,
+      // Audio belongs to this block only while the lesson is pointed at it.
+      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === instanceId),
       cueMatchesItem: run.cuedItemId === item.id,
       visibleIds: targets.map((target) => target.id),
     });
     return { instanceId, scopeId: item.id, label: 'You and me', dock: pip.dock.current, targets, pose };
   });
 
+  const phases = useMemo(() => phaseResultsFromSummary(items, run.practiceSummary, ch => ({
+    label: `${ch.participants[ch.speaker].name} speaking`, icon: ch.objectEmoji,
+  })), [items, run.practiceSummary]);
+
   if (!item) return <LuminaCard><LuminaCardContent>No scenes available. Generate a new activity.</LuminaCardContent></LuminaCard>;
-  if (run.summary) return <PhaseSummaryPanel
-    phases={phaseResultsFromSummary(items, run.summary, ch => ({
-      label: `${ch.participants[ch.speaker].name} speaking`, icon: ch.objectEmoji,
-    }))} overallScore={run.summary.accuracy} heading="You & Me"
+  if (showSummary) return <PhaseSummaryPanel phases={phases}
+    overallScore={evaluation.submittedResult?.score ?? run.teachingResult?.accuracy} heading="You & Me"
     celebrationMessage="Both partners had a turn." />;
 
   const speaker = item.participants[item.speaker];
@@ -151,10 +195,15 @@ function YouAndMeSession({ data, className }: { data: YouAndMeData; className?: 
       {correctedId === item.id && <LuminaPanel>
         <p className="text-center text-slate-200">{speaker.name} is speaking. {actor.name} did the action.</p>
       </LuminaPanel>}
-      <JudgedMicPanel run={run} voiceLabel="Tell your partner" idleLabel="Let’s talk" />
-      {run.running && <div className="text-center"><LuminaButton tone="ghost" onClick={run.hearStimulus}>
+      <div className="text-center"><LuminaButton tone="ghost"
+        onClick={() => ctx.sendText(hearSceneRequest(item), { silent: true, author: 'host' })}>
         Hear the scene again
-      </LuminaButton></div>}
+      </LuminaButton></div>
     </LuminaCardContent>
   </LuminaCard>;
 }
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const YouAndMe = withWorkspaceOnly<YouAndMeProps>('you-and-me', YouAndMeSurface, props => props.data.title);
+
+export default YouAndMe;

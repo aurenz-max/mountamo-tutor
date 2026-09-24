@@ -58,6 +58,7 @@ import { swapHarnessAnswers } from '../../primitives/visual-primitives/literacy/
 import { cvcHarnessAnswers } from '../../primitives/visual-primitives/literacy/cvcSpellerWorkspace';
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
+import { youAndMeHarnessAnswers } from '../../primitives/visual-primitives/literacy/youAndMeWorkspace';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -833,6 +834,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         : [{ type: 'answer', text: answers[0] }];
     },
     probes: { mounted: { selector: '[aria-label="hear the word"]' }, reward: { selector: '[data-cvc-reward]', kind: 'count' } },
+  },
+  'you-and-me': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/YouAndMe.tsx',
+    instanceId: 'partners',
+    defaults: { grade: 'Kindergarten', mode: 'describe_action', di: false,
+      topic: 'Using I and you to tell a partner what happened' },
+    leakTokens: ['YOU_AND_ME_ITEM', 'YOU_AND_ME_MOVE_ON', 'YOU_AND_ME_COMPLETE', 'YOU_AND_ME_HEAR'],
+    prompts: WORKSPACE_PROMPTS,
+    // One spoken sentence per turn: the model sentence, or the same action with I and you swapped.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current you-and-me turn');
+      const answers = youAndMeHarnessAnswers(c);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="scene"]' } },
   },
 };
 

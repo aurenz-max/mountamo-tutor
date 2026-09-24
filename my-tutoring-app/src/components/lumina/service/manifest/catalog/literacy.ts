@@ -39,7 +39,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'past-tense actions and two clearly named participants per scene. The child speaks AS the named '
       + 'speaker, addressing the other partner. I identifies the speaker as actor; you identifies the '
       + 'listening partner as actor. Preserve each scene\'s participants, actor, action and object across '
-      + 'its two turns while swapping the speaker. The scripted runner owns the opening and turn prompts. '
+      + 'its two turns while swapping the speaker. The live tutor asks each turn. '
       + 'describe_action assesses I/you; describe_independent_action also requires correctly bound myself/yourself '
       + 'for an action completed without help. Six turns per pinned mode; blends/mixed contain four turns per mode. '
       + 'Do not assign possessives, third-person/object reflexives, independent writing, or transfer to real conversations.',
@@ -93,6 +93,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'The learner plays the named speaker and tells the listening partner what happened, out loud. The subject '
+        + 'must point at the person who did the action from that role: I when the speaker did it, you when the '
+        + 'listener did. On independent actions the learner also uses myself or yourself for that same person. A '
+        + 'natural sentence or paraphrase counts; swapped I and you, a name with no pronoun, a bare pronoun, or the '
+        + 'scene echoed back does not. Hear the scene again asks you to repeat the scene and the ask only. Which of '
+        + 'I or you (or myself or yourself) to use is the answer: never name it or give a model sentence before a '
+        + 'real wrong attempt. You cannot change the scene or the roles.',
+    },
     affordances: { representation: 'pictorial', answers: ['spoken'], role: 'apply', minutes: 5 },
   },
   {
