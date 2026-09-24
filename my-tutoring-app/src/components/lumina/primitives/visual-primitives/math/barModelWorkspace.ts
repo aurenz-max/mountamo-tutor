@@ -59,7 +59,8 @@ export function spokenGraphAnswer(c: BarModelChallenge): string {
     ? ` It must compare ${c.graphLabel} with ${c.secondGraphLabel}, not two rows of one graph.` : '';
   return `One true comparison is the whole answer; the learner does not compare every group. Any one of these, `
     + `in the learner's own words (fewer for more reversed is the same claim): `
-    + `${graphComparisonFacts(c).join(' ')}${focus}${across}`;
+    + `${graphComparisonFacts(c).join(' ')}${focus}${across}`
+    + ' Judge only the comparison: a count the learner says on the way, right or wrong, does not change whether the comparison is true.';
 }
 
 export function workspaceAssignment(c: BarModelChallenge): TeachingAssignment {
