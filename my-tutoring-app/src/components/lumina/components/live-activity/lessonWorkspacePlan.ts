@@ -36,8 +36,9 @@ export function workspaceBinding({ instanceId, primitiveId, pin, objectiveIds, d
   if (!adapter.bindsTeachingWorkspace || !pinBindsWorkspace(primitiveId, adapter.modes, mode)
     || objectiveIds.length !== 1) return null;
   try {
-    const validated = adapter.validate(data);
-    if (!validated.challenges?.length) return null;
+    // The family's own mount state counts its askable items, whatever its payload calls them
+    // (`challenges`, phonics-blender's `words`); an empty or unaskable pool does not bind.
+    if (!(Number(adapter.initialState(adapter.validate(data)).totalChallenges) > 0)) return null;
   } catch { return null; }
   return { instanceId, primitiveId, evalMode: mode, objectiveId: objectiveIds[0], planItemId: instanceId, guidance: adapter.guidance };
 }

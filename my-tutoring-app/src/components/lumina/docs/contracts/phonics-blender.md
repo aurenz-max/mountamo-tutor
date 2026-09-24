@@ -191,6 +191,17 @@ scope per the handoff; only the sorting-station rider was authorized). Queue the
 
 ## Changelog
 
+- 2026-09-24 — **Teaching workspace, workspace only (rollout B2). R4 RE-BASED; R2 restated; all
+  other requirements hold.** R4's property "only a sentinel-classified tutor verdict advances"
+  protected one progression owner and no unearned credit: restated against the workspace, the
+  observer's committed outcome advances, and nothing on screen commits or advances (unchanged).
+  R2: a tapped letter now sends a silent host request for its sound (`soundRequest`), not the
+  `[PRONOUNCE_SOUND]` tag the workspace tutor has no directive for; never the word. R3, the
+  answer-leak rule (picture only while the credited word is held) and the tier levers hold;
+  `nameTargetPhonemes` no longer reaches the tutor (the scripted model line is gone), and the
+  `none` segmentation tier tells the tutor not to split the word. Probes: the reader-fit and
+  support-tier jsdom suites, now mounted under a runtime; `PhonicsBlender.workspace.test.tsx`;
+  smoke `cvc` text + `--audio` PASS.
 - 2026-09-16 — **Student-interests rollout row 0. R10 NARROWED; R6 now also enforced in code.
   All other requirements hold.** The intent line is now the shared `themedFocusLine` (theme →
   title; ≤2 everyday theme words), and the K guideline "use words from the topic theme" became

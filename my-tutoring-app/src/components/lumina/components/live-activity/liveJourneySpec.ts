@@ -52,6 +52,7 @@ import { balanceSurface, explainHarnessAnswers, weightsFor } from '../../primiti
 import { equalityItems, equalityProblem, WEIGHTS } from '../../primitives/visual-primitives/math/balanceEqualityModel';
 import { isHands, TRAY, workshopItems, workshopProblem } from '../../primitives/visual-primitives/math/balanceWorkshopModel';
 import type { BarModelChallenge } from '../../primitives/visual-primitives/math/BarModel';
+import { blendHarnessAnswers, blendItems } from '../../primitives/visual-primitives/literacy/phonicsBlenderWorkspace';
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
 
@@ -754,6 +755,25 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         { type: 'choose', label: `Step of ${step}` }, { type: 'choose', label: 'Submit graph' }];
     },
     probes: { mounted: { selector: '[data-pip-object="graph"]' } },
+  },
+  'phonics-blender': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/PhonicsBlender.tsx',
+    instanceId: 'blend',
+    defaults: { grade: 'Kindergarten', mode: 'cvc', di: false,
+      topic: 'Blending the sounds of short-vowel CVC words into whole words' },
+    leakTokens: ['DI_BLEND_ITEM', 'DI_BLEND_MOVE_ON', 'DI_BLEND_COMPLETE', 'PRONOUNCE_SOUND'],
+    prompts: WORKSPACE_PROMPTS,
+    // One spoken word per item: the word itself, or a plainly different word.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = blendItems(ctx.data.words ?? []).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current phonics-blender word');
+      const answers = blendHarnessAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    // The reward picture, counted so a transcript inspection can check it never shows before a credit.
+    probes: { mounted: { selector: '[data-pip-object="letters"]' }, reward: { selector: '[data-blend-reward]', kind: 'count' } },
   },
 };
 

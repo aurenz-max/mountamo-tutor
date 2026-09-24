@@ -30,7 +30,8 @@ const ctxState = vi.hoisted(() => ({
   isConnected: true,
   isListening: false,
   isAudioPlaying: false,
-  sessionMode: 'idle' as 'idle' | 'lesson',
+  sessionMode: 'lesson' as 'idle' | 'lesson',
+  activePrimitiveId: 'blend',
   sessionResumeCount: 0,
   conversation: [] as Array<{ role: string; content: string }>,
 }));
@@ -47,6 +48,7 @@ vi.mock('@/contexts/LuminaAIContext', () => ({
     startListening: vi.fn(() => { ctxState.isListening = true; }),
     stopListening: vi.fn(),
     updateContext: vi.fn(),
+    sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} },
   }),
 }));
 
@@ -65,6 +67,18 @@ vi.mock('../../../../utils/SoundManager', () => ({
 }));
 
 import PhonicsBlender, { type PhonicsBlenderData } from '../PhonicsBlender';
+import { LiveLessonRuntime } from '../../../../components/live-activity/runtime/LiveLessonRuntime';
+import { LiveRuntimeContext } from '../../../../components/live-activity/runtime/LiveRuntimeContext';
+import { LiveRuntimeSurface } from '../../../../components/live-activity/runtime/LiveRuntimeSurface';
+
+/** Phonics blender runs only on the teaching workspace, so it is mounted the way a lesson mounts it. */
+const bound = (data: PhonicsBlenderData) => {
+  const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
+  return <LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
+    <PhonicsBlender data={data} runtimePlanItemId="plan-blend" runtimeEvalMode="cvc" />
+  </LiveRuntimeSurface></LiveRuntimeContext.Provider>;
+};
+
 import {
   completeCue,
   HOW_TO_PLAY,
@@ -80,6 +94,7 @@ const makeData = (
   tierFields: Partial<PhonicsBlenderData> = {},
 ): PhonicsBlenderData => ({
   title: 'Animal Sounds',
+  instanceId: 'blend',
   gradeLevel,
   patternType: 'cvc',
   words: [
@@ -139,18 +154,18 @@ describe('phonics-blender tier · lever 1: showBlendPreview (segmentation help)'
   afterEach(cleanup);
 
   it('easy separates the letters and marks the breaks with dots', () => {
-    render(<PhonicsBlender data={makeData('1', EASY)} />);
+    render(bound(makeData('1', EASY)));
     expect(screen.getAllByText('·').length).toBe(2);
   });
 
   it('medium keeps the letters separated but drops the dots', () => {
-    render(<PhonicsBlender data={makeData('1', MEDIUM)} />);
+    render(bound(makeData('1', MEDIUM)));
     expect(screen.queryByText('·')).toBeNull();
     expect(screen.getAllByRole('button', { name: /^sound / }).length).toBe(3);
   });
 
   it('hard joins the letters into one solid word — the child segments it', () => {
-    render(<PhonicsBlender data={makeData('1', HARD)} />);
+    render(bound(makeData('1', HARD)));
     expect(screen.queryByText('·')).toBeNull();
     // The stimulus is NOT withdrawn: every letter is still there and tappable.
     expect(screen.getAllByRole('button', { name: /^sound / }).length).toBe(3);
@@ -160,16 +175,16 @@ describe('phonics-blender tier · lever 1: showBlendPreview (segmentation help)'
   it('NO tier withdraws tap-to-hear — a stuck child can always recover a sound (R2)', () => {
     for (const tier of [EASY, MEDIUM, HARD]) {
       sendText.mockClear();
-      const view = render(<PhonicsBlender data={makeData('1', tier)} />);
+      const view = render(bound(makeData('1', tier)));
       fireEvent.click(screen.getByRole('button', { name: 'sound /k/' }));
-      expect(sendText.mock.calls.filter(c => String(c[0]).startsWith('[PRONOUNCE_SOUND]'))).toHaveLength(1);
+      expect(sendText.mock.calls.filter(c => String(c[0]).startsWith('The learner tapped a letter'))).toHaveLength(1);
       view.unmount();
     }
   });
 
   it('NO tier leaks the answer — no picture and no printed word at any tier', () => {
     for (const tier of [EASY, MEDIUM, HARD]) {
-      const view = render(<PhonicsBlender data={makeData('1', tier)} />);
+      const view = render(bound(makeData('1', tier)));
       expect(screen.queryByText('🐱')).toBeNull();
       expect(screen.queryByText('cat')).toBeNull();
       view.unmount();
@@ -181,12 +196,12 @@ describe('phonics-blender tier · dead levers (asserted, not ignored)', () => {
   afterEach(cleanup);
 
   it('showSlotCount has no surface — there are no build slots to count', () => {
-    render(<PhonicsBlender data={makeData('1', { ...EASY, showSlotCount: false })} />);
+    render(bound(makeData('1', { ...EASY, showSlotCount: false })));
     expect(screen.queryByText('?')).toBeNull();
   });
 
   it('showTileLetters has no surface — the letters ARE the stimulus', () => {
-    render(<PhonicsBlender data={makeData('1', { ...EASY, showTileLetters: false })} />);
+    render(bound(makeData('1', { ...EASY, showTileLetters: false })));
     expect(screen.getByText('c')).toBeTruthy();
     expect(screen.getByText('a')).toBeTruthy();
     expect(screen.getByText('t')).toBeTruthy();

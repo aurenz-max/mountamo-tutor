@@ -29,6 +29,7 @@ import { diMathFactsLiveDomain } from './adapters/diMathFactsLive';
 import { diSentenceReadingLiveDomain } from './adapters/diSentenceReadingLive';
 import { letterSoundLinkLiveDomain } from './adapters/letterSoundLinkLive';
 import { barModelLiveDomain } from './adapters/barModelLive';
+import { phonicsBlenderLiveDomain } from './adapters/phonicsBlenderLive';
 import { workspaceAdapter, type LiveActivityAdapter } from './adapters/adapterContract';
 
 export type { LiveActivityAdapter } from './adapters/adapterContract';
@@ -63,6 +64,7 @@ export const LIVE_ADAPTERS = {
   'di-sentence-reading': workspaceAdapter('di-sentence-reading', diSentenceReadingLiveDomain),
   'letter-sound-link': workspaceAdapter('letter-sound-link', letterSoundLinkLiveDomain),
   'bar-model': workspaceAdapter('bar-model', barModelLiveDomain),
+  'phonics-blender': workspaceAdapter('phonics-blender', phonicsBlenderLiveDomain),
 } satisfies Record<string, LiveActivityAdapter<any>>;
 
 export type LivePrimitiveId = keyof typeof LIVE_ADAPTERS;

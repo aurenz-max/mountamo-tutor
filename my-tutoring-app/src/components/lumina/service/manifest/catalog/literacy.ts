@@ -831,6 +831,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
+      guidance: 'The learner sees the letters of a word and says the whole word out loud; it is judged against the word you '
+        + 'are given. Sounding it out and then saying the word is a correct blend. Separate sounds with no word at the '
+        + 'end, letter names, or a close but different word (cap for cat) are not yet the word. A tapped letter asks you '
+        + 'for its sound: say only that sound, never the word. The word is never printed and its picture appears only '
+        + 'after the word is credited. You cannot tap letters or show the picture.',
+    },
     // ── DI MODALITY, PURELY VERBAL (2026-08-09, two user rulings) ──────────
     // The tutor owns the clock and the task is spoken end to end. It models the
     // sounds and the word, waits, judges the audio in-band, corrects

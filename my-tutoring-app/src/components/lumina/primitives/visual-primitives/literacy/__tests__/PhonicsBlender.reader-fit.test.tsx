@@ -27,7 +27,8 @@ const ctxState = vi.hoisted(() => ({
   isConnected: true,
   isListening: false,
   isAudioPlaying: false,
-  sessionMode: 'idle' as 'idle' | 'lesson',
+  sessionMode: 'lesson' as 'idle' | 'lesson',
+  activePrimitiveId: 'blend',
   sessionResumeCount: 0,
   conversation: [] as Array<{ role: string; content: string }>,
 }));
@@ -44,6 +45,7 @@ vi.mock('@/contexts/LuminaAIContext', () => ({
     startListening: vi.fn(() => { ctxState.isListening = true; }),
     stopListening: vi.fn(),
     updateContext: vi.fn(),
+    sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} },
   }),
 }));
 
@@ -62,9 +64,22 @@ vi.mock('../../../../utils/SoundManager', () => ({
 }));
 
 import PhonicsBlender, { type PhonicsBlenderData } from '../PhonicsBlender';
+import { LiveLessonRuntime } from '../../../../components/live-activity/runtime/LiveLessonRuntime';
+import { LiveRuntimeContext } from '../../../../components/live-activity/runtime/LiveRuntimeContext';
+import { LiveRuntimeSurface } from '../../../../components/live-activity/runtime/LiveRuntimeSurface';
+
+/** Phonics blender runs only on the teaching workspace, so it is mounted the way a lesson mounts it. */
+const bound = (data: PhonicsBlenderData) => {
+  const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
+  return <LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
+    <PhonicsBlender data={data} runtimePlanItemId="plan-blend" runtimeEvalMode="cvc" />
+  </LiveRuntimeSurface></LiveRuntimeContext.Provider>;
+};
+
 
 const makeData = (gradeLevel: string): PhonicsBlenderData => ({
   title: 'Animal Sounds',
+  instanceId: 'blend',
   gradeLevel,
   patternType: 'cvc',
   words: [
@@ -90,51 +105,51 @@ describe('PhonicsBlender @ PRE (gradeLevel K)', () => {
   afterEach(cleanup);
 
   it('hides adult chrome (word counter, badges, reader instruction line)', () => {
-    render(<PhonicsBlender data={makeData('K')} />);
+    render(bound(makeData('K')));
     expect(screen.queryByText('Grade K')).toBeNull();
     expect(screen.queryByText('CVC Words')).toBeNull();
     expect(screen.queryByText(/Tap a letter to hear its sound/)).toBeNull();
   });
 
   it('SHOWS the word’s letters — they are the stimulus a pre-reader is learning to decode', () => {
-    render(<PhonicsBlender data={makeData('K')} />);
+    render(bound(makeData('K')));
     expect(screen.getByRole('button', { name: 'sound /k/' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'sound /a/' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'sound /t/' })).toBeTruthy();
     expect(screen.getByText('c')).toBeTruthy();
   });
 
-  it('tapping a letter speaks its SOUND via [PRONOUNCE_SOUND] (R2)', () => {
-    render(<PhonicsBlender data={makeData('K')} />);
+  it('tapping a letter asks the tutor for its SOUND (R2)', () => {
+    render(bound(makeData('K')));
     fireEvent.click(screen.getByRole('button', { name: 'sound /k/' }));
-    const spoken = tagged('[PRONOUNCE_SOUND]');
+    const spoken = tagged('The learner tapped a letter');
     expect(spoken).toHaveLength(1);
     expect(spoken[0]).toContain('/k/');
   });
 
   it('tapping a letter never speaks the WORD — the word is the answer', () => {
-    render(<PhonicsBlender data={makeData('K')} />);
+    render(bound(makeData('K')));
     fireEvent.click(screen.getByRole('button', { name: 'sound /k/' }));
     fireEvent.click(screen.getByRole('button', { name: 'sound /a/' }));
     fireEvent.click(screen.getByRole('button', { name: 'sound /t/' }));
-    expect(tagged('[PRONOUNCE_SOUND]')).toHaveLength(3);
+    expect(tagged('The learner tapped a letter')).toHaveLength(3);
     expect(sendText.mock.calls.some(c => /\bcat\b/i.test(String(c[0])))).toBe(false);
   });
 
   it('ANSWER-LEAK — the picture is not shown before the child has blended the word', () => {
-    render(<PhonicsBlender data={makeData('K')} />);
+    render(bound(makeData('K')));
     expect(screen.queryByText('🐱')).toBeNull();
   });
 
   it('ANSWER-LEAK — the whole word is never printed as a word before the answer', () => {
-    render(<PhonicsBlender data={makeData('K')} />);
+    render(bound(makeData('K')));
     // The letters render individually; nothing renders the joined string.
     expect(screen.queryByText('cat')).toBeNull();
     expect(screen.queryByText('→')).toBeNull();
   });
 
   it('R4 RE-BASED — no button may carry the child forward', () => {
-    render(<PhonicsBlender data={makeData('K')} />);
+    render(bound(makeData('K')));
     expect(screen.queryByRole('button', { name: 'Check' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Ready to Build/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Blend!/ })).toBeNull();
@@ -149,14 +164,14 @@ describe('PhonicsBlender @ reader grade (control, Grade 1)', () => {
   afterEach(cleanup);
 
   it('keeps the adult chrome the K band hides', () => {
-    render(<PhonicsBlender data={makeData('1')} />);
+    render(bound(makeData('1')));
     expect(screen.getByText('Grade 1')).toBeTruthy();
     expect(screen.getByText('CVC Words')).toBeTruthy();
     expect(screen.getByText(/Tap a letter to hear its sound/)).toBeTruthy();
   });
 
   it('the modality is not band-gated: no advance button and no leaked answer at Grade 1 either', () => {
-    render(<PhonicsBlender data={makeData('1')} />);
+    render(bound(makeData('1')));
     expect(screen.queryByRole('button', { name: 'Check' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Ready to Build/ })).toBeNull();
     expect(screen.queryByText('🐱')).toBeNull();

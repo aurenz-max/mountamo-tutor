@@ -1,0 +1,104 @@
+{
+ "source": "qa/tutor-reports/phonics-blender-runtime-cvc-payload-2026-09-24.json",
+ "primitiveId": "phonics-blender",
+ "evalMode": "cvc",
+ "data": {
+  "title": "Fun CVC Word Blending",
+  "gradeLevel": "K",
+  "patternType": "cvc",
+  "words": [
+   {
+    "id": "w1",
+    "targetWord": "cat",
+    "phonemes": [
+     {
+      "id": "w1_p1",
+      "sound": "/k/",
+      "letters": "c"
+     },
+     {
+      "id": "w1_p2",
+      "sound": "/æ/",
+      "letters": "a"
+     },
+     {
+      "id": "w1_p3",
+      "sound": "/t/",
+      "letters": "t"
+     }
+    ],
+    "emoji": "🐱",
+    "imageDescription": "a small furry cat"
+   },
+   {
+    "id": "w2",
+    "targetWord": "dog",
+    "phonemes": [
+     {
+      "id": "w2_p1",
+      "sound": "/d/",
+      "letters": "d"
+     },
+     {
+      "id": "w2_p2",
+      "sound": "/ɒ/",
+      "letters": "o"
+     },
+     {
+      "id": "w2_p3",
+      "sound": "/ɡ/",
+      "letters": "g"
+     }
+    ],
+    "emoji": "🐶",
+    "imageDescription": "a friendly dog"
+   },
+   {
+    "id": "w3",
+    "targetWord": "sun",
+    "phonemes": [
+     {
+      "id": "w3_p1",
+      "sound": "/s/",
+      "letters": "s"
+     },
+     {
+      "id": "w3_p2",
+      "sound": "/ʌ/",
+      "letters": "u"
+     },
+     {
+      "id": "w3_p3",
+      "sound": "/n/",
+      "letters": "n"
+     }
+    ],
+    "emoji": "☀️",
+    "imageDescription": "a bright sunny sun"
+   },
+   {
+    "id": "w4",
+    "targetWord": "bus",
+    "phonemes": [
+     {
+      "id": "w4_p1",
+      "sound": "/b/",
+      "letters": "b"
+     },
+     {
+      "id": "w4_p2",
+      "sound": "/ʌ/",
+      "letters": "u"
+     },
+     {
+      "id": "w4_p3",
+      "sound": "/s/",
+      "letters": "s"
+     }
+    ],
+    "emoji": "🚌",
+    "imageDescription": "a yellow school bus"
+   }
+  ]
+ }
+}

@@ -537,10 +537,11 @@ PROGRAMS = {'tutor': tutor_led, 'di-runner': judged_runner}
 async def drive(args, token, live, index):
     journey, spec = args.journey, args.activity_spec
     activity = next(a for a in spec['activities'] if a['primitiveId'] == args.primitive)
-    s = Session(args, journey, spec, {**live['generatedData'],
-        'challenges': live['generatedData']['challenges'][:2]},
+    # The item pool is `challenges` for most families; phonics-blender's is `words`.
+    pool = next(k for k in ('challenges', 'words') if isinstance(live['generatedData'].get(k), list))
+    s = Session(args, journey, spec, {**live['generatedData'], pool: live['generatedData'][pool][:2]},
         [i for i in (live.get('diPlan') or {}).get('items', [])], index)
-    assert len(s.data['challenges']) == 2, 'Probe needs two generated challenges'
+    assert len(s.data[pool]) == 2, 'Probe needs two generated items'
     s.process = subprocess.Popen(['node', 'scripts/primitive-runtime-driver.mjs', str(uuid.uuid4()), args.primitive],
         cwd=ROOT/'my-tutoring-app', env={**os.environ, 'LIVE_FRONTEND': args.frontend}, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
         stderr=subprocess.PIPE, text=True, encoding='utf-8')
