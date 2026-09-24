@@ -53,6 +53,7 @@ import { equalityItems, equalityProblem, WEIGHTS } from '../../primitives/visual
 import { isHands, TRAY, workshopItems, workshopProblem } from '../../primitives/visual-primitives/math/balanceWorkshopModel';
 import type { BarModelChallenge } from '../../primitives/visual-primitives/math/BarModel';
 import { blendHarnessAnswers, blendItems } from '../../primitives/visual-primitives/literacy/phonicsBlenderWorkspace';
+import { flipHarnessAnswers } from '../../primitives/visual-primitives/literacy/wordFlipWorkspace';
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
 
@@ -774,6 +775,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     // The reward picture, counted so a transcript inspection can check it never shows before a credit.
     probes: { mounted: { selector: '[data-pip-object="letters"]' }, reward: { selector: '[data-blend-reward]', kind: 'count' } },
+  },
+  'word-flip': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/WordFlip.tsx',
+    instanceId: 'flip',
+    defaults: { grade: 'Kindergarten', mode: 'plural_s', di: false,
+      topic: 'Saying the plural of a noun when there is more than one' },
+    leakTokens: ['DI_FLIP_ITEM', 'DI_FLIP_MOVE_ON', 'DI_FLIP_COMPLETE', 'SAY_WORD'],
+    prompts: WORKSPACE_PROMPTS,
+    // One spoken word per item: the changed word, or the source word said back unchanged.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current word-flip challenge');
+      const answers = flipHarnessAnswers(c);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="frame"]' }, reward: { selector: '[data-flip-reward]', kind: 'count' } },
   },
 };
 

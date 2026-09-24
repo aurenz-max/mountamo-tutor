@@ -3853,6 +3853,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
+      guidance: 'The frame shows one thing and how many there are now, or an action today and yesterday. The learner '
+        + 'says the changed word aloud and it is judged against the word you are given; saying it inside a phrase '
+        + '(three dogs, yesterday I jumped) is correct. The word said back unchanged, or the rule applied twice '
+        + '(dogses, jumpeded), is not yet the answer. The new word is a blank until credited: never say it before the '
+        + 'learner has tried. A tapped card asks you to say its word unchanged. You cannot tap or fill in the blank.',
+    },
   },
   {
     id: 'character-web',

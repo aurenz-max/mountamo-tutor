@@ -2,46 +2,27 @@
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { LoopEmission } from '../hooks/judgedLoopModel';
 import { PipSurfaceContext } from './PipSurfaceContext';
 import { PipSurfaceStore } from './PipSurfaceStore';
-import WordFlip, { type WordFlipData } from '../primitives/visual-primitives/literacy/WordFlip';
+import { LiveLessonRuntime } from '../components/live-activity/runtime/LiveLessonRuntime';
+import { LiveRuntimeContext } from '../components/live-activity/runtime/LiveRuntimeContext';
+import { LiveRuntimeSurface } from '../components/live-activity/runtime/LiveRuntimeSurface';
 
-const live = vi.hoisted(() => ({
-  isConnected: true, isListening: true, isAudioPlaying: false, sessionMode: 'standalone', activePrimitiveId: null as string | null,
-}));
-vi.mock('@/contexts/LuminaAIContext', () => ({
-  useMicLevel: () => 0,
-  useLuminaAIContext: () => ({
-    ...live, sendText: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), startListening: vi.fn(), stopListening: vi.fn(), updateContext: vi.fn(),
-  }),
-}));
+// Word flip runs only on the teaching workspace, so Pip is exercised there: the runtime owns progression.
+const tutor = vi.hoisted(() => ({ isAudioPlaying: false, activePrimitiveId: 'flip', conversation: [] as any[] }));
+vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
+  isConnected: true, isListening: true, sessionMode: 'lesson', sendText: vi.fn(),
+  sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} }, ...tutor,
+}) }));
 vi.mock('../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({ submitResult: vi.fn(), hasSubmitted: false, submittedResult: null, elapsedMs: 0 }),
   useEvaluationContext: () => null,
-}));
-const loop = vi.hoisted(() => ({ emit: (_e: unknown) => {}, sendQueued: () => {} }));
-vi.mock('../hooks/useJudgedSpeechLoop', () => ({
-  useJudgedSpeechLoop: (options: { onEmission?: (e: unknown) => void; onCue?: (e: { phase: string; text: string }) => void }) => {
-    loop.emit = (e) => options.onEmission?.(e);
-    loop.sendQueued = () => options.onCue?.({ phase: 'sent', text: '' });
-    return {
-      voiceTurns: { isVoiceActive: () => false, reset: vi.fn() },
-      queueCue: vi.fn(), sendCueNow: () => options.onCue?.({ phase: 'sent', text: '' }),
-      clearQueuedCue: vi.fn(), arm: vi.fn(), disarm: vi.fn(), reset: vi.fn(),
-      isAwaitingJudgment: () => false, config: {},
-    };
-  },
-}));
-vi.mock('../components/JudgedMicPanel', () => ({
-  default: ({ onStart }: { onStart?: () => void }) => <button type="button" onClick={onStart}>Start</button>,
+  usePrimitiveEvaluation: () => ({ submitResult: vi.fn(), hasSubmitted: false, submittedResult: null, elapsedMs: 0 }),
 }));
 vi.mock('../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => vi.fn() }) }));
+import WordFlip, { type WordFlipData } from '../primitives/visual-primitives/literacy/WordFlip';
 
-beforeEach(() => {
-  Object.assign(live, { isConnected: true, isListening: true, isAudioPlaying: false, sessionMode: 'standalone', activePrimitiveId: null });
-});
 afterEach(cleanup);
+beforeEach(() => { tutor.isAudioPlaying = false; tutor.activePrimitiveId = 'flip'; tutor.conversation = []; });
 
 const data: WordFlipData = {
   title: 'Farm', challengeType: 'plural_s', gradeLevel: 'K', instanceId: 'flip',
@@ -53,55 +34,70 @@ const data: WordFlipData = {
 
 function mount() {
   const store = new PipSurfaceStore();
-  const ui = () => <PipSurfaceContext.Provider value={store}><WordFlip data={data} /></PipSurfaceContext.Provider>;
+  store.setActive('flip');
+  const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
+  const ui = () => <PipSurfaceContext.Provider value={store}><LiveRuntimeContext.Provider value={runtime}>
+    <LiveRuntimeSurface runtime={runtime}>
+      <WordFlip data={data} runtimePlanItemId="plan-flip" runtimeEvalMode="plural_s" />
+    </LiveRuntimeSurface></LiveRuntimeContext.Provider></PipSurfaceContext.Provider>;
   const view = render(ui());
-  const audio = (on: boolean) => act(() => { live.isAudioPlaying = on; view.rerender(ui()); });
-  const emit = (e: object) => act(() => { loop.emit(e as LoopEmission); });
-  return { store, audio, emit, ...view };
+  const speak = (on: boolean) => act(() => { tutor.isAudioPlaying = on; view.rerender(ui()); });
+  const say = (text: string) => act(() => {
+    tutor.conversation = [...tutor.conversation, { role: 'user', content: text, timestamp: tutor.conversation.length + 1 }];
+    view.rerender(ui());
+  });
+  let lastCommand = '';
+  /** The observer's committed verdict on the pending spoken answer. */
+  const verdict = (correct: boolean, transition: 'none' | 'advance' | 'retry') => {
+    const s = runtime.getSnapshot();
+    const a = s.affordances.find(x => x.action.type === 'workspace' && x.action.operation === 'apply_tutor_verdict');
+    expect(a, 'no pending verdict').toBeTruthy();
+    lastCommand = crypto.randomUUID();
+    act(() => { runtime.dispatch({ sessionEpoch: 'test', commandId: lastCommand, instanceId: 'flip', itemId: s.task!.itemId,
+      expectedRevision: s.revision, action: { ...a!.action, input: { dialogue: { responseId: s.task!.workspace!.pendingResponse!.id,
+        verdict: correct ? 'correct' : 'incorrect', transition, tutor: correct ? 'Yes, dogs!' : 'Not quite.' } } } }); });
+  };
+  const confirmVisible = () => act(() => { runtime.confirmVisibleResponse(lastCommand); });
+  return { store, speak, say, verdict, confirmVisible, ...view };
 }
 const pose = (store: PipSurfaceStore) => store.getActive()?.pose;
-const start = () => act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Start' })); });
-const verdict = (judgment: string) => ({ kind: 'verdict', judgment, misses: 0, attempt: { openedAt: 0, closedAt: 0 } });
 
-describe('Word Flip maps its own loop phases into Pip', () => {
-  it('outlines the whole frame on the ask and watches the source card the child taps', async () => {
-    const { store, audio, container } = mount();
+describe('Word Flip drives Pip from the workspace', () => {
+  it('outlines the whole frame on the ask and watches the source card the child taps', () => {
+    const { store, speak, container } = mount();
     expect(container.querySelector('[data-pip-dock="flip"]')).not.toBeNull();
     expect(store.getActive()?.targets.map((t) => t.id)).toEqual(expect.arrayContaining(['frame', 'source']));
-    expect(pose(store)).toEqual({ phase: 'idle', gesture: 'none' });
-    await start();
-    expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'frame' });
-    audio(true);
+    speak(true);
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'frame' });
-    audio(false);
+    speak(false);
     fireEvent.click(screen.getByRole('button', { name: 'word dog' }));
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'source' });
   });
 
-  it('holds the affirmed answer until the next cue is sent; a correction is a cue', async () => {
-    const { store, audio, emit } = mount();
-    await start();
-    emit({ kind: 'attempt-open' });
-    audio(true);
-    emit(verdict('affirmed'));
-    expect(store.getActive()?.scopeId).toBe('wf2');
+  it('celebrates a credited word while it is held, and prints it only then', () => {
+    const { store, say, verdict } = mount();
+    expect(screen.queryByText('dogs')).toBeNull();
+    say('dogs');
+    verdict(true, 'none');
     expect(pose(store)).toEqual({ phase: 'celebrating', gesture: 'none' });
-    act(() => { loop.sendQueued(); });
-    expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'frame' });
-    audio(false);
-    emit({ kind: 'attempt-open' });
-    emit(verdict('corrected'));
-    audio(true);
-    expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'frame' });
+    expect(screen.getByText('dogs')).toBeTruthy();
   });
 
-  it('ignores another lesson block’s audio and unregisters on unmount', async () => {
-    live.sessionMode = 'lesson';
-    live.activePrimitiveId = 'someone-else';
-    const { store, audio, unmount } = mount();
-    await start();
-    audio(true);
-    expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'frame' });
+  it('a credit that advances opens the next item with its blank', () => {
+    const { store, say, verdict, confirmVisible } = mount();
+    say('dogs');
+    verdict(true, 'advance');
+    confirmVisible();
+    expect(store.getActive()?.scopeId).toBe('wf2');
+    expect(screen.queryByText('cats')).toBeNull();
+  });
+
+  it('ignores speech for another block and unregisters on unmount', () => {
+    tutor.activePrimitiveId = 'another-block';
+    const { store, speak, unmount } = mount();
+    speak(true);
+    expect(pose(store)?.gesture).not.toBe('point');
+    tutor.activePrimitiveId = 'flip';
     unmount();
     expect(store.getActive()).toBeNull();
   });

@@ -12,8 +12,8 @@
  *  1. Adult chrome is hidden at gradeLevel 'K' (counter, Grade / mode badges,
  *     the reader hint line) — a pre-reader gets the task by voice.
  *  2. The one-thing word, its emoji and the counted pictures are the stimulus
- *     and are shown at every grade; tapping the card speaks THAT word via
- *     [SAY_WORD], never the plural.
+ *     and are shown at every grade; tapping the card asks the tutor for THAT word,
+ *     never the plural.
  *  3. ANSWER-LEAK: nothing that names the more-than-one word may appear before
  *     the child says it — not a printed word, and above all not a tap chip.
  *     The chips were deleted because they printed the answer; Grade 1 can read
@@ -34,7 +34,8 @@ const ctxState = vi.hoisted(() => ({
   isConnected: true,
   isListening: false,
   isAudioPlaying: false,
-  sessionMode: 'idle' as 'idle' | 'lesson',
+  sessionMode: 'lesson' as 'idle' | 'lesson',
+  activePrimitiveId: 'flip',
   sessionResumeCount: 0,
   conversation: [] as Array<{ role: string; content: string }>,
 }));
@@ -51,6 +52,7 @@ vi.mock('@/contexts/LuminaAIContext', () => ({
     startListening: vi.fn(() => { ctxState.isListening = true; }),
     stopListening: vi.fn(),
     updateContext: vi.fn(),
+    sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} },
   }),
 }));
 
@@ -70,8 +72,21 @@ vi.mock('../../../utils/SoundManager', () => ({
 
 import WordFlip, { type WordFlipData } from './WordFlip';
 
+import { LiveLessonRuntime } from '../../../components/live-activity/runtime/LiveLessonRuntime';
+import { LiveRuntimeContext } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
+
+/** WordFlip runs only on the teaching workspace, so it is mounted the way a lesson mounts it. */
+const bound = (data: WordFlipData) => {
+  const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
+  return <LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
+    <WordFlip data={data} runtimePlanItemId="plan-flip" runtimeEvalMode="plural_s" />
+  </LiveRuntimeSurface></LiveRuntimeContext.Provider>;
+};
+
 const makeData = (gradeLevel: string): WordFlipData => ({
   title: 'Farm Friends',
+  instanceId: 'flip',
   challengeType: 'plural_s',
   gradeLevel,
   challenges: [
@@ -88,36 +103,36 @@ describe('WordFlip @ PRE (gradeLevel K)', () => {
   afterEach(cleanup);
 
   it('hides adult chrome (counter, Grade / mode badges, the reader hint line)', () => {
-    render(<WordFlip data={makeData('K')} />);
+    render(bound(makeData('K')));
     expect(screen.queryByText('Grade K')).toBeNull();
     expect(screen.queryByText(/One & Many/)).toBeNull();
     expect(screen.queryByText(/Tap the word to hear it/)).toBeNull();
   });
 
   it('SHOWS the counted-picture frame — it is the stimulus, not the answer', () => {
-    render(<WordFlip data={makeData('K')} />);
+    render(bound(makeData('K')));
     expect(screen.getByText('dog')).toBeTruthy();                  // the one-thing word
     expect(screen.getAllByText('🐕').length).toBeGreaterThan(0);   // the one side
     expect(screen.getByText('🐕🐕🐕')).toBeTruthy();               // three on the many side
     expect(screen.getByText('Three')).toBeTruthy();                // the count caption
   });
 
-  it('tapping the picture speaks the ONE-THING word via [SAY_WORD]', () => {
-    render(<WordFlip data={makeData('K')} />);
+  it('tapping the picture asks the tutor for the ONE-THING word', () => {
+    render(bound(makeData('K')));
     fireEvent.click(screen.getByRole('button', { name: 'word dog' }));
-    const spoken = tagged('[SAY_WORD]');
+    const spoken = tagged('The learner tapped the word card');
     expect(spoken).toHaveLength(1);
     expect(spoken[0]).toContain('"dog"');
   });
 
   it('tapping never speaks the PLURAL — that is the answer', () => {
-    render(<WordFlip data={makeData('K')} />);
+    render(bound(makeData('K')));
     fireEvent.click(screen.getByRole('button', { name: 'word dog' }));
     expect(sendText.mock.calls.some(c => /\bdogs\b/i.test(String(c[0])))).toBe(false);
   });
 
   it('ANSWER-LEAK — the plural is not printed before the child has said it', () => {
-    render(<WordFlip data={makeData('K')} />);
+    render(bound(makeData('K')));
     expect(screen.queryByText('dogs')).toBeNull();
     // The many-side carries a blank until the tutor affirms.
     expect(screen.getByText(/___/)).toBeTruthy();
@@ -127,14 +142,14 @@ describe('WordFlip @ PRE (gradeLevel K)', () => {
     // This is the deletion the port is FOR. The chips were "dogs" / "dog" /
     // "dogses"; the first printed the answer on screen, and the catalog
     // defended it by noting a pre-reader cannot read it. Grade 1 can.
-    render(<WordFlip data={makeData('K')} />);
+    render(bound(makeData('K')));
     expect(screen.queryByRole('button', { name: 'dogs' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'dogses' })).toBeNull();
     expect(screen.queryByText('dogses')).toBeNull();
   });
 
   it('no button carries the child forward — the tutor owns every transition', () => {
-    render(<WordFlip data={makeData('K')} />);
+    render(bound(makeData('K')));
     expect(screen.queryByRole('button', { name: /Start with Voice/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /Start tap-only/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /^Next$/ })).toBeNull();
@@ -149,14 +164,14 @@ describe('WordFlip @ reader grade (control, Grade 1)', () => {
   afterEach(cleanup);
 
   it('keeps the adult chrome the K band hides', () => {
-    render(<WordFlip data={makeData('1')} />);
+    render(bound(makeData('1')));
     expect(screen.getByText('Grade 1')).toBeTruthy();
     expect(screen.getByText(/One & Many/)).toBeTruthy();
     expect(screen.getByText(/Tap the word to hear it/)).toBeTruthy();
   });
 
   it('the modality is not band-gated: no advance button and no leaked answer at Grade 1 either', () => {
-    render(<WordFlip data={makeData('1')} />);
+    render(bound(makeData('1')));
     expect(screen.queryByRole('button', { name: /Start tap-only/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /^Next$/ })).toBeNull();
     expect(screen.queryByText('dogs')).toBeNull();
@@ -164,8 +179,8 @@ describe('WordFlip @ reader grade (control, Grade 1)', () => {
   });
 
   it('tap-to-hear is not band-gated either — a stuck reader can still recover the word', () => {
-    render(<WordFlip data={makeData('1')} />);
+    render(bound(makeData('1')));
     fireEvent.click(screen.getByRole('button', { name: 'word dog' }));
-    expect(tagged('[SAY_WORD]')).toHaveLength(1);
+    expect(tagged('The learner tapped the word card')).toHaveLength(1);
   });
 });

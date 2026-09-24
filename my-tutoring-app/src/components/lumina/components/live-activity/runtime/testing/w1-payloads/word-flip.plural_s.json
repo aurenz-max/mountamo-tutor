@@ -1,0 +1,52 @@
+{
+ "source": "qa/tutor-reports/word-flip-runtime-plural_s-payload-2026-09-24.json",
+ "primitiveId": "word-flip",
+ "evalMode": "plural_s",
+ "data": {
+  "title": "Fun With More Than One! Making Plurals",
+  "challengeType": "plural_s",
+  "challenges": [
+   {
+    "id": "word-flip-1",
+    "type": "plural_s",
+    "sourceWord": "car",
+    "answer": "cars",
+    "emoji": "🚗",
+    "count": 2
+   },
+   {
+    "id": "word-flip-2",
+    "type": "plural_s",
+    "sourceWord": "sock",
+    "answer": "socks",
+    "emoji": "🧦",
+    "count": 2
+   },
+   {
+    "id": "word-flip-3",
+    "type": "plural_s",
+    "sourceWord": "frog",
+    "answer": "frogs",
+    "emoji": "🐸",
+    "count": 3
+   },
+   {
+    "id": "word-flip-4",
+    "type": "plural_s",
+    "sourceWord": "kite",
+    "answer": "kites",
+    "emoji": "🪁",
+    "count": 5
+   },
+   {
+    "id": "word-flip-5",
+    "type": "plural_s",
+    "sourceWord": "bird",
+    "answer": "birds",
+    "emoji": "🐦",
+    "count": 4
+   }
+  ],
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+ }
+}
