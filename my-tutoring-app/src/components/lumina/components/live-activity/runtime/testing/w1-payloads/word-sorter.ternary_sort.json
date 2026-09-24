@@ -1,0 +1,213 @@
+{
+ "source": "qa/tutor-reports/word-sorter-runtime-ternary_sort-payload-2026-09-24.json",
+ "primitiveId": "word-sorter",
+ "evalMode": "ternary_sort",
+ "data": {
+  "title": "Fun Word Sort for Kids",
+  "gradeLevel": "K",
+  "sortingTopic": "Animals and Foods",
+  "challenges": [
+   {
+    "id": "ternary_sort-0",
+    "type": "ternary_sort",
+    "instruction": "Sort these words into cats, dogs, and snacks!",
+    "bucketLabels": [
+     "Cats",
+     "Dogs",
+     "Food"
+    ],
+    "bucketEmojis": [
+     "🐱",
+     "🐶",
+     "🍎"
+    ],
+    "words": [
+     {
+      "id": "w8",
+      "word": "hound",
+      "emoji": "🦴",
+      "correctBucket": "Dogs"
+     },
+     {
+      "id": "w6",
+      "word": "pie",
+      "emoji": "🥧",
+      "correctBucket": "Food"
+     },
+     {
+      "id": "w5",
+      "word": "kit",
+      "emoji": "🐈",
+      "correctBucket": "Cats"
+     },
+     {
+      "id": "w2",
+      "word": "pup",
+      "emoji": "🐶",
+      "correctBucket": "Dogs"
+     },
+     {
+      "id": "w1",
+      "word": "milk",
+      "emoji": "🥛",
+      "correctBucket": "Food"
+     },
+     {
+      "id": "w0",
+      "word": "cat",
+      "emoji": "🐱",
+      "correctBucket": "Cats"
+     },
+     {
+      "id": "w3",
+      "word": "fish",
+      "emoji": "🐟",
+      "correctBucket": "Food"
+     },
+     {
+      "id": "w4",
+      "word": "dog",
+      "emoji": "🐕",
+      "correctBucket": "Dogs"
+     },
+     {
+      "id": "w7",
+      "word": "pet",
+      "emoji": "🐾",
+      "correctBucket": "Cats"
+     }
+    ]
+   },
+   {
+    "id": "ternary_sort-1",
+    "type": "ternary_sort",
+    "instruction": "Sort these words into bugs, birds, and treats!",
+    "bucketLabels": [
+     "Bugs",
+     "Birds",
+     "Snacks"
+    ],
+    "bucketEmojis": [
+     "🐛",
+     "🐦",
+     "🍿"
+    ],
+    "words": [
+     {
+      "id": "w0",
+      "word": "fly",
+      "emoji": "🪰",
+      "correctBucket": "Bugs"
+     },
+     {
+      "id": "w1",
+      "word": "nut",
+      "emoji": "🥜",
+      "correctBucket": "Snacks"
+     },
+     {
+      "id": "w8",
+      "word": "duck",
+      "emoji": "🐤",
+      "correctBucket": "Birds"
+     },
+     {
+      "id": "w3",
+      "word": "ant",
+      "emoji": "🐜",
+      "correctBucket": "Bugs"
+     },
+     {
+      "id": "w7",
+      "word": "plum",
+      "emoji": "🍑",
+      "correctBucket": "Snacks"
+     },
+     {
+      "id": "w4",
+      "word": "egg",
+      "emoji": "🥚",
+      "correctBucket": "Snacks"
+     },
+     {
+      "id": "w5",
+      "word": "jay",
+      "emoji": "🐦",
+      "correctBucket": "Birds"
+     },
+     {
+      "id": "w2",
+      "word": "owl",
+      "emoji": "🦉",
+      "correctBucket": "Birds"
+     },
+     {
+      "id": "w6",
+      "word": "bee",
+      "emoji": "🐝",
+      "correctBucket": "Bugs"
+     }
+    ]
+   },
+   {
+    "id": "ternary_sort-2",
+    "type": "ternary_sort",
+    "instruction": "Sort these words into farm pets, wild beasts, and yummy lunch items!",
+    "bucketLabels": [
+     "Pig",
+     "Bear",
+     "Soup"
+    ],
+    "bucketEmojis": [
+     "🐷",
+     "🐻",
+     "🥣"
+    ],
+    "words": [
+     {
+      "id": "w8",
+      "word": "grizzly",
+      "emoji": "🐾",
+      "correctBucket": "Bear"
+     },
+     {
+      "id": "w4",
+      "word": "hog",
+      "emoji": "🐖",
+      "correctBucket": "Pig"
+     },
+     {
+      "id": "w7",
+      "word": "sow",
+      "emoji": "🐽",
+      "correctBucket": "Pig"
+     },
+     {
+      "id": "w6",
+      "word": "stew",
+      "emoji": "🍲",
+      "correctBucket": "Soup"
+     },
+     {
+      "id": "w3",
+      "word": "rice",
+      "emoji": "🍚",
+      "correctBucket": "Soup"
+     },
+     {
+      "id": "w2",
+      "word": "cub",
+      "emoji": "🐻",
+      "correctBucket": "Bear"
+     },
+     {
+      "id": "w1",
+      "word": "pear",
+      "emoji": "🍐",
+      "correctBucket": "Soup"
+     }
+    ]
+   }
+  ]
+ }
+}

@@ -1,11 +1,13 @@
 'use client';
 
 /**
- * WordSorter — DI modality (SEVENTEENTH literacy port, 2026-08-16). The Live
- * tutor owns the clock: it says the word, asks ONCE, waits, judges the child's
- * spoken answer from the audio in-band, corrects contrastively, and its OWN
- * affirmation is the advance. There is no advance timer, no Next button, no
- * push-to-talk mic, and no answer on screen before the tutor affirms.
+ * WordSorter — the tutor says a word and the child says which group it belongs
+ * with, or its partner from the printed bank. It runs only on the shared tutor/JEV
+ * teaching workspace (workspace rollout C2; the scripted runner was retired, LA-14,
+ * user ruling 09-23: one path). The observer judges each spoken answer and the
+ * runtime owns progression. An unbound mount shows the shared "needs the tutor"
+ * card. There is no advance timer, no Next button and no answer on screen before
+ * it is credited.
  *
  * THE MODALITY, in one exchange:
  *
@@ -43,11 +45,11 @@
  *  - The word bank, the tier decoys and the filed-word badges.
  *  - Tap-to-hear, which re-speaks the QUESTION and is never withdrawn.
  *
- * Cue lines, judging contracts and build gates live in `wordSorterScript.ts`
- * (hand-authored, DISTAR). Nothing in this file writes a spoken line.
+ * Build gates and the asks live in `wordSorterScript.ts`; the workspace assignment
+ * and scene in `wordSorterWorkspace.ts`. Nothing in this file writes a spoken line.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaBadge,
   LuminaCard,
@@ -59,26 +61,25 @@ import {
   LuminaReadAloudGlyph,
   type DropZoneState,
 } from '../../../ui';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { WordSorterMetrics } from '../../../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import {
   itemsFromChallenges,
-  wordSorterPackBase,
   type WordSorterItem,
   type WordSorterMode,
   type WordSorterTier,
 } from './wordSorterScript';
+import { hearQuestionRequest, wordSorterAssignment, wordSorterScene } from './wordSorterWorkspace';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { wordSorterPipPose } from '../../../pip/wordSorterPipPose';
 
@@ -159,6 +160,9 @@ export interface WordSorterData {
 interface WordSorterProps {
   data: WordSorterData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -182,7 +186,7 @@ const MAT_COLORS = ['text-violet-300', 'text-sky-300', 'text-emerald-300'];
 // Component
 // ============================================================================
 
-const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
+function WordSorterSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: WordSorterProps) {
   const {
     title,
     gradeLevel = 'K',
@@ -197,6 +201,8 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
   } = data;
 
   const isPreReader = gradeLevel === 'K';
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   const stableInstanceIdRef = useRef(instanceId || `word-sorter-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -210,17 +216,17 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
 
   /**
    * The affirmed item's reveal payload. Set on the affirm and rendered behind
-   * `runner.revealHeld` — NOT `currentSolved` and NOT `stage`, and deliberately
-   * never cleared in `onItemOpened` (18b): the runner opens the next item in the
-   * SAME dispatch as the affirmation, so both of the obvious gates are already
-   * false by render time and a payload cleared there paints on the last item and
-   * nowhere else.
+   * `runner.revealHeld`, and deliberately never cleared in `onItemOpened` (18b):
+   * a credit that also advances opens the next item in the SAME dispatch, so a
+   * payload cleared there paints on the last item and nowhere else.
    */
   const [reveal, setReveal] = useState<{
     challengeId: string;
     word: string;
     answer: string;
   } | null>(null);
+  /** Every credited item: the only thing that can put a word on a mat. */
+  const [solvedIds, setSolvedIds] = useState<ReadonlySet<string>>(() => new Set());
 
   // ── Evaluation ─────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<WordSorterMetrics>({
@@ -233,7 +239,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const metrics: WordSorterMetrics = {
       type: 'word-sorter',
       sortingAccuracy: summary.accuracy,
@@ -244,63 +250,61 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items.length, evaluation]);
+  };
 
-  // ── The pack — wording lives in wordSorterScript.ts ────────────────────────
-  const pack = useMemo<JudgedScriptPack<WordSorterItem>>(() => ({
-    ...wordSorterPackBase(items),
-    statusLines: {
-      idle: 'Tap the microphone to start sorting.',
-      ready: () => 'Listen to the word — then say your answer.',
-      retry: () => 'Have another go — say your answer out loud.',
-      noVerdict: () => 'One more time — say your answer out loud.',
-      done: 'Great sorting today!',
-    },
-    // One record per attempt, right or corrected: the word heard, the choices on screen, and what was said.
-    // Never the verdict, because the same text is kept for right answers.
-    observation: (item, { heard: transcript }) => {
-      const heard = transcript?.trim() ?? '';
-      return {
-        challenge: item.mode === 'match_pairs'
-          ? `Hear a word, then say the word on screen that goes with it (${item.choices.join(', ')}): "${item.word}"`
-          : `Hear a word, then say which group it belongs with (${item.choices.join(', ')}): "${item.word}"`,
-        expected: `"${item.answer}" said out loud.`,
-        observed: heard ? `Said "${heard}".` : 'No transcript was captured.',
-      };
-    },
-  }), [items]);
-
-  const runner = useJudgedScriptRunner<WordSorterItem>({
-    pack,
+  const runner = useWorkspaceRunner<WordSorterItem>({
+    primitiveId: 'word-sorter',
+    assignment: wordSorterAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || items[0]?.mode || 'binary_sort',
     instanceId: resolvedInstanceId,
-    gradeLevel,
-    exhibitId,
-    onFinished: handleFinished,
-    onAffirmed: (item) => setReveal({
-      challengeId: item.challengeId,
-      word: item.word,
-      answer: item.answer,
-    }),
+    onFinished: finish,
+    onAffirmed: (item) => {
+      setReveal({ challengeId: item.challengeId, word: item.word, answer: item.answer });
+      setSolvedIds((current) => new Set(current).add(item.id));
+    },
   });
 
   const currentItem = runner.currentItem;
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   const modeMeta = MODE_META[currentItem?.mode ?? 'binary_sort'];
 
+  // What the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...wordSorterScene(currentItem), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
+  /** Asks the tutor for the question again: a silent host request, never the answer. */
+  const hearQuestion = useCallback(() => {
+    if (!currentItem) return;
+    ctx.sendText(hearQuestionRequest(currentItem), { silent: true, author: 'host' });
+  }, [ctx, currentItem]);
+
   // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the runner's phase onto the word card; Pip never answers,
+  // A projection of the workspace's committed state onto the word card; Pip never answers,
   // files a word, or advances.
   const pip = usePipTargets(currentItem?.id ?? null, false);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const targets = pip.targets(['word'], () => 'The word card');
     const pose = wordSorterPipPose({
-      running: runner.running, preparing: runner.preparing,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      running: runner.running, preparing: false,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld, judging: false,
+      // Audio belongs to this block only while the lesson is pointed at it.
+      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
       cueMatchesItem: runner.cuedItemId === currentItem.id,
       visibleIds: targets.map((target) => target.id),
     });
@@ -309,19 +313,19 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
 
   /**
    * The words this challenge has already placed — the surviving `showFiledWords`
-   * lever. Read off the runner's solved ledger rather than a local map, so the
-   * only thing that can put a word on a mat is a tutor affirmation.
+   * lever. Read off the credited ledger, so the only thing that can put a word on
+   * a mat is a committed credit.
    */
   const placedByChoice = useMemo(() => {
     const map = new Map<string, WordSorterItem[]>();
     if (!currentItem) return map;
     for (const item of items) {
       if (item.challengeId !== currentItem.challengeId) continue;
-      if (!runner.solvedIds.has(item.id)) continue;
+      if (!solvedIds.has(item.id)) continue;
       map.set(item.answer, [...(map.get(item.answer) ?? []), item]);
     }
     return map;
-  }, [items, currentItem, runner.solvedIds]);
+  }, [items, currentItem, solvedIds]);
 
   /** The mat/bank entry the tutor is affirming right now, for the reveal ring.
    *  Guarded on the challenge: by render time the surface may already point at
@@ -333,13 +337,13 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => ({
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => ({
       label: MODE_META[item.mode].label,
       icon: MODE_META[item.mode].icon,
       accentColor: MODE_META[item.mode].accent,
     }));
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
   // ============================================================================
   // Render
@@ -445,7 +449,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
    *  information from a bank that deliberately never shrinks. */
   const renderPaired = (item: WordSorterItem) => {
     const paired = items.filter(
-      (i) => i.challengeId === item.challengeId && runner.solvedIds.has(i.id),
+      (i) => i.challengeId === item.challengeId && solvedIds.has(i.id),
     );
     if (!item.showFiledWords || paired.length === 0) return null;
     return (
@@ -464,7 +468,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          {!evaluation.hasSubmitted && !isPreReader && (
+          {!showSummary && !isPreReader && (
             <LuminaBadge accent={modeMeta.accent} className="text-xs">
               {modeMeta.icon} {modeMeta.label}
             </LuminaBadge>
@@ -473,7 +477,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-5">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex items-center justify-center gap-4">
               <LuminaChallengeCounter
@@ -485,13 +489,10 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
                   never withdrawn by band or tier. */}
               <button
                 type="button"
-                onClick={runner.hearStimulus}
-                className={`
-                  flex h-11 w-11 items-center justify-center rounded-full
+                onClick={hearQuestion}
+                className="flex h-11 w-11 items-center justify-center rounded-full
                   bg-amber-500/15 border-2 border-amber-500/30
-                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
-                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
-                `}
+                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all"
                 aria-label="Hear the question again"
               >
                 <span className="text-xl">🔁</span>
@@ -516,7 +517,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
                     >
                       {currentItem.word}
                     </span>
-                    <LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} />
+                    <LuminaReadAloudGlyph size={22} speaking={ctx.isAudioPlaying && ctx.activePrimitiveId === resolvedInstanceId} />
                   </div>
                 </div>
 
@@ -538,15 +539,13 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
               </>
             )}
 
-            {/* Open for the whole run — no tutor-busy gate, no push-to-talk. */}
-            <JudgedMicPanel run={runner} />
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Word Sorting Complete!"
             celebrationMessage="Great sorting — you told me every answer out loud!"
@@ -555,6 +554,9 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
       </LuminaCardContent>
     </LuminaCard>
   );
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const WordSorter = withWorkspaceOnly<WordSorterProps>('word-sorter', WordSorterSurface, props => props.data.title);
 
 export default WordSorter;

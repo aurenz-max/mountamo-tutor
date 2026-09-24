@@ -1,39 +1,21 @@
 // @vitest-environment jsdom
-import React from 'react';
-import { act, cleanup, render } from '@testing-library/react';
+// Word sorter runs only on the teaching workspace, so Pip is exercised there: the runtime owns progression.
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { PipSurfaceContext } from './PipSurfaceContext';
+import { cleanup } from '@testing-library/react';
 import { PipSurfaceStore } from './PipSurfaceStore';
-import WordSorter, { type WordSorterData } from '../primitives/visual-primitives/literacy/WordSorter';
+import { installRuntimeTimers, restoreRuntimeTimers } from '../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace } from '../components/live-activity/runtime/testing/workspaceHarness';
 
-const phase = vi.hoisted(() => ({
-  tutorSpeaking: false, stage: 'asking', currentSolved: false, revealHeld: false, index: 0, cued: true,
-}));
-vi.mock('../hooks/useJudgedScriptRunner', () => ({
-  useJudgedScriptRunner: ({ pack }: { pack: { items: Array<{ id: string }> } }) => {
-    const item = pack.items[phase.index] ?? null;
-    return {
-      currentItem: item, currentIndex: phase.index, stage: phase.stage, tutorSpeaking: phase.tutorSpeaking,
-      currentSolved: phase.currentSolved, revealHeld: phase.revealHeld, cuedItemId: phase.cued ? item?.id ?? null : 'elsewhere',
-      canAttempt: phase.stage !== 'judging' && !phase.currentSolved, solvedIds: new Set(),
-      running: true, preparing: false, summary: null, stimulusTapped: false, hearStimulus: vi.fn(),
-      isAwaitingGesture: () => false, submitGestureAttempt: vi.fn(),
-    };
-  },
-}));
-vi.mock('../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({ submitResult: vi.fn(), hasSubmitted: false, submittedResult: null, elapsedMs: 0 }),
-  useEvaluationContext: () => null,
-}));
-vi.mock('../components/JudgedMicPanel', () => ({ default: () => null }));
+beforeEach(() => { installRuntimeTimers(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); });
 
-beforeEach(() => {
-  Object.assign(phase, { tutorSpeaking: false, stage: 'asking', currentSolved: false, revealHeld: false, index: 0, cued: true });
-});
-afterEach(cleanup);
-
-const data: WordSorterData = {
-  title: 'Sorting', gradeLevel: 'K', sortingTopic: 'Animals and food', instanceId: 'sorter',
+const data = {
+  title: 'Sorting', gradeLevel: 'K', sortingTopic: 'Animals and food',
   challenges: [
     { id: 'ch1', type: 'binary_sort', instruction: '', bucketLabels: ['Animals', 'Food'], bucketEmojis: ['🐾', '🍎'],
       words: [
@@ -48,38 +30,31 @@ const data: WordSorterData = {
 function mount() {
   const store = new PipSurfaceStore();
   store.setActive('sorter');
-  const ui = () => <PipSurfaceContext.Provider value={store}><WordSorter data={data} /></PipSurfaceContext.Provider>;
-  const view = render(ui());
-  const update = (next: Partial<typeof phase>) => act(() => { Object.assign(phase, next); view.rerender(ui()); });
-  return { store, update, ...view };
+  const h = mountWorkspace({ primitiveId: 'word-sorter', evalMode: 'mixed', data, instanceId: 'sorter', pipStore: store });
+  const next = (answer: string) => { h.say(answer); h.feedback('correct', 'advance'); h.confirmVisible(); };
+  return { ...h, store, next, container: h.view.container, unmount: h.view.unmount };
 }
 const pose = (store: PipSurfaceStore) => store.getActive()?.pose;
 
-describe('Word Sorter drives Pip from its judged phases', () => {
-  it('points at the word card on the ask, never a mat; celebrates only the affirmed answer', () => {
-    const { store, update, container } = mount();
+describe('Word Sorter drives Pip from the workspace', () => {
+  it('points at the word card on the ask, never a mat; celebrates only the credited answer', () => {
+    const { store, speak, say, feedback, container } = mount();
     expect(container.querySelector('[data-pip-dock="sorter"]')).not.toBeNull();
     expect(store.getActive()?.targets.map((t) => t.id)).toEqual(['word']);
-    expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'word' });
-    update({ tutorSpeaking: true });
+    speak(true);
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'word' });
-    update({ cued: false }); // praise for the previous word, before this word's cue is sent
-    expect(pose(store)).toEqual({ phase: 'idle', gesture: 'none' });
-    update({ tutorSpeaking: false, cued: true, revealHeld: true });
+    speak(false);
+    say('Animals'); feedback('correct');
     expect(pose(store)).toEqual({ phase: 'celebrating', gesture: 'none' });
   });
 
-  it('match_pairs also points only at the word card, never at a bank word', () => {
-    const { store, update } = mount();
-    const matchIndex = 2; // two sort items, then the pairs
-    update({ index: matchIndex, tutorSpeaking: true });
+  it('match_pairs also points only at the word card, never at a bank word; unregisters on unmount', () => {
+    const { store, speak, next, unmount } = mount();
+    next('Animals'); next('Food');
     expect(store.getActive()?.scopeId).toContain('ch2');
     expect(store.getActive()?.targets.map((t) => t.id)).toEqual(['word']);
+    speak(true);
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'word' });
-  });
-
-  it('unregisters on unmount', () => {
-    const { store, unmount } = mount();
     unmount();
     expect(store.getActive()).toBeNull();
   });

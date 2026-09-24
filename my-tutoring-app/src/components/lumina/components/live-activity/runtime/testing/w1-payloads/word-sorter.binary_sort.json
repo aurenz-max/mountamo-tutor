@@ -1,0 +1,165 @@
+{
+ "source": "qa/tutor-reports/word-sorter-runtime-binary_sort-payload-2026-09-24.json",
+ "primitiveId": "word-sorter",
+ "evalMode": "binary_sort",
+ "data": {
+  "title": "Fun Word Sort for Kids",
+  "gradeLevel": "K",
+  "sortingTopic": "Animals and Foods",
+  "challenges": [
+   {
+    "id": "binary_sort-0",
+    "type": "binary_sort",
+    "instruction": "Sort these words into animals and foods",
+    "bucketLabels": [
+     "Animals",
+     "Food"
+    ],
+    "bucketEmojis": [
+     "🐱",
+     "🍎"
+    ],
+    "words": [
+     {
+      "id": "w2",
+      "word": "dog",
+      "emoji": "🐕",
+      "correctBucket": "Animals"
+     },
+     {
+      "id": "w1",
+      "word": "milk",
+      "emoji": "🥛",
+      "correctBucket": "Food"
+     },
+     {
+      "id": "w4",
+      "word": "pig",
+      "emoji": "🐖",
+      "correctBucket": "Animals"
+     },
+     {
+      "id": "w3",
+      "word": "pear",
+      "emoji": "🍐",
+      "correctBucket": "Food"
+     },
+     {
+      "id": "w0",
+      "word": "cat",
+      "emoji": "🐈",
+      "correctBucket": "Animals"
+     },
+     {
+      "id": "w5",
+      "word": "plum",
+      "emoji": "🍑",
+      "correctBucket": "Food"
+     }
+    ]
+   },
+   {
+    "id": "binary_sort-1",
+    "type": "binary_sort",
+    "instruction": "Sort these words into pets and treats",
+    "bucketLabels": [
+     "Pets",
+     "Treats"
+    ],
+    "bucketEmojis": [
+     "🐹",
+     "🍪"
+    ],
+    "words": [
+     {
+      "id": "w1",
+      "word": "fish",
+      "emoji": "🐠",
+      "correctBucket": "Pets"
+     },
+     {
+      "id": "w5",
+      "word": "frog",
+      "emoji": "🐸",
+      "correctBucket": "Pets"
+     },
+     {
+      "id": "w0",
+      "word": "cake",
+      "emoji": "🎂",
+      "correctBucket": "Treats"
+     },
+     {
+      "id": "w4",
+      "word": "soup",
+      "emoji": "🍲",
+      "correctBucket": "Treats"
+     },
+     {
+      "id": "w2",
+      "word": "pie",
+      "emoji": "🥧",
+      "correctBucket": "Treats"
+     },
+     {
+      "id": "w3",
+      "word": "bird",
+      "emoji": "🐦",
+      "correctBucket": "Pets"
+     }
+    ]
+   },
+   {
+    "id": "binary_sort-2",
+    "type": "binary_sort",
+    "instruction": "Sort these words into creatures and snacks",
+    "bucketLabels": [
+     "Creatures",
+     "Snacks"
+    ],
+    "bucketEmojis": [
+     "🐛",
+     "🍿"
+    ],
+    "words": [
+     {
+      "id": "w2",
+      "word": "bean",
+      "emoji": "🫘",
+      "correctBucket": "Snacks"
+     },
+     {
+      "id": "w0",
+      "word": "rice",
+      "emoji": "🍚",
+      "correctBucket": "Snacks"
+     },
+     {
+      "id": "w1",
+      "word": "duck",
+      "emoji": "🦆",
+      "correctBucket": "Creatures"
+     },
+     {
+      "id": "w3",
+      "word": "bee",
+      "emoji": "🐝",
+      "correctBucket": "Creatures"
+     },
+     {
+      "id": "w4",
+      "word": "corn",
+      "emoji": "🌽",
+      "correctBucket": "Snacks"
+     },
+     {
+      "id": "w5",
+      "word": "ant",
+      "emoji": "🐜",
+      "correctBucket": "Creatures"
+     }
+    ]
+   }
+  ]
+ }
+}

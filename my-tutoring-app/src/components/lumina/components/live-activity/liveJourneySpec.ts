@@ -59,6 +59,8 @@ import { cvcHarnessAnswers } from '../../primitives/visual-primitives/literacy/c
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
 import { youAndMeHarnessAnswers } from '../../primitives/visual-primitives/literacy/youAndMeWorkspace';
+import { itemsFromChallenges as sorterItems } from '../../primitives/visual-primitives/literacy/wordSorterScript';
+import { wordSorterJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordSorterWorkspace';
 import { itemsFromTargets as builderItems } from '../../primitives/visual-primitives/literacy/wordBuilderScript';
 import { wordBuilderJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordBuilderWorkspace';
 import { itemsFromChallenges as workoutItems } from '../../primitives/visual-primitives/literacy/wordWorkoutScript';
@@ -1014,6 +1016,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'word-sorter': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/WordSorter.tsx',
+    instanceId: 'sorter',
+    defaults: { grade: 'Kindergarten', mode: 'binary_sort', di: false, topic: 'Sorting animals and foods' },
+    leakTokens: ['WSR_ITEM', 'WSR_MOVE', 'WSR_COMPLETE', 'WSR_HEAR'],
+    prompts: WORKSPACE_PROMPTS,
+    // One spoken answer per item: the right group or partner, or another printed choice.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = sorterItems(ctx.data.challenges ?? [], { tier: ctx.data.supportTier, isPreReader: (ctx.data.gradeLevel ?? 'K') === 'K' })
+        .find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current word-sorter item');
+      const answers = wordSorterJourneyAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="word"]' } },
   },
 };
 

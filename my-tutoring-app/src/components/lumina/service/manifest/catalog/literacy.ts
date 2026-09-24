@@ -5180,8 +5180,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     description:
       'LIVE-JUDGED SPOKEN word sorting (Direct Instruction). The tutor says a word out loud and the student ANSWERS OUT LOUD — '
       + 'naming the group it belongs with (two groups, or three), or naming its partner from a printed word bank '
-      + '(opposites, synonyms, plurals, rhymes). The tutor judges the spoken answer, corrects contrastively, and its own '
-      + 'affirmation advances the lesson. Nothing is tapped or dragged. REQUIRES A MICROPHONE. '
+      + '(opposites, synonyms, plurals, rhymes). The tutor responds to the spoken answer, and a credited answer '
+      + 'advances the lesson. Nothing is tapped or dragged. REQUIRES A MICROPHONE. '
       + 'ESSENTIAL for K-2 grammar, vocabulary and categorization.',
     constraints:
       'REQUIRES A MICROPHONE — every answer is spoken; there is no tap, drag or button path. '
@@ -5195,6 +5195,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // forces `namesChoices` at the K band floor precisely because a pre-reader cannot read a
     // mat — the ask names the groups aloud. Zero taps in all three modes.
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
+      guidance: 'You say a word and the learner answers out loud: on binary and ternary sort, the name of the group it '
+        + 'belongs with; on match pairs, its partner from the printed word bank (an opposite, synonym, plural or '
+        + 'rhyme). It is judged against the answer you are given. The word said back, or a group or bank word that '
+        + 'does not fit, is not the answer. Name the groups or bank words aloud only when the namingChoices fact '
+        + 'allows it: at the hardest level for readers the learner reads them. Never say which group or partner is '
+        + 'right before the learner has tried. The hear-again button asks you to repeat the question only. Nothing is '
+        + 'tapped or dragged; you cannot place a word.',
+    },
     // ── DI MODALITY (2026-08-16) — SEVENTEENTH literacy port. The tutor owns
     // the clock: it says the word, asks once, waits, judges the spoken answer
     // from the audio in-band, and its own affirmation is the advance. No advance

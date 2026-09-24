@@ -13,8 +13,8 @@
  *
  * What this locks in:
  *  1. NOTHING ON SCREEN CARRIES THE CHILD FORWARD: no Next, Finish, Skip or
- *     Check, and no bucket, mat or bank entry is clickable. The tutor's verdict
- *     is the only advance, and the only answer channel is the child's voice.
+ *     Check, and no bucket, mat or bank entry is clickable. The runtime owns
+ *     progression, and the only answer channel is the child's voice.
  *  2. The stimulus is on screen and the ANSWER is not: the word card prints the
  *     word (it is the question in every mode), and no mat or bank entry is
  *     marked correct before the tutor affirms.
@@ -28,67 +28,24 @@
  *       partner, indistinguishable from them.
  *  4. Adult chrome is hidden at Kindergarten.
  *
- * The live loop itself is NOT driven here. It cannot be driven honestly in jsdom
- * (the mic never opens, the context refs never re-render), and a green test that
- * never fired the path is worse than no test.
+ * Mounted under a runtime (the sorter runs only on the teaching workspace); the workspace
+ * behaviour itself is in WordSorter.workspace.test.tsx.
  */
-import React from 'react';
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { screen, cleanup } from '@testing-library/react';
+import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
+import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
+import type { WordSorterChallenge, WordSorterData } from './WordSorter';
 
-const sendText = vi.hoisted(() => vi.fn());
-const ctxState = vi.hoisted(() => ({
-  isConnected: true,
-  isListening: false,
-  isAudioPlaying: false,
-  sessionMode: 'idle' as 'idle' | 'lesson',
-  sessionResumeCount: 0,
-  conversation: [] as Array<{ role: string; content: string }>,
-}));
-vi.mock('@/contexts/LuminaAIContext', () => ({
-  useMicLevel: () => 0,
-  useLuminaAIContext: () => ({
-    ...ctxState,
-    sendText,
-    connect: vi.fn(async () => {}),
-    disconnect: vi.fn(),
-    reconnect: vi.fn(),
-    startListening: vi.fn(() => { ctxState.isListening = true; }),
-    stopListening: vi.fn(),
-    updateContext: vi.fn(),
-  }),
-}));
-
-vi.mock('../../../hooks/useJudgedSpeechLoop', () => ({
-  useJudgedSpeechLoop: () => ({
-    voiceTurns: { isVoiceActive: () => false, reset: vi.fn() },
-    queueCue: vi.fn(),
-    submitGestureAttempt: vi.fn(),
-    sendCueNow: vi.fn(),
-    clearQueuedCue: vi.fn(),
-    arm: vi.fn(),
-    disarm: vi.fn(),
-    reset: vi.fn(),
-    isAwaitingJudgment: () => false,
-    config: {},
-  }),
-}));
-
-vi.mock('../../../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({
-    submitResult: vi.fn(),
-    hasSubmitted: false,
-    submittedResult: null,
-    elapsedMs: 0,
-  }),
-  useEvaluationContext: () => null,
-}));
-
-vi.mock('../../../utils/SoundManager', () => ({
-  SoundManager: new Proxy({}, { get: () => vi.fn() }),
-}));
-
-import WordSorter, { type WordSorterChallenge, type WordSorterData } from './WordSorter';
+const render = (data: WordSorterData) => mountWorkspace({ primitiveId: 'word-sorter',
+  evalMode: new Set(data.challenges.map(c => c.type)).size === 1 ? data.challenges[0].type : 'mixed',
+  data: data as unknown as Record<string, unknown> }).view;
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -129,17 +86,14 @@ const makeData = (
   challenges,
 });
 
-beforeEach(() => {
-  sendText.mockClear();
-  ctxState.isListening = false;
-});
-afterEach(cleanup);
+beforeEach(() => { installRuntimeTimers(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); });
 
 // ── 1. The tutor owns the clock, and the voice is the only answer channel ───
 
 describe('WordSorter · the tutor owns the clock', () => {
   it('offers no Next, Finish, Skip or Check anywhere', () => {
-    render(<WordSorter data={makeData('1', [SORT, MATCH])} />);
+    render(makeData('1', [SORT, MATCH]));
     for (const label of [/next/i, /finish/i, /skip/i, /check/i, /continue/i]) {
       expect(screen.queryByRole('button', { name: label })).toBeNull();
     }
@@ -152,7 +106,7 @@ describe('WordSorter · the tutor owns the clock', () => {
    * mats are printed material now and nothing about them commits an answer.
    */
   it('renders the mats as printed material, with nothing to tap', () => {
-    render(<WordSorter data={makeData('1')} />);
+    render(makeData('1'));
     expect(screen.getByText('Animals')).toBeTruthy();
     expect(screen.getByText('Food')).toBeTruthy();
     for (const label of [/animals/i, /food/i]) {
@@ -161,20 +115,18 @@ describe('WordSorter · the tutor owns the clock', () => {
   });
 
   it('renders the word bank as printed material, with nothing to tap', () => {
-    render(<WordSorter data={makeData('1', [MATCH])} />);
+    render(makeData('1', [MATCH]));
     for (const partner of ['small', 'cold', 'down']) {
       expect(screen.getByText(partner)).toBeTruthy();
       expect(screen.queryByRole('button', { name: new RegExp(`^${partner}$`, 'i') })).toBeNull();
     }
   });
 
-  /** The two affordances that survive are both question-side. (The orb itself
-   *  returns null in jsdom — no `navigator.mediaDevices` — so the panel is
-   *  pinned by its status line, which is the runner's.) */
-  it('keeps exactly the question-side affordances: hear-it-again and the mic panel', () => {
-    render(<WordSorter data={makeData('1')} />);
+  /** The one control that survives is question-side: hear-it-again. */
+  it('keeps exactly the question-side affordance: hear-it-again', () => {
+    render(makeData('1'));
     expect(screen.getByLabelText(/hear the question again/i)).toBeTruthy();
-    expect(screen.getByText(/tap the microphone to start sorting/i)).toBeTruthy();
+    expect(screen.queryByText(/tap the microphone/i)).toBeNull();
   });
 });
 
@@ -182,19 +134,19 @@ describe('WordSorter · the tutor owns the clock', () => {
 
 describe('WordSorter · what is on screen before a verdict', () => {
   it('prints the word and its picture — the word is the QUESTION in every mode', () => {
-    render(<WordSorter data={makeData('K')} />);
+    render(makeData('K'));
     expect(screen.getByText('dog')).toBeTruthy();
     expect(screen.getByText('🐕')).toBeTruthy();
   });
 
   it('prints the match TERM and never marks a bank entry correct at rest', () => {
-    const { container } = render(<WordSorter data={makeData('1', [MATCH])} />);
+    const { container } = render(makeData('1', [MATCH]));
     expect(screen.getByText('big')).toBeTruthy();
     expect(container.querySelectorAll('.border-emerald-400\\/40')).toHaveLength(0);
   });
 
   it('drops the click-era instruction sentence — the tutor\'s opening IS the instruction', () => {
-    render(<WordSorter data={makeData('1')} />);
+    render(makeData('1'));
     expect(screen.queryByText(/Sort these words into animals and food/i)).toBeNull();
     expect(screen.queryByText(/tap a word/i)).toBeNull();
   });
@@ -211,14 +163,14 @@ describe('WordSorter support tier — hard withdraws scaffolding (reader grade)'
   };
 
   it('withdraws the mat picture cue', () => {
-    render(<WordSorter data={makeData('1', [hard], 'hard')} />);
+    render(makeData('1', [hard], 'hard'));
     expect(screen.queryByText('🐾')).toBeNull();
     expect(screen.queryByText('🍎')).toBeNull();
   });
 
   it('withdraws the placed-word badges on a match challenge too', () => {
     const hardMatch: WordSorterChallenge = { ...MATCH, showFiledWords: false };
-    const { container } = render(<WordSorter data={makeData('1', [hardMatch], 'hard')} />);
+    const { container } = render(makeData('1', [hardMatch], 'hard'));
     // Nothing has been affirmed yet either way; the pin is that the bank is
     // whole and no "term → partner" record is rendered.
     expect(container.textContent).not.toContain('→');
@@ -234,7 +186,7 @@ describe('WordSorter support tier — easy keeps full help', () => {
   };
 
   it('grants the mat picture cue', () => {
-    render(<WordSorter data={makeData('1', [easy], 'easy')} />);
+    render(makeData('1', [easy], 'easy'));
     expect(screen.getByText('🐾')).toBeTruthy();
     expect(screen.getByText('🍎')).toBeTruthy();
   });
@@ -242,13 +194,13 @@ describe('WordSorter support tier — easy keeps full help', () => {
 
 describe('WordSorter support tier — legacy default (no tier fields)', () => {
   it('renders the full-help surface when the payload carries no tier', () => {
-    render(<WordSorter data={makeData('K')} />);
+    render(makeData('K'));
     // At K the picture cue is the band floor; the payload said nothing at all.
     expect(screen.getByText('🐾')).toBeTruthy();
   });
 
   it('leaves the word bank exactly as generated', () => {
-    render(<WordSorter data={makeData('1', [MATCH])} />);
+    render(makeData('1', [MATCH]));
     for (const partner of ['small', 'cold', 'down']) {
       expect(screen.getByText(partner)).toBeTruthy();
     }
@@ -258,22 +210,22 @@ describe('WordSorter support tier — legacy default (no tier fields)', () => {
 describe('WordSorter support tier — K band floor beats every tier', () => {
   it('keeps the mat picture cue at K even when the payload says to withdraw it', () => {
     const withdrawn: WordSorterChallenge = { ...SORT, showBucketEmojis: false };
-    render(<WordSorter data={makeData('K', [withdrawn], 'hard')} />);
+    render(makeData('K', [withdrawn], 'hard'));
     expect(screen.getByText('🐾')).toBeTruthy();
     expect(screen.getByText('🍎')).toBeTruthy();
   });
 
   it('never withdraws the hear-it-again channel', () => {
     const withdrawn: WordSorterChallenge = { ...SORT, showBucketEmojis: false, showFiledWords: false };
-    render(<WordSorter data={makeData('K', [withdrawn], 'hard')} />);
+    render(makeData('K', [withdrawn], 'hard'));
     expect(screen.getByLabelText(/hear the question again/i)).toBeTruthy();
   });
 
   it('hides adult chrome at K and shows it at a reader grade', () => {
-    const { unmount } = render(<WordSorter data={makeData('K')} />);
+    const { unmount } = render(makeData('K'));
     expect(screen.queryByText(/Two Groups/i)).toBeNull();
     unmount();
-    render(<WordSorter data={makeData('1')} />);
+    render(makeData('1'));
     expect(screen.getByText(/Two Groups/i)).toBeTruthy();
   });
 });
@@ -288,14 +240,14 @@ describe('WordSorter support tier — match_pairs distractors', () => {
   };
 
   it('shows the decoys in the bank alongside every correct partner', () => {
-    render(<WordSorter data={makeData('1', [withDecoys], 'hard')} />);
+    render(makeData('1', [withDecoys], 'hard'));
     for (const text of ['small', 'cold', 'down', 'wet', 'loud']) {
       expect(screen.getByText(text)).toBeTruthy();
     }
   });
 
   it('never lets a decoy become a stimulus — they raise discrimination, not length', () => {
-    render(<WordSorter data={makeData('1', [withDecoys], 'hard')} />);
+    render(makeData('1', [withDecoys], 'hard'));
     // The stimulus card holds a real TERM; each decoy appears exactly once, in
     // the bank, and never as a word the child is asked about.
     expect(screen.getByText('big')).toBeTruthy();
@@ -307,8 +259,9 @@ describe('WordSorter support tier — match_pairs distractors', () => {
 // ── 4. Nothing to sort ──────────────────────────────────────────────────────
 
 describe('WordSorter · nothing askable', () => {
-  it('says so rather than rendering an empty stage', () => {
-    render(<WordSorter data={makeData('1', [{ ...SORT, bucketLabels: ['Animals'] }])} />);
-    expect(screen.getByText(/still being written/i)).toBeTruthy();
+  // A pool with nothing askable never binds a workspace: the adapter refuses it, so the lesson shows
+  // the needs-the-tutor card instead of an empty stage.
+  it('the adapter refuses it, so it never reaches a mounted lesson', () => {
+    expect(() => LIVE_ADAPTERS['word-sorter'].validate(makeData('1', [{ ...SORT, bucketLabels: ['Animals'] }]))).toThrow();
   });
 });
