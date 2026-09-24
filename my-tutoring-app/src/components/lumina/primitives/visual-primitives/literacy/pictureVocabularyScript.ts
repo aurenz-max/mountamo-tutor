@@ -425,7 +425,7 @@ export const howToPlayFor = (
 // ask. For receptive_match the word IS the question, so it is spoken; for
 // naming the picture is the question and the word must never be.)
 
-const askFor = (item: PictureVocabItem): string => {
+export const askFor = (item: PictureVocabItem): string => {
   switch (item.kind) {
     case 'receptive_match':
       return `Listen: ${item.word}. Your turn. Tap the ${item.word}.`;

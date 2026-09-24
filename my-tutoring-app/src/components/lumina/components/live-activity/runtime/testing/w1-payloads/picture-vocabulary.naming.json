@@ -1,0 +1,43 @@
+{
+ "source": "qa/tutor-reports/picture-vocabulary-runtime-naming-payload-2026-09-24.json",
+ "primitiveId": "picture-vocabulary",
+ "evalMode": "naming",
+ "data": {
+  "title": "Fun Things At Home!",
+  "description": "Look at the pictures and help me name all these everyday items we use at home.",
+  "challengeType": "naming",
+  "challenges": [
+   {
+    "id": "pv-1",
+    "type": "naming",
+    "word": "rug",
+    "emoji": "🧶"
+   },
+   {
+    "id": "pv-2",
+    "type": "naming",
+    "word": "bed",
+    "emoji": "🛏️"
+   },
+   {
+    "id": "pv-3",
+    "type": "naming",
+    "word": "clock",
+    "emoji": "🕒"
+   },
+   {
+    "id": "pv-4",
+    "type": "naming",
+    "word": "soap",
+    "emoji": "🧼"
+   },
+   {
+    "id": "pv-5",
+    "type": "naming",
+    "word": "book",
+    "emoji": "📖"
+   }
+  ],
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+ }
+}

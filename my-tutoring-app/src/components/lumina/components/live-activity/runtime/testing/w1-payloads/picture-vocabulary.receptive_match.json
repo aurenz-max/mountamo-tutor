@@ -1,0 +1,133 @@
+{
+ "source": "qa/tutor-reports/picture-vocabulary-runtime-receptive_match-payload-2026-09-24.json",
+ "primitiveId": "picture-vocabulary",
+ "evalMode": "receptive_match",
+ "data": {
+  "title": "Fun Things at Home!",
+  "description": "Let us look at pictures and name the fun things we find around the house.",
+  "challengeType": "receptive_match",
+  "challenges": [
+   {
+    "id": "pv-1",
+    "type": "receptive_match",
+    "word": "bowl",
+    "emoji": "🥣",
+    "options": [
+     {
+      "word": "bowl",
+      "emoji": "🥣"
+     },
+     {
+      "word": "door",
+      "emoji": "🚪"
+     },
+     {
+      "word": "cup",
+      "emoji": "🥤"
+     },
+     {
+      "word": "soap",
+      "emoji": "🧼"
+     }
+    ]
+   },
+   {
+    "id": "pv-2",
+    "type": "receptive_match",
+    "word": "lamp",
+    "emoji": "🛋️",
+    "options": [
+     {
+      "word": "shoe",
+      "emoji": "👟"
+     },
+     {
+      "word": "chair",
+      "emoji": "🪑"
+     },
+     {
+      "word": "soap",
+      "emoji": "🧼"
+     },
+     {
+      "word": "lamp",
+      "emoji": "🛋️"
+     }
+    ]
+   },
+   {
+    "id": "pv-3",
+    "type": "receptive_match",
+    "word": "shoe",
+    "emoji": "👟",
+    "options": [
+     {
+      "word": "shoe",
+      "emoji": "👟"
+     },
+     {
+      "word": "cup",
+      "emoji": "🥤"
+     },
+     {
+      "word": "soap",
+      "emoji": "🧼"
+     },
+     {
+      "word": "book",
+      "emoji": "📖"
+     }
+    ]
+   },
+   {
+    "id": "pv-4",
+    "type": "receptive_match",
+    "word": "clock",
+    "emoji": "⏰",
+    "options": [
+     {
+      "word": "shoe",
+      "emoji": "👟"
+     },
+     {
+      "word": "bed",
+      "emoji": "🛏️"
+     },
+     {
+      "word": "clock",
+      "emoji": "⏰"
+     },
+     {
+      "word": "cup",
+      "emoji": "🥤"
+     }
+    ]
+   },
+   {
+    "id": "pv-5",
+    "type": "receptive_match",
+    "word": "door",
+    "emoji": "🚪",
+    "options": [
+     {
+      "word": "bowl",
+      "emoji": "🥣"
+     },
+     {
+      "word": "door",
+      "emoji": "🚪"
+     },
+     {
+      "word": "book",
+      "emoji": "📖"
+     },
+     {
+      "word": "soap",
+      "emoji": "🧼"
+     }
+    ]
+   }
+  ],
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+ }
+}

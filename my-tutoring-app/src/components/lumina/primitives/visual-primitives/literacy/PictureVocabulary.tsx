@@ -1,11 +1,12 @@
 'use client';
 
 /**
- * PictureVocabulary — DI modality (fifth literacy port, 2026-08-11; FIRST
- * literacy consumer of useJudgedScriptRunner). The Live tutor owns the clock
- * in every mode: it asks, waits, judges, corrects contrastively, and its OWN
- * verdict is the advance. There is no advance timer, no push-to-talk mic, no
- * Next button and no answer chips anywhere in this file.
+ * PictureVocabulary — word meaning with pictures. It runs only on the shared
+ * tutor/JEV teaching workspace (workspace rollout C2; the scripted runner was
+ * retired, LA-14, user ruling 09-23: one path). The observer judges each spoken
+ * answer, the activity checks each picture tap, and the runtime owns progression.
+ * An unbound mount shows the shared "needs the tutor" card. There is no advance
+ * timer, no Next button and no answer chips anywhere in this file.
  *
  * WHAT THE CHILD DOES, PER MODE.
  *  - naming / opposite / gradable_scale / sentence_frame / association: the
@@ -15,7 +16,7 @@
  *  - receptive_match: the answer is a TAP on emoji-only picture cards.
  *    Receptive identification is a real 1-in-4 selection skill — the tap IS
  *    the skill, not a costume over a spoken one — so it stays. The tap commits
- *    through the gesture anchor; the tutor's verdict is the advance.
+ *    through `commitGesture` with the activity's own check.
  *
  * ⭐ ASSOCIATION WENT SPOKEN ON 2026-08-19 (item 25). It tapped four emoji
  * cards for exactly one reason: "what goes with sock" is an OPEN production
@@ -37,7 +38,7 @@
  * Tap-to-hear re-speaks the QUESTION, never the answer.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -53,21 +54,16 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { PictureVocabularyMetrics } from '../../../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
-import {
-  itemsFromChallenges,
-  pictureVocabularyPackBase,
-  scaleSpokenFor,
-  tapVerdictCue,
-  type PictureVocabItem,
-} from './pictureVocabularyScript';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { judgedAnswerMix } from '../../../hooks/judgedScriptContract';
+import { itemsFromChallenges, type PictureVocabItem } from './pictureVocabularyScript';
+import { describeCardTap, hearQuestionRequest, pictureVocabAssignment, pictureVocabScene } from './pictureVocabularyWorkspace';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { pictureVocabularyPipPose } from '../../../pip/pictureVocabularyPipPose';
@@ -139,6 +135,9 @@ export interface PictureVocabularyData {
 interface PictureVocabularyProps {
   data: PictureVocabularyData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -158,7 +157,7 @@ const MODE_META: Record<PictureVocabChallengeType, { badge: string; icon: string
 // Component
 // ============================================================================
 
-const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }) => {
+function PictureVocabularySurface({ data, className, runtimePlanItemId, runtimeEvalMode }: PictureVocabularyProps) {
   const {
     title,
     challenges = [],
@@ -170,7 +169,8 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
     onEvaluationSubmit,
   } = data;
 
-  const gradeLevel = data.gradeLevel ?? 'kindergarten';
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   const stableInstanceIdRef = useRef(instanceId || `picture-vocabulary-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -191,8 +191,6 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
   // ── Per-item stage state ───────────────────────────────────────────────────
   /** The tapped card's word (gesture modes) — cleared on retry and item open. */
   const [tapped, setTapped] = useState<string | null>(null);
-  const tappedRef = useRef<string | null>(null);
-  /** Affirmed: the first moment the answer may appear on screen. */
 
   // ── Evaluation ─────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<PictureVocabularyMetrics>({
@@ -205,7 +203,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const metrics: PictureVocabularyMetrics = {
       type: 'picture-vocabulary',
       challengeType: data.challengeType,
@@ -215,7 +213,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
       correctCount: summary.solvedCount,
       attemptsCount: summary.attemptsCount,
       firstTryCount: summary.firstTryCount,
-      hintsViewed: summary.hearTaps,
+      hintsViewed: 0,
       overallAccuracy: summary.accuracy,
       averageAttemptsPerChallenge: items.length > 0
         ? summary.attemptsCount / items.length
@@ -225,107 +223,51 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items.length, data.challengeType, evaluation]);
+  };
 
-  // ── The pack — wording lives in pictureVocabularyScript.ts ────────────────
-  const pack = useMemo<JudgedScriptPack<PictureVocabItem>>(() => ({
-    // Everything the tutor is ever told comes from the shared cue surface, so
-    // the DI harness cannot drift from what production sends. What stays here
-    // is what only a mounted component can own: lines that are RENDERED, and a
-    // diagnosis that reads the tapped card out of component state.
-    ...pictureVocabularyPackBase(items),
-    // Only what DIFFERS from the runner's defaults.
-    statusLines: {
-      ready: (item) => item.answerKind === 'gesture'
-        ? 'Listen, then tap the picture.'
-        : 'Listen, then say your answer out loud.',
-      retry: (item) => item.answerKind === 'gesture'
-        ? 'Look again — then tap the picture.'
-        : 'Have another go — say your answer.',
-      done: 'Great word work today!',
-    },
-    /**
-     * ⚠️ ASSOCIATION NEEDED ITS OWN SPOKEN ARM, and this is the near-miss the
-     * type checker could not see. It used to sit in the GESTURE branch. Moving
-     * it to `answerKind === 'voice'` without adding a case here would have
-     * dropped it through the ternary chain to the sentence_frame fallback, so
-     * every association diagnosis would have read "Complete the sentence:
-     * undefined" — a well-formed record of the wrong challenge, fed to the
-     * misconception loop.
-     *
-     * Its `expected` is also the one that cannot be a single word: the set is
-     * open, so it names the RELATION and offers the generated partner as an
-     * example rather than as the answer.
-     */
-    // One factual record per attempt; the picture is named, because "name the pictured item" alone told the
-    // distiller nothing about what was shown (judged-evidence census, 2026-09-14).
-    observation: (item, { heard }) =>
-      item.answerKind === 'gesture'
-        ? {
-            challenge: `Hear "${item.word}" and tap its picture.`,
-            expected: `The picture of "${item.word}".`,
-            observed: tappedRef.current
-              ? `Tapped the picture of "${tappedRef.current}".`
-              : 'Tapped a picture; which one was not recorded.',
-          }
-        : {
-            challenge: item.kind === 'naming'
-              ? `Name the pictured item aloud: a picture of a ${item.word} (${item.emoji}) is shown.`
-              : item.kind === 'opposite'
-                ? `Produce the opposite of "${item.baseWord}" aloud${item.baseEmoji ? ` (its picture ${item.baseEmoji} is shown)` : ''}.`
-                : item.kind === 'association'
-                  ? `Name something that naturally goes with "${item.baseWord}" aloud${item.baseEmoji ? ` (its picture ${item.baseEmoji} is shown)` : ''}.`
-                  : item.kind === 'gradable_scale'
-                    ? `Say the missing word in the scale: ${scaleSpokenFor(item)}.`
-                    : `Complete the sentence: ${item.frameDisplay}`,
-            expected: item.kind === 'association'
-              ? `Any everyday thing that plainly goes with "${item.baseWord}" — for example "${item.word}".`
-              : `The word "${item.word}".`,
-            observed: heard
-              ? `Heard "${heard}".`
-              : 'No transcript was captured.',
-          },
-  }), [items]);
-
-  const runner = useJudgedScriptRunner<PictureVocabItem>({
-    pack,
+  const runner = useWorkspaceRunner<PictureVocabItem>({
+    primitiveId: 'picture-vocabulary',
+    assignment: pictureVocabAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || data.challengeType,
     instanceId: resolvedInstanceId,
-    gradeLevel,
-    exhibitId,
-    onFinished: handleFinished,
-    onItemOpened: () => {
-      setTapped(null);
-      tappedRef.current = null;
-    },
+    onFinished: finish,
+    onItemOpened: () => setTapped(null),
     onCorrectionRetry: () => {
-      // The tutor's line re-oriented in-band; free the cards for another go.
+      // Try again frees the cards.
       setTapped(null);
-      tappedRef.current = null;
       pip.clear();
     },
   });
 
   const currentItem = runner.currentItem;
-  /** Affirmed: the first moment the answer may appear on screen. The runner
-   *  owns this latch now (it replaces the `onItemOpened`/`onAffirmed` pair). */
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
+  /** Credited: the first moment the answer may appear on screen. */
   const revealed = runner.currentSolved;
 
   // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the runner's phase and the child's own picture tap; Pip
+  // A projection of the workspace's committed state and the child's own picture tap; Pip
   // never answers, taps, or advances.
   const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const targets = pip.targets();
     const pose = pictureVocabularyPipPose({
       kind: currentItem.kind,
-      running: runner.running, preparing: runner.preparing,
+      running: runner.running, preparing: false,
       currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      judging: runner.isAwaitingGesture(),
+      // Audio belongs to this block only while the lesson is pointed at it.
+      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
       cueMatchesItem: runner.cuedItemId === currentItem.id,
       visibleIds: targets.map((target) => target.id),
       lastTouchedId: pip.lastTouchedId,
@@ -333,20 +275,35 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
     return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Picture vocabulary', dock: pip.dock.current, targets, pose };
   });
 
-  // ── The tap — gesture modes only; the tap IS the commit ───────────────────
+  // What the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...pictureVocabScene(currentItem), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
+  // ── The tap — gesture modes only; the tap IS the commit, checked by the activity ──
   const handleOptionTap = useCallback((option: PictureVocabOption) => {
     const item = runner.currentItem;
-    if (!runner.canAttempt || evaluation.hasSubmitted) return;
+    if (!runner.canAttempt || showSummary) return;
     if (!item || item.answerKind !== 'gesture') return;
-    // Synchronous ref: `canAttempt` closes the pending window through batched
-    // state, this stops a second tap inside the same tick.
+    // `canAttempt` closes through batched state; this stops a second tap inside the same tick.
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
     pip.look(`card-${option.word}`);
     setTapped(option.word);
-    tappedRef.current = option.word;
-    runner.submitGestureAttempt(tapVerdictCue(item, option.word));
-  }, [runner, evaluation.hasSubmitted, pip]);
+    commitGesture(runner, { response: describeCardTap(option.word),
+      correct: option.word.toLowerCase() === item.word.toLowerCase(), cue: () => describeCardTap(option.word) });
+  }, [runner, showSummary, pip]);
+
+  /** Tapping the stimulus asks the tutor for the question again: a silent host request, never the answer. */
+  const hearQuestion = useCallback(() => {
+    if (!currentItem) return;
+    SoundManager.tap();
+    ctx.sendText(hearQuestionRequest(currentItem), { silent: true, author: 'host' });
+  }, [ctx, currentItem]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   /** Say-it and tap-it runs are both legitimate here, so the copy names what
@@ -368,12 +325,12 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
   // outcome 0 rather than dropping the row, which would report a failure
   // against a word the child was never asked.
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => {
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => {
       const meta = MODE_META[item.kind];
       return { label: meta.badge, icon: meta.icon };
     });
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
   // ============================================================================
   // Render helpers
@@ -381,8 +338,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
 
   /** A tappable stimulus card: tap = hear the question again (never the answer). */
   const stimulusCardClass = (accentBg: string, accentBorder: string) =>
-    `rounded-2xl ${accentBg} border-2 ${accentBorder} text-center cursor-pointer select-none transition-all `
-    + (runner.stimulusTapped ? 'ring-2 ring-cyan-300/60 ' : '');
+    `rounded-2xl ${accentBg} border-2 ${accentBorder} text-center cursor-pointer select-none transition-all `;
 
   const renderTapCards = (item: PictureVocabItem) => (
     <div ref={pip.ref('cards')} data-pip-object="cards" className="grid grid-cols-2 gap-3">
@@ -429,8 +385,8 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
             </p>
             <div className="flex justify-center">
               <button
-                onClick={runner.hearStimulus}
-                className={`text-xs rounded-full border border-white/10 px-3 py-1.5 text-slate-400 hover:text-slate-200 transition-all ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}`}
+                onClick={hearQuestion}
+                className="text-xs rounded-full border border-white/10 px-3 py-1.5 text-slate-400 hover:text-slate-200 transition-all"
               >
                 🔊 Hear it again
               </button>
@@ -447,7 +403,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
                 data-pip-object="stimulus"
                 role="button"
                 tabIndex={0}
-                onClick={runner.hearStimulus}
+                onClick={hearQuestion}
                 className={stimulusCardClass('bg-emerald-500/10', 'border-emerald-500/30') + 'px-12 py-8'}
               >
                 <span className="text-7xl">{item.emoji}</span>
@@ -468,7 +424,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
                 data-pip-object="stimulus"
                 role="button"
                 tabIndex={0}
-                onClick={runner.hearStimulus}
+                onClick={hearQuestion}
                 className={stimulusCardClass('bg-amber-500/10', 'border-amber-500/30') + 'px-10 py-6'}
               >
                 <span className="text-5xl">{item.baseEmoji}</span>
@@ -516,7 +472,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
                 data-pip-object="stimulus"
                 role="button"
                 tabIndex={0}
-                onClick={runner.hearStimulus}
+                onClick={hearQuestion}
                 className={
                   stimulusCardClass('bg-pink-500/10', 'border-pink-500/30')
                   + 'px-10 py-6 '
@@ -543,8 +499,8 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
                 data-pip-object="stimulus"
                 role="button"
                 tabIndex={0}
-                onClick={runner.hearStimulus}
-                className={`flex items-stretch gap-1.5 rounded-2xl bg-cyan-500/10 border-2 border-cyan-500/30 p-3 overflow-x-auto max-w-full cursor-pointer ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}`}
+                onClick={hearQuestion}
+                className="flex items-stretch gap-1.5 rounded-2xl bg-cyan-500/10 border-2 border-cyan-500/30 p-3 overflow-x-auto max-w-full cursor-pointer"
               >
                 {rungs.map((w, i) => {
                   const isTarget = i === item.scaleTargetIndex;
@@ -583,7 +539,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
                 data-pip-object="stimulus"
                 role="button"
                 tabIndex={0}
-                onClick={runner.hearStimulus}
+                onClick={hearQuestion}
                 className={stimulusCardClass('bg-purple-500/10', 'border-purple-500/30') + 'px-8 py-6 max-w-md'}
               >
                 {revealed ? (
@@ -611,7 +567,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
   // ITEMS: a payload can arrive with challenges that the build gate all rejects
   // (no cards containing the target, frames with no blank). Gating on
   // `challenges` there would mount a runner with nothing to run.
-  if (items.length === 0) {
+  if (items.length === 0 || !currentItem) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-6">
@@ -621,14 +577,14 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
     );
   }
 
-  const modeMeta = MODE_META[currentItem?.kind ?? 'naming'];
+  const modeMeta = MODE_META[currentItem.kind];
 
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          {!evaluation.hasSubmitted && currentItem && (
+          {!showSummary && (
             <LuminaBadge accent={modeMeta.accent} className="text-xs">
               {modeMeta.icon} {modeMeta.badge}
             </LuminaBadge>
@@ -637,7 +593,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex justify-center">
               {/* The runner's index counts ITEMS, so the denominator must too —
@@ -658,18 +614,14 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
                 className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
             )}
 
-            {currentItem && renderChallenge(currentItem)}
-
-            {/* The picture-tap modes are answered with the hands — the orb
-                names that turn instead of claiming to listen for it. */}
-            <JudgedMicPanel run={runner} gestureLabel="Your turn — tap the picture" />
+            {renderChallenge(currentItem)}
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Picture Vocabulary Complete!"
             celebrationMessage={celebrationMessage}
@@ -679,6 +631,10 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
       </LuminaCardContent>
     </LuminaCard>
   );
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const PictureVocabulary = withWorkspaceOnly<PictureVocabularyProps>('picture-vocabulary', PictureVocabularySurface,
+  props => props.data.title);
 
 export default PictureVocabulary;

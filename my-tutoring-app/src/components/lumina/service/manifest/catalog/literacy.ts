@@ -2744,14 +2744,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'picture-vocabulary',
     misconceptionScope: 'skill',
     description:
-      'Live Direct Instruction picture-vocabulary practice with a spoken tutor. ORAL VOCABULARY for K-1: the tutor '
-      + 'asks, waits, judges the child’s answer from the audio, and its own affirmation moves the lesson on. FIVE of '
+      'Live picture-vocabulary practice with a spoken tutor. ORAL VOCABULARY for K-1: the tutor '
+      + 'asks, waits and responds to the child’s answer, and a credited answer moves the lesson on. FIVE of '
       + 'the six modes are ANSWERED ALOUD — the child names a picture (Say It), produces an opposite (Opposites), '
       + 'says what goes with a shown thing (Goes Together), says the missing rung of a spoken word scale (Word '
       + 'Scale), or finishes a spoken sentence (Finish the Sentence) — there are no word chips to tap and nothing '
       + 'on screen prints the answer. ONE mode is ANSWERED WITH THE HANDS on emoji-only picture cards: Listen & '
       + 'Find (hear a word, tap its picture), where picking the referent out of four IS the receptive skill; the '
-      + 'tap is the commit and the tutor’s verdict is the advance. Tap-to-hear repeats the question. Requires a '
+      + 'tap is the commit and the activity checks it. Tap-to-hear repeats the question. Requires a '
       + 'microphone. ESSENTIAL for K-1 vocabulary development and oral language.',
     constraints:
       'Use concrete, picturable words with clear emoji matches. K: everyday nouns (animals, foods, clothes, home). '
@@ -2765,6 +2765,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // same day ("an incredibly strong modality from a learning standpoint"): nothing on screen
     // prints the word, five of six modes are answered aloud, and receptive_match taps a picture.
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'On listen and find you say the word and the learner taps its picture among four cards with no words; the '
+        + 'activity checks the tap and tells you what was tapped. Every other mode is one spoken word, judged against '
+        + 'the answer you are given: the picture\'s name, the opposite of the shown word, something that goes with it '
+        + '(many answers are right: judge whether it plainly goes together), the missing word of a scale, or the word '
+        + 'that finishes the sentence. The shown word said back, a made-up word, or a category word like "a thing" is '
+        + 'not the answer. Never say the answer, name the picture, or give the missing word before the learner has '
+        + 'tried. Tapping the card asks you to repeat the question only. You cannot tap a card.',
+    },
     // ── DI MODALITY (2026-08-11) — fifth literacy port, first literacy consumer
     // of useJudgedScriptRunner. The tutor owns the clock in every mode; there is
     // no advance timer, no push-to-talk mic, no Next button and no answer chips

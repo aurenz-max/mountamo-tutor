@@ -59,6 +59,8 @@ import { cvcHarnessAnswers } from '../../primitives/visual-primitives/literacy/c
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
 import { youAndMeHarnessAnswers } from '../../primitives/visual-primitives/literacy/youAndMeWorkspace';
+import { itemsFromChallenges as vocabItems } from '../../primitives/visual-primitives/literacy/pictureVocabularyScript';
+import { pictureVocabJourneyAnswers } from '../../primitives/visual-primitives/literacy/pictureVocabularyWorkspace';
 import { itemsFromChallenges as sorterItems } from '../../primitives/visual-primitives/literacy/wordSorterScript';
 import { wordSorterJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordSorterWorkspace';
 import { itemsFromTargets as builderItems } from '../../primitives/visual-primitives/literacy/wordBuilderScript';
@@ -1034,6 +1036,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="word"]' } },
+  },
+  'picture-vocabulary': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/PictureVocabulary.tsx',
+    instanceId: 'vocab',
+    defaults: { grade: 'Kindergarten', mode: 'naming', di: false, topic: 'Naming everyday things at home' },
+    leakTokens: ['PV_ITEM', 'PV_MOVE', 'PV_COMPLETE', 'PV_HEAR', 'PV_TAP'],
+    prompts: WORKSPACE_PROMPTS,
+    // A spoken word per item; listen and find taps a card (a wrong tap is another card).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = vocabItems(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current picture-vocabulary item');
+      const answers = pictureVocabJourneyAnswers(item);
+      if (answers.tapped) return [{ type: 'touch', target: `card-${intent === 'wrong' ? answers.tapped.wrong : answers.tapped.correct}` }];
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"], [data-pip-object="cards"]' } },
   },
 };
 

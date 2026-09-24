@@ -1,43 +1,21 @@
 // @vitest-environment jsdom
-import React from 'react';
-import { act, cleanup, fireEvent, render } from '@testing-library/react';
+// Picture vocabulary runs only on the teaching workspace, so Pip is exercised there: the runtime owns progression.
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { PipSurfaceContext } from './PipSurfaceContext';
+import { act, cleanup, fireEvent } from '@testing-library/react';
 import { PipSurfaceStore } from './PipSurfaceStore';
-import PictureVocabulary, { type PictureVocabularyData } from '../primitives/visual-primitives/literacy/PictureVocabulary';
+import { installRuntimeTimers, restoreRuntimeTimers } from '../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace } from '../components/live-activity/runtime/testing/workspaceHarness';
 
-const phase = vi.hoisted(() => ({
-  tutorSpeaking: false, stage: 'asking', currentSolved: false, revealHeld: false, index: 0, cued: true,
-  retry: () => {}, submit: vi.fn(),
-}));
-vi.mock('../hooks/useJudgedScriptRunner', () => ({
-  useJudgedScriptRunner: ({ pack, onCorrectionRetry }: { pack: { items: Array<{ id: string }> }; onCorrectionRetry?: () => void }) => {
-    const item = pack.items[phase.index] ?? null;
-    phase.retry = () => onCorrectionRetry?.();
-    return {
-      currentItem: item, currentIndex: phase.index, stage: phase.stage, tutorSpeaking: phase.tutorSpeaking,
-      currentSolved: phase.currentSolved, revealHeld: phase.revealHeld, cuedItemId: phase.cued ? item?.id ?? null : 'elsewhere',
-      canAttempt: phase.stage !== 'judging' && !phase.currentSolved, solvedIds: new Set(),
-      running: true, preparing: false, summary: null, stimulusTapped: false, hearStimulus: vi.fn(),
-      isAwaitingGesture: () => false, submitGestureAttempt: phase.submit,
-    };
-  },
-}));
-vi.mock('../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({ submitResult: vi.fn(), hasSubmitted: false, submittedResult: null, elapsedMs: 0 }),
-  useEvaluationContext: () => null,
-}));
-vi.mock('../components/JudgedMicPanel', () => ({ default: () => null }));
-vi.mock('../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => vi.fn() }) }));
+beforeEach(() => { installRuntimeTimers(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); });
 
-beforeEach(() => {
-  Object.assign(phase, { tutorSpeaking: false, stage: 'asking', currentSolved: false, revealHeld: false, index: 0, cued: true });
-  phase.submit.mockClear();
-});
-afterEach(cleanup);
-
-const data: PictureVocabularyData = {
-  title: 'Words', description: '', challengeType: 'receptive_match', gradeLevel: 'K', instanceId: 'vocab',
+const data = {
+  title: 'Words', description: '', challengeType: 'receptive_match', gradeLevel: 'K',
   challenges: [
     { id: 'pv-1', type: 'receptive_match', word: 'dog', emoji: '🐶',
       options: [{ word: 'dog', emoji: '🐶' }, { word: 'sun', emoji: '☀️' }, { word: 'cup', emoji: '☕' }, { word: 'bus', emoji: '🚌' }] },
@@ -49,44 +27,41 @@ const data: PictureVocabularyData = {
 
 function mount() {
   const store = new PipSurfaceStore();
-  const ui = () => <PipSurfaceContext.Provider value={store}><PictureVocabulary data={data} /></PipSurfaceContext.Provider>;
-  const view = render(ui());
-  const update = (next: Partial<typeof phase>) => act(() => { Object.assign(phase, next); view.rerender(ui()); });
-  return { store, update, ...view };
+  store.setActive('vocab');
+  const h = mountWorkspace({ primitiveId: 'picture-vocabulary', evalMode: 'mixed', data, instanceId: 'vocab', pipStore: store });
+  const container = h.view.container;
+  const tap = (id: string) => act(() => { fireEvent.click(container.querySelector(`[data-pip-object="${id}"]`) as HTMLElement); });
+  return { ...h, store, container, tap, unmount: h.view.unmount };
 }
 const pose = (store: PipSurfaceStore) => store.getActive()?.pose;
 const ids = (store: PipSurfaceStore) => store.getActive()?.targets.map((t) => t.id);
 
-describe('Picture Vocabulary drives Pip from its judged phases', () => {
-  it('receptive match outlines the cards as a group and watches the tapped card while judged, without receiving it', () => {
-    const { store, update, container } = mount();
+describe('Picture Vocabulary drives Pip from the workspace', () => {
+  it('receptive match outlines the cards as a group, watches the checked card, and Try again frees it', () => {
+    const { store, speak, tap, dispatch, confirmVisible, container } = mount();
     expect(container.querySelector('[data-pip-dock="vocab"]')).not.toBeNull();
-    update({ tutorSpeaking: true });
+    speak(true);
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'cards' });
-    update({ tutorSpeaking: false });
-    act(() => { fireEvent.click(container.querySelector('[data-pip-object="card-sun"]') as HTMLElement); });
-    expect(phase.submit).toHaveBeenCalledTimes(1);
-    expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'card-sun' });
-    update({ stage: 'judging' });
+    speak(false);
+    tap('card-sun');
     expect(pose(store)).toEqual({ phase: 'checking', gesture: 'look', targetId: 'card-sun' });
-    update({ stage: 'asking' });
-    act(() => { phase.retry(); });
+    dispatch('retry'); confirmVisible();
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'cards' });
   });
 
-  it('spoken modes point at the stimulus card and publish no answer surface', () => {
-    const { store, update } = mount();
-    for (const index of [1, 2, 3]) {
-      update({ index, tutorSpeaking: true });
+  it('spoken modes point at the stimulus card and publish no answer surface; unregisters on unmount', () => {
+    const { store, speak, tap, dispatch, confirmVisible, say, feedback, unmount } = mount();
+    tap('card-dog'); dispatch('advance'); confirmVisible();
+    for (const answer of ['small', 'cool']) {
+      speak(true);
       expect(ids(store)).toEqual(['stimulus']);
       expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'stimulus' });
+      speak(false);
+      say(answer); feedback('correct', 'advance'); confirmVisible();
     }
-    update({ tutorSpeaking: false, revealHeld: true });
+    expect(ids(store)).toEqual(['stimulus']);
+    say('bed'); feedback('correct');
     expect(pose(store)).toEqual({ phase: 'celebrating', gesture: 'none' });
-  });
-
-  it('unregisters on unmount', () => {
-    const { store, unmount } = mount();
     unmount();
     expect(store.getActive()).toBeNull();
   });
