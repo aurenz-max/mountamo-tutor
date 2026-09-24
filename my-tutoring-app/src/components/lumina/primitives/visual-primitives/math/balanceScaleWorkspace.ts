@@ -10,11 +10,10 @@
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { BalanceScaleChallenge, BalanceScaleData, BalanceScaleObject } from './BalanceScale';
-import { describeBoard, equalityProblem, usesEqualityPilot, WEIGHTS, type EqualityBoard } from './balanceEqualityModel';
-import { isHands, scene, TRAY, usesBalanceWorkshop, workshopExpected, workshopProblem, type WorkshopBoard }
-  from './balanceWorkshopModel';
-import { equalityItems, type EqualityItem } from './balanceEqualityScript';
-import { workshopAsk, workshopItems, type WorkshopItem } from './balanceWorkshopScript';
+import { describeBoard, equalityItems, equalityProblem, usesEqualityPilot, WEIGHTS, type EqualityBoard, type EqualityItem }
+  from './balanceEqualityModel';
+import { isHands, scene, TRAY, usesBalanceWorkshop, workshopAsk, workshopExpected, workshopItems, workshopProblem,
+  type WorkshopBoard, type WorkshopItem } from './balanceWorkshopModel';
 
 export type BalanceSurface = 'equality' | 'workshop' | 'plain';
 export const balanceSurface = (data: BalanceScaleData): BalanceSurface =>

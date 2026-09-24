@@ -10,6 +10,7 @@ import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
 import SavedLearningObservations from './SavedLearningObservations';
 import BaseTenBlocks, { type BaseTenBlocksData } from '../primitives/visual-primitives/math/BaseTenBlocks';
 import LearningResponsePreview from './LearningResponsePreview';
+import { TesterWorkspace } from './live-activity/TesterWorkspace';
 import { EvaluationProvider, useRequiredEvaluationContext } from '../evaluation/contexts/EvaluationContext';
 import PlaceValueChart, { type PlaceValueChartData } from '../primitives/visual-primitives/math/PlaceValueChart';
 import { LuminaButton, LuminaCard, LuminaCardContent, LuminaCardHeader, LuminaCardTitle } from '../ui';
@@ -130,7 +131,11 @@ function TesterActivity({ onBack }: { onBack: () => void }) {
       </LuminaCardContent>
     </LuminaCard>
     {data && <PlaceValueChart key={data.instanceId} data={data} />}
-    {blocks && <BaseTenBlocks key={blocks.instanceId} data={blocks} />}
+    {/* base-ten-blocks runs only on the teaching workspace: bound like any tester preview. */}
+    {blocks && <TesterWorkspace key={blocks.instanceId} primitiveId="base-ten-blocks" instanceId={blocks.instanceId ?? 'blocks'}
+      evalMode="read_blocks" data={blocks} topic={topic} gradeLevel="Grade 4">
+      <BaseTenBlocks data={blocks} runtimeEvalMode="read_blocks" />
+    </TesterWorkspace>}
     {activeId && evaluation.submittedResults.filter(r => r.instanceId === activeId).map(result =>
       <LearningResponsePreview key={result.attemptId} result={result} />)}
     <SavedLearningObservations />

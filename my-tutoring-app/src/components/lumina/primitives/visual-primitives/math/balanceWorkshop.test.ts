@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { validateJudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import { selectBalanceScaleChallenges } from '../../../service/math/gemini-balance-scale';
 import { enterWorkshopStage, groupCounts, initialWorkshopBoard, isHands, modelStage, moveWorkshopUnit, placeWorkshopWeight,
-  scene, signature, stageSolved, STAGES, workshopBalance, workshopProblem, WORKSHOP_MODES, type WorkshopProblem } from './balanceWorkshopModel';
-import { workshopAsk, workshopCheckCue, workshopCompleteCue, workshopItemCue, workshopItems, workshopJudging, workshopMoveCue } from './balanceWorkshopScript';
+  scene, signature, stageSolved, STAGES, workshopAsk, workshopBalance, workshopItems, workshopProblem, WORKSHOP_MODES,
+  type WorkshopProblem } from './balanceWorkshopModel';
+import { EXPLAIN_MEANING, workshopAssignment } from './balanceScaleWorkspace';
 
 const problem = (mode: WorkshopProblem['mode'], target = 4, known = 3, parcels = 2): WorkshopProblem => ({
   id: 'test', mode, target, known, parcels, total: target * parcels + known, reverse: false,
 });
-const spoken = (cue: string) => cue.match(/Say exactly: "([^"]*)"/)?.[1] ?? '';
 
 describe('weight workshop conservation', () => {
   it('lets students separate either side first, restore it, and only complete an equal removal', () => {
@@ -65,13 +64,10 @@ describe('weight workshop conservation', () => {
     expect(enterWorkshopStage(p, 'recompose', different).board).toEqual(different);
     expect(signature(modelStage(p, 'recompose', next).weights)).not.toBe(signature(first.weights));
   });
-  it('keeps every generated mode solvable, with valid numeric classes and explicit modeled fallbacks', () => {
+  it('keeps every generated mode solvable, with one item per stage and explicit modeled fallbacks', () => {
     for (const mode of WORKSHOP_MODES) for (let run = 0; run < 30; run++) {
       const problems = selectBalanceScaleChallenges(mode).map(workshopProblem);
-      const items = workshopItems(problems);
-      expect(validateJudgedScriptPack({ primitiveType: 'balance-scale', activityLine: 'weights', items,
-        itemCue: workshopItemCue, moveOnCue: (item, next) => workshopMoveCue(item, next, initialWorkshopBoard(next?.problem ?? item.problem)),
-        completeCue: workshopCompleteCue, contextFor: () => ({}) })).toEqual([]);
+      expect(workshopItems(problems)).toHaveLength(STAGES[mode].length * problems.length);
       for (const p of problems) {
         let board = initialWorkshopBoard(p);
         for (const stage of STAGES[mode]) {
@@ -83,17 +79,18 @@ describe('weight workshop conservation', () => {
   });
 });
 
-describe('spoken workshop contract', () => {
-  it('withholds parcel values in hand prompts and separates number interpretation from explanation', () => {
+describe('workshop asks on the teaching workspace', () => {
+  it('withholds parcel values in hand asks and separates number interpretation from explanation', () => {
     const p = problem('two_step', 7, 3, 2);
     const items = workshopItems([p]);
     for (const item of items.filter((entry) => isHands(entry.step))) {
-      expect(spoken(workshopItemCue(item, { opening: true }))).not.toMatch(/\b7\b|\bseven\b/);
-      expect(spoken(workshopCheckCue(item, modelStage(p, item.step, initialWorkshopBoard(p))))).not.toMatch(/\b7\b|\bseven\b/);
+      const ask = workshopAssignment(item);
+      expect(ask.task).not.toMatch(/\b7\b|\bseven\b/);
+      expect(ask.expectedAnswer).toBeUndefined();
     }
     expect(scene(p, initialWorkshopBoard(p))).not.toContain('target');
-    expect(workshopJudging(items.find((item) => item.step === 'infer')!)).toContain('Wait for fresh speech');
-    expect(workshopJudging(items.find((item) => item.step === 'explain')!)).toContain('Reject a bare number');
+    expect(workshopAssignment(items.find((item) => item.step === 'infer')!)).toMatchObject({ response: 'speech', expectedAnswer: '7' });
+    expect(workshopAssignment(items.find((item) => item.step === 'explain')!).expectedAnswer).toBe(EXPLAIN_MEANING);
   });
   it('asks reverse rounds to demonstrate the operation without supplying its result', () => {
     const p = { ...problem('two_step', 5, 4, 3), reverse: true };
@@ -103,10 +100,8 @@ describe('spoken workshop contract', () => {
   });
   it('models a capped separation before asking about the remaining weight', () => {
     const p = problem('two_step_intro');
-    const items = workshopItems([p]);
     const prepared = enterWorkshopStage(p, 'remaining', initialWorkshopBoard(p));
     expect(prepared.modeled).toBe(true);
     expect(stageSolved(p, 'separate', prepared.board)).toBe(true);
-    expect(spoken(workshopMoveCue(items[0], items[1], initialWorkshopBoard(p)))).toContain('I have shown this step');
   });
 });

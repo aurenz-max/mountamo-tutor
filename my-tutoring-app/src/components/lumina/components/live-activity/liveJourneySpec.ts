@@ -49,10 +49,8 @@ import { baseTenHarnessAnswers, itemsFromChallenges as baseTenItems, usesBaseTen
 import { blockNoun, blockNounPlural, readCount } from '../../primitives/visual-primitives/math/baseTenModel';
 import { itemsFromChallenges as ordinalItems, ordinalLineHarnessAnswers } from '../../primitives/visual-primitives/math/ordinalLineScript';
 import { balanceSurface, explainHarnessAnswers, weightsFor } from '../../primitives/visual-primitives/math/balanceScaleWorkspace';
-import { equalityProblem, WEIGHTS } from '../../primitives/visual-primitives/math/balanceEqualityModel';
-import { equalityItems } from '../../primitives/visual-primitives/math/balanceEqualityScript';
-import { isHands, TRAY, workshopProblem } from '../../primitives/visual-primitives/math/balanceWorkshopModel';
-import { workshopItems } from '../../primitives/visual-primitives/math/balanceWorkshopScript';
+import { equalityItems, equalityProblem, WEIGHTS } from '../../primitives/visual-primitives/math/balanceEqualityModel';
+import { isHands, TRAY, workshopItems, workshopProblem } from '../../primitives/visual-primitives/math/balanceWorkshopModel';
 import type { BarModelChallenge } from '../../primitives/visual-primitives/math/BarModel';
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';

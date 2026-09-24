@@ -1,4 +1,5 @@
 import type { BalanceScaleChallenge, BalanceScaleData } from './BalanceScale';
+import type { DiActionContract, JudgedScriptItem } from '../../../hooks/judgedScriptContract';
 
 export interface EqualityProblem { id: string; target: number; mode: 'equality' | 'equality_hard' }
 export interface WeightBlock { id: number; value: number }
@@ -50,3 +51,22 @@ export function equalityFeedback(problem: EqualityProblem, board: EqualityBoard)
     ? 'The left side is heavier. Try adding weight on the right.'
     : 'The right side is heavier. Try taking a block off or swapping it for a lighter one.';
 }
+
+// ── The session's steps: build (hands), total and infer (spoken), per problem ──
+
+export type EqualityStep = 'build' | 'total' | 'infer';
+export interface EqualityItem extends JudgedScriptItem {
+  problem: EqualityProblem; step: EqualityStep; actionContract: DiActionContract;
+}
+const ACTIONS: Record<EqualityStep, DiActionContract> = {
+  build: { id: 'build', label: 'Balance the weights', icon: '=', answerKind: 'gesture',
+    instruction: 'Put weights on the right until the scale balances.', checkingInstruction: 'The scale is settling.' },
+  total: { id: 'total', label: 'Add your weights', icon: '+', answerKind: 'voice',
+    instruction: 'Add the numbers on your right-side blocks. What is their total weight?', checkingInstruction: 'Listening to your total.' },
+  infer: { id: 'infer', label: 'Find the left weight', icon: '=', answerKind: 'voice',
+    instruction: 'Since the scales are balanced, what weight is the left side?', checkingInstruction: 'Listening to your answer.' },
+};
+export const equalityItems = (problems: EqualityProblem[]): EqualityItem[] => problems.flatMap((problem) =>
+  (['build', 'total', 'infer'] as const).map((step) => ({ id: `${problem.id}-${step}`, problem, step, action: step,
+    answerKind: ACTIONS[step].answerKind, actionContract: ACTIONS[step],
+    responseClass: step === 'build' ? 'manipulation' : 'number_word_to_20' })));

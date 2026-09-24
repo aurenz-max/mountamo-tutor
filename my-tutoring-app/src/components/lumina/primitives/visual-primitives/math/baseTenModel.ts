@@ -1,10 +1,10 @@
 /**
- * baseTenModel — the pure block-mat model behind the base-ten-blocks DI port.
+ * baseTenModel — the pure block-mat model behind base-ten-blocks' spoken mat.
  *
  * Code owns the physics (what is on the mat, what a trade does, whether the
- * trade the child made is the one that was asked for); the tutor owns the clock
- * and the voice. Every function here is pure and total so the component, the
- * script, the generator gates and the drive harness read the SAME arithmetic —
+ * trade the child made is the one that was asked for); the tutor owns the voice.
+ * Every function here is pure and total so the component, the items, the
+ * generator gates and the workspace journey read the SAME arithmetic —
  * the balance-scale/number-bond split that kept those ports' scenes and
  * verdicts from drifting.
  *
@@ -124,8 +124,8 @@ export const readablePlaces = (n: number): number[] =>
  * the answer is the word the ask just said. Worse, the whole mode is built
  * around ONE signature error — answering "ten", the blocks the trade creates,
  * with the ones already on the mat forgotten — and on an empty receiving place
- * that wrong answer IS the right answer, so `predictJudging` hands the tutor a
- * contract that calls "ten" correct and incorrect in the same breath.
+ * that wrong answer IS the right answer, so "ten" would be both the expected
+ * answer and the signature error.
  * Forty is such a number, and so is every multiple of ten. They are DROPPED
  * (keep-or-drop, never repair) and the generator re-selects an outward
  * neighbour: 40 becomes 41, which has one ones cube to add the ten to.
@@ -168,38 +168,6 @@ export const startingLowerCount = (problem: BtProblem): number =>
 export const predictedCount = (problem: BtProblem): number => startingLowerCount(problem) + 10;
 
 export const wordFor = (value: number): string => digitWord(value);
-
-// ============================================================================
-// Scenes — what the TUTOR is told about the mat
-// ============================================================================
-
-/**
- * THE SCENE IS AN AUDIO CHANNEL (add-di-loop defect 6). On `read_blocks` the
- * block COUNTS are exactly what the child must say, so this description names
- * none of them — it says the mat exists and states its own non-speakability,
- * and the judging contract carries the private expected value. On `regroup` the
- * ask itself states the starting counts, so naming them here leaks nothing.
- */
-export function btScene(problem: BtProblem, columns: BtColumns): string {
-  if (problem.mode === 'read_blocks') {
-    return `A block mat with ${occupiedPlaces(columns).length} filled columns. `
-      + 'The block counts and the number they make are withheld from you and are never guessed aloud.';
-  }
-  const parts = occupiedPlaces(columns).map((place) => `${columns[place]} ${blockNoun(place, columns[place] ?? 0)}`);
-  return `Block mat: ${parts.join(', ') || 'empty'}. The trade under way is one ${blockNoun(problem.place, 1)} `
-    + `for ten ${blockNounPlural(problem.place - 1)}.`;
-}
-
-/** Hands-turn coaching, code-authored — never a verdict, never the answer. */
-export function btTradeFeedback(problem: BtProblem, columns: BtColumns): string {
-  if (sameColumns(columns, problem.start)) {
-    return `The mat has not changed yet. Tap a ${blockNoun(problem.place, 1)} to trade it.`;
-  }
-  if (sameColumns(columns, tradedColumns(problem.start, problem.place))) {
-    return 'The blocks have moved. Look at what you have now.';
-  }
-  return 'That is a different move from the trade we are making. You can put the blocks back and try again.';
-}
 
 /** Code-computed hands verdict: did the child make the trade that was asked? */
 export const tradeSolved = (problem: BtProblem, columns: BtColumns): boolean =>

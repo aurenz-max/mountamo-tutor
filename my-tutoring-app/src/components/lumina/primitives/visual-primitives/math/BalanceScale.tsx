@@ -20,11 +20,9 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { BalanceScaleMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { describeVerify, plainAssignment, plainScene } from './balanceScaleWorkspace';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -76,7 +74,7 @@ export interface BalanceScaleData {
   /**
    * Within-mode support tier ('easy' | 'medium' | 'hard') — how much balance
    * feedback is on screen. Set by the generator from config.difficulty; drives
-   * showSideValues / showBalanceStatus / showTilt and the tutor's reveal level.
+   * showSideValues / showBalanceStatus / showTilt.
    * Never changes the equations or numbers.
    */
   supportTier?: 'easy' | 'medium' | 'hard';
@@ -191,8 +189,10 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 
 type BalanceScaleProps = BalanceSurfaceProps;
 
-const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
-  BalanceScaleProps & { tutorOwned: boolean; useController: (options: ProgressOptions<BalanceScaleChallenge>) => Progress }) => {
+/** The teaching workspace is the plain solver's only controller: the runtime owns progression. */
+const useBalanceProgress = useWorkspaceProgressFor('balance-scale');
+
+const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode }: BalanceScaleProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -203,7 +203,6 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     showTilt = true,
     showSideValues = true,
     showBalanceStatus = true,
-    supportTier,
     allowOperations = ['add', 'subtract'],
     gradeBand = '3-4',
     challenges = [],
@@ -228,7 +227,6 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
   const [currentRight, setCurrentRight] = useState<BalanceScaleObject[]>(initialChallengeRight);
   const [phase, setPhase] = useState<Phase>('explore');
   const [userSteps, setUserSteps] = useState<StepEntry[]>([]);
-  const [showSolution, setShowSolution] = useState(false);
   const [selectedOp, setSelectedOp] = useState<'add' | 'subtract' | 'multiply' | 'divide' | null>(null);
   const [opValue, setOpValue] = useState('');
   const [feedback, setFeedback] = useState('');
@@ -238,22 +236,22 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
   const stableInstanceIdRef = useRef(instanceId || `balance-scale-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // Challenge state (multi-phase hooks). On the workspace path the runtime moves the index.
+  // Challenge state (multi-phase hooks). The runtime moves the index.
   const challengeIdOf = (ch: BalanceScaleChallenge) => `bs-${challenges.indexOf(ch) + 1}`;
-  const progress = useController({
+  const progress = useBalanceProgress<BalanceScaleChallenge>({
     challenges,
     getChallengeId: challengeIdOf,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     evalMode: runtimeEvalMode || firstChallenge?.type || 'one_step', workspace,
     assignment: (ch) => plainAssignment(ch, challengeIdOf(ch)),
-    // Workspace only: a fresh equation resets the scale; Try again clears the typed value.
+    // A fresh equation resets the scale; Try again clears the typed value.
     onItemOpened: (index, retry) => {
       if (retry) { setVerifyInput(''); setFeedback(''); setFeedbackType(''); recordedRef.current = false; return; }
       const next = challenges[index];
       if (!next) return;
       setCurrentLeft(next.leftSide); setCurrentRight(next.rightSide); setPhase('explore'); setUserSteps([]);
-      setFeedback(''); setFeedbackType(''); setVerifyInput(''); setShowSolution(false); setSelectedOp(null); setOpValue('');
-      recordedRef.current = false; hintViewedRef.current = false;
+      setFeedback(''); setFeedbackType(''); setVerifyInput(''); setSelectedOp(null); setOpValue('');
+      recordedRef.current = false;
     },
   });
   const {
@@ -263,11 +261,10 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     isComplete: allChallengesComplete,
     recordResult,
     incrementAttempts,
-    advance: advanceProgress,
   } = progress;
-  // A checked answer on the workspace waits for Try again or Next challenge.
+  // A checked answer waits for Try again or Next challenge on the shell.
   const blockedRef = useRef(false);
-  blockedRef.current = tutorOwned && progress.canAttempt === false;
+  blockedRef.current = progress.canAttempt === false;
   const learnerBlocked = () => blockedRef.current;
 
   // Drag state
@@ -276,12 +273,9 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
 
   // Refs
   const recordedRef = useRef(false);
-  const hintViewedRef = useRef(false);
-  const hintsViewedRef = useRef(0);
 
   // Computed
   const currentChallenge = challenges[currentChallengeIndex] || null;
-  const currentChallengeId = currentChallenge ? `bs-${currentChallengeIndex + 1}` : null;
   const activeVariableValue = currentChallenge?.variableValue ?? variableValue;
 
   const calcSideValue = useCallback((side: BalanceScaleObject[]): number => {
@@ -298,8 +292,6 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
   }, [showTilt, isBalanced, leftValue, rightValue]);
 
   const formatObj = (obj: BalanceScaleObject) => obj.isVariable ? (obj.label || 'x') : (obj.label || String(obj.value));
-  const formatEquation = (left: BalanceScaleObject[], right: BalanceScaleObject[]) =>
-    `${left.map(formatObj).join(' + ') || '0'} = ${right.map(formatObj).join(' + ') || '0'}`;
 
   const isSolved = useMemo(() => {
     const leftOnlyVar = currentLeft.length === 1 && currentLeft[0].isVariable && currentRight.every(o => !o.isVariable) && currentRight.length >= 1;
@@ -342,95 +334,10 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // -------------------------------------------------------------------------
-  // AI Tutoring
-  // -------------------------------------------------------------------------
-  const challengeType = currentChallenge?.type ?? 'one_step';
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType,
-    currentChallengeIndex: currentChallengeIndex + 1,
-    totalChallenges: challenges.length,
-    targetEquation: currentChallenge
-      ? formatEquation(currentChallenge.leftSide, currentChallenge.rightSide)
-      : formatEquation(initialLeft, initialRight),
-    currentEquation: formatEquation(currentLeft, currentRight),
-    variableValue: activeVariableValue,
-    gradeBand,
-    supportTier,
-    phase,
-    stepCount: userSteps.length,
-    isSolved,
-    isBalanced,
-    attemptNumber: currentAttempts + 1,
-  }), [challengeType, currentChallengeIndex, challenges.length, currentChallenge, initialLeft, initialRight, currentLeft, currentRight, activeVariableValue, gradeBand, supportTier, phase, userSteps.length, isSolved, isBalanced, currentAttempts]);
-
-  // Keep the tutor's reveal level in sync with the on-screen support tier so it
-  // never names a strategy the tier deliberately withheld (esp. at 'hard', where
-  // all balance feedback is off and the student must reason from the equation).
-  const tutorTierClause =
-    supportTier === 'easy'
-      ? ' [SUPPORT easy] You may name the solving strategy and walk the first step concretely; the scale shows full feedback.'
-      : supportTier === 'hard'
-        ? ' [SUPPORT hard] All balance feedback is hidden. Do NOT name the operation or strategy — ask what the student notices about the two sides; never reveal the answer.'
-        : supportTier === 'medium'
-          ? ' [SUPPORT medium] Side totals are hidden but the scale still shows balance. Nudge the next move without naming the full strategy; do not reveal the answer.'
-          : '';
-
-  // The legacy AI context carries the answer; on the workspace path the tutor reads the published scene.
-  const { sendText: scriptedSendText, isConnected } = useLuminaAI({
-    enabled: !tutorOwned,
-    primitiveType: 'balance-scale',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K-2' ? 'Grade 1' : gradeBand === '3-4' ? 'Grade 3' : 'Grade 5',
-  });
-  const sendText = useCallback<typeof scriptedSendText>((...args) => { if (!tutorOwned) scriptedSendText(...args); },
-    [tutorOwned, scriptedSendText]);
-
-  // Introduction
-  const hasIntroducedRef = useRef(false);
+  // Phase transition: an isolated variable moves the learner to Verify.
   useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
-    hasIntroducedRef.current = true;
-    const totalCh = challenges.length;
-    sendText(
-      `[ACTIVITY_START] Balance scale session: ${totalCh > 1 ? `${totalCh} equations` : 'one equation'}. Grade band: ${gradeBand}. `
-      + `${gradeBand === 'K-2' ? 'Use concrete language — "mystery number" not "variable".' : ''} `
-      + `Introduce: "Look at this balance scale! Can you find the mystery number?"`
-      + tutorTierClause,
-      { silent: true }
-    );
-  }, [isConnected, challenges.length, gradeBand, sendText, tutorTierClause]);
-
-  // Per-challenge reset — fires whenever advance() flips currentChallengeId.
-  // Resets every per-challenge UI slot so the next equation starts clean.
-  useEffect(() => {
-    if (!currentChallenge) return;
-    setCurrentLeft(currentChallenge.leftSide);
-    setCurrentRight(currentChallenge.rightSide);
-    setPhase('explore');
-    setUserSteps([]);
-    setFeedback('');
-    setFeedbackType('');
-    setVerifyInput('');
-    setShowSolution(false);
-    setSelectedOp(null);
-    setOpValue('');
-    recordedRef.current = false;
-    hintViewedRef.current = false;
-  }, [currentChallengeId, currentChallenge]);
-
-  // Phase transitions
-  useEffect(() => {
-    if (isSolved && phase === 'solve') {
-      setPhase('verify');
-      sendText(
-        `[PHASE_TRANSITION] Student isolated the variable! Moving to Verify phase. `
-        + `Ask: "You found that the mystery number might be ${activeVariableValue}. Can you check?"`,
-        { silent: true }
-      );
-    }
-  }, [isSolved, phase, activeVariableValue, sendText]);
+    if (isSolved && phase === 'solve') setPhase('verify');
+  }, [isSolved, phase]);
 
   // -------------------------------------------------------------------------
   // Interaction Handlers
@@ -458,11 +365,6 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
       SoundManager.invalid();
       setFeedback('To keep balanced, remove the same value from both sides!');
       setFeedbackType('error');
-      sendText(
-        `[BALANCE_ERROR] Student tried to remove ${formatObj(obj)} from only one side. `
-        + `Remind: "What you do to one side, you must do to the other!"`,
-        { silent: true }
-      );
       return;
     }
 
@@ -481,13 +383,7 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     addStep(desc, `Subtract ${formatObj(obj)} to simplify`);
     setFeedback(desc);
     setFeedbackType('success');
-
-    sendText(
-      `[STEP_TAKEN] ${desc}. Equation is now: ${formatEquation(newLeft, newRight)}. `
-      + `${newLeft.length <= 2 && newRight.length <= 2 ? 'Getting close! Encourage.' : 'Good step.'}`,
-      { silent: true }
-    );
-  }, [hasSubmittedEvaluation, phase, currentLeft, currentRight, addStep, sendText]);
+  }, [hasSubmittedEvaluation, phase, currentLeft, currentRight, addStep]);
 
   const applyOperation = useCallback(() => {
     if (!selectedOp || !opValue || hasSubmittedEvaluation || learnerBlocked()) return;
@@ -557,12 +453,7 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     setSelectedOp(null);
     setFeedback(desc);
     setFeedbackType('success');
-
-    sendText(
-      `[STEP_TAKEN] ${desc}. Equation is now: ${formatEquation(newLeft, newRight)}.`,
-      { silent: true }
-    );
-  }, [selectedOp, opValue, hasSubmittedEvaluation, phase, currentLeft, currentRight, addStep, sendText]);
+  }, [selectedOp, opValue, hasSubmittedEvaluation, phase, currentLeft, currentRight, addStep]);
 
   // Drag handlers
   const handleDragStart = (block: BalanceScaleObject) => setDraggedBlock(block);
@@ -592,7 +483,7 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     }
     const correct = Math.abs(answer - activeVariableValue) < 0.01;
     incrementAttempts();
-    // Workspace only: the scale's own check is the verdict, right or wrong.
+    // The scale's own check is the verdict, right or wrong.
     progress.commitCheck?.(describeVerify(answer), correct);
     const attempts = currentAttempts + 1;
 
@@ -600,7 +491,6 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
       SoundManager.playCorrect();
       setFeedback(`Correct! x = ${activeVariableValue}`);
       setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student verified x = ${activeVariableValue}. Celebrate!`, { silent: true });
 
       // Standard per-challenge score (PRD §6a #11): 100 first try, -20 per extra, floor 20.
       const score = correct ? Math.max(20, 100 - (attempts - 1) * 20) : 0;
@@ -619,30 +509,13 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
       SoundManager.playIncorrect();
       setFeedback(`${answer} is not correct. Check your work!`);
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student guessed x = ${answer} but it's ${activeVariableValue}. `
-        + `Hint: "Substitute your answer back into the original equation. Does it balance?"`
-        + tutorTierClause,
-        { silent: true }
-      );
     }
-  }, [verifyInput, activeVariableValue, currentAttempts, challenges.length, currentChallenge, currentChallengeIndex, userSteps.length, recordResult, incrementAttempts, sendText, tutorTierClause, progress, tutorOwned]);
-
-  // Challenge advance — per-challenge UI reset is handled by the reset useEffect.
-  const advanceChallenge = useCallback(() => {
-    if (advanceProgress()) {
-      const nextIdx = currentChallengeIndex + 1;
-      sendText(
-        `[NEXT_ITEM] Equation ${nextIdx + 1} of ${challenges.length}: "${challenges[nextIdx]?.instruction}". Introduce briefly.`,
-        { silent: true },
-      );
-    }
-  }, [advanceProgress, currentChallengeIndex, challenges, sendText]);
+  }, [verifyInput, activeVariableValue, currentAttempts, challenges.length, currentChallenge, currentChallengeIndex, userSteps.length, recordResult, incrementAttempts, progress]);
 
   // Session-complete: build flattened metrics and submit exactly once.
   useEffect(() => {
-    // The live host has no evaluation provider; the workspace summary stands in for it there.
-    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0 || progress.recordsEvaluation === false) return;
+    // The live host has no evaluation provider; the workspace submits only under one.
+    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0 || !progress.recordsEvaluation) return;
 
     const total = challenges.length;
     const correctCount = challengeResults.filter((r) => r.correct).length;
@@ -662,19 +535,14 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
       correctCount,
       attemptsCount,
       firstTryCount,
-      hintsViewed: hintsViewedRef.current,
+      hintsViewed: 0,
       overallAccuracy: avgScore,
       averageAttemptsPerChallenge: Math.round((attemptsCount / total) * 10) / 10,
     };
 
     const goalMet = correctCount === total;
     submitEvaluation(goalMet, avgScore, metrics, { challengeResults });
-
-    sendText(
-      `[ALL_COMPLETE] All ${total} equations done. Correct: ${correctCount}/${total}. First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give encouraging summary.`,
-      { silent: true },
-    );
-  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText, progress.recordsEvaluation]);
+  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, progress.recordsEvaluation]);
 
   const handleReset = useCallback(() => {
     if (learnerBlocked()) return;
@@ -687,21 +555,9 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     setFeedback('');
     setFeedbackType('');
     setVerifyInput('');
-    setShowSolution(false);
     setSelectedOp(null);
     setOpValue('');
   }, [currentChallenge, initialLeft, initialRight]);
-
-  const toggleShowSolution = useCallback(() => {
-    setShowSolution((prev) => {
-      const next = !prev;
-      if (next && !hintViewedRef.current) {
-        hintViewedRef.current = true;
-        hintsViewedRef.current += 1;
-      }
-      return next;
-    });
-  }, []);
 
   const isCurrentComplete = challenges.length > 0 && challengeResults.length > currentChallengeIndex && challengeResults[currentChallengeIndex]?.correct;
 
@@ -727,9 +583,9 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
       ? 'bg-gradient-to-br from-purple-500/80 to-pink-500/80 border-purple-400/50'
       : 'bg-gradient-to-br from-blue-500/80 to-cyan-500/80 border-blue-400/50';
 
-  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // What the tutor and the observer are shown, republished every render.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge) return;
+    if (!currentChallenge) return;
     workspace.current = { ...plainScene(currentChallenge, { left: currentLeft, right: currentRight, phase, steps: userSteps.length }),
       demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
     progress.publishWorkspace?.();
@@ -963,24 +819,6 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
           </div>
         )}
 
-        {/* Solution reveal */}
-        {isSolved && !tutorOwned && (
-          <div className="flex justify-center">
-            <LuminaButton
-              tone="subtle"
-              size="sm"
-              className="text-xs text-purple-300"
-              onClick={toggleShowSolution}
-            >
-              {showSolution ? 'Hide' : 'Show'} Answer
-            </LuminaButton>
-          </div>
-        )}
-        {showSolution && (
-          <div className="text-center">
-            <span className="text-purple-300 font-mono font-bold text-xl">x = {activeVariableValue}</span>
-          </div>
-        )}
 
         {/* Steps History */}
         {userSteps.length > 0 && (
@@ -1006,11 +844,6 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
 
         {/* Controls */}
         <div className="flex justify-center gap-2">
-          {!tutorOwned && isCurrentComplete && !allChallengesComplete && (
-            <LuminaActionButton action="next" onClick={advanceChallenge}>
-              Next Equation →
-            </LuminaActionButton>
-          )}
           <LuminaButton
             tone="ghost"
             size="sm"
@@ -1026,7 +859,7 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
               size="sm"
               className="text-xs"
               disabled={learnerBlocked()}
-              onClick={() => { if (learnerBlocked()) return; setPhase('solve'); sendText('[PHASE_TRANSITION] Student ready to solve. Guide first step.', { silent: true }); }}
+              onClick={() => { if (learnerBlocked()) return; setPhase('solve'); }}
             >
               Start Solving
             </LuminaButton>
@@ -1055,14 +888,13 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
   );
 };
 
-// The workspace path never runs the legacy AI context or the primitive's own Next beside the tutor.
-const BalanceScale = withWorkspaceController<BalanceScaleProps, ProgressOptions<BalanceScaleChallenge>, Progress>(
-  'balance-scale', BalanceScaleSurface, useScriptedProgress, useWorkspaceProgressFor('balance-scale'));
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const BalanceScale = withWorkspaceOnly<BalanceScaleProps>('balance-scale', BalanceScaleSurface, props => props.data.title);
 
 /**
  * Three surfaces, one family: the route is by DATA, and each surface is its own
- * `withWorkspaceController`, so every surface binds the teaching workspace under tutor
- * ownership and keeps its scripted controller otherwise.
+ * `withWorkspaceOnly`, so every route renders on the teaching workspace or, unbound, the
+ * "needs the tutor" card. There is no scripted fallback.
  */
 const BalanceScaleWithEqualityPilot: React.FC<BalanceScaleProps> = (props) =>
   usesBalanceWorkshop(props.data) ? <BalanceScaleWorkshop {...props} />

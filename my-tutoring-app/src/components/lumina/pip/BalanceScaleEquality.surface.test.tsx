@@ -2,34 +2,35 @@
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { JudgedScriptRunnerOptions } from '../hooks/useJudgedScriptRunner';
-import type { EqualityItem } from '../primitives/visual-primitives/math/balanceEqualityScript';
 import type { BalanceScaleData } from '../primitives/visual-primitives/math/BalanceScale';
+import type { WorkspaceInput } from '../components/live-activity/runtime/contract';
 import { PipSurfaceContext } from './PipSurfaceContext';
 import { PipSurfaceStore } from './PipSurfaceStore';
+import { LiveLessonRuntime } from '../components/live-activity/runtime/LiveLessonRuntime';
+import { LiveRuntimeContext } from '../components/live-activity/runtime/LiveRuntimeContext';
+import { LiveRuntimeSurface } from '../components/live-activity/runtime/LiveRuntimeSurface';
 
-const phase = vi.hoisted(() => ({ index: 0, tutorSpeaking: false, stage: 'asking', currentSolved: false, revealHeld: false,
-  options: null as JudgedScriptRunnerOptions<EqualityItem> | null }));
-vi.mock('../hooks/useJudgedScriptRunner', () => ({
-  useJudgedScriptRunner: (options: JudgedScriptRunnerOptions<EqualityItem>) => {
-    phase.options = options;
-    const item = options.pack.items[phase.index];
-    return { currentItem: item, currentIndex: phase.index, cuedItemId: item?.id, running: true, preparing: false,
-      tutorSpeaking: phase.tutorSpeaking, stage: phase.stage, currentSolved: phase.currentSolved, revealHeld: phase.revealHeld,
-      canAttempt: phase.stage !== 'judging' && !phase.currentSolved, solvedIds: new Set<string>(),
-      start: vi.fn(), hearStimulus: vi.fn(), armStillness: vi.fn(), clearStillness: vi.fn(),
-      isAwaitingGesture: () => phase.stage === 'judging', submitGestureAttempt: vi.fn(),
-      loop: { queueCue: vi.fn(), clearQueuedCue: vi.fn() } };
-  },
+// Balance scale runs only on the teaching workspace, so Pip is exercised there: the runtime owns
+// progression, and the tutor's audio is the Live context's.
+const tutor = vi.hoisted(() => ({ isAudioPlaying: false, activePrimitiveId: 'balance', conversation: [] as any[] }));
+vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
+  isConnected: true, isListening: true, sessionMode: 'lesson', sendText: vi.fn(),
+  sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} }, ...tutor,
+}) }));
+vi.mock('../evaluation', () => ({
+  useEvaluationContext: () => null,
+  usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: vi.fn() }),
 }));
-vi.mock('../evaluation', () => ({ usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: vi.fn() }) }));
 vi.mock('../components/DiActionPanel', () => ({ default: () => null }));
 vi.mock('../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => vi.fn() }) }));
 
 import BalanceScaleEquality from '../primitives/visual-primitives/math/BalanceScaleEquality';
 
-afterEach(cleanup);
-beforeEach(() => { Object.assign(phase, { index: 0, tutorSpeaking: false, stage: 'asking', currentSolved: false, revealHeld: false }); });
+beforeEach(() => {
+  vi.useFakeTimers();
+  Object.assign(tutor, { isAudioPlaying: false, activePrimitiveId: 'balance', conversation: [] });
+});
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 const data: BalanceScaleData = { title: 'Keep It Balanced', description: '', gradeBand: 'K-2', leftSide: [], rightSide: [], variableValue: 5,
   instanceId: 'balance', challenges: [
@@ -40,58 +41,81 @@ const data: BalanceScaleData = { title: 'Keep It Balanced', description: '', gra
 function mount() {
   const store = new PipSurfaceStore();
   store.setActive('balance');
-  const ui = () => <PipSurfaceContext.Provider value={store}><BalanceScaleEquality data={data} /></PipSurfaceContext.Provider>;
+  const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
+  const ui = () => <PipSurfaceContext.Provider value={store}><LiveRuntimeContext.Provider value={runtime}>
+    <LiveRuntimeSurface runtime={runtime}>
+      <BalanceScaleEquality data={data} runtimePlanItemId="plan-balance" runtimeEvalMode="equality" />
+    </LiveRuntimeSurface></LiveRuntimeContext.Provider></PipSurfaceContext.Provider>;
   const view = render(ui());
   const refresh = () => view.rerender(ui());
-  const open = (index: number) => {
-    phase.index = index; phase.stage = 'asking'; phase.currentSolved = false;
-    act(() => phase.options?.onItemOpened?.(phase.options.pack.items[index], index));
+  const speak = (on: boolean) => { tutor.isAudioPlaying = on; refresh(); };
+  const state = () => runtime.getSnapshot();
+  let lastCommand = '';
+  const dispatch = (name: string, input?: WorkspaceInput) => {
+    const s = state();
+    const a = s.affordances.find(x => x.action.type === name || x.action.type === 'workspace' && x.action.operation === name);
+    expect(a, `missing action ${name}`).toBeTruthy();
+    lastCommand = crypto.randomUUID();
+    act(() => { runtime.dispatch({ sessionEpoch: 'test', commandId: lastCommand, instanceId: 'balance', itemId: s.task!.itemId,
+      expectedRevision: s.revision, action: { ...a!.action, ...(input ? { input } : {}) } }); });
   };
-  act(() => phase.options?.onItemOpened?.(phase.options.pack.items[0], 0));
-  return { store, refresh, open, ...view };
+  const confirmVisible = () => act(() => { runtime.confirmVisibleResponse(lastCommand); });
+  /** Advance a solved item and show its receipt, as the shell does. */
+  const next = () => { dispatch('advance'); confirmVisible(); };
+  /** The learner says the answer and the tutor affirms it and moves on. */
+  const answer = (text: string) => {
+    act(() => { tutor.conversation = [...tutor.conversation, { role: 'user', content: text, timestamp: tutor.conversation.length + 1 }]; refresh(); });
+    dispatch('apply_tutor_verdict', { dialogue: { responseId: state().task!.workspace!.pendingResponse!.id, verdict: 'correct',
+      transition: 'advance', tutor: 'Yes, that is right.' } });
+    confirmVisible();
+  };
+  const press = (name: string) => act(() => { fireEvent.click(screen.getByRole('button', { name })); });
+  /** Load the right pan to the target and let it settle, so the build step commits. */
+  const balance = (weights: number[]) => { for (const w of weights) press(`Add ${w} weight`); act(() => { vi.advanceTimersByTime(900); }); };
+  return { store, speak, state, next, answer, press, balance, ...view };
 }
 const pose = (store: PipSurfaceStore) => store.getActive()?.pose;
 
-describe('Balance Scale (equality) drives Pip from its judged phases', () => {
-  it('build: points at the right pan, never a tray weight; follows the child’s weights; receives the settled pan', () => {
-    phase.tutorSpeaking = true;
-    const { store, refresh, container } = mount();
+describe('Balance Scale (equality) drives Pip from its workspace phases', () => {
+  it('build: points at the right pan, never a tray weight; follows the child’s weights; celebrates the settled balance', () => {
+    const { store, speak, press, container } = mount();
+    speak(true);
     const dock = container.querySelector('[data-pip-dock="balance"]')!;
     expect(dock).not.toBeNull();
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'right' });
     expect(dock.compareDocumentPosition(container.querySelector('[data-pip-object="tray"]')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    phase.tutorSpeaking = false; refresh();
-    fireEvent.click(screen.getByRole('button', { name: 'Add 3 weight' }));
+    speak(false);
+    press('Add 3 weight');
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'right' });
-    fireEvent.click(screen.getByRole('button', { name: 'Remove 3 weight, block 0' }));
+    press('Remove 3 weight, block 0');
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'tray' });
-    phase.stage = 'judging'; refresh();
-    expect(pose(store)).toEqual({ phase: 'checking', gesture: 'receive', targetId: 'tray' });
-    phase.currentSolved = true; refresh();
+    press('Add 5 weight');
+    act(() => { vi.advanceTimersByTime(900); });
     expect(pose(store)).toEqual({ phase: 'celebrating', gesture: 'none' });
   });
 
-  it('total: points at the gathered weights (no total printed) and keeps watching them while the spoken sum is judged', () => {
-    const { store, refresh, open, container } = mount();
-    open(1);
-    phase.tutorSpeaking = true; refresh();
+  it('total: points at the gathered weights (no total printed); the tray is gone', () => {
+    const { store, speak, balance, next, state, container } = mount();
+    balance([5]); next();
+    expect(state().task!.itemId).toBe('balance-1-total');
+    speak(true);
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'sum' });
     expect(container.querySelector('[data-pip-object="tray"]')).toBeNull();
-    phase.tutorSpeaking = false; phase.stage = 'judging'; refresh();
-    expect(pose(store)).toEqual({ phase: 'checking', gesture: 'look', targetId: 'sum' });
   });
 
   it('infer: points at the left weight, whose number stays hidden; a new problem drops the child’s last touch', () => {
-    const { store, refresh, open, container, unmount } = mount();
-    fireEvent.click(screen.getByRole('button', { name: 'Add 2 weight' }));
+    const { store, speak, press, balance, next, answer, state, container, unmount } = mount();
+    press('Add 2 weight');
     expect(pose(store)?.targetId).toBe('right');
-    open(2);
-    phase.tutorSpeaking = true; refresh();
+    balance([3]); next();
+    answer('five');
+    expect(state().task!.itemId).toBe('balance-1-infer');
+    speak(true);
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'left' });
     expect(container.querySelector('[data-pip-object="left"]')?.textContent).toBe('');
-    phase.tutorSpeaking = false;
-    open(3); refresh();
-    expect(store.getActive()?.scopeId).toBe(phase.options?.pack.items[3].id);
+    speak(false);
+    answer('five');
+    expect(store.getActive()?.scopeId).toBe('balance-2-build');
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'none' });
     unmount();
     expect(store.getActive()).toBeNull();

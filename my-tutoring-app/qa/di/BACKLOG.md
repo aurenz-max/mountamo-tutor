@@ -4389,6 +4389,8 @@ mat. Live mic/touch acceptance = HUMAN-CHECKS **#155**.
 colon, so their verdict lines are invisible to `spokenSpansOf` the same way. number-bond
 has a registered adapter, so its drive plan is reading `correctionLine` as the ask today.
 QUEUED — executor `/eval-fix`, one-line change per file plus a bite in each pack's suite.
+(09-23: `balanceWorkshopScript.ts` is deleted with balance-scale's scripted path; only the two
+number-bond files remain.)
 
 
 **2026-09-11 ? Number Sequencer DI implemented (user-selected next math modernization).**

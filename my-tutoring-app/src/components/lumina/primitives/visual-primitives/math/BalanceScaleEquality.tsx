@@ -7,20 +7,17 @@ import { LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardContent, Lumin
 import DiActionPanel from '../../../components/DiActionPanel';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { BalanceScaleMetrics } from '../../../evaluation/types';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { commitGesture } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { useScriptedBalance, workspaceBalance, type BalanceControllerOptions, type BalanceFinish, type BalanceRun } from './balanceScaleControllers';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { equalityAssignment, equalityScene } from './balanceScaleWorkspace';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { balanceEqualityPipPose } from '../../../pip/balanceEqualityPipPose';
 import type { BalanceScaleData } from './BalanceScale';
-import { addWeight, removeWeight, balanceState, describeBoard, equalityFeedback, equalityProblem, initialBoard,
-  demonstratedBoard, isMatched, WEIGHTS, type WeightBlock, type EqualityBoard, type EqualityChange } from './balanceEqualityModel';
-import { equalityItems, equalityItemCue, equalityChangeCue, equalityCheckCue, equalityCompleteCue,
-  equalityHearCue, equalityMoveCue, type EqualityItem } from './balanceEqualityScript';
+import { addWeight, removeWeight, balanceState, equalityFeedback, equalityItems, equalityProblem, initialBoard,
+  demonstratedBoard, isMatched, WEIGHTS, type WeightBlock, type EqualityBoard, type EqualityChange, type EqualityItem }
+  from './balanceEqualityModel';
 
 const PIP_LABELS: Record<string, string> = { left: 'Left weight', right: 'Right pan', sum: 'Right-side weights', tray: 'Weight tray' };
 
@@ -31,10 +28,8 @@ export interface BalanceSurfaceProps {
   /** The RESOLVED plan mode, kept exactly as mounted. */
   runtimeEvalMode?: string;
 }
-type EqualityOptions = BalanceControllerOptions<EqualityItem>;
 
-function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
-  BalanceSurfaceProps & { tutorOwned: boolean; useController: (options: EqualityOptions) => BalanceRun<EqualityItem> }) {
+function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId, runtimeEvalMode }: BalanceSurfaceProps) {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [affirmedIds, setAffirmedIds] = useState<ReadonlySet<string>>(new Set());
   const built = useMemo(() => {
@@ -56,39 +51,7 @@ function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId, runti
     instanceId: instance.current, skillId: data.skillId, subskillId: data.subskillId,
     objectiveId: data.objectiveId, exhibitId: data.exhibitId, onSubmit: data.onEvaluationSubmit });
 
-  const pack = useMemo<JudgedScriptPack<EqualityItem> | undefined>(() => tutorOwned ? undefined : ({
-    primitiveType: 'balance-scale', activityLine: 'match a weight, compose the chosen weights, and infer equal weight', items,
-    itemCue: (item, opts) => equalityItemCue(item, opts, boardFor(item)),
-    pronounceCue: (item) => equalityHearCue(item, boardFor(item)),
-    moveOnCue: (item, next) => equalityMoveCue(item, next, next ? boardFor(next) : undefined),
-    completeCue: equalityCompleteCue,
-    contextFor: (item) => ({
-      title: data.title, challengeType: item.problem.mode, phase: item.step,
-      currentChallengeIndex: String(built.problems.findIndex((problem) => problem.id === item.problem.id) + 1),
-      totalChallenges: String(built.problems.length),
-      currentEquation: describeBoard(item.problem, boardFor(item)),
-      targetEquation: 'Match the left block, add the right weights, then infer the left weight.',
-      variableValue: 'withheld; use only the current scripted judging cue', gradeBand: data.gradeBand ?? 'K-2',
-      stepCount: String(histories.current[item.problem.id]?.length ?? 0),
-      isSolved: String(isMatched(item.problem, boardFor(item))),
-      isBalanced: String(balanceState(item.problem, boardFor(item)) === 'balanced'), attemptNumber: '0',
-    }),
-    statusLines: {
-      idle: 'Start the tutor to explore the scale.', ready: (item) => item.actionContract.instruction,
-      retry: (item) => item.step === 'build' ? 'Try changing the weights on the right.' : 'Have another go aloud.',
-      noVerdict: () => 'Take your time. Tell me when you are ready.',
-      affirmedNext: 'Ready for the next step.', affirmedLast: 'You finished the balance practice.',
-      done: 'Nice work with the scale!',
-    },
-    // One record per spoken attempt, right or corrected: the ask and the scale as it stands, and what was heard.
-    // The build step is ungraded exploration, so it records nothing. Never the verdict.
-    observation: (item, { heard }) => item.step === 'build' ? null : ({
-      challenge: `${item.step}: ${item.actionContract.instruction} On the scale: ${describeBoard(item.problem, boardFor(item))}`,
-      expected: String(item.problem.target), observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
-    }),
-  }), [items, built.problems, data.title, data.gradeBand, tutorOwned]);
-
-  const finish = (summary: BalanceFinish) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const results = built.problems.map((problem) => {
       const build = summary.outcomes.find((outcome) => outcome.id === `${problem.id}-build`);
       const total = summary.outcomes.find((outcome) => outcome.id === `${problem.id}-total`);
@@ -107,17 +70,19 @@ function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId, runti
       attemptsCount: attempts, firstTryCount: results.filter((result) => result.score === 100).length,
       hintsViewed: helped.current.size, overallAccuracy: accuracy,
       averageAttemptsPerChallenge: attempts / Math.max(1, results.length) };
-    // The runner owns the evidence (first-response share, kept phases); the shared capture gate decides.
+    // The workspace owns the evidence (first-response share, kept phases); the shared capture gate decides.
     evaluation.submitResult(accuracy >= 60, accuracy, metrics,
       { interactionVersion: 'match-compose-infer-di-v2', scoringBasis: 'spoken-sum-and-weight-inference',
         explorationIsUngraded: true, results, learningResponses: summary.learningResponses,
-        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
+        teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
       undefined, summary.diagnosisEvidence);
   };
 
-  const runner = useController({ pack, items, workspace, instanceId: instance.current, objectiveId: data.objectiveId,
-    planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || 'equality',
-    gradeLevel: data.gradeLevel ?? 'elementary', exhibitId: data.exhibitId, silenceCloseMs: 1100, onFinished: finish,
+  // The teaching workspace is the only controller: the runtime owns progression, and `finish` runs
+  // only under an evaluation provider.
+  const runner = useWorkspaceRunner<EqualityItem>({ primitiveId: 'balance-scale', assignment: equalityAssignment, items, workspace,
+    instanceId: instance.current, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || 'equality', onFinished: finish,
     onAffirmed: (done) => setAffirmedIds((prev) => new Set(prev).add(done.id)),
     onItemOpened: (item, index) => {
       pip.clear();
@@ -149,7 +114,8 @@ function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId, runti
     const pose = balanceEqualityPipPose({
       running: runner.running, preparing: runner.preparing,
       currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      // The tutor judges speech on the workspace; the surface has no judging stage of its own.
+      judging: false, tutorSpeaking: runner.tutorSpeaking,
       cueMatchesItem: runner.cuedItemId === item.id,
       step: item.step, visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
     });
@@ -166,14 +132,12 @@ function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId, runti
     boards.current[item.problem.id] = next;
     setBoard(next);
     setFeedback(equalityFeedback(item.problem, next));
-    runner.loop?.clearQueuedCue();
-    // Wait for settled hands; only an exact match commits. Other moves are coaching (the scripted
-    // cue, or on the workspace the published scene the tutor reads).
+    // Wait for settled hands; only an exact match commits. Other moves are exploration the tutor
+    // reads from the published scene.
     runner.armStillness(() => {
       if (runner.isAwaitingGesture()) return;
-      if (isMatched(item.problem, next)) commitGesture(runner, { response: `Balanced the scale with right weights ${next.blocks
-        .map((block) => block.value).join(', ')}`, correct: true, cue: () => equalityCheckCue(item, next) });
-      else runner.loop?.queueCue(equalityChangeCue(item, next));
+      if (isMatched(item.problem, next)) runner.commitGesture({ response: `Balanced the scale with right weights ${next.blocks
+        .map((block) => block.value).join(', ')}`, correct: true, cue: () => '' });
     }, isMatched(item.problem, next) ? 900 : 1800);
     SoundManager.tap();
   };
@@ -189,13 +153,13 @@ function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId, runti
     if (block) { pip.look('tray'); publishBoard(removeWeight(current, id), `Removed a ${block.value} weight from the right`); }
   };
 
-  // Workspace path: what the tutor and the observer are shown, republished every render. W1 offers no
+  // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!tutorOwned || !item) return;
+    if (!item) return;
     workspace.current = { ...equalityScene(item, board), demonstration: [], canDemonstrate: false, canPresent: false,
       readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace?.();
+    runner.publishWorkspace();
   });
   // The live host has no evaluation provider, so the workspace's own summary ends the activity there.
   const finished = evaluation.hasSubmitted || !!runner.practiceSummary;
@@ -297,20 +261,15 @@ function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId, runti
           <p className="text-center text-sm text-slate-300" aria-live="polite">{feedback}</p>
         </div>}
         <DiActionPanel run={runner} running={runner.running} stage={runner.stage} currentItem={item}
-          steps={items.filter((step) => step.problem.id === item.problem.id)} completedIds={runner.solvedIds ?? affirmedIds}
-          carriedIds={new Set(items.filter((step, index) => index < runner.currentIndex && !(runner.solvedIds ?? affirmedIds).has(step.id)).map((step) => step.id))}
+          steps={items.filter((step) => step.problem.id === item.problem.id)} completedIds={affirmedIds}
+          carriedIds={new Set(items.filter((step, index) => index < runner.currentIndex && !affirmedIds.has(step.id)).map((step) => step.id))}
           startInstruction="Start the tutor, then put weights on the right to balance the scale." />
-        {/* With the tutor (no `hearStimulus`), the learner asks the tutor to repeat. */}
-        {runner.hearStimulus && <button type="button" disabled={!runner.running} onClick={runner.hearStimulus}
-          className="block mx-auto text-sm text-cyan-300 underline disabled:opacity-40">Say that again</button>}
       </>}
     </LuminaCardContent>
   </LuminaCard>;
 }
 
-const useWorkspaceEquality = workspaceBalance<EqualityItem>(equalityAssignment);
-
-// The workspace path never mounts the runner, whose context push and cue loop would run beside the tutor.
-const BalanceScaleEquality = withWorkspaceController<BalanceSurfaceProps, EqualityOptions, BalanceRun<EqualityItem>>(
-  'balance-scale', BalanceScaleEqualitySurface, useScriptedBalance<EqualityItem>, useWorkspaceEquality);
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const BalanceScaleEquality = withWorkspaceOnly<BalanceSurfaceProps>('balance-scale', BalanceScaleEqualitySurface,
+  props => props.data.title);
 export default BalanceScaleEquality;

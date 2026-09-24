@@ -2,20 +2,17 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardContent, LuminaChallengeCounter } from '../../../ui';
 import DiActionPanel from '../../../components/DiActionPanel';
-import { useJudgedScriptRunner, type JudgedRunSummary, type JudgedScriptRunnerOptions } from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { FractionCirclesMetrics } from '../../../evaluation/types';
 import type { FractionCirclesData } from './FractionCircles';
-import { buildFractionTouchItems, fractionTouchPack, fractionTouchVerdictCue, type FractionPicture, type FractionTouchItem } from './fractionTouchScript';
-import { describeTouch, touchAssignment, touchMatches, touchScene } from './fractionCirclesWorkspace';
+import { buildFractionTouchItems, describeTouch, touchAssignment, touchMatches, touchScene, type FractionPicture }
+  from './fractionCirclesWorkspace';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { stimulusPipPose } from '../../../pip/stimulusPipPose';
 import { PIP_DOCK_CLASS } from '../../../pip/useWorkspacePipSurface';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
 
 export function FractionTouchPicture({ picture }: { picture: FractionPicture }) {
   const r = 66, center = 72;
@@ -35,32 +32,15 @@ export interface FractionTouchProps {
   localOnly?: boolean;
   runtimePlanItemId?: string;
   runtimeEvalMode?: string;
-  /** Workspace path only: this surface's teaching session settled (the mixed chain's cue to move on). */
+  /** This surface's teaching session settled (the mixed chain's cue to move on). */
   onWorkspaceFinished?: () => void;
 }
 
-/** What the metrics read, from either controller's finished record. */
-type FractionTouchFinish = Pick<JudgedRunSummary, 'passed' | 'accuracy' | 'solvedCount' | 'attemptsCount' | 'outcomes'
-  | 'learningResponses' | 'diagnosisEvidence'> & { teachingAttempts?: unknown; assistanceProvenance?: string };
-
-/** The scripted runner's options beside the workspace controller's (place-value-chart's shape). */
-type FractionTouchControllerOptions = Omit<WorkspaceRunOptions<FractionTouchItem>, 'primitiveId' | 'assignment' | 'onFinished'>
-  & Omit<JudgedScriptRunnerOptions<FractionTouchItem>, 'pack' | 'instanceId' | 'onItemOpened' | 'onFinished'>
-  & { pack?: JudgedScriptPack<FractionTouchItem>; onFinished: (summary: FractionTouchFinish) => void };
-type FractionTouchRun = LiveRun<FractionTouchItem> & { solvedIds?: ReadonlySet<string> };
-
-const useScriptedController = (options: FractionTouchControllerOptions): FractionTouchRun =>
-  useJudgedScriptRunner<FractionTouchItem>({ ...options, pack: options.pack! });
-
-const useWorkspaceController = (options: FractionTouchControllerOptions): FractionTouchRun =>
-  useWorkspaceRunner<FractionTouchItem>({ ...options, primitiveId: 'fraction-circles', assignment: touchAssignment });
-
-function FractionTouchSurface({ data, className, localOnly = false, runtimePlanItemId, runtimeEvalMode, onWorkspaceFinished,
-  tutorOwned, useController }: FractionTouchProps & { tutorOwned: boolean; useController: (options: FractionTouchControllerOptions) => FractionTouchRun }) {
+/** The teaching workspace is touch_fraction's only controller: the tutor says the fraction, the runtime owns progression. */
+function FractionTouchSurface({ data, className, localOnly = false, runtimePlanItemId, runtimeEvalMode, onWorkspaceFinished }: FractionTouchProps) {
   const instance = useRef(data.instanceId ?? `fraction-touch-${Date.now()}`);
   const workspace = useRef<TeachingWorkspace | null>(null);
   const items = useMemo(() => buildFractionTouchItems(data.challenges), [data.challenges]);
-  const lastTap = useRef<string | null>(null);
   const taps = useRef<Record<string, string[]>>({});
   const [selected, setSelected] = useState<string | null>(null);
   const evaluation = usePrimitiveEvaluation<FractionCirclesMetrics>({
@@ -68,25 +48,25 @@ function FractionTouchSurface({ data, className, localOnly = false, runtimePlanI
     skillId: data.skillId, subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId,
     onSubmit: data.onEvaluationSubmit,
   });
-  const pack = useMemo(() => tutorOwned ? undefined : fractionTouchPack(items, () => lastTap.current), [items, tutorOwned]);
-  const finished = useCallback((summary: FractionTouchFinish) => {
+  // Called once, with the finished record, and only under an evaluation provider.
+  const finished = useCallback((summary: TeachingEvaluationResult) => {
     evaluation.submitResult(summary.passed, summary.accuracy, {
       type: 'fraction-circles', evalMode: 'touch_fraction', totalChallenges: items.length,
       correctCount: summary.solvedCount, accuracy: summary.accuracy, touchFractionAccuracy: summary.accuracy,
       identifyAccuracy: 0, buildAccuracy: 0, compareAccuracy: 0, equivalentAccuracy: 0, attemptsCount: summary.attemptsCount,
     }, { challengeResults: summary.outcomes, pictures: items, taps: taps.current,
       learningResponses: summary.learningResponses,
-      ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}),
+      teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance,
     }, undefined, summary.diagnosisEvidence);
   }, [evaluation, items]);
-  const resetTap = () => { lastTap.current = null; setSelected(null); pip.clear(); };
-  const runner = useController({ pack, items, workspace, instanceId: instance.current,
-    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || 'touch_fraction',
-    gradeLevel: data.gradeBand === '3-5' ? '3' : '1', exhibitId: data.exhibitId,
+  const resetTap = () => { setSelected(null); pip.clear(); };
+  const runner = useWorkspaceRunner({ items, workspace, instanceId: instance.current, primitiveId: 'fraction-circles',
+    assignment: touchAssignment, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || 'touch_fraction',
     onFinished: finished, onItemOpened: resetTap, onCorrectionRetry: resetTap,
   });
   const item = runner.currentItem ?? items[0];
-  // The workspace path shows its finish without an evaluation provider (the live host has none).
+  // The finish shows without an evaluation provider (the live host has none).
   const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
   const finishedRef = useRef(onWorkspaceFinished); finishedRef.current = onWorkspaceFinished;
   const reportedFinish = useRef(false);
@@ -104,19 +84,20 @@ function FractionTouchSurface({ data, className, localOnly = false, runtimePlanI
     const pose = stimulusPipPose({
       running: runner.running, preparing: runner.preparing,
       currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      // The workspace judges no speech here: a touch is checked by code at once.
+      judging: false, tutorSpeaking: runner.tutorSpeaking,
       cueMatchesItem: runner.cuedItemId === item.id, gesture: true,
       visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
     });
     return { instanceId: instance.current, scopeId: item.id, label: 'Fraction pictures', dock: pip.dock.current, targets, pose };
   });
-  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation; the pictures show from the start.
   useLayoutEffect(() => {
-    if (!tutorOwned || !item) return;
+    if (!item) return;
     workspace.current = { ...touchScene(item), demonstration: [], canDemonstrate: false, canPresent: false,
       readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace?.();
+    runner.publishWorkspace();
   });
   if (!item) return <p>No fraction pictures are available.</p>;
   // A picture's object id names what it shows (as its aria-label does), never whether it matches.
@@ -125,10 +106,9 @@ function FractionTouchSurface({ data, className, localOnly = false, runtimePlanI
     const id = picture.id;
     if (!runner.canAttempt || runner.isAwaitingGesture() || evaluation.hasSubmitted) return;
     pip.look(pictureObject(picture));
-    lastTap.current = id; setSelected(id);
+    setSelected(id);
     (taps.current[item.id] ??= []).push(id);
-    commitGesture(runner, { response: describeTouch(item, id), correct: touchMatches(item, id),
-      cue: () => fractionTouchVerdictCue(item, id) });
+    runner.commitGesture({ response: describeTouch(item, id), correct: touchMatches(item, id), cue: () => '' });
   };
   return <LuminaCard className={className} surface="elevated">
     <LuminaCardHeader><LuminaCardTitle>Touch the Fraction</LuminaCardTitle></LuminaCardHeader>
@@ -147,15 +127,12 @@ function FractionTouchSurface({ data, className, localOnly = false, runtimePlanI
           </button>)}
         </div>
         <DiActionPanel run={runner} running={runner.running} stage={runner.stage} currentItem={item} steps={[item]}
-          completedIds={runner.solvedIds} startInstruction="Start the tutor. Listen, then touch the matching picture." />
-        {/* With the tutor (no `hearStimulus`), the learner asks the tutor to say it again. */}
-        {runner.hearStimulus && <button type="button" disabled={!runner.running} onClick={runner.hearStimulus} className="mx-auto block text-sm text-sky-300 underline disabled:opacity-40">Say that again</button>}
+          startInstruction="Start the tutor. Listen, then touch the matching picture." />
       </>}
     </LuminaCardContent>
   </LuminaCard>;
 }
 
-// The workspace path never mounts the runner, whose cue loop would run beside the tutor.
-const FractionTouch = withWorkspaceController<FractionTouchProps, FractionTouchControllerOptions, FractionTouchRun>(
-  'fraction-circles', FractionTouchSurface, useScriptedController, useWorkspaceController);
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const FractionTouch = withWorkspaceOnly<FractionTouchProps>('fraction-circles', FractionTouchSurface, props => props.data.title);
 export default FractionTouch;

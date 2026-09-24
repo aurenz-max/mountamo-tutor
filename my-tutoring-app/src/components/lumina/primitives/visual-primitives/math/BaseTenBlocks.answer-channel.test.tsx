@@ -1,50 +1,37 @@
 // @vitest-environment jsdom
 /**
- * BaseTenBlocks — the answer channel per challenge type (BT-4), driven.
+ * BaseTenBlocks — the answer channel per challenge type (BT-4), driven on the teaching workspace,
+ * the primitive's only teaching path.
  *
- * WHY A COMPONENT TEST: before this slice every mode answered through a number
- * keypad, including `build_number` — whose target is NAMED in its own instruction
- * ("Build the number 12") and echoed by the "Blocks Total" panel. A student could
- * type 12 without ever touching a block, and a student who piled up 12 unit cubes
- * was marked correct without ever showing the ten. Both are runtime behaviors that
- * `tsc` and the generator suite are blind to (CLAUDE.md verification doctrine), so
- * the judgement is exercised here against the real component.
+ * WHY A COMPONENT TEST: every mode once answered through a number keypad, including
+ * `build_number` — whose target is NAMED in its own instruction ("Build the number 12") and
+ * echoed by the "Blocks Total" panel. A student could type 12 without ever touching a block, and
+ * a student who piled up 12 unit cubes was marked correct without ever showing the ten. Both are
+ * runtime behaviors that `tsc` and the generator suite are blind to, so the judgement is exercised
+ * here against the real component.
  *
- * The rule under test: the blocks are the answer when the value is already on
- * screen (build_number, regroup); the keypad survives only where the student must
- * read (read_blocks) or compute (add/subtract) a number the screen does not state.
+ * The rule under test: the blocks are the answer when the value is already on screen
+ * (build_number, and regroup on a mixed deck); the keypad survives only where the student must
+ * read or compute a number the screen does not state. Homogeneous read_blocks and regroup decks
+ * route to the spoken mat, whose behaviour is pinned in `BaseTenBlocks.workspace.test.tsx`.
  */
 import React from 'react';
 import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import BaseTenBlocks, { type BaseTenBlocksChallenge, type BaseTenBlocksData } from './BaseTenBlocks';
+import { LiveLessonRuntime } from '../../../components/live-activity/runtime/LiveLessonRuntime';
+import { LiveRuntimeContext } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
 
-// The tutor socket, auth and the sound engine are not what is under test here.
-vi.mock('@/lib/firebase', () => ({
-  auth: { currentUser: null, onAuthStateChanged: () => () => {} },
-  db: {},
-  app: {},
-}));
-vi.mock('../../../hooks/useLuminaAI', () => ({
-  useLuminaAI: () => ({ sendText: vi.fn(), isConnected: false }),
-}));
+vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
+  isConnected: true, isListening: true, isAudioPlaying: false, sessionMode: 'lesson', activePrimitiveId: null,
+  conversation: [], sendText: vi.fn(), sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} },
+}) }));
+vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => null,
+  usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: vi.fn(), submittedResult: null, elapsedMs: 0 }) }));
 // jsdom has no canvas, and the completion panel's confetti runs on rAF past teardown.
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
-// The judged-loop stage needs the live tutor context and has its own suite
-// (`BaseTenBlocksDi.di-stage.test.tsx`). Here it is a routing marker.
-vi.mock('./BaseTenBlocksDi', () => ({
-  default: () => <div data-testid="di-stage" />,
-}));
-vi.mock('../../../utils/SoundManager', () => ({
-  SoundManager: {
-    playCorrect: vi.fn(), playIncorrect: vi.fn(), tick: vi.fn(), snap: vi.fn(),
-    tap: vi.fn(), select: vi.fn(),
-    // The completion panel reads these (a one-challenge deck finishes as soon as
-    // the answer is right, and its celebration fires on a post-teardown timer).
-    isEnabled: () => false, getVolume: () => 0, celebrate: vi.fn(), play: vi.fn(),
-    playPerfect: vi.fn(), playStreak: vi.fn(),
-  },
-}));
+vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => vi.fn() }) }));
+import BaseTenBlocks, { type BaseTenBlocksChallenge, type BaseTenBlocksData } from './BaseTenBlocks';
 
 afterEach(cleanup);
 
@@ -59,6 +46,14 @@ const deck = (challenge: BaseTenBlocksChallenge, over: Partial<BaseTenBlocksData
   ...over,
 });
 
+/** Mounted as a lesson binds it: inside a live runtime, pinned to the section's mode. */
+function renderBound(data: BaseTenBlocksData, pin: string) {
+  const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
+  return render(<LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
+    <BaseTenBlocks data={data} runtimePlanItemId="plan-blocks" runtimeEvalMode={pin} />
+  </LiveRuntimeSurface></LiveRuntimeContext.Provider>);
+}
+
 const BUILD_12: BaseTenBlocksChallenge = {
   type: 'build_number',
   instruction: 'Build the number 12 with blocks.',
@@ -72,7 +67,7 @@ const plus = (place: 'hundreds' | 'tens' | 'ones') =>
 
 describe('build_number — judged from the blocks, not a keypad', () => {
   it('shows a Check My Blocks button and NO number keypad', () => {
-    render(<BaseTenBlocks data={deck(BUILD_12)} />);
+    renderBound(deck(BUILD_12), 'build_number');
     expect(screen.getByRole('button', { name: /check my blocks/i })).toBeTruthy();
     // The keypad's digits and its clear key are gone.
     expect(screen.queryByRole('button', { name: '7' })).toBeNull();
@@ -80,17 +75,16 @@ describe('build_number — judged from the blocks, not a keypad', () => {
   });
 
   it('marks an empty / short build wrong instead of accepting a typed 12', () => {
-    render(<BaseTenBlocks data={deck(BUILD_12)} />);
+    renderBound(deck(BUILD_12), 'build_number');
     fireEvent.click(screen.getByRole('button', { name: /check my blocks/i }));
     expect(screen.getByText(/you need 12/i)).toBeTruthy();
     expect(screen.queryByText(/^Yes! 12 is/)).toBeNull();
   });
 
   it('rejects 12 unit cubes as NOT standard form and names the trade', () => {
-    render(<BaseTenBlocks data={deck(BUILD_12)} />);
+    renderBound(deck(BUILD_12), 'build_number');
     for (let i = 0; i < 12; i++) fireEvent.click(plus('ones'));
     // The value is right — the old keypad flow would have accepted this.
-    // ('12' shows twice: the ones-column count and the Blocks Total panel.)
     expect(screen.getAllByText('12').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /check my blocks/i }));
     expect(screen.getByText(/not with the fewest blocks/i)).toBeTruthy();
@@ -98,7 +92,7 @@ describe('build_number — judged from the blocks, not a keypad', () => {
   });
 
   it('accepts 1 ten + 2 ones, including via the trade button', async () => {
-    render(<BaseTenBlocks data={deck(BUILD_12)} />);
+    renderBound(deck(BUILD_12), 'build_number');
     for (let i = 0; i < 12; i++) fireEvent.click(plus('ones'));
     fireEvent.click(screen.getByRole('button', { name: /10 → 1 Tens/i }));
     // The regroup animation resolves on a 400ms timer.
@@ -108,7 +102,7 @@ describe('build_number — judged from the blocks, not a keypad', () => {
   });
 
   it('accepts a direct 1 ten + 2 ones build', () => {
-    render(<BaseTenBlocks data={deck(BUILD_12)} />);
+    renderBound(deck(BUILD_12), 'build_number');
     fireEvent.click(plus('tens'));
     fireEvent.click(plus('ones'));
     fireEvent.click(plus('ones'));
@@ -117,7 +111,7 @@ describe('build_number — judged from the blocks, not a keypad', () => {
   });
 
   it('withholds the running total in the wrong-answer feedback at the hard tier', () => {
-    render(<BaseTenBlocks data={deck({ ...BUILD_12, showColumnCounts: false, showBlocksTotal: false })} />);
+    renderBound(deck({ ...BUILD_12, showColumnCounts: false, showBlocksTotal: false }), 'build_number');
     fireEvent.click(plus('ones'));
     fireEvent.click(screen.getByRole('button', { name: /check my blocks/i }));
     expect(screen.getByText(/count each column again/i)).toBeTruthy();
@@ -125,29 +119,8 @@ describe('build_number — judged from the blocks, not a keypad', () => {
   });
 });
 
-/**
- * `regroup` and `read_blocks` LEFT THIS SURFACE on 2026-09-12 (qa/di/BACKLOG.md
- * item 18): both are judged-loop modes now and render `BaseTenBlocksDi`, so the
- * two describes that used to sit here — the trade's Check button and the
- * read keypad — were describing a UI those modes no longer have.
- *
- * NOTHING THEY PINNED WAS DROPPED. Each intent was re-based onto the surface it
- * still applies to:
- *
- *  · "asks the student to trade, not to type the number already on screen" and
- *    "accepts a value-preserving trade" → `BaseTenBlocksDi.di-stage.test.tsx`,
- *    strengthened: the Check button is gone too, so a wrong trade commits on
- *    stillness as a real wrong answer rather than waiting to be submitted.
- *  · "never states the target in the wrong-answer feedback" → the
- *    `add_with_blocks` describe below, which is where Channel B (the keypad for
- *    a number the screen does not state) still lives, AND widened to a pixel
- *    rule on the DI stage, where the column count is itself an answer.
- *
- * What belongs HERE is the routing: which modes leave, which stay, and what a
- * mixed deck does. The DI stage is stubbed for those cases — its behaviour is
- * its own suite's job, and mounting it needs the live tutor context.
- */
-describe('the staged port — which modes still answer on this surface', () => {
+/** Which surface a payload routes to: the spoken mat for a homogeneous askable read/regroup deck. */
+describe('the payload routes to one surface', () => {
   const REGROUP_25: BaseTenBlocksChallenge = {
     type: 'regroup',
     instruction: 'You have 2 tens and 5 ones. Trade 1 ten for 10 ones.',
@@ -160,33 +133,31 @@ describe('the staged port — which modes still answer on this surface', () => {
     targetNumber: 23,
     hint: 'Count each column.',
   };
+  const mat = () => document.querySelector('[data-base-ten-mat]')?.getAttribute('data-base-ten-mat');
 
   it.each([
     ['regroup', REGROUP_25],
     ['read_blocks', READ_23],
-  ])('a judged %s deck leaves this component entirely', (_type, challenge) => {
-    render(<BaseTenBlocks data={deck(challenge, { interactionMode: 'regroup' })} />);
-    expect(screen.getByTestId('di-stage')).toBeTruthy();
-    // Neither channel of the click era survives for these modes.
+  ] as const)('a homogeneous %s deck renders the spoken mat', (type, challenge) => {
+    renderBound(deck(challenge, { interactionMode: 'regroup' }), type);
+    expect(mat()).toBe('judged');
+    // Neither channel of the click mat survives for these modes.
     expect(screen.queryByRole('button', { name: /check my (blocks|trade)/i })).toBeNull();
     expect(screen.queryByRole('button', { name: '7' })).toBeNull();
   });
 
-  it('a MIXED deck keeps the whole deck on clicks — the transport cannot split mid-session', () => {
-    // The homogeneity rule the catalog's `audioInputByMode` resolver applies:
-    // the backend is told one transport for the payload, so one judged
-    // challenge beside a click one falls back for all of them.
-    render(<BaseTenBlocks data={{ ...deck(BUILD_12), challenges: [READ_23, BUILD_12] }} />);
-    expect(screen.queryByTestId('di-stage')).toBeNull();
-    // read_blocks is back on the click era's Channel B — the keypad.
+  it('a MIXED deck keeps the whole deck on the click mat — the transport cannot split mid-session', () => {
+    // The homogeneity rule the catalog's `audioInputByMode` resolver applies.
+    renderBound({ ...deck(BUILD_12), challenges: [READ_23, BUILD_12] }, 'mixed');
+    expect(mat()).toBe('click');
+    // read_blocks answers on the click mat's keypad.
     expect(screen.getByRole('button', { name: '7' })).toBeTruthy();
   });
 
-  it('a judged deck whose numbers ALL fail the build gate falls back rather than asking nothing', () => {
-    // 40 has no ones cube to receive the traded ten, so the prediction would
-    // state its own answer. The DI pack drops it; the click surface still works.
-    render(<BaseTenBlocks data={deck({ ...REGROUP_25, targetNumber: 40 }, { interactionMode: 'regroup' })} />);
-    expect(screen.queryByTestId('di-stage')).toBeNull();
+  it('a regroup deck whose numbers ALL fail the build gate falls back to the click mat rather than asking nothing', () => {
+    // 40 has no ones cube to receive the traded ten, so the prediction would state its own answer.
+    renderBound(deck({ ...REGROUP_25, targetNumber: 40 }, { interactionMode: 'regroup' }), 'regroup');
+    expect(mat()).toBe('click');
     expect(screen.getByRole('button', { name: /check my trade/i })).toBeTruthy();
   });
 });
@@ -201,7 +172,7 @@ describe('add_with_blocks — the keypad survives where the number is NOT on scr
   };
 
   it('keeps the keypad and offers no Check My Blocks button', () => {
-    render(<BaseTenBlocks data={deck(ADD_23, { interactionMode: 'operate' })} />);
+    renderBound(deck(ADD_23, { interactionMode: 'operate' }), 'operate');
     expect(screen.getByRole('button', { name: '7' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /check my blocks/i })).toBeNull();
   });
@@ -209,7 +180,7 @@ describe('add_with_blocks — the keypad survives where the number is NOT on scr
   it('never states the target in the wrong-answer feedback', () => {
     // Unlike build_number, the answer is NOT on screen here — naming it in the
     // miss hands over the next attempt.
-    render(<BaseTenBlocks data={deck(ADD_23, { interactionMode: 'operate' })} />);
+    renderBound(deck(ADD_23, { interactionMode: 'operate' }), 'operate');
     fireEvent.click(screen.getByRole('button', { name: '4' }));
     fireEvent.click(screen.getByRole('button', { name: '1' }));
     fireEvent.click(screen.getByRole('button', { name: '✓' }));

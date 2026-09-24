@@ -1,15 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { checkDiCatalogEntry, checkPackGates } from '../../../hooks/judgedScriptContract.testkit';
-import { spokenSpanOf } from '../../../hooks/judgedScriptContract';
-import { buildFractionTouchItems, fractionTouchPack, fractionTouchVerdictCue } from './fractionTouchScript';
-import { MATH_CATALOG } from '../../../service/manifest/catalog/math';
+import { buildFractionTouchItems, describeTouch, touchAssignment, touchMatches } from './fractionCirclesWorkspace';
 import type { FractionCirclesChallenge } from './FractionCircles';
 
 const challenges: FractionCirclesChallenge[] = [2, 3, 4].flatMap(d => Array.from({ length: d - 1 }, (_, i) => ({
   id: `f-${i + 1}-${d}`, type: 'touch_fraction' as const, numerator: i + 1, denominator: d,
   instruction: '', hint: '', narration: '',
 })));
-describe('fraction touch contract', () => {
+describe('touch_fraction items', () => {
   it('all supported targets have exactly one matching picture and distinct distractor values across random draws', () => {
     for (let run = 0; run < 100; run++) for (const item of buildFractionTouchItems(challenges)) {
       expect(item.choices).toHaveLength(3);
@@ -19,29 +16,24 @@ describe('fraction touch contract', () => {
         expect(c.shaded).toHaveLength(c.numerator);
         expect(new Set(c.shaded).size).toBe(c.numerator);
         expect(c.shaded.every(i => i >= 0 && i < c.denominator)).toBe(true);
-        const spoken = spokenSpanOf(fractionTouchVerdictCue(item, c.id));
-        expect(spoken.startsWith(c.id === item.correctChoiceId ? 'Yes,' : 'My turn.')).toBe(true);
+        expect(touchMatches(item, c.id)).toBe(c.id === item.correctChoiceId);
       }
     }
   });
-  it('passes the DI gates and repeats only the question on replay', () => {
-    const items = buildFractionTouchItems(challenges);
-    const pack = fractionTouchPack(items);
-    expect(checkPackGates(pack)).toEqual([]);
-    const entry = MATH_CATALOG.find(c => c.id === 'fraction-circles')!;
-    // `audioInput` is resolved per mode on this entry (touch_fraction is judged;
-    // identify/build/compare/equivalent stay click); the shim lets the shared
-    // checker run the rest of the contract, matching baseTenScript.test.ts.
-    const shimmed = { ...entry, audioInput: entry.audioInputByMode!['touch_fraction'] };
-    expect(checkDiCatalogEntry(shimmed, pack, items[0])).toEqual([]);
-    for (const item of items) expect(spokenSpanOf(pack.pronounceCue!(item))).toBe(item.actionContract.instruction);
+  it('the tutor is told the spoken fraction only, never which picture matches', () => {
+    for (const item of buildFractionTouchItems(challenges)) {
+      const assignment = touchAssignment(item);
+      expect(assignment).toEqual({ id: item.id, task: item.actionContract.instruction, response: 'gesture' });
+      expect(JSON.stringify(assignment)).not.toMatch(/picture-\d|correctChoice/);
+    }
   });
   it('rejects malformed or out-of-scope content rather than silently changing a target', () => {
     for (const [n, d] of [[0, 4], [4, 4], [1, 8], [1.5, 3], [1, 0]]) {
       expect(() => buildFractionTouchItems([{ ...challenges[0], numerator: n, denominator: d }])).toThrow();
     }
     const item = buildFractionTouchItems(challenges)[0];
-    expect(() => fractionTouchVerdictCue(item, 'missing')).toThrow();
+    expect(touchMatches(item, 'missing')).toBe(false);
+    expect(describeTouch(item, 'missing')).toBe('Touched a picture');
   });
   it('varies answer position and shading rather than identifying the answer by layout', () => {
     const positions = new Set<number>(); const shading = new Set<string>();

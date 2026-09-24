@@ -1,5 +1,6 @@
-// Real production generation for base-ten-blocks' two judged modes, plus
-// deterministic pack/plan verification over what came back.
+// Real production generation for base-ten-blocks' two spoken-mat modes, plus
+// deterministic item verification over what came back (the items and workspace
+// assignments the teaching workspace runs; the scripted drive plan was retired).
 //
 // It answers the question a vitest fixture cannot: does the LIVE generator hand
 // this pack numbers it can actually ask about? The build gates drop a target
@@ -39,8 +40,9 @@ const summary = [];
 try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateBaseTenBlocks } = await loader.import('/src/components/lumina/service/math/gemini-base-ten-blocks.ts');
-  const { buildDiDrivePlan } = await loader.import('/src/components/lumina/service/qa/di/diDrivePlan.ts');
-  const { usesBaseTenDi } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/baseTenScript.ts');
+  const { usesBaseTenDi, itemsFromChallenges, baseTenHarnessAnswers } =
+    await loader.import('/src/components/lumina/primitives/visual-primitives/math/baseTenScript.ts');
+  const { diWorkspaceAssignment } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/baseTenWorkspace.ts');
 
   const cases = [
     ['read-easy', 'read_blocks', 'easy', 'Read a place on the block mat and say what it is worth'],
@@ -66,35 +68,33 @@ try {
     }
     if (!usesBaseTenDi(data.challenges)) issues.push('Payload does not route to the judged stage');
 
-    const plan = buildDiDrivePlan('base-ten-blocks', data, 'Grade 2');
-    issues.push(...plan.packGateIssues);
-    if (!plan.items.length) issues.push('No judged items survived the build gates');
-    if (plan.droppedChallenges) {
+    const items = itemsFromChallenges(data.challenges ?? [], targetEvalMode);
+    const droppedChallenges = (data.challenges?.length ?? 0) - new Set(items.map((item) => item.problem.id)).size;
+    if (!items.length) issues.push('No items survived the build gates');
+    if (droppedChallenges) {
       // Not fatal — the gate dropping a number is the gate working. It IS a
       // signal about the generator's number habits, so it is always reported.
-      issues.push(`NOTE: ${plan.droppedChallenges} of ${data.challenges.length} challenges dropped`);
+      issues.push(`NOTE: ${droppedChallenges} of ${data.challenges.length} challenges dropped`);
     }
 
+    const plan = { items: items.map((item) => ({ id: item.id, step: item.step, answerKind: item.answerKind,
+      assignment: diWorkspaceAssignment(item), answers: baseTenHarnessAnswers(item) })) };
     for (const item of plan.items) {
-      if (!item.askLine) issues.push(`${item.id}: empty ask`);
+      if (!item.assignment.task) issues.push(`${item.id}: empty ask`);
       if (item.answerKind === 'voice') {
-        if (!item.affirmLine) issues.push(`${item.id}: no affirmation line`);
-        if (!item.correctionLine || item.correctionLine === item.askLine) {
-          issues.push(`${item.id}: correction line missing or equal to the ask`);
-        }
-        // The leak scan the live harness runs, over the scripted ask.
+        if (!item.assignment.expectedAnswer) issues.push(`${item.id}: no published expected answer`);
+        // The leak scan the live journey runs, over the ask.
         const exempt = [item.answers.leakExemptSpan ?? []].flat();
         const norm = (value) => String(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ');
-        let scanned = norm(item.askLine);
+        let scanned = norm(item.assignment.task);
         for (const span of exempt) scanned = scanned.split(norm(span)).join(' ');
         for (const token of item.answers.leakTokens ?? []) {
           if (new RegExp(`\\b${norm(token)}\\b`).test(scanned)) {
             issues.push(`${item.id}: the ask contains its own answer "${token}"`);
           }
         }
-      } else if (!item.gestureVerdict?.correct.includes('solved=true')
-        || !item.gestureVerdict?.wrong.includes('solved=false')) {
-        issues.push(`${item.id}: hands verdict is not code-computed both ways`);
+      } else if (item.assignment.expectedAnswer !== undefined) {
+        issues.push(`${item.id}: the hands turn published its key`);
       }
     }
 

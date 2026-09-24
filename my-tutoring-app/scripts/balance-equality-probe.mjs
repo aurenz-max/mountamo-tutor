@@ -1,4 +1,4 @@
-// Real production generation plus deterministic model/cue verification.
+// Real production generation plus deterministic model verification and the workspace asks.
 // Does not submit student data or simulate a live microphone session.
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -28,10 +28,8 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateBalanceScale } = await loader.import('/src/components/lumina/service/math/gemini-balance-scale.ts');
   const model = await loader.import('/src/components/lumina/primitives/visual-primitives/math/balanceEqualityModel.ts');
-  const script = await loader.import('/src/components/lumina/primitives/visual-primitives/math/balanceEqualityScript.ts');
-  const { validateJudgedScriptPack } = await loader.import('/src/components/lumina/hooks/judgedScriptContract.ts');
   const workshop = await loader.import('/src/components/lumina/primitives/visual-primitives/math/balanceWorkshopModel.ts');
-  const workshopScript = await loader.import('/src/components/lumina/primitives/visual-primitives/math/balanceWorkshopScript.ts');
+  const workspace = await loader.import('/src/components/lumina/primitives/visual-primitives/math/balanceScaleWorkspace.ts');
   for (const mode of ['equality', 'equality_hard', 'one_step', 'one_step_hard', 'two_step_intro', 'two_step']) for (const difficulty of ['easy', 'medium', 'hard']) {
     const data = await generateBalanceScale({ componentId: 'balance-scale', instanceId: `equality-${difficulty}`,
       topic: 'Match a weight, add chosen weights and infer equality', grade: '2', gradeLevel: 'elementary',
@@ -39,12 +37,10 @@ try {
       scope: {}, raw: { targetEvalMode: mode, difficulty, instanceCount: 3 } });
     const basic = mode === 'equality';
     const problems = data.challenges.map(basic ? model.equalityProblem : workshop.workshopProblem);
-    const items = basic ? script.equalityItems(problems) : workshopScript.workshopItems(problems);
-    const issues = validateJudgedScriptPack({ primitiveType: 'balance-scale', activityLine: 'weights', items,
-      itemCue: basic ? script.equalityItemCue : workshopScript.workshopItemCue,
-      moveOnCue: (item, next) => basic ? script.equalityMoveCue(item, next)
-        : workshopScript.workshopMoveCue(item, next, workshop.initialWorkshopBoard(next?.problem ?? item.problem)),
-      completeCue: basic ? script.equalityCompleteCue : workshopScript.workshopCompleteCue, contextFor: () => ({}) });
+    const items = basic ? model.equalityItems(problems) : workshop.workshopItems(problems);
+    // What the tutor is told per item; a hands step never carries its key.
+    const asks = items.map(basic ? workspace.equalityAssignment : workspace.workshopAssignment);
+    const issues = asks.filter((ask) => ask.response === 'gesture' && ask.expectedAnswer !== undefined).map((ask) => `${ask.id} publishes a hands key`);
     if (issues.length) throw new Error(issues.join('; '));
     const traces = problems.map((problem, index) => {
       if (!basic) {
@@ -58,7 +54,7 @@ try {
             if (!workshop.stageSolved(problem, step, board)) throw new Error('Workshop stage unsolvable');
           }
           const item = items.find((entry) => entry.problem.id === problem.id && entry.step === step);
-          stages.push({ step, board, cue: workshopScript.workshopItemCue(item, {}, board) });
+          stages.push({ step, board, ask: workspace.workshopAssignment(item) });
         }
         return { id: problem.id, stages };
       }
@@ -74,7 +70,7 @@ try {
         moves.push({ amount, board, feedback: model.equalityFeedback(problem, board) });
       }
       if (!model.isMatched(problem, board)) throw new Error('Weight matching failed');
-      return { id: problem.id, moves, commit: script.equalityCheckCue(items[index * 3], board) };
+      return { id: problem.id, moves, asks: asks.slice(index * 3, index * 3 + 3) };
     });
     writeFileSync(resolve(out, `${mode}-${difficulty}.json`), clean(JSON.stringify({ generatedAt: new Date().toISOString(), data, traces, issues }, null, 2)) + '\n');
     process.stdout.write(JSON.stringify({ mode, difficulty, equations: problems.length, steps: items.length, issues }) + '\n');

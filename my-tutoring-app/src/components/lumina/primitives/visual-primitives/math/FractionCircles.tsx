@@ -10,7 +10,6 @@ import {
   LuminaCardTitle,
   LuminaCardContent,
   LuminaBadge,
-  LuminaButton,
   LuminaActionButton,
   LuminaPanel,
   LuminaInput,
@@ -20,13 +19,11 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { FractionCirclesMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { catalogBindsWorkspace } from '../../../components/live-activity/pinnedModes';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { describeWork, workspaceAssignment, workspaceScene } from './fractionCirclesWorkspace';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
@@ -57,7 +54,7 @@ export interface FractionCirclesChallenge {
   showWorkingCount?: boolean;
   /** compare ONLY: numeric fraction labels under each circle + inside the buttons */
   showFractionLabels?: boolean;
-  /** within-mode support tier, drives the AI tutor's reveal level */
+  /** within-mode support tier the generator resolved the scaffolds above from */
   supportTier?: 'easy' | 'medium' | 'hard';
 }
 
@@ -172,27 +169,6 @@ function fractionsEquivalent(n1: number, d1: number, n2: number, d2: number): bo
   return s1.n === s2.n && s1.d === s2.d;
 }
 
-/**
- * Tutor reveal level for the current support tier — the tutor sees full challenge
- * data and must NOT leak what a tier withheld on screen. easy = walk the setup;
- * medium = nudge only; hard = state no counts. compare's relationship IS the
- * answer, so the tutor never names which fraction is larger at any tier.
- */
-function tutorRevealClause(
-  tier: FractionCirclesChallenge['supportTier'],
-  type: FractionCirclesChallenge['type'],
-): string {
-  if (!tier) return '';
-  if (type === 'compare') {
-    return tier === 'hard'
-      ? ' [TIER hard] Numeric labels are HIDDEN — do NOT state the fraction values. Ask only what they SEE ("which circle has more color?"). Never say which is larger.'
-      : ` [TIER ${tier}] Guide by the picture ("which circle has more color?"). Never state which fraction is larger.`;
-  }
-  if (tier === 'easy') return ' [TIER easy] You may count the slices aloud and walk the student through the setup.';
-  if (tier === 'medium') return ' [TIER medium] Nudge them to count for themselves — do NOT state the current shaded count or the answer.';
-  return ' [TIER hard] On-screen counts are hidden. Do NOT state the numerator, denominator, or shaded count — ask what the student sees and let them count unaided.';
-}
-
 // ============================================================================
 // Props
 // ============================================================================
@@ -202,9 +178,9 @@ interface FractionCirclesProps {
   className?: string;
   localOnly?: boolean;
   runtimePlanItemId?: string;
-  /** The RESOLVED pin from the mount; inside a live runtime it decides who owns the teaching. */
+  /** The RESOLVED pin from the mount; a pin the family binds mounts the teaching workspace. */
   runtimeEvalMode?: string;
-  /** Workspace path only: this surface's teaching session settled (the mixed chain's cue to move on). */
+  /** This surface's teaching session settled (the mixed chain's cue to move on). */
   onWorkspaceFinished?: () => void;
 }
 
@@ -212,17 +188,19 @@ interface FractionCirclesProps {
 // Component
 // ============================================================================
 
-const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePlanItemId, runtimeEvalMode, onWorkspaceFinished,
-  tutorOwned, useController }: FractionCirclesProps & {
-  tutorOwned: boolean; useController: (options: ProgressOptions<FractionCirclesChallenge>) => Progress }) => {
+/** The teaching workspace is fraction-circles' only controller: the runtime owns progression. */
+const useFractionCirclesProgress = useWorkspaceProgressFor('fraction-circles');
+
+const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePlanItemId, runtimeEvalMode, onWorkspaceFinished }:
+  FractionCirclesProps) => {
   const liveRuntime = useLiveRuntime();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const componentMounted = useRef(true);
   useLayoutEffect(() => { componentMounted.current = true; return () => { componentMounted.current = false; }; }, []);
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
   const workspaceClosed = useRef(false);
-  const learnerBlocked = () => tutorOwned && (!componentMounted.current || workspaceClosed.current
-    || !!liveRuntime && !['empty', 'active'].includes(liveRuntime.getSnapshot().status));
+  const learnerBlocked = () => !componentMounted.current || workspaceClosed.current
+    || !!liveRuntime && !['empty', 'active'].includes(liveRuntime.getSnapshot().status);
   const {
     title,
     description,
@@ -237,11 +215,11 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
   } = data;
 
   // -------------------------------------------------------------------------
-  // Shared hooks. On the workspace path the runtime moves the index.
+  // Shared hooks. The runtime moves the index.
   // -------------------------------------------------------------------------
   const stableInstanceIdRef = useRef(instanceId || `fraction-circles-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-  const progress = useController({
+  const progress = useFractionCirclesProgress<FractionCirclesChallenge>({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
@@ -261,9 +239,8 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
     isComplete: allChallengesComplete,
     recordResult,
     incrementAttempts,
-    advance: advanceProgress,
   } = progress;
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -320,54 +297,8 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // -------------------------------------------------------------------------
-  // AI Tutoring
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    gradeBand,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    challengeType: currentChallenge?.type ?? 'identify',
-    instruction: currentChallenge?.instruction ?? '',
-    denominator: currentChallenge?.denominator ?? 4,
-    numerator: currentChallenge?.numerator ?? 0,
-    equivalentDenominator: currentChallenge?.equivalentDenominator ?? '',
-    shadedCount: shadedSlices.size,
-    attemptNumber: currentAttempts + 1,
-    supportTier: currentChallenge?.supportTier ?? 'none',
-  }), [
-    gradeBand, challenges.length, currentChallengeIndex, currentChallenge,
-    shadedSlices.size, currentAttempts,
-  ]);
-
-  const { sendText: sendScriptedText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'fraction-circles',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K-2' ? 'Grades K-2' : 'Grades 3-5',
-    // Its context carries the answers; with the tutor it stays off.
-    enabled: !tutorOwned,
-  });
-  // The scripted cues below name the key; the tutor on the workspace hears none of them.
-  const sendText = useCallback((...args: Parameters<typeof sendScriptedText>) => {
-    if (!tutorOwned) sendScriptedText(...args);
-  }, [tutorOwned, sendScriptedText]);
-
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-
-    const types = Array.from(new Set(challenges.map(c => c.type))).join(', ');
-    sendText(
-      `[ACTIVITY_START] Fraction Circles activity for ${gradeBand}. `
-      + `${challenges.length} challenges with types: ${types}. `
-      + `First challenge: "${currentChallenge?.instruction}" (${currentChallenge?.type}). `
-      + `Introduce warmly and read the first instruction.`,
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText]);
+  // The tutor teaches from the workspace packet; Pip only reads whether it is speaking.
+  const { isAudioPlaying, activePrimitiveId } = useLuminaAIContext();
 
   // -------------------------------------------------------------------------
   // Slice click handler (build & equivalent modes)
@@ -408,23 +339,12 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
       setFeedback(`Correct! ${currentChallenge.numerator}/${currentChallenge.denominator} is right!`);
       setFeedbackType('success');
       recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
-      sendText(
-        `[IDENTIFY_CORRECT] Student correctly identified ${currentChallenge.numerator}/${currentChallenge.denominator}. `
-        + `They answered "${identifyInput}". Celebrate briefly!`,
-        { silent: true },
-      );
     } else {
       SoundManager.playIncorrect();
       setFeedback(`Not quite. Look at how many pieces are shaded out of the total.`);
       setFeedbackType('error');
-      sendText(
-        `[IDENTIFY_INCORRECT] Student answered "${identifyInput}" but correct is ${currentChallenge.numerator}/${currentChallenge.denominator}. `
-        + `Attempt ${currentAttempts + 1}. The circle has ${currentChallenge.denominator} slices with ${currentChallenge.numerator} shaded. Give a hint.`
-        + tutorRevealClause(currentChallenge.supportTier, currentChallenge.type),
-        { silent: true },
-      );
     }
-  }, [currentChallenge, identifyInput, currentAttempts, incrementAttempts, recordResult, sendText, progress]);
+  }, [currentChallenge, identifyInput, currentAttempts, incrementAttempts, recordResult, progress]);
 
   const checkBuild = useCallback(() => {
     if (!currentChallenge) return;
@@ -438,22 +358,12 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
       setFeedback(`Great job! You built ${currentChallenge.numerator}/${currentChallenge.denominator}!`);
       setFeedbackType('success');
       recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
-      sendText(
-        `[BUILD_CORRECT] Student built ${currentChallenge.numerator}/${currentChallenge.denominator} by shading ${shadedSlices.size} of ${currentChallenge.denominator} slices. Celebrate!`,
-        { silent: true },
-      );
     } else {
       SoundManager.playIncorrect();
       setFeedback(`You shaded ${shadedSlices.size}/${currentChallenge.denominator}. The target is ${currentChallenge.numerator}/${currentChallenge.denominator}.`);
       setFeedbackType('error');
-      sendText(
-        `[BUILD_INCORRECT] Student shaded ${shadedSlices.size} slices but target is ${currentChallenge.numerator}/${currentChallenge.denominator}. `
-        + `Attempt ${currentAttempts + 1}. Hint: "Count the shaded pieces. You need exactly ${currentChallenge.numerator}."`
-        + tutorRevealClause(currentChallenge.supportTier, currentChallenge.type),
-        { silent: true },
-      );
     }
-  }, [currentChallenge, shadedSlices.size, currentAttempts, incrementAttempts, recordResult, sendText, progress]);
+  }, [currentChallenge, shadedSlices.size, currentAttempts, incrementAttempts, recordResult, progress]);
 
   const checkCompare = useCallback(() => {
     if (!currentChallenge || !currentChallenge.compareFraction || !compareChoice) return;
@@ -484,25 +394,14 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
       setFeedback(msg);
       setFeedbackType('success');
       recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
-      sendText(
-        `[COMPARE_CORRECT] Student correctly compared ${leftStr} vs ${rightStr}. `
-        + `They chose "${compareChoice}". ${areEqual ? 'These are equivalent fractions!' : `Explain why ${correctChoice === 'left' ? leftStr : rightStr} is larger.`}`,
-        { silent: true },
-      );
     } else {
       SoundManager.playIncorrect();
       setFeedback(areEqual
         ? `These fractions are actually equal! Look at how much of each circle is shaded.`
         : `Look again at how much of each circle is shaded.`);
       setFeedbackType('error');
-      sendText(
-        `[COMPARE_INCORRECT] Student chose "${compareChoice}" comparing ${leftStr} vs ${rightStr} (correct: ${correctChoice}). `
-        + `Attempt ${currentAttempts + 1}. Hint: "Look at how much of each circle is filled. Which has more color?"`
-        + tutorRevealClause(currentChallenge.supportTier, currentChallenge.type),
-        { silent: true },
-      );
     }
-  }, [currentChallenge, compareChoice, currentAttempts, incrementAttempts, recordResult, sendText, progress]);
+  }, [currentChallenge, compareChoice, currentAttempts, incrementAttempts, recordResult, progress]);
 
   const checkEquivalent = useCallback(() => {
     if (!currentChallenge || !currentChallenge.equivalentDenominator) return;
@@ -520,23 +419,12 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
       setFeedback(`Excellent! ${builtNum}/${equivDen} is equivalent to ${targetNum}/${targetDen}!`);
       setFeedbackType('success');
       recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
-      sendText(
-        `[EQUIVALENT_CORRECT] Student found that ${builtNum}/${equivDen} = ${targetNum}/${targetDen}. `
-        + `Celebrate and explain why these fractions are the same amount!`,
-        { silent: true },
-      );
     } else {
       SoundManager.playIncorrect();
       setFeedback(`${builtNum}/${equivDen} is not equivalent to ${targetNum}/${targetDen}. Try adjusting the shaded slices.`);
       setFeedbackType('error');
-      sendText(
-        `[EQUIVALENT_INCORRECT] Student built ${builtNum}/${equivDen} trying to match ${targetNum}/${targetDen}. `
-        + `Attempt ${currentAttempts + 1}. The equivalent denominator is ${equivDen}. Give a hint without revealing the answer.`
-        + tutorRevealClause(currentChallenge.supportTier, currentChallenge.type),
-        { silent: true },
-      );
     }
-  }, [currentChallenge, shadedSlices.size, currentAttempts, incrementAttempts, recordResult, sendText, progress]);
+  }, [currentChallenge, shadedSlices.size, currentAttempts, incrementAttempts, recordResult, progress]);
 
   // -------------------------------------------------------------------------
   // Unified check answer
@@ -552,89 +440,53 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
   }, [currentChallenge, checkIdentify, checkBuild, checkCompare, checkEquivalent]);
 
   // -------------------------------------------------------------------------
-  // Advance to next challenge
+  // Session complete: submit once, and only under a lesson's evaluation provider
+  // (the live host has none). The runtime moves between challenges.
   // -------------------------------------------------------------------------
-  const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All challenges complete
-      const phaseScoreStr = phaseResults
-        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const correctCount = challengeResults.filter(r => r.correct).length;
-      const overallPct = Math.round((correctCount / challenges.length) * 100);
+  const submitSession = useCallback(() => {
+    if (hasSubmittedEvaluation || !progress.recordsEvaluation) return;
+    const correctCount = challengeResults.filter(r => r.correct).length;
+    const overallPct = Math.round((correctCount / challenges.length) * 100);
+    const byType = (type: string) => {
+      const matching = challenges.filter(c => c.type === type);
+      if (matching.length === 0) return 0;
+      const correct = matching.filter(c =>
+        challengeResults.find(r => r.challengeId === c.id && r.correct),
+      ).length;
+      return Math.round((correct / matching.length) * 100);
+    };
 
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging phase-specific feedback about their fraction understanding!`,
-        { silent: true },
-      );
+    const metrics: FractionCirclesMetrics = {
+      type: 'fraction-circles',
+      evalMode: new Set(challenges.map(c => c.type)).size === 1 ? challenges[0].type : 'mixed',
+      totalChallenges: challenges.length,
+      correctCount,
+      accuracy: overallPct,
+      identifyAccuracy: byType('identify'),
+      buildAccuracy: byType('build'),
+      compareAccuracy: byType('compare'),
+      equivalentAccuracy: byType('equivalent'),
+      attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
+    };
 
-      // Submit evaluation (on the workspace path, only under a lesson's evaluation provider)
-      if (!hasSubmittedEvaluation && progress.recordsEvaluation !== false) {
-        const byType = (type: string) => {
-          const matching = challenges.filter(c => c.type === type);
-          if (matching.length === 0) return 0;
-          const correct = matching.filter(c =>
-            challengeResults.find(r => r.challengeId === c.id && r.correct),
-          ).length;
-          return Math.round((correct / matching.length) * 100);
-        };
-
-        const metrics: FractionCirclesMetrics = {
-          type: 'fraction-circles',
-          evalMode: new Set(challenges.map(c => c.type)).size === 1 ? challenges[0].type : 'mixed',
-          totalChallenges: challenges.length,
-          correctCount,
-          accuracy: overallPct,
-          identifyAccuracy: byType('identify'),
-          buildAccuracy: byType('build'),
-          compareAccuracy: byType('compare'),
-          equivalentAccuracy: byType('equivalent'),
-          attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
-        };
-
-        const compareResponses = compareResponsesRef.current;
-        submitEvaluation(
-          correctCount === challenges.length,
-          overallPct,
-          metrics,
-          { challengeResults, ...(compareResponses.length ? { compareResponses } : {}) },
-          undefined,
-          buildFractionCompareEvidence(compareResponses),
-        );
-      }
-      return;
-    }
-
-    // Reset domain-specific state for next challenge
-    setShadedSlices(new Set());
-    setIdentifyInput('');
-    setCompareChoice('');
-    setFeedback('');
-    setFeedbackType('');
-
-    const nextChallenge = challenges[currentChallengeIndex + 1];
-    sendText(
-      `[PHASE_TRANSITION] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}, ${nextChallenge.numerator}/${nextChallenge.denominator}). `
-      + `Read the instruction to the student and encourage them.`,
-      { silent: true },
+    const compareResponses = compareResponsesRef.current;
+    submitEvaluation(
+      correctCount === challenges.length,
+      overallPct,
+      metrics,
+      { challengeResults, ...(compareResponses.length ? { compareResponses } : {}) },
+      undefined,
+      buildFractionCompareEvidence(compareResponses),
     );
-  }, [
-    advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex, progress.recordsEvaluation,
-  ]);
+  }, [challenges, challengeResults, hasSubmittedEvaluation, submitEvaluation, progress.recordsEvaluation]);
 
-  // -------------------------------------------------------------------------
-  // Auto-submit when all challenges complete
-  // -------------------------------------------------------------------------
   const hasAutoSubmittedRef = useRef(false);
   useEffect(() => {
     if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
       hasAutoSubmittedRef.current = true;
-      advanceToNextChallenge();
+      submitSession();
     }
-  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
+  }, [allChallengesComplete, hasSubmittedEvaluation, submitSession]);
 
   // -------------------------------------------------------------------------
   // Computed
@@ -661,10 +513,10 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
     return Math.round((correct / challenges.length) * 100);
   }, [allChallengesComplete, challenges, challengeResults]);
 
-  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge) return;
+    if (!currentChallenge) return;
     workspace.current = { ...workspaceScene(currentChallenge, { typed: identifyInput, shaded: shadedSlices.size, choice: compareChoice }),
       demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
     progress.publishWorkspace?.();
@@ -952,17 +804,8 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
               <LuminaActionButton
                 action="check"
                 onClick={handleCheckAnswer}
-                disabled={!canCheck || (tutorOwned && progress.canAttempt === false)}
+                disabled={!canCheck || progress.canAttempt === false}
               />
-            )}
-            {!tutorOwned && isCurrentChallengeCorrect && (
-              <LuminaButton
-                tone="primary"
-                className="bg-emerald-500/10 border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/20"
-                onClick={advanceToNextChallenge}
-              >
-                Next Challenge
-              </LuminaButton>
             )}
           </div>
         )}
@@ -1002,11 +845,10 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
   );
 };
 
-// The workspace path never registers a scripted context or cue loop beside the tutor.
-const PlainFractionCircles = withWorkspaceController<FractionCirclesProps, ProgressOptions<FractionCirclesChallenge>, Progress>(
-  'fraction-circles', FractionCirclesSurface, useScriptedProgress, useWorkspaceProgressFor('fraction-circles'));
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const PlainFractionCircles = withWorkspaceOnly<FractionCirclesProps>('fraction-circles', FractionCirclesSurface, props => props.data.title);
 
-// Keep each teaching flow intact; local child results feed one session submission.
+// Route to the surface the challenges need; a touch-and-circle session runs as a chain of blocks.
 const FractionCircles: React.FC<FractionCirclesProps> = (props) => {
   const hasTouch = props.data.challenges.some(c => c.type === 'touch_fraction');
   if (!hasTouch) return <PlainFractionCircles {...props} />;
@@ -1016,14 +858,13 @@ const FractionCircles: React.FC<FractionCirclesProps> = (props) => {
 /**
  * Touch and non-touch challenges in one session run as a chain of blocks, one surface each.
  *
- * Scripted: a block's local evaluation closes it and the next block mounts. With the tutor, each
- * block is its own workspace session (one per mounted surface): its evaluation only records (it
+ * Each block is its own workspace session (one per mounted surface): its evaluation only records (it
  * exists only under a lesson's evaluation provider), and the block's settled teaching session moves
  * the chain on. The first block keeps the section's instance id so the lesson host introduces it;
  * later blocks need their own, since a new session reading the previous block's completed runtime
- * under the same id would settle at once. Either way the family submits one aggregate evaluation.
+ * under the same id would settle at once. The family submits one aggregate evaluation.
  */
-const MixedFractionCircles: React.FC<FractionCirclesProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
+const MixedFractionChain: React.FC<FractionCirclesProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const groups = useMemo(() => {
     const blocks: FractionCirclesChallenge[][] = [];
     for (const c of data.challenges) {
@@ -1033,8 +874,6 @@ const MixedFractionCircles: React.FC<FractionCirclesProps> = ({ data, className,
     }
     return blocks;
   }, [data.challenges]);
-  const liveRuntime = useLiveRuntime();
-  const tutorOwned = !!liveRuntime && catalogBindsWorkspace('fraction-circles', runtimeEvalMode);
   const [index, setIndex] = useState(0);
   const results = useRef<PrimitiveEvaluationResult<FractionCirclesMetrics>[]>([]);
   const finishedBlocks = useRef(0);
@@ -1066,22 +905,22 @@ const MixedFractionCircles: React.FC<FractionCirclesProps> = ({ data, className,
     if (finishedBlocks.current !== index) return;
     finishedBlocks.current = index + 1;
     if (index + 1 < groups.length) { setIndex(index + 1); return; }
-    // With the tutor and no evaluation provider (the live host) no block recorded; nothing is submitted.
+    // Without an evaluation provider (the live host) no block recorded; nothing is submitted.
     if (results.current.length === groups.length) submitAggregate();
   };
+  /** A block's evaluation only records; its settled teaching session closes it (`finishBlock`). */
   const completeBlock = (result: PrimitiveEvaluationResult<FractionCirclesMetrics>) => {
     if (results.current.length !== index) return;
     results.current.push(result);
-    if (!tutorOwned) finishBlock();
   };
-  // With the tutor the last block stays mounted with its own summary: its settled session is what the host completed.
-  if (evaluation.hasSubmitted && !tutorOwned) return <LuminaPanel><p>You finished your fraction activities.</p></LuminaPanel>;
+  // The last block stays mounted with its own summary: its settled session is what the host completed.
   const childData = { ...data, challenges: groups[index],
-    instanceId: tutorOwned && index === 0 ? instance.current : `${instance.current}-block-${index}`,
+    instanceId: index === 0 ? instance.current : `${instance.current}-block-${index}`,
     onEvaluationSubmit: completeBlock };
-  const mount = { runtimePlanItemId, runtimeEvalMode, ...(tutorOwned ? { onWorkspaceFinished: finishBlock } : {}) };
+  const mount = { runtimePlanItemId, runtimeEvalMode, onWorkspaceFinished: finishBlock };
   return groups[index][0].type === 'touch_fraction'
     ? <FractionTouch key={index} data={childData} className={className} localOnly {...mount} />
     : <PlainFractionCircles key={index} data={childData} className={className} localOnly {...mount} />;
 };
+const MixedFractionCircles = withWorkspaceOnly<FractionCirclesProps>('fraction-circles', MixedFractionChain, props => props.data.title);
 export default FractionCircles;

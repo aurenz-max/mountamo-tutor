@@ -1,4 +1,4 @@
-// Real production generation plus deterministic model/cue verification.
+// Real production generation plus deterministic item and workspace-assignment verification.
 // Does not submit student data or simulate a live microphone session.
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -27,8 +27,7 @@ const server = await vite.createServer({ root, configFile: false, appType: 'cust
 try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateFractionCircles } = await loader.import('/src/components/lumina/service/math/gemini-fraction-circles.ts');
-  const { buildFractionTouchItems, fractionTouchPack, fractionTouchVerdictCue } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/fractionTouchScript.ts');
-  const { checkPackGates } = await loader.import('/src/components/lumina/hooks/judgedScriptContract.testkit.ts');
+  const { buildFractionTouchItems, touchAssignment, touchMatches } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/fractionCirclesWorkspace.ts');
   const cases = [
     ['pinned-easy', 'touch_fraction', 'easy', 'Touch the picture showing the named fraction'],
     ['pinned-hard', 'touch_fraction', 'hard', 'Recognize halves, thirds and fourths'],
@@ -41,7 +40,11 @@ try {
       topic: 'Halves, thirds, and fourths', grade: '2', gradeLevel: 'elementary', gradeContext: 'Grade 2',
       intent, objective: {}, scope: {}, targetEvalMode, raw: { targetEvalMode, difficulty } });
     const items = buildFractionTouchItems(data.challenges);
-    const issues = checkPackGates(fractionTouchPack(items));
+    const issues = [];
+    for (const item of items) {
+      if (item.choices.filter(c => touchMatches(item, c.id)).length !== 1) issues.push(`${item.id}: not exactly one matching picture`);
+      if (/picture-\d|correctChoice/.test(JSON.stringify(touchAssignment(item)))) issues.push(`${item.id}: the assignment names a picture`);
+    }
     const types = [...new Set(data.challenges.map(c => c.type))];
     if (!items.length) issues.push('No touch_fraction items');
     if (name.startsWith('pinned') || name === 'intent') {
@@ -49,8 +52,8 @@ try {
     }
     if (name === 'blend' && (types.length !== 2 || !types.includes('build'))) issues.push('Blend routing failed');
     if (name === 'mixed' && types.length !== 5) issues.push('Mixed routing omitted a mode');
-    const traces = items.map(item => ({ item, ask: fractionTouchPack(items).itemCue(item, { opening: false, howToPlay: false }),
-      verdicts: item.choices.map(c => fractionTouchVerdictCue(item, c.id)) }));
+    const traces = items.map(item => ({ item, assignment: touchAssignment(item),
+      verdicts: item.choices.map(c => ({ id: c.id, matches: touchMatches(item, c.id) })) }));
     writeFileSync(resolve(out, `${name}.json`), clean(JSON.stringify({ generatedAt: new Date().toISOString(), data, traces, issues }, null, 2)) + '\n');
     process.stdout.write(JSON.stringify({ name, count: data.challenges.length, types, issues }) + '\n');
     if (issues.length) process.exitCode = 1;

@@ -39,7 +39,7 @@ Mode-specific manual audio is declared for all six modes. Homogeneous hydrated c
 - The source equations still satisfy the existing selection/answer-variety regression tests.
 - Full repository typechecking has existing errors outside Lumina; the active Lumina surface and modified AI context are checked separately from those diagnostics.
 
-Regenerate fixtures from `my-tutoring-app` with `node scripts/balance-equality-probe.mjs --run`. This calls the production generator, validates script packs and deterministic constructions, and does not submit student data or simulate microphone recognition.
+Regenerate fixtures from `my-tutoring-app` with `node scripts/balance-equality-probe.mjs --run`. This calls the production generator, checks the workspace asks (no hands step carries its key) and the deterministic constructions, and does not submit student data or simulate microphone recognition.
 
 ## Live acceptance still required
 

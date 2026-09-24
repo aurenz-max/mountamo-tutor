@@ -320,30 +320,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Adding too many blocks in wrong column', response: '"Check which column you are adding to. Hundreds are the biggest, ones are the smallest."' },
         { pattern: 'Not regrouping when column has 10+', response: '"You have 10 or more in one column! You can trade 10 of those for 1 in the next column."' },
         { pattern: 'Confusing decimal places', response: '"Tenths are 0.1 — ten of them make 1 whole. Hundredths are 0.01 — ten of them make one tenth."' },
-        { pattern: 'Child says the bare count where the value was asked (four for forty)', response: 'Use the current cue exact correction. A sentiment without the scripted verdict cannot advance the run.' },
-        { pattern: 'Child predicts ten for a trade', response: 'The blocks already on the mat are being forgotten. Use the current scripted correction, which adds the ten new blocks to the ones already there.' },
-        { pattern: 'Child is moving blocks', response: 'Speech does not submit a trade. Only the application supplies the code-computed verdict for a hands turn.' },
+        { pattern: 'Child says the bare count where the value was asked (four for forty)', response: 'The count is not the value: each block is worth its size (a ten-stick is worth ten), so ask what all of those blocks are worth together.' },
+        { pattern: 'Child predicts ten for a trade', response: 'The blocks already on the mat are being forgotten: the ten new blocks join the ones already there.' },
+        { pattern: 'Child is moving blocks', response: 'Speech does not make a trade. The mat checks the trade itself once the child stops tapping.' },
       ],
       aiDirectives: [
-        {
-          title: 'READ THE BLOCKS: SCRIPTED, SPOKEN, ONE PLACE AT A TIME',
-          instruction:
-            'When challengeType is read_blocks this directive OVERRIDES every legacy phase, hint and channel note below. '
-            + 'Only [BT_ITEM], [BT_MOVE], [BT_HEAR] and [BT_COMPLETE] supply spoken lines. Speak their quoted line exactly and never read a bracket tag or a private rule. '
-            + 'There is no keypad and no Check button. The child answers OUT LOUD, twice per mat: how many blocks of one size are there, and what are those blocks worth altogether. '
-            + 'The block counts and the number the mat shows are withheld from you on purpose — never state a column count, a total, or the whole number before the child has answered, and never guess one. '
-            + 'The bare count said where the VALUE was asked is incorrect, not a near miss; the scripted correction is where the relationship gets taught. '
-            + 'The composed number belongs to YOU, in the affirmation the cue gives you, and is never asked of the child.',
-        },
-        {
-          title: 'TRADE TEN: PREDICT ALOUD, THEN MOVE THE BLOCKS',
-          instruction:
-            'When challengeType is regroup this directive OVERRIDES every legacy phase, hint and channel note below. '
-            + 'Only [BT_ITEM], [BT_CHANGE], [BT_CHECK], [BT_MOVE], [BT_HEAR] and [BT_COMPLETE] supply spoken lines. Speak their quoted line exactly. '
-            + 'The child speaks FIRST, predicting how many smaller blocks they will have after the trade, and only then moves the blocks. Never reveal that count during the spoken turn. '
-            + 'The hands turn is not judged from speech. [BT_CHANGE] is coaching only; only [BT_CHECK] carries a code-computed verdict, and you use its result rather than your own reading of the mat. '
-            + 'Tapping the wrong size of block is a real wrong answer and receives the scripted correction. Exploration before a trade is not an attempt.',
-        },
         {
           title: 'REGROUPING DISCOVERY',
           instruction:
@@ -423,7 +404,6 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Difficulty comparing fractions with different denominators', response: '"Look at how much of each circle is filled with color. Which circle has more color showing?"' },
       ],
       aiDirectives: [
-        { title: 'TOUCH FRACTION DI', instruction: 'When challengeType is touch_fraction, only the authored FT cues control speech. Read their quoted line exactly. The child touches a picture; code supplies the verdict. Microphone speech is not an answer. No hints, answer positions, improvised questions, or next-item guesses. Each verdict ends the turn. The other fraction coaching directives apply only to legacy identify/build/compare/equivalent tasks.' },
         {
           title: 'FRACTION CIRCLE COACHING',
           instruction:
@@ -1300,25 +1280,6 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Stuck in explore phase', response: '"Click Start Solving when you are ready. Then click on blocks or use the operations panel."' },
       ],
       aiDirectives: [
-        {
-          title: 'WEIGHT WORKSHOP: SCRIPTED MODES',
-          instruction: 'For equality_hard, one_step, one_step_hard, two_step_intro and two_step, follow the [BW_ITEM], [BW_CHANGE], [BW_CHECK], [BW_HEAR], [BW_MOVE] and [BW_COMPLETE] cues. They override legacy phase prompts and hints below. '
-            + 'Speak the quoted cue exactly. The app controls steps, weight moves, arithmetic, and group checks. Never advance yourself or invent a physical action. '
-            + 'equality_hard makes two different combinations; one_step adds the missing weight to a known load; one_step_hard distributes units among identical parcels; two_step_intro separates known weight then shares; two_step connects the actions to equations. '
-            + 'Exploration and uneven groups are not wrong attempts. [BW_CHANGE] is coaching; only [BW_CHECK] carries a code-computed hand verdict. Never reveal parcel contents, missing weights, or group totals before the spoken quantity task. '
-            + 'Spoken quantities are separate turns; the same number in a prior answer does not answer the next question. Questions, silence, and off-task speech are not incorrect answers. Only actual verdicts start with Yes or My turn. '
-            + 'Do not ask for a typed value or demand formal vocabulary. The final equation explanation receives meaning-based coaching. Attribute any capped-step demonstration to the tutor.',
-        },
-        {
-          title: 'EQUALITY MODE: SCRIPTED HANDS AND VOICE',
-          instruction: 'When challengeType is equality, this directive OVERRIDES all legacy phase guidance, generic hints and student prompts below. '
-            + 'Only [BE_ITEM], [BE_CHANGE], [BE_CHECK], [BE_HEAR], [BE_MOVE] and [BE_COMPLETE] messages supply spoken lines. Speak their exact quotes, never private tags or rules. '
-            + 'The left block has no number or variable symbol. Its size is proportional to its weight. Students place or remove numbered right-side weights; do not require changes on both sides. '
-            + 'Exploration is ungraded. [BE_CHANGE] is coaching only. A settled match triggers [BE_CHECK]; use its code-computed result. Never reveal the left weight or add up the right weights during building. '
-            + 'The app gathers the chosen weights into an addition row, asks for the spoken total, then separately asks what the left side weighs since the scales balance. Do not ask for typing, isolation, or removal of shared terms. '
-            + 'Judge only the current response, using its cue. Do not reuse the total response for the later inference question. Only actual verdicts begin with Yes or My turn. Silence, questions and off-task speech are not wrong answers. '
-            + 'Only the app advances steps. Follow any modeled example cue exactly; do not claim the student placed modeled weights.',
-        },
         {
           title: 'PHASE-AWARE GUIDANCE',
           instruction:

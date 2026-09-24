@@ -5,8 +5,8 @@ vi.mock('../../geminiClient', () => ({ ai: { models: { generateContent } } }));
 import { generateBalanceScale } from '../gemini-balance-scale';
 import { MATH_CATALOG } from '../../manifest/catalog/math';
 import { resolvePrimitiveAudioInput } from '../../../hooks/primitiveAudioInput';
-import { STAGES, usesBalanceWorkshop, WORKSHOP_MODES, workshopProblem } from '../../../primitives/visual-primitives/math/balanceWorkshopModel';
-import { workshopItems } from '../../../primitives/visual-primitives/math/balanceWorkshopScript';
+import { STAGES, usesBalanceWorkshop, WORKSHOP_MODES, workshopItems, workshopProblem }
+  from '../../../primitives/visual-primitives/math/balanceWorkshopModel';
 
 describe('workshop generation, curriculum mode and audio routing', () => {
   for (const mode of WORKSHOP_MODES) it.each(['easy', 'medium', 'hard'])(`${mode} at %s`, async (difficulty) => {

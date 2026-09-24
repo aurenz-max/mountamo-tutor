@@ -1,4 +1,5 @@
 import type { BalanceScaleChallenge, BalanceScaleData, BalanceScaleChallengeType } from './BalanceScale';
+import type { DiActionContract, JudgedScriptItem } from '../../../hooks/judgedScriptContract';
 
 export const WORKSHOP_MODES = ['equality_hard', 'one_step', 'one_step_hard', 'two_step_intro', 'two_step'] as const;
 export type WorkshopMode = typeof WORKSHOP_MODES[number];
@@ -127,3 +128,40 @@ export function enterWorkshopStage(p: WorkshopProblem, stage: WorkshopStage, b: 
 }
 export const workshopExpected = (p: WorkshopProblem, stage: WorkshopStage) => stage === 'remaining' ? p.parcels * p.target : p.target;
 export const workshopMode = (mode: BalanceScaleChallengeType): mode is WorkshopMode => (WORKSHOP_MODES as readonly string[]).includes(mode);
+
+// ── The session's steps, one per stage of each problem ──
+
+export interface WorkshopItem extends JudgedScriptItem { problem: WorkshopProblem; step: WorkshopStage; actionContract: DiActionContract }
+const LABELS: Record<WorkshopStage, string> = {
+  compose: 'Build a match', sum: 'Add the weights', recompose: 'Another combination', resum: 'Add again',
+  complete: 'Complete the load', added: 'Find the added weight', relate: 'Name the missing part',
+  separate: 'Set known weight aside', remaining: 'Find the remaining weight', share: 'Share equally',
+  each: 'Count one group', infer: 'Find one weight', explain: 'Connect the equation',
+};
+export function workshopAsk(p: WorkshopProblem, stage: WorkshopStage): string {
+  switch (stage) {
+    case 'compose': return 'Add weights to the right until the scale balances.';
+    case 'sum': return 'Add your right-side weights. What is their total?';
+    case 'recompose': return 'Make the same weight again using a different combination of blocks.';
+    case 'resum': return 'Add your new combination. What is its total weight?';
+    case 'complete': return `The right side weighs ${p.total}. The left already has ${p.known}. Add weights to the left until it balances.`;
+    case 'added': return 'Add up just the blocks you placed. How much weight did you add?';
+    case 'relate': return `${p.known} and what make ${p.total}?`;
+    case 'separate': return p.reverse ? `Show me what subtracting ${p.known} from both sides means. Move the weights to the set-aside areas.`
+      : 'Set the known loose weight aside. Then set aside the same weight from the other side, leaving the parcels on the scale.';
+    case 'remaining': return 'What weight belongs to the parcels together now?';
+    case 'share': return p.reverse ? `Show what dividing both sides by ${p.parcels} means. Share the remaining weight into one equal group per parcel.`
+      : `Share the weight into ${p.parcels} equal groups, one for each identical parcel. Tap a unit, then its group, or drag it there.`;
+    case 'each': return 'How much weight is in each group?';
+    case 'infer': return p.mode === 'equality_hard' ? 'Both combinations balanced the left block. What does the left block weigh?'
+      : 'Since the identical parcels balance these equal groups, what does one parcel weigh?';
+    case 'explain': return 'Why does dividing into equal groups tell us what one x is worth?';
+  }
+}
+export const workshopItems = (problems: WorkshopProblem[]): WorkshopItem[] => problems.flatMap((problem) => STAGES[problem.mode].map((step) => ({
+  id: `${problem.id}-${step}`, problem, step, action: step, answerKind: isHands(step) ? 'gesture' : 'voice',
+  responseClass: isHands(step) ? 'manipulation' : step === 'explain' ? 'concept_statement'
+    : workshopExpected(problem, step) <= 20 ? 'number_word_to_20' : 'number_word_to_120',
+  actionContract: { id: step, label: LABELS[step], icon: isHands(step) ? '=' : '+', answerKind: isHands(step) ? 'gesture' : 'voice',
+    instruction: workshopAsk(problem, step), checkingInstruction: isHands(step) ? 'Watching your weights settle.' : 'Listening to your answer.' },
+})));

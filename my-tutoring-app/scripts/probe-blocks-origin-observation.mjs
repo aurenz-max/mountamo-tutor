@@ -1,8 +1,9 @@
 // Real distiller + real planner/generator for an observation that ORIGINATES in
 // base-ten-blocks read_blocks. Fictional learner responses; no account, store,
 // submission or calibration write. Item text and answer words come from the
-// production script; the evidence packet mirrors useJudgedScriptRunner's
-// assembly (the mounted BaseTenBlocksDi.capture test pins that shape).
+// production items; the evidence packet mirrors the RETIRED scripted runner's
+// assembly (base-ten-blocks runs only on the teaching workspace since 09-23,
+// whose packet is teachingEvaluation.ts: re-derive before trusting this probe).
 // Expected outcomes are declared below, before any call is made.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';

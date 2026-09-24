@@ -1,5 +1,5 @@
 import type { FractionCirclesChallenge, FractionCirclesData } from '../../../primitives/visual-primitives/math/FractionCircles';
-import { buildFractionTouchItems } from '../../../primitives/visual-primitives/math/fractionTouchScript';
+import { buildFractionTouchItems } from '../../../primitives/visual-primitives/math/fractionCirclesWorkspace';
 import { validateChallengePool, workspaceOpening, type WorkspaceDomain } from './adapterContract';
 
 const whole = (n: unknown, min: number, max: number): n is number => Number.isInteger(n) && (n as number) >= min && (n as number) <= max;

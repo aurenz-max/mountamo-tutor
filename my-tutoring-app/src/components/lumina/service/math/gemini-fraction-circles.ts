@@ -1,5 +1,5 @@
 import { FRACTION_TOUCH_TYPE_DOCS, fractionTouchPlan } from '../../primitives/visual-primitives/math/fractionTouchModes';
-import { buildFractionTouchItems } from '../../primitives/visual-primitives/math/fractionTouchScript';
+import { buildFractionTouchItems } from '../../primitives/visual-primitives/math/fractionCirclesWorkspace';
 /**
  * Fraction Circles Generator - Dedicated service for fraction circle challenges
  *

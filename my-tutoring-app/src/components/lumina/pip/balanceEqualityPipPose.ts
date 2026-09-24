@@ -1,6 +1,6 @@
 import type { PipPose } from './PipSurfaceStore';
 import { pipPhasePose, type PipPhaseGate } from './pipPhasePose';
-import type { EqualityStep } from '../primitives/visual-primitives/math/balanceEqualityScript';
+import type { EqualityStep } from '../primitives/visual-primitives/math/balanceEqualityModel';
 
 export interface BalanceEqualityPipState extends PipPhaseGate {
   step: EqualityStep;

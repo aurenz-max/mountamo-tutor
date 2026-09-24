@@ -9,6 +9,7 @@
  *     number they ask for; the trade is a tap checked in code, so its key is not published.
  *   - the click-era mat (`build_number`, `operate`, and any mixed payload; BaseTenBlocks),
  *     plain shape: its own Check My Blocks / Check My Trade / keypad stays the judge.
+ * The workspace is both surfaces' only teaching path (the scripted path was deleted, LA-14).
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { BaseTenItem } from './baseTenScript';
@@ -34,7 +35,7 @@ export function spokenAnswer(item: BaseTenItem): number {
   }
 }
 
-/** The pack's own ask; a spoken step publishes its number, the trade does not. */
+/** The step's own ask; a spoken step publishes its number, the trade does not. */
 export function diWorkspaceAssignment(item: BaseTenItem): TeachingAssignment {
   const task = item.actionContract.instruction;
   if (item.answerKind === 'gesture') return { id: item.id, task, response: 'gesture' };

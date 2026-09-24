@@ -3,8 +3,7 @@ import type { GenerationContext } from '../../generation/generationContext';
 const { generateContent } = vi.hoisted(() => ({ generateContent: vi.fn() }));
 vi.mock('../../geminiClient', () => ({ ai: { models: { generateContent } } }));
 import { generateBalanceScale } from '../gemini-balance-scale';
-import { equalityProblem, usesEqualityPilot } from '../../../primitives/visual-primitives/math/balanceEqualityModel';
-import { equalityItems } from '../../../primitives/visual-primitives/math/balanceEqualityScript';
+import { equalityItems, equalityProblem, usesEqualityPilot } from '../../../primitives/visual-primitives/math/balanceEqualityModel';
 import { MATH_CATALOG } from '../../manifest/catalog/math';
 import { resolvePrimitiveAudioInput } from '../../../hooks/primitiveAudioInput';
 

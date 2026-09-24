@@ -8,11 +8,13 @@
  * gesture checked by code, so no key reaches the tutor: not the typed fraction, not
  * the larger circle, not the matching picture.
  *
- * Pure: the component and any probe read the same assignment and scene.
+ * Pure: the component, the generator, the live adapter and any probe read the same items,
+ * assignment and scene.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { DiActionContract, JudgedScriptItem } from '../../../hooks/judgedScriptContract';
 import type { FractionCirclesChallenge } from './FractionCircles';
-import type { FractionPicture, FractionTouchItem } from './fractionTouchScript';
+import { fractionTouchPlan } from './fractionTouchModes';
 
 // ── identify / build / compare / equivalent (plain surface) ─────────────────
 
@@ -77,6 +79,48 @@ export function workspaceScene(challenge: FractionCirclesChallenge, view: Fracti
 }
 
 // ── touch_fraction (picture-touch surface) ──────────────────────────────────
+
+/** The answer is a pictured amount, not its name (which is already in the ask). A single touch
+ * closes the gesture and code owns the verdict. All choices remain available on every retry. */
+export interface FractionPicture { id: string; numerator: number; denominator: number; shaded: number[] }
+export interface FractionTouchItem extends JudgedScriptItem {
+  challengeType: 'touch_fraction'; numerator: number; denominator: number;
+  actionContract: DiActionContract; choices: FractionPicture[]; correctChoiceId: string;
+}
+const shuffle = <T,>(values: T[], random: () => number): T[] => {
+  const result = [...values];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+};
+/** Three distinct pictures per touch_fraction challenge; throws on a target the pictures cannot show. */
+export function buildFractionTouchItems(challenges: readonly FractionCirclesChallenge[], random = Math.random): FractionTouchItem[] {
+  return challenges.filter(c => c.type === 'touch_fraction').map(c => {
+    if (![2, 3, 4].includes(c.denominator) || !Number.isInteger(c.numerator) || c.numerator < 1 || c.numerator >= c.denominator) {
+      throw new Error(`Invalid touch_fraction target ${c.id}: ${c.numerator}/${c.denominator}`);
+    }
+    const target = { id: c.id, challengeType: 'touch_fraction' as const, numerator: c.numerator, denominator: c.denominator };
+    // Same-denominator near miss first; another denominator prevents counting
+    // shaded pieces alone from solving all unit-fraction items.
+    const pool = [2, 3, 4].flatMap(d => Array.from({ length: d - 1 }, (_, i) => ({ numerator: i + 1, denominator: d })))
+      .filter(f => f.numerator * c.denominator !== c.numerator * f.denominator);
+    const same = shuffle(pool.filter(f => f.denominator === c.denominator), random)[0];
+    const different = shuffle(pool.filter(f => f.denominator !== c.denominator), random);
+    const first = same ?? different[0];
+    const second = different.find(f => f.numerator * first.denominator !== first.numerator * f.denominator)!;
+    const wrong = [first, second];
+    const choices = shuffle([target, ...wrong], random).map((f, index) => ({
+      id: `${c.id}-picture-${index}`, numerator: f.numerator, denominator: f.denominator,
+      shaded: shuffle(Array.from({ length: f.denominator }, (_, i) => i), random).slice(0, f.numerator),
+    }));
+    const correctChoiceId = choices.find(f => f.numerator * c.denominator === c.numerator * f.denominator)!.id;
+    const plan = fractionTouchPlan(target);
+    return { ...target, answerKind: 'gesture', responseClass: 'manipulation', action: 'touch_fraction',
+      actionContract: plan.answerStep.actionContract, choices, correctChoiceId };
+  });
+}
 
 /** The ask the tutor must say: the spoken fraction is the stimulus. Nothing about which picture matches. */
 export function touchAssignment(item: FractionTouchItem): TeachingAssignment {

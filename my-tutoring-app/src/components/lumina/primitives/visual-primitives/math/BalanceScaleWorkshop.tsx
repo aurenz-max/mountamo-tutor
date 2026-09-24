@@ -7,25 +7,18 @@ import { LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardContent, Lumin
 import DiActionPanel from '../../../components/DiActionPanel';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { BalanceScaleMetrics } from '../../../evaluation/types';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { commitGesture } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { useScriptedBalance, workspaceBalance, type BalanceControllerOptions, type BalanceFinish, type BalanceRun } from './balanceScaleControllers';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { workshopAssignment, workshopScene } from './balanceScaleWorkspace';
 import type { BalanceSurfaceProps } from './BalanceScaleEquality';
 import { SoundManager } from '../../../utils/SoundManager';
-import type { BalanceScaleData } from './BalanceScale';
 import { enterWorkshopStage, groupCounts, initialWorkshopBoard, isHands, moveWorkshopUnit,
   placeWorkshopWeight, removeWorkshopWeight, scene, separated, shared, stageSolved, STAGES, TITLES, TRAY,
-  workshopBalance, workshopExpected, workshopFeedback, workshopProblem, type WorkshopBoard, type WorkshopWeight } from './balanceWorkshopModel';
-import { workshopItems, workshopItemCue, workshopMoveCue, workshopCompleteCue, workshopHearCue, workshopChangeCue,
-  workshopCheckCue, workshopAsk, type WorkshopItem } from './balanceWorkshopScript';
+  workshopBalance, workshopFeedback, workshopItems, workshopProblem, type WorkshopBoard, type WorkshopItem, type WorkshopWeight }
+  from './balanceWorkshopModel';
 
-type WorkshopOptions = BalanceControllerOptions<WorkshopItem>;
-
-function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
-  BalanceSurfaceProps & { tutorOwned: boolean; useController: (options: WorkshopOptions) => BalanceRun<WorkshopItem> }) {
+function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: BalanceSurfaceProps) {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [affirmedIds, setAffirmedIds] = useState<ReadonlySet<string>>(new Set());
   const built = useMemo(() => {
@@ -47,29 +40,7 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId, runti
   const boardFor = (item: WorkshopItem) => boards.current[item.problem.id] ?? initialWorkshopBoard(item.problem);
   const evaluation = usePrimitiveEvaluation<BalanceScaleMetrics>({ primitiveType: 'balance-scale', instanceId: instance.current,
     skillId: data.skillId, subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId, onSubmit: data.onEvaluationSubmit });
-  const pack = useMemo<JudgedScriptPack<WorkshopItem> | undefined>(() => tutorOwned ? undefined : ({
-    primitiveType: 'balance-scale', activityLine: 'build, separate and share real weights; then explain their quantities', items,
-    itemCue: (item, opts) => workshopItemCue(item, opts, boardFor(item)),
-    pronounceCue: (item) => workshopHearCue(item, boardFor(item)),
-    moveOnCue: (item, next) => workshopMoveCue(item, next, next ? boardFor(next) : boardFor(item)),
-    completeCue: workshopCompleteCue,
-    contextFor: (item) => ({ title: TITLES[item.problem.mode], challengeType: item.problem.mode, phase: item.step,
-      currentChallengeIndex: String(built.problems.indexOf(item.problem) + 1), totalChallenges: String(built.problems.length),
-      targetEquation: 'Use the current scripted weight task.', currentEquation: scene(item.problem, boardFor(item)),
-      variableValue: 'withheld; use the current private judging cue only', gradeBand: data.gradeBand ?? '3-4',
-      stepCount: String(moves.current[item.problem.id]?.length ?? 0), isBalanced: String(workshopBalance(item.problem, boardFor(item)) === 'balanced'),
-      isSolved: 'Use the current code-computed check cue', attemptNumber: '0' }),
-    statusLines: { idle: 'Start the tutor to work with the weights.', ready: (item) => workshopAsk(item.problem, item.step),
-      retry: (item) => isHands(item.step) ? 'Try another move with the weights.' : 'Have another go aloud.',
-      noVerdict: () => 'Take your time.', affirmedNext: 'Ready for the next part.', affirmedLast: 'You finished the weight activity.', done: 'Nice work!' },
-    // One record per spoken number, right or corrected: the ask and the scale as it stands, and what was heard.
-    // Hand work is ungraded exploration and the explanation is coaching, so those record nothing. Never the verdict.
-    observation: (item, { heard }) => isHands(item.step) || item.step === 'explain' ? null : ({
-      challenge: `${item.step}: ${workshopAsk(item.problem, item.step)} On the scale: ${scene(item.problem, boardFor(item))}`,
-      expected: String(workshopExpected(item.problem, item.step)),
-      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.' }),
-  }), [items, built.problems, data.gradeBand, tutorOwned]);
-  const finish = (summary: BalanceFinish) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const results = built.problems.map((problem) => {
       const outcomes = items.filter((item) => item.problem.id === problem.id).map((item) => ({ step: item.step,
         ...summary.outcomes.find((outcome) => outcome.id === item.id) }));
@@ -87,16 +58,18 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId, runti
       totalChallenges: results.length, correctCount: results.filter((result) => result.solved).length, overallAccuracy: score,
       attemptsCount: attempts, firstTryCount: results.filter((result) => result.score === 100).length,
       hintsViewed: modeled.current.size, averageAttemptsPerChallenge: attempts / Math.max(1, results.length) };
-    // The runner owns the evidence (first-response share, kept phases); the shared capture gate decides.
+    // The workspace owns the evidence (first-response share, kept phases); the shared capture gate decides.
     evaluation.submitResult(score >= 60, score, metrics, { interactionVersion: 'weight-workshop-di-v1', explorationIsUngraded: true,
       explanationIsCoaching: true, scoringBasis: 'minimum-of-distinct-spoken-quantities', results,
       learningResponses: summary.learningResponses,
-      ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
+      teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
     undefined, summary.diagnosisEvidence);
   };
-  const runner = useController({ pack, items, workspace, instanceId: instance.current, objectiveId: data.objectiveId,
-    planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || built.problems[0]?.mode || 'one_step',
-    gradeLevel: data.gradeLevel ?? 'elementary', exhibitId: data.exhibitId, silenceCloseMs: 1100, onFinished: finish,
+  // The teaching workspace is the only controller: the runtime owns progression, and `finish` runs
+  // only under an evaluation provider.
+  const runner = useWorkspaceRunner<WorkshopItem>({ primitiveId: 'balance-scale', assignment: workshopAssignment, items, workspace,
+    instanceId: instance.current, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || built.problems[0]?.mode || 'one_step', onFinished: finish,
     onAffirmed: (done) => setAffirmedIds((prev) => new Set(prev).add(done.id)),
     onItemOpened: (item, index) => {
       if (index === 0) { boards.current = {}; moves.current = {}; modeled.current.clear(); }
@@ -120,14 +93,11 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId, runti
     (moves.current[item.problem.id] ??= []).push({ before: previous, after: next, description });
     boards.current[item.problem.id] = next; setBoard(next); setSelected(null);
     setFeedback(workshopFeedback(item.problem, item.step, next));
-    runner.loop?.clearQueuedCue();
-    // Only a completed move commits; anything else is coaching (the scripted cue, or on the
-    // workspace the published scene the tutor reads).
+    // Only a completed move commits; anything else is exploration the tutor reads from the published scene.
     runner.armStillness(() => {
       if (runner.isAwaitingGesture()) return;
-      if (stageSolved(item.problem, item.step, next)) commitGesture(runner, { response: `${description}. Now: ${scene(item.problem, next)}`,
-        correct: true, cue: () => workshopCheckCue(item, next) });
-      else runner.loop?.queueCue(workshopChangeCue(item, next));
+      if (stageSolved(item.problem, item.step, next)) runner.commitGesture({ response: `${description}. Now: ${scene(item.problem, next)}`,
+        correct: true, cue: () => '' });
     }, stageSolved(item.problem, item.step, next) ? 900 : 1800);
     SoundManager.tap();
   };
@@ -135,17 +105,17 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId, runti
     if (!item || !canMove) return;
     publish(moveWorkshopUnit(item.problem, boardFor(item), index, destination, item.step), `Moved unit ${index + 1} to ${destination === -2 ? 'set aside' : destination === -1 ? 'pool' : `group ${destination + 1}`}`);
   };
-  // Workspace path: what the tutor and the observer are shown, republished every render. W1 offers no
+  // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!tutorOwned || !item) return;
+    if (!item) return;
     workspace.current = { ...workshopScene(item, board), demonstration: [], canDemonstrate: false, canPresent: false,
       readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace?.();
+    runner.publishWorkspace();
   });
   // The live host has no evaluation provider, so the workspace's own summary ends the activity there.
   const finished = evaluation.hasSubmitted || !!runner.practiceSummary;
-  const solvedIds = runner.solvedIds ?? affirmedIds;
+  const solvedIds = affirmedIds;
 
   if (!item || built.error) return <LuminaCard className={className}><LuminaCardContent>{built.error || 'No weight challenges are available.'}</LuminaCardContent></LuminaCard>;
   const p = item.problem;
@@ -279,16 +249,12 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId, runti
           steps={items.filter((step) => step.problem.id === p.id)} completedIds={solvedIds}
           carriedIds={new Set(items.filter((step, index) => index < runner.currentIndex && !solvedIds.has(step.id)).map((step) => step.id))}
           startInstruction="Start the tutor, then work with the weights." />
-        {/* With the tutor (no `hearStimulus`), the learner asks the tutor to repeat. */}
-        {runner.hearStimulus && <button type="button" disabled={!runner.running} onClick={runner.hearStimulus} className="mx-auto block text-sm text-cyan-300 underline disabled:opacity-40">Say that again</button>}
       </>}
     </LuminaCardContent>
   </LuminaCard>;
 }
 
-const useWorkspaceWorkshop = workspaceBalance<WorkshopItem>(workshopAssignment);
-
-// The workspace path never mounts the runner, whose context push and cue loop would run beside the tutor.
-const BalanceScaleWorkshop = withWorkspaceController<BalanceSurfaceProps, WorkshopOptions, BalanceRun<WorkshopItem>>(
-  'balance-scale', BalanceScaleWorkshopSurface, useScriptedBalance<WorkshopItem>, useWorkspaceWorkshop);
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const BalanceScaleWorkshop = withWorkspaceOnly<BalanceSurfaceProps>('balance-scale', BalanceScaleWorkshopSurface,
+  props => props.data.title);
 export default BalanceScaleWorkshop;

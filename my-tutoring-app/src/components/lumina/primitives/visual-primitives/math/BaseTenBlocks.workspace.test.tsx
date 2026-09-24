@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 /**
- * W1 minimal binding: the real BaseTenBlocks on the shared teaching workspace, with the real
+ * The real BaseTenBlocks on the shared teaching workspace, its only teaching path, with the real
  * TeachingSession, LiveLessonRuntime, transport and rendering shell. The family has two surfaces,
- * chosen by the payload: the judged mat (read_blocks, regroup; runner-era) and the click mat
- * (build_number, operate; plain shape). Both bind under tutor ownership, and neither runner nor
- * legacy cue may run beside the tutor. Only microphone hardware, evaluation writes, sound and the
- * legacy AI-context hook are substituted.
+ * chosen by the payload: the spoken mat (read_blocks, regroup) and the click mat (build_number,
+ * operate). Both bind under tutor ownership; no scripted cue runs beside the tutor, and an unbound
+ * mount of either renders the "needs the tutor" card, never a scripted fallback. Only the Live
+ * context, evaluation writes, sound and the capture transport are substituted.
  */
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -16,30 +16,28 @@ import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/Li
 import { RuntimeTransport } from '../../../components/live-activity/runtime/runtimeTransport';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
 
-const seam = vi.hoisted(() => ({ conversation: [] as any[], send: vi.fn(), submit: vi.fn(), legacy: vi.fn(),
-  evaluationContext: null as unknown }));
+const seam = vi.hoisted(() => ({ conversation: [] as any[], send: vi.fn(), submit: vi.fn(), evaluationContext: null as unknown }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
   isConnected: true, isListening: true, isAudioPlaying: false, sessionMode: 'lesson', activePrimitiveId: 'blocks',
   conversation: seam.conversation, sendText: seam.send,
   sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} },
 }) }));
-// The legacy context hook: records whether it was enabled or sent anything.
-vi.mock('../../../hooks/useLuminaAI', () => ({ useLuminaAI: (o: { enabled?: boolean }) => {
-  if (o.enabled !== false) seam.legacy();
-  return { sendText: seam.legacy, isConnected: true, isAudioPlaying: false, activePrimitiveId: 'blocks' };
-} }));
 vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => seam.evaluationContext,
   // Submitted once `submitResult` has run, as the real hook reports it.
   usePrimitiveEvaluation: () => ({ hasSubmitted: seam.submit.mock.calls.length > 0, submitResult: seam.submit, submittedResult: null, elapsedMs: 0 }) }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
-vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
+vi.mock('@/lib/authApiClient', () => ({ authApi: { post: vi.fn() } }));
 import BaseTenBlocks, { type BaseTenBlocksChallenge, type BaseTenBlocksData } from './BaseTenBlocks';
 import { itemsFromChallenges } from './baseTenScript';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { getComponentById } from '../../../service/manifest/catalog';
+import { captureMisconception, resetMisconceptionCaptureLatch } from '../../../evaluation/diagnosis/captureMisconception';
+import type { PrimitiveEvaluationResult } from '../../../evaluation/types';
+import { authApi } from '@/lib/authApiClient';
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.evaluationContext = null;
+  resetMisconceptionCaptureLatch();
   vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => setTimeout(() => fn(performance.now()), 16));
   vi.stubGlobal('cancelAnimationFrame', clearTimeout);
 });
@@ -50,17 +48,18 @@ const challenge = (type: BaseTenBlocksChallenge['type'], targetNumber: number, i
   ({ type, targetNumber, instruction, hint: 'Look at each column.' });
 const DECKS: Record<Mode, BaseTenBlocksChallenge[]> = {
   build_number: [challenge('build_number', 12, 'Build the number 12 with blocks.')],
-  read_blocks: [challenge('read_blocks', 47, 'unused: the pack owns every ask')],
-  regroup: [challenge('regroup', 34, 'unused: the pack owns every ask')],
+  read_blocks: [challenge('read_blocks', 47, 'unused: the modes own every ask')],
+  regroup: [challenge('regroup', 34, 'unused: the modes own every ask')],
   operate: [challenge('add_with_blocks', 41, 'Add 23 and 18 with blocks.')],
 };
 
-function mount(mode: Mode) {
+function mount(mode: Mode, challenges: BaseTenBlocksChallenge[] = DECKS[mode]) {
   const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
   const sent: any[] = [];
   const transport = new RuntimeTransport(runtime, m => sent.push(m));
   const data: BaseTenBlocksData = { instanceId: 'blocks', title: 'Blocks', description: 'Place value with blocks.',
-    numberValue: DECKS[mode][0].targetNumber, maxPlace: 'hundreds', gradeBand: '2-3', challenges: DECKS[mode] };
+    numberValue: challenges[0].targetNumber, maxPlace: 'hundreds', gradeBand: '2-3', challenges,
+    skillId: 'NBT004-01', subskillId: 'NBT004-01-b' };
   const tree = () => <LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
     <BaseTenBlocks data={data} runtimePlanItemId="plan-blocks" runtimeEvalMode={mode} />
   </LiveRuntimeSurface></LiveRuntimeContext.Provider>;
@@ -93,15 +92,37 @@ function mount(mode: Mode) {
 const tutorTools = (h: ReturnType<typeof mount>) => h.state().affordances.filter(a => !a.controller)
   .map(a => (a.action as { operation?: string }).operation ?? a.action.type).sort();
 
+/** Every block button of one place on the spoken mat, by its accessible name. */
+const blocksOf = (place: 0 | 1 | 2) => {
+  const noun = ['ones cube', 'ten-stick', 'hundred-flat'][place];
+  return screen.queryAllByRole('button', { name: new RegExp(`^(Trade one ${noun} for ten |${noun}$)`) });
+};
+const columnOf = (name: string) => screen.getByLabelText(`${name} column`);
+
 it.each(['build_number', 'read_blocks', 'regroup', 'operate'] as const)(
-  '%s binds the workspace under tutor ownership, with no runner cue, legacy context or Next button', mode => {
+  '%s binds the workspace under tutor ownership, with no scripted cue, Next button or runner control', mode => {
     const h = mount(mode);
     expect(h.state().owner).toBe('tutor');
     expect(h.state().task!.task).not.toMatch(/Say exactly|\[BT_|unused/);
     expect(tutorTools(h)).toEqual(['begin_help']);
-    expect(seam.send.mock.calls.flat().join(' ')).not.toMatch(/\[BT_|Say exactly|\[ACTIVITY_START/);
-    expect(seam.legacy).not.toHaveBeenCalled();
+    expect(seam.send.mock.calls.flat().join(' ')).not.toMatch(/\[BT_|Say exactly|\[ACTIVITY_START|\[REGROUP_|\[BUILD_|\[ANSWER_/);
     expect(screen.queryByRole('button', { name: /next challenge|say that again/i })).toBeNull();
+  });
+
+it.each([['the spoken mat', 'read_blocks'], ['the click mat', 'build_number']] as const)(
+  'an unbound mount of %s (no runtime, or a pin outside the catalog) renders the needs-the-tutor card', (_surface, mode) => {
+    const data: BaseTenBlocksData = { instanceId: 'blocks', title: 'Our blocks', description: '', numberValue: 47,
+      maxPlace: 'hundreds', challenges: DECKS[mode] };
+    const { container } = render(<BaseTenBlocks data={data} runtimeEvalMode={mode} />);
+    expect(container.querySelector('[data-workspace-unbound="base-ten-blocks"]')).not.toBeNull();
+    expect(screen.getByText('Our blocks')).toBeTruthy();
+    expect(container.querySelector('[data-base-ten-mat]')).toBeNull();
+    cleanup();
+    const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
+    const off = render(<LiveRuntimeContext.Provider value={runtime}><BaseTenBlocks data={data} runtimeEvalMode="not_a_mode" />
+    </LiveRuntimeContext.Provider>);
+    expect(off.container.querySelector('[data-workspace-unbound="base-ten-blocks"]')).not.toBeNull();
+    expect(off.container.querySelector('[data-base-ten-mat]')).toBeNull();
   });
 
 it('a spoken step publishes the number it asks for; the trade, build and operate keys are never published', () => {
@@ -123,29 +144,94 @@ it('a spoken step publishes the number it asks for; the trade, build and operate
   }
 });
 
-it('read_blocks: a wrong count is retried, and the worth step is judged against the value, not the count', () => {
+it('the spoken mat prints no count, total or composed number, and offers no keypad or Check button', () => {
+  mount('read_blocks', [challenge('read_blocks', 247, 'unused')]);
+  // The scan is scoped to the mat: the problem counter elsewhere counts things the child can see.
+  const mat = screen.getByLabelText('Block mat');
+  expect(mat.textContent).toBe('hundred-flatsten-sticksones cubes');
+  expect(document.body.textContent).not.toContain('247');
+  expect(document.body.textContent).not.toMatch(/blocks total|\bforty\b|two hundred/i);
+  for (const label of [/check my blocks/i, /check my trade/i, /^7$/, /^✓$/]) {
+    expect(screen.queryByRole('button', { name: label })).toBeNull();
+  }
+  // One block per unit is the only place the count lives, and reading is a mouth turn: nothing is tappable.
+  expect(blocksOf(2)).toHaveLength(2);
+  expect(blocksOf(1)).toHaveLength(4);
+  expect(blocksOf(0)).toHaveLength(7);
+  for (const block of [...blocksOf(2), ...blocksOf(1), ...blocksOf(0)]) expect((block as HTMLButtonElement).disabled).toBe(true);
+  // The subject column is highlighted, and only that one.
+  expect(columnOf('hundreds').getAttribute('data-highlighted')).toBe('true');
+  expect(columnOf('tens').getAttribute('data-highlighted')).toBeNull();
+  expect(screen.queryByRole('button', { name: /put the blocks back/i })).toBeNull();
+});
+
+it('read_blocks: a wrong count is retried, the worth step is judged against the value, and the submission counts problems', () => {
   seam.evaluationContext = { lesson: 'test' };
   const h = mount('read_blocks');
   h.say('forty'); h.feedback('incorrect', 'retry');
   expect(h.state().task!.workspace!.expectedAnswer).toBe('4');
   h.say('four'); h.feedback('correct', 'advance');
   expect(h.state().task!.workspace!.expectedAnswer).toBe('40');
+  expect(columnOf('tens').getAttribute('data-highlighted')).toBe('true');
   h.say('forty'); h.feedback('correct', 'advance');
   expect(h.state().status).not.toBe('completed');
   h.confirmVisible();
   expect(h.state().status).toBe('completed');
-  expect(screen.getByText(/Nice work with the blocks!/)).toBeTruthy();
+  const done = screen.getByText(/Nice work with the blocks!/);
+  expect(done.parentElement!.textContent).not.toMatch(/\d/);
   expect(seam.submit).toHaveBeenCalledOnce();
-  expect(seam.submit.mock.calls[0].slice(0, 2)).toEqual([true, 67]);
+  const [success, score, metrics, work, , evidence] = seam.submit.mock.calls[0];
+  expect([success, score]).toEqual([true, 67]);
+  expect(metrics).toMatchObject({ evalMode: 'read_blocks', totalChallenges: 1, challengesCompleted: 1, placeValuesUsed: ['tens'] });
+  // The workspace's record of every judged attempt, and the correction as diagnosis evidence.
+  expect(work.learningResponses).toHaveLength(3);
+  expect(work.problem.challenges).toEqual(DECKS.read_blocks);
+  expect(evidence.firstResponseScore).toBe(50);
+  expect(evidence.phases).toHaveLength(1);
+  expect(evidence.phases[0]).toMatchObject({ expected: '4' });
+  expect(evidence.phases[0].observed).toContain('forty');
+  expect(work.diagnosisEvidence).toEqual(evidence);
 });
 
-it('regroup: a wrong trade commits on stillness, Try again puts the blocks back, a right trade completes once', () => {
+it('read_blocks correction evidence reaches the skill-scoped observation capture', async () => {
+  seam.evaluationContext = { lesson: 'test' };
+  const h = mount('read_blocks', [challenge('read_blocks', 2305, 'unused'), challenge('read_blocks', 5206, 'unused')]);
+  // Each worth step is said as the bare count first: every mat passes after one correction.
+  for (const [count, worth] of [['two', 'two thousand'], ['two', 'two hundred']]) {
+    h.say(count); h.feedback('correct', 'advance');
+    h.say(count); h.feedback('incorrect', 'retry');
+    h.say(worth); h.feedback('correct', 'advance');
+  }
+  h.confirmVisible();
+  expect(h.state().status).toBe('completed');
+  const [success, score, metrics, studentWork, , diagnosisEvidence] = seam.submit.mock.calls[0];
+  expect([success, score, diagnosisEvidence.firstResponseScore]).toEqual([true, 67, 50]);
+  vi.useRealTimers();
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ abstain: false, confidence: 'high', evidenceTier: 'judge',
+    misconceptionText: 'Synthetic hypothesis.', teachingImplication: 'Pair equal counts of different block sizes.', checkNext: 'Ask worth independently.' }) }));
+  vi.mocked(authApi.post).mockResolvedValue({ stored: true });
+  const result = { skillId: 'NBT004-01', subskillId: 'NBT004-01-b', primitiveType: 'base-ten-blocks', success, score, metrics,
+    diagnosisEvidence, studentWork, attemptId: 'blocks-attempt', instanceId: 'blocks',
+    lessonContext: { gradeLevel: '4', curriculumSubject: 'MATHEMATICS' } } as unknown as PrimitiveEvaluationResult;
+  await captureMisconception(result, { sessionId: 's', subskillId: 'NBT004-01-b', gradeLevel: '4' });
+  expect(JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]!.body)).params.evidence.firstResponseScore).toBe(50);
+  expect(authApi.post).toHaveBeenCalledWith('/api/student-profile/misconceptions', expect.objectContaining({
+    primitive_type: 'base-ten-blocks', scope: 'skill', skill_id: 'NBT004-01', subskill_id: 'NBT004-01-b' }));
+});
+
+it('regroup: the prediction turn is untradeable; a wrong trade commits on stillness, Try again puts the blocks back, a right trade completes once', () => {
   seam.evaluationContext = { lesson: 'test' };
   const h = mount('regroup');
+  expect(blocksOf(1).every(b => (b as HTMLButtonElement).disabled)).toBe(true);
+  expect(screen.queryByRole('button', { name: /put the blocks back/i })).toBeNull();
+  expect(columnOf('tens').getAttribute('data-highlighted')).toBeNull();
   h.say('fourteen'); h.feedback('correct', 'advance');
   const tenStick = 'Trade one ten-stick for ten ones cubes';
+  // A ones cube is never tradeable: nothing sits below it.
+  expect(blocksOf(0).every(b => (b as HTMLButtonElement).disabled)).toBe(true);
   // Two tens broken: the value is kept, but it is not the one trade asked for.
   h.press(tenStick); h.press(tenStick);
+  expect(screen.getByText('That is a different block from the one we are trading.')).toBeTruthy();
   expect(h.state().task!.evidence.attemptNumber).toBe(0);
   h.settle();
   expect(h.state().task!.evidence.correctness).toBe('incorrect');
@@ -162,6 +248,23 @@ it('regroup: a wrong trade commits on stillness, Try again puts the blocks back,
   expect(h.state().status).toBe('completed');
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0].slice(0, 2)).toEqual([true, 67]);
+  // regroup supplies no correction evidence, so capture never calls the model.
+  expect(seam.submit.mock.calls[0][5]).toBeUndefined();
+  expect(seam.submit.mock.calls[0][3].diagnosisEvidence).toBeUndefined();
+});
+
+it('regroup: Put the blocks back restores the starting mat before the check', () => {
+  const h = mount('regroup');
+  h.say('fourteen'); h.feedback('correct', 'advance');
+  h.press('Trade one ten-stick for ten ones cubes');
+  expect(blocksOf(0)).toHaveLength(14);
+  h.press(/put the blocks back/i);
+  expect(blocksOf(1)).toHaveLength(3);
+  expect(blocksOf(0)).toHaveLength(4);
+  expect(document.body.textContent).not.toMatch(/different block/i);
+  h.settle();
+  // The undo cleared the pending stillness commit: nothing was checked.
+  expect(h.state().task!.evidence.attemptNumber).toBe(0);
 });
 
 it('build_number: Check My Blocks commits, the mat closes until Try again empties it, a standard build completes once', () => {

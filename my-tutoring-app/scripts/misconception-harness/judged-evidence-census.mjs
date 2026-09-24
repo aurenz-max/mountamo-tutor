@@ -33,7 +33,6 @@ const nextEnv = await import('@next/env');
 // where the catalog's first mode is not the judged one.
 const SOURCES = {
   '3d-shape-explorer': { topic: '3D shapes', gradeLevel: 'Kindergarten' },
-  'base-ten-blocks': { topic: 'Place value: what the blocks are worth', gradeLevel: 'Grade 4', evalMode: 'read_blocks' },
   'compare-objects': { topic: 'Comparing lengths and weights of objects', gradeLevel: 'Kindergarten' },
   'counting-board': { topic: 'Taking away objects and saying how many are left', gradeLevel: 'Kindergarten', evalMode: 'take_away' },   // slice 2: runner evidence, one observation callback
   'decodable-reader': { topic: 'Short a decodable passage', gradeLevel: 'Kindergarten' },
@@ -41,7 +40,6 @@ const SOURCES = {
   'di-dice-roll': { topic: 'Counting dice pips', gradeLevel: 'Kindergarten' },
   'di-word-problem-setup': { topic: 'Addition word problems within 20', gradeLevel: 'Grade 1' },
   'di-worked-procedure': { topic: 'Two-digit addition with regrouping', gradeLevel: 'Grade 2' },
-  'fraction-circles': { topic: 'Understanding fractions', gradeLevel: 'Grade 3', evalMode: 'touch_fraction' },
   'letter-sound-link': { topic: 'Letter sounds', gradeLevel: 'Kindergarten' },
   'letter-spotter': { topic: 'Letter recognition', gradeLevel: 'Kindergarten' },
   'oral-sentence-studio': { topic: 'Using new vocabulary words in sentences', gradeLevel: 'Grade 1' },

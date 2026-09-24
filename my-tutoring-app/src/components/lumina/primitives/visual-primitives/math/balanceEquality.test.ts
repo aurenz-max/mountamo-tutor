@@ -1,16 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { validateJudgedScriptPack } from '../../../hooks/judgedScriptContract';
-import { addWeight, removeWeight, balanceState, describeBoard, equalityProblem, initialBoard,
+import { addWeight, removeWeight, balanceState, describeBoard, equalityItems, equalityProblem, initialBoard,
   demonstratedBoard, isMatched, usesEqualityPilot, rightWeight } from './balanceEqualityModel';
-import { equalityItems, equalityItemCue, equalityCheckCue, equalityChangeCue, equalityCompleteCue,
-  equalityHearCue, equalityMoveCue, equalityJudging } from './balanceEqualityScript';
+import { equalityAssignment, equalityScene } from './balanceScaleWorkspace';
 import type { BalanceScaleChallenge, BalanceScaleData } from './BalanceScale';
 
 const challenge: BalanceScaleChallenge = { type: 'equality', leftSide: [], rightSide: [], variableValue: 8,
   instruction: 'Match the weight.', hint: 'Watch the scale.' };
 const problem = equalityProblem(challenge, 0);
 const items = equalityItems([problem]);
-const spoken = (cue: string) => cue.match(/Say exactly: "([^"]*)"/)?.[1] ?? '';
 
 describe('weight matching model', () => {
   it('starts empty, responds to weight rather than block count, and allows overshooting', () => {
@@ -55,30 +52,25 @@ describe('weight matching model', () => {
   });
 });
 
-describe('match, compose, infer teaching contract', () => {
-  it('uses one gesture followed by two distinct spoken-number turns and passes shared gates', () => {
+describe('match, compose, infer on the teaching workspace', () => {
+  it('uses one gesture followed by two distinct spoken-number turns', () => {
     expect(items.map((item) => [item.step, item.answerKind])).toEqual([['build', 'gesture'], ['total', 'voice'], ['infer', 'voice']]);
-    expect(validateJudgedScriptPack({ primitiveType: 'balance-scale', activityLine: 'weight matching', items,
-      itemCue: equalityItemCue, moveOnCue: (item, next) => equalityMoveCue(item, next), completeCue: equalityCompleteCue,
-      contextFor: () => ({}) })).toEqual([]);
   });
-  it('withholds the target and total during building, including replay and coaching', () => {
+  it('withholds the target during building: the ask, the key and the scene', () => {
     expect(describeBoard(problem, initialBoard())).not.toContain('8');
-    for (const cue of [equalityItemCue(items[0], { opening: true }), equalityHearCue(items[0], initialBoard()),
-      equalityChangeCue(items[0], addWeight(initialBoard(), 3, 1)!)]) {
-      expect(spoken(cue)).not.toMatch(/\b(8|eight)\b|^(Yes|My turn)/);
+    const build = equalityAssignment(items[0]);
+    expect(build).toMatchObject({ response: 'gesture' });
+    expect(build.expectedAnswer).toBeUndefined();
+    expect(build.task).not.toMatch(/\b(8|eight)\b/);
+    expect(JSON.stringify(equalityScene(items[0], addWeight(initialBoard(), 3, 1)!))).not.toMatch(/\b(8|eight)\b/);
+  });
+  it('asks the sum before the left weight, and never says either number in the ask', () => {
+    const [, total, infer] = items.map(equalityAssignment);
+    expect(total.task).toContain('total weight');
+    expect(infer.task).toBe('Since the scales are balanced, what weight is the left side?');
+    for (const ask of [total, infer]) {
+      expect(ask).toMatchObject({ response: 'speech', expectedAnswer: '8' });
+      expect(ask.task).not.toContain('8');
     }
-    expect(spoken(equalityCheckCue(items[0], demonstratedBoard(problem)))).not.toMatch(/\b(8|eight)\b/);
-  });
-  it('elicits the sum before the left weight and requires fresh speech for the inference', () => {
-    const board = demonstratedBoard(problem);
-    expect(spoken(equalityItemCue(items[1], {}, board))).toContain('total weight');
-    expect(spoken(equalityItemCue(items[2], {}, board))).toBe('Since the scales are balanced, what weight is the left side?');
-    expect(equalityJudging(items[2])).toContain('wait for a fresh response');
-    expect(equalityJudging(items[1])).toContain('Reject negated correct numbers');
-    expect(spoken(equalityItemCue(items[2], {}, board))).not.toContain('8');
-  });
-  it('can describe a tutor demonstration without claiming student authorship', () => {
-    expect(spoken(equalityMoveCue(items[0], items[1]))).toContain('I have placed a matching set');
   });
 });

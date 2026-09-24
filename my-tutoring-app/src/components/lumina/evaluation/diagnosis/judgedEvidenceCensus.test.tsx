@@ -57,7 +57,6 @@ vi.mock('@/lib/authApiClient', () => ({ authApi: { post: vi.fn(), get: vi.fn() }
 type Loader = () => Promise<{ default: React.ComponentType<{ data: Record<string, unknown> }> }>;
 const COMPONENTS: Record<string, Loader> = {
   '3d-shape-explorer': () => import('../../primitives/visual-primitives/math/ThreeDShapeExplorer'),
-  'base-ten-blocks': () => import('../../primitives/visual-primitives/math/BaseTenBlocks'),
   'compare-objects': () => import('../../primitives/visual-primitives/math/CompareObjects'),
   'counting-board': () => import('../../primitives/visual-primitives/math/CountingBoard'),
   'ten-frame': () => import('../../primitives/visual-primitives/math/TenFrame'),
@@ -66,7 +65,6 @@ const COMPONENTS: Record<string, Loader> = {
   'di-dice-roll': () => import('../../primitives/visual-primitives/direct-instruction/DiDiceRoll'),
   'di-word-problem-setup': () => import('../../primitives/visual-primitives/direct-instruction/DiWordProblemSetup'),
   'di-worked-procedure': () => import('../../primitives/visual-primitives/direct-instruction/DiWorkedProcedure'),
-  'fraction-circles': () => import('../../primitives/visual-primitives/math/FractionCircles'),
   'letter-sound-link': () => import('../../primitives/visual-primitives/literacy/LetterSoundLink'),
   'letter-spotter': () => import('../../primitives/visual-primitives/literacy/LetterSpotter'),
   'oral-sentence-studio': () => import('../../primitives/visual-primitives/literacy/OralSentenceStudio'),

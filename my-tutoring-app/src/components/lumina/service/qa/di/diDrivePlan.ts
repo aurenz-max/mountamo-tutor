@@ -1,5 +1,3 @@
-import { buildFractionTouchItems, fractionTouchPack, fractionTouchHarnessAnswers, fractionTouchVerdictCue, type FractionTouchItem } from '../../../primitives/visual-primitives/math/fractionTouchScript';
-import type { FractionCirclesChallenge } from '../../../primitives/visual-primitives/math/FractionCircles';
 import { buildSequencerItems, sequencerPackBase, sequencerHarnessAnswers, sequencerOrderCue, type SequencerItem } from '../../../primitives/visual-primitives/math/numberSequencerScript';
 import type { NumberSequencerChallenge } from '../../../primitives/visual-primitives/math/NumberSequencer';
 /**
@@ -96,19 +94,6 @@ import {
   type NumberBondChallengeLike,
   type NumberBondItem,
 } from '@/components/lumina/primitives/visual-primitives/math/numberBondScript';
-import {
-  baseTenCheckCue,
-  baseTenHarnessAnswers,
-  baseTenPackBase,
-  itemsFromChallenges as baseTenItemsFromChallenges,
-  usesBaseTenDi,
-  type BaseTenChallengeLike,
-  type BaseTenItem,
-} from '@/components/lumina/primitives/visual-primitives/math/baseTenScript';
-import {
-  tradedColumns as baseTenTradedColumns,
-  type BtMode,
-} from '@/components/lumina/primitives/visual-primitives/math/baseTenModel';
 import {
   countersForAction,
   expandNumberBondInteractions,
@@ -671,16 +656,6 @@ const interactiveBookAdapter: DiPortAdapter<InteractiveBookItem> = {
 };
 
 /** Story Bridge: mixed gesture and spoken comparison over two read-alouds. */
-const fractionTouchAdapter: DiPortAdapter<FractionTouchItem> = {
-  build: data => {
-    const challenges = (data.challenges ?? []) as FractionCirclesChallenge[];
-    const items = buildFractionTouchItems(challenges);
-    return { items, dropped: challenges.length - items.length, surface: fractionTouchPack(items) };
-  },
-  answersFor: fractionTouchHarnessAnswers,
-  gestureVerdictCue: (item, gesture) => fractionTouchVerdictCue(item, String(gesture)),
-};
-
 const storyBridgeAdapter: DiPortAdapter<StoryBridgeItem> = {
   build: (data) => {
     const challenges = (data.challenges ?? []) as StoryBridgeChallenge[];
@@ -1686,41 +1661,6 @@ const placeValueChartAdapter: DiPortAdapter<PlaceValueItem> = {
 };
 
 /**
- * base-ten-blocks — the CONCRETE half of the place-value pair, and a STAGED
- * port: only `read_blocks` and `regroup` are judged, while `build_number` and
- * the operate modes keep the click transport. The build mirrors that exactly.
- *
- * ⚠️ ALL-OR-NOTHING, like knowledge-check's, and for the component's reason
- * rather than the harness's. `usesBaseTenDi` routes a payload to the judged
- * stage only when every challenge carries the SAME judged type and at least one
- * number survives the build gates; anything else gets the click surface. An
- * adapter that built items from a mixed payload anyway would drive a session no
- * child can be given — so a payload the component would not route here returns
- * zero items and counts every candidate as dropped.
- *
- * THE GESTURE PAYLOAD IS A PLACE, not a count: the child taps one block and the
- * mat that produces is computed here, because `tradedColumns` is the same
- * function the stage calls. Tapping the ones column is a legal wrong move — it
- * cannot break down, so the mat is unchanged and `solved=false`, which is the
- * honest verdict for "did nothing".
- */
-const baseTenAdapter: DiPortAdapter<BaseTenItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as BaseTenChallengeLike[];
-    if (!usesBaseTenDi(challenges)) {
-      return { items: [], dropped: challenges.length, surface: baseTenPackBase([]) };
-    }
-    const mode = challenges[0]!.type as BtMode;
-    const items = baseTenItemsFromChallenges(challenges, mode);
-    const problems = new Set(items.map((item) => item.problem.id));
-    return { items, dropped: challenges.length - problems.size, surface: baseTenPackBase(items) };
-  },
-  answersFor: baseTenHarnessAnswers,
-  gestureVerdictCue: (item, gesture) =>
-    baseTenCheckCue(item, baseTenTradedColumns(item.problem.start, Number(gesture) || 0)),
-};
-
-/**
  * knowledge-check (item 23 slice 2) — the first CROSS-CUTTING port: not a
  * subject primitive but the closing assessment carrier, so one payload mixes
  * up to five judged kinds (true_false / choice / choice_tap / blank / match /
@@ -2308,7 +2248,6 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'word-builder': wordBuilderAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'decodable-reader': decodableReaderAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'fraction-circles': fractionTouchAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-bridge': storyBridgeAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'compare-objects': compareObjectsAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
@@ -2326,7 +2265,6 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'sentence-analyzer': sentenceAnalyzerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'sorting-station': sortingStationAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'place-value-chart': placeValueChartAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'base-ten-blocks': baseTenAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'solar-system-explorer': solarSystemAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'habitat-diorama': habitatDioramaAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'rhyme-studio': rhymeStudioAdapter as unknown as DiPortAdapter<JudgedScriptItem>,

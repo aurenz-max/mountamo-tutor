@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { Button } from '@/components/ui/button';
 import {
   LuminaCard,
@@ -17,12 +18,10 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { BaseTenBlocksMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { describePlainCheck, plainWorkspaceAssignment, plainWorkspaceScene } from './baseTenWorkspace';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
@@ -114,47 +113,6 @@ function decomposeNumber(num: number, places: PlaceValue[]): Record<PlaceValue, 
   return result as Record<PlaceValue, number>;
 }
 
-/**
- * Keeps the tutor's reveal level in sync with the on-screen support tier so it
- * never reads aloud a readout the tier deliberately withdrew. read_blocks is
- * always treated as max-withhold (its counts/total are contractually hidden).
- */
-function tutorRevealClause(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  challengeType?: string,
-): string {
-  if (challengeType === 'read_blocks') {
-    return `[TIER] The column counts and total are hidden. NEVER state how many blocks are in any column or the total — ask the student to count each place themselves.`;
-  }
-  switch (tier) {
-    case 'easy':
-      return `[TIER easy] Full support is on screen (column counts + running total). You may read the columns aloud and name the place-value strategy step by step.`;
-    case 'hard':
-      return `[TIER hard] The column counts AND running total are hidden. Do NOT read off any column count or the total for the student, and never state the answer — ask what they see in each place and have them track it mentally.`;
-    case 'medium':
-    default:
-      return `[TIER medium] The running total is visible but per-column counts are hidden. Nudge the execution — point to a place to check — but do not count each column for the student.`;
-  }
-}
-
-/**
- * Tells the tutor HOW the student answers this challenge, so it never coaches a
- * keypad that isn't on screen (build/regroup) or block-placing on a mode where
- * the blocks are only the stimulus (read_blocks).
- */
-function answerChannelClause(challengeType?: string): string {
-  switch (challengeType) {
-    case 'build_number':
-      return ` [CHANNEL] There is NO number keypad — the student answers by placing blocks and pressing "Check My Blocks". The build must be in STANDARD form (each column shows that digit), so 12 unit cubes is not a finished answer for 12. Coach block placement and trading, never typing.`;
-    case 'regroup':
-      return ` [CHANNEL] There is NO number keypad — the student answers by making the trade and pressing "Check My Trade". Coach the trade itself, never typing a number.`;
-    case 'read_blocks':
-      return ` [CHANNEL] The blocks are fixed; the student types the number they read on a keypad. Coach counting each place, never state the number.`;
-    default:
-      return ` [CHANNEL] The student works the operation with blocks, then types the result on a keypad. Coach the column-by-column work, never state the result.`;
-  }
-}
-
 function computeTotal(columns: Record<PlaceValue, number>, places: PlaceValue[]): number {
   let total = 0;
   for (const place of places) {
@@ -232,14 +190,16 @@ interface BaseTenBlocksProps {
 
 type PlainChallenge = BaseTenBlocksChallenge & { id: string };
 
-const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
-  BaseTenBlocksProps & { tutorOwned: boolean; useController: (options: ProgressOptions<PlainChallenge>) => Progress }) => {
+/** The teaching workspace is base-ten-blocks' only controller: the runtime owns progression. */
+const useBaseTenProgress = useWorkspaceProgressFor('base-ten-blocks');
+
+const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode }: BaseTenBlocksProps) => {
   const liveRuntime = useLiveRuntime();
   const workspace = useRef<TeachingWorkspace | null>(null);
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
   const workspaceClosed = useRef(false);
-  const learnerBlocked = () => tutorOwned && (workspaceClosed.current
-    || (!!liveRuntime && !['empty', 'active'].includes(liveRuntime.getSnapshot().status)));
+  const learnerBlocked = () => workspaceClosed.current
+    || (!!liveRuntime && !['empty', 'active'].includes(liveRuntime.getSnapshot().status));
   const {
     title,
     description,
@@ -250,7 +210,6 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
     supplyTray = true,
     challenges = [],
     gradeBand = '2-3',
-    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -313,8 +272,8 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
     return empty as Record<PlaceValue, number>;
   };
 
-  // Challenge progress. On the workspace path the runtime moves the index.
-  const progress = useController({
+  // Challenge progress. The runtime moves the index.
+  const progress = useBaseTenProgress<PlainChallenge>({
     challenges: challengesWithIds,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
@@ -333,10 +292,9 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
     isComplete: allChallengesComplete,
     recordResult,
     incrementAttempts,
-    advance: advanceProgress,
   } = progress;
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
-  // The workspace path finishes without an evaluation provider, and a skipped item still ends the run.
+  workspaceClosed.current = progress.canAttempt === false;
+  // The workspace finishes without an evaluation provider, and a skipped item still ends the run.
   const showSummary = allChallengesComplete || !!progress.practiceSummary;
 
   const phaseResults = usePhaseResults({
@@ -386,57 +344,6 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    numberValue,
-    interactionMode,
-    decimalMode,
-    gradeBand,
-    currentTotal,
-    columns: Object.fromEntries(activePlaces.map(p => [p, columns[p] || 0])),
-    targetNumber: currentChallenge?.targetNumber ?? numberValue,
-    challengeType: currentChallenge?.type ?? interactionMode,
-    instruction: currentChallenge?.instruction ?? description,
-    attemptNumber: currentAttempts + 1,
-    regroupsUsed: regroupCount,
-    supportTier: supportTier ?? 'medium',
-  }), [numberValue, interactionMode, decimalMode, gradeBand, currentTotal, activePlaces, columns, currentChallenge, currentAttempts, regroupCount, description, supportTier]);
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'base-ten-blocks',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K-1' ? 'Kindergarten' : gradeBand === '2-3' ? 'Grade 2' : 'Grade 4',
-    // The workspace packet replaces this context (it carries the target and the column counts).
-    enabled: !tutorOwned,
-  });
-  // Every scripted cue goes through here; on the workspace path the tutor teaches from the packet instead.
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
-    hasIntroducedRef.current = true;
-    const mode = interactionMode === 'build' ? 'building numbers with blocks'
-      : interactionMode === 'decompose' ? 'breaking apart numbers'
-      : interactionMode === 'regroup' ? 'regrouping (trading blocks)'
-      : 'adding and subtracting with blocks';
-    sendText(
-      `[ACTIVITY_START] Base-ten blocks activity for ${gradeBand}. Mode: ${mode}. `
-      + `Number: ${numberValue}. ${challengesWithIds.length} challenges. `
-      + `Introduce warmly: "Let's explore place value with our blocks!" `
-      + `${currentChallenge ? `First challenge: "${currentChallenge.instruction}" ` : ''}`
-      + tutorRevealClause(supportTier, currentChallenge?.type)
-      + answerChannelClause(currentChallenge?.type),
-      { silent: true }
-    );
-  }, [isConnected, interactionMode, gradeBand, numberValue, challengesWithIds.length, currentChallenge, supportTier, sendText]);
-
-  // -------------------------------------------------------------------------
   // Interaction Handlers
   // -------------------------------------------------------------------------
   const addBlock = useCallback((place: PlaceValue) => {
@@ -477,13 +384,8 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
       setRegroupCount(c => c + 1);
       setFeedback(`10 ${PLACE_CONFIG[place].label.toLowerCase()} = 1 ${PLACE_CONFIG[higherPlace].label.toLowerCase().slice(0, -1)}!`);
       setFeedbackType('success');
-      sendText(
-        `[REGROUP_UP] Student regrouped 10 ${place} into 1 ${higherPlace}. `
-        + `Encourage: "Great trading! 10 ${place} always makes 1 ${higherPlace}."`,
-        { silent: true }
-      );
     }, 400);
-  }, [hasSubmittedEvaluation, activePlaces, columns, sendText]);
+  }, [hasSubmittedEvaluation, activePlaces, columns]);
 
   // Regroup: break 1 larger unit into 10 smaller units
   const regroupDown = useCallback((place: PlaceValue) => {
@@ -508,24 +410,19 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
       setRegroupCount(c => c + 1);
       setFeedback(`1 ${PLACE_CONFIG[place].label.toLowerCase().slice(0, -1)} = 10 ${PLACE_CONFIG[lowerPlace].label.toLowerCase()}!`);
       setFeedbackType('success');
-      sendText(
-        `[REGROUP_DOWN] Student broke 1 ${place} into 10 ${lowerPlace}. `
-        + `Encourage: "You unpacked it! 1 ${place} is the same as 10 ${lowerPlace}."`,
-        { silent: true }
-      );
     }, 400);
-  }, [hasSubmittedEvaluation, activePlaces, columns, sendText]);
+  }, [hasSubmittedEvaluation, activePlaces, columns]);
 
   const resetColumns = useCallback(() => {
     if (learnerBlocked()) return;
-    // The workspace path resets to the CURRENT challenge's mat; the scripted path keeps its first-challenge reset.
-    setColumns(tutorOwned ? startColumnsFor(currentChallenge) : initialColumns);
+    // Reset to the CURRENT challenge's mat.
+    setColumns(startColumnsFor(currentChallenge));
     setFeedback('');
     setFeedbackType('');
     setRegroupCount(0);
     setTypedAnswer('');
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialColumns, tutorOwned, currentChallenge]);
+  }, [currentChallenge]);
 
   // -------------------------------------------------------------------------
   // Challenge Checking
@@ -538,7 +435,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
       typed: typedAnswer, trades: regroupCount }), correct);
   };
 
-  const markCorrect = useCallback((message: string, tutorLine: string) => {
+  const markCorrect = useCallback((message: string) => {
     if (!currentChallenge) return;
     commitCheck(true);
     SoundManager.playCorrect();
@@ -550,18 +447,16 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
       attempts: currentAttempts + 1,
       regroupsUsed: regroupCount,
     });
-    sendText(tutorLine, { silent: true });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallenge, currentAttempts, regroupCount, recordResult, sendText, progress, columns, typedAnswer]);
+  }, [currentChallenge, currentAttempts, regroupCount, recordResult, progress, columns, typedAnswer]);
 
-  const markWrong = useCallback((message: string, tutorLine: string) => {
+  const markWrong = useCallback((message: string) => {
     commitCheck(false);
     SoundManager.playIncorrect();
     setFeedback(message);
     setFeedbackType('error');
-    sendText(tutorLine, { silent: true });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sendText, currentChallenge, progress, columns, typedAnswer, regroupCount]);
+  }, [currentChallenge, progress, columns, typedAnswer, regroupCount]);
 
   // ── Channel A: the blocks are the answer (build_number, regroup) ──
   const checkBlocks = useCallback(() => {
@@ -573,25 +468,11 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
     if (currentChallenge.type === 'regroup') {
       const conserved = Math.abs(currentTotal - target) < 0.01;
       if (regroupCount > 0 && conserved) {
-        markCorrect(
-          `Nice trade! The blocks look different, but they still make ${target}.`,
-          `[TRADE_CORRECT] Student made ${regroupCount} trade(s); the value stayed ${target}. `
-          + `Celebrate the conservation idea in one line.`,
-        );
+        markCorrect(`Nice trade! The blocks look different, but they still make ${target}.`);
       } else if (regroupCount === 0) {
-        markWrong(
-          `No trade yet — use a trade button under a column to swap blocks between places.`,
-          `[TRADE_MISSING] Student checked without trading. Attempt ${currentAttempts + 1}. `
-          + `Point them to the trade the instruction asks for; do not make it for them. `
-          + tutorRevealClause(supportTier, currentChallenge.type),
-        );
+        markWrong(`No trade yet — use a trade button under a column to swap blocks between places.`);
       } else {
-        markWrong(
-          `Trading never changes the value — you have too ${currentTotal > target ? 'many' : 'few'} blocks now. Try Reset.`,
-          `[TRADE_VALUE_CHANGED] Student traded but the total drifted off ${target} (blocks were added/removed). `
-          + `Attempt ${currentAttempts + 1}. Remind them a trade swaps blocks, it never adds or removes value. `
-          + tutorRevealClause(supportTier, currentChallenge.type),
-        );
+        markWrong(`Trading never changes the value — you have too ${currentTotal > target ? 'many' : 'few'} blocks now. Try Reset.`);
       }
       return;
     }
@@ -599,11 +480,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
     // build_number: the columns must match the target's STANDARD form.
     const verdict = judgeBuild(columns, target, activePlaces);
     if (verdict === 'match') {
-      markCorrect(
-        `Yes! ${target} is ${describeDecomposition(columns, activePlaces)}.`,
-        `[BUILD_CORRECT] Student built ${target} in standard form (${describeDecomposition(columns, activePlaces)}). `
-        + `${regroupCount > 0 ? `Used ${regroupCount} trade(s). ` : ''}Celebrate briefly.`,
-      );
+      markCorrect(`Yes! ${target} is ${describeDecomposition(columns, activePlaces)}.`);
     } else if (verdict === 'nonstandard') {
       const tradeable = findTradeablePlace(columns, activePlaces);
       const nextPlace = tradeable ? activePlaces[activePlaces.indexOf(tradeable) - 1] : null;
@@ -611,23 +488,15 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
         tradeable && nextPlace
           ? `Those blocks make ${target}, but not with the fewest blocks — trade 10 ${PLACE_CONFIG[tradeable].label.toLowerCase()} for 1 ${PLACE_CONFIG[nextPlace].label.toLowerCase().slice(0, -1)}.`
           : `Those blocks make ${target}, but not with the fewest blocks. Try trading up to a bigger place.`,
-        `[BUILD_NONSTANDARD] Student's blocks total ${target} but are NOT in standard form `
-        + `(${describeDecomposition(columns, activePlaces)}). Attempt ${currentAttempts + 1}. `
-        + `Guide the trade that makes each column show the matching digit. `
-        + tutorRevealClause(supportTier, currentChallenge.type),
       );
     } else {
       markWrong(
         showBlocksTotal
           ? `Your blocks make ${currentTotal}. You need ${target} — keep going.`
           : `Not ${target} yet — count each column again.`,
-        `[BUILD_INCORRECT] Student's blocks make ${currentTotal} but the target is ${target}. `
-        + `Attempt ${currentAttempts + 1}. `
-        + `Help: "Which place still needs blocks — ${currentTotal < target ? 'add' : 'take away'} from which column?" `
-        + tutorRevealClause(supportTier, currentChallenge.type),
       );
     }
-  }, [currentChallenge, columns, activePlaces, currentTotal, currentAttempts, regroupCount, showBlocksTotal, supportTier, incrementAttempts, markCorrect, markWrong]);
+  }, [currentChallenge, columns, activePlaces, currentTotal, regroupCount, showBlocksTotal, incrementAttempts, markCorrect, markWrong]);
 
   // ── Channel B: the student types a number the screen does not state
   //    (read_blocks, add_with_blocks, subtract_with_blocks) ──
@@ -639,44 +508,19 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
     incrementAttempts();
 
     if (Math.abs(parsed - target) < 0.01) {
-      markCorrect(
-        `Correct! ${parsed} is right!`,
-        `[ANSWER_CORRECT] Student answered ${parsed} correctly! `
-        + `${regroupCount > 0 ? `Used ${regroupCount} regroups. ` : ''}`
-        + `Celebrate briefly.`,
-      );
+      markCorrect(`Correct! ${parsed} is right!`);
     } else {
       // Never name the target here — unlike build_number, the answer is NOT on
       // screen for read_blocks/operate, so stating it hands over the next attempt.
       setTypedAnswer('');
-      markWrong(
-        `${parsed} isn't it — check each column and try again.`,
-        `[ANSWER_INCORRECT] Student entered ${parsed} but target is ${target}. `
-        + `Attempt ${currentAttempts + 1}. `
-        + `Help: "Look at each column. How many ${parsed < target ? 'more' : 'fewer'} do you need?" `
-        + `Do NOT state the answer. `
-        + tutorRevealClause(supportTier, currentChallenge?.type),
-      );
+      markWrong(`${parsed} isn't it — check each column and try again.`);
     }
-  }, [currentChallenge, typedAnswer, currentAttempts, regroupCount, supportTier, incrementAttempts, markCorrect, markWrong]);
+  }, [currentChallenge, typedAnswer, incrementAttempts, markCorrect, markWrong]);
 
   // Auto-submit evaluation when all challenges complete
   useEffect(() => {
-    // The live host has no evaluation provider; a workspace family submits only under one.
-    if (!allChallengesComplete || hasSubmittedEvaluation || progress.recordsEvaluation === false) return;
-
-    const phaseScoreStr = phaseResults
-      .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-      .join(', ');
-    const overallPct = challengesWithIds.length > 0
-      ? Math.round((challengeResults.filter(r => r.correct).length / challengesWithIds.length) * 100)
-      : 0;
-
-    sendText(
-      `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-      + `Give encouraging phase-specific feedback.`,
-      { silent: true }
-    );
+    // The live host has no evaluation provider; the workspace submits only under one.
+    if (!allChallengesComplete || hasSubmittedEvaluation || !progress.recordsEvaluation) return;
 
     const correctCount = challengeResults.filter(r => r.correct).length;
     const accuracy = Math.round((correctCount / challengesWithIds.length) * 100);
@@ -694,42 +538,13 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
       attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
     };
     submitEvaluation(correctCount === challengesWithIds.length, accuracy, metrics, { challengeResults });
-  }, [allChallengesComplete, hasSubmittedEvaluation, phaseResults, challengeResults, challengesWithIds, activePlaces, decimalMode, submitEvaluation, sendText, progress.recordsEvaluation]);
-
-  const advanceChallenge = useCallback(() => {
-    if (!advanceProgress()) return;
-
-    // advanceProgress() already incremented index and reset attempts.
-    // Reset domain-specific state:
-    const nextIdx = currentChallengeIndex + 1;
-    const next = challengesWithIds[nextIdx];
-    setRegroupCount(0);
-    setFeedback('');
-    setFeedbackType('');
-    setTypedAnswer('');
-
-    // Reset columns for next challenge
-    if (next.type === 'read_blocks' || next.type === 'regroup') {
-      setColumns(decomposeNumber(next.targetNumber, activePlaces));
-    } else {
-      const empty: Record<string, number> = {};
-      activePlaces.forEach(p => { empty[p] = 0; });
-      setColumns(empty as Record<PlaceValue, number>);
-    }
-
-    sendText(
-      `[NEXT_ITEM] Challenge ${nextIdx + 1} of ${challengesWithIds.length}: "${next.instruction}". Introduce it.`
-      + tutorRevealClause(supportTier, next.type)
-      + answerChannelClause(next.type),
-      { silent: true }
-    );
-  }, [advanceProgress, currentChallengeIndex, challengesWithIds, activePlaces, supportTier, sendText]);
-
+  }, [allChallengesComplete, hasSubmittedEvaluation, challengeResults, challengesWithIds, activePlaces, decimalMode, submitEvaluation, progress.recordsEvaluation]);
   const isCurrentComplete = currentChallenge
     ? challengeResults.some(r => r.challengeId === currentChallenge.id)
     : false;
 
   // ── Pip shared surface ───────────────────────────────────────────
+  const { isAudioPlaying, activePrimitiveId } = useLuminaAIContext();
   // A projection of this challenge's check state, the tutor's speech on it, and
   // the child's touches; Pip points only at the workspace as a whole and never
   // chooses, checks, or advances.
@@ -747,10 +562,10 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
     return Math.round((correct / challengesWithIds.length) * 100);
   }, [allChallengesComplete, challengesWithIds, challengeResults]);
 
-  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge) return;
+    if (!currentChallenge) return;
     workspace.current = { ...plainWorkspaceScene(currentChallenge, { blocks: describeDecomposition(columns, activePlaces),
       typed: typedAnswer, trades: regroupCount }), demonstration: [], canDemonstrate: false, canPresent: false,
       readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
@@ -990,15 +805,6 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
           </div>
         )}
 
-        {/* Next Challenge Button — the runtime owns progression on the workspace path */}
-        {!tutorOwned && isCurrentComplete && !allChallengesComplete && (
-          <div className="flex justify-center">
-            <LuminaActionButton action="next" onClick={advanceChallenge}>
-              Next Challenge
-            </LuminaActionButton>
-          </div>
-        )}
-
         {/* Reset Button */}
         <div className="flex justify-center">
           <LuminaButton
@@ -1041,17 +847,15 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
 };
 
 /**
- * `read_blocks` and `regroup` are on the judged DI loop; `build_number` and the
- * operate modes still use the click-era component above. The predicate matches
- * the catalog's `audioInputByMode` resolver exactly, so the transport declared
- * at connect and the component the child gets can never disagree.
+ * `read_blocks` and `regroup` run on the spoken mat (BaseTenBlocksDi); `build_number`, the operate
+ * modes and any mixed payload run on the click mat above. Each surface is workspace-only: an unbound
+ * mount shows the "needs the tutor" card, never a scripted fallback. The router stays a pure function
+ * of the payload, so a mount never switches surface.
  */
-// Each surface binds the workspace on its own (withWorkspaceController); the router stays a pure
-// function of the payload, so a mount never switches surface.
-const BaseTenBlocks = withWorkspaceController<BaseTenBlocksProps, ProgressOptions<PlainChallenge>, Progress>(
-  'base-ten-blocks', BaseTenBlocksSurface, useScriptedProgress, useWorkspaceProgressFor('base-ten-blocks'));
+const BaseTenBlocks = withWorkspaceOnly<BaseTenBlocksProps>('base-ten-blocks', BaseTenBlocksSurface,
+  props => props.data.title);
 
-const BaseTenBlocksWithDiPilot: React.FC<BaseTenBlocksProps> = (props) =>
+const BaseTenBlocksRouter: React.FC<BaseTenBlocksProps> = (props) =>
   usesBaseTenDi(props.data.challenges) ? <BaseTenBlocksDi {...props} /> : <BaseTenBlocks {...props} />;
 
-export default BaseTenBlocksWithDiPilot;
+export default BaseTenBlocksRouter;
