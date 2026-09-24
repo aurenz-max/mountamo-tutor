@@ -61,15 +61,19 @@ export function decideDialogue(input: DialogueRequest, answers: any, ms: number,
     .every(o => verdict.probabilities[c] > verdict.probabilities[o]);
   const belowGate = spoken && replyFinished && !gated;
   const notCredited = belowGate && likeliest('incorrect');
-  if (belowGate && likeliest('correct'))
+  // The tutor was asked to say plainly and did: its judgment moves the lesson (user direction 09-24: the
+  // tutor judges the flow, the scoring pass re-grades the learner's own answer for the record).
+  const confirmedByTutor = belowGate && !!input.confirming && likeliest('correct');
+  if (belowGate && likeliest('correct') && !confirmedByTutor)
     return { ...abstain('confirm_credit', ms), feedbackComplete, replyFinished, verdictConfidence: 0, model };
+  if (confirmedByTutor) verdict.choice = 'correct';
   if (notCredited) verdict.choice = 'incorrect';
-  const verdictCertain = notCredited || gated;
+  const verdictCertain = notCredited || confirmedByTutor || gated;
   const transitionCertain = certain(transition, ['advance', 'retry', 'none']);
   const spokenVerdict = spoken && verdictCertain && ['correct', 'incorrect'].includes(verdict.choice);
   const grounded = spoken ? spokenVerdict ? 1 : 0 : hasCheckedResponse ? 1 : 0;
   const correct = spoken ? verdict.choice === 'correct' : input.lastResponse?.correct;
-  const finishedSuccess = grounded === 1 && correct && verdictCertain && verdict.choice === 'correct' && feedbackComplete;
+  const finishedSuccess = grounded === 1 && correct && verdictCertain && verdict.choice === 'correct' && (feedbackComplete || confirmedByTutor);
   // The mirror of finishedSuccess, and the reason it exists: a confidently wrong
   // answer leaves the item unfinished, and reopening it is the only thing that can
   // follow. Making that wait on the transition question clearing its own gate
@@ -84,18 +88,18 @@ export function decideDialogue(input: DialogueRequest, answers: any, ms: number,
   if (!verdictCertain && !transitionCertain) return { ...abstain('uncertain_or_invalid', ms), feedbackComplete, replyFinished };
   const base = { verdict: verdictCertain ? verdict.choice : 'none',
     transition: finishedSuccess ? 'advance' : settledFailure ? 'retry' : transitionCertain ? transition.choice : 'none',
-    confidence: finishedSuccess ? Math.min(verdict.probabilities.correct, feedback.probabilities.finished)
+    confidence: finishedSuccess ? confirmedByTutor ? verdict.probabilities.correct : Math.min(verdict.probabilities.correct, feedback.probabilities.finished)
       : settledFailure ? verdict.probabilities.incorrect
       : transitionCertain ? transition.probabilities[transition.choice] : 0,
     verdictConfidence: verdictCertain ? verdict.probabilities[verdict.choice] : 0, feedbackComplete, replyFinished, grounded, ms, model,
-    ...(notCredited ? { resolution: 'not_credited' as const } : {}) };
+    ...(notCredited ? { resolution: 'not_credited' as const } : confirmedByTutor ? { resolution: 'confirmed_by_tutor' as const } : {}) };
   // A refused observation reports no score. Carrying the transition probability
   // through a refusal read as proof the answer was recognized; it never was.
   if (grounded < .9) return { ...base, confidence: 0, accepted: false, transition: 'none', reason: 'unsupported' };
   if ((!spoken && base.verdict === 'correct' && !correct)
       || (!spoken && base.verdict === 'incorrect' && correct)
       || (base.transition === 'advance' && !correct)) return { ...base, confidence: 0, grounded: 0, accepted: false, transition: 'none', reason: 'contradiction' };
-  return { ...base, accepted: true, reason: finishedSuccess ? spoken ? 'tutor_success_feedback_finished' : 'checked_success_feedback_finished'
+  return { ...base, accepted: true, reason: finishedSuccess ? confirmedByTutor ? 'confirmed_by_tutor' : spoken ? 'tutor_success_feedback_finished' : 'checked_success_feedback_finished'
     : settledFailure ? notCredited ? 'not_credited_below_gate' : 'tutor_incorrect_reopen'
     : base.transition === 'none' ? transitionCertain ? 'no_transition' : 'transition_uncertain' : 'supported' };
 }

@@ -87,7 +87,10 @@ export class DialogueObserver {
       learner: (w.pendingResponse?.text ?? this.learner).slice(-2000),
       ...(w.expectedAnswer !== undefined ? { expectedAnswer: w.expectedAnswer } : {}),
       ...(this.priorTutorScope === this.key() ? { priorTutor: this.priorTutor.slice(-4000) } : {}),
-      ...(w.pendingResponse ? { pendingResponse: w.pendingResponse } : {}), tutor: this.text.slice(-4000), lastResponse: w.lastResponse,
+      ...(w.pendingResponse ? { pendingResponse: w.pendingResponse } : {}),
+      // The reply that follows the host's plain-verdict request for this same answer.
+      ...(w.pendingResponse && this.cuedResponse === w.pendingResponse.id ? { confirming: true } : {}),
+      tutor: this.text.slice(-4000), lastResponse: w.lastResponse,
       activity: { responseSource: s.task.evidence.recentResponses.at(-1)?.source ?? null,
         attemptNumber: s.task.evidence.attemptNumber, objects: w.objects, demonstration: w.demonstration,
         facts: s.task.demand, assistance: { level: s.task.support.level, answerExposure: s.task.support.answerExposure } } };
@@ -109,9 +112,12 @@ export class DialogueObserver {
       const spoken = !!request.pendingResponse && request.activity?.facts.response === 'speech';
       // A below-gate "not credited" resolution may only ever reopen the item, never credit it.
       const notCredited = decision.resolution === 'not_credited' && decision.verdict === 'incorrect' && decision.transition === 'retry';
-      const verdictValid = notCredited || ['correct', 'incorrect'].includes(decision.verdict) && Number.isFinite(decision.verdictConfidence)
+      // A tutor's plain confirmation, asked for by the host, may advance below the gate: the record is re-graded.
+      const confirmed = decision.resolution === 'confirmed_by_tutor' && request.confirming === true
+        && decision.verdict === 'correct' && decision.transition === 'advance';
+      const verdictValid = notCredited || confirmed || ['correct', 'incorrect'].includes(decision.verdict) && Number.isFinite(decision.verdictConfidence)
         && decision.verdictConfidence! >= .9 && decision.verdictConfidence! <= 1;
-      const transitionValid = notCredited || ['advance', 'retry'].includes(decision.transition) && Number.isFinite(decision.confidence)
+      const transitionValid = notCredited || confirmed || ['advance', 'retry'].includes(decision.transition) && Number.isFinite(decision.confidence)
         && decision.confidence >= .9 && decision.confidence <= 1;
       const transition = transitionValid ? decision.transition : 'none';
       const action = spoken ? { type: 'workspace' as const, operation: 'apply_tutor_verdict', input: { dialogue: {

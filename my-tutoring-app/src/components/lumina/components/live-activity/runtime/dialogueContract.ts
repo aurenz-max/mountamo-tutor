@@ -16,6 +16,9 @@ export interface DialogueRequest {
   priorTutor?: string;
   lastResponse: { response: string; correct: boolean; assisted: boolean } | null;
   pendingResponse?: { id: string; text: string };
+  /** This reply answers the host's request to say plainly whether the learner solved the task
+   *  (`confirm_credit`). The tutor's judgment then decides the flow; the scoring pass decides the record. */
+  confirming?: boolean;
   activity?: {
     responseSource: 'speech' | 'gesture' | null;
     attemptNumber: number;
@@ -36,7 +39,7 @@ export interface DialogueDecision {
   feedbackComplete?: boolean;
   /** A finished reply to a spoken answer below the verdict gate whose likeliest reading is "not
    *  credited": it resolves to a retry rather than stranding the learner (user ruling 09-24). */
-  resolution?: 'not_credited';
+  resolution?: 'not_credited' | 'confirmed_by_tutor';
   /** The reply's likeliest reading is finished feedback (below the feedback gate too). A finished reply that
    *  records nothing gets one plain-verdict request, so no answered item is left waiting in silence. */
   replyFinished?: boolean;
@@ -53,6 +56,7 @@ export function validDialogueRequest(v: any): v is DialogueRequest {
     && text(v.task, 1500) && text(v.phase, 40) && text(v.learner, 2000) && text(v.tutor, 4000) && !!v.tutor.trim()
     && (v.expectedAnswer === undefined || text(v.expectedAnswer, 1500))
     && (v.priorTutor === undefined || text(v.priorTutor, 4000))
+    && (v.confirming === undefined || typeof v.confirming === 'boolean')
     && (v.pendingResponse === undefined || !!v.pendingResponse && text(v.pendingResponse.id, 200)
       && !!v.pendingResponse.id && text(v.pendingResponse.text, 2000))
     && (v.activity === undefined || !!v.activity

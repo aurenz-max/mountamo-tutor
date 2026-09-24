@@ -110,3 +110,20 @@ it('never leaves a finished reply to a spoken answer in a dead end (user ruling 
   expect(decideDialogue(spoken, reply({ correct: .56, none: .4, incorrect: .04 }, .2), 1)).toMatchObject({
     accepted: false, replyFinished: false });
 });
+
+it("follows the tutor's plain confirmation below the gate: the flow is the tutor's, the record is re-graded (09-24)", () => {
+  const spoken = { ...input, phase: 'working', lastResponse: null, learner: 'more dolls than cars',
+    pendingResponse: { id: 'speech:9', text: 'more dolls than cars' },
+    activity: { responseSource: null, attemptNumber: 0, objects: [], demonstration: [], facts: { response: 'speech' },
+      assistance: { level: 0, answerExposure: 'none' as const } } };
+  const reply = (p: Record<string, number>) => ({
+    verdict: { type: 'choice', choice: Object.entries(p).sort((a, b) => b[1] - a[1])[0][0], confidence: .5, probabilities: p },
+    feedback: { type: 'choice', choice: 'finished', confidence: .8, probabilities: { finished: .86, open: .14 } },
+    transition: { type: 'choice', choice: 'advance', confidence: .6, probabilities: { advance: .6, none: .35, retry: .05 } } });
+  const likelyCredit = reply({ correct: .62, none: .36, incorrect: .02 });
+  expect(decideDialogue(spoken, likelyCredit, 1)).toMatchObject({ accepted: false, reason: 'confirm_credit' });
+  expect(decideDialogue({ ...spoken, confirming: true }, likelyCredit, 1)).toMatchObject({
+    accepted: true, verdict: 'correct', transition: 'advance', resolution: 'confirmed_by_tutor', reason: 'confirmed_by_tutor' });
+  expect(decideDialogue({ ...spoken, confirming: true }, reply({ incorrect: .6, none: .3, correct: .1 }), 1)).toMatchObject({
+    accepted: true, verdict: 'incorrect', transition: 'retry', resolution: 'not_credited' });
+});

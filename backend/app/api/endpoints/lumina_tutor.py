@@ -1311,8 +1311,17 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 await runtime_bridge.publish_observation()
 
                     elif message_type == "dialogue_observation" and runtime_bridge:
+                        # The model's probabilities and the exchange it judged, so a stall or an
+                        # abstention can be diagnosed from the session log alone (09-24 sitting).
+                        answers = ((message.get("assessment") or {}).get("answers") or {}) if isinstance(message.get("assessment"), dict) else {}
+                        judged = message.get("input") if isinstance(message.get("input"), dict) else {}
                         ledger.write("dialogue-observation", **{k: message.get(k) for k in
-                            ("scope", "verdict", "transition", "confidence", "verdictConfidence", "grounded", "accepted", "reason", "status", "ms", "model")})
+                            ("scope", "verdict", "transition", "confidence", "verdictConfidence", "grounded", "accepted", "reason", "status", "ms", "model",
+                             "resolution", "replyFinished")},
+                            probabilities={q: (answers.get(q) or {}).get("probabilities") for q in ("verdict", "feedback", "transition")
+                                           if isinstance(answers.get(q), dict)} or None,
+                            judged={k: str(judged.get(k))[:600] for k in ("task", "expectedAnswer", "priorTutor", "learner", "tutor")
+                                    if judged.get(k) is not None} or None)
 
                     elif message_type == "runtime_result" and runtime_bridge:
                         accepted = await runtime_bridge.result(message)

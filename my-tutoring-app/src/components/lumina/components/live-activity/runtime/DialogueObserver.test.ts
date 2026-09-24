@@ -103,6 +103,29 @@ it('says the assignment is still open once per turn when a settled tutor turn re
   expect(cues(s.report)).toHaveLength(1);
 });
 
+it("asks once for a plain verdict, then follows the tutor's confirmation of that same answer (09-24)", async () => {
+  const s = setup(true);
+  s.classify.mockResolvedValueOnce({ verdict: 'none', transition: 'none', confidence: 0, verdictConfidence: 0, feedbackComplete: false,
+    replyFinished: true, grounded: 0, accepted: false, reason: 'confirm_credit', ms: 200 });
+  s.turn(); await settle();
+  expect(s.execute).not.toHaveBeenCalled();
+  expect(cues(s.report)).toHaveLength(1);
+  expect((s.classify.mock.calls[0] as unknown[])[0]).not.toHaveProperty('confirming');
+  // The host's note opens the next exchange; the tutor answers it plainly.
+  s.classify.mockResolvedValueOnce({ verdict: 'correct', transition: 'advance', confidence: .62, verdictConfidence: .62,
+    feedbackComplete: false, replyFinished: true, grounded: 1, accepted: true, reason: 'confirmed_by_tutor', resolution: 'confirmed_by_tutor', ms: 200 });
+  s.observer.hostTurn(); s.observer.output('Yes, you solved it: there are three.'); s.observer.end(false); await settle();
+  expect((s.classify.mock.calls[1] as unknown[])[0]).toMatchObject({ confirming: true, pendingResponse: { id: 'turn-1' } });
+  expect(s.execute).toHaveBeenCalledWith(expect.objectContaining({ action: expect.objectContaining({
+    operation: 'apply_tutor_verdict', input: { dialogue: expect.objectContaining({ verdict: 'correct', transition: 'advance' }) } }) }));
+  // A confirmation resolution is never accepted for a reply that was not a confirmation.
+  const plain = setup(true);
+  plain.classify.mockResolvedValue({ verdict: 'correct', transition: 'advance', confidence: .62, verdictConfidence: .62,
+    feedbackComplete: false, replyFinished: true, grounded: 1, accepted: true, reason: 'confirmed_by_tutor', resolution: 'confirmed_by_tutor', ms: 200 });
+  plain.turn(); await settle();
+  expect(plain.execute).not.toHaveBeenCalled();
+});
+
 it('stays silent when the turn is unfinished, committed, or out of scope', async () => {
   const unfinished = setup(true);
   unfinished.classify.mockResolvedValue({ verdict: 'none', transition: 'none', confidence: 0, feedbackComplete: false,
