@@ -1,11 +1,13 @@
 'use client';
 
 /**
- * InteractiveBook — DI modality (FOURTEENTH literacy port, 2026-08-14). The Live
- * tutor owns the clock in both modes: it asks ONCE, waits, judges (in-band for
- * the spoken word; from a code-computed verdict for a tapped book part), and its
- * OWN line is the advance. There is no advance timer, no Next button, no
- * push-to-talk mic, and no answer anywhere on screen before the tutor affirms.
+ * InteractiveBook — a picture book: the child taps a printed book part (title, author,
+ * heading, caption, page number) or reads a glowing word out loud. It runs only on the
+ * shared tutor/JEV teaching workspace (workspace rollout C3; the scripted runner was
+ * retired, LA-14, user ruling 09-23: one path). A tap is checked by the activity; a read
+ * word is judged by the observer; the runtime owns progression. An unbound mount shows the
+ * shared "needs the tutor" card. There is no advance timer and no Next button, and no
+ * answer is on screen before it is credited.
  *
  * WHAT WENT, AND WHY:
  *  - **The push-to-talk capture and the tap-to-choose voice hook.** This was the
@@ -44,7 +46,7 @@
  * (hand-authored, DISTAR). Nothing in this file writes a spoken line.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, ImageIcon, Sparkles } from 'lucide-react';
 import {
   LuminaBadge,
@@ -57,26 +59,29 @@ import {
   answerStateClass,
   type AnswerChoiceState,
 } from '../../../ui';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { InteractiveBookMetrics } from '../../../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { judgedAnswerMix } from '../../../hooks/judgedScriptContract';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import { itemsFromChallenges, type InteractiveBookItem } from './interactiveBookScript';
 import {
-  interactiveBookPackBase,
-  itemsFromChallenges,
-  tapVerdictCue,
-  type InteractiveBookItem,
-} from './interactiveBookScript';
+  describeBookTap,
+  hearQuestionRequest,
+  interactiveBookAssignment,
+  interactiveBookScene,
+  hotspotsFor,
+  tapMatches,
+  type BookHotspot,
+} from './interactiveBookWorkspace';
 import { generateConceptImage } from '../../../service/geminiClient-api';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
@@ -158,12 +163,9 @@ export interface InteractiveBookData {
 interface InteractiveBookProps {
   data: InteractiveBookData;
   className?: string;
-}
-
-interface BookHotspot {
-  id: string;
-  feature: BookFeatureKind;
-  text: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 const PHASE_CONFIG = {
@@ -181,26 +183,9 @@ const COVER_GRADIENTS: Record<BookCoverColor, string> = {
 
 const normalizeText = (value: string) => value.trim().toLowerCase();
 
-function hotspotsFor(book: InteractiveBookVolume, pageId: string): BookHotspot[] {
-  if (pageId === 'cover') {
-    return [
-      { id: 'cover-title', feature: 'title', text: book.bookTitle },
-      { id: 'cover-author', feature: 'author', text: book.author },
-    ];
-  }
-  const page = book.pages.find((candidate) => candidate.id === pageId);
-  if (!page) return [];
-  return [
-    { id: `${page.id}-heading`, feature: 'heading', text: page.heading },
-    { id: `${page.id}-caption`, feature: 'caption', text: page.caption },
-    { id: `${page.id}-number`, feature: 'page-number', text: `Page ${page.pageNumber}` },
-  ];
-}
-
-const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) => {
+function InteractiveBookSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: InteractiveBookProps) {
   const {
     title,
-    gradeLevel,
     challenges,
     instanceId,
     skillId,
@@ -210,6 +195,8 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
     onEvaluationSubmit,
   } = data;
   const book = data.books[0];
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   const stableInstanceIdRef = useRef(instanceId || `interactive-book-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -269,7 +256,7 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const solvedIds = new Set(
       summary.outcomes.filter((outcome) => outcome.solved).map((outcome) => outcome.id),
     );
@@ -301,60 +288,30 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, hearTaps: 0, learningResponses: summary.learningResponses,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items, data.challengeType, evaluation]);
+  };
 
-  // ── The pack — wording lives in interactiveBookScript.ts ──────────────────
-  const pack = useMemo<JudgedScriptPack<InteractiveBookItem>>(() => ({
-    ...interactiveBookPackBase(items),
-    statusLines: {
-      ready: (item) => (item.answerKind === 'voice'
-        ? 'Listen — then read the glowing word out loud.'
-        : 'Listen — then tap the book part.'),
-      retry: (item) => (item.answerKind === 'voice'
-        ? 'Listen again — then read the glowing word.'
-        : 'Listen again — then tap the book part.'),
-      noVerdict: () => 'One more time — read the glowing word.',
-      done: 'Great book work today!',
-    },
-    // One factual record per attempt, right or corrected: the printed parts on the page or the sentence read up
-    // to the glowing word, and what was tapped or said (the tap ref is read before the retry clears it).
-    // Never the verdict, because the same text is kept for right answers.
-    observation: (item, { heard: transcript }) => {
-      if (item.mode === 'find-feature') {
-        const parts = book ? hotspotsFor(book, item.targetPageId).map((spot) => `${spot.feature} "${spot.text}"`).join('; ') : '';
-        return {
-          challenge: `Find the ${item.feature ?? 'book part'} on the page${parts ? ` (printed parts: ${parts})` : ''}.`,
-          expected: `The printed ${item.feature ?? 'part'}: "${item.targetText}".`,
-          observed: tappedRef.current
-            ? `Tapped the printed words "${tappedRef.current}".`
-            : 'Tapped the page; which part was not recorded.',
-        };
-      }
-      const heard = transcript?.trim() ?? '';
-      return {
-        challenge: `Hear "${item.readLead ?? ''}" stop, and read the glowing word.`,
-        expected: `"${item.targetText}" read aloud.`,
-        observed: heard ? `Said "${heard}".` : 'No transcript was captured.',
-      };
-    },
-  }), [items, book]);
-
-  const runner = useJudgedScriptRunner<InteractiveBookItem>({
-    pack,
+  const runner = useWorkspaceRunner<InteractiveBookItem>({
+    primitiveId: 'interactive-book',
+    assignment: interactiveBookAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || (items[0]?.mode ?? 'find-feature'),
     instanceId: resolvedInstanceId,
-    gradeLevel,
-    exhibitId,
-    onFinished: handleFinished,
+    onFinished: finish,
     onItemOpened: () => {
       setTapped(null);
       tappedRef.current = null;
     },
     onCorrectionRetry: () => {
-      // The tutor's correction re-modelled in-band; free the page for another go.
+      // Try again frees the page for another go.
       setTapped(null);
       tappedRef.current = null;
       pip.clear();
@@ -362,8 +319,9 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
   });
 
   const currentItem = runner.currentItem;
-  /** Affirmed: the first moment the answer may appear on screen. */
+  /** Credited: the first moment the answer may appear on screen. */
   const revealed = runner.currentSolved;
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
   /** The view the lesson is on — the screen follows the current item. */
   const currentPageId = currentItem?.targetPageId ?? 'cover';
@@ -404,13 +362,13 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
   // tap on a printed part; Pip never answers, taps, or advances.
   const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const targets = pip.targets();
     const pose = interactiveBookPipPose({
       mode: currentItem.mode,
-      running: runner.running, preparing: runner.preparing,
+      running: runner.running, preparing: false,
       currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      judging: runner.isAwaitingGesture(), tutorSpeaking: runner.tutorSpeaking,
       cueMatchesItem: runner.cuedItemId === currentItem.id,
       visibleIds: targets.map((target) => target.id),
       lastTouchedId: pip.lastTouchedId,
@@ -418,11 +376,26 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
     return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Interactive book', dock: pip.dock.current, targets, pose };
   });
 
-  // ── The tap IS the commit (find-feature) ──────────────────────────────────
+  // What the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...interactiveBookScene(currentItem), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
+  /** Asks the tutor for the question again: a silent host request, never the answer. */
+  const hearQuestion = useCallback(() => {
+    if (!currentItem) return;
+    ctx.sendText(hearQuestionRequest(currentItem), { silent: true, author: 'host' });
+  }, [ctx, currentItem]);
+
+  // ── The tap IS the commit (find-feature), checked by the activity ─────────
   const handleHotspotTap = useCallback((hotspot: BookHotspot) => {
     const item = runner.currentItem;
     if (!item || item.mode !== 'find-feature') return;
-    if (!runner.canAttempt || evaluation.hasSubmitted) return;
+    if (!runner.canAttempt || showSummary) return;
     // `canAttempt` closes the pending window through batched React state; this
     // ref flips synchronously and stops a second tap in the same tick.
     if (runner.isAwaitingGesture()) return;
@@ -430,14 +403,15 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
     pip.look(`part-${hotspot.id}`);
     setTapped(hotspot.text);
     tappedRef.current = hotspot.text;
-    runner.submitGestureAttempt(tapVerdictCue(item, hotspot.text));
-  }, [runner, evaluation.hasSubmitted, pip]);
+    commitGesture(runner, { response: describeBookTap(hotspot.text), correct: tapMatches(item, hotspot.text),
+      cue: () => describeBookTap(hotspot.text) });
+  }, [runner, showSummary, pip]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => PHASE_CONFIG[item.mode]);
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => PHASE_CONFIG[item.mode]);
+  }, [runner.practiceSummary, items]);
 
   const celebrationFor = (): string => {
     switch (judgedAnswerMix(items)) {
@@ -570,7 +544,7 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
   // Main render
   // ============================================================================
 
-  if (!book || items.length === 0) {
+  if (!book || items.length === 0 || !currentItem) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-8 text-center text-slate-400">
@@ -588,14 +562,14 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
             <BookOpen className="h-5 w-5 text-cyan-300" />
             {title}
           </LuminaCardTitle>
-          {!evaluation.hasSubmitted && (
+          {!showSummary && (
             <LuminaBadge accent="blue">K–2 book skills</LuminaBadge>
           )}
         </div>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex items-center justify-center gap-4">
               <LuminaChallengeCounter
@@ -607,13 +581,12 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
                   withdrawn by band or tier. */}
               <button
                 type="button"
-                onClick={runner.hearStimulus}
-                className={`
+                onClick={hearQuestion}
+                className="
                   flex h-11 w-11 items-center justify-center rounded-full
                   bg-amber-500/15 border-2 border-amber-500/30
                   hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
-                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
-                `}
+                "
                 aria-label="Hear the question again"
               >
                 <span className="text-xl">🔊</span>
@@ -655,18 +628,13 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
               </div>
             ) : null}
 
-            {/* The orb reads `answerKind` off the runner: on find-feature the
-                mic stays open (the tutor is audible, the child may talk) but
-                the answer is the tap, so it must not claim to be listening for
-                one. */}
-            <JudgedMicPanel run={runner} gestureLabel="Your turn — tap it on the page" />
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Interactive Book Complete!"
             celebrationMessage={celebrationFor()}
@@ -675,6 +643,9 @@ const InteractiveBook: React.FC<InteractiveBookProps> = ({ data, className }) =>
       </LuminaCardContent>
     </LuminaCard>
   );
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const InteractiveBook = withWorkspaceOnly<InteractiveBookProps>('interactive-book', InteractiveBookSurface, props => props.data.title);
 
 export default InteractiveBook;

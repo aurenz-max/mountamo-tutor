@@ -1,0 +1,169 @@
+{
+ "source": "qa/tutor-reports/interactive-book-runtime-read-focus-word-payload-2026-09-25.json",
+ "primitiveId": "interactive-book",
+ "evalMode": "read-focus-word",
+ "data": {
+  "title": "Find The Farm Words",
+  "description": "Look closely at the pictures and words on each page.",
+  "gradeLevel": "kindergarten",
+  "mode": "focus-word-reading",
+  "challengeType": "read-focus-word",
+  "wordDifficulty": "easy",
+  "books": [
+   {
+    "id": "interactive-book-volume-1",
+    "bookTitle": "Life On Farm",
+    "author": "Sam Hill",
+    "coverColor": "emerald",
+    "coverImagePrompt": "A bright red barn with a green tractor parked in front under a sunny blue sky, digital children book illustration style.",
+    "coverImageAlt": "A cheerful red barn sits by a green tractor on a sunny day.",
+    "coverImageUrl": null,
+    "pages": [
+     {
+      "id": "interactive-book-page-1",
+      "pageNumber": 1,
+      "heading": "Big Red Barn",
+      "paragraphs": [
+       "The tall red barn keeps the animals safe from rain.",
+       "A fluffy sheep walks by the wide door."
+      ],
+      "imagePrompt": "A red barn with a fluffy white sheep standing near the open door, digital children book illustration style.",
+      "imageAlt": "A fluffy sheep stands near the open door of a red barn.",
+      "imageUrl": null,
+      "caption": "Barn And Sheep",
+      "focusWords": [
+       {
+        "word": "barn",
+        "difficulty": "easy",
+        "definition": "A large farm building used to store crops or house animals.",
+        "pictureCue": "Look at the large red building on the left."
+       },
+       {
+        "word": "sheep",
+        "difficulty": "easy",
+        "definition": "A woolly farm animal that eats grass.",
+        "pictureCue": "Look at the fluffy white animal standing near the door."
+       }
+      ]
+     },
+     {
+      "id": "interactive-book-page-2",
+      "pageNumber": 2,
+      "heading": "Green Tractor",
+      "paragraphs": [
+       "The loud green tractor pulls a heavy cart.",
+       "Soft hay piles up in the back."
+      ],
+      "imagePrompt": "A green tractor pulling a cart full of yellow hay in a green field, digital children book illustration style.",
+      "imageAlt": "A green tractor pulls a cart filled with hay.",
+      "imageUrl": null,
+      "caption": "Tractor And Hay",
+      "focusWords": [
+       {
+        "word": "tractor",
+        "difficulty": "easy",
+        "definition": "A strong machine used on a farm to pull heavy loads.",
+        "pictureCue": "Look at the big green machine in the middle."
+       },
+       {
+        "word": "hay",
+        "difficulty": "easy",
+        "definition": "Cut and dried grass used to feed farm animals.",
+        "pictureCue": "Look at the yellow pile in the cart."
+       }
+      ]
+     },
+     {
+      "id": "interactive-book-page-3",
+      "pageNumber": 3,
+      "heading": "Busy Pond",
+      "paragraphs": [
+       "A yellow duck swims in the blue pond.",
+       "Soft mud sits near the edge."
+      ],
+      "imagePrompt": "A yellow duck swimming in a blue pond with brown mud on the bank, digital children book illustration style.",
+      "imageAlt": "A yellow duck swims in a blue pond.",
+      "imageUrl": null,
+      "caption": "Duck And Pond",
+      "focusWords": [
+       {
+        "word": "duck",
+        "difficulty": "easy",
+        "definition": "A water bird with webbed feet and a short bill.",
+        "pictureCue": "Look at the yellow bird swimming in the water."
+       },
+       {
+        "word": "mud",
+        "difficulty": "easy",
+        "definition": "Wet dirt found near water on a farm.",
+        "pictureCue": "Look at the dark wet dirt by the water edge."
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "challenges": [
+   {
+    "id": "interactive-book-word-1-1",
+    "type": "read-focus-word",
+    "prompt": "Listen to the sentence. Then say the glowing underlined word.",
+    "targetPageId": "interactive-book-page-1",
+    "targetFeature": "focus-word",
+    "targetText": "barn",
+    "optionTexts": [
+     "barn",
+     "sheep"
+    ],
+    "hint": "Look at the large red building on the left.",
+    "readLead": "The tall red",
+    "readTail": "keeps the animals safe from rain."
+   },
+   {
+    "id": "interactive-book-word-1-2",
+    "type": "read-focus-word",
+    "prompt": "Listen to the sentence. Then say the glowing underlined word.",
+    "targetPageId": "interactive-book-page-1",
+    "targetFeature": "focus-word",
+    "targetText": "sheep",
+    "optionTexts": [
+     "barn",
+     "sheep"
+    ],
+    "hint": "Look at the fluffy white animal standing near the door.",
+    "readLead": "A fluffy",
+    "readTail": "walks by the wide door."
+   },
+   {
+    "id": "interactive-book-word-2-1",
+    "type": "read-focus-word",
+    "prompt": "Listen to the sentence. Then say the glowing underlined word.",
+    "targetPageId": "interactive-book-page-2",
+    "targetFeature": "focus-word",
+    "targetText": "tractor",
+    "optionTexts": [
+     "tractor",
+     "hay"
+    ],
+    "hint": "Look at the big green machine in the middle.",
+    "readLead": "The loud green",
+    "readTail": "pulls a heavy cart."
+   },
+   {
+    "id": "interactive-book-word-3-1",
+    "type": "read-focus-word",
+    "prompt": "Listen to the sentence. Then say the glowing underlined word.",
+    "targetPageId": "interactive-book-page-3",
+    "targetFeature": "focus-word",
+    "targetText": "duck",
+    "optionTexts": [
+     "duck",
+     "mud"
+    ],
+    "hint": "Look at the yellow bird swimming in the water.",
+    "readLead": "A yellow",
+    "readTail": "swims in the blue pond."
+   }
+  ]
+ }
+}

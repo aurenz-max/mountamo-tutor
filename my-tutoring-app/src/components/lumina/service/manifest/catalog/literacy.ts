@@ -1254,14 +1254,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'interactive-book',
     description:
-      'Live Direct Instruction picture-book work with a spoken tutor. The tutor asks, waits, judges, and its '
-      + 'own affirmation moves the lesson on. Two directions, and the answer is made of something different in '
+      'Live picture-book work with a spoken tutor. The tutor asks, waits and responds, and a credited '
+      + 'answer moves the lesson on. Two directions, and the answer is made of something different in '
       + 'each: Read Together (the tutor reads a real book sentence up to one glowing word, stops, and the child '
       + 'READS that word out loud — supported oral reading), and Book Detective (the tutor names a printed book '
       + 'part — title, author, heading, caption, page number — and the child TAPS it on the page — print '
       + 'awareness and text features). The tap direction taps because its answer is WHICH printed element on '
       + 'the page it is — a position, like pointing at a real book — while reading the part\'s words aloud '
-      + 'would be a different skill. Nothing on screen shows an answer before the tutor affirms. Requires a '
+      + 'would be a different skill. Nothing on screen shows an answer before it is credited. Requires a '
       + 'microphone. ESSENTIAL for K-2 print awareness and early oral reading.',
     constraints:
       'Requires the live tutor and a microphone. Uses one generated nonfiction book. The manifest must not '
@@ -1417,6 +1417,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
+      guidance: 'One picture book; the screen shows the page the item is on. Read the glowing word: read the '
+        + 'sentence up to the glowing word aloud and stop; the learner reads that word out loud, judged against the '
+        + 'word you are given. The lead-in said back or a different word is not it; never say the glowing word '
+        + 'before they try. Find a book part: name the part (title, author\'s name, heading, picture caption, page '
+        + 'number) and the learner taps it on the page; the activity checks the tap. Before they tap, never read out '
+        + 'or point to which printed words are that part; after a tap you may say what each part is for. The '
+        + 'speaker button asks you to repeat the question only. You cannot tap, mark or turn a page.',
+    },
   },
 
   {

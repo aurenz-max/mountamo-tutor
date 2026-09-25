@@ -77,6 +77,8 @@ import { itemsFromChallenges as spotterItems } from '../../primitives/visual-pri
 import { letterSpotterJourneyAnswers } from '../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
 import { itemsFromChallenges as decodableItems } from '../../primitives/visual-primitives/literacy/decodableReaderScript';
 import { decodableReaderJourneyAnswers } from '../../primitives/visual-primitives/literacy/decodableReaderWorkspace';
+import { itemsFromChallenges as bookItems } from '../../primitives/visual-primitives/literacy/interactiveBookScript';
+import { interactiveBookJourneyAnswers } from '../../primitives/visual-primitives/literacy/interactiveBookWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
@@ -1119,6 +1121,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="line"], [data-pip-object="question"], [data-pip-object="story"]' } },
+  },
+  'interactive-book': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/InteractiveBook.tsx',
+    instanceId: 'book',
+    defaults: { grade: 'Kindergarten', mode: 'find-feature', di: false, topic: 'A picture book about a day at the farm' },
+    leakTokens: ['IB_ITEM', 'IB_MOVE', 'IB_COMPLETE', 'IB_HEAR', 'IB_TAP'],
+    prompts: WORKSPACE_PROMPTS,
+    // Read the glowing word aloud; find a book part taps a printed part (a wrong tap is another part on the page).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = bookItems(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current interactive-book item');
+      const answers = interactiveBookJourneyAnswers(item, ctx.data.books[0]);
+      if (!answers.tapped) return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+      return [{ type: 'touch', target: intent === 'wrong' ? answers.tapped.wrong : answers.tapped.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="page"]' } },
   },
 };
 

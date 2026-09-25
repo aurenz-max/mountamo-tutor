@@ -1,0 +1,177 @@
+{
+ "source": "qa/tutor-reports/interactive-book-runtime-find-feature-payload-2026-09-25.json",
+ "primitiveId": "interactive-book",
+ "evalMode": "find-feature",
+ "data": {
+  "title": "Farm Book Detective",
+  "description": "Let us explore a fun book about a day at the farm!",
+  "gradeLevel": "kindergarten",
+  "mode": "text-features",
+  "challengeType": "find-feature",
+  "wordDifficulty": "easy",
+  "books": [
+   {
+    "id": "interactive-book-volume-1",
+    "bookTitle": "Down on Farm",
+    "author": "Sam Reed",
+    "coverColor": "emerald",
+    "coverImagePrompt": "A bright red barn with a green tractor parked outside under a blue sunny sky.",
+    "coverImageAlt": "A bright red barn stands near a green tractor.",
+    "coverImageUrl": null,
+    "pages": [
+     {
+      "id": "interactive-book-page-1",
+      "pageNumber": 1,
+      "heading": "Big Barn",
+      "paragraphs": [
+       "The red barn stands tall in the sun. A brown horse rests inside.",
+       "Soft hay sits on the wooden floor for him to eat."
+      ],
+      "imagePrompt": "A brown horse standing inside a large red barn eating yellow hay from a wooden bin.",
+      "imageAlt": "A brown horse eats yellow hay inside a barn.",
+      "imageUrl": null,
+      "caption": "Horse and hay",
+      "focusWords": [
+       {
+        "word": "horse",
+        "difficulty": "easy",
+        "definition": "A large animal with four legs and a long tail.",
+        "pictureCue": "Look for the brown animal standing inside the barn."
+       },
+       {
+        "word": "hay",
+        "difficulty": "easy",
+        "definition": "Dried grass that farm animals eat.",
+        "pictureCue": "Look at the yellow grass piled up for food."
+       }
+      ]
+     },
+     {
+      "id": "interactive-book-page-2",
+      "pageNumber": 2,
+      "heading": "Green Fields",
+      "paragraphs": [
+       "Green grass grows all across the wide open hill. A black cow walks slowly by.",
+       "Fresh milk comes from this gentle farm animal each day."
+      ],
+      "imagePrompt": "A black and white cow standing in a green grassy field eating grass.",
+      "imageAlt": "A cow stands in a green field.",
+      "imageUrl": null,
+      "caption": "Cow in field",
+      "focusWords": [
+       {
+        "word": "cow",
+        "difficulty": "easy",
+        "definition": "A large farm animal that gives us milk.",
+        "pictureCue": "Find the black and white animal on the grass."
+       },
+       {
+        "word": "milk",
+        "difficulty": "easy",
+        "definition": "A white drink that comes from cows.",
+        "pictureCue": "Think about the healthy drink the animal helps make."
+       }
+      ]
+     },
+     {
+      "id": "interactive-book-page-3",
+      "pageNumber": 3,
+      "heading": "Busy Coop",
+      "paragraphs": [
+       "Little red hens cluck softly near the wooden fence. A white hen finds a round egg.",
+       "Warm feathers keep the birds cozy all day long."
+      ],
+      "imagePrompt": "A red hen sitting in a nest with a white egg next to a wooden fence.",
+      "imageAlt": "A hen sits near a white egg by a fence.",
+      "imageUrl": null,
+      "caption": "Hen and egg",
+      "focusWords": [
+       {
+        "word": "hen",
+        "difficulty": "easy",
+        "definition": "A female chicken that can lay eggs.",
+        "pictureCue": "See the red bird sitting near the nest."
+       },
+       {
+        "word": "egg",
+        "difficulty": "easy",
+        "definition": "A round shell with food inside laid by birds.",
+        "pictureCue": "Look at the small white oval next to the bird."
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "challenges": [
+   {
+    "id": "interactive-book-feature-1",
+    "type": "find-feature",
+    "prompt": "Tap the title on the cover.",
+    "targetPageId": "cover",
+    "targetFeature": "title",
+    "targetText": "Down on Farm",
+    "optionTexts": [
+     "Down on Farm",
+     "Sam Reed"
+    ],
+    "hint": "Look for the biggest words that tell what the whole book is about."
+   },
+   {
+    "id": "interactive-book-feature-2",
+    "type": "find-feature",
+    "prompt": "Tap the author name on the cover.",
+    "targetPageId": "cover",
+    "targetFeature": "author",
+    "targetText": "Sam Reed",
+    "optionTexts": [
+     "Down on Farm",
+     "Sam Reed"
+    ],
+    "hint": "Look near the title for the name of the person who wrote the book."
+   },
+   {
+    "id": "interactive-book-feature-3",
+    "type": "find-feature",
+    "prompt": "Tap the heading at the start of this page.",
+    "targetPageId": "interactive-book-page-1",
+    "targetFeature": "heading",
+    "targetText": "Big Barn",
+    "optionTexts": [
+     "Big Barn",
+     "Horse and hay",
+     "Page 1"
+    ],
+    "hint": "A heading sits above the facts and tells the page topic."
+   },
+   {
+    "id": "interactive-book-feature-4",
+    "type": "find-feature",
+    "prompt": "Tap the caption for this picture.",
+    "targetPageId": "interactive-book-page-2",
+    "targetFeature": "caption",
+    "targetText": "Cow in field",
+    "optionTexts": [
+     "Green Fields",
+     "Cow in field",
+     "Page 2"
+    ],
+    "hint": "A caption is the short line closest to the picture."
+   },
+   {
+    "id": "interactive-book-feature-5",
+    "type": "find-feature",
+    "prompt": "Tap the page number.",
+    "targetPageId": "interactive-book-page-3",
+    "targetFeature": "page-number",
+    "targetText": "Page 3",
+    "optionTexts": [
+     "Busy Coop",
+     "Hen and egg",
+     "Page 3"
+    ],
+    "hint": "Look near an outer edge for the small number that marks this page."
+   }
+  ]
+ }
+}
