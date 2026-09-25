@@ -142,7 +142,7 @@ export const challengeAskable = (challenge: StoryRibbonChallenge): boolean => it
 const supportFor = (item: StoryRibbonItem) => item.challenge.support
   ?? resolveSupportStructure(item.mode, normalizeSupportTier(item.challenge.supportTier));
 
-const askFor = (item: StoryRibbonItem): string => {
+export const askFor = (item: StoryRibbonItem): string => {
   const supportTier = normalizeSupportTier(item.challenge.supportTier);
   // Untiered content keeps the shipped L0/L1 spoken contract byte-for-byte.
   if (supportTier === null) {

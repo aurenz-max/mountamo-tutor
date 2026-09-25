@@ -8,9 +8,14 @@
  * the assessed production is the child's original connected spoken account.
  * Model sentences stay private until a tutor verdict, so the board never turns
  * into a script to read back.
+ *
+ * It runs only on the shared tutor/JEV teaching workspace (workspace rollout C3; the
+ * scripted runner was retired, LA-14, user ruling 09-23: one path). The observer judges
+ * the spoken account and the runtime owns progression; the card order is never graded.
+ * An unbound mount shows the shared "needs the tutor" card.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaBadge,
   LuminaButton,
@@ -24,19 +29,18 @@ import {
   LuminaPrompt,
   LuminaReadAloudGlyph,
 } from '../../../ui';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { StoryRibbonMetrics } from '../../../evaluation/types';
-import { useJudgedScriptRunner, type JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { phaseResultsFromSummary, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import {
-  itemsFromChallenges,
-  mixedEventIds,
-  storyRibbonPack,
-  type StoryRibbonItem,
-} from './storyRibbonScript';
+import { itemsFromChallenges, mixedEventIds, type StoryRibbonItem } from './storyRibbonScript';
+import { hearDirectionsRequest, storyRibbonAssignment, storyRibbonScene } from './storyRibbonWorkspace';
 import {
   normalizeSupportTier,
   resolveSupportStructure,
@@ -109,6 +113,9 @@ export interface StoryRibbonData {
 interface StoryRibbonProps {
   data: StoryRibbonData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 const PHASE_CONFIG: Record<StoryRibbonChallengeType, PhaseConfig> = {
@@ -124,16 +131,19 @@ const isExperienceItem = (item: StoryRibbonItem): boolean => item.mode === 'stor
 const initialIdsFor = (item: StoryRibbonItem): string[] =>
   isExperienceItem(item) ? orderedIds(item) : mixedEventIds(item);
 
-const StoryRibbon: React.FC<StoryRibbonProps> = ({ data, className }) => (
-  <StoryRibbonSession
-    key={[data.instanceId ?? '', ...data.challenges.map((challenge) => challenge.id)].join('|')}
-    data={data}
-    className={className}
-  />
-);
+function StoryRibbonSurface(props: StoryRibbonProps) {
+  return (
+    <StoryRibbonSession
+      key={[props.data.instanceId ?? '', ...props.data.challenges.map((challenge) => challenge.id)].join('|')}
+      {...props}
+    />
+  );
+}
 
-const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => {
+function StoryRibbonSession({ data, className, runtimePlanItemId, runtimeEvalMode }: StoryRibbonProps) {
   const items = useMemo(() => itemsFromChallenges(data.challenges), [data.challenges]);
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const stableInstanceIdRef = useRef(data.instanceId || `story-ribbon-${Date.now()}`);
   const resolvedInstanceId = data.instanceId || stableInstanceIdRef.current;
 
@@ -144,8 +154,8 @@ const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => 
   const [affirmedItem, setAffirmedItem] = useState<StoryRibbonItem | null>(null);
   const preparedItemRef = useRef(items[0]?.id ?? '');
   const arrangementsRef = useRef<Record<string, string[][]>>({});
+  /** The board when the account was credited: order (or the chosen moment) and whether it was in story order. */
   const arrangementAtTellRef = useRef<Record<string, { order: string[]; correct: boolean }>>({});
-  const transcriptsRef = useRef<Record<string, string[]>>({});
 
   const evaluation = usePrimitiveEvaluation<StoryRibbonMetrics>({
     primitiveType: 'story-ribbon',
@@ -157,7 +167,7 @@ const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => 
     onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const total = items.length;
     const modes = new Set(items.map((item) => item.mode));
     const metrics: StoryRibbonMetrics = {
@@ -167,7 +177,7 @@ const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => 
       correctCount: summary.solvedCount,
       attemptsCount: summary.attemptsCount,
       firstTryCount: summary.firstTryCount,
-      hintsViewed: summary.hearTaps,
+      hintsViewed: 0,
       overallAccuracy: summary.accuracy,
       averageAttemptsPerChallenge: total > 0 ? summary.attemptsCount / total : 0,
     };
@@ -177,24 +187,26 @@ const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => 
       metrics,
       {
         challengeResults: summary.outcomes,
-        observations: summary.observations,
         learningResponses: summary.learningResponses,
         arrangements: arrangementsRef.current,
         arrangementAtTell: arrangementAtTellRef.current,
-        transcripts: transcriptsRef.current,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}),
       },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [evaluation, items.length]);
+  };
 
-  const pack = useMemo(() => storyRibbonPack(items), [items]);
-  const runner = useJudgedScriptRunner<StoryRibbonItem>({
-    pack,
+  const runner = useWorkspaceRunner<StoryRibbonItem>({
+    primitiveId: 'story-ribbon',
+    assignment: storyRibbonAssignment,
+    items,
+    workspace,
+    objectiveId: data.objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || (items[0]?.mode ?? 'tell_connected_account'),
     instanceId: resolvedInstanceId,
-    gradeLevel: data.gradeLevel ?? 'K',
-    exhibitId: data.exhibitId,
-    silenceCloseMs: 1600,
     onItemOpened: (item) => {
       const mixed = initialIdsFor(item);
       preparedItemRef.current = item.id;
@@ -204,27 +216,38 @@ const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => 
       selectedEventIdRef.current = null;
       arrangementsRef.current[item.id] = [mixed];
     },
-    onAffirmed: (item) => setAffirmedItem(item),
-    onFinished: handleFinished,
-    onEmission: (emission, item) => {
-      if (!item) return;
-      if (emission.kind === 'attempt-open' && emission.attempt.source === 'voice') {
-        const target = orderedIds(item);
-        const selected = selectedEventIdRef.current;
-        arrangementAtTellRef.current[item.id] = {
-          order: isExperienceItem(item) && selected ? [selected] : [...eventOrderRef.current],
-          correct: isExperienceItem(item)
-            ? Boolean(selected)
-            : eventOrderRef.current.every((id, index) => id === target[index]),
-        };
-      }
-      if (emission.kind === 'attempt-transcript') {
-        (transcriptsRef.current[item.id] ??= []).push(emission.text);
-      }
+    // Try again keeps the learner's board: the order is their plan, and only the account is judged.
+    onCorrectionRetry: () => {},
+    onAffirmed: (item) => {
+      const target = orderedIds(item);
+      const selected = selectedEventIdRef.current;
+      arrangementAtTellRef.current[item.id] = {
+        order: isExperienceItem(item) && selected ? [selected] : [...eventOrderRef.current],
+        correct: isExperienceItem(item) ? Boolean(selected) : eventOrderRef.current.every((id, index) => id === target[index]),
+      };
+      setAffirmedItem(item);
     },
+    onFinished: finish,
   });
 
   const currentItem = runner.currentItem ?? items[0] ?? null;
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
+
+  // What the tutor and the observer are shown, republished every render. The card order is a
+  // planning aid and is not a fact: only the spoken account is judged.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...storyRibbonScene(currentItem), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
+  /** Asks the tutor for the directions again: a silent host request, never an event. */
+  const hearDirections = useCallback(() => {
+    if (!currentItem) return;
+    ctx.sendText(hearDirectionsRequest(currentItem), { silent: true, author: 'host' });
+  }, [ctx, currentItem]);
 
   /** Belt-and-braces reset keyed to the active content. The runner normally
    * prepares in onItemOpened; this catches a future alternate open path without
@@ -255,14 +278,14 @@ const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => 
   // ── Pip shared surface ────────────────────────────────────────────────────
   // A projection of the runner's phase onto the ribbon and the child's own
   // card taps; Pip never moves a card, judges, or advances.
-  const pip = usePipTargets(currentItem?.id ?? null, !runner.currentSolved && !evaluation.hasSubmitted);
+  const pip = usePipTargets(currentItem?.id ?? null, !runner.currentSolved && !showSummary);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const targets = pip.targets(undefined, (id) => (id === 'ribbon' ? 'The picture ribbon' : 'A story picture'));
     const pose = storyRibbonPipPose({
-      running: runner.running, preparing: runner.preparing,
+      running: runner.running, preparing: false,
       currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      judging: false, tutorSpeaking: runner.tutorSpeaking,
       cueMatchesItem: runner.cuedItemId === currentItem.id,
       visibleIds: targets.map((target) => target.id),
       lastTouchedId: pip.lastTouchedId,
@@ -271,7 +294,7 @@ const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => 
   });
 
   const handleEventTap = (eventId: string) => {
-    if (!currentItem || runner.currentSolved || evaluation.hasSubmitted) return;
+    if (!currentItem || runner.currentSolved || !runner.canAttempt || showSummary) return;
     pip.look(`card-${eventId}`);
     if (isExperienceItem(currentItem)) {
       SoundManager.select();
@@ -306,9 +329,9 @@ const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => 
   };
 
   const phaseResults = useMemo(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => PHASE_CONFIG[item.mode]);
-  }, [evaluation.hasSubmitted, items, runner.summary]);
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => PHASE_CONFIG[item.mode]);
+  }, [runner.practiceSummary, items]);
 
   if (!currentItem) {
     return (
@@ -341,14 +364,14 @@ const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => 
             <LuminaCardTitle className="text-lg">{data.title}</LuminaCardTitle>
             <p className="mt-1 text-sm text-slate-400">{data.description}</p>
           </div>
-          {!evaluation.hasSubmitted && (
+          {!showSummary && (
             <LuminaBadge accent={phase.accentColor}>{phase.icon} {phase.label}</LuminaBadge>
           )}
         </div>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-5">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex items-center justify-center gap-4">
               <LuminaChallengeCounter
@@ -454,25 +477,18 @@ const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => 
               </LuminaFeedbackCard>
             )}
 
-            <JudgedMicPanel
-              run={runner}
-              voiceLabel={experienceMode ? 'Tell your connection' : 'Tell your story'}
-              idleLabel={experienceMode ? 'Connect this moment' : 'Tell this story'}
-              openingLabel="Opening story time…"
-            >
-              {runner.running && (
-                <LuminaButton tone="ghost" onClick={runner.hearStimulus}>
-                  Hear the directions again
-                </LuminaButton>
-              )}
-            </JudgedMicPanel>
+            <div className="flex justify-center">
+              <LuminaButton tone="ghost" onClick={hearDirections}>
+                Hear the directions again
+              </LuminaButton>
+            </div>
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Story Ribbons Complete!"
             celebrationMessage="You turned picture moments into connected stories."
@@ -481,6 +497,9 @@ const StoryRibbonSession: React.FC<StoryRibbonProps> = ({ data, className }) => 
       </LuminaCardContent>
     </LuminaCard>
   );
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const StoryRibbon = withWorkspaceOnly<StoryRibbonProps>('story-ribbon', StoryRibbonSurface, props => props.data.title);
 
 export default StoryRibbon;

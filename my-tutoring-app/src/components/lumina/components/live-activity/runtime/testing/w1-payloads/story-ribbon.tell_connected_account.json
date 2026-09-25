@@ -1,0 +1,106 @@
+{
+ "source": "qa/tutor-reports/story-ribbon-runtime-tell_connected_account-payload-2026-09-25.json",
+ "primitiveId": "story-ribbon",
+ "evalMode": "tell_connected_account",
+ "data": {
+  "title": "Story Ribbon",
+  "description": "Use picture moments to tell connected stories, control story time, or explain a connection.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "tell_connected_account",
+  "challenges": [
+   {
+    "id": "story-ribbon-1",
+    "type": "tell_connected_account",
+    "title": "A Tasty Park Snack",
+    "characterName": "Leo",
+    "characterEmoji": "👦",
+    "setting": "sunny green park",
+    "events": [
+     {
+      "id": "story-ribbon-1-event-1",
+      "order": 0,
+      "emoji": "🥣",
+      "pictureLabel": "large mixing bowl",
+      "modelSentence": "Leo brought a bowl filled with tasty ingredients to the park table."
+     },
+     {
+      "id": "story-ribbon-1-event-2",
+      "order": 1,
+      "emoji": "🍞",
+      "pictureLabel": "slice of bread",
+      "modelSentence": "He put the spread gently on a soft slice of bread."
+     },
+     {
+      "id": "story-ribbon-1-event-3",
+      "order": 2,
+      "emoji": "🍪",
+      "pictureLabel": "sweet baked cookie",
+      "modelSentence": "He shared a sweet cookie with his friend after lunch."
+     }
+    ]
+   },
+   {
+    "id": "story-ribbon-2",
+    "type": "tell_connected_account",
+    "title": "A Sunny Park Day",
+    "characterName": "Leo",
+    "characterEmoji": "👦",
+    "setting": "the green park",
+    "events": [
+     {
+      "id": "story-ribbon-2-event-1",
+      "order": 0,
+      "emoji": "🌧️",
+      "pictureLabel": "big rain drops",
+      "modelSentence": "Leo watched the rain fall softly over the green park."
+     },
+     {
+      "id": "story-ribbon-2-event-2",
+      "order": 1,
+      "emoji": "💦",
+      "pictureLabel": "water puddle",
+      "modelSentence": "He jumped right into a shiny water puddle."
+     },
+     {
+      "id": "story-ribbon-2-event-3",
+      "order": 2,
+      "emoji": "🥾",
+      "pictureLabel": "red rain boots",
+      "modelSentence": "Leo wore his red rain boots to keep his feet dry."
+     }
+    ]
+   },
+   {
+    "id": "story-ribbon-3",
+    "type": "tell_connected_account",
+    "title": "Helping a Little Bird",
+    "characterName": "Maya",
+    "characterEmoji": "👧",
+    "setting": "the sunny park",
+    "events": [
+     {
+      "id": "story-ribbon-3-event-1",
+      "order": 0,
+      "emoji": "🐦",
+      "pictureLabel": "hurt little bird",
+      "modelSentence": "Maya found a hurt little bird sitting on the grass."
+     },
+     {
+      "id": "story-ribbon-3-event-2",
+      "order": 1,
+      "emoji": "🩹",
+      "pictureLabel": "soft bandage",
+      "modelSentence": "She put a soft bandage on its wing very gently."
+     },
+     {
+      "id": "story-ribbon-3-event-3",
+      "order": 2,
+      "emoji": "🪶",
+      "pictureLabel": "happy feather",
+      "modelSentence": "The bird flapped its feather and flew away into the trees."
+     }
+    ]
+   }
+  ]
+ }
+}

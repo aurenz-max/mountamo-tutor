@@ -262,6 +262,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'Story-to-experience accepts personal, familiar, observed, heard-about, or imagined examples; never require private '
       + 'disclosure or grade the truth or emotional value of a memory. Its structural axis intentionally saturates because '
       + 'the current response contract permits a connection to any one event.',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'Three picture cards of one short story, mixed up; the learner may tap two to swap them while planning, '
+        + 'but only the spoken story is judged, never the card order. Connected, present, future and past accounts: '
+        + 'the learner tells all three events in order in their own words (the tense modes in that time). Story to '
+        + 'experience: the learner picks one moment and tells how it connects to something they did, saw, heard about '
+        + 'or imagined; never ask for private detail and never judge whether a memory is true. Before an attempt never '
+        + 'say an event sentence or the story order, and follow the reveal policy in the scene facts. Hear the '
+        + 'directions again asks you to repeat the directions only. You cannot move a card.',
+    },
     evalModes: [
       {
         evalMode: 'tell_connected_account', label: 'Connected account', beta: 2.5, discrimination: 1.0,

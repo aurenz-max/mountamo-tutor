@@ -81,6 +81,8 @@ import { itemsFromChallenges as bookItems } from '../../primitives/visual-primit
 import { interactiveBookJourneyAnswers } from '../../primitives/visual-primitives/literacy/interactiveBookWorkspace';
 import { itemsFromChallenges as bridgeItems } from '../../primitives/visual-primitives/literacy/storyBridgeScript';
 import { storyBridgeJourneyAnswers } from '../../primitives/visual-primitives/literacy/storyBridgeWorkspace';
+import { itemsFromChallenges as ribbonItems } from '../../primitives/visual-primitives/literacy/storyRibbonScript';
+import { storyRibbonJourneyAnswers } from '../../primitives/visual-primitives/literacy/storyRibbonWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
@@ -1159,6 +1161,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'touch', target: intent === 'wrong' ? answers.tapped.wrong : answers.tapped.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stories"]' } },
+  },
+  'story-ribbon': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/StoryRibbon.tsx',
+    instanceId: 'ribbon',
+    defaults: { grade: 'Kindergarten', mode: 'tell_connected_account', di: false, topic: 'A day at the park' },
+    leakTokens: ['SR_ITEM', 'SR_MOVE', 'SR_COMPLETE', 'SR_HEAR'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one spoken account; a wrong one is a single picture label said alone. The cards are not graded.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = ribbonItems(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current story-ribbon item');
+      const answers = storyRibbonJourneyAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="ribbon"]' } },
   },
 };
 

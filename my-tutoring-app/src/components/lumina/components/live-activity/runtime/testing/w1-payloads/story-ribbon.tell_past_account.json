@@ -1,0 +1,109 @@
+{
+ "source": "qa/tutor-reports/story-ribbon-runtime-tell_past_account-payload-2026-09-25.json",
+ "primitiveId": "story-ribbon",
+ "evalMode": "tell_past_account",
+ "data": {
+  "title": "Story Ribbon",
+  "description": "Use picture moments to tell connected stories, control story time, or explain a connection.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "tell_past_account",
+  "challenges": [
+   {
+    "id": "story-ribbon-1",
+    "type": "tell_past_account",
+    "title": "Helping A Lost Bird",
+    "characterName": "Leo",
+    "characterEmoji": "👦",
+    "setting": "the green park",
+    "timeCue": "Yesterday",
+    "events": [
+     {
+      "id": "story-ribbon-1-event-1",
+      "order": 0,
+      "emoji": "🐦",
+      "pictureLabel": "little hurt bird",
+      "modelSentence": "Yesterday, Leo found a little hurt bird resting under a tall tree."
+     },
+     {
+      "id": "story-ribbon-1-event-2",
+      "order": 1,
+      "emoji": "📦",
+      "pictureLabel": "soft cozy box",
+      "modelSentence": "He gently placed the bird inside a soft cozy box."
+     },
+     {
+      "id": "story-ribbon-1-event-3",
+      "order": 2,
+      "emoji": "🍞",
+      "pictureLabel": "fresh bread crumbs",
+      "modelSentence": "Leo fed fresh bread crumbs to help the bird feel better."
+     }
+    ]
+   },
+   {
+    "id": "story-ribbon-2",
+    "type": "tell_past_account",
+    "title": "Leo At The Park",
+    "characterName": "Leo",
+    "characterEmoji": "🧒",
+    "setting": "sunny park",
+    "timeCue": "Yesterday",
+    "events": [
+     {
+      "id": "story-ribbon-2-event-1",
+      "order": 0,
+      "emoji": "🧱",
+      "pictureLabel": "wooden blocks",
+      "modelSentence": "Yesterday, Leo found some wooden blocks on the park table."
+     },
+     {
+      "id": "story-ribbon-2-event-2",
+      "order": 1,
+      "emoji": "🗼",
+      "pictureLabel": "tall tower",
+      "modelSentence": "He carefully built a tall tower with the blocks."
+     },
+     {
+      "id": "story-ribbon-2-event-3",
+      "order": 2,
+      "emoji": "🎁",
+      "pictureLabel": "special gift",
+      "modelSentence": "His friend gave him a shiny sticker as a special gift."
+     }
+    ]
+   },
+   {
+    "id": "story-ribbon-3",
+    "type": "tell_past_account",
+    "title": "Leo Finds a Ball",
+    "characterName": "Leo",
+    "characterEmoji": "👦",
+    "setting": "the green park",
+    "timeCue": "Yesterday",
+    "events": [
+     {
+      "id": "story-ribbon-3-event-1",
+      "order": 0,
+      "emoji": "⚽",
+      "pictureLabel": "red ball",
+      "modelSentence": "Yesterday, Leo found a red ball in the grass."
+     },
+     {
+      "id": "story-ribbon-3-event-2",
+      "order": 1,
+      "emoji": "🐶",
+      "pictureLabel": "friendly puppy",
+      "modelSentence": "A friendly puppy chased the rolling ball."
+     },
+     {
+      "id": "story-ribbon-3-event-3",
+      "order": 2,
+      "emoji": "🧺",
+      "pictureLabel": "toy basket",
+      "modelSentence": "Leo put the ball safely inside the basket."
+     }
+    ]
+   }
+  ]
+ }
+}
