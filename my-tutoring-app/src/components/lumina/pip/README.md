@@ -74,18 +74,18 @@ Objects hidden by a flash, the count-on basket, or removal are not published.
 | Pattern Builder | the next empty "?" slot (extend, find the rule), or the row once every slot is filled; the row as a whole (identify the core); the build zone (create, translate) | a palette token; a single token of the row on identify |
 | Shape Sorter | the one shape the screen rings (or draws alone) on every mode | a mat; any other shape in the pool |
 | DI Spoken Practice | the stimulus panel as a whole; nothing on a listen-only item | one picture of a compare pair; one object of a count |
-| DI Math Facts | the printed problem (its own loop phases mapped onto the gate; the reward beat celebrates) | the completed equation; anything while praise for the previous fact is still playing |
+| DI Math Facts | the whole stimulus, through the shared `DiTeachingStage` surface (`diStagePipPose`): a committed credit celebrates, held or advanced, until the new item's first utterance | the completed equation; anything while praise for the previous fact is still playing |
 | Measure Lab | the object pair before the prediction, then the scale; both containers (holds more, least to most); the container while pouring, then the cups row | one object or container; a number option |
 | Math Fact Fluency | the dots, frame or fingers (visual fact, picture-to-equation match); otherwise the printed equation | a number, equation or picture choice; the stepper |
 | Number Line | the whole line (plot, find between); the marked start point (jump); the chips as a row (order) | a tick, a label, or a place where a hop lands |
 | Calendar Explorer | the grid when a date is the answer; the starred "today" cell when an option is the answer; the start-day card (days forward); the listen card on the spoken chain | a date cell that could be the answer; the target-day column; an option |
-| DI Shapes | the whole drawn shape or object (its own loop phases mapped onto the gate; the reward beat celebrates) | one side or corner; the labeled reward; anything while praise for the previous shape is still playing |
+| DI Shapes | the whole stimulus, through the shared `DiTeachingStage` surface (`diStagePipPose`): a committed credit celebrates, held or advanced, until the new item's first utterance | one side or corner; the labeled trail; anything while praise for the previous shape is still playing |
 | Equation Builder | the empty slot row (build, rewrite); the printed "?" (missing value, balance); the whole printed equation (true or false) | a tile in the pool, a number option, True or False, the number box |
 | Shape Tracer | the canvas as a whole, on every mode | a dot or vertex (the next dot is the answer once a tier withdraws the numbers and the next-dot ring); a grid corner |
 | Shape Composer | the canvas as a whole — silhouette, picture or composite — on every mode | a palette piece, a decompose shape button, where a piece goes |
 | Hundreds Chart | the chart as a whole, on every mode | a cell; an option |
 | Balance Scale (equality) | the right pan (build); the gathered right-side weights (say the total); the unnumbered left weight (find the left weight) | a tray weight, a placed block |
-| DI Word Reading | the whole printed word, on every mode | one letter; anything while praise for the previous word is still playing |
+| DI Word Reading | the whole stimulus, through the shared `DiTeachingStage` surface (`diStagePipPose`): a committed credit celebrates, held or advanced, until the new item's first utterance | one letter; anything while praise for the previous word is still playing |
 | Phonics Blender | the letter row as a whole, on every mode and tier | one letter card (a ring would draw the segmentation the hard tier removes) |
 | CVC Speller | the "?" box (middle sound); the word's picture (sound groups); the box row (spell it) | a vowel column; a bank letter; on sound groups with the picture withdrawn, nothing |
 | Letter Spotter | the star over the hidden letter (name it); the grid as a whole (find it); the big letter (match it) | a grid cell; a little letter |
@@ -107,8 +107,8 @@ Objects hidden by a flash, the count-on basket, or removal are not published.
 | Letter-Sound Link | the big letter card (see-hear, keyword match); the letter buttons as one region (hear-see) | one letter button; a keyword picture |
 | Syllable Clapper | the hear-it-again button (the word is never printed) | the reveal bar's parts |
 | Knowledge Check | the question card as a whole, on every item kind (judged surface only; the no-mic tap flow keeps the perch) | a choice, True/False card, sort group, word-bank word, or number-sentence token |
-| DI Letter Sounds | the stage (picture with the letter, or with the word on first-sound items) | the word's first letter |
-| DI Sentence Reading | the whole printed sentence; its reward beat celebrates | one word; anything while praise for the previous sentence plays |
+| DI Letter Sounds | the whole stimulus, through the shared `DiTeachingStage` surface (`diStagePipPose`): a committed credit celebrates, held or advanced, until the new item's first utterance | the word's first letter |
+| DI Sentence Reading | the whole stimulus, through the shared `DiTeachingStage` surface (`diStagePipPose`): a committed credit celebrates, held or advanced, until the new item's first utterance | one word; anything while praise for the previous sentence plays |
 
 ### Shared surfaces
 
@@ -162,8 +162,7 @@ Ribbon's arrangement, which plans a spoken story rather than being judged. Docks
 pointer to the cue does not cross an answer surface. Pip's pose never calls the
 child's handler, advances the runner, or writes an evaluation.
 
-The packs that run `useJudgedSpeechLoop` directly without a reward beat (DI Word Reading, DI Letter
-Sounds, Phonics Blender, CVC Speller, Sound Swap, Word Flip) open the next item on the affirming verdict, before the praise
+The packs that run `useJudgedSpeechLoop` directly without a reward beat (Phonics Blender, CVC Speller, Sound Swap, Word Flip) open the next item on the affirming verdict, before the praise
 is spoken. Each records the item its loop's last *sent* cue was about (`onCue`), the
 runner's `cuedItemId` in miniature: speech counts as a cue only once that id names the
 item on screen, and the praise is held as the confirmed result until then.

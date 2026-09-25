@@ -18,6 +18,8 @@ import { LiveRuntimeSurface } from '../LiveRuntimeSurface';
 import { RuntimeTransport } from '../runtimeTransport';
 import type { WorkspaceInput } from '../contract';
 import { seam } from './liveRuntimeSeams';
+import { PipSurfaceContext } from '../../../../pip/PipSurfaceContext';
+import type { PipSurfaceStore } from '../../../../pip/PipSurfaceStore';
 
 export interface WorkspaceMount {
   primitiveId: string;
@@ -25,12 +27,14 @@ export interface WorkspaceMount {
   evalMode: string;
   data: Record<string, unknown>;
   instanceId?: string;
+  /** Hosts Pip's surface store around the mount, as a lesson does. */
+  pipStore?: PipSurfaceStore;
 }
 
 /** The action names only the observer may run. A tutor tool with one of these names breaks TW ownership. */
 export const OBSERVER_ONLY = ['apply_tutor_verdict', 'retry', 'advance'] as const;
 
-export function mountWorkspace({ primitiveId, evalMode, data, instanceId = 'ws' }: WorkspaceMount) {
+export function mountWorkspace({ primitiveId, evalMode, data, instanceId = 'ws', pipStore }: WorkspaceMount) {
   const Component = getPrimitive(primitiveId as never)?.component as React.ComponentType<any> | undefined;
   if (!Component) throw new Error(`${primitiveId} is not in the primitive registry`);
   seam.activePrimitiveId = instanceId;
@@ -38,9 +42,10 @@ export function mountWorkspace({ primitiveId, evalMode, data, instanceId = 'ws' 
   const sent: any[] = [];
   const transport = new RuntimeTransport(runtime, m => sent.push(m));
   const payload = { ...data, instanceId };
-  const tree = () => <LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
+  const mounted = () => <LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
     <Component data={payload} autoStart runtimePlanItemId={`plan-${instanceId}`} runtimeEvalMode={evalMode} />
   </LiveRuntimeSurface></LiveRuntimeContext.Provider>;
+  const tree = () => pipStore ? <PipSurfaceContext.Provider value={pipStore}>{mounted()}</PipSurfaceContext.Provider> : mounted();
   const view = render(tree());
   const state = () => runtime.getSnapshot();
   let lastCommand = '';
@@ -60,6 +65,8 @@ export function mountWorkspace({ primitiveId, evalMode, data, instanceId = 'ws' 
     seam.conversation = [...seam.conversation, { role: 'user', content: text, timestamp: seam.conversation.length + 1 }];
     view.rerender(tree());
   });
+  /** Tutor audio starts or stops (the `seam.audio` a mocked context reads). */
+  const speak = (on: boolean) => act(() => { seam.audio = on; view.rerender(tree()); });
   /** The observer's committed reading of the tutor's reply to the pending spoken answer. */
   const feedback = (verdict: 'correct' | 'incorrect', transition: 'none' | 'advance' | 'retry' = 'none') =>
     dispatch('apply_tutor_verdict', { dialogue: { responseId: state().task!.workspace!.pendingResponse!.id, verdict, transition,
@@ -81,7 +88,7 @@ export function mountWorkspace({ primitiveId, evalMode, data, instanceId = 'ws' 
     expect(el, `no object ${pipObject}`).toBeTruthy();
     fireEvent.click(el!);
   });
-  return { runtime, transport, sent, view, state, offer, dispatch, confirmVisible, settle, say, feedback, tutorTools,
+  return { runtime, transport, sent, view, state, offer, dispatch, confirmVisible, settle, say, speak, feedback, tutorTools,
     packet, press, touch, close: () => transport.close() };
 }
 

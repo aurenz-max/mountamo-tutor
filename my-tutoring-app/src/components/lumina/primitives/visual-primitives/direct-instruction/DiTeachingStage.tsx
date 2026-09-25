@@ -34,6 +34,11 @@ import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRu
 import { NeedsTutor } from '../../../components/live-activity/runtime/NeedsTutor';
 import type { PrimitiveMetrics } from '../../../evaluation';
 import type { ComponentId } from '../../../types';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
+import { diStagePipPose } from '../../../pip/diStagePipPose';
+import { PIP_DOCK_CLASS } from '../../../pip/useWorkspacePipSurface';
 
 export interface DiStageData {
   instanceId?: string;
@@ -123,6 +128,30 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
     lesson.publishWorkspace();
   });
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of committed workspace state onto the stimulus as a whole; Pip never answers,
+  // judges, or advances. Audio belongs to this block only while a lesson is pointed at it.
+  const ai = useLuminaAIContext();
+  const tutorSpeaking = ai.isAudioPlaying && (ai.sessionMode !== 'lesson' || ai.activePrimitiveId === instance.current);
+  const speechOnItem = useSpeechScope(item.id, tutorSpeaking);
+  const [cuedItemId, setCuedItemId] = useState<string | null>(null);
+  useEffect(() => { if (speechOnItem) setCuedItemId(item.id); }, [speechOnItem, item.id]);
+  const { attempts } = lesson.state;
+  const latest = attempts[attempts.length - 1];
+  const pip = usePipTargets(item.id, false);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || lesson.summary) return null;
+    const targets = pip.targets(['stimulus'], () => copy.title);
+    const pose = diStagePipPose({
+      running: lesson.state.phase !== 'completed',
+      heldSolved: lesson.state.phase === 'checked' && !!lesson.state.lastResponse?.correct,
+      creditedOnAdvance: !!latest?.correct && latest.itemId === items[lesson.state.index - 1]?.id,
+      tutorSpeaking, cuedCurrentItem: cuedItemId === item.id || speechOnItem, speechOnItem,
+      visibleIds: targets.map(target => target.id),
+    });
+    return { instanceId: instance.current, scopeId: item.id, label: copy.title, dock: pip.dock.current, targets, pose };
+  });
+
   const summary = lesson.summary;
   if (summary) return <LuminaCard className={className} surface="elevated">
     <LuminaCardContent className="space-y-6">
@@ -147,7 +176,9 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
     </LuminaCardHeader>
     <LuminaCardContent className="space-y-6">
       <LuminaChallengeCounter current={lesson.state.index + 1} total={items.length} variant="dots" />
-      {stimulus(item, marks)}
+      <div ref={pip.ref('stimulus')} data-pip-object="stimulus">{stimulus(item, marks)}</div>
+      {/* Every answer is spoken, so no answer surface lies between the dock and the stimulus. */}
+      {pipStore && <div ref={pip.dock} data-pip-dock={instance.current} className={PIP_DOCK_CLASS} />}
       {trail?.(committed)}
       <div className="flex justify-center"><LuminaReadAloudGlyph size={22} speaking={lesson.tutorSpeaking} /></div>
       <p className="text-center text-sm text-slate-400">{copy.prompt}</p>
