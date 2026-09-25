@@ -9,6 +9,7 @@
  * main_idea). Nothing is tapped.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { textFacts } from '../../../components/live-activity/runtime/sceneFacts';
 import {
   askFor,
   choicesSpokenFor,
@@ -54,7 +55,7 @@ export function decodableReaderScene(item: DecodableReaderItem): WorkspaceScene 
     facts.constraints = 'The learner reads the printed line out loud; it is the only thing on screen. Nothing is tapped.';
   } else {
     facts.question = item.question ?? '';
-    if (item.storyText) facts.story = item.storyText;
+    if (item.storyText) Object.assign(facts, textFacts('story', item.storyText));
     if (item.kind === 'answer_choice') facts.choicesInScreenOrder = choicesSpokenFor(item);
     facts.constraints = item.kind === 'answer_choice'
       ? 'The question and the picture choices are printed; the learner says which choice out loud. Nothing is tapped.'

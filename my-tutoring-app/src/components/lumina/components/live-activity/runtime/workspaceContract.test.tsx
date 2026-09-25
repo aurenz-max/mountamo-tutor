@@ -26,6 +26,7 @@ import { workspaceBinding } from '../lessonWorkspacePlan';
 import { getComponentById } from '../../../service/manifest/catalog';
 import { installRuntimeTimers, restoreRuntimeTimers, seam } from './testing/liveRuntimeSeams';
 import { mountWorkspace, OBSERVER_ONLY } from './testing/workspaceHarness';
+import { validDialogueRequest } from './dialogueContract';
 
 interface Payload { source: string; primitiveId: string; evalMode: string; data: Record<string, unknown> }
 const PAYLOAD_DIR = join(process.cwd(), 'src/components/lumina/components/live-activity/runtime/testing/w1-payloads');
@@ -74,6 +75,23 @@ describe.each(PAYLOADS)('$primitiveId $evalMode (saved payload)', ({ primitiveId
     expect(h.tutorTools().filter(t => (OBSERVER_ONLY as readonly string[]).includes(t))).toEqual([]);
     expect(seam.legacyAI, 'the legacy AI hook is live beside the workspace').not.toHaveBeenCalled();
     expect(seam.send.mock.calls.flat().filter(x => typeof x === 'string').join(' ')).not.toMatch(CUE_PROTOCOL);
+  });
+
+  it('publishes an item the outcome observer accepts', () => {
+    // The observer's request carries the item's task, key and scene facts, each under a length cap
+    // (a fact over 500 characters). A request past a cap is refused before any model runs, so every
+    // spoken answer on that item goes unjudged (story-bridge's two stories in one fact, C3).
+    const h = mountWorkspace({ primitiveId, evalMode, data });
+    const s = h.state(), task = s.task!, w = task.workspace!;
+    if (w.progression !== 'observer') return;
+    const request = { scope: { sessionEpoch: s.sessionEpoch, instanceId: s.instanceId, itemId: task.itemId, revision: s.revision },
+      task: task.task, phase: task.phase, learner: 'an answer', tutor: 'a reply', lastResponse: w.lastResponse,
+      ...(w.expectedAnswer !== undefined ? { expectedAnswer: w.expectedAnswer } : {}),
+      activity: { responseSource: null, attemptNumber: 0, objects: w.objects, demonstration: w.demonstration, facts: task.demand,
+        assistance: { level: task.support.level, answerExposure: task.support.answerExposure } } };
+    const long = Object.entries(task.demand ?? {}).filter(([, v]) => typeof v === 'string' && v.length > 500).map(([k]) => k);
+    expect(long, 'scene facts over 500 characters').toEqual([]);
+    expect(validDialogueRequest(request), 'the observer refuses this item').toBe(true);
   });
 
   it('sends the tutor the current item with learner signals', () => {
