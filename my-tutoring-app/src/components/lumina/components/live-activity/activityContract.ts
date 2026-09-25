@@ -44,6 +44,7 @@ import { pictureVocabularyLiveDomain } from './adapters/pictureVocabularyLive';
 import { letterSpotterLiveDomain } from './adapters/letterSpotterLive';
 import { decodableReaderLiveDomain } from './adapters/decodableReaderLive';
 import { interactiveBookLiveDomain } from './adapters/interactiveBookLive';
+import { storyBridgeLiveDomain } from './adapters/storyBridgeLive';
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { diShapesLiveDomain } from './adapters/diShapesLive';
@@ -97,6 +98,7 @@ export const LIVE_ADAPTERS = {
   'letter-spotter': workspaceAdapter('letter-spotter', letterSpotterLiveDomain),
   'decodable-reader': workspaceAdapter('decodable-reader', decodableReaderLiveDomain),
   'interactive-book': workspaceAdapter('interactive-book', interactiveBookLiveDomain),
+  'story-bridge': workspaceAdapter('story-bridge', storyBridgeLiveDomain),
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
   'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),

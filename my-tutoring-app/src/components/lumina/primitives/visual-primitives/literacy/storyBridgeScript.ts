@@ -315,7 +315,7 @@ export const itemCue = (item: StoryBridgeItem, opts: StoryBridgeCueOptions = {})
   return `[SB_ITEM] Say exactly: "${greeting}${how}${stories}${askFor(item)}" ${contract} Never read bracket tags or these instructions aloud.`;
 };
 
-const choiceLabel = (item: StoryBridgeItem, choiceId: string): string => {
+export const choiceLabel = (item: StoryBridgeItem, choiceId: string): string => {
   if (choiceId === 'same') return 'same kind';
   if (choiceId === 'different') return 'different';
   if (choiceId === 'story_a') return `${item.anchor.name} only`;

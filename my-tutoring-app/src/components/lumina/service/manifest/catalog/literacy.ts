@@ -115,9 +115,19 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     constraints:
       'Requires a microphone and live tutor. One generated pair of two five-sentence stories stays in context '
       + 'for the whole session. Story text is audio-only before a verdict; relevant excerpts appear side by side '
-      + 'after affirmation. Gesture modes use pictured choices and never judge microphone speech. Spoken modes '
+      + 'after credit. Gesture modes use pictured choices and never judge microphone speech. Spoken modes '
       + 'accept age-appropriate defensible comparisons but reject a response that references only one story. '
       + 'The manifest must not supply story text, names, comparison answers, or event pairings.',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'Two short read-aloud stories stay on screen as pictures, titles and friends; the story text is '
+        + 'heard, not printed. Read both stories aloud before the first question, and again when asked. Match '
+        + 'characters, match settings, the picture Venn diagram and event sequences are answered by tapping a choice; '
+        + 'the activity checks the tap. Say alike, say different and compare big ideas are answered out loud: any '
+        + 'true comparison across BOTH stories counts, not only the reference wording, but a detail about one story '
+        + 'alone is not a comparison. Before an attempt never say the comparison or which choice is right. The '
+        + 'replay button asks you to read both stories and the question again. You cannot tap or mark anything.',
+    },
     evalModes: [
       {
         evalMode: 'match_character', label: 'Match characters', beta: 2.0, discrimination: 1.2,

@@ -1,0 +1,124 @@
+{
+ "source": "qa/tutor-reports/story-bridge-runtime-say_alike-payload-2026-09-25.json",
+ "primitiveId": "story-bridge",
+ "evalMode": "say_alike",
+ "data": {
+  "title": "Story Bridge",
+  "description": "Compare characters, settings, events, and big ideas across two illustrated stories.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "say_alike",
+  "stories": [
+   {
+    "id": "story-bridge-pair-1-a",
+    "title": "Sharing at the Farm",
+    "sceneEmoji": "🚜",
+    "setting": "a sunny farm yard",
+    "opening": "The morning sun shined bright on the busy farm.",
+    "closing": "The happy animals played together until the sun went down.",
+    "mainIdea": "Sharing makes farm friends happy.",
+    "characters": [
+     {
+      "id": "story-bridge-pair-1-a-1",
+      "name": "Cow",
+      "emoji": "🐮",
+      "eventEmoji": "🍎",
+      "sentence": "Cow shared a big red apple with Pig.",
+      "uniqueDetail": "munched on a crunchy red fruit"
+     },
+     {
+      "id": "story-bridge-pair-1-a-2",
+      "name": "Pig",
+      "emoji": "🐷",
+      "eventEmoji": "🧱",
+      "sentence": "Pig shared wooden blocks to build a tall tower.",
+      "uniqueDetail": "piled up heavy wooden toys"
+     },
+     {
+      "id": "story-bridge-pair-1-a-3",
+      "name": "Duck",
+      "emoji": "🦆",
+      "eventEmoji": "📖",
+      "sentence": "Duck shared a picture book for quiet reading time.",
+      "uniqueDetail": "turned the paper pages gently"
+     }
+    ]
+   },
+   {
+    "id": "story-bridge-pair-1-b",
+    "title": "Sharing in the Garden",
+    "sceneEmoji": "🌻",
+    "setting": "a pretty flower garden",
+    "opening": "The warm wind blew softly through the green garden.",
+    "closing": "The joyful bugs smiled as they shared until night time.",
+    "mainIdea": "Sharing makes garden friends happy.",
+    "characters": [
+     {
+      "id": "story-bridge-pair-1-b-1",
+      "name": "Ant",
+      "emoji": "🐜",
+      "eventEmoji": "🍏",
+      "sentence": "Ant shared a sweet green apple with Bee.",
+      "uniqueDetail": "nibbled on a small green fruit"
+     },
+     {
+      "id": "story-bridge-pair-1-b-2",
+      "name": "Bee",
+      "emoji": "🐝",
+      "eventEmoji": "🪵",
+      "sentence": "Bee shared light twigs to build a tall tower.",
+      "uniqueDetail": "stacked thin brown sticks"
+     },
+     {
+      "id": "story-bridge-pair-1-b-3",
+      "name": "Ladybug",
+      "emoji": "🐞",
+      "eventEmoji": "📚",
+      "sentence": "Ladybug shared a story book for quiet reading time.",
+      "uniqueDetail": "looked at the colorful cover art"
+     }
+    ]
+   }
+  ],
+  "challenges": [
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "say_alike",
+    "anchorStoryId": "story-bridge-pair-1-a",
+    "anchorCharacterId": "story-bridge-pair-1-a-1",
+    "targetStoryId": "story-bridge-pair-1-b",
+    "targetCharacterId": "story-bridge-pair-1-b-1",
+    "sharedBehavior": "shared an apple with a friend",
+    "comparisonSummary": "Cow and Ant both shared an apple with a friend.",
+    "id": "story-bridge-1-1"
+   },
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "say_alike",
+    "anchorStoryId": "story-bridge-pair-1-b",
+    "anchorCharacterId": "story-bridge-pair-1-b-2",
+    "targetStoryId": "story-bridge-pair-1-a",
+    "targetCharacterId": "story-bridge-pair-1-a-2",
+    "sharedBehavior": "shared blocks to build a tall tower",
+    "comparisonSummary": "Bee and Pig both shared blocks to build a tall tower.",
+    "id": "story-bridge-1-2"
+   },
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "say_alike",
+    "anchorStoryId": "story-bridge-pair-1-a",
+    "anchorCharacterId": "story-bridge-pair-1-a-3",
+    "targetStoryId": "story-bridge-pair-1-b",
+    "targetCharacterId": "story-bridge-pair-1-b-3",
+    "sharedBehavior": "shared a book for quiet reading time",
+    "comparisonSummary": "Duck and Ladybug both shared a book for quiet reading time.",
+    "id": "story-bridge-1-3"
+   }
+  ]
+ }
+}

@@ -79,6 +79,8 @@ import { itemsFromChallenges as decodableItems } from '../../primitives/visual-p
 import { decodableReaderJourneyAnswers } from '../../primitives/visual-primitives/literacy/decodableReaderWorkspace';
 import { itemsFromChallenges as bookItems } from '../../primitives/visual-primitives/literacy/interactiveBookScript';
 import { interactiveBookJourneyAnswers } from '../../primitives/visual-primitives/literacy/interactiveBookWorkspace';
+import { itemsFromChallenges as bridgeItems } from '../../primitives/visual-primitives/literacy/storyBridgeScript';
+import { storyBridgeJourneyAnswers } from '../../primitives/visual-primitives/literacy/storyBridgeWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
@@ -1139,6 +1141,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'touch', target: intent === 'wrong' ? answers.tapped.wrong : answers.tapped.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="page"]' } },
+  },
+  'story-bridge': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/StoryBridge.tsx',
+    instanceId: 'bridge',
+    defaults: { grade: 'Kindergarten', mode: 'match_character', di: false, topic: 'Two stories about friends who share' },
+    leakTokens: ['SB_ITEM', 'SB_MOVE', 'SB_COMPLETE', 'SB_HEAR', 'SB_TAP'],
+    prompts: WORKSPACE_PROMPTS,
+    // Say alike / different / big ideas answer aloud; the other modes tap a choice (a wrong tap is another choice).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = bridgeItems(ctx.data.challenges ?? [], ctx.data.stories ?? []).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current story-bridge item');
+      const answers = storyBridgeJourneyAnswers(item);
+      if (!answers.tapped) return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+      return [{ type: 'touch', target: intent === 'wrong' ? answers.tapped.wrong : answers.tapped.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stories"]' } },
   },
 };
 

@@ -1,0 +1,124 @@
+{
+ "source": "qa/tutor-reports/story-bridge-runtime-match_character-payload-2026-09-25.json",
+ "primitiveId": "story-bridge",
+ "evalMode": "match_character",
+ "data": {
+  "title": "Story Bridge",
+  "description": "Compare characters, settings, events, and big ideas across two illustrated stories.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "match_character",
+  "stories": [
+   {
+    "id": "story-bridge-pair-1-a",
+    "title": "Sharing On The Farm",
+    "sceneEmoji": "🚜",
+    "setting": "a sunny farm",
+    "opening": "Morning came to the big green farm.",
+    "closing": "Everyone felt happy and shared all day long.",
+    "mainIdea": "Friends on the farm shared their food and toys to have fun together.",
+    "characters": [
+     {
+      "id": "story-bridge-pair-1-a-1",
+      "name": "Pig",
+      "emoji": "🐷",
+      "eventEmoji": "🍎",
+      "sentence": "Pig shared a yummy apple by the red barn.",
+      "uniqueDetail": "ate a crunchy red apple near the big barn"
+     },
+     {
+      "id": "story-bridge-pair-1-a-2",
+      "name": "Cow",
+      "emoji": "🐮",
+      "eventEmoji": "🛒",
+      "sentence": "Cow shared a red wagon on the dirt path.",
+      "uniqueDetail": "pulled a heavy red wagon across the dirt"
+     },
+     {
+      "id": "story-bridge-pair-1-a-3",
+      "name": "Duck",
+      "emoji": "🦆",
+      "eventEmoji": "⚽",
+      "sentence": "Duck shared a shiny blue ball near the fence.",
+      "uniqueDetail": "bounced a shiny blue ball near the wooden fence"
+     }
+    ]
+   },
+   {
+    "id": "story-bridge-pair-1-b",
+    "title": "Sharing In The Garden",
+    "sceneEmoji": "🌻",
+    "setting": "a bright flower garden",
+    "opening": "Morning came to the pretty flower garden.",
+    "closing": "Everyone felt glad and shared until bedtime.",
+    "mainIdea": "Friends in the garden shared their snacks and games to have fun together.",
+    "characters": [
+     {
+      "id": "story-bridge-pair-1-b-1",
+      "name": "Bunny",
+      "emoji": "🐰",
+      "eventEmoji": "🍏",
+      "sentence": "Bunny shared a yummy apple by the tall flowers.",
+      "uniqueDetail": "ate a crisp green apple near the tall flowers"
+     },
+     {
+      "id": "story-bridge-pair-1-b-2",
+      "name": "Bear",
+      "emoji": "🐻",
+      "eventEmoji": "🛞",
+      "sentence": "Bear shared a red wagon on the soft grass.",
+      "uniqueDetail": "pushed a rolling red wagon across the grass"
+     },
+     {
+      "id": "story-bridge-pair-1-b-3",
+      "name": "Frog",
+      "emoji": "🐸",
+      "eventEmoji": "🏀",
+      "sentence": "Frog shared a shiny blue ball near the pond.",
+      "uniqueDetail": "tossed a shiny blue ball near the water pond"
+     }
+    ]
+   }
+  ],
+  "challenges": [
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "match_character",
+    "anchorStoryId": "story-bridge-pair-1-b",
+    "anchorCharacterId": "story-bridge-pair-1-b-1",
+    "targetStoryId": "story-bridge-pair-1-a",
+    "targetCharacterId": "story-bridge-pair-1-a-1",
+    "sharedBehavior": "shared a yummy apple",
+    "comparisonSummary": "Bunny and Pig both shared a yummy apple.",
+    "id": "story-bridge-1-1"
+   },
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "match_character",
+    "anchorStoryId": "story-bridge-pair-1-a",
+    "anchorCharacterId": "story-bridge-pair-1-a-2",
+    "targetStoryId": "story-bridge-pair-1-b",
+    "targetCharacterId": "story-bridge-pair-1-b-2",
+    "sharedBehavior": "shared a red wagon",
+    "comparisonSummary": "Cow and Bear both shared a red wagon.",
+    "id": "story-bridge-1-2"
+   },
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "match_character",
+    "anchorStoryId": "story-bridge-pair-1-b",
+    "anchorCharacterId": "story-bridge-pair-1-b-3",
+    "targetStoryId": "story-bridge-pair-1-a",
+    "targetCharacterId": "story-bridge-pair-1-a-3",
+    "sharedBehavior": "shared a shiny blue ball",
+    "comparisonSummary": "Frog and Duck both shared a shiny blue ball.",
+    "id": "story-bridge-1-3"
+   }
+  ]
+ }
+}

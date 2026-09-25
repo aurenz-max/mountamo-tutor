@@ -5,25 +5,33 @@
  * The same two stories stay on screen for every task in a session. Before a
  * verdict the stage shows only accessible picture references and names; after
  * the verdict it places one evidence excerpt from each story side by side.
+ *
+ * It runs only on the shared tutor/JEV teaching workspace (workspace rollout C3; the
+ * scripted runner was retired, LA-14, user ruling 09-23: one path). Taps are checked by
+ * the activity; spoken comparisons are judged by the observer; the runtime owns
+ * progression. An unbound mount shows the shared "needs the tutor" card.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaBadge, LuminaCard, LuminaCardContent, LuminaCardHeader, LuminaCardTitle,
   LuminaChallengeCounter, LuminaPanel, LuminaReadAloudGlyph, answerStateClass,
   type AnswerChoiceState,
 } from '../../../ui';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { StoryBridgeMetrics } from '../../../evaluation/types';
-import { useJudgedScriptRunner, type JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { judgedAnswerMix } from '../../../hooks/judgedScriptContract';
 import { phaseResultsFromSummary, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import { evidenceFor, itemsFromChallenges, type StoryBridgeItem } from './storyBridgeScript';
 import {
-  evidenceFor, itemsFromChallenges, storyBridgePack, tapVerdictCue,
-  type StoryBridgeItem,
-} from './storyBridgeScript';
+  describeStoryBridgeTap, hearStoriesRequest, storyBridgeAssignment, storyBridgeScene,
+} from './storyBridgeWorkspace';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { storyBridgePipPose } from '../../../pip/storyBridgePipPose';
 
@@ -97,7 +105,13 @@ export interface StoryBridgeData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<StoryBridgeMetrics>) => void;
 }
 
-interface StoryBridgeProps { data: StoryBridgeData; className?: string }
+interface StoryBridgeProps {
+  data: StoryBridgeData;
+  className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
+}
 
 const PHASE_CONFIG: Record<StoryBridgeChallengeType, PhaseConfig> = {
   match_character: { label: 'Match Characters', icon: '🌉', accentColor: 'cyan' },
@@ -118,25 +132,26 @@ const shuffle = <T,>(list: readonly T[]): T[] => {
   return out;
 };
 
-const StoryBridge: React.FC<StoryBridgeProps> = ({ data, className }) => (
-  <StoryBridgeSession
-    key={[data.instanceId ?? '', ...(data.challenges ?? []).map((challenge) => challenge.id)].join('|')}
-    data={data}
-    className={className}
-  />
-);
+function StoryBridgeSurface(props: StoryBridgeProps) {
+  return (
+    <StoryBridgeSession
+      key={[props.data.instanceId ?? '', ...(props.data.challenges ?? []).map((challenge) => challenge.id)].join('|')}
+      {...props}
+    />
+  );
+}
 
-const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => {
+function StoryBridgeSession({ data, className, runtimePlanItemId, runtimeEvalMode }: StoryBridgeProps) {
   const {
     title, stories = [], challenges = [], instanceId, skillId, subskillId,
     objectiveId, exhibitId, onEvaluationSubmit,
   } = data;
-  const gradeLevel = data.gradeLevel ?? 'K';
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const stableInstanceIdRef = useRef(instanceId || `story-bridge-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   const items = useMemo(() => itemsFromChallenges(challenges, stories), [challenges, stories]);
   const [tappedChoice, setTappedChoice] = useState<string | null>(null);
-  const tappedChoiceRef = useRef<string | null>(null);
   const [choiceOrder, setChoiceOrder] = useState<string[]>([]);
   const tapLogRef = useRef<Record<string, string[]>>({});
 
@@ -146,7 +161,7 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const total = items.length;
     const modes = new Set(items.map((item) => item.mode));
     const challengeType = modes.size === 1 ? items[0]?.mode ?? 'mixed' : 'mixed';
@@ -159,7 +174,7 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
     const metrics: StoryBridgeMetrics = {
       type: 'story-bridge', challengeType, modeResults, totalChallenges: total,
       correctCount: summary.solvedCount, attemptsCount: summary.attemptsCount,
-      firstTryCount: summary.firstTryCount, hintsViewed: summary.hearTaps,
+      firstTryCount: summary.firstTryCount, hintsViewed: 0,
       overallAccuracy: summary.accuracy,
       averageAttemptsPerChallenge: total > 0 ? summary.attemptsCount / total : 0,
     };
@@ -167,9 +182,9 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
       summary.passed, summary.accuracy, metrics,
       {
         challengeResults: summary.outcomes,
-        observations: summary.observations,
         learningResponses: summary.learningResponses,
-        hearTaps: summary.hearTaps,
+        hearTaps: 0,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}),
         comparisons: items.map((item) => ({
           id: item.id, mode: item.mode, storyA: item.storyA.id, storyB: item.storyB.id,
           evidence: evidenceFor(item), taps: tapLogRef.current[item.id] ?? [],
@@ -177,19 +192,25 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
       },
       undefined, summary.diagnosisEvidence,
     );
-  }, [items, evaluation]);
+  };
 
-  const pack = useMemo(() => storyBridgePack(items, () => tappedChoiceRef.current), [items]);
-  const runner = useJudgedScriptRunner<StoryBridgeItem>({
-    pack, instanceId: resolvedInstanceId, gradeLevel, exhibitId, onFinished: handleFinished,
+  const runner = useWorkspaceRunner<StoryBridgeItem>({
+    primitiveId: 'story-bridge',
+    assignment: storyBridgeAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || (items[0]?.mode ?? 'match_character'),
+    instanceId: resolvedInstanceId,
+    onFinished: finish,
     onItemOpened: (item) => {
       setTappedChoice(null);
-      tappedChoiceRef.current = null;
       setChoiceOrder(shuffle(item.choiceIds));
     },
     onCorrectionRetry: (item) => {
       setTappedChoice(null);
-      tappedChoiceRef.current = null;
       setChoiceOrder(shuffle(item.choiceIds));
       pip.clear();
     },
@@ -197,20 +218,36 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
 
   const currentItem = runner.currentItem;
   const revealed = runner.currentSolved;
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
+
+  // What the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...storyBridgeScene(currentItem), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
+  /** Asks the tutor to read both stories again: a silent host request, never the answer. */
+  const hearStories = useCallback(() => {
+    if (!currentItem) return;
+    ctx.sendText(hearStoriesRequest(currentItem), { silent: true, author: 'host' });
+  }, [ctx, currentItem]);
 
   // ── Pip shared surface ────────────────────────────────────────────────────
   // A projection of the runner's phase, the marked question side, and the
   // child's own tap; Pip never answers, taps, or advances.
   const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const targets = pip.targets();
     const pose = storyBridgePipPose({
       mode: currentItem.mode, gesture: currentItem.answerKind === 'gesture',
       anchorFirst: currentItem.anchorStory.id === currentItem.storyA.id,
-      running: runner.running, preparing: runner.preparing,
+      running: runner.running, preparing: false,
       currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      judging: runner.isAwaitingGesture(), tutorSpeaking: runner.tutorSpeaking,
       cueMatchesItem: runner.cuedItemId === currentItem.id,
       visibleIds: targets.map((target) => target.id),
       lastTouchedId: pip.lastTouchedId,
@@ -221,18 +258,18 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
   const handleTap = useCallback((choiceId: string) => {
     const item = runner.currentItem;
     if (!item || item.answerKind !== 'gesture') return;
-    if (!runner.canAttempt || evaluation.hasSubmitted || runner.isAwaitingGesture()) return;
+    if (!runner.canAttempt || showSummary || runner.isAwaitingGesture()) return;
     pip.look(`choice-${choiceId}`);
     setTappedChoice(choiceId);
-    tappedChoiceRef.current = choiceId;
     (tapLogRef.current[item.id] ??= []).push(choiceId);
-    runner.submitGestureAttempt(tapVerdictCue(item, choiceId));
-  }, [runner, evaluation.hasSubmitted, pip]);
+    commitGesture(runner, { response: describeStoryBridgeTap(item, choiceId), correct: choiceId === item.correctChoiceId,
+      cue: () => describeStoryBridgeTap(item, choiceId) });
+  }, [runner, showSummary, pip]);
 
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => PHASE_CONFIG[item.mode]);
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => PHASE_CONFIG[item.mode]);
+  }, [runner.practiceSummary, items]);
 
   const choiceState = (id: string): AnswerChoiceState => {
     if (!currentItem) return 'idle';
@@ -251,7 +288,7 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
     return (
       <button key={character.id} type="button" onClick={() => handleTap(character.id)}
         ref={pipId ? pip.ref(pipId) : undefined} data-pip-object={pipId ?? undefined}
-        disabled={!tappable || !runner.canAttempt || evaluation.hasSubmitted}
+        disabled={!tappable || !runner.canAttempt || showSummary}
         aria-label={role === 'anchor' ? `${character.name}, the friend to compare` : character.name}
         className={`flex min-w-[6rem] flex-col items-center gap-1 rounded-2xl border-2 px-3 py-3 transition-all ${answerStateClass(state)} ${role === 'anchor' ? 'ring-2 ring-cyan-300/70 shadow-lg shadow-cyan-400/20 scale-105' : ''} ${tappable ? 'hover:scale-105 active:scale-95 cursor-pointer' : 'cursor-default'}`}>
         <span className="text-4xl sm:text-5xl" role="img" aria-hidden>{character.emoji}</span>
@@ -332,7 +369,7 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
     );
   };
 
-  if (items.length === 0) {
+  if (items.length === 0 || !currentItem) {
     return <LuminaCard className={className}><LuminaCardContent className="p-8 text-center text-slate-400">These two stories are still being written. Try generating them again.</LuminaCardContent></LuminaCard>;
   }
 
@@ -347,18 +384,18 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          {!evaluation.hasSubmitted && currentItem && (
+          {!showSummary && (
             <LuminaBadge accent="cyan" className="text-xs">{PHASE_CONFIG[currentItem.mode].icon} {PHASE_CONFIG[currentItem.mode].label}</LuminaBadge>
           )}
         </div>
       </LuminaCardHeader>
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && currentItem && (
+        {!showSummary && (
           <>
             <div className="flex items-center justify-center gap-4">
               <LuminaChallengeCounter current={Math.min(runner.currentIndex + 1, items.length)} total={items.length} variant="dots" />
-              <button type="button" onClick={runner.hearStimulus}
-                className={`flex h-11 w-11 items-center justify-center rounded-full bg-amber-500/15 border-2 border-amber-500/30 hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}`}
+              <button type="button" onClick={hearStories}
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-amber-500/15 border-2 border-amber-500/30 hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all"
                 aria-label="Hear both stories again"><span className="text-xl">🔁</span></button>
               <LuminaReadAloudGlyph size={32} speaking={runner.tutorSpeaking} />
             </div>
@@ -392,16 +429,18 @@ const StoryBridgeSession: React.FC<StoryBridgeProps> = ({ data, className }) => 
                 </div>
               </div>
             )}
-            <JudgedMicPanel run={runner} gestureLabel="Your turn — tap your comparison" voiceLabel="Your turn — compare both stories" idleLabel="Story time" />
           </>
         )}
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
-          <PhaseSummaryPanel phases={phaseResults} overallScore={evaluation.submittedResult?.score}
+        {showSummary && (
+          <PhaseSummaryPanel phases={phaseResults} overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs} heading="Story Bridge Complete!" celebrationMessage={celebration} />
         )}
       </LuminaCardContent>
     </LuminaCard>
   );
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const StoryBridge = withWorkspaceOnly<StoryBridgeProps>('story-bridge', StoryBridgeSurface, props => props.data.title);
 
 export default StoryBridge;

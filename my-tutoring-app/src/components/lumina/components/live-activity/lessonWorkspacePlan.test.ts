@@ -82,7 +82,7 @@ describe('ordinary lesson workspace eligibility', () => {
     expect(bound.map(([id]) => id).sort()).toEqual(['adaptation-investigator', 'balance-scale', 'bar-model', 'base-ten-blocks', 'compare-objects',
       'comparison-builder', 'counting-board', 'cvc-speller', 'decodable-reader', 'di-letter-sounds', 'di-math-facts', 'di-sentence-reading', 'di-shapes',
       'di-word-reading', 'fraction-circles', 'interactive-book', 'letter-sound-link', 'letter-spotter', 'number-bond', 'number-line', 'number-sequencer', 'number-tracer', 'ordinal-line', 'phoneme-explorer',
-      'phonics-blender', 'picture-vocabulary', 'place-value-chart', 'ramp-lab', 'rhyme-studio', 'shape-sorter', 'sorting-station', 'sound-swap', 'spatial-scene', 'syllable-clapper', 'ten-frame', 'word-builder', 'word-flip', 'word-sorter', 'word-workout',
+      'phonics-blender', 'picture-vocabulary', 'place-value-chart', 'ramp-lab', 'rhyme-studio', 'shape-sorter', 'sorting-station', 'sound-swap', 'spatial-scene', 'story-bridge', 'syllable-clapper', 'ten-frame', 'word-builder', 'word-flip', 'word-sorter', 'word-workout',
       'you-and-me']);
     // A component with no workspace binding keeps its lesson path and its catalog tutoring.
     const chart = { componentId: 'hundreds-chart', instanceId: 'one', title: 'Chart', objectiveIds: ['objective'], data: {} };
