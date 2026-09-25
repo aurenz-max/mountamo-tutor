@@ -18,7 +18,7 @@ export default function JevInspector({ runtime }: { runtime: LiveLessonRuntime }
       {state.task?.workspace?.expectedAnswer !== undefined && <p>Expected final answer: {state.task.workspace.expectedAnswer}</p>}
       {state.task?.workspace?.lastResponse && <p className="break-words text-slate-300">Recorded response: {state.task.workspace.lastResponse.response}</p>}
       {signals && <dl className="mt-2 grid grid-cols-2 gap-x-3 border-t border-slate-700 pt-2 text-xs text-slate-300" data-testid="learner-signals">
-        <dt className="col-span-2 font-semibold text-slate-200">Learner signals{state.task?.workspace?.progression === 'observer' ? ' (sent to the tutor)' : ' (not sent: not a shared-workspace binding)'}</dt>
+        <dt className="col-span-2 font-semibold text-slate-200">Learner signals{state.task?.workspace?.progression ? ' (sent to the tutor)' : ' (not sent: not a shared-workspace binding)'}</dt>
         {Object.entries(signals).filter(([key]) => key !== 'itemId').map(([key, value]) =>
           <React.Fragment key={key}><dt>{key}</dt><dd>{value === null ? 'n/a' : String(value)}</dd></React.Fragment>)}
       </dl>}

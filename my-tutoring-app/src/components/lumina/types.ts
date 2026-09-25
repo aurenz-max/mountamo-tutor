@@ -1897,8 +1897,13 @@ export interface ComponentDefinition {
    * `guidance` is only this primitive's own sentences; `WORKSPACE_DOCTRINE` carries teaching,
    * crediting and progression for every adopter. `grades` gates the live development host.
    * Never read by the manifest prompt.
+   *
+   * `ungraded`: a teaching surface, not an assessment. The tutor teaches from what is on screen,
+   * nothing the learner says or taps is graded, and the learner moves on with the primitive's own
+   * Done. Such a family declares no eval modes and binds as `mixed` (user ruling 2026-09-24,
+   * adaptation-investigator). `TEACHING_DOCTRINE` replaces `WORKSPACE_DOCTRINE` in its guidance.
    */
-  teachingWorkspace?: { guidance: string; grades: readonly string[] };
+  teachingWorkspace?: { guidance: string; grades: readonly string[]; ungraded?: true };
   /** Optional Gemini Live audio-input request (e.g. manual voice-activity for
    *  DI live-judged packs). Sent at WebSocket auth; a lesson session applies it
    *  when ANY of its manifest items declares one. */

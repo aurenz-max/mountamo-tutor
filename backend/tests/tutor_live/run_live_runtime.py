@@ -387,62 +387,66 @@ def spoken_words(text):
     return bool(re.search(r'\w', re.sub(r'<[^>]*(?:>|$)|\{[^}]*(?:\}|$)', '', text)))
 
 
+async def workspace_turn(s, label, prompt=None, until=lambda state: True):
+    """One tutor turn on a shared workspace: say `prompt`, relay commands and speech, return once `until` holds."""
+    if prompt:
+        await s.say(prompt)
+    transcript = ''
+    ended = False
+    async with asyncio.timeout(55):
+        while True:
+            try:
+                event = json.loads(await asyncio.wait_for(s.ws.recv(), .15))
+            except asyncio.TimeoutError:
+                await s.step({'type': 'poll'})
+                if ended and not s.observing and not s.waiting_intro and until(s.state): return
+                continue
+            kind = event.get('type')
+            if kind == 'user_transcription':
+                s.record('provider_transcript', text=event.get('content'), finished=event.get('finished'))
+                await s.step({'type': 'audio_fragment', 'text': event.get('content', ''), 'finished': event.get('finished', False)})
+            if kind == 'runtime_command':
+                s.record('runtime_command', phase=label, command=event['command'])
+                reply = await s.step({'type': 'command', 'command': event['command']})
+                if reply['dom'].get('demonstration', 0):
+                    s.record('visible_demonstration', state=s.state, dom=reply['dom'])
+            elif kind == 'ai_transcription':
+                ended = False
+                transcript += event.get('content', '')
+                await s.step({'type': 'output', 'text': event.get('content', '')})
+            elif kind == 'ai_turn_end':
+                await s.step({'type': 'end'})
+                ended = ended or spoken_words(transcript)
+                if spoken_words(transcript):
+                    s.record('tutor', phase=label, text=transcript, state=s.state)
+                    print(f'Run {s.index} {label}: {transcript[:200]}', flush=True)
+                    s.waiting_intro = False
+                    if not s.observing and until(s.state):
+                        return
+                    transcript = ''
+            elif kind in ('session_resuming', 'session_resumed'):
+                s.record('provider_resume', event=kind, message=event.get('message'))
+            elif kind in ('error', 'session_ended'):
+                raise RuntimeError(event.get('message', kind))
+            elif kind == 'activity_request' and s.args.startup:
+                assert not s.state.get('task'), 'Tutor replaced the unfinished workspace'
+                assert event['args']['primitiveId'] == s.args.primitive and event['args']['mode'] == s.args.mode
+                s.record('activity_request', request=event['args'])
+                await s.step({'type': 'mount', 'data': s.data, 'evalMode': s.args.mode, 'diItems': s.di_items})
+                await asyncio.sleep(.08)
+                mounted = await s.step({'type': 'poll'})
+                assert s.state['visibleRevision'] == s.state['revision']
+                await s.ws.send(json.dumps({'type': 'activity_result', 'callId': event['callId'], 'status': 'mounted',
+                    'instanceId': s.journey['instanceId'], 'primitiveId': s.args.primitive,
+                    'data': mounted['activityState'], 'tutoring': mounted.get('tutoring', s.args.tutoring)}))
+                s.record('mounted_generated_payload', state=s.state)
+            elif kind in ('activity_request', 'activity_command'):
+                raise AssertionError('Tutor replaced the unfinished workspace')
+
+
 async def teaching_workspace(s):
     """Natural learner requests against shared workspace facts, without requested tool names."""
-    async def turn(label, prompt=None, until=lambda state: True):
-        if prompt:
-            await s.say(prompt)
-        transcript = ''
-        ended = False
-        async with asyncio.timeout(55):
-            while True:
-                try:
-                    event = json.loads(await asyncio.wait_for(s.ws.recv(), .15))
-                except asyncio.TimeoutError:
-                    await s.step({'type': 'poll'})
-                    if ended and not s.observing and not s.waiting_intro and until(s.state): return
-                    continue
-                kind = event.get('type')
-                if kind == 'user_transcription':
-                    s.record('provider_transcript', text=event.get('content'), finished=event.get('finished'))
-                    await s.step({'type': 'audio_fragment', 'text': event.get('content', ''), 'finished': event.get('finished', False)})
-                if kind == 'runtime_command':
-                    s.record('runtime_command', phase=label, command=event['command'])
-                    reply = await s.step({'type': 'command', 'command': event['command']})
-                    if reply['dom'].get('demonstration', 0):
-                        s.record('visible_demonstration', state=s.state, dom=reply['dom'])
-                elif kind == 'ai_transcription':
-                    ended = False
-                    transcript += event.get('content', '')
-                    await s.step({'type': 'output', 'text': event.get('content', '')})
-                elif kind == 'ai_turn_end':
-                    await s.step({'type': 'end'})
-                    ended = ended or spoken_words(transcript)
-                    if spoken_words(transcript):
-                        s.record('tutor', phase=label, text=transcript, state=s.state)
-                        print(f'Run {s.index} {label}: {transcript[:200]}', flush=True)
-                        s.waiting_intro = False
-                        if not s.observing and until(s.state):
-                            return
-                        transcript = ''
-                elif kind in ('session_resuming', 'session_resumed'):
-                    s.record('provider_resume', event=kind, message=event.get('message'))
-                elif kind in ('error', 'session_ended'):
-                    raise RuntimeError(event.get('message', kind))
-                elif kind == 'activity_request' and s.args.startup:
-                    assert not s.state.get('task'), 'Tutor replaced the unfinished workspace'
-                    assert event['args']['primitiveId'] == s.args.primitive and event['args']['mode'] == s.args.mode
-                    s.record('activity_request', request=event['args'])
-                    await s.step({'type': 'mount', 'data': s.data, 'evalMode': s.args.mode, 'diItems': s.di_items})
-                    await asyncio.sleep(.08)
-                    mounted = await s.step({'type': 'poll'})
-                    assert s.state['visibleRevision'] == s.state['revision']
-                    await s.ws.send(json.dumps({'type': 'activity_result', 'callId': event['callId'], 'status': 'mounted',
-                        'instanceId': s.journey['instanceId'], 'primitiveId': s.args.primitive,
-                        'data': mounted['activityState'], 'tutoring': mounted.get('tutoring', s.args.tutoring)}))
-                    s.record('mounted_generated_payload', state=s.state)
-                elif kind in ('activity_request', 'activity_command'):
-                    raise AssertionError('Tutor replaced the unfinished workspace')
+    turn = lambda label, prompt=None, until=lambda state: True: workspace_turn(s, label, prompt, until)
 
     async with asyncio.timeout(30):
         while json.loads(await s.ws.recv()).get('type') != 'session_ready':
@@ -537,17 +541,54 @@ async def teaching_workspace(s):
              scoring=reply.get('scoring') or [])
 
 
+async def teaching_surface(s):
+    """An ungraded teaching surface: the learner looks, asks and opens things, and finishes with Done.
+    Nothing is graded, so the program checks what teaching owes instead: the tutor answers the learner's
+    questions, shows something on the actual screen when asked, never records an attempt, and the
+    learner's own Done completes the lesson with no submission."""
+    turn = lambda label, prompt=None, until=lambda state: True: workspace_turn(s, label, prompt, until)
+    async with asyncio.timeout(30):
+        while json.loads(await s.ws.recv()).get('type') != 'session_ready':
+            pass
+    await s.step({'type': 'poll'})
+    if s.args.lesson_entry:
+        await turn('lesson-entry', '[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.')
+    assert s.state['task']['workspace']['progression'] == 'learner', 'Not an ungraded teaching surface'
+    ungraded = lambda: s.state['task']['evidence']['attemptNumber'] == 0 and not s.state['task']['workspace']['attempts']
+    await turn('opening', s.prompt('opening'))
+    await turn('question', s.prompt('hint'))
+    if not any(e['type'] == 'visible_demonstration' for e in s.events):
+        await turn('show', s.prompt('example'))
+    assert any(e['type'] == 'visible_demonstration' for e in s.events), 'The tutor never showed anything on the actual screen'
+    await s.learner('explore')
+    await turn('explore')
+    assert ungraded(), 'Teaching recorded a graded attempt'
+    await s.learner('finish')
+    reply = await s.step({'type': 'poll'})
+    if s.state['status'] != 'completed':
+        await turn('finish', until=lambda st: st['status'] == 'completed')
+        reply = await s.step({'type': 'poll'})
+    assert s.state['status'] == 'completed', 'Done did not complete the lesson'
+    assert ungraded(), 'Teaching recorded a graded attempt'
+    assert reply['submissions'] == 0, 'An ungraded surface wrote an evaluation'
+    s.record('complete', state=s.state, submissions=reply['submissions'], persistence='none', scoring=[])
+
+
 PROGRAMS = {'tutor': tutor_led, 'di-runner': judged_runner}
 
 
 async def drive(args, token, live, index):
     journey, spec = args.journey, args.activity_spec
     activity = next(a for a in spec['activities'] if a['primitiveId'] == args.primitive)
-    # The item pool is `challenges` for most families; phonics-blender's is `words`, word-builder's `targets`.
-    pool = next(k for k in ('challenges', 'words', 'targets') if isinstance(live['generatedData'].get(k), list))
-    s = Session(args, journey, spec, {**live['generatedData'], pool: live['generatedData'][pool][:2]},
-        [i for i in (live.get('diPlan') or {}).get('items', [])], index)
-    assert len(s.data[pool]) == 2, 'Probe needs two generated items'
+    teaching = journey.get('execution') == 'teaching'
+    if teaching:
+        s = Session(args, journey, spec, live['generatedData'], [], index)
+    else:
+        # The item pool is `challenges` for most families; phonics-blender's is `words`, word-builder's `targets`.
+        pool = next(k for k in ('challenges', 'words', 'targets') if isinstance(live['generatedData'].get(k), list))
+        s = Session(args, journey, spec, {**live['generatedData'], pool: live['generatedData'][pool][:2]},
+            [i for i in (live.get('diPlan') or {}).get('items', [])], index)
+        assert len(s.data[pool]) == 2, 'Probe needs two generated items'
     s.process = subprocess.Popen(['node', 'scripts/primitive-runtime-driver.mjs', str(uuid.uuid4()), args.primitive],
         cwd=ROOT/'my-tutoring-app', env={**os.environ, 'LIVE_FRONTEND': args.frontend}, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
         stderr=subprocess.PIPE, text=True, encoding='utf-8')
@@ -573,7 +614,7 @@ async def drive(args, token, live, index):
                 'lesson_context': {'topic': args.topic, 'grade_level': args.grade,
                                    'objectives': [], 'ordered_components': []}}))
             workspace = journey.get('execution') == 'workspace' or bool((s.state.get('task') or {}).get('workspace'))
-            await (teaching_workspace(s) if workspace else PROGRAMS[activity['teachingOwner']](s))
+            await (teaching_surface(s) if teaching else teaching_workspace(s) if workspace else PROGRAMS[activity['teachingOwner']](s))
         receipts = [e['result'] for e in s.events if e['type'] == 'runtime_result']
         # Real audio can finish an answer while the model is choosing an action
         # from the prior working state. A scoped refusal is correct in that race.

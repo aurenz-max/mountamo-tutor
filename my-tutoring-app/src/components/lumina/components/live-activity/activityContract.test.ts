@@ -43,7 +43,9 @@ describe('live activity boundary', () => {
   });
   it.each(LIVE_PRIMITIVE_IDS)('%s declares its facts once and consistently', id => {
     const adapter: LiveActivityAdapter = LIVE_ADAPTERS[id];
-    const catalogModes = (getComponentById(id)?.evalModes ?? []).map(m => m.evalMode);
+    const entry = getComponentById(id);
+    // An ungraded teaching surface has no eval modes; it mounts unpinned content as `mixed`.
+    const catalogModes = entry?.teachingWorkspace?.ungraded ? ['mixed'] : (entry?.evalModes ?? []).map(m => m.evalMode);
     // The picker can only offer what the route accepts, and the route only what the catalog defines.
     for (const [mode] of adapter.copy.lessons) expect(adapter.modes).toContain(mode);
     for (const mode of adapter.modes) expect(catalogModes).toContain(mode);

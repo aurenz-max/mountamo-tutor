@@ -1,0 +1,48 @@
+{
+  "source": "qa/tutor-reports/adaptation-investigator-runtime-mixed-payload-2026-09-24.json (run_live_runtime, topic pink flowers, Grade 1)",
+  "primitiveId": "adaptation-investigator",
+  "evalMode": "mixed",
+  "data": {
+    "organism": "Pink Flower",
+    "adaptation": {
+      "trait": "Bright Pink Petals",
+      "type": "structural",
+      "description": "The flower has bright pink petals that stand out against green leaves. This colorful coat acts like a bright sign for friendly visitors.",
+      "imagePrompt": "A close-up of a vibrant pink flower with bright pink petals glowing in the sunshine, with green leaves in the background"
+    },
+    "environment": {
+      "habitat": "Sunny Garden",
+      "pressures": [
+        "Finding helpers to spread pollen",
+        "Standing out in a sea of green leaves"
+      ],
+      "description": "The sunny garden is full of green plants, making it hard for small helpers to find where the sweet treats are hidden."
+    },
+    "connection": {
+      "explanation": "The bright pink petals act like a colorful neon sign that tells helpful bugs and birds where to find sweet food. When the helpers visit, they carry pollen to other plants.",
+      "evidencePoints": [
+        "Bright pink color is easy for bees and butterflies to see from far away",
+        "Petals guide hungry visitors right to the center of the flower"
+      ]
+    },
+    "whatIfScenarios": [
+      {
+        "environmentChange": "All the petals turn completely green to match the leaves.",
+        "question": "Would the green petals still be easy for bees to spot in the garden?",
+        "expectedReasoning": "No - green petals would blend right into the green leaves, making it much harder for bees to find the flower.",
+        "adaptationStillUseful": false
+      },
+      {
+        "environmentChange": "The sun shines even brighter during the day.",
+        "question": "Would the bright pink petals still help the flower stand out in the bright sun?",
+        "expectedReasoning": "Yes - bright pink colors still catch the light and look like a colorful sign for visiting bugs.",
+        "adaptationStillUseful": true
+      }
+    ],
+    "misconception": {
+      "commonBelief": "Flowers grow bright pink petals just to make the garden pretty for people to look at.",
+      "correction": "Flowers actually grow bright petals to attract helpful bugs and birds that help the plant make new seeds."
+    },
+    "gradeBand": "2-4"
+  }
+}

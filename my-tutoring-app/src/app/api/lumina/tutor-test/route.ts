@@ -97,6 +97,24 @@ async function handleProbe(request: NextRequest, frozen?: Record<string, unknown
       { status: 404 },
     );
   }
+  // A teaching-workspace family is taught from its workspace, and the live path sends it no tutoring
+  // block at all (`tutoring: null`). A live journey still needs its generated content, so it gets
+  // exactly that: there is no scaffold to audit or preview.
+  if (!entry.tutoring && entry.teachingWorkspace && searchParams.get('probe') === '1' && searchParams.get('live') === '1') {
+    const topic = searchParams.get('topic') || 'general practice';
+    const gradeLevel = searchParams.get('gradeLevel') || 'elementary';
+    const evalMode = searchParams.get('evalMode');
+    const pinned = evalMode && entry.evalModes?.some(m => m.evalMode === evalMode) ? { targetEvalMode: evalMode } : {};
+    try {
+      const result = frozen ? { data: frozen } : await generateComponentContent(
+        { componentId, instanceId: `tutor-test-${componentId}-${Date.now()}`, config: pinned }, topic, gradeLevel);
+      const generatedData = (result?.data ?? {}) as Record<string, unknown>;
+      return NextResponse.json({ status: 'workspace', componentId,
+        probe: { evalMode: evalMode ?? null, topic, gradeLevel, liveContext: { tutoring: null, generatedData, mergedBag: {} } } });
+    } catch (error) {
+      return NextResponse.json({ status: 'error', componentId, probe: { error: String(error) } });
+    }
+  }
   if (!entry.tutoring) {
     return NextResponse.json(
       {

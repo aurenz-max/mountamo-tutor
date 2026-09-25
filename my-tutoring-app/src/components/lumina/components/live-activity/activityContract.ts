@@ -30,17 +30,18 @@ import { diSentenceReadingLiveDomain } from './adapters/diSentenceReadingLive';
 import { letterSoundLinkLiveDomain } from './adapters/letterSoundLinkLive';
 import { barModelLiveDomain } from './adapters/barModelLive';
 import { phonicsBlenderLiveDomain } from './adapters/phonicsBlenderLive';
+import { adaptationInvestigatorLiveDomain } from './adapters/adaptationInvestigatorLive';
 import { wordFlipLiveDomain } from './adapters/wordFlipLive';
 import { soundSwapLiveDomain } from './adapters/soundSwapLive';
 import { cvcSpellerLiveDomain } from './adapters/cvcSpellerLive';
-import { letterSpotterLiveDomain } from './adapters/letterSpotterLive';
-import { pictureVocabularyLiveDomain } from './adapters/pictureVocabularyLive';
-import { wordSorterLiveDomain } from './adapters/wordSorterLive';
-import { wordBuilderLiveDomain } from './adapters/wordBuilderLive';
-import { wordWorkoutLiveDomain } from './adapters/wordWorkoutLive';
-import { phonemeExplorerLiveDomain } from './adapters/phonemeExplorerLive';
-import { rhymeStudioLiveDomain } from './adapters/rhymeStudioLive';
 import { syllableClapperLiveDomain } from './adapters/syllableClapperLive';
+import { rhymeStudioLiveDomain } from './adapters/rhymeStudioLive';
+import { phonemeExplorerLiveDomain } from './adapters/phonemeExplorerLive';
+import { wordWorkoutLiveDomain } from './adapters/wordWorkoutLive';
+import { wordBuilderLiveDomain } from './adapters/wordBuilderLive';
+import { wordSorterLiveDomain } from './adapters/wordSorterLive';
+import { pictureVocabularyLiveDomain } from './adapters/pictureVocabularyLive';
+import { letterSpotterLiveDomain } from './adapters/letterSpotterLive';
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { diShapesLiveDomain } from './adapters/diShapesLive';
@@ -80,17 +81,18 @@ export const LIVE_ADAPTERS = {
   'letter-sound-link': workspaceAdapter('letter-sound-link', letterSoundLinkLiveDomain),
   'bar-model': workspaceAdapter('bar-model', barModelLiveDomain),
   'phonics-blender': workspaceAdapter('phonics-blender', phonicsBlenderLiveDomain),
+  'adaptation-investigator': workspaceAdapter('adaptation-investigator', adaptationInvestigatorLiveDomain),
   'word-flip': workspaceAdapter('word-flip', wordFlipLiveDomain),
   'sound-swap': workspaceAdapter('sound-swap', soundSwapLiveDomain),
   'cvc-speller': workspaceAdapter('cvc-speller', cvcSpellerLiveDomain),
-  'letter-spotter': workspaceAdapter('letter-spotter', letterSpotterLiveDomain),
-  'picture-vocabulary': workspaceAdapter('picture-vocabulary', pictureVocabularyLiveDomain),
-  'word-sorter': workspaceAdapter('word-sorter', wordSorterLiveDomain),
-  'word-builder': workspaceAdapter('word-builder', wordBuilderLiveDomain),
-  'word-workout': workspaceAdapter('word-workout', wordWorkoutLiveDomain),
-  'phoneme-explorer': workspaceAdapter('phoneme-explorer', phonemeExplorerLiveDomain),
-  'rhyme-studio': workspaceAdapter('rhyme-studio', rhymeStudioLiveDomain),
   'syllable-clapper': workspaceAdapter('syllable-clapper', syllableClapperLiveDomain),
+  'rhyme-studio': workspaceAdapter('rhyme-studio', rhymeStudioLiveDomain),
+  'phoneme-explorer': workspaceAdapter('phoneme-explorer', phonemeExplorerLiveDomain),
+  'word-workout': workspaceAdapter('word-workout', wordWorkoutLiveDomain),
+  'word-builder': workspaceAdapter('word-builder', wordBuilderLiveDomain),
+  'word-sorter': workspaceAdapter('word-sorter', wordSorterLiveDomain),
+  'picture-vocabulary': workspaceAdapter('picture-vocabulary', pictureVocabularyLiveDomain),
+  'letter-spotter': workspaceAdapter('letter-spotter', letterSpotterLiveDomain),
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
   'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),

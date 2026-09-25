@@ -484,6 +484,14 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
     constraints: 'Use for grades 2-8 students learning about adaptations, natural selection, structure-function relationships, or evolution. Grade 2-4: Simple observable traits (camouflage, thick fur, sharp claws), everyday vocabulary, 2 simple What If? scenarios, focus on "What do you notice?" and "How does this help?". Grade 5-6: Scientific vocabulary introduced (adaptation, selective pressure, fitness), functional descriptions, 2-3 What If? scenarios with moderate reasoning. Grade 7-8: Evolutionary context (natural selection, gene pool, selective advantage), all three adaptation types (structural, behavioral, physiological), 3 nuanced What If? scenarios requiring sophisticated causal reasoning. Perfect for: animal adaptations (camouflage, migration, hibernation), plant adaptations (thorns, deep roots, waxy leaves), physiological adaptations (antifreeze proteins, venom, echolocation). Works well paired with organism-card for reference, classification-sorter for grouping adaptations, or bio-compare-contrast for comparing adapted vs non-adapted organisms.',
     affordances: { representation: 'pictorial', answers: ['tap'], role: ['visualize', 'apply'], minutes: 5 },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      ungraded: true,
+      guidance: 'A picture of the organism sits above three cards, The Trait, The Environment and The Connection, which '
+        + 'start closed. The learner opens one by tapping it, or you show it. The Common Misconception card is optional: '
+        + 'open it when the learner voices that idea. The learner may not read yet: after a card opens, say what it means '
+        + 'in your own simple words rather than reading every line. You cannot draw on the picture or change a card.',
+    },
   },
   {
     id: 'cell-builder',

@@ -52,7 +52,7 @@ export class LearnerObserver {
     const s = this.snapshot(), learner = this.learner.trim();
     if (!finished || !learner) return false;
     // Every shared-workspace binding. A legacy runner owns its own judge and clock, and gets no model call here.
-    if (s.status !== 'active' || !s.task || !s.instanceId || s.task.workspace?.progression !== 'observer') return true;
+    if (s.status !== 'active' || !s.task || !s.instanceId || !s.task.workspace?.progression) return true;
     void this.observe({ scope: { sessionEpoch: s.sessionEpoch, instanceId: s.instanceId, itemId: s.task.itemId },
       turnId: `learner-turn-${++this.turns}`, task: s.task.task, learner: learner.slice(-2000),
       ...(this.tutor.trim() ? { priorTutor: this.tutor.slice(-4000) } : {}) });

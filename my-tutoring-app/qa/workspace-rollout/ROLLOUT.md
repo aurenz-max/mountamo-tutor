@@ -71,7 +71,7 @@ Order: Tier A, then runner-era K–2 (the recipe applies as written), then the r
 | C20 | P | Algebra: `slope-triangle`, `systems-equations-visualizer`, `matrix-display`, `function-sketch`, `parameter-explorer` | open |
 | C21 | P | Literacy G2–5: `character-web`, `context-clues-detective`, `evidence-finder`, `figurative-language-finder` | open |
 | C22 | P | Literacy G2–5: `reading-repair-studio`, `poetry-lab`, `spatial-path` | open |
-| C23 | P | Science G3+: `food-web-builder`, `adaptation-investigator`, `constellation-builder`, `planetary-explorer`, `telescope-simulator` | open |
+| C23 | P | Science G3+: `food-web-builder`, `adaptation-investigator`, `constellation-builder`, `planetary-explorer`, `telescope-simulator` | open; `adaptation-investigator` DONE 09-24 as an UNGRADED teaching surface (user ruling; `teachingWorkspace.ungraded`, `useTeachingSurface`), not W1 — [report](../tutor-reports/adaptation-investigator-teaching-2026-09-24.md) |
 | C24 | P | Biology: `cell-builder`, `microscope-viewer`, `bio-compare-contrast`, `bio-process-animator`, `dna-explorer` | open |
 | C25 | P | Life and earth science: `energy-cycle-engine`, `evolution-timeline`, `inheritance-lab`, `protein-folder`, `orbit-mechanics-lab` | open |
 | C26 | P | Chemistry: `atom-builder`, `mixing-and-dissolving`, `molecule-constructor`, `reaction-lab`, `ph-explorer` | open |

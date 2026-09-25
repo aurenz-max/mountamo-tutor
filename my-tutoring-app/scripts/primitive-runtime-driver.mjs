@@ -30,6 +30,8 @@ globalThis.fetch = (input, options) => nativeFetch(typeof input === 'string' && 
   ? new URL(input, process.env.LIVE_FRONTEND || 'http://localhost:3000') : input, options);
 for (const key of ['window', 'document', 'HTMLElement', 'Element', 'SVGElement', 'MutationObserver', 'localStorage']) globalThis[key] = dom.window[key];
 globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window);
+// Radix primitives (Accordion's presence) read computed styles on mount.
+globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
 globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window);
 // react-dom detects DOM features (the `input` event among them) when it first loads, so it loads
 // only once the JSDOM globals exist. A static import ran first and left React on its legacy IE path.

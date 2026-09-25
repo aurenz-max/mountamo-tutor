@@ -48,7 +48,7 @@ export class RuntimeTransport {
   }
   /** The packet the tutor receives. Every shared-workspace binding carries learner facts; nothing is wired per primitive. */
   private packet(state: RuntimeSnapshot = this.runtime.getSnapshot()) {
-    return runtimePacket(state, state.task?.workspace?.progression === 'observer'
+    return runtimePacket(state, state.task?.workspace?.progression
       ? { about: LEARNER_FACTS_NOTE, signals: this.runtime.learner.read(state), observations: this.runtime.learner.observations() } : undefined);
   }
   publish() {

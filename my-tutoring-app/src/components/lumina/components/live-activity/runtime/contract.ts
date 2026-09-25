@@ -52,7 +52,12 @@ export interface TutorPrimitiveState {
    */
   assessment?: ItemAssessment;
   workspace?: {
-    progression?: 'observer';
+    /**
+     * `observer`: the dialogue observer commits outcomes and advances. `learner`: an ungraded
+     * teaching surface; nothing is committed and the learner's own Done finishes it. Either one
+     * marks a shared-workspace binding, so both carry learner signals and the learner-turn observation.
+     */
+    progression?: 'observer' | 'learner';
     pendingResponse?: { id: string; text: string };
     expectedAnswer?: string;
     objects: Array<{ id: string; label: string; selected: boolean; group?: string }>;

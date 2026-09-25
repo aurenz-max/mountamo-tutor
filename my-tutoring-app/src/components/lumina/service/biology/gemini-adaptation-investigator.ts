@@ -2,6 +2,7 @@ import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
+import { biologyBandFromGrade, biologyBandFromProse } from './gradeBand';
 
 // Import the data type from the component (single source of truth)
 import { AdaptationInvestigatorData } from "../../primitives/visual-primitives/biology/AdaptationInvestigator";
@@ -129,6 +130,16 @@ const adaptationInvestigatorSchema: Schema = {
   required: ["organism", "adaptation", "environment", "connection", "whatIfScenarios", "misconception", "gradeBand"]
 };
 
+/** This primitive's three bands from the shared biology resolver: K-4 → 2-4, 5-6 → 5-6, 7-8 → 7-8. */
+export function adaptationBand(grade: string | undefined, prose: string | undefined): AdaptationInvestigatorData['gradeBand'] {
+  const n = parseInt((grade ?? '').toString(), 10);
+  if (biologyBandFromGrade(grade) === 'K-2' || n <= 4) return '2-4';
+  if (n === 5 || n === 6) return '5-6';
+  if (n >= 7) return '7-8';
+  const fromProse = biologyBandFromProse(prose);
+  return fromProse === '6-8' ? '7-8' : '2-4';
+}
+
 /**
  * Generate adaptation investigator data using Gemini AI
  *
@@ -149,21 +160,12 @@ export const generateAdaptationInvestigator = async (
   const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as Partial<AdaptationInvestigatorData>;
 
-  // Map grade context to grade band
-  const gradeBandMap: Record<string, '2-4' | '5-6' | '7-8'> = {
-    '2': '2-4',
-    '3': '2-4',
-    '4': '2-4',
-    '5': '5-6',
-    '6': '5-6',
-    '7': '7-8',
-    '8': '7-8',
-    '2-4': '2-4',
-    '5-6': '5-6',
-    '7-8': '7-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '5-6';
+  // The sixth copy of the biology prose-keyed band defect (see `gradeBand.ts`): the old map was
+  // keyed on grade tokens and indexed with `ctx.gradeContext`, which is prose, so every grade,
+  // kindergarten included, fell through to '5-6' ("selective pressure, fitness"). A live K-1
+  // session met exactly that (2026-09-24). Canonical grade first, prose only as a fallback; there is
+  // no K-1 band here, so the youngest learners get the simplest one.
+  const gradeBand = config.gradeBand || adaptationBand(ctx.grade, ctx.gradeContext);
 
   const gradeContext: Record<string, string> = {
     '2-4': `
@@ -329,6 +331,7 @@ Now generate an adaptation investigator for "${topic}" at grade band ${gradeBand
     // Merge with config overrides
     const finalData: AdaptationInvestigatorData = {
       ...result,
+      gradeBand,
       ...config,
       adaptation: config?.adaptation || result.adaptation,
       environment: config?.environment || result.environment,

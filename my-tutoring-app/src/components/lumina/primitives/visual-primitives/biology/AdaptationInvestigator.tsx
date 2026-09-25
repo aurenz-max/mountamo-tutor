@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,8 +19,14 @@ import {
   Lightbulb,
   RotateCcw,
   Image as ImageIcon,
+  Hand,
 } from 'lucide-react';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { LuminaButton } from '../../../ui';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useNoTeachingSurface, useTeachingSurface, type TeachingSurface, type TeachingSurfaceOptions }
+  from '../../../components/live-activity/runtime/useTeachingSurface';
+import { TEACHING_CARDS, teachingScene } from './adaptationInvestigatorWorkspace';
 
 /**
  * Adaptation Investigator - Structure-Function-Environment Reasoning
@@ -36,6 +42,11 @@ import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
  *
  * Higher grades include "What If?" mode where students predict
  * consequences of changing the environment.
+ *
+ * With the live tutor (`tutorOwned`) it is an ungraded teaching surface (user ruling 2026-09-24):
+ * the picture draws itself, the three cards start closed and open on the learner's tap or the
+ * tutor's show, the What If? questions are not shown, nothing is graded or submitted, and the
+ * learner's Done completes it. The standalone path below is unchanged.
  *
  * Grade Bands: 2-4, 5-6, 7-8
  */
@@ -95,7 +106,15 @@ export interface AdaptationInvestigatorData {
 interface AdaptationInvestigatorProps {
   data: AdaptationInvestigatorData;
   className?: string;
+  /** Live runtime mount props (`workspaceMountProps`). */
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
 }
+
+type SurfaceProps = AdaptationInvestigatorProps & {
+  tutorOwned: boolean;
+  useController: (options: TeachingSurfaceOptions) => TeachingSurface | null;
+};
 
 // ============================================================================
 // Constants
@@ -113,6 +132,9 @@ const GRADE_LABELS: Record<string, string> = {
   '7-8': 'Grades 7-8',
 };
 
+/** The tutor's ring on a shown object: the demonstration colour, never the learner's selection. */
+const TUTOR_RING = 'ring-2 ring-purple-400/80 ring-offset-2 ring-offset-slate-950';
+
 type Phase = 'explore' | 'practice' | 'apply';
 
 interface WhatIfResponse {
@@ -126,7 +148,8 @@ interface WhatIfResponse {
 // Main Component
 // ============================================================================
 
-const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, className = '' }) => {
+const AdaptationInvestigatorSurface: React.FC<SurfaceProps> = props => {
+  const { data } = props;
   // Defensive check
   if (!data || !data.organism || !data.adaptation || !data.environment || !data.connection) {
     return (
@@ -138,7 +161,11 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
       </div>
     );
   }
+  return <AdaptationInvestigatorBody {...props} />;
+};
 
+const AdaptationInvestigatorBody: React.FC<SurfaceProps> = ({ data, className = '', runtimePlanItemId, runtimeEvalMode,
+  tutorOwned, useController }) => {
   const [currentPhase, setCurrentPhase] = useState<Phase>('explore');
   const [exploredPanels, setExploredPanels] = useState<Set<string>>(new Set());
   const [whatIfResponses, setWhatIfResponses] = useState<WhatIfResponse[]>(
@@ -153,6 +180,24 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
   const [organismImage, setOrganismImage] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
+
+  // Teaching path only: what the tutor has ringed, and whether the learner pressed Done. The refs
+  // are what the runtime reads, so a tutor action is visible in the packet as soon as it commits.
+  const [marked, setMarked] = useState<string[]>([]);
+  const [finished, setFinished] = useState(false);
+  const openRef = useRef<Set<string>>(exploredPanels);
+  const misconceptionRef = useRef(showMisconception);
+  const markedRef = useRef<string[]>(marked);
+  const finishedRef = useRef(finished);
+  openRef.current = exploredPanels;
+  misconceptionRef.current = showMisconception;
+  markedRef.current = marked;
+  finishedRef.current = finished;
+  const pictureState = (): 'drawn' | 'drawing' | 'none' => organismImage ? 'drawn' : imageLoading ? 'drawing' : 'none';
+  const pictureRef = useRef(pictureState());
+  pictureRef.current = pictureState();
+  /** What a DOM probe counts as a visible tutor show. */
+  const ringed = (id: string) => marked.includes(id) ? { 'data-tutor-ring': id } : {};
 
   const typeColors = ADAPTATION_TYPE_COLORS[data.adaptation.type] || ADAPTATION_TYPE_COLORS.structural;
   const hasWhatIfScenarios = data.whatIfScenarios && data.whatIfScenarios.length > 0;
@@ -180,6 +225,22 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
     objectiveId,
     exhibitId,
     onSubmit: onEvaluationSubmit as any,
+  });
+
+  const surface = useController({
+    instanceId: instanceId || 'adaptation-investigator', primitiveId: 'adaptation-investigator', objectiveId,
+    planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || 'mixed',
+    scene: () => ({ ...teachingScene(data, { open: openRef.current, picture: pictureRef.current,
+      misconceptionOpen: misconceptionRef.current }), marked: markedRef.current, finished: finishedRef.current }),
+    show: ids => {
+      const open = new Set(openRef.current);
+      ids.forEach(id => { if ((TEACHING_CARDS as readonly string[]).includes(id)) open.add(id); });
+      openRef.current = open;
+      if (ids.includes('misconception')) { misconceptionRef.current = true; setShowMisconception(true); }
+      markedRef.current = ids;
+      setExploredPanels(open);
+      setMarked(ids);
+    },
   });
 
   // ============================================================================
@@ -218,11 +279,28 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
     }
   };
 
+  // The picture is what a young learner starts from, so the teaching path draws it without a button to read.
+  useEffect(() => {
+    if (tutorOwned) void handleGenerateImage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorOwned]);
+
+  // Every committed scene change reaches the tutor; `changed` publishes only when the packet differs.
+  useLayoutEffect(() => { surface?.publish(); });
+
   // ============================================================================
   // Phase Management
   // ============================================================================
 
+  const PANEL_NAMES: Record<string, string> = { trait: 'The Trait card', environment: 'The Environment card',
+    connection: 'The Connection card' };
   const markPanelExplored = (panel: string) => {
+    if (finished) return;
+    // Teaching path: the tutor hears about a card the learner opened, once, after the ref is current.
+    if (tutorOwned && !openRef.current.has(panel)) {
+      openRef.current = new Set(openRef.current).add(panel);
+      surface?.learnerOpened(PANEL_NAMES[panel] ?? panel);
+    }
     setExploredPanels(prev => {
       const next = new Set(prev);
       next.add(panel);
@@ -238,6 +316,16 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
 
   const handleAdvanceToApply = () => {
     setCurrentPhase('apply');
+  };
+
+  const handleDone = () => {
+    if (!allPanelsExplored || finishedRef.current) return;
+    finishedRef.current = true;
+    markedRef.current = [];
+    setFinished(true);
+    setMarked([]);
+    SoundManager.playCorrect();
+    surface?.finish();
   };
 
   // ============================================================================
@@ -391,7 +479,8 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
 
       {/* Organism Image */}
       {organismImage ? (
-        <div className="relative rounded-xl overflow-hidden border border-white/10 mb-4">
+        <div data-pip-object="picture" {...ringed('picture')}
+          className={`relative rounded-xl overflow-hidden border border-white/10 mb-4 transition-shadow ${marked.includes('picture') ? TUTOR_RING : ''}`}>
           <img
             src={organismImage}
             alt={`${data.organism} - ${data.adaptation.trait}`}
@@ -407,7 +496,8 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
         </div>
       ) : (
         // dropzone-triage: decorative image placeholder, out of scope
-        <div className="relative h-48 rounded-xl flex flex-col items-center justify-center border-2 border-dashed border-emerald-500/20 bg-emerald-500/5 mb-4">
+        <div data-pip-object="picture" {...ringed('picture')}
+          className={`relative h-48 rounded-xl flex flex-col items-center justify-center border-2 border-dashed border-emerald-500/20 bg-emerald-500/5 mb-4 ${marked.includes('picture') ? TUTOR_RING : ''}`}>
           {imageLoading ? (
             <>
               <div className="w-10 h-10 border-4 border-white/10 border-t-emerald-400 rounded-full animate-spin mb-3" />
@@ -441,11 +531,28 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
   // Render: Three-Panel Layout
   // ============================================================================
 
+  /** Teaching path: a card is closed until the learner taps it or the tutor shows it. */
+  const isClosed = (panel: string) => tutorOwned && !exploredPanels.has(panel);
+  const cardRing = (panel: string) => tutorOwned && marked.includes(panel) ? TUTOR_RING : '';
+
+  const renderClosed = (hint: string) => (
+    <CardContent>
+      <div className="flex items-center gap-2 text-sm text-slate-400">
+        <Hand className="w-4 h-4" />
+        <span>{hint}</span>
+      </div>
+    </CardContent>
+  );
+
   const renderThreePanels = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       {/* Panel 1: The Trait */}
       <Card
-        className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-xl cursor-pointer transition-all hover:border-blue-500/30 ${exploredPanels.has('trait') ? 'ring-1 ring-blue-500/20' : ''}`}
+        data-pip-object="trait"
+        {...ringed('trait')}
+        role={isClosed('trait') ? 'button' : undefined}
+        aria-label={isClosed('trait') ? 'Open The Trait' : undefined}
+        className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-xl cursor-pointer transition-all hover:border-blue-500/30 ${exploredPanels.has('trait') ? 'ring-1 ring-blue-500/20' : ''} ${cardRing('trait')}`}
         onClick={() => markPanelExplored('trait')}
       >
         <CardHeader className="pb-2">
@@ -455,6 +562,7 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
           </div>
           <CardDescription className="text-slate-400 text-sm">What the adaptation is</CardDescription>
         </CardHeader>
+        {isClosed('trait') ? renderClosed('Tap to open') : (
         <CardContent className="space-y-3">
           <div>
             <p className="text-lg font-semibold text-slate-100 mb-1">{data.adaptation.trait}</p>
@@ -470,11 +578,16 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
             </div>
           )}
         </CardContent>
+        )}
       </Card>
 
       {/* Panel 2: The Environment */}
       <Card
-        className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-xl cursor-pointer transition-all hover:border-emerald-500/30 ${exploredPanels.has('environment') ? 'ring-1 ring-emerald-500/20' : ''}`}
+        data-pip-object="environment"
+        {...ringed('environment')}
+        role={isClosed('environment') ? 'button' : undefined}
+        aria-label={isClosed('environment') ? 'Open The Environment' : undefined}
+        className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-xl cursor-pointer transition-all hover:border-emerald-500/30 ${exploredPanels.has('environment') ? 'ring-1 ring-emerald-500/20' : ''} ${cardRing('environment')}`}
         onClick={() => markPanelExplored('environment')}
       >
         <CardHeader className="pb-2">
@@ -484,6 +597,7 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
           </div>
           <CardDescription className="text-slate-400 text-sm">What pressures exist</CardDescription>
         </CardHeader>
+        {isClosed('environment') ? renderClosed('Tap to open') : (
         <CardContent className="space-y-3">
           <div>
             <p className="text-sm font-semibold text-slate-200 mb-1">{data.environment.habitat}</p>
@@ -505,11 +619,16 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
             </div>
           )}
         </CardContent>
+        )}
       </Card>
 
       {/* Panel 3: The Connection */}
       <Card
-        className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-xl cursor-pointer transition-all hover:border-amber-500/30 ${exploredPanels.has('connection') ? 'ring-1 ring-amber-500/20' : ''}`}
+        data-pip-object="connection"
+        {...ringed('connection')}
+        role={isClosed('connection') ? 'button' : undefined}
+        aria-label={isClosed('connection') ? 'Open The Connection' : undefined}
+        className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-xl cursor-pointer transition-all hover:border-amber-500/30 ${exploredPanels.has('connection') ? 'ring-1 ring-amber-500/20' : ''} ${cardRing('connection')}`}
         onClick={() => markPanelExplored('connection')}
       >
         <CardHeader className="pb-2">
@@ -519,6 +638,7 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
           </div>
           <CardDescription className="text-slate-400 text-sm">How trait addresses the pressure</CardDescription>
         </CardHeader>
+        {isClosed('connection') ? renderClosed('Tap to open') : (
         <CardContent className="space-y-3">
           <p className="text-sm text-slate-300 leading-relaxed">{data.connection.explanation}</p>
           <div className="space-y-1">
@@ -537,6 +657,7 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
             </div>
           )}
         </CardContent>
+        )}
       </Card>
     </div>
   );
@@ -549,8 +670,16 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
     if (!data.misconception) return null;
 
     return (
-      <Accordion type="single" collapsible className="mb-6">
-        <AccordionItem value="misconception" className="border-white/10">
+      <Accordion type="single" collapsible className={`mb-6 rounded-lg ${cardRing('misconception')}`}
+        {...(tutorOwned ? { value: showMisconception ? 'misconception' : '', onValueChange: (v: string) => {
+          if (finished) return;
+          if (v === 'misconception' && !misconceptionRef.current) {
+            misconceptionRef.current = true;
+            surface?.learnerOpened('The Common Misconception card');
+          }
+          setShowMisconception(v === 'misconception');
+        } } : {})}>
+        <AccordionItem value="misconception" className="border-white/10" data-pip-object="misconception" {...ringed('misconception')}>
           <AccordionTrigger
             className="text-slate-300 hover:text-slate-100 hover:no-underline"
             onClick={() => setShowMisconception(true)}
@@ -804,6 +933,36 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
   };
 
   // ============================================================================
+  // Render: Teaching path (ungraded)
+  // ============================================================================
+
+  const renderTeachingFooter = () => finished ? (
+    <Card className="backdrop-blur-xl bg-emerald-500/10 border-emerald-500/30 shadow-2xl mb-6">
+      <CardContent className="p-6">
+        <div className="flex items-center gap-3">
+          <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+          <div>
+            <h4 className="text-lg font-semibold text-emerald-300">Investigation Complete!</h4>
+            <p className="text-sm text-slate-300">
+              You explored why the {data.organism} has {data.adaptation.trait.toLowerCase()}.
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  ) : (
+    <div className="flex flex-col items-center gap-3 mb-6">
+      {!allPanelsExplored && <p className="text-sm text-slate-400">Tap a card to open it.</p>}
+      {allPanelsExplored && (
+        <LuminaButton tone="primary" className="px-6" onClick={handleDone}>
+          <CheckCircle2 className="w-4 h-4 mr-2" />
+          Done
+        </LuminaButton>
+      )}
+    </div>
+  );
+
+  // ============================================================================
   // Main Render
   // ============================================================================
 
@@ -813,11 +972,26 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
   // chooses, checks, or advances.
   const pip = useWorkspacePipSurface({
     instanceId: instanceId || 'adaptation-investigator',
-    scopeId: hasSubmitted ? null : currentPhase,
+    scopeId: tutorOwned ? (finished ? null : 'teach') : hasSubmitted ? null : currentPhase,
     label: 'The adaptation panels and questions',
-    solved: currentPhase === 'apply' && whatIfResponses.length > 0 && whatIfResponses.every((r) => r.isCorrect === true),
+    solved: tutorOwned ? finished
+      : currentPhase === 'apply' && whatIfResponses.length > 0 && whatIfResponses.every((r) => r.isCorrect === true),
     tutorSpeaking: false,
   });
+
+  if (tutorOwned) {
+    return (
+      <div className={`relative ${className}`}>
+        {renderOrganismHeader()}
+        {pip.store && !finished && <div {...pip.dock} />}
+        <div {...pip.workspace}>
+        {renderThreePanels()}
+        {renderMisconception()}
+        </div>
+        {renderTeachingFooter()}
+      </div>
+    );
+  }
 
   return (
     <div className={`relative ${className}`}>
@@ -837,5 +1011,10 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
     </div>
   );
 };
+
+// Inside a live runtime the catalog's ungraded `teachingWorkspace` mounts the teaching surface;
+// everywhere else the standalone investigation, with no runtime mount at all.
+const AdaptationInvestigator = withWorkspaceController<AdaptationInvestigatorProps, TeachingSurfaceOptions, TeachingSurface | null>(
+  'adaptation-investigator', AdaptationInvestigatorSurface, useNoTeachingSurface, useTeachingSurface);
 
 export default AdaptationInvestigator;

@@ -14,6 +14,7 @@
  */
 import type { TutoringScaffold } from '../../../types';
 import { getComponentById } from '../../../service/manifest/catalog';
+import { UNGRADED_MODE } from '../pinnedModes';
 
 export interface LiveActivityAdapter<T = any> {
   /** Explicit null opts out of legacy catalog speech protocols in this host. */
@@ -88,6 +89,25 @@ export const WORKSPACE_DOCTRINE = 'You own the teaching: one step at a time, and
 /** A workspace family's guidance: its own domain facts, then the shared doctrine. */
 export const workspaceGuidance = (domain: string) => `${domain} ${WORKSPACE_DOCTRINE}`;
 
+/**
+ * What every UNGRADED teaching surface tells the tutor, written once (user ruling 2026-09-24:
+ * adaptation-investigator is purely a teaching primitive). Nothing is graded and no observer
+ * commits an outcome, so the crediting and progression sentences of `WORKSPACE_DOCTRINE` would
+ * be false here. Same rule as that doctrine: instructions in the tutor's own words, no line to recite.
+ */
+export const TEACHING_DOCTRINE = 'Nothing on this screen is graded: you are teaching, not testing. '
+  + 'Start from what the learner can see, ask what they notice, and build on what they say. '
+  + 'Let them guess before you show a card, then show it and connect it to their guess. '
+  + 'Use show with target ids from workspace.objects and wait for its visible result before saying anything is open '
+  + 'or marked; talk alone does not show. One idea at a time, in short sentences; invite them to say a new word back. '
+  + 'Answer their questions and follow their curiosity back to the screen. The transcript is noisy supporting context. '
+  + 'There is no score: never quiz for one, and call no recording or progression tool. The learner presses Done when ready.';
+
+/** The mount state of an ungraded teaching surface: what it teaches and how many things it can show. */
+export const teachingOpening = ({ title, task, steps }: { title: string; task: string; steps: number }) => ({
+  title, instruction: task, teachingOwner: 'tutor', totalSteps: steps,
+  interaction: 'Teach from liveRuntime.task and its workspace. Nothing here is graded; the learner presses Done to move on.' });
+
 /** The `[LESSON_START]` wording every tutor-owned workspace family uses. */
 export const workspaceLessonStart = (noun: string, primitiveId: string) => (grade: string, mode: string) =>
   `[LESSON_START] Begin a ${noun} lesson for ${grade}, mode ${mode}. `
@@ -121,7 +141,8 @@ export function workspaceAdapter<T>(primitiveId: string, domain: WorkspaceDomain
   const entry = getComponentById(primitiveId);
   const declared = entry?.teachingWorkspace;
   if (!entry || !declared) throw new Error(`${primitiveId} declares no teachingWorkspace in the catalog`);
-  const modes = (entry.evalModes ?? []).map(m => m.evalMode);
+  const ungraded = !!declared.ungraded;
+  const modes = ungraded ? [UNGRADED_MODE] : (entry.evalModes ?? []).map(m => m.evalMode);
   const label = titleCase(primitiveId);
   return {
     tutoring: null,
@@ -131,9 +152,9 @@ export function workspaceAdapter<T>(primitiveId: string, domain: WorkspaceDomain
     canAdvance: false, // The dialogue observer owns checked progression.
     grades: declared.grades,
     copy: { label, checkbox: label, title: `Learn with ${label}`,
-      lessons: (entry.evalModes ?? []).map(m => [m.evalMode, m.label] as const) },
+      lessons: ungraded ? [[UNGRADED_MODE, 'Teach'] as const] : (entry.evalModes ?? []).map(m => [m.evalMode, m.label] as const) },
     lessonStart: workspaceLessonStart(primitiveId, primitiveId),
-    guidance: workspaceGuidance(declared.guidance),
+    guidance: ungraded ? `${declared.guidance} ${TEACHING_DOCTRINE}` : workspaceGuidance(declared.guidance),
     validate: domain.validate,
     initialState: domain.initialState,
   };

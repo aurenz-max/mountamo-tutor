@@ -51,7 +51,10 @@ describe('every bound family', () => {
 
   it.each(BOUND)('%s advertises exactly the catalog modes, with guidance that carries no cue protocol', id => {
     const adapter = LIVE_ADAPTERS[id];
-    expect([...adapter.modes].sort()).toEqual((getComponentById(id)?.evalModes ?? []).map(m => m.evalMode).sort());
+    // An ungraded teaching surface has no eval modes and mounts its unpinned content as `mixed`.
+    const entry = getComponentById(id);
+    expect([...adapter.modes].sort()).toEqual(entry?.teachingWorkspace?.ungraded ? ['mixed']
+      : (entry?.evalModes ?? []).map(m => m.evalMode).sort());
     expect(adapter).toMatchObject({ teachingOwner: 'tutor', canAdvance: false, tutoring: null });
     expect(adapter.guidance).not.toMatch(CUE_PROTOCOL);
   });

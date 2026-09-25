@@ -59,22 +59,22 @@ import { cvcHarnessAnswers } from '../../primitives/visual-primitives/literacy/c
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
 import { youAndMeHarnessAnswers } from '../../primitives/visual-primitives/literacy/youAndMeWorkspace';
-import { itemsFromChallenges as spotterItems } from '../../primitives/visual-primitives/literacy/letterSpotterScript';
-import { letterSpotterJourneyAnswers } from '../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
-import { itemsFromChallenges as vocabItems } from '../../primitives/visual-primitives/literacy/pictureVocabularyScript';
-import { pictureVocabJourneyAnswers } from '../../primitives/visual-primitives/literacy/pictureVocabularyWorkspace';
-import { itemsFromChallenges as sorterItems } from '../../primitives/visual-primitives/literacy/wordSorterScript';
-import { wordSorterJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordSorterWorkspace';
-import { itemsFromTargets as builderItems } from '../../primitives/visual-primitives/literacy/wordBuilderScript';
-import { wordBuilderJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordBuilderWorkspace';
-import { itemsFromChallenges as workoutItems } from '../../primitives/visual-primitives/literacy/wordWorkoutScript';
-import { wordWorkoutJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordWorkoutWorkspace';
-import { itemsFromChallenges as phonemeItems } from '../../primitives/visual-primitives/literacy/phonemeExplorerScript';
-import { phonemeHarnessAnswers } from '../../primitives/visual-primitives/literacy/phonemeExplorerWorkspace';
-import { itemsFromChallenge as rhymeItems } from '../../primitives/visual-primitives/literacy/rhymeStudioScript';
-import { rhymeHarnessAnswers } from '../../primitives/visual-primitives/literacy/rhymeStudioWorkspace';
 import { itemsFromChallenges as syllableItems } from '../../primitives/visual-primitives/literacy/syllableClapperScript';
 import { syllableHarnessAnswers } from '../../primitives/visual-primitives/literacy/syllableClapperWorkspace';
+import { itemsFromChallenge as rhymeItems } from '../../primitives/visual-primitives/literacy/rhymeStudioScript';
+import { rhymeHarnessAnswers } from '../../primitives/visual-primitives/literacy/rhymeStudioWorkspace';
+import { itemsFromChallenges as phonemeItems } from '../../primitives/visual-primitives/literacy/phonemeExplorerScript';
+import { phonemeHarnessAnswers } from '../../primitives/visual-primitives/literacy/phonemeExplorerWorkspace';
+import { itemsFromChallenges as workoutItems } from '../../primitives/visual-primitives/literacy/wordWorkoutScript';
+import { wordWorkoutJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordWorkoutWorkspace';
+import { itemsFromTargets as builderItems } from '../../primitives/visual-primitives/literacy/wordBuilderScript';
+import { wordBuilderJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordBuilderWorkspace';
+import { itemsFromChallenges as sorterItems } from '../../primitives/visual-primitives/literacy/wordSorterScript';
+import { wordSorterJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordSorterWorkspace';
+import { itemsFromChallenges as vocabItems } from '../../primitives/visual-primitives/literacy/pictureVocabularyScript';
+import { pictureVocabJourneyAnswers } from '../../primitives/visual-primitives/literacy/pictureVocabularyWorkspace';
+import { itemsFromChallenges as spotterItems } from '../../primitives/visual-primitives/literacy/letterSpotterScript';
+import { letterSpotterJourneyAnswers } from '../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
@@ -94,7 +94,9 @@ export type DriverInput =
   | { type: 'answer'; text: string };
 
 /** What the program is asking the learner to do, independent of how this primitive does it. */
-export type LearnerIntent = 'warmup' | 'wrong' | 'correct';
+export type LearnerIntent = 'warmup' | 'wrong' | 'correct'
+  /** An ungraded teaching surface (`execution: 'teaching'`): look at one thing, then finish with the surface's own Done. */
+  | 'explore' | 'finish';
 
 export interface JourneyContext {
   /** The generated payload as mounted. */
@@ -122,7 +124,8 @@ export interface JourneyProbe {
 }
 
 export interface LiveJourney {
-  execution?: 'workspace';
+  /** `workspace`: graded items the observer advances. `teaching`: an ungraded surface the learner finishes. */
+  execution?: 'workspace' | 'teaching';
   /** Module path under `src/components/lumina/`, so the driver needs no primitive map of its own. */
   component: string;
   /** The mounted instance id. The driver owns it and reports it in its ready handshake. */
@@ -853,6 +856,25 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         : [{ type: 'answer', text: answers[0] }];
     },
     probes: { mounted: { selector: '[aria-label="hear the word"]' }, reward: { selector: '[data-cvc-reward]', kind: 'count' } },
+  },
+  'adaptation-investigator': {
+    execution: 'teaching',
+    component: 'primitives/visual-primitives/biology/AdaptationInvestigator.tsx',
+    instanceId: 'adapt',
+    defaults: { grade: 'Grade 1', mode: 'mixed', di: false, topic: 'Why pink flowers have bright pink petals' },
+    leakTokens: [],
+    // A young learner's own questions: what the picture is, why, and asking to be shown.
+    prompts: { opening: 'What is that flower?', hint: 'Why is it so pink?', example: 'Can you show me?' },
+    // Nothing is graded, so there is no wrong or correct: the learner opens a card still closed (the
+    // tutor may already have shown one), and later opens the rest and presses Done. A card already
+    // open is tapped again harmlessly.
+    inputsFor: (intent, ctx) => intent === 'explore'
+      ? [{ type: 'touch', target: ['trait', 'environment', 'connection'].find(c => !String(ctx.demand?.cardsOpen ?? '').includes(c)) ?? 'trait' }]
+      : intent === 'finish' ? [{ type: 'touch', target: 'trait' }, { type: 'touch', target: 'environment' },
+        { type: 'touch', target: 'connection' }, { type: 'choose', label: 'Done' }]
+      : [],
+    probes: { mounted: { selector: '[data-pip-object="trait"]' }, demonstration: { selector: '[data-tutor-ring]', kind: 'count' },
+      closed: { selector: '[aria-label^="Open The"]', kind: 'count' } },
   },
   'you-and-me': {
     execution: 'workspace',

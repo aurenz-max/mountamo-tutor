@@ -37,8 +37,10 @@ export function workspaceBinding({ instanceId, primitiveId, pin, objectiveIds, d
     || objectiveIds.length !== 1) return null;
   try {
     // The family's own mount state counts its askable items, whatever its payload calls them
-    // (`challenges`, phonics-blender's `words`); an empty or unaskable pool does not bind.
-    if (!(Number(adapter.initialState(adapter.validate(data)).totalChallenges) > 0)) return null;
+    // (`challenges`, phonics-blender's `words`); an empty or unaskable pool does not bind. An
+    // ungraded teaching surface counts the things it can show (`totalSteps`) instead.
+    const opening = adapter.initialState(adapter.validate(data));
+    if (!(Number(opening.totalChallenges ?? opening.totalSteps) > 0)) return null;
   } catch { return null; }
   return { instanceId, primitiveId, evalMode: mode, objectiveId: objectiveIds[0], planItemId: instanceId, guidance: adapter.guidance };
 }

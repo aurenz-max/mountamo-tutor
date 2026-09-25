@@ -199,6 +199,19 @@ right!" from 2/3 accepted to 0/3, which is stating the success condition the way
 sibling directions already did.
 [Report](../../../../qa/tutor-reports/letter-sound-link-teaching-2026-09-20.md).
 
+**Ungraded teaching surface: adaptation-investigator, 2026-09-24.** User ruling: this primitive is
+purely teaching. The picture and the cards carry the lesson, and a young learner learns from seeing
+the flower and hearing why its petals are pink, not from being scored. A catalog entry declares
+`teachingWorkspace.ungraded` and has no eval modes. It binds unpinned content as `mixed` and mounts
+through `useTeachingSurface` rather than `useTeachingWorkspace`: one scoped mount, truthful scene
+facts, and one tutor action (`show`, which opens and rings objects after validating every target).
+It has no items, attempts, verdicts or outcome observer. The workspace publishes
+`progression: 'learner'`, so learner signals and the learner-turn observation still ride with it, and
+the learner's own Done completes it. Nothing is submitted (TW-11). `TEACHING_DOCTRINE` replaces
+`WORKSPACE_DOCTRINE`, whose crediting and progression sentences would be false here. A card the
+learner opens is sent to the tutor as a host-written fact, because a pre-reader cannot read what
+opened. [Report](../../../../qa/tutor-reports/adaptation-investigator-teaching-2026-09-24.md).
+
 ## Governing principle: completion belongs to the assignment
 
 **Teaching can change the path; only evidence satisfying the original assignment
