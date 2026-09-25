@@ -42,6 +42,7 @@ import { wordBuilderLiveDomain } from './adapters/wordBuilderLive';
 import { wordSorterLiveDomain } from './adapters/wordSorterLive';
 import { pictureVocabularyLiveDomain } from './adapters/pictureVocabularyLive';
 import { letterSpotterLiveDomain } from './adapters/letterSpotterLive';
+import { decodableReaderLiveDomain } from './adapters/decodableReaderLive';
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { diShapesLiveDomain } from './adapters/diShapesLive';
@@ -93,6 +94,7 @@ export const LIVE_ADAPTERS = {
   'word-sorter': workspaceAdapter('word-sorter', wordSorterLiveDomain),
   'picture-vocabulary': workspaceAdapter('picture-vocabulary', pictureVocabularyLiveDomain),
   'letter-spotter': workspaceAdapter('letter-spotter', letterSpotterLiveDomain),
+  'decodable-reader': workspaceAdapter('decodable-reader', decodableReaderLiveDomain),
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
   'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),

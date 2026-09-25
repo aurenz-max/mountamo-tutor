@@ -1014,10 +1014,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'decodable-reader',
     misconceptionScope: 'primitive',
     description:
-      'Live-judged DECODABLE READING with a spoken Direct Instruction tutor. A short controlled-vocabulary story '
+      'Live DECODABLE READING with a spoken tutor. A short controlled-vocabulary story '
       + 'is on screen ONE SENTENCE AT A TIME and the child reads each one out loud into an open microphone; the '
-      + 'tutor judges every read from the audio WORD BY WORD — a skipped, added or swapped word is corrected, not '
-      + 'waved through — and its own affirmation moves the story on. Then it asks comprehension questions about '
+      + 'tutor responds to every read from the audio WORD BY WORD — a skipped, added or swapped word is corrected, not '
+      + 'waved through — and a credited read moves the story on. Then it asks comprehension questions about '
       + 'the story, and EVERY answer is spoken: where the answer is a WORD from the text the child says that word, '
       + 'and where the answer is a whole idea the tutor reads three or four picture choices aloud and the child '
       + 'says which one it is. Nothing is tapped. Two reading modes: READ-ALONG (the tutor reads '
@@ -1078,6 +1078,18 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'main_idea', label: 'Main Idea (Tier 4)', beta: 5.5, scaffoldingMode: 4, challengeTypes: ['main_idea'], description: 'Read the story aloud, then SAY what the whole story is mostly about, from the choices the tutor reads out.' },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
+      guidance: 'A decodable story, one item at a time, every answer spoken and nothing tapped. A read line is one '
+        + 'printed sentence the learner reads aloud cold: it is judged word by word, so a skipped, added or swapped '
+        + 'small word ("the" for "a") is a miss, and slow sounding-out that lands on the right words is correct. '
+        + 'Never read a line, or any word of it, before the learner has tried; after an attempt you may model it. '
+        + 'A question is answered with one word from the story, or by saying which printed choice is right (the '
+        + 'whole choice, the part that tells it apart, or its position all count). In read-along the learner '
+        + 'cannot read yet: read the whole story aloud before the first question, and again if asked. Before an '
+        + 'attempt never say the answer or which choice is right. Say that again asks you to repeat the question '
+        + 'only. You cannot mark or move anything on screen.',
+    },
     tutoring: {
       taskDescription:
         'Live-judged Direct Instruction reading of a decodable story. The child has ONE thing on screen at a '

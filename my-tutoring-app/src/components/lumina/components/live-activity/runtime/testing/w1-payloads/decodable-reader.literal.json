@@ -1,0 +1,217 @@
+{
+ "source": "qa/tutor-reports/decodable-reader-runtime-literal-payload-2026-09-25.json",
+ "primitiveId": "decodable-reader",
+ "evalMode": "literal",
+ "data": {
+  "title": "Pat and the Fat Cat",
+  "gradeLevel": "1",
+  "passage": {
+   "sentences": [
+    {
+     "id": "s1",
+     "words": [
+      {
+       "id": "s1_w1",
+       "text": "Pat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s1_w2",
+       "text": "is",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s1_w3",
+       "text": "a",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s1_w4",
+       "text": "cat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s1_w5",
+       "text": "with",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s1_w6",
+       "text": "a",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s1_w7",
+       "text": "hat.",
+       "phonicsPattern": "cvc"
+      }
+     ]
+    },
+    {
+     "id": "s2",
+     "words": [
+      {
+       "id": "s2_w1",
+       "text": "The",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s2_w2",
+       "text": "fat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s2_w3",
+       "text": "cat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s2_w4",
+       "text": "sat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s2_w5",
+       "text": "on",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s2_w6",
+       "text": "a",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s2_w7",
+       "text": "mat.",
+       "phonicsPattern": "cvc"
+      }
+     ]
+    },
+    {
+     "id": "s3",
+     "words": [
+      {
+       "id": "s3_w1",
+       "text": "Pat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s3_w2",
+       "text": "had",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s3_w3",
+       "text": "a",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s3_w4",
+       "text": "rat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s3_w5",
+       "text": "in",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s3_w6",
+       "text": "the",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s3_w7",
+       "text": "bag.",
+       "phonicsPattern": "cvc"
+      }
+     ]
+    },
+    {
+     "id": "s4",
+     "words": [
+      {
+       "id": "s4_w1",
+       "text": "The",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s4_w2",
+       "text": "rat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s4_w3",
+       "text": "can",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s4_w4",
+       "text": "run",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s4_w5",
+       "text": "fast.",
+       "phonicsPattern": "blend"
+      }
+     ]
+    }
+   ],
+   "imageDescription": "A chubby cat wearing a hat sitting on a mat while a rat runs away"
+  },
+  "phonicsPatternsInPassage": [
+   "cvc",
+   "sight",
+   "blend"
+  ],
+  "comprehensionQuestions": [
+   {
+    "question": "What did the cat sit on?",
+    "options": [
+     {
+      "id": "A",
+      "text": "The cat sat on a mat.",
+      "emoji": "🛋️"
+     },
+     {
+      "id": "B",
+      "text": "The cat sat in a bed.",
+      "emoji": "🛏️"
+     },
+     {
+      "id": "C",
+      "text": "The cat sat on a box.",
+      "emoji": "📦"
+     }
+    ],
+    "correctOptionId": "A",
+    "answerWord": "mat"
+   },
+   {
+    "question": "What did Pat have in the bag?",
+    "options": [
+     {
+      "id": "A",
+      "text": "Pat had a bat.",
+      "emoji": "🏏"
+     },
+     {
+      "id": "B",
+      "text": "Pat had a rat.",
+      "emoji": "🐀"
+     },
+     {
+      "id": "C",
+      "text": "Pat had a dog.",
+      "emoji": "🐕"
+     }
+    ],
+    "correctOptionId": "B",
+    "answerWord": "rat"
+   }
+  ],
+  "comprehensionType": "literal",
+  "readingMode": "decode"
+ }
+}

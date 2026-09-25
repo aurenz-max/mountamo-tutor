@@ -585,10 +585,12 @@ async def drive(args, token, live, index):
         s = Session(args, journey, spec, live['generatedData'], [], index)
     else:
         # The item pool is `challenges` for most families; phonics-blender's is `words`, word-builder's `targets`.
-        pool = next(k for k in ('challenges', 'words', 'targets') if isinstance(live['generatedData'].get(k), list))
-        s = Session(args, journey, spec, {**live['generatedData'], pool: live['generatedData'][pool][:2]},
-            [i for i in (live.get('diPlan') or {}).get('items', [])], index)
-        assert len(s.data[pool]) == 2, 'Probe needs two generated items'
+        # A family whose items are built from several fields (decodable-reader: a story's lines, then its
+        # questions) is driven whole; the program answers every item it is asked.
+        pool = next((k for k in ('challenges', 'words', 'targets') if isinstance(live['generatedData'].get(k), list)), None)
+        data = {**live['generatedData'], pool: live['generatedData'][pool][:2]} if pool else live['generatedData']
+        s = Session(args, journey, spec, data, [i for i in (live.get('diPlan') or {}).get('items', [])], index)
+        assert not pool or len(s.data[pool]) == 2, 'Probe needs two generated items'
     s.process = subprocess.Popen(['node', 'scripts/primitive-runtime-driver.mjs', str(uuid.uuid4()), args.primitive],
         cwd=ROOT/'my-tutoring-app', env={**os.environ, 'LIVE_FRONTEND': args.frontend}, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
         stderr=subprocess.PIPE, text=True, encoding='utf-8')

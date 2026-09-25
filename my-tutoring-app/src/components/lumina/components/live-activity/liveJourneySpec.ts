@@ -75,6 +75,8 @@ import { itemsFromChallenges as vocabItems } from '../../primitives/visual-primi
 import { pictureVocabJourneyAnswers } from '../../primitives/visual-primitives/literacy/pictureVocabularyWorkspace';
 import { itemsFromChallenges as spotterItems } from '../../primitives/visual-primitives/literacy/letterSpotterScript';
 import { letterSpotterJourneyAnswers } from '../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
+import { itemsFromChallenges as decodableItems } from '../../primitives/visual-primitives/literacy/decodableReaderScript';
+import { decodableReaderJourneyAnswers } from '../../primitives/visual-primitives/literacy/decodableReaderWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
@@ -1100,6 +1102,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'touch', target: `cell-${cell}` }];
     },
     probes: { mounted: { selector: '[data-pip-object="grid"], [data-pip-object="letter"], [data-pip-object="marker"]' } },
+  },
+  'decodable-reader': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/DecodableReader.tsx',
+    instanceId: 'decodable',
+    defaults: { grade: 'Grade 1', mode: 'literal', di: false, topic: 'A short story with short-a words' },
+    leakTokens: ['DR_ITEM', 'DR_MOVE', 'DR_COMPLETE', 'DR_HEAR'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is spoken: the printed line read aloud, a word from the story, or the right choice said.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = decodableItems(ctx.data as never).items.find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current decodable-reader item');
+      const answers = decodableReaderJourneyAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="line"], [data-pip-object="question"], [data-pip-object="story"]' } },
   },
 };
 

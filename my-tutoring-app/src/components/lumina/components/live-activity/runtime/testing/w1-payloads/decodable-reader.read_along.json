@@ -1,0 +1,188 @@
+{
+ "source": "qa/tutor-reports/decodable-reader-runtime-read_along-payload-2026-09-25.json",
+ "primitiveId": "decodable-reader",
+ "evalMode": "read_along",
+ "data": {
+  "title": "The Cat on a Mat",
+  "gradeLevel": "K",
+  "passage": {
+   "sentences": [
+    {
+     "id": "s1",
+     "words": [
+      {
+       "id": "s1_w1",
+       "text": "The",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s1_w2",
+       "text": "fat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s1_w3",
+       "text": "cat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s1_w4",
+       "text": "sat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s1_w5",
+       "text": "on",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s1_w6",
+       "text": "a",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s1_w7",
+       "text": "mat.",
+       "phonicsPattern": "cvc"
+      }
+     ]
+    },
+    {
+     "id": "s2",
+     "words": [
+      {
+       "id": "s2_w1",
+       "text": "A",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s2_w2",
+       "text": "rat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s2_w3",
+       "text": "ran",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s2_w4",
+       "text": "to",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s2_w5",
+       "text": "the",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s2_w6",
+       "text": "mat.",
+       "phonicsPattern": "cvc"
+      }
+     ]
+    },
+    {
+     "id": "s3",
+     "words": [
+      {
+       "id": "s3_w1",
+       "text": "The",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s3_w2",
+       "text": "cat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s3_w3",
+       "text": "can",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s3_w4",
+       "text": "nap.",
+       "phonicsPattern": "cvc"
+      }
+     ]
+    }
+   ],
+   "imageDescription": "A fat cat sitting on a mat while a small rat runs toward it."
+  },
+  "phonicsPatternsInPassage": [
+   "cvc",
+   "sight"
+  ],
+  "comprehensionQuestions": [
+   {
+    "question": "What animal sat on a mat?",
+    "options": [
+     {
+      "id": "A",
+      "text": "The cat sat on it.",
+      "emoji": "🐈"
+     },
+     {
+      "id": "B",
+      "text": "The dog sat on it.",
+      "emoji": "🐕"
+     },
+     {
+      "id": "C",
+      "text": "The pig sat on it.",
+      "emoji": "🐖"
+     }
+    ],
+    "correctOptionId": "A",
+    "answerWord": "cat"
+   },
+   {
+    "question": "What animal ran to the mat?",
+    "options": [
+     {
+      "id": "A",
+      "text": "A bug ran to it.",
+      "emoji": "🐛"
+     },
+     {
+      "id": "B",
+      "text": "A rat ran to it.",
+      "emoji": "🐀"
+     },
+     {
+      "id": "C",
+      "text": "A fox ran to it.",
+      "emoji": "🦊"
+     }
+    ],
+    "correctOptionId": "B",
+    "answerWord": "rat"
+   },
+   {
+    "question": "What can the cat do on the mat?",
+    "options": [
+     {
+      "id": "A",
+      "text": "The cat can hop.",
+      "emoji": "🐇"
+     },
+     {
+      "id": "B",
+      "text": "The cat can dig.",
+      "emoji": "⛏️"
+     },
+     {
+      "id": "C",
+      "text": "The cat can nap.",
+      "emoji": "💤"
+     }
+    ],
+    "correctOptionId": "C",
+    "answerWord": "nap"
+   }
+  ],
+  "comprehensionType": "literal",
+  "readingMode": "read_along"
+ }
+}
