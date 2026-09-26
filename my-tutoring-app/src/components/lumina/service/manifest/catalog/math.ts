@@ -4507,6 +4507,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'The activity checks the learner’s answer itself: the learner taps a number, an equation or a picture, or '
+        + 'sets a number with the − and + buttons and presses Submit, and you are not told the answer. The learner may not '
+        + 'read: say the instruction and the printed fact in your own words first. There is no timer: never mention speed, '
+        + 'never hurry the learner, and let them think. Before the learner has checked, never say the answer, how many a '
+        + 'picture shows, or which choice matches; coach only as far as the support tier allows (count the picture, count '
+        + 'on from the bigger number, think backwards from the total). You cannot tap or enter a number for the learner.',
+    },
   },
   {
     id: 'strategy-picker',

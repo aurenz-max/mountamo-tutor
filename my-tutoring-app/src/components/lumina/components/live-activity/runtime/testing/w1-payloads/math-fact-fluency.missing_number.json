@@ -1,0 +1,113 @@
+{
+ "source": "qa/tutor-reports/math-fact-fluency-runtime-missing_number-payload-2026-09-26.json",
+ "primitiveId": "math-fact-fluency",
+ "evalMode": "missing_number",
+ "data": {
+  "title": "Addition and Subtraction Facts Within 10",
+  "description": "Practice finding missing numbers in addition and subtraction equations up to 10.",
+  "maxNumber": 10,
+  "includeSubtraction": true,
+  "showVisualAids": false,
+  "targetResponseTime": 3,
+  "adaptiveDifficulty": true,
+  "gradeBand": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "missing-number",
+    "instruction": "Find the missing number to make this addition equation true.",
+    "equation": "3 + 4 = 7",
+    "operation": "addition",
+    "operand1": 3,
+    "operand2": 4,
+    "result": 7,
+    "unknownPosition": "operand2",
+    "correctAnswer": 4
+   },
+   {
+    "id": "c2",
+    "type": "missing-number",
+    "instruction": "What number is missing in this addition problem?",
+    "equation": "5 + 2 = 7",
+    "operation": "addition",
+    "operand1": 5,
+    "operand2": 2,
+    "result": 7,
+    "unknownPosition": "operand1",
+    "correctAnswer": 5
+   },
+   {
+    "id": "c3",
+    "type": "missing-number",
+    "instruction": "Figure out the missing start number for this addition sentence.",
+    "equation": "4 + 5 = 9",
+    "operation": "addition",
+    "operand1": 4,
+    "operand2": 5,
+    "result": 9,
+    "unknownPosition": "operand2",
+    "correctAnswer": 5
+   },
+   {
+    "id": "c4",
+    "type": "missing-number",
+    "instruction": "Find the missing part in this addition equation.",
+    "equation": "6 + 3 = 9",
+    "operation": "addition",
+    "operand1": 6,
+    "operand2": 3,
+    "result": 9,
+    "unknownPosition": "operand1",
+    "correctAnswer": 6
+   },
+   {
+    "id": "c5",
+    "type": "missing-number",
+    "instruction": "Solve for the missing number in this subtraction equation.",
+    "equation": "8 - 3 = 5",
+    "operation": "subtraction",
+    "operand1": 8,
+    "operand2": 3,
+    "result": 5,
+    "unknownPosition": "operand2",
+    "correctAnswer": 3
+   },
+   {
+    "id": "c6",
+    "type": "missing-number",
+    "instruction": "What number was subtracted here?",
+    "equation": "7 - 4 = 3",
+    "operation": "subtraction",
+    "operand1": 7,
+    "operand2": 4,
+    "result": 3,
+    "unknownPosition": "operand1",
+    "correctAnswer": 7
+   },
+   {
+    "id": "c7",
+    "type": "missing-number",
+    "instruction": "Find the missing number to complete this subtraction fact.",
+    "equation": "9 - 5 = 4",
+    "operation": "subtraction",
+    "operand1": 9,
+    "operand2": 5,
+    "result": 4,
+    "unknownPosition": "operand2",
+    "correctAnswer": 5
+   },
+   {
+    "id": "c8",
+    "type": "missing-number",
+    "instruction": "Discover the missing number in this subtraction equation.",
+    "equation": "10 - 6 = 4",
+    "operation": "subtraction",
+    "operand1": 10,
+    "operand2": 6,
+    "result": 4,
+    "unknownPosition": "operand1",
+    "correctAnswer": 10
+   }
+  ]
+ }
+}

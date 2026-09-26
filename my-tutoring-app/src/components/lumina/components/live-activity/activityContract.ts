@@ -73,6 +73,7 @@ import { diWorkedProcedureLiveDomain } from './adapters/diWorkedProcedureLive';
 import { diWordProblemSetupLiveDomain } from './adapters/diWordProblemSetupLive';
 import { spatialSceneLiveDomain } from './adapters/spatialSceneLive';
 import { hundredsChartLiveDomain } from './adapters/hundredsChartLive';
+import { mathFactFluencyLiveDomain } from './adapters/mathFactFluencyLive';
 import { workspaceAdapter, type LiveActivityAdapter } from './adapters/adapterContract';
 
 export type { LiveActivityAdapter } from './adapters/adapterContract';
@@ -151,6 +152,7 @@ export const LIVE_ADAPTERS = {
   'di-word-problem-setup': workspaceAdapter('di-word-problem-setup', diWordProblemSetupLiveDomain),
   'spatial-scene': workspaceAdapter('spatial-scene', spatialSceneLiveDomain),
   'hundreds-chart': workspaceAdapter('hundreds-chart', hundredsChartLiveDomain),
+  'math-fact-fluency': workspaceAdapter('math-fact-fluency', mathFactFluencyLiveDomain),
 } satisfies Record<string, LiveActivityAdapter<any>>;
 
 export type LivePrimitiveId = keyof typeof LIVE_ADAPTERS;

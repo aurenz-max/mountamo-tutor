@@ -1,0 +1,185 @@
+{
+ "source": "qa/tutor-reports/math-fact-fluency-runtime-match-payload-2026-09-26.json",
+ "primitiveId": "math-fact-fluency",
+ "evalMode": "match",
+ "data": {
+  "title": "Matching Pictures to Addition Facts within 10",
+  "description": "Connect fun visual representations to their matching addition equations.",
+  "maxNumber": 10,
+  "includeSubtraction": false,
+  "showVisualAids": true,
+  "targetResponseTime": 3,
+  "adaptiveDifficulty": true,
+  "gradeBand": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "match",
+    "instruction": "Look at the dots and find the addition fact that shows how many there are in all!",
+    "equation": "2 + 3 = 5",
+    "operation": "addition",
+    "operand1": 2,
+    "operand2": 3,
+    "result": 5,
+    "unknownPosition": "result",
+    "correctAnswer": 5,
+    "equationOptions": [
+     "1 + 3 = 4",
+     "2 + 3 = 5",
+     "2 + 4 = 6",
+     "3 + 3 = 6"
+    ],
+    "matchDirection": "visual-to-equation",
+    "visualCount": 5,
+    "visualType": "dot-array"
+   },
+   {
+    "id": "c2",
+    "type": "match",
+    "instruction": "Count the items on the ten-frame and pick the equation that matches!",
+    "equation": "4 + 4 = 8",
+    "operation": "addition",
+    "operand1": 4,
+    "operand2": 4,
+    "result": 8,
+    "unknownPosition": "result",
+    "correctAnswer": 8,
+    "equationOptions": [
+     "3 + 4 = 7",
+     "4 + 4 = 8",
+     "5 + 4 = 9",
+     "4 + 2 = 6"
+    ],
+    "matchDirection": "visual-to-equation",
+    "visualCount": 8,
+    "visualType": "ten-frame"
+   },
+   {
+    "id": "c3",
+    "type": "match",
+    "instruction": "Look at these fingers and find the matching addition equation.",
+    "equation": "3 + 3 = 6",
+    "operation": "addition",
+    "operand1": 3,
+    "operand2": 3,
+    "result": 6,
+    "unknownPosition": "result",
+    "correctAnswer": 6,
+    "equationOptions": [
+     "2 + 3 = 5",
+     "3 + 3 = 6",
+     "4 + 3 = 7",
+     "3 + 2 = 5"
+    ],
+    "matchDirection": "visual-to-equation",
+    "visualCount": 6,
+    "visualType": "fingers"
+   },
+   {
+    "id": "c4",
+    "type": "match",
+    "instruction": "Find the equation that matches this group of objects!",
+    "equation": "1 + 4 = 5",
+    "operation": "addition",
+    "operand1": 1,
+    "operand2": 4,
+    "result": 5,
+    "unknownPosition": "result",
+    "correctAnswer": 5,
+    "equationOptions": [
+     "1 + 4 = 5",
+     "2 + 4 = 6",
+     "1 + 3 = 4",
+     "2 + 5 = 7"
+    ],
+    "matchDirection": "visual-to-equation",
+    "visualCount": 5,
+    "visualType": "objects"
+   },
+   {
+    "id": "c5",
+    "type": "match",
+    "instruction": "Count the dots carefully and choose the correct math sentence.",
+    "equation": "5 + 3 = 8",
+    "operation": "addition",
+    "operand1": 5,
+    "operand2": 3,
+    "result": 8,
+    "unknownPosition": "result",
+    "correctAnswer": 8,
+    "equationOptions": [
+     "4 + 3 = 7",
+     "5 + 2 = 7",
+     "5 + 3 = 8",
+     "6 + 3 = 9"
+    ],
+    "matchDirection": "visual-to-equation",
+    "visualCount": 8,
+    "visualType": "dot-array"
+   },
+   {
+    "id": "c6",
+    "type": "match",
+    "instruction": "Look at the ten-frame to find your matching addition equation.",
+    "equation": "6 + 3 = 9",
+    "operation": "addition",
+    "operand1": 6,
+    "operand2": 3,
+    "result": 9,
+    "unknownPosition": "result",
+    "correctAnswer": 9,
+    "equationOptions": [
+     "5 + 3 = 8",
+     "6 + 4 = 10",
+     "6 + 3 = 9",
+     "4 + 4 = 8"
+    ],
+    "matchDirection": "visual-to-equation",
+    "visualCount": 9,
+    "visualType": "ten-frame"
+   },
+   {
+    "id": "c7",
+    "type": "match",
+    "instruction": "Which equation tells the story of these objects?",
+    "equation": "2 + 2 = 4",
+    "operation": "addition",
+    "operand1": 2,
+    "operand2": 2,
+    "result": 4,
+    "unknownPosition": "result",
+    "correctAnswer": 4,
+    "equationOptions": [
+     "1 + 2 = 3",
+     "2 + 2 = 4",
+     "3 + 2 = 5",
+     "2 + 1 = 3"
+    ],
+    "matchDirection": "visual-to-equation",
+    "visualCount": 4,
+    "visualType": "objects"
+   },
+   {
+    "id": "c8",
+    "type": "match",
+    "instruction": "Match the ten-frame picture with the correct addition equation!",
+    "equation": "5 + 5 = 10",
+    "operation": "addition",
+    "operand1": 5,
+    "operand2": 5,
+    "result": 10,
+    "unknownPosition": "result",
+    "correctAnswer": 10,
+    "equationOptions": [
+     "4 + 5 = 9",
+     "5 + 4 = 9",
+     "5 + 5 = 10",
+     "6 + 3 = 9"
+    ],
+    "matchDirection": "visual-to-equation",
+    "visualCount": 10,
+    "visualType": "ten-frame"
+   }
+  ]
+ }
+}

@@ -600,9 +600,22 @@ Return the complete math fact fluency configuration.
       if (challenge.matchDirection !== 'visual-to-equation' && challenge.matchDirection !== 'equation-to-visual') {
         challenge.matchDirection = 'visual-to-equation';
       }
+      // The schema carries no visualOptions, so an equation-to-visual match arrives with no
+      // pictures to tap and nothing to answer: match from the picture to the equations instead.
+      if (challenge.matchDirection === 'equation-to-visual' && !challenge.visualOptions?.some(v => v.count === challenge.correctAnswer)) {
+        challenge.matchDirection = 'visual-to-equation';
+      }
+      // A match is checked by the total: the picture shows it and the matching equation equals it.
+      challenge.unknownPosition = 'result';
+      challenge.correctAnswer = challenge.result;
+      if (challenge.matchDirection === 'visual-to-equation') {
+        challenge.visualCount = challenge.result;
+        if (!challenge.equationOptions?.length) challenge.equationOptions = [];
+      }
       // Ensure equationOptions for visual-to-equation: correct equation present,
       // and all distractors have DIFFERENT results to avoid ambiguous matches.
       if (challenge.matchDirection === 'visual-to-equation' && challenge.equationOptions) {
+        const built = challenge.equationOptions.length === 0;
         if (!challenge.equationOptions.includes(challenge.equation)) {
           if (challenge.equationOptions.length > 0) {
             challenge.equationOptions[0] = challenge.equation;
@@ -625,7 +638,8 @@ Return the complete math fact fluency configuration.
           const offset = challenge.equationOptions.length; // 1, 2, 3
           const distResult = correctResult + offset;
           if (distResult >= 0 && distResult <= data.maxNumber + 2) {
-            const a = Math.max(1, distResult - 1);
+            // A varied split, so the distractors are not all "n + 1" beside a correct equation that stands out.
+            const a = distResult > 1 ? 1 + Math.floor(Math.random() * (distResult - 1)) : Math.max(1, distResult);
             const b = distResult - a;
             challenge.equationOptions.push(`${a} + ${b} = ${distResult}`);
           } else {
@@ -635,6 +649,8 @@ Return the complete math fact fluency configuration.
             challenge.equationOptions.push(`${distResult2} + 0 = ${distResult2}`);
           }
         }
+        // Options built here start with the correct equation; never pin the answer to the first slot.
+        if (built) shuffleInPlace(challenge.equationOptions);
       }
     }
   }

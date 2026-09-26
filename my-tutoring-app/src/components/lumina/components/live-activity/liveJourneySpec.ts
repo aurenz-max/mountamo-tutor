@@ -122,6 +122,7 @@ import { diWorkedProcedureHarnessAnswers, workedProcedureItems } from '../../pri
 import { diWordProblemHarnessAnswers, wordProblemHarnessPlacements, wordProblemItems } from '../../primitives/visual-primitives/direct-instruction/diWordProblemWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
 import { hundredsChartHarnessInputs } from '../../primitives/visual-primitives/math/hundredsChartWorkspace';
+import { mathFactHarnessInputs } from '../../primitives/visual-primitives/math/mathFactFluencyWorkspace';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -1661,6 +1662,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return hundredsChartHarnessInputs(c, intent === 'wrong', ctx.data.gridMax ?? 100);
     },
     probes: { mounted: { selector: '[data-pip-object="chart"]' } },
+  },
+  'math-fact-fluency': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/MathFactFluency.tsx',
+    instanceId: 'facts',
+    defaults: { grade: 'Kindergarten', mode: 'visual_fact', di: false, topic: 'Addition facts within 5' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: a number, equation or picture tapped, or the stepper
+    // pressed up to a number and Submit. Derived from the mounted challenge, never from Python.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current math-fact-fluency challenge');
+      return mathFactHarnessInputs(c, intent === 'wrong', ctx.data.maxNumber ?? 5);
+    },
+    probes: { mounted: { selector: '[data-pip-object="problem"], [data-pip-object="visual"]' } },
   },
 };
 
