@@ -4085,8 +4085,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'texts and ANSWERS OUT LOUD three ways: saying yes or no to what is actually in a text ("does this one '
       + 'have animals that talk?"), saying which of two texts something is true of, and NAMING what kind of '
       + 'writing each text is from a printed menu (fiction/nonfiction, fable, myth, biography, informational, '
-      + 'poem…). The tutor judges each spoken answer, corrects contrastively, and its own affirmation advances '
-      + 'the lesson. Nothing is tapped, checked or dragged. REQUIRES A MICROPHONE. Perfect for grades 1-6 genre '
+      + 'poem…). The tutor judges each spoken answer and teaches after a miss; a credited answer moves the '
+      + 'lesson on. Nothing is tapped, checked or dragged. REQUIRES A MICROPHONE. Perfect for grades 1-6 genre '
       + 'study; at grades 1-2 the tutor reads each text aloud to the child.',
     constraints:
       'REQUIRES A MICROPHONE — every answer is spoken; there is no checkbox, tap or button path. '
@@ -4137,6 +4137,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'compare_genres', label: 'Compare Genres (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['compare_genres'], description: 'Two texts on one topic: SAY which of the two each distinguishing feature belongs to, then NAME both genres aloud. Only a feature true of exactly ONE text is asked.' },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'Two or three short texts; every answer is said out loud. Three kinds of question: yes or no about what is '
+        + 'in one text, which of two texts something is true of, and what kind of writing a text is from the printed '
+        + 'menu. When the ask carries a text, read it aloud first: at grades 1-2 the learner cannot read it. Reading a text '
+        + 'aloud gives nothing away, since no text names its genre. Saying the feature back is not a yes or no, and "both" '
+        + 'is never the text: each feature is true of one. Before an attempt never say the answer or which genre a text '
+        + 'is; a close relative genre is wrong. Nothing on screen marks a genre until credit. You cannot point at or '
+        + 'highlight the text.',
+    },
     tutoring: {
       // ⚠️ `challengeType` IS THE STEP, NOT THE EVAL MODE. `identify_basic` names
       // its own two-genre answer set, so pushing the mode would park half the

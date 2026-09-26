@@ -96,6 +96,8 @@ import { itemsFromChallenges as habitatItems } from '../../primitives/visual-pri
 import { habitatJourneyAnswers } from '../../primitives/visual-primitives/biology/habitatDioramaWorkspace';
 import { matterItems } from './adapters/matterExplorerLive';
 import { matterJourneyAnswers } from '../../primitives/visual-primitives/chemistry/matterExplorerWorkspace';
+import { itemsFromPayload as genreItems } from '../../primitives/visual-primitives/literacy/genreExplorerScript';
+import { genreJourneyAnswers } from '../../primitives/visual-primitives/literacy/genreExplorerWorkspace';
 import { statesItems } from './adapters/statesOfMatterLive';
 import { statesJourneyAnswers } from '../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
 import { solarItems } from './adapters/solarSystemExplorerLive';
@@ -1462,6 +1464,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const item = solarItems(ctx.data as never).find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current solar-system-explorer item');
       const answers = solarJourneyAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'genre-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/GenreExplorer.tsx',
+    instanceId: 'genre-explorer',
+    defaults: { grade: 'Grade 3', mode: 'classify_genre', di: false, topic: 'Fables, myths and informational texts' },
+    leakTokens: ['GEX_ITEM', 'GEX_MOVE', 'GEX_COMPLETE', 'GEX_HEAR'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one spoken answer: yes or no, which text, or the kind of writing.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = genreItems(ctx.data as never).items.find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current genre-explorer item');
+      const answers = genreJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },

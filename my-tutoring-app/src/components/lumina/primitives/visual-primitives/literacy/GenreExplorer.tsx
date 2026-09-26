@@ -1,12 +1,11 @@
 'use client';
 
 /**
- * GenreExplorer — DI modality (NINETEENTH literacy port, 2026-08-17;
- * qa/di/BACKLOG.md item 22, port 2 of the closed-set literacy frontier). The Live
- * tutor owns the clock: it asks ONCE, waits, judges the child's spoken answer
- * from the audio in-band, corrects contrastively, and its OWN affirmation is the
- * advance. There is no advance timer, no Next button, no push-to-talk mic, and no
- * answer on screen before the tutor affirms.
+ * GenreExplorer — runs only on the shared tutor/JEV teaching workspace (workspace
+ * rollout C7; the scripted runner was retired, LA-14, user ruling 09-23: one path).
+ * The observer judges each spoken answer and the runtime owns progression. There
+ * is no Next button, no mic panel, and no answer on screen before credit. An
+ * unbound mount shows the shared "needs the tutor" card.
  *
  * THE MODALITY, in one sitting:
  *
@@ -36,8 +35,7 @@
  *  - The texts. They are the reading material.
  *  - The printed genre menu with its kid-friendly glosses. A genre question whose
  *    candidates are unknowable is a broken task, not a harder one.
- *  - Tap-to-hear, which re-speaks the QUESTION — and, at the band floor, the text
- *    with it, because there the text IS question-side audio.
+ *  - (Tap-to-hear is gone: with the tutor present, the learner asks it to repeat.)
  *
  * ⚠️ THE TUTOR READS THE TEXT AT GRADES K-2, WHICH IS THE OPPOSITE OF THE PORT
  * BEFORE IT. text-structure-analyzer's tutor may never read the passage, because
@@ -47,11 +45,11 @@
  * where a child cannot decode four sentences unaided. The rule is a property of
  * the answer material, not a family constant.
  *
- * Cue lines, judging contracts and build gates live in `genreExplorerScript.ts`
- * (hand-authored, DISTAR). Nothing in this file writes a spoken line.
+ * Asks and build gates live in `genreExplorerScript.ts`; the assignment and scene
+ * the tutor receives live in `genreExplorerWorkspace.ts`.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaBadge,
   LuminaCard,
@@ -62,27 +60,25 @@ import {
   LuminaPanel,
   LuminaReadAloudGlyph,
 } from '../../../ui';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { GenreExplorerMetrics } from '../../../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import {
-  genreExplorerPackBase,
   itemsFromPayload,
   type GenreAction,
   type GenreExplorerItem,
   type GenreTier,
 } from './genreExplorerScript';
+import { genreAssignment, genreScene } from './genreExplorerWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -158,6 +154,9 @@ export interface GenreExplorerData {
 interface GenreExplorerProps {
   data: GenreExplorerData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -176,7 +175,7 @@ const ACTION_META: Record<GenreAction, { label: string; icon: string; accent: Ge
 // Component
 // ============================================================================
 
-const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
+const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const {
     title,
     gradeLevel = '3',
@@ -190,20 +189,15 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
 
   const stableInstanceIdRef = useRef(instanceId || `genre-explorer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
-  /** Build gates drop what cannot be asked — a placeholder in a judged loop
-   *  becomes a spoken ask the tutor has to stand behind. */
-  const { items, excerpts, menu, menuNotes } = useMemo(() => itemsFromPayload(data), [data]);
+  /** Build gates drop what cannot be asked. */
+  const { items, excerpts, menu, menuNotes, readsAloud } = useMemo(() => itemsFromPayload(data), [data]);
 
-  /**
-   * The affirmed item's reveal payload. Set on the affirm and rendered behind
-   * `runner.revealHeld` — NOT `currentSolved` and NOT `stage`, and deliberately
-   * never cleared in `onItemOpened` (18b): the runner opens the next item in the
-   * SAME dispatch as the affirmation, so both of the obvious gates are already
-   * false by render time and a payload cleared there paints on the last item and
-   * nowhere else.
-   */
+  /** The credited item's reveal payload, rendered behind `runner.revealHeld`. */
   const [reveal, setReveal] = useState<{ action: GenreAction; answer: string } | null>(null);
+  /** Items credited so far: the only route by which a finding or a genre name reaches the screen. */
+  const [solvedIds, setSolvedIds] = useState<ReadonlySet<string>>(() => new Set());
 
   // ── Evaluation ─────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<GenreExplorerMetrics>({
@@ -216,7 +210,7 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const solvedOf = (...actions: GenreAction[]) => {
       const ids = new Set(items.filter((i) => actions.includes(i.action)).map((i) => i.id));
       return summary.outcomes.filter((o) => ids.has(o.id) && o.solved).length;
@@ -232,9 +226,7 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
       // text, or a contrast across two.
       featuresCheckedCorrectly: solvedOf('check-feature', 'pick-excerpt'),
       featuresTotal: totalOf('check-feature', 'pick-excerpt'),
-      // ⚠️ EARNED, NOT OFFERED. The click era set this true when the child pressed
-      // "Compare Excerpts Side by Side" — a button press recorded as an analysis.
-      // It now means the child answered a contrast question correctly.
+      // EARNED, NOT OFFERED: the child answered a contrast question correctly.
       comparisonMade: solvedOf('pick-excerpt') > 0,
       attemptsCount: summary.attemptsCount,
     };
@@ -242,68 +234,55 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { itemResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
+      { itemResults: summary.outcomes, learningResponses: summary.learningResponses,
+        teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items, evaluation]);
+  };
 
-  // ── The pack — wording lives in genreExplorerScript.ts ─────────────────────
-  const pack = useMemo<JudgedScriptPack<GenreExplorerItem>>(() => ({
-    ...genreExplorerPackBase(items),
-    statusLines: {
-      idle: 'Tap the microphone to start reading.',
-      ready: () => 'Listen — then say your answer out loud.',
-      retry: () => 'Have another go — say your answer out loud.',
-      noVerdict: () => 'One more time — say your answer out loud.',
-      done: 'Great reading today!',
-    },
-    // One record per attempt, right or corrected: the text(s) on screen (clipped to stay inside the evidence
-    // limits), the question and choices, and what was said. Never the verdict.
-    observation: (item, { heard: transcript }) => {
-      const heard = transcript?.trim() ?? '';
-      const clip = (text: string) => (text.length > 500 ? `${text.slice(0, 500)}…` : text);
-      const shown = (item.excerptIndex < 0 ? excerpts : excerpts.filter((e) => e.index === item.excerptIndex))
-        .map((e) => `${e.ordinal}: "${clip(e.text)}"`).join(' ');
-      const challenge = item.action === 'check-feature'
-        ? `Say yes or no: does ${item.excerptOrdinal} ${item.predicate}? Text shown: ${shown}`
-        : item.action === 'pick-excerpt'
-          ? `Say which of two texts ${item.predicate}. Texts shown: ${shown}`
-          : `Read a text, then say what kind of writing it is (choices: ${item.choices.join(', ')}). Text shown: ${shown}`;
-      return {
-        challenge,
-        expected: `"${item.answer}" said out loud.`,
-        observed: heard ? `Said "${heard}".` : 'No transcript was captured.',
-      };
-    },
-  }), [items, excerpts]);
-
-  const runner = useJudgedScriptRunner<GenreExplorerItem>({
-    pack,
+  const runner = useWorkspaceRunner<GenreExplorerItem>({
+    primitiveId: 'genre-explorer',
+    assignment: genreAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || data.mode || 'classify_genre',
     instanceId: resolvedInstanceId,
-    gradeLevel,
-    exhibitId,
-    onFinished: handleFinished,
-    onAffirmed: (item) => setReveal({ action: item.action, answer: item.answer }),
+    onFinished: finish,
+    onAffirmed: (item) => {
+      setReveal({ action: item.action, answer: item.answer });
+      setSolvedIds((prev) => new Set(prev).add(item.id));
+    },
   });
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
   const currentItem = runner.currentItem;
   const actionMeta = ACTION_META[currentItem?.action ?? 'check-feature'];
-  // Pip: the texts are the question side and the genre menu is the answer, so
-  // Pip outlines the texts as a region during the cue and never the menu.
-  const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The texts', finished: evaluation.hasSubmitted,
+
+  // What the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation; every item is answerable once it opens.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...genreScene(currentItem, excerpts, currentItem.action === 'name-genre' ? menu : [], readsAloud),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true,
+      mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
   });
 
-  /**
-   * The evidence this run has already EARNED, in the order it was earned. Read
-   * off the runner's solved ledger rather than a local list, so the only thing
-   * that can put a finding on screen is a tutor affirmation.
-   */
+  // Pip: the texts are the question side and the genre menu is the answer, so
+  // Pip outlines the texts as a region during the ask and never the menu.
+  const pip = useStimulusPipSurface({
+    run: runner, instanceId: resolvedInstanceId, label: 'The texts', finished: showSummary,
+  });
+
+  /** The evidence this run has already EARNED, in the order it was earned. */
   const findings = useMemo(() => {
     const rows: Array<{ id: string; text: string; positive: boolean }> = [];
     for (const item of items) {
-      if (!runner.solvedIds.has(item.id)) continue;
+      if (!solvedIds.has(item.id)) continue;
       if (item.action === 'check-feature') {
         rows.push({
           id: item.id,
@@ -315,28 +294,25 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
       }
     }
     return rows;
-  }, [items, runner.solvedIds]);
+  }, [items, solvedIds]);
 
-  /** Genres the tutor has already affirmed, by excerpt index — the only route by
-   *  which a genre name reaches the screen. */
+  /** Genres already credited, by excerpt index — the only route by which a genre name reaches the screen. */
   const affirmedGenreByExcerpt = useMemo(() => {
     const map = new Map<number, string>();
     for (const item of items) {
-      if (item.action !== 'name-genre' || !runner.solvedIds.has(item.id)) continue;
+      if (item.action !== 'name-genre' || !solvedIds.has(item.id)) continue;
       map.set(item.excerptIndex, item.answer);
     }
     return map;
-  }, [items, runner.solvedIds]);
+  }, [items, solvedIds]);
 
-  /** What the tutor is affirming right now, for the reveal ring. Guarded on the
-   *  ACTION: by render time the surface may already point at the next step. */
+  /** What was just credited, for the reveal ring. Guarded on the ACTION. */
   const revealed =
     runner.revealHeld && reveal && reveal.action === currentItem?.action ? reveal.answer : null;
 
   /**
    * Which texts are on screen. A contrast item is about BOTH, so both are shown;
-   * every other item shows the one it is about, which keeps a six-year-old's
-   * attention where the question is.
+   * every other item shows the one it is about.
    */
   const shownExcerpts = useMemo(() => {
     if (!currentItem || currentItem.excerptIndex < 0) return excerpts;
@@ -345,13 +321,13 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => ({
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => ({
       label: ACTION_META[item.action].label,
       icon: ACTION_META[item.action].icon,
       accentColor: ACTION_META[item.action].accent,
     }));
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
   // ============================================================================
   // Render
@@ -453,7 +429,7 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
           </div>
           {/* NO GENRE BADGE ANYWHERE. The click era's Review phase printed each
               excerpt's correct genre beside a right/wrong chip. */}
-          {!evaluation.hasSubmitted && (
+          {!showSummary && (
             <LuminaBadge accent={actionMeta.accent} className="text-xs">
               {actionMeta.icon} {actionMeta.label}
             </LuminaBadge>
@@ -462,7 +438,7 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex items-center justify-center gap-4">
               <LuminaChallengeCounter
@@ -470,21 +446,6 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
                 total={items.length}
                 variant="dots"
               />
-              {/* Tap-to-hear — the question again (and the text with it at the
-                  band floor), never a hint ladder, never withdrawn. */}
-              <button
-                type="button"
-                onClick={runner.hearStimulus}
-                className={`
-                  flex h-11 w-11 items-center justify-center rounded-full
-                  bg-amber-500/15 border-2 border-amber-500/30
-                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
-                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
-                `}
-                aria-label="Hear the question again"
-              >
-                <span className="text-xl">🔁</span>
-              </button>
               <LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} />
             </div>
 
@@ -495,15 +456,13 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
 
             {menu.length > 0 && renderMenu()}
 
-            {/* Open for the whole run — no tutor-busy gate, no push-to-talk. */}
-            <JudgedMicPanel run={runner} />
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Genre Work Complete!"
             celebrationMessage="Great reading — you told me every answer out loud!"
@@ -513,5 +472,8 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
     </LuminaCard>
   );
 };
+
+/** Runs only on the teaching workspace; an unbound mount shows the "needs the tutor" card. */
+const GenreExplorer = withWorkspaceOnly<GenreExplorerProps>('genre-explorer', GenreExplorerSurface, (props) => props.data.title);
 
 export default GenreExplorer;

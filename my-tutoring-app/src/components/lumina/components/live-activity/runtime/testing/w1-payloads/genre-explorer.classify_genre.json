@@ -1,0 +1,62 @@
+{
+ "source": "qa/tutor-reports/genre-explorer-runtime-classify_genre-payload-2026-09-26.json",
+ "primitiveId": "genre-explorer",
+ "evalMode": "classify_genre",
+ "data": {
+  "title": "Ancient Tales and Real Facts",
+  "gradeLevel": "3",
+  "excerpts": [
+   {
+    "excerptId": "e1",
+    "text": "The sun god rode his golden chariot across the sky every single morning to bring daylight to the world. When he grew tired at evening, his fiery horses rested beneath the great western ocean.",
+    "genre": "myth"
+   },
+   {
+    "excerptId": "e2",
+    "text": "Honeybees have six legs and two pairs of wings. They visit hundreds of flowers each day to collect nectar, which they bring back to their hive to make sweet honey.",
+    "genre": "informational"
+   },
+   {
+    "excerptId": "e3",
+    "text": "A tiny mouse found a sleeping lion and ran across his nose. The lion woke up and caught him, but the tiny mouse promised to help him someday, proving that even small friends can be very big helpers.",
+    "genre": "fable"
+   }
+  ],
+  "features": [
+   {
+    "featureId": "f1",
+    "predicate": "explain how ancient people understood nature",
+    "presentIn": [
+     "e1"
+    ]
+   },
+   {
+    "featureId": "f2",
+    "predicate": "give real facts you could look up",
+    "presentIn": [
+     "e2"
+    ]
+   },
+   {
+    "featureId": "f3",
+    "predicate": "teach a lesson at the end",
+    "presentIn": [
+     "e3"
+    ]
+   },
+   {
+    "featureId": "f5",
+    "predicate": "use rhyme and rhythm",
+    "presentIn": []
+   }
+  ],
+  "genreOptions": [
+   "myth",
+   "informational",
+   "fable",
+   "folktale",
+   "poem"
+  ],
+  "mode": "classify_genre"
+ }
+}

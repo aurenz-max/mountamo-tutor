@@ -1,0 +1,35 @@
+{
+ "source": "qa/tutor-reports/genre-explorer-runtime-identify_basic-payload-2026-09-26.json",
+ "primitiveId": "genre-explorer",
+ "evalMode": "identify_basic",
+ "data": {
+  "title": "Finding Facts and Tales",
+  "gradeLevel": "3",
+  "excerpts": [
+   {
+    "excerptId": "e1",
+    "text": "A tiny mouse ran across the sleeping paw of a giant lion. The lion woke up and caught the mouse in his big hand. The mouse begged for mercy, and the lion let him go with a smile.",
+    "genre": "fiction"
+   },
+   {
+    "excerptId": "e2",
+    "text": "Honeybees are flying insects that gather sweet nectar from blooming flowers. They use this nectar to make honey inside their busy hives. A single hive can hold thousands of buzzing bees.",
+    "genre": "nonfiction"
+   }
+  ],
+  "features": [
+   {
+    "featureId": "made-up-events",
+    "predicate": "tell a made-up story from someone's imagination",
+    "presentIn": [
+     "e1"
+    ]
+   }
+  ],
+  "genreOptions": [
+   "fiction",
+   "nonfiction"
+  ],
+  "mode": "identify_basic"
+ }
+}
