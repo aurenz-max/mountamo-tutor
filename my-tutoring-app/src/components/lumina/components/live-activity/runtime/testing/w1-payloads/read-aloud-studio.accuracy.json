@@ -1,0 +1,55 @@
+{
+ "source": "qa/tutor-reports/read-aloud-studio-runtime-accuracy-payload-2026-09-26.json",
+ "primitiveId": "read-aloud-studio",
+ "evalMode": "accuracy",
+ "data": {
+  "title": "A Day at the Pond",
+  "gradeLevel": "3",
+  "fluencyFocus": "accuracy",
+  "lexileLevel": "520L",
+  "lines": [
+   {
+    "text": "Bright sunlight warms the quiet pond water.",
+    "phraseGroups": [
+     "Bright sunlight warms",
+     "the quiet pond water."
+    ]
+   },
+   {
+    "text": "Green frogs sit still upon large lily pads.",
+    "phraseGroups": [
+     "Green frogs sit still",
+     "upon large lily pads."
+    ]
+   },
+   {
+    "text": "Small fish swim quickly beneath the surface.",
+    "phraseGroups": [
+     "Small fish swim quickly",
+     "beneath the surface."
+    ]
+   },
+   {
+    "text": "A turtle climbs slowly onto a muddy log.",
+    "phraseGroups": [
+     "A turtle climbs slowly",
+     "onto a muddy log."
+    ]
+   },
+   {
+    "text": "Soft breezes ripple across the gentle waves.",
+    "phraseGroups": [
+     "Soft breezes ripple",
+     "across the gentle waves."
+    ]
+   },
+   {
+    "text": "Evening shadows bring peaceful rest to nature.",
+    "phraseGroups": [
+     "Evening shadows bring peaceful",
+     "rest to nature."
+    ]
+   }
+  ]
+ }
+}

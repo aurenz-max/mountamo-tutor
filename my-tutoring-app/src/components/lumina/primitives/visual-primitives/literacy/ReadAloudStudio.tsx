@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * ReadAloudStudio — DI modality (ninth literacy port, 2026-08-12). The Live
- * tutor owns the clock: it asks, waits, judges the child's READ from the audio
- * in-band, corrects contrastively, and its own affirmation is the advance.
- * There is no advance timer, no Record button, no Next button, no self-
- * assessment scale and no push-to-talk mic anywhere in this file.
+ * ReadAloudStudio — runs only on the shared tutor/JEV teaching workspace (workspace
+ * rollout C7; the scripted runner was retired, LA-14, user ruling 09-23: one path).
+ * The observer judges each read against the print and the runtime owns progression.
+ * There is no Record or Next button, no self-assessment scale and no mic panel. An
+ * unbound mount shows the shared "needs the tutor" card.
  *
  * WHAT THIS REPLACES. The pre-port surface judged nothing. Its score was
  * `modelListened + recordingMade + selfAssessment + comparisonUsed` — four
@@ -37,13 +37,10 @@
  * (outside the benched window, a sentinel-opening sentence, dialogue with no
  * speaker) are DROPPED at build — never degraded.
  *
- * CONNECTED TEXT RAISES THE VOICE-TURN FLOOR. A reader pauses between words and
- * the family default (500ms, tuned for one-word answers) splits one read into
- * two turns — di-sentence-reading's ship-blocking bench finding. This pack
- * passes the same 1100ms through the runner.
+ * The assignment and scene the tutor receives live in `readAloudStudioWorkspace.ts`.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -60,25 +57,21 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { ReadAloudStudioMetrics } from '../../../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import DiActionPanel from '../../../components/DiActionPanel';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import {
-  studioItems, studioItemCue, studioMoveCue, studioHearCue, phrasePlanCue,
-  markedGroups, scoredReadingItems, readingSummary, type StudioItem,
+  studioItems, phrasePlanCue, markedGroups, scoredReadingItems, readingSummary, type StudioItem,
 } from './readAloudPhrasing';
 import {
-  completeCue,
   passageFrom,
-  stimulusFor,
   type ReadAloudLineLike,
   type ReadAloudMode,
 } from './readAloudStudioScript';
+import { describePhrasePlan, readAloudAssignment, readAloudScene } from './readAloudStudioWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -112,17 +105,14 @@ export interface ReadAloudStudioData {
 interface ReadAloudStudioProps {
   data: ReadAloudStudioData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Constants
 // ============================================================================
-
-/**
- * Silence that closes a learner voice turn, for CONNECTED TEXT. See the header
- * note: 500ms is right for one-word answers and wrong for a read line.
- */
-const LINE_SILENCE_CLOSE_MS = 1100;
 
 const MODE_META: Record<ReadAloudMode, { badge: string; icon: string; accent: LuminaAccent; ready: string }> = {
   accuracy: { badge: 'Read It', icon: '📖', accent: 'blue', ready: 'Read the line out loud — every word.' },
@@ -139,7 +129,7 @@ const lineSizeClass = (wordCount: number): string =>
 // Component
 // ============================================================================
 
-const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) => {
+const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const {
     title,
     gradeLevel,
@@ -157,6 +147,7 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
 
   const stableInstanceIdRef = useRef(instanceId || `read-aloud-studio-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   // ── Items (drop-gated) ────────────────────────────────────────────────────
   const items = useMemo<StudioItem[]>(() => {
@@ -172,6 +163,8 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
   const readingItems = useMemo(() => scoredReadingItems(items), [items]);
   const [phrasePlans, setPhrasePlans] = useState<Record<string, number[]>>({});
   const phrasePlansRef = useRef<Record<string, number[]>>({});
+  /** Steps credited so far, for the expression step rail. */
+  const [solvedIds, setSolvedIds] = useState<ReadonlySet<string>>(() => new Set());
 
   // ── Evaluation ────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<ReadAloudStudioMetrics>({
@@ -184,15 +177,10 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
+    // One scored reading per printed line: a saved plan and the first read do not count.
     const scored = readingSummary(items, summary);
-    // The runner owns the evidence: first-response share, every line's first
-    // wrong read kept under the phase cap, the pack's activity line. The pack
-    // already records nothing for unscored planning steps (`observation`
-    // returns null there), so scored reads are the only phases it carries.
-    const diagnosisEvidence = summary.diagnosisEvidence;
-    // The set's actual difficulty. Line length is this pack's structural axis,
-    // and without it the metrics cannot tell a 3-word set from an 8-word one.
+    // The set's actual difficulty. Line length is this pack's structural axis.
     const meanLineWords = readingItems.length
       ? Math.round((readingItems.reduce((sum, it) => sum + it.wordCount, 0) / readingItems.length) * 10) / 10
       : 0;
@@ -213,6 +201,7 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
       scored.accuracy,
       metrics,
       { lineResults: scored.outcomes, learningResponses: summary.learningResponses,
+        teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance,
         ...(mode === 'expression' ? {
           practiceVersion: 'phrase-read-reread-v1',
           scoringBasis: 'modeled-reread-word-accuracy',
@@ -224,81 +213,67 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
         } : {}),
       },
       undefined,
-      diagnosisEvidence,
+      summary.diagnosisEvidence,
     );
-  }, [items, readingItems, mode, lexileLevel, evaluation]);
+  };
 
-  // ── The pack — wording lives in readAloudStudioScript.ts ──────────────────
-  const pack = useMemo<JudgedScriptPack<StudioItem>>(() => ({
-    primitiveType: 'read-aloud-studio',
-    activityLine: 'live direct instruction read-aloud fluency practice',
+  const runner = useWorkspaceRunner<StudioItem>({
+    primitiveId: 'read-aloud-studio',
+    assignment: readAloudAssignment,
     items,
-    itemCue: (item, opts) => studioItemCue(item, opts, phrasePlansRef.current[item.lineId]),
-    moveOnCue: (item, next, opts) => studioMoveCue(item, next, opts, next ? phrasePlansRef.current[next.lineId] : []),
-    completeCue: mode === 'expression'
-      ? () => '[RA_COMPLETE] Say exactly: "You practiced grouping words and reading them together. Great effort today!" Then stop — the activity is over.'
-      : completeCue,
-    pronounceCue: (item) => studioHearCue(item, phrasePlansRef.current[item.lineId]),
-    contextFor: (item) => ({
-      challengeType: item.kind,
-      stimulus: stimulusFor(item),
-    }),
-    statusLines: {
-      idle: 'Tap the microphone to start reading.',
-      ready: (item) => item.step ? item.actionContract.instruction : MODE_META[item.kind].ready,
-      retry: () => 'Have another go — read it again.',
-      noVerdict: () => 'One more time — read it out loud.',
-      affirmedNext: 'Ready for the next step.',
-      affirmedLast: 'You read the whole thing!',
-      moveOn: 'Good try — here comes the next line.',
-      done: 'Great reading today!',
-    },
-    // One record per scored read, right or corrected: the printed line and what was heard; planning steps are
-    // unscored and record nothing. Never the verdict, because the same text is kept for right answers.
-    observation: (item, { heard }) => item.step && item.step !== 'reread' ? null : ({
-      challenge: `Read the printed ${item.wordCount}-word line aloud`
-        + (item.kind === 'dialogue' ? ` as ${item.speaker} says it` : '')
-        + (item.step === 'reread' ? ' after the tutor modelled the phrase' : '')
-        + `: "${item.text}".`,
-      expected: item.text,
-      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
-    }),
-  }), [items, mode]);
-
-  const runner = useJudgedScriptRunner<StudioItem>({
-    pack,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || mode,
     instanceId: resolvedInstanceId,
-    gradeLevel,
-    exhibitId,
-    silenceCloseMs: LINE_SILENCE_CLOSE_MS,
-    onFinished: handleFinished,
+    onFinished: finish,
     onItemOpened: (_item, index) => {
       if (index === 0) {
         phrasePlansRef.current = {};
         setPhrasePlans({});
       }
     },
+    onAffirmed: (item) => setSolvedIds((prev) => new Set(prev).add(item.id)),
   });
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
   const currentItem = runner.currentItem;
-  /** Affirmed: the line is marked read in place. The runner owns this latch
-   *  now (it replaces the `onItemOpened`/`onAffirmed` pair). */
+  /** Credited: the line is marked read in place. */
   const revealed = runner.currentSolved;
   const currentBreaks = currentItem ? phrasePlans[currentItem.lineId] ?? [] : [];
-  const canMark = currentItem?.step === 'mark' && runner.canAttempt && !runner.isAwaitingGesture();
+  const canMark = currentItem?.step === 'mark' && runner.canAttempt;
+
+  // What the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation; every item is answerable once it opens.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...readAloudScene(currentItem, phrasePlansRef.current[currentItem.lineId] ?? []),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true,
+      mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
   // Pip: the printed line is the whole question side. A phrase plan is a hands
-  // answer, so Pip receives the line while the plan is judged; it never marks a
+  // answer, so Pip receives the line while the plan is open; it never marks a
   // break itself.
   const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The line', finished: evaluation.hasSubmitted,
+    run: runner, instanceId: resolvedInstanceId, label: 'The line', finished: showSummary,
     handover: currentItem?.step === 'mark',
   });
   const updateBreak = (boundary: number) => {
-    if (!currentItem || !canMark || runner.isAwaitingGesture()) return;
+    if (!currentItem || !canMark) return;
     const previous = phrasePlansRef.current[currentItem.lineId] ?? [];
     const next = previous.includes(boundary) ? previous.filter((n) => n !== boundary) : [...previous, boundary].sort((a, b) => a - b);
     phrasePlansRef.current = { ...phrasePlansRef.current, [currentItem.lineId]: next };
     setPhrasePlans(phrasePlansRef.current);
+  };
+  /** The plan is page work: any plan commits as done, and the activity says so. */
+  const commitPlan = () => {
+    if (!currentItem || !canMark) return;
+    const breaks = phrasePlansRef.current[currentItem.lineId] ?? [];
+    commitGesture(runner, { response: describePhrasePlan(currentItem, breaks), correct: true,
+      cue: () => phrasePlanCue(currentItem, breaks) });
   };
 
   // ============================================================================
@@ -316,7 +291,7 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
   }
 
   const meta = MODE_META[mode];
-  const outcomes = runner.summary?.outcomes ?? [];
+  const outcomes = runner.teachingResult?.outcomes ?? [];
 
   return (
     <LuminaCard className={className}>
@@ -329,7 +304,7 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
               <LuminaBadge accent="blue" className="text-xs">{lexileLevel}</LuminaBadge>
             </div>
           </div>
-          {!evaluation.hasSubmitted && (
+          {!showSummary && (
             <LuminaBadge accent={meta.accent} className="text-xs">
               {meta.icon} {meta.badge}
             </LuminaBadge>
@@ -338,7 +313,7 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex justify-center">
               <LuminaChallengeCounter
@@ -388,10 +363,7 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
                 {currentItem.step === 'mark' && (
                   <div className="space-y-3">
                     <p className="text-sm text-slate-300">Tap a mark again to remove it. You can keep the whole line together.</p>
-                    <button type="button" disabled={!canMark}
-                      onClick={() => {
-                        if (canMark && !runner.isAwaitingGesture()) runner.submitGestureAttempt(phrasePlanCue(currentItem, phrasePlansRef.current[currentItem.lineId] ?? []));
-                      }}
+                    <button type="button" disabled={!canMark} onClick={commitPlan}
                       className="min-h-12 rounded-xl bg-purple-500 px-5 py-3 font-semibold text-white disabled:opacity-40">
                       Use my phrase plan
                     </button>
@@ -407,48 +379,35 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
                   </div>
                 )}
                 <div className="text-xs uppercase tracking-[0.25em] text-cyan-300">
-                  {runner.stage === 'judging'
-                    ? currentItem.step === 'mark' ? 'saving your plan' : 'listening'
-                    : revealed
-                      ? 'yes!'
-                      : currentItem.step === 'mark' ? 'plan your phrases'
-                        : currentItem.step === 'first_read' ? 'your first reading'
-                          : currentItem.kind === 'accuracy' ? 'read it' : 'listen, then say it back'}
+                  {revealed
+                    ? 'yes!'
+                    : currentItem.step === 'mark' ? 'plan your phrases'
+                      : currentItem.step === 'first_read' ? 'your first reading'
+                        : currentItem.kind === 'accuracy' ? 'read it' : 'listen, then say it back'}
                 </div>
               </div>
             )}
 
-            {/* Every item here is a line the child READS aloud. */}
-            {mode === 'expression' ? (
+            {/* Expression keeps its step rail: plan, first read, reread. */}
+            {mode === 'expression' && (
               <DiActionPanel run={runner} running={runner.running} stage={runner.stage}
                 currentItem={currentItem} steps={items.filter((item) => item.lineId === currentItem?.lineId)}
-                completedIds={runner.solvedIds}
+                completedIds={solvedIds}
                 carriedIds={new Set(items.filter((item, index) => index < runner.currentIndex
-                  && item.lineId === currentItem?.lineId && !runner.solvedIds.has(item.id)).map((item) => item.id))}
-                startInstruction="Start the tutor, then mark where you want to pause." />
-            ) : <JudgedMicPanel run={runner} />}
-              {/* Tap-to-hear re-speaks the INSTRUCTION. On accuracy the line
-                  itself stays unspoken — that is the mode, not an omission. */}
-              <button
-                onClick={runner.hearStimulus}
-                disabled={!runner.running}
-                className={`text-xs text-cyan-300/80 underline underline-offset-4 disabled:opacity-30 ${
-                  runner.stimulusTapped ? 'opacity-50' : ''
-                }`}
-              >
-                Say that again
-              </button>
+                  && item.lineId === currentItem?.lineId && !solvedIds.has(item.id)).map((item) => item.id))}
+                startInstruction="Mark where you want to pause." />
+            )}
           </>
         )}
 
         {/* Completion — the passage whole, which is the first time the child
             sees the text they just read as one piece, plus a per-line mark. */}
-        {evaluation.hasSubmitted && (
+        {showSummary && (
           <div className="space-y-4">
             <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-5 text-center">
               <div className="text-xl font-semibold text-emerald-200">Great reading today!</div>
               <p className="mt-1 text-xs text-slate-400">
-                {runner.summary ? readingSummary(items, runner.summary).solvedCount : 0} of {readingItems.length} lines read accurately{mode === 'expression' ? ' after the model' : ''}.
+                {readingSummary(items, { outcomes }).solvedCount} of {readingItems.length} lines read accurately{mode === 'expression' ? ' after the model' : ''}.
               </p>
             </div>
 
@@ -480,5 +439,9 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
     </LuminaCard>
   );
 };
+
+/** Runs only on the teaching workspace; an unbound mount shows the "needs the tutor" card. */
+const ReadAloudStudio = withWorkspaceOnly<ReadAloudStudioProps>('read-aloud-studio', ReadAloudStudioSurface,
+  (props) => props.data.title);
 
 export default ReadAloudStudio;

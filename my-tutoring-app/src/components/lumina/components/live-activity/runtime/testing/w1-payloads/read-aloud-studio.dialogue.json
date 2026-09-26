@@ -1,0 +1,55 @@
+{
+ "source": "qa/tutor-reports/read-aloud-studio-runtime-dialogue-payload-2026-09-26.json",
+ "primitiveId": "read-aloud-studio",
+ "evalMode": "dialogue",
+ "data": {
+  "title": "The Lost Puppy",
+  "gradeLevel": "3",
+  "fluencyFocus": "dialogue",
+  "lexileLevel": "520L",
+  "lines": [
+   {
+    "text": "Look at that tiny puppy hiding there.",
+    "speaker": "Leo",
+    "phraseGroups": [
+     "Look at that tiny puppy hiding there."
+    ]
+   },
+   {
+    "text": "He looks very cold and terribly scared.",
+    "speaker": "Mia",
+    "phraseGroups": [
+     "He looks very cold and terribly scared."
+    ]
+   },
+   {
+    "text": "We should gently pick him up now.",
+    "speaker": "Leo",
+    "phraseGroups": [
+     "We should gently pick him up now."
+    ]
+   },
+   {
+    "text": "Let us wrap him inside my warm jacket.",
+    "speaker": "Mia",
+    "phraseGroups": [
+     "Let us wrap him inside my warm jacket."
+    ]
+   },
+   {
+    "text": "His owner must be searching everywhere today.",
+    "speaker": "Leo",
+    "phraseGroups": [
+     "His owner must be searching everywhere today."
+    ]
+   },
+   {
+    "text": "We will help him find his home.",
+    "speaker": "Mia",
+    "phraseGroups": [
+     "We will help him find his home."
+    ]
+   }
+  ]
+ }
+}

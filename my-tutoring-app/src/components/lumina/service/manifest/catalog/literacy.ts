@@ -4774,11 +4774,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       'Live-judged READ-ALOUD FLUENCY with a spoken Direct Instruction tutor. A short connected passage is '
       + 'split into single-breath lines and the child reads them ONE AT A TIME, out loud, into an open '
       + 'microphone; the tutor judges each read from the audio WORD BY WORD — a skipped, added or swapped word '
-      + 'is corrected, not waved through — and its own affirmation moves the lesson to the next line. Three '
+      + 'is corrected, not waved through — and a credited read moves the lesson to the next line. Three '
       + 'fluency identities: Read It (the child decodes the printed line COLD, with nothing spoken first), Phrase '
       + 'and Read (the child marks phrase breaks, reads once, hears a suggested grouping and rereads), and Character '
       + 'Voice (the tutor models one character\'s line in that character\'s voice and the child reads it back '
-      + 'their way). Phrase planning is unscored page work; the tutor acknowledges the committed plan and owns progression. Requires '
+      + 'their way). Phrase planning is unscored page work; the activity commits the plan and the runtime owns progression. Requires '
       + 'a microphone. Perfect for grades 1-6 oral reading fluency.',
     constraints:
       'Best for grades 1-6. Requires the live tutor and a microphone. Judged lines are 3-8 words — the benched '
@@ -4830,6 +4830,15 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'dialogue', label: 'Character Voice (Tier 4)', beta: 5.5, scaffoldingMode: 4, challengeTypes: ['dialogue'], description: 'The tutor models one character\'s line in that character\'s voice; the child reads it back their way.' },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'One printed line at a time, read aloud and judged word for word against the print. Read It is a cold read: '
+        + 'never say the line or any word of it before the learner reads it. Character Voice: read the line in the '
+        + 'character voice first, then the learner reads it back. Phrase and Read: the learner taps pause marks and '
+        + 'commits a phrase plan (any plan is fine, it is not graded), reads the line once without a model, then you read '
+        + 'the given groups and the learner rereads. A skipped, added or swapped word is wrong; a self-correction and slow '
+        + 'sounding-out count. Never grade phrasing, voice or speed. You cannot tap the pause marks.',
+    },
     tutoring: {
       taskDescription:
         'Live-judged Direct Instruction read-aloud practice. A short passage is on the child\'s screen ONE LINE '

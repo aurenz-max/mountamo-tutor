@@ -79,7 +79,7 @@ const planningRules = 'This is an unscored reading plan, not a correct/incorrect
   + 'Do not judge microphone speech or read the printed line during planning. '
   + 'Wait for [RA_PLAN] before acknowledging the committed page work. Never speak a verdict before that commit.';
 
-function phraseAsk(item: StudioItem): string {
+export function phraseAsk(item: StudioItem): string {
   if (item.step === 'mark') return item.actionContract.instruction;
   if (item.step === 'first_read') return item.actionContract.instruction;
   const coaching = item.modelGroups.length > 1
@@ -130,7 +130,7 @@ export function scoredReadingItems(items: StudioItem[]): StudioItem[] {
 /** Keep a single scored reading per printed line, as before this extension.
  * A saved plan and the additional first read must not inflate the result.
  */
-export function readingSummary(items: StudioItem[], summary: JudgedRunSummary) {
+export function readingSummary(items: StudioItem[], summary: Pick<JudgedRunSummary, 'outcomes'>) {
   const ids = new Set(scoredReadingItems(items).map((item) => item.id));
   const outcomes: JudgedRunOutcome[] = summary.outcomes.filter((outcome) => ids.has(outcome.id));
   const accuracy = outcomes.length ? Math.round(outcomes.reduce((sum, o) => sum + o.score, 0) / outcomes.length) : 0;

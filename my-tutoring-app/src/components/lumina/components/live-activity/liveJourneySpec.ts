@@ -101,6 +101,8 @@ import { genreJourneyAnswers } from '../../primitives/visual-primitives/literacy
 import { textStructureItems, textStructureJourneyAnswers } from '../../primitives/visual-primitives/literacy/textStructureAnalyzerWorkspace';
 import { itemsFromPayload as sentenceItems } from '../../primitives/visual-primitives/literacy/sentenceAnalyzerScript';
 import { sentenceJourneyAnswers } from '../../primitives/visual-primitives/literacy/sentenceAnalyzerWorkspace';
+import { readAloudItems } from './adapters/readAloudStudioLive';
+import { readAloudJourneyAnswers } from '../../primitives/visual-primitives/literacy/readAloudStudioWorkspace';
 import { statesItems } from './adapters/statesOfMatterLive';
 import { statesJourneyAnswers } from '../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
 import { solarItems } from './adapters/solarSystemExplorerLive';
@@ -1518,6 +1520,25 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const item = sentenceItems(ctx.data as never).items.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current sentence-analyzer item');
       const answers = sentenceJourneyAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'read-aloud-studio': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/ReadAloudStudio.tsx',
+    instanceId: 'read-aloud-studio',
+    defaults: { grade: 'Grade 2', mode: 'accuracy', di: false, topic: 'A day at the pond' },
+    leakTokens: ['RA_ITEM', 'RA_MOVE', 'RA_COMPLETE', 'RA_HEAR', 'RA_PLAN'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every scored item is the printed line read aloud. Expression's phrase plan accepts any plan, so it has no
+    // wrong answer for this driver to give.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = readAloudItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current read-aloud-studio item');
+      if (item.step === 'mark') throw new Error('read-aloud-studio expression mark: any phrase plan is accepted; undriven');
+      const answers = readAloudJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
