@@ -1,0 +1,146 @@
+{
+ "source": "qa/tutor-reports/sentence-analyzer-runtime-identify_pos-payload-2026-09-26.json",
+ "primitiveId": "sentence-analyzer",
+ "evalMode": "identify_pos",
+ "data": {
+  "title": "Fun with Nouns, Verbs, and Adjectives",
+  "description": "Identify the parts of speech for words in fun grade 4 sentences.",
+  "gradeLevel": "4",
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "identify_pos",
+    "sentence": "Three brown dogs barked loudly.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Three",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "brown",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w2",
+      "text": "dogs",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w3",
+      "text": "barked",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w4",
+      "text": "loudly.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "In this sentence, dogs is the noun doing the action, barked is the verb, and brown is the adjective describing the dogs."
+   },
+   {
+    "id": "ch2",
+    "type": "identify_pos",
+    "sentence": "The lazy cat slept.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "The",
+      "partOfSpeech": "Determiner",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "lazy",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w2",
+      "text": "cat",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w3",
+      "text": "slept.",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     }
+    ],
+    "explanation": "The word cat is a noun because it names an animal, and lazy is an adjective telling us what kind of cat it is."
+   },
+   {
+    "id": "ch3",
+    "type": "identify_pos",
+    "sentence": "Bright stars shone tonight.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Bright",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "stars",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "shone",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "tonight.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "Bright is an adjective describing the stars, stars is the noun, and shone is the verb showing the action."
+   },
+   {
+    "id": "ch4",
+    "type": "identify_pos",
+    "sentence": "Four green frogs jumped.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Four",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "green",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w2",
+      "text": "frogs",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w3",
+      "text": "jumped.",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     }
+    ],
+    "explanation": "Frogs is the noun, jumped is the verb, and green is the adjective that describes the frogs."
+   }
+  ]
+ }
+}

@@ -1,12 +1,11 @@
 'use client';
 
 /**
- * SentenceAnalyzer — DI modality (TWENTIETH literacy port, 2026-08-17;
- * qa/di/BACKLOG.md item 22, port 3 of the closed-set literacy frontier). The Live
- * tutor owns the clock: it asks ONCE, waits, judges the child's spoken answer
- * from the audio in-band, corrects contrastively, and its OWN affirmation is the
- * advance. There is no advance timer, no Next button, no Check button, no
- * push-to-talk mic, and no answer on screen before the tutor affirms.
+ * SentenceAnalyzer — runs only on the shared tutor/JEV teaching workspace (workspace
+ * rollout C7; the scripted runner was retired, LA-14, user ruling 09-23: one path).
+ * The observer judges each spoken label and the runtime owns progression. There is
+ * no Next or Check button, no mic panel, and no answer on screen before credit. An
+ * unbound mount shows the shared "needs the tutor" card.
  *
  * THE MODALITY, in one sitting:
  *
@@ -40,20 +39,19 @@
  *    stimulus, not the answer: it is how the child knows WHICH word.
  *  - A word wall of the grammar vocabulary in scope — GRADE-scoped, glossed,
  *    identical on every item, and not tappable. A teacher has one on the wall.
- *  - Tap-to-hear, which re-speaks the QUESTION and, at the band floor, the
- *    sentence with it.
+ *  - (Tap-to-hear is gone: with the tutor present, the learner asks it to repeat.)
  *
  * ⚠️ NO WORD IS EVER COLOURED BY ITS OWN PART OF SPEECH BEFORE IT IS EARNED. The
  * click era had a `POS_COLORS` map; a coloured word is a printed answer wearing a
  * different medium, and no string gate in this family would have caught it (the
  * pixel-leak walk, ten-frame's running counter). Colour arrives on the tutor's
- * affirmation and not one frame earlier.
+ * credit and not one frame earlier.
  *
- * Cue lines, judging contracts and build gates live in `sentenceAnalyzerScript.ts`
- * (hand-authored, DISTAR). Nothing in this file writes a spoken line.
+ * Asks and build gates live in `sentenceAnalyzerScript.ts`; the assignment and
+ * scene the tutor receives live in `sentenceAnalyzerWorkspace.ts`.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaBadge,
   LuminaCard,
@@ -64,27 +62,25 @@ import {
   LuminaPanel,
   LuminaReadAloudGlyph,
 } from '../../../ui';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { SentenceAnalyzerMetrics } from '../../../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import {
   itemsFromPayload,
-  sentenceAnalyzerPackBase,
   type SentenceAction,
   type SentenceAnalyzerItem,
   type SentenceTier,
 } from './sentenceAnalyzerScript';
+import { sentenceAssignment, sentenceScene } from './sentenceAnalyzerWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -163,6 +159,9 @@ export interface SentenceAnalyzerData {
 interface SentenceAnalyzerProps {
   data: SentenceAnalyzerData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -188,7 +187,7 @@ const WALL_HEADING: Record<string, string> = {
 // Component
 // ============================================================================
 
-const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) => {
+const SentenceAnalyzerSurface: React.FC<SentenceAnalyzerProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const {
     title,
     description,
@@ -203,23 +202,18 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
 
   const stableInstanceIdRef = useRef(instanceId || `sentence-analyzer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
-  /** Build gates drop what cannot be asked — a placeholder in a judged loop
-   *  becomes a spoken ask the tutor has to stand behind. */
-  const { items, sentences, wall, wallNotes, wallKind } = useMemo(
+  /** Build gates drop what cannot be asked. */
+  const { items, sentences, wall, wallNotes, wallKind, readsAloud } = useMemo(
     () => itemsFromPayload(data),
     [data],
   );
 
-  /**
-   * The affirmed item's reveal payload. Set on the affirm and rendered behind
-   * `runner.revealHeld` — NOT `currentSolved` and NOT `stage`, and deliberately
-   * never cleared in `onItemOpened` (18b): the runner opens the next item in the
-   * SAME dispatch as the affirmation, so both of the obvious gates are already
-   * false by render time and a payload cleared there paints on the last item and
-   * nowhere else.
-   */
+  /** The credited item's reveal payload, rendered behind `runner.revealHeld`. */
   const [reveal, setReveal] = useState<{ action: SentenceAction; answer: string } | null>(null);
+  /** Items credited so far: the only route by which a grammar label reaches the screen. */
+  const [solvedIds, setSolvedIds] = useState<ReadonlySet<string>>(() => new Set());
 
   // ── Evaluation ─────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<SentenceAnalyzerMetrics>({
@@ -232,7 +226,7 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const idsOf = (...actions: SentenceAction[]) =>
       new Set(items.filter((i) => actions.includes(i.action)).map((i) => i.id));
     const solvedOf = (...actions: SentenceAction[]) => {
@@ -250,9 +244,7 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
       challengesCorrect: summary.outcomes.filter((o) => o.solved).length,
       posIdentifyCorrect: solvedOf('name-pos'),
       roleIdentifyCorrect: solvedOf('name-role'),
-      // ⚠️ EARNED, NOT THRESHOLDED. The click era scored label_all as a single
-      // challenge at an 80% word threshold; every word is now its own judged ask,
-      // so this is a real per-word accuracy over asks the tutor actually heard.
+      // EARNED, NOT THRESHOLDED: every word is its own judged ask.
       labelAllAccuracy: posTotal > 0 ? Math.round((solvedOf('name-pos') / posTotal) * 100) : 0,
       parseStructureCorrect: solvedOf('name-side', 'name-type'),
     };
@@ -260,97 +252,80 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
       summary.passed,
       summary.accuracy,
       metrics,
-      { itemResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
+      { itemResults: summary.outcomes, learningResponses: summary.learningResponses,
+        teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items, gradeLevel, evaluation]);
+  };
 
-  // ── The pack — wording lives in sentenceAnalyzerScript.ts ──────────────────
-  const pack = useMemo<JudgedScriptPack<SentenceAnalyzerItem>>(() => ({
-    ...sentenceAnalyzerPackBase(items),
-    statusLines: {
-      idle: 'Tap the microphone to start.',
-      ready: () => 'Listen — then say your answer out loud.',
-      retry: () => 'Have another go — say your answer out loud.',
-      noVerdict: () => 'One more time — say your answer out loud.',
-      done: 'Great grammar work today!',
-    },
-    // One record per attempt, right or corrected: the sentence and word asked about, the labels on the wall, and
-    // what was said. Never the verdict, because the same text is kept for right answers.
-    observation: (item, { heard: transcript }) => {
-      const heard = transcript?.trim() ?? '';
-      const wall = item.wallLabels.length ? ` (labels: ${item.wallLabels.join(', ')})` : '';
-      const challenge =
-        item.action === 'name-type'
-          ? `Say what kind of sentence "${item.sentence}" is${wall}.`
-          : item.action === 'name-side'
-            ? `Say whether "${item.targetWord}" is in the subject or the predicate of "${item.sentence}".`
-            : item.action === 'name-role'
-              ? `Say what job "${item.targetWord}" does in "${item.sentence}"${wall}.`
-              : `Say the part of speech of "${item.targetWord}" in "${item.sentence}"${wall}.`;
-      return {
-        challenge,
-        expected: `"${item.answer}" said out loud.`,
-        observed: heard ? `Said "${heard}".` : 'No transcript was captured.',
-      };
-    },
-  }), [items]);
-
-  const runner = useJudgedScriptRunner<SentenceAnalyzerItem>({
-    pack,
+  const runner = useWorkspaceRunner<SentenceAnalyzerItem>({
+    primitiveId: 'sentence-analyzer',
+    assignment: sentenceAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || (data.challenges?.[0]?.type ?? 'identify_pos'),
     instanceId: resolvedInstanceId,
-    gradeLevel,
-    exhibitId,
-    onFinished: handleFinished,
-    onAffirmed: (item) => setReveal({ action: item.action, answer: item.answer }),
+    onFinished: finish,
+    onAffirmed: (item) => {
+      setReveal({ action: item.action, answer: item.answer });
+      setSolvedIds((prev) => new Set(prev).add(item.id));
+    },
   });
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
   const currentItem = runner.currentItem;
   const actionMeta = ACTION_META[currentItem?.action ?? 'name-pos'];
+
+  // What the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation; every item is answerable once it opens.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...sentenceScene(currentItem, readsAloud), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
   // Pip: the sentence is the question side (its highlight already marks the word);
   // the label wall is the answer, so Pip outlines only the sentence.
   const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The sentence', finished: evaluation.hasSubmitted,
+    run: runner, instanceId: resolvedInstanceId, label: 'The sentence', finished: showSummary,
   });
 
-  /** What the tutor is affirming right now, for the reveal. Guarded on the
-   *  ACTION: by render time the surface may already point at the next step. */
+  /** What was just credited, for the reveal. Guarded on the ACTION. */
   const revealed =
     runner.revealHeld && reveal && reveal.action === currentItem?.action ? reveal.answer : null;
 
-  /** The sentence this item is about — one on screen at a time, which keeps a
-   *  child's attention where the question is. */
+  /** The sentence this item is about — one on screen at a time. */
   const shownSentence = useMemo(
     () => sentences.find((s) => s.index === (currentItem?.sentenceIndex ?? 0)) ?? sentences[0],
     [sentences, currentItem],
   );
 
-  /**
-   * Labels the tutor has already affirmed on THIS sentence, by word index — the
-   * only route by which a grammar label reaches the screen. Read off the runner's
-   * solved ledger, never a local list.
-   */
+  /** Labels already credited on THIS sentence, by word index. */
   const affirmedByWord = useMemo(() => {
     const map = new Map<number, string>();
     for (const item of items) {
-      if (!runner.solvedIds.has(item.id)) continue;
+      if (!solvedIds.has(item.id)) continue;
       if (item.sentenceIndex !== shownSentence?.index) continue;
       if (item.targetIndex < 0) continue;
       map.set(item.targetIndex, item.answer);
     }
     return map;
-  }, [items, runner.solvedIds, shownSentence]);
+  }, [items, solvedIds, shownSentence]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => ({
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => ({
       label: ACTION_META[item.action].label,
       icon: ACTION_META[item.action].icon,
       accentColor: ACTION_META[item.action].accent,
     }));
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
   // ============================================================================
   // Render
@@ -450,7 +425,7 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
             <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
           </div>
           {/* The ACTION, never the label being asked for. */}
-          {!evaluation.hasSubmitted && (
+          {!showSummary && (
             <LuminaBadge accent={actionMeta.accent} className="text-xs">
               {actionMeta.icon} {actionMeta.label}
             </LuminaBadge>
@@ -459,7 +434,7 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex items-center justify-center gap-4">
               <LuminaChallengeCounter
@@ -467,21 +442,6 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
                 total={items.length}
                 variant="dots"
               />
-              {/* Tap-to-hear — the question again (and the sentence with it at
-                  the band floor), never a hint ladder, never withdrawn. */}
-              <button
-                type="button"
-                onClick={runner.hearStimulus}
-                className={`
-                  flex h-11 w-11 items-center justify-center rounded-full
-                  bg-amber-500/15 border-2 border-amber-500/30
-                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
-                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
-                `}
-                aria-label="Hear the question again"
-              >
-                <span className="text-xl">🔁</span>
-              </button>
               <LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} />
             </div>
 
@@ -490,15 +450,13 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
 
             {wall.length > 0 && renderWall()}
 
-            {/* Open for the whole run — no tutor-busy gate, no push-to-talk. */}
-            <JudgedMicPanel run={runner} />
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Grammar Work Complete!"
             celebrationMessage="Great work — you told me every answer out loud!"
@@ -508,5 +466,9 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
     </LuminaCard>
   );
 };
+
+/** Runs only on the teaching workspace; an unbound mount shows the "needs the tutor" card. */
+const SentenceAnalyzer = withWorkspaceOnly<SentenceAnalyzerProps>('sentence-analyzer', SentenceAnalyzerSurface,
+  (props) => props.data.title);
 
 export default SentenceAnalyzer;

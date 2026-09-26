@@ -465,11 +465,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     misconceptionScope: 'primitive',
     description:
       'Live Direct Instruction GRAMMAR with a spoken tutor. The tutor names one word of a printed '
-      + 'sentence, waits, judges what it hears, and its own confirmation moves the lesson on. The child '
+      + 'sentence, waits, judges what it hears, and a credited answer moves the lesson on. The child '
       + 'SAYS the grammar label out loud — "adjective", "subject", "predicate", "declarative" — with a '
       + 'printed word wall of the vocabulary in scope beside them for reference. Nothing is tapped, there '
-      + 'are no multiple-choice options anywhere, and no label appears on screen before the tutor confirms '
-      + 'it. Four progressive tasks from naming one word\'s part of speech to walking a whole sentence and '
+      + 'are no multiple-choice options anywhere, and no label appears on screen before the answer is '
+      + 'credited. Four progressive tasks from naming one word\'s part of speech to walking a whole sentence and '
       + 'parsing its structure. Requires a microphone. Ideal for grades 2-8 grammar and language arts.',
     constraints:
       'Requires the live tutor and a microphone. Grades 2-8. The sentence is PRINTED (and read aloud at '
@@ -625,6 +625,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'One printed sentence at a time with the asked word highlighted; every answer is a grammar label said out '
+        + 'loud: the part of speech of the word, its job in the sentence, whether it is in the subject or the predicate, '
+        + 'or the kind of sentence. A word wall of the grade labels is printed for reference. When the ask carries the '
+        + 'sentence, read it aloud (grade 2). A part of speech is not an answer to a job question; a label that sounds '
+        + 'close or contains the right one is wrong. Small words and describing words in front of the naming word are '
+        + 'part of the complete subject: judge the side against the given answer. Before an attempt never say the label. '
+        + 'No word is coloured or labelled until credit. You cannot point at or highlight words.',
+    },
   },
   {
     id: 'word-builder',

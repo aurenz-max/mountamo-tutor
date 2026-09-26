@@ -99,6 +99,8 @@ import { matterJourneyAnswers } from '../../primitives/visual-primitives/chemist
 import { itemsFromPayload as genreItems } from '../../primitives/visual-primitives/literacy/genreExplorerScript';
 import { genreJourneyAnswers } from '../../primitives/visual-primitives/literacy/genreExplorerWorkspace';
 import { textStructureItems, textStructureJourneyAnswers } from '../../primitives/visual-primitives/literacy/textStructureAnalyzerWorkspace';
+import { itemsFromPayload as sentenceItems } from '../../primitives/visual-primitives/literacy/sentenceAnalyzerScript';
+import { sentenceJourneyAnswers } from '../../primitives/visual-primitives/literacy/sentenceAnalyzerWorkspace';
 import { statesItems } from './adapters/statesOfMatterLive';
 import { statesJourneyAnswers } from '../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
 import { solarItems } from './adapters/solarSystemExplorerLive';
@@ -1499,6 +1501,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const item = textStructureItems(ctx.data as never, 'text-structure-analyzer').items.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current text-structure-analyzer item');
       const answers = textStructureJourneyAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'sentence-analyzer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/SentenceAnalyzer.tsx',
+    instanceId: 'sentence-analyzer',
+    defaults: { grade: 'Grade 3', mode: 'identify_pos', di: false, topic: 'Nouns, verbs and adjectives' },
+    leakTokens: ['SAN_ITEM', 'SAN_MOVE', 'SAN_COMPLETE', 'SAN_HEAR'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one spoken grammar label.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = sentenceItems(ctx.data as never).items.find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current sentence-analyzer item');
+      const answers = sentenceJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },

@@ -1,0 +1,178 @@
+{
+ "source": "qa/tutor-reports/sentence-analyzer-runtime-parse_structure-payload-2026-09-26.json",
+ "primitiveId": "sentence-analyzer",
+ "evalMode": "parse_structure",
+ "data": {
+  "title": "Subject and Predicate Safari",
+  "description": "Practice finding subjects and predicates in spoken sentences.",
+  "gradeLevel": "4",
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "parse_structure",
+    "sentence": "The hungry brown bear slept.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "The",
+      "partOfSpeech": "Determiner",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "hungry",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w2",
+      "text": "brown",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w3",
+      "text": "bear",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w4",
+      "text": "slept.",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     }
+    ],
+    "explanation": "The complete subject is 'The hungry brown bear' because it tells us who is doing the action. The rest of the sentence tells us what the bear did.",
+    "sentenceType": "Declarative",
+    "subjectEndIndex": 3
+   },
+   {
+    "id": "ch2",
+    "type": "parse_structure",
+    "sentence": "Three little birds sang loudly.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Three",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "little",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w2",
+      "text": "birds",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w3",
+      "text": "sang",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w4",
+      "text": "loudly.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "The complete subject is 'Three little birds' because they are the ones performing the action. 'Sang loudly' forms the predicate.",
+    "sentenceType": "Declarative",
+    "subjectEndIndex": 2
+   },
+   {
+    "id": "ch3",
+    "type": "parse_structure",
+    "sentence": "My playful dog caught the ball.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "My",
+      "partOfSpeech": "Determiner",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "playful",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w2",
+      "text": "dog",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w3",
+      "text": "caught",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w4",
+      "text": "the",
+      "partOfSpeech": "Determiner",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w5",
+      "text": "ball.",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Direct Object"
+     }
+    ],
+    "explanation": "The complete subject is 'My playful dog' as it names the doer. The predicate starts at 'caught' and tells us what action happened.",
+    "sentenceType": "Declarative",
+    "subjectEndIndex": 2
+   },
+   {
+    "id": "ch4",
+    "type": "parse_structure",
+    "sentence": "Bright stars shine every night.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Bright",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "stars",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "shine",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "every",
+      "partOfSpeech": "Determiner",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w4",
+      "text": "night.",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Object of Preposition"
+     }
+    ],
+    "explanation": "The subject is 'Bright stars' because they are what the sentence describes. The predicate is 'shine every night'.",
+    "sentenceType": "Declarative",
+    "subjectEndIndex": 1
+   }
+  ]
+ }
+}
