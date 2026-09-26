@@ -61,6 +61,7 @@ import { diSpokenPracticeLiveDomain } from './adapters/diSpokenPracticeLive';
 import { diDiceRollLiveDomain } from './adapters/diDiceRollLive';
 import { diDeductionLiveDomain } from './adapters/diDeductionLive';
 import { diWorkedProcedureLiveDomain } from './adapters/diWorkedProcedureLive';
+import { diWordProblemSetupLiveDomain } from './adapters/diWordProblemSetupLive';
 import { spatialSceneLiveDomain } from './adapters/spatialSceneLive';
 import { workspaceAdapter, type LiveActivityAdapter } from './adapters/adapterContract';
 
@@ -128,6 +129,7 @@ export const LIVE_ADAPTERS = {
   'di-dice-roll': workspaceAdapter('di-dice-roll', diDiceRollLiveDomain),
   'di-deduction': workspaceAdapter('di-deduction', diDeductionLiveDomain),
   'di-worked-procedure': workspaceAdapter('di-worked-procedure', diWorkedProcedureLiveDomain),
+  'di-word-problem-setup': workspaceAdapter('di-word-problem-setup', diWordProblemSetupLiveDomain),
   'spatial-scene': workspaceAdapter('spatial-scene', spatialSceneLiveDomain),
 } satisfies Record<string, LiveActivityAdapter<any>>;
 

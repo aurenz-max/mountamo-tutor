@@ -106,6 +106,7 @@ import { diSpokenPracticeHarnessAnswers } from '../../primitives/visual-primitiv
 import { diDiceRollHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diDiceRollWorkspace';
 import { deductionItems, diDeductionHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diDeductionWorkspace';
 import { diWorkedProcedureHarnessAnswers, workedProcedureItems } from '../../primitives/visual-primitives/direct-instruction/diWorkedProcedureWorkspace';
+import { diWordProblemHarnessAnswers, wordProblemHarnessPlacements, wordProblemItems } from '../../primitives/visual-primitives/direct-instruction/diWordProblemWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
 
 /** One real learner action for the mounted driver to perform. */
@@ -1048,6 +1049,33 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-procedure-object="problem"]' }, reward: { selector: '[data-procedure-digit]', kind: 'count' } },
+  },
+  'di-word-problem-setup': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/direct-instruction/DiWordProblemSetup.tsx',
+    instanceId: 'wordproblem',
+    defaults: { grade: 'Grade 1', mode: 'find_big_number', di: false,
+      topic: 'Addition and subtraction word problems within 20' },
+    leakTokens: ['WPS_ITEM', 'WPS_MOVE_ON', 'WPS_COMPLETE', 'WPS_HEAR', 'WPS_BIG'],
+    prompts: WORKSPACE_PROMPTS,
+    // The hands step taps each card, then its slot (the build commits after the stillness window); a wrong
+    // build puts a small amount in the big slot. Every other step is one spoken answer.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = wordProblemItems(ctx.data as never).find(x => x.id === ctx.itemId);
+      if (!c) throw new Error('No current di-word-problem-setup step');
+      if (c.kind === 'big_number') {
+        const board = wordProblemHarnessPlacements(c, intent === 'wrong');
+        return (['small1', 'small2', 'big'] as const).flatMap((slot): DriverInput[] => {
+          const id = board[slot];
+          const label = c.plan.quantities.find(q => q.id === id)?.label;
+          return label ? [{ type: 'choose', label: `Select ${label}` }, { type: 'touch', target: `slot-${slot}` }] : [];
+        });
+      }
+      const answers = diWordProblemHarnessAnswers(c);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-word-problem-object="story"]' } },
   },
   'spatial-scene': {
     execution: 'workspace',

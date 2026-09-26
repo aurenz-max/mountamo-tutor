@@ -1194,6 +1194,15 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // β mirrors backend problem_type_registry.py.
     evalModes: DI_WORD_PROBLEM_EVAL_MODES,
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 1', 'Grade 2', 'Grade 3'],
+      guidance: 'One story is printed; read it aloud to the child when they need it. They set it up one step at a time. '
+        + 'Naming the story kind, reading the number family, choosing add or subtract, and solving are said OUT LOUD. '
+        + 'Placing the big amount, or building small + small = big, is done with their hands on the story-part cards, '
+        + 'and the activity checks it: you cannot place a card, and never say which part is the big amount or where a '
+        + 'part belongs before they try. The family decides the operation, not the story\'s words. Nothing they must '
+        + 'say is printed before it is credited.',
+    },
     misconceptionScope: 'primitive',
     audioInput: { manual_activity: true },
     tutoring: {

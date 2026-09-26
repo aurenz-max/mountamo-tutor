@@ -1,0 +1,67 @@
+{
+ "source": "qa/tutor-reports/di-word-problem-setup-runtime-find_big_number-payload-2026-09-26.json",
+ "primitiveId": "di-word-problem-setup",
+ "evalMode": "find_big_number",
+ "data": {
+  "title": "Build the Story",
+  "description": "Read the story and build the number family before you solve.",
+  "challengeType": "find_big_number",
+  "problems": [
+   {
+    "id": "wps-1-change-gain_end",
+    "frameId": "change:gain_end",
+    "theme": {
+     "nameA": "Sam",
+     "nameB": "Zoe",
+     "nounPlural": "shells",
+     "gainPast": "picked",
+     "gainBase": "pick",
+     "losePast": "dropped",
+     "loseBase": "drop"
+    },
+    "first": 12,
+    "second": 3,
+    "adjectivePair": 0,
+    "challengeType": "find_big_number",
+    "maxNumber": 20
+   },
+   {
+    "id": "wps-2-part_whole-whole",
+    "frameId": "part_whole:whole",
+    "theme": {
+     "nameA": "Leo",
+     "nameB": "Mia",
+     "nounPlural": "marbles",
+     "gainPast": "found",
+     "gainBase": "find",
+     "losePast": "lost",
+     "loseBase": "lose"
+    },
+    "first": 5,
+    "second": 10,
+    "adjectivePair": 1,
+    "challengeType": "find_big_number",
+    "maxNumber": 20
+   },
+   {
+    "id": "wps-3-comparison-more_person",
+    "frameId": "comparison:more_person",
+    "theme": {
+     "nameA": "Ben",
+     "nameB": "Ava",
+     "nounPlural": "apples",
+     "gainPast": "bought",
+     "gainBase": "buy",
+     "losePast": "ate",
+     "loseBase": "eat"
+    },
+    "first": 15,
+    "second": 3,
+    "adjectivePair": 1,
+    "challengeType": "find_big_number",
+    "maxNumber": 20
+   }
+  ],
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

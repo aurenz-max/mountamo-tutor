@@ -1,0 +1,67 @@
+{
+ "source": "qa/tutor-reports/di-word-problem-setup-runtime-build_family-payload-2026-09-26.json",
+ "primitiveId": "di-word-problem-setup",
+ "evalMode": "build_family",
+ "data": {
+  "title": "Set Up the Story",
+  "description": "You will build the number family and read it aloud before working each story.",
+  "challengeType": "build_family",
+  "problems": [
+   {
+    "id": "wps-1-part_whole-part",
+    "frameId": "part_whole:part",
+    "theme": {
+     "nameA": "Ben",
+     "nameB": "Ava",
+     "nounPlural": "shells",
+     "gainPast": "picked",
+     "gainBase": "pick",
+     "losePast": "dropped",
+     "loseBase": "drop"
+    },
+    "first": 7,
+    "second": 5,
+    "adjectivePair": 2,
+    "challengeType": "build_family",
+    "maxNumber": 20
+   },
+   {
+    "id": "wps-2-change-gain_end",
+    "frameId": "change:gain_end",
+    "theme": {
+     "nameA": "Sam",
+     "nameB": "Zoe",
+     "nounPlural": "stickers",
+     "gainPast": "won",
+     "gainBase": "win",
+     "losePast": "gave away",
+     "loseBase": "give away"
+    },
+    "first": 11,
+    "second": 3,
+    "adjectivePair": 2,
+    "challengeType": "build_family",
+    "maxNumber": 20
+   },
+   {
+    "id": "wps-3-comparison-fewer_person",
+    "frameId": "comparison:fewer_person",
+    "theme": {
+     "nameA": "Mia",
+     "nameB": "Leo",
+     "nounPlural": "marbles",
+     "gainPast": "found",
+     "gainBase": "find",
+     "losePast": "lost",
+     "loseBase": "lose"
+    },
+    "first": 15,
+    "second": 5,
+    "adjectivePair": 2,
+    "challengeType": "build_family",
+    "maxNumber": 20
+   }
+  ],
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

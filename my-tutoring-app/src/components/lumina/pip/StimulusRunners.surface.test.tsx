@@ -12,7 +12,6 @@ import fixtures from './testing/workspaceFixtures.json';
 import CauseEffectChain from '../primitives/visual-primitives/history/CauseEffectChain';
 import EraExplorer from '../primitives/visual-primitives/history/EraExplorer';
 import SentenceAnalyzer from '../primitives/visual-primitives/literacy/SentenceAnalyzer';
-import DiWordProblemSetup from '../primitives/visual-primitives/direct-instruction/DiWordProblemSetup';
 
 const phase = vi.hoisted((): RunnerPhase => ({ stage: 'asking', running: true, tutorSpeaking: false, currentSolved: false, revealHeld: false, itemIndex: 0 }));
 vi.mock('../hooks/useJudgedScriptRunner', async (original) => ({
@@ -74,12 +73,10 @@ describe('judged primitives share their stimulus panel with Pip', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const SCIENCE: Array<[string, React.ComponentType<{ data: any }>]> = [
     ['cause-effect-chain', CauseEffectChain], ['era-explorer', EraExplorer], ['sentence-analyzer', SentenceAnalyzer],
-    ['di-word-problem-setup', DiWordProblemSetup],
   ];
   it.each(SCIENCE)('%s outlines its stimulus panel', (id, Primitive) => {
-    // The generated packs open on a hands answer here (build the chain; place the big amount),
-    // which Pip receives while it is judged.
-    const receive = id === 'cause-effect-chain' || id === 'di-word-problem-setup';
+    // The generated chain opens on a hands answer here (build the chain), which Pip receives while it is judged.
+    const receive = id === 'cause-effect-chain';
     expectStimulusSurface({ mounted: mountWithStore(() => <Primitive data={generated(id)} />), phase, instanceId: id, receive });
   });
 });

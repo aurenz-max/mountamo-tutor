@@ -81,7 +81,7 @@ describe('ordinary lesson workspace eligibility', () => {
     const bound = Object.entries(LIVE_ADAPTERS).filter(([, adapter]) => (adapter as LiveActivityAdapter).bindsTeachingWorkspace);
     expect(bound.map(([id]) => id).sort()).toEqual(['3d-shape-explorer', 'adaptation-investigator', 'addition-subtraction-scene', 'balance-scale', 'bar-model', 'base-ten-blocks', 'calendar-explorer', 'compare-objects',
       'comparison-builder', 'counting-board', 'cvc-speller', 'decodable-reader', 'di-deduction', 'di-dice-roll', 'di-letter-sounds', 'di-math-facts', 'di-sentence-reading', 'di-shapes', 'di-spoken-practice',
-      'di-word-reading', 'di-worked-procedure', 'fraction-circles', 'habitat-diorama', 'interactive-book', 'letter-sound-link', 'letter-spotter', 'matter-explorer', 'number-bond', 'number-line', 'number-sequencer', 'number-tracer', 'ordinal-line', 'phoneme-explorer',
+      'di-word-problem-setup', 'di-word-reading', 'di-worked-procedure', 'fraction-circles', 'habitat-diorama', 'interactive-book', 'letter-sound-link', 'letter-spotter', 'matter-explorer', 'number-bond', 'number-line', 'number-sequencer', 'number-tracer', 'ordinal-line', 'phoneme-explorer',
       'phonics-blender', 'picture-vocabulary', 'place-value-chart', 'push-pull-arena', 'ramp-lab', 'rhyme-studio', 'shape-sorter', 'solar-system-explorer', 'sorting-station', 'sound-swap', 'spatial-scene', 'states-of-matter', 'story-bridge', 'story-ribbon', 'syllable-clapper', 'ten-frame', 'word-builder', 'word-flip', 'word-sorter', 'word-workout',
       'you-and-me']);
     // A component with no workspace binding keeps its lesson path and its catalog tutoring.
