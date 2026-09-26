@@ -55,6 +55,7 @@ import { matterExplorerLiveDomain } from './adapters/matterExplorerLive';
 import { genreExplorerLiveDomain } from './adapters/genreExplorerLive';
 import { textStructureAnalyzerLiveDomain } from './adapters/textStructureAnalyzerLive';
 import { sentenceAnalyzerLiveDomain } from './adapters/sentenceAnalyzerLive';
+import { causeEffectChainLiveDomain } from './adapters/causeEffectChainLive';
 import { readAloudStudioLiveDomain } from './adapters/readAloudStudioLive';
 import { oralSentenceStudioLiveDomain } from './adapters/oralSentenceStudioLive';
 import { statesOfMatterLiveDomain } from './adapters/statesOfMatterLive';
@@ -128,6 +129,7 @@ export const LIVE_ADAPTERS = {
   'genre-explorer': workspaceAdapter('genre-explorer', genreExplorerLiveDomain),
   'text-structure-analyzer': workspaceAdapter('text-structure-analyzer', textStructureAnalyzerLiveDomain),
   'sentence-analyzer': workspaceAdapter('sentence-analyzer', sentenceAnalyzerLiveDomain),
+  'cause-effect-chain': workspaceAdapter('cause-effect-chain', causeEffectChainLiveDomain),
   'read-aloud-studio': workspaceAdapter('read-aloud-studio', readAloudStudioLiveDomain),
   'oral-sentence-studio': workspaceAdapter('oral-sentence-studio', oralSentenceStudioLiveDomain),
   'states-of-matter': workspaceAdapter('states-of-matter', statesOfMatterLiveDomain),

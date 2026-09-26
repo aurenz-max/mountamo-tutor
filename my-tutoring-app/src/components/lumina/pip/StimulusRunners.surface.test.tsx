@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, it, vi } from 'vitest';
 import { mountWithStore } from './testing/classicSurface';
 import { expectStimulusSurface, initialRunnerPhase, type RunnerPhase } from './testing/runnerSurface';
 import fixtures from './testing/workspaceFixtures.json';
-import CauseEffectChain from '../primitives/visual-primitives/history/CauseEffectChain';
 import EraExplorer from '../primitives/visual-primitives/history/EraExplorer';
 
 const phase = vi.hoisted((): RunnerPhase => ({ stage: 'asking', running: true, tutorSpeaking: false, currentSolved: false, revealHeld: false, itemIndex: 0 }));
@@ -36,11 +35,9 @@ describe('judged primitives share their stimulus panel with Pip', () => {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const SCIENCE: Array<[string, React.ComponentType<{ data: any }>]> = [
-    ['cause-effect-chain', CauseEffectChain], ['era-explorer', EraExplorer],
+    ['era-explorer', EraExplorer],
   ];
   it.each(SCIENCE)('%s outlines its stimulus panel', (id, Primitive) => {
-    // The generated chain opens on a hands answer here (build the chain), which Pip receives while it is judged.
-    const receive = id === 'cause-effect-chain';
-    expectStimulusSurface({ mounted: mountWithStore(() => <Primitive data={generated(id)} />), phase, instanceId: id, receive });
+    expectStimulusSurface({ mounted: mountWithStore(() => <Primitive data={generated(id)} />), phase, instanceId: id });
   });
 });

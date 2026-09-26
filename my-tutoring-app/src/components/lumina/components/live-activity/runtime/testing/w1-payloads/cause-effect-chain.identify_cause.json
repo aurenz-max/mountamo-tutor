@@ -1,0 +1,265 @@
+{
+ "source": "qa/tutor-reports/cause-effect-chain-runtime-identify_cause-payload-2026-09-26.json",
+ "primitiveId": "cause-effect-chain",
+ "evalMode": "identify_cause",
+ "data": {
+  "title": "The River Town Railway",
+  "description": "Students will figure out how the arrival of the railroad changed daily life in a bustling river town.",
+  "context": "The year is 1870, and the bustling town of Oak River sits along a wide, muddy waterway where paddlewheel boats carry goods and people. Most people get around by horse and wagon on dusty dirt roads, and news travels slowly from faraway cities. Life is closely tied to the river currents and the changing seasons.",
+  "periodLabel": "the 1800s river town",
+  "challenges": [
+   {
+    "id": "cec-1",
+    "type": "identify_cause",
+    "chainTheme": "mail delivery",
+    "outcome": {
+     "id": "cec-1-outcome",
+     "text": "Letters arrive from distant cities in a single day.",
+     "category": "social",
+     "icon": "👥"
+    },
+    "nodes": [
+     {
+      "id": "cec-1-2",
+      "text": "Postal workers load canvas mail bags onto the new steam train.",
+      "category": "economic",
+      "icon": "💰"
+     },
+     {
+      "id": "cec-1-3",
+      "text": "Town leaders build a small wooden post office near the tracks.",
+      "category": "political",
+      "icon": "🏛️"
+     },
+     {
+      "id": "cec-1-d1",
+      "text": "Children run down to the platform to wave at the passengers.",
+      "category": "social",
+      "icon": "👥"
+     },
+     {
+      "id": "cec-1-d2",
+      "text": "Heavy wooden telegraph poles line the edges of the dirt road.",
+      "category": "technological",
+      "icon": "⚙️"
+     },
+     {
+      "id": "cec-1-1",
+      "text": "Iron workers lay heavy steel tracks across the open prairie.",
+      "category": "technological",
+      "icon": "⚙️"
+     }
+    ],
+    "correctOrder": [
+     "cec-1-1",
+     "cec-1-2",
+     "cec-1-3"
+    ],
+    "explanation": "Workers had to build the tracks before the steam train could run, and the train was needed to carry the mail bags quickly.",
+    "hint": "Which of these had to be built before mail could travel by train?"
+   },
+   {
+    "id": "cec-2",
+    "type": "identify_cause",
+    "chainTheme": "town bakery",
+    "outcome": {
+     "id": "cec-2-outcome",
+     "text": "Fresh bananas sit on wooden shelves in the grocery store.",
+     "category": "economic",
+     "icon": "💰"
+    },
+    "nodes": [
+     {
+      "id": "cec-2-1",
+      "text": "Merchants order heavy wooden crates filled with tropical fruit.",
+      "category": "economic",
+      "icon": "💰"
+     },
+     {
+      "id": "cec-2-d2",
+      "text": "River boat captains tie thick hemp ropes to the wooden dock.",
+      "category": "social",
+      "icon": "👥"
+     },
+     {
+      "id": "cec-2-3",
+      "text": "Store owners sweep the wooden floor and set out new display baskets.",
+      "category": "social",
+      "icon": "👥"
+     },
+     {
+      "id": "cec-2-2",
+      "text": "Freight handlers load the heavy wooden crates into a locked railcar.",
+      "category": "technological",
+      "icon": "⚙️"
+     },
+     {
+      "id": "cec-2-d1",
+      "text": "Hungry customers buy warm apple pies baked by the local baker.",
+      "category": "economic",
+      "icon": "💰"
+     }
+    ],
+    "correctOrder": [
+     "cec-2-1",
+     "cec-2-2",
+     "cec-2-3"
+    ],
+    "explanation": "Merchants had to order the fruit before anyone could load it onto the railcar for the long journey.",
+    "hint": "What had to happen in the store before fruit could be loaded onto the train?"
+   },
+   {
+    "id": "cec-3",
+    "type": "identify_cause",
+    "chainTheme": "school attendance",
+    "outcome": {
+     "id": "cec-3-outcome",
+     "text": "Students write their spelling lessons with brand new chalk.",
+     "category": "social",
+     "icon": "👥"
+    },
+    "nodes": [
+     {
+      "id": "cec-3-1",
+      "text": "Factory workers pack small white chalk sticks into cardboard boxes.",
+      "category": "economic",
+      "icon": "💰"
+     },
+     {
+      "id": "cec-3-d2",
+      "text": "Red brick chimneys puff thick gray smoke into the morning sky.",
+      "category": "technological",
+      "icon": "⚙️"
+     },
+     {
+      "id": "cec-3-2",
+      "text": "Train conductors place the cardboard boxes inside the noisy baggage car.",
+      "category": "technological",
+      "icon": "⚙️"
+     },
+     {
+      "id": "cec-3-d1",
+      "text": "Teachers hang colorful paper artwork across the classroom windows.",
+      "category": "social",
+      "icon": "👥"
+     },
+     {
+      "id": "cec-3-3",
+      "text": "School board members purchase supplies for the upcoming autumn classes.",
+      "category": "political",
+      "icon": "🏛️"
+     }
+    ],
+    "correctOrder": [
+     "cec-3-1",
+     "cec-3-2",
+     "cec-3-3"
+    ],
+    "explanation": "Workers had to pack the chalk into boxes before the conductor could put those boxes onto the train.",
+    "hint": "Which event had to happen inside the factory before the boxes reached the train?"
+   },
+   {
+    "id": "cec-4",
+    "type": "identify_cause",
+    "chainTheme": "fire safety",
+    "outcome": {
+     "id": "cec-4-outcome",
+     "text": "Firefighters spray powerful streams of water on the burning barn.",
+     "category": "political",
+     "icon": "🏛️"
+    },
+    "nodes": [
+     {
+      "id": "cec-4-3",
+      "text": "Local volunteers pull the heavy brass pump down the muddy street.",
+      "category": "social",
+      "icon": "👥"
+     },
+     {
+      "id": "cec-4-d1",
+      "text": "Town council members draft new rules about storing sharp metal tools.",
+      "category": "political",
+      "icon": "🏛️"
+     },
+     {
+      "id": "cec-4-2",
+      "text": "Train engineers haul the heavy brass pump on a flatbed railcar.",
+      "category": "economic",
+      "icon": "💰"
+     },
+     {
+      "id": "cec-4-d2",
+      "text": "Tall oak trees shade the grassy park where children play tag.",
+      "category": "social",
+      "icon": "👥"
+     },
+     {
+      "id": "cec-4-1",
+      "text": "Metalworkers forge a shiny brass pump inside the city machine shop.",
+      "category": "technological",
+      "icon": "⚙️"
+     }
+    ],
+    "correctOrder": [
+     "cec-4-1",
+     "cec-4-2",
+     "cec-4-3"
+    ],
+    "explanation": "The metalworkers had to make the brass pump before the train engineers could haul it to town.",
+    "hint": "What had to be built in the machine shop before the train could carry it?"
+   },
+   {
+    "id": "cec-5",
+    "type": "identify_cause",
+    "chainTheme": "hotel building",
+    "outcome": {
+     "id": "cec-5-outcome",
+     "text": "Weary travelers sleep in comfortable feather beds at the grand hotel.",
+     "category": "economic",
+     "icon": "💰"
+    },
+    "nodes": [
+     {
+      "id": "cec-5-2",
+      "text": "Lumber jacks stack the pine planks onto a rolling freight wagon.",
+      "category": "economic",
+      "icon": "💰"
+     },
+     {
+      "id": "cec-5-3",
+      "text": "Hotel maids fluff soft white pillows and smooth the woolen blankets.",
+      "category": "social",
+      "icon": "👥"
+     },
+     {
+      "id": "cec-5-d1",
+      "text": "Hungry guests eat thick slices of roasted beef in the dining room.",
+      "category": "economic",
+      "icon": "💰"
+     },
+     {
+      "id": "cec-5-1",
+      "text": "Carpenters saw sturdy pine boards into long planks for wall frames.",
+      "category": "technological",
+      "icon": "⚙️"
+     },
+     {
+      "id": "cec-5-d2",
+      "text": "Muddy wagon wheels sink deep into the wet springtime soil.",
+      "category": "technological",
+      "icon": "⚙️"
+     }
+    ],
+    "correctOrder": [
+     "cec-5-1",
+     "cec-5-2",
+     "cec-5-3"
+    ],
+    "explanation": "Carpenters had to cut the pine boards before lumber jacks could stack them onto the wagon.",
+    "hint": "Which task had to happen at the sawmill before anyone loaded the wagon?"
+   }
+  ],
+  "challengeType": "identify_cause",
+  "gradeLevel": "elementary"
+ }
+}

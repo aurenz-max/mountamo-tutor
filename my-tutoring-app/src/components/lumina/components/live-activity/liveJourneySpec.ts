@@ -105,6 +105,7 @@ import { readAloudItems } from './adapters/readAloudStudioLive';
 import { readAloudJourneyAnswers } from '../../primitives/visual-primitives/literacy/readAloudStudioWorkspace';
 import { itemsFromChallenges as oralSentenceItems } from '../../primitives/visual-primitives/literacy/oralSentenceStudioScript';
 import { oralSentenceJourneyAnswers } from '../../primitives/visual-primitives/literacy/oralSentenceStudioWorkspace';
+import { causeEffectItems, causeEffectJourneyAnswers } from '../../primitives/visual-primitives/history/causeEffectChainWorkspace';
 import { statesItems } from './adapters/statesOfMatterLive';
 import { statesJourneyAnswers } from '../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
 import { solarItems } from './adapters/solarSystemExplorerLive';
@@ -1558,6 +1559,29 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const item = oralSentenceItems((ctx.data as { challenges?: never[] }).challenges ?? []).find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current oral-sentence-studio item');
       const answers = oralSentenceJourneyAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'cause-effect-chain': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/history/CauseEffectChain.tsx',
+    instanceId: 'cause-effect-chain',
+    defaults: { grade: 'Grade 3', mode: 'build_chain', di: false, topic: 'How the railroad changed a river town' },
+    leakTokens: ['CEC_ITEM', 'CEC_MOVE', 'CEC_COMPLETE', 'CEC_HEAR', 'CEC_CHAIN', 'CEC_CONTEXT'],
+    prompts: WORKSPACE_PROMPTS,
+    // identify_cause and root_vs_proximate are spoken; build_chain taps every card into the chain, in causal
+    // order or reversed, and the board commits once it sits still.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = causeEffectItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current cause-effect-chain item');
+      const answers = causeEffectJourneyAnswers(item);
+      if (answers.order) {
+        const text = (id: string) => item.cards.find(c => c.id === id)?.text ?? id;
+        return (intent === 'wrong' ? answers.order.wrong : answers.order.correct)
+          .map(id => ({ type: 'choose' as const, label: `Place "${text(id)}"` }));
+      }
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },

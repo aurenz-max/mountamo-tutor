@@ -1,0 +1,205 @@
+{
+ "source": "qa/tutor-reports/cause-effect-chain-runtime-build_chain-payload-2026-09-26.json",
+ "primitiveId": "cause-effect-chain",
+ "evalMode": "build_chain",
+ "data": {
+  "title": "How Trains Changed Our Town",
+  "description": "Students will figure out how the arrival of the railroad transformed daily life in a river town.",
+  "context": "Along the muddy banks of a wide river, wooden storefronts line a dusty street where steamboats whistle at the dock. Families trade furs and crops, waiting days for letters and supplies to arrive by boat. Life moves slowly with the river's current until iron tracks are laid across the grassy plains.",
+  "periodLabel": "the river town",
+  "challenges": [
+   {
+    "id": "cec-1",
+    "type": "build_chain",
+    "chainTheme": "mail delivery speed",
+    "outcome": {
+     "id": "cec-1-outcome",
+     "text": "Letters arrive from distant cities in days instead of months.",
+     "category": "social",
+     "icon": "👥"
+    },
+    "nodes": [
+     {
+      "id": "cec-1-3",
+      "text": "Post office workers sort incoming letters before the sun rises.",
+      "category": "social",
+      "icon": "👥"
+     },
+     {
+      "id": "cec-1-2",
+      "text": "Locomotives pull heavy mail cars directly into the town station.",
+      "category": "economic",
+      "icon": "💰"
+     },
+     {
+      "id": "cec-1-1",
+      "text": "Iron tracks are laid across the open prairie.",
+      "category": "technological",
+      "icon": "⚙️"
+     }
+    ],
+    "correctOrder": [
+     "cec-1-1",
+     "cec-1-2",
+     "cec-1-3"
+    ],
+    "explanation": "Laying the tracks was necessary before heavy locomotives could reach the town station to deliver the mail bags.",
+    "hint": "Which of these had to be built across the land before a locomotive could arrive?"
+   },
+   {
+    "id": "cec-2",
+    "type": "build_chain",
+    "chainTheme": "fresh food markets",
+    "outcome": {
+     "id": "cec-2-outcome",
+     "text": "Grocery shelves overflow with fresh fruit from distant southern farms.",
+     "category": "economic",
+     "icon": "💰"
+    },
+    "nodes": [
+     {
+      "id": "cec-2-2",
+      "text": "Merchants pack ripe oranges into insulated wooden crates for shipping.",
+      "category": "economic",
+      "icon": "💰"
+     },
+     {
+      "id": "cec-2-3",
+      "text": "Store owners unload wooden fruit crates onto the platform.",
+      "category": "economic",
+      "icon": "💰"
+     },
+     {
+      "id": "cec-2-1",
+      "text": "Workers install heavy steel rails connecting distant regions.",
+      "category": "technological",
+      "icon": "⚙️"
+     }
+    ],
+    "correctOrder": [
+     "cec-2-1",
+     "cec-2-2",
+     "cec-2-3"
+    ],
+    "explanation": "Workers had to install the steel rails before merchants could pack crates of oranges to ship across the country.",
+    "hint": "Which event created the path needed to ship crates of fruit?"
+   },
+   {
+    "id": "cec-3",
+    "type": "build_chain",
+    "chainTheme": "school attendance rules",
+    "outcome": {
+     "id": "cec-3-outcome",
+     "text": "Children attend classes inside a large brick schoolhouse.",
+     "category": "social",
+     "icon": "👥"
+    },
+    "nodes": [
+     {
+      "id": "cec-3-2",
+      "text": "Parents move their children into the newly built neighborhoods near the tracks.",
+      "category": "social",
+      "icon": "👥"
+     },
+     {
+      "id": "cec-3-3",
+      "text": "Town council members vote to fund a brick schoolhouse.",
+      "category": "political",
+      "icon": "🏛️"
+     },
+     {
+      "id": "cec-3-1",
+      "text": "Builders hammer wooden boards to construct new houses for incoming families.",
+      "category": "economic",
+      "icon": "💰"
+     }
+    ],
+    "correctOrder": [
+     "cec-3-1",
+     "cec-3-2",
+     "cec-3-3"
+    ],
+    "explanation": "Houses had to be built before families could move into the new neighborhoods near the tracks.",
+    "hint": "Which of these had to be built before families could move into the neighborhood?"
+   },
+   {
+    "id": "cec-4",
+    "type": "build_chain",
+    "chainTheme": "factory job growth",
+    "outcome": {
+     "id": "cec-4-outcome",
+     "text": "Hundreds of workers earn wages inside a large brick furniture factory.",
+     "category": "economic",
+     "icon": "💰"
+    },
+    "nodes": [
+     {
+      "id": "cec-4-1",
+      "text": "Inventors string copper wires on wooden poles across the valley.",
+      "category": "technological",
+      "icon": "⚙️"
+     },
+     {
+      "id": "cec-4-3",
+      "text": "Foremen hire local laborers to operate the steam saws.",
+      "category": "economic",
+      "icon": "💰"
+     },
+     {
+      "id": "cec-4-2",
+      "text": "Factory owners purchase steam engines to power their heavy woodworking saws.",
+      "category": "economic",
+      "icon": "💰"
+     }
+    ],
+    "correctOrder": [
+     "cec-4-1",
+     "cec-4-2",
+     "cec-4-3"
+    ],
+    "explanation": "Copper wires and modern machines were needed before factory owners could power heavy woodworking saws.",
+    "hint": "Which of these had to happen with wires and poles before factory engines could run?"
+   },
+   {
+    "id": "cec-5",
+    "type": "build_chain",
+    "chainTheme": "fire department protection",
+    "outcome": {
+     "id": "cec-5-outcome",
+     "text": "Firefighters spray pressurized water from a horse drawn engine.",
+     "category": "political",
+     "icon": "🏛️"
+    },
+    "nodes": [
+     {
+      "id": "cec-5-1",
+      "text": "Engineers dig deep trenches to lay iron water pipes beneath the muddy streets.",
+      "category": "technological",
+      "icon": "⚙️"
+     },
+     {
+      "id": "cec-5-3",
+      "text": "Volunteers organize a neighborhood bucket brigade and fire crew.",
+      "category": "political",
+      "icon": "🏛️"
+     },
+     {
+      "id": "cec-5-2",
+      "text": "Plumbers connect tall cast iron hydrants to the underground pipes.",
+      "category": "technological",
+      "icon": "⚙️"
+     }
+    ],
+    "correctOrder": [
+     "cec-5-1",
+     "cec-5-2",
+     "cec-5-3"
+    ],
+    "explanation": "Workers had to dig trenches and lay pipes before plumbers could connect hydrants to the water system.",
+    "hint": "Which of these had to be buried underground before hydrants could be connected?"
+   }
+  ],
+  "challengeType": "build_chain",
+  "gradeLevel": "elementary"
+ }
+}

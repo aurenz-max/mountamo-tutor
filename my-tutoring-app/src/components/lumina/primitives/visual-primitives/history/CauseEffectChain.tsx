@@ -1,16 +1,12 @@
 'use client';
 
 /**
- * CauseEffectChain — TWO surfaces, forked on whether judged items could be built:
- *
- *  - DI JUDGED LOOP (the normal path): the Live tutor owns the clock. It states
- *    the ending, reads the cards to a child who cannot read them, waits, judges
- *    the answer, corrects contrastively, and its own affirmation is the advance.
- *    No advance timer, no Next button, no Check button, no push-to-talk mic, no
- *    printed answer before the affirm.
- *
- *  - BACKGROUND ONLY (no challenges, or every one dropped by a build gate): the
- *    "story so far" on its own. The honest degrade — nothing is judged.
+ * CauseEffectChain — runs only on the shared tutor/JEV teaching workspace (workspace
+ * rollout C8; the scripted runner was retired, LA-14, user ruling 09-23: one path).
+ * The observer judges each spoken answer, the activity checks the built chain, and the
+ * runtime owns progression. There is no Next or Check button, no mic panel, and no
+ * answer on screen before credit. An unbound mount shows the shared "needs the tutor"
+ * card; the adapter refuses a lesson with no askable chain.
  *
  * ⭐ THE ANSWER-MATERIAL FORK (`causeEffectChainScript.ts`, standing gate 1):
  *   identify_cause     SPOKEN — one yes/no per card      the child SAYS it
@@ -28,35 +24,32 @@
  *  - the CHECK button per rung and the two-strikes REVEAL ladder — the tutor's
  *    verdict is the check, its correction is the second try, and a chain
  *    commits on STILLNESS once every slot is filled.
- *  - the NEXT button — the tutor owns the clock.
+ *  - the NEXT button — the runtime owns progression.
  *  - the HINT DISCLOSURE — a hint the child dispenses to themselves is not a
- *    scaffold a tier can withdraw; the scripted correction re-models instead.
+ *    scaffold a tier can withdraw.
  *  - the EXPLANATION under the feedback card — it names the answer, so it is a
  *    reveal, and reveals ride `runner.revealHeld` (18b).
- *  - every improvised tutor turn (the framing send, the per-verdict sends,
- *    the per-round send, the closing send, the tier reveal clause) — the cues
- *    carry the entire spoken surface.
+ *  - tap-to-hear the question: with the tutor present, the learner asks it to repeat.
  *
- * WHAT IT KEEPS, deliberately: the BACKGROUND panel with its read-aloud
- * (`contextCue`, the pre-reader's channel to the setting — question-side by
- * construction, it never states what caused what), the CHAIN BOARD (the page a
- * build_chain child works on), and two L3 render levers: `showSlotNumbers` on
- * the board and `showCategoryLabels` on every card (the ICON stays at every
- * tier — it is the emerging reader's channel).
+ * WHAT IT KEEPS, deliberately: the BACKGROUND panel with its read-aloud (a silent
+ * host request for the paragraph, the pre-reader's channel to the setting —
+ * question-side by construction, it never states what caused what), the CHAIN
+ * BOARD (the page a build_chain child works on), and two L3 render levers:
+ * `showSlotNumbers` on the board and `showCategoryLabels` on every card (the ICON
+ * stays at every tier — it is the emerging reader's channel).
  *
  * HOW A HANDS TURN CLOSES. A voice turn closes on SILENCE; the chain closes on
  * STILLNESS: when every slot is filled and the board stops changing for
- * `CHAIN_SETTLE_MS`, the order is described to the tutor and judged. The
- * WINDOW is the runner's (`armStillness`, 19c). It is completeness-gated —
- * an unfinished chain is thinking, not an answer — and never correctness-
- * gated: a wrong full chain commits exactly as readily as a right one.
+ * `CHAIN_SETTLE_MS`, the activity checks the order and commits it. It is
+ * completeness-gated — an unfinished chain is thinking, not an answer — and
+ * never correctness-gated: a wrong full chain commits exactly as readily as a
+ * right one.
  *
- * Cue lines, judging contracts and build gates live in the script module
- * (hand-authored, DISTAR). Nothing in this file writes a spoken line.
+ * Asks and build gates live in `causeEffectChainScript.ts`; the assignment and
+ * scene the tutor receives live in `causeEffectChainWorkspace.ts`.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Volume2 } from 'lucide-react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard,
@@ -80,27 +73,28 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { CauseEffectChainMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
-import {
-  causeEffectChainPackBase,
-  chainVerdictCue,
-  contextCue,
   correctChoiceOf,
-  itemsFromChallenges,
   type CauseEffectChainItem,
   type ChainCard,
   type ChainKind,
   type ChainTier,
 } from './causeEffectChainScript';
+import {
+  causeEffectAssignment,
+  causeEffectItems,
+  causeEffectScene,
+  chainMatches,
+  describeChain,
+  hearBackgroundRequest,
+} from './causeEffectChainWorkspace';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 
 // ============================================================================
@@ -218,6 +212,9 @@ export interface CauseEffectChainData {
 interface CauseEffectChainProps {
   data: CauseEffectChainData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -252,7 +249,7 @@ const CATEGORY_META: Record<string, { label: string; className: string }> = {
 };
 
 /** How long a full chain may stay still before it commits. The window itself
- *  is the runner's (`armStillness`, 19c); this is the one number that is a
+ *  is the controller's (`armStillness`); this is the one number that is a
  *  property of THIS board — three or four cards placed one at a time, and a
  *  child who wants to swap two has to take one out first. */
 const CHAIN_SETTLE_MS = 3000;
@@ -265,7 +262,7 @@ interface RevealPayload {
 // Component
 // ============================================================================
 
-const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) => {
+const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const {
     title,
     description,
@@ -284,28 +281,15 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
 
   const stableInstanceIdRef = useRef(instanceId || `cause-effect-chain-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   /** K-2 read slowly or not at all — the read-aloud is sized to a young hand. */
   const isEmergingReader = gradeLevel === 'K' || gradeLevel === '1' || gradeLevel === '2';
 
   const items = useMemo(
-    () => itemsFromChallenges(
-      challenges.map((c) => ({
-        id: c.id,
-        type: c.type,
-        ask: c.ask,
-        outcome: c.outcome,
-        nodes: c.nodes,
-        correctOrder: c.correctOrder,
-        explanation: c.explanation,
-      })),
-      { periodLabel, gradeLevel },
-      { tier: supportTier },
-    ),
+    () => causeEffectItems({ challenges, periodLabel, gradeLevel, supportTier }),
     [challenges, periodLabel, gradeLevel, supportTier],
   );
-
-  const judged = items.length > 0;
 
   /** The per-challenge render levers, looked up by the staged item's challenge. */
   const leversFor = useCallback((challengeId: string) => {
@@ -348,7 +332,7 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
     return kinds.length === 1 ? kinds[0] : 'mixed';
   }, [items]);
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const metrics: CauseEffectChainMetrics = {
       type: 'cause-effect-chain',
       challengeType: items.length > 0 ? sessionChallengeType : (data.challengeType ?? 'mixed'),
@@ -357,8 +341,8 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
       correctCount: summary.solvedCount,
       attemptsCount: summary.attemptsCount,
       firstTryCount: summary.firstTryCount,
-      // The background read-aloud is baseline access, not a hint, and the
-      // judged loop has no hint disclosure left to count. Reported honestly.
+      // The background read-aloud is baseline access, not a hint, and there is
+      // no hint disclosure left to count. Reported honestly.
       hintsViewed: 0,
       overallAccuracy: summary.accuracy,
       averageAttemptsPerChallenge: items.length
@@ -369,81 +353,58 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
       summary.passed,
       summary.accuracy,
       metrics,
-      { periodLabel, challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
+      { periodLabel, challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items, sessionChallengeType, data.challengeType, periodLabel, evaluation]);
+  };
 
-  // ── The pack — wording lives in causeEffectChainScript.ts ─────────────────
-  // The cue surface is SPREAD, not re-declared, so the DI drive harness reads
-  // the same bytes this component sends.
-  const pack = useMemo<JudgedScriptPack<CauseEffectChainItem>>(() => ({
-    ...causeEffectChainPackBase(items),
-    statusLines: {
-      ready: (item) => (item.answerKind === 'gesture'
-        ? 'Build the chain, then hold still.'
-        : 'Listen, then say your answer.'),
-      retry: (item) => (item.answerKind === 'gesture'
-        ? 'Build the chain again, then hold still.'
-        : 'Listen again — then say your answer.'),
-      done: 'Great history today!',
-    },
-    // One factual record per attempt, right or corrected: the outcome and the cards in play (as text, not ids),
-    // and what was said or built (the placed board is read before the retry clears it). Never the verdict.
-    observation: (item, { heard: transcript }) => {
-      const heard = (transcript ?? '').trim();
-      const textOf = (id: string | null) => (id ? item.cards.find((c) => c.id === id)?.text ?? id : '_');
-      const expected = item.kind === 'identify_cause'
-        ? (item.isCause ? 'yes' : 'no')
-        : item.kind === 'build_chain'
-          ? item.correctOrder.map(textOf).join(' → ')
-          : correctChoiceOf(item).card.text;
-      const observed = item.kind === 'build_chain'
-        ? `Built ${placedRef.current.map(textOf).join(' → ')}.`
-        : heard ? `Said "${heard}".` : 'No transcript was captured.';
-      const shown = item.kind === 'identify_cause'
-        ? `; asked whether "${item.card.text}" caused it`
-        : item.kind === 'build_chain'
-          ? `; cards to order: ${item.cards.map((c) => c.text).join('; ')}`
-          : `; choices: ${item.choices.map((c) => c.card.text).join('; ')}`;
-      return {
-        challenge: `${MODE_META[item.kind].badge}: ${item.outcome.text}${shown}`,
-        expected,
-        observed,
-      };
-    },
-  }), [items]);
-
-  const runner = useJudgedScriptRunner<CauseEffectChainItem>({
-    pack,
+  const runner = useWorkspaceRunner<CauseEffectChainItem>({
+    primitiveId: 'cause-effect-chain',
+    assignment: causeEffectAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || items[0]?.kind || 'build_chain',
     instanceId: resolvedInstanceId,
-    gradeLevel: gradeLevel || 'Elementary',
-    exhibitId,
-    onFinished: handleFinished,
+    onFinished: finish,
     onItemOpened: (item) => resetBoard(item),
     // All-or-nothing: the whole board clears, because leaving the right cards
     // in place would hand back which ones were already right.
     onCorrectionRetry: (item) => resetBoard(item),
     onAffirmed: (item) => setReveal({ item }),
   });
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
+
+  // What the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation; every item is answerable once it opens.
+  useLayoutEffect(() => {
+    const item = runner.currentItem;
+    if (!item) return;
+    workspace.current = { ...causeEffectScene(item, context, placedRef.current), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
 
   const showReveal = runner.revealHeld && reveal !== null;
   const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The ending and the events', finished: evaluation.hasSubmitted,
+    run: runner, instanceId: resolvedInstanceId, label: 'The ending and the events', finished: showSummary,
     handover: runner.currentItem?.kind === 'build_chain',
   });
 
   // ── Hands: place, remove, and the stillness close ─────────────────────────
-  /** Called by the runner's stillness window once the full chain has sat still.
-   *  Reads the board through the ref, at fire time. */
+  /** Called by the stillness window once the full chain has sat still. Reads the
+   *  board through the ref, at fire time; the activity's own check is the verdict. */
   const commitChain = useCallback(() => {
     const item = runner.currentItem;
     if (!item || item.kind !== 'build_chain') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const order = placedRef.current;
     if (order.length === 0 || order.some((id) => id === null)) return;
-    runner.submitGestureAttempt(chainVerdictCue(item, order.join(',')));
+    commitGesture(runner, { response: describeChain(item, order), correct: chainMatches(item, order), cue: () => '' });
   }, [runner]);
 
   /** Tap a bank card → it drops into the earliest empty slot. Filling the last
@@ -486,54 +447,23 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
     runner.clearStillness();
   }, [runner]);
 
-  // ── The background read-aloud: the one cue the runner does not own ────────
+  // ── The background read-aloud: a silent host request, never an answer ─────
   const ctx = useLuminaAIContext();
-  const readContext = useCallback(() => {
-    const cue = contextCue(context);
-    if (!cue) return;
-    ctx.sendText(cue, { silent: true, scripted: true });
-    // Context methods are stable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [context]);
-
-  // ── Background-only fallback: the tutor as a silent guide ─────────────────
-  useLuminaAI({
-    primitiveType: 'cause-effect-chain',
-    instanceId: resolvedInstanceId,
-    /**
-     * Pushed under the SAME TWO KEYS the judged pack uses, with the
-     * `free_explore` sentinel for the round type (era-explorer's convention):
-     * the catalog interpolates exactly those keys, and the static tutor-test
-     * analyzer parses the first `primitiveData` literal it finds.
-     */
-    primitiveData: {
-      challengeType: 'free_explore',
-      stimulus: `the background for ${periodLabel}, on screen for the learner to read; `
-        + 'no rounds could be built, so nothing is being judged; '
-        + 'this state line is for you alone and is never spoken to the learner',
-    },
-    // The judged path owns the tutor through the runner; this hook is only
-    // the fallback surface's guide, and must never open a second channel.
-    enabled: !judged,
-    gradeLevel: gradeLevel || 'Elementary',
-  });
+  const readContext = () => {
+    if (context) ctx.sendText(hearBackgroundRequest(context), { silent: true, author: 'host' });
+  };
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => ({
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => ({
       label: MODE_META[item.kind].badge,
       icon: MODE_META[item.kind].icon,
       accentColor: 'amber',
     }));
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
-  /**
-   * WHICH item is on the bench right now. On the advance path the runner opens
-   * the next item in the SAME dispatch as the affirmation, so by render time
-   * `currentItem` is already the NEXT one while the tutor is still saying the
-   * verdict for the last. The reveal therefore renders its OWN item.
-   */
+  /** WHICH item is on the bench right now: the reveal renders its OWN item while it is held. */
   const staged = showReveal && reveal ? reveal.item : runner.currentItem;
   const modeMeta = MODE_META[staged?.kind ?? 'build_chain'];
   const levers = leversFor(staged?.challengeId ?? '');
@@ -675,6 +605,7 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
                 className="max-w-full whitespace-normal py-3 text-left"
                 onClick={() => handlePlace(card.id)}
                 disabled={!live}
+                aria-label={`Place "${card.text}"`}
               >
                 {renderCardBody(card)}
               </LuminaChip>
@@ -746,7 +677,7 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
     </div>
   );
 
-  if (!judged) {
+  if (items.length === 0) {
     return (
       <LuminaCard className={className} topAccent="amber">
         <LuminaCardHeader className="pb-3">
@@ -777,7 +708,7 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
             <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           </div>
           <div className="flex items-center gap-2">
-            {!evaluation.hasSubmitted && staged && (
+            {!showSummary && staged && (
               <LuminaBadge accent={modeMeta.accent} className="text-xs">
                 {modeMeta.icon} {modeMeta.badge}
               </LuminaBadge>
@@ -788,7 +719,7 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-5">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             {backgroundEl}
 
@@ -799,21 +730,6 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
                   total={items.length}
                   variant="dots"
                 />
-                {/* Tap-to-hear the question again — the ending and the cards in
-                    on-screen order. Never the answer, never a hint. */}
-                <button
-                  type="button"
-                  onClick={runner.hearStimulus}
-                  aria-label="Hear the question again"
-                  className={`
-                    flex items-center justify-center w-10 h-10 rounded-full
-                    bg-amber-500/15 border-2 border-amber-500/30 text-amber-300
-                    hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
-                    ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
-                  `}
-                >
-                  <Volume2 size={18} />
-                </button>
               </div>
 
               {staged && (
@@ -836,16 +752,14 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
                   </p>
                 </div>
               )}
-
-              <JudgedMicPanel run={runner} gestureLabel="Your turn — build the chain" />
             </div>
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Chains Built!"
             celebrationMessage={`You traced what caused what in ${periodLabel}.`}
@@ -856,5 +770,9 @@ const CauseEffectChain: React.FC<CauseEffectChainProps> = ({ data, className }) 
     </LuminaCard>
   );
 };
+
+/** Runs only on the teaching workspace; an unbound mount shows the "needs the tutor" card. */
+const CauseEffectChain = withWorkspaceOnly<CauseEffectChainProps>('cause-effect-chain', CauseEffectChainSurface,
+  (props) => props.data.title);
 
 export default CauseEffectChain;

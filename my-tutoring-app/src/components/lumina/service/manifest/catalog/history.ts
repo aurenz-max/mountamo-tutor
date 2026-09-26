@@ -28,7 +28,7 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
     // session-level frame. SENTINEL DISCIPLINE re-checked on every line: no
     // sentence begins with "Yes" or with "My turn".
     description: 'Live-judged Direct Instruction on historical cause and effect, spoken and built. Students see an outcome and a bank of shuffled event cards and work out what had to happen before what: the tutor reads one event at a time and the child SAYS whether it helped cause the ending (rather than being a result of it, or just true at the time); the child BUILDS the chain with their hands by placing the causes in the order each one made the next possible; and the child SAYS which cause was the deep root versus the one that happened right before the end. Requires a microphone. Color-coded by category (political, economic, social, technological) so students SEE that big changes have causes from different corners of life. Ideal for "why did this happen" history, community-change and social-studies causation objectives, grades 1-6.',
-    constraints: 'Explains ONE historical setting per session across 3-5 separate chains (causation depth, not chronology - use timeline-explorer for dating events, era-explorer for what one era was like). Requires a working microphone and the live tutor: two of the three moves are spoken exchanges and the third is judged by the tutor. Chain length is set by grade (3 cards K-4, 4 cards at 5+), never by the manifest. The manifest must NOT supply events, causes or an order: the generator writes the chains, and CODE derives the answer key from the order Gemini emits and then shuffles the bank away from it.',
+    constraints: 'Explains ONE historical setting per session across 3-5 separate chains (causation depth, not chronology - use timeline-explorer for dating events, era-explorer for what one era was like). Requires a working microphone and the live tutor: two of the three moves are spoken exchanges and the third is a chain built by hand and checked by the activity. Chain length is set by grade (3 cards K-4, 4 cards at 5+), never by the manifest. The manifest must NOT supply events, causes or an order: the generator writes the chains, and CODE derives the answer key from the order Gemini emits and then shuffles the bank away from it.',
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken', 'build'], role: 'apply', minutes: 8 },
     audioInput: { manual_activity: true },
     evalModes: [
@@ -145,6 +145,18 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'An ending is printed with event cards in shuffled order; the cards never show their causal order. Find the '
+        + 'causes: one event at a time, the learner says yes if it helped cause the ending or no if it did not; an event '
+        + 'that came after the ending, or was only true at the time, is not a cause. Root or right before: the learner says '
+        + 'which one event is the root (none of the others could happen without it) or the one right before the ending, by '
+        + 'its words or its place on screen. Build the chain: the learner taps every card into the slots, earliest first; '
+        + 'the activity checks the order once every slot is filled and the board sits still, and a miss empties the board. '
+        + 'Before an attempt never say which event is a cause, which comes first, next or last, or which one is the answer, '
+        + 'and do not single out one card as a hint. When the ask carries the events (grades 1-2), read them in the order '
+        + 'given. You cannot move or highlight cards.',
+    },
   },
   {
     id: 'era-explorer',

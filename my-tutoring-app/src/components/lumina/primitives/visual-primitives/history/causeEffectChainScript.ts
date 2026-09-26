@@ -589,7 +589,7 @@ const identifyStimulus = (item: IdentifyCauseItem): string => (
     : `Same ending: ${item.outcome.text} Here is another event: ${item.card.text}`
 );
 
-const askFor = (item: CauseEffectChainItem): string => {
+export const askFor = (item: CauseEffectChainItem): string => {
   switch (item.kind) {
     case 'identify_cause':
       return `Listen. ${identifyStimulus(item)} Your turn. ${elicitFor(item)}`;
