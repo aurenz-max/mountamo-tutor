@@ -9,27 +9,27 @@
  *    This surface is the primitive's manifest identity and it survives the
  *    port untouched — the DI conversion must not ablate the reference use.
  *
- *  - DI JUDGED LOOP (challenges present — first CHEMISTRY port): the Live
- *    tutor owns the clock. It asks ONCE, waits, judges (or is handed the
- *    code-computed tap verdict), corrects contrastively, and its own
- *    affirmation is the advance. No advance timer, no Next button, no
- *    push-to-talk mic, no printed answer before the affirm.
+ *  - JUDGED (challenges present): runs only on the shared tutor/JEV teaching
+ *    workspace (workspace rollout C8; the scripted runner was retired, LA-14,
+ *    user ruling 09-23: one path). A find is a tap the activity checks; the
+ *    other asks are spoken and the observer judges them; the runtime owns
+ *    progression. An unbound mount shows the shared "needs the tutor" card.
  *
  * What the judged surface DELETES from the exploration chrome, and why:
  *  - the SEARCH BAR (type "gold", get Au — the whole find/name ask answered);
  *  - the CATEGORY FILTER CHIPS (highlight a family = a free elimination);
  *  - the TAP-TO-OPEN ELEMENT MODAL (shells + valence on screen during a trend
- *    item is the answer in PIXELS — the leak no string scan sees).
+ *    item is the answer in PIXELS — the leak no string scan sees);
+ *  - tap-to-hear the question: with the tutor present, the learner asks it to repeat.
  *  The element card returns as the REVEAL, rendered behind `runner.revealHeld`
  *  (18b: set in onAffirmed, never cleared in onItemOpened).
  *
- * Cue lines, judging contracts, build gates and pools live in
- * `chemistry-primitives/periodicTableScript.ts` (hand-authored, DISTAR).
- * Nothing in this file writes a spoken line.
+ * Asks, build gates and pools live in `chemistry-primitives/periodicTableScript.ts`;
+ * the assignment and scene the tutor receives live in `periodicTableWorkspace.ts`.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Search, Atom, Volume2 } from 'lucide-react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Search, Atom } from 'lucide-react';
 import { PeriodicTableData } from '../types';
 import { ChemicalElement } from './chemistry-primitives/types';
 import { ELEMENTS, getCategoryStyle } from './chemistry-primitives/constants';
@@ -46,7 +46,6 @@ import {
   LuminaChallengeCounter,
   type LuminaAccent,
 } from '../ui';
-import JudgedMicPanel from '../components/JudgedMicPanel';
 import { useStimulusPipSurface } from '../pip/useStimulusPipSurface';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../hooks/usePhaseResults';
@@ -55,26 +54,24 @@ import {
   type PrimitiveEvaluationResult,
 } from '../evaluation';
 import type { PeriodicTableMetrics } from '../evaluation/types';
+import type { TeachingWorkspace } from '../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../components/live-activity/runtime/useWorkspaceRunner';
 import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../hooks/judgedScriptContract';
-import {
-  cellVerdictCue,
-  itemsFromChallenges,
-  askFor,
   numberWord,
-  periodicTablePackBase,
   type ElementFacts,
   type PeriodicKind,
   type PeriodicTableItem,
-  type PeriodicTier,
 } from './chemistry-primitives/periodicTableScript';
+import { cellMatches, periodicAssignment, periodicItems, periodicScene } from './chemistry-primitives/periodicTableWorkspace';
 
 interface PeriodicTableProps {
   data: PeriodicTableData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -88,12 +85,11 @@ const MODE_META: Record<PeriodicKind, { badge: string; icon: string; accent: Lum
   valence: { badge: 'Outer Shell', icon: '⚡', accent: 'amber' },
 };
 
-const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className }) => {
+const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const {
     title,
     challenges = [],
     supportTier,
-    gradeBand,
     instanceId,
     skillId,
     subskillId,
@@ -104,19 +100,18 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className }) 
 
   const stableInstanceIdRef = useRef(instanceId || `periodic-table-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-  const tier: PeriodicTier = supportTier ?? 'medium';
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
-  /** Build gates drop what cannot be asked — a placeholder in a judged loop
-   *  becomes a spoken ask the tutor has to stand behind. */
+  /** Build gates drop what cannot be asked. */
   const items = useMemo<PeriodicTableItem[]>(
-    () => itemsFromChallenges(challenges, tier),
-    [challenges, tier],
+    () => periodicItems({ challenges, supportTier }),
+    [challenges, supportTier],
   );
 
   // ── Per-item stage state ───────────────────────────────────────────────────
   /** Wrong tap: the red-ringed box, cleared on retry and item open. */
   const [wrongTapNumber, setWrongTapNumber] = useState<number | null>(null);
-  const tappedNameRef = useRef<string | null>(null);
+  const [tappedName, setTappedName] = useState<string | null>(null);
   /** The reveal payload (18b): set in onAffirmed, rendered behind
    *  `runner.revealHeld`, deliberately NOT cleared in onItemOpened. */
   const [reveal, setReveal] = useState<{ facts: ElementFacts; line: string | null } | null>(null);
@@ -131,7 +126,7 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className }) 
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const rate = (predicate: (item: PeriodicTableItem) => boolean) => {
       const scoped = items.filter(predicate);
       if (scoped.length === 0) return 100;
@@ -155,77 +150,27 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className }) 
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items, evaluation]);
+  };
 
-  // ── The pack — wording lives in periodicTableScript.ts ─────────────────────
-  // The cue surface is SPREAD, not re-declared, so the DI drive harness reads
-  // the same bytes this component sends.
-  const pack = useMemo<JudgedScriptPack<PeriodicTableItem>>(() => ({
-    ...periodicTablePackBase(items),
-    statusLines: {
-      ready: (item) => (item.answerKind === 'voice'
-        ? 'Listen, then say your answer.'
-        : 'Listen, then tap the box.'),
-      retry: (item) => (item.answerKind === 'voice'
-        ? 'Listen again — then say your answer.'
-        : 'Listen again — then tap the box.'),
-      done: 'Great work on the table today!',
-    },
-    // One factual record per attempt, right or corrected: the clue as asked and what was tapped or said (the
-    // tapped box is read before the retry clears it). Never the verdict, because the same text is kept for
-    // right answers.
-    observation: (item, { heard: transcript }) => {
-      const heard = transcript?.trim() ?? '';
-      const said = heard ? `Said "${heard}".` : 'No transcript was captured.';
-      switch (item.kind) {
-        case 'find':
-          return {
-            challenge: `find (by ${item.findBy}): asked "${askFor(item)}"`,
-            expected: `A tap on ${item.element?.name}'s box.`,
-            observed: tappedNameRef.current
-              ? `Tapped ${tappedNameRef.current}'s box.`
-              : 'Tapped a box; which one was not recorded.',
-          };
-        case 'name':
-          return {
-            challenge: `name (clue: ${item.clueBy}): asked "${askFor(item)}"`,
-            expected: `"${item.element?.name}".`,
-            observed: said,
-          };
-        case 'compare':
-          return {
-            challenge: `${item.axis === 'reactivity' ? 'Reactivity' : 'Atomic size'} comparison: asked "${askFor(item)}"`,
-            expected: `"${item.answerName}".`,
-            observed: said,
-          };
-        case 'valence':
-          return {
-            challenge: `valence: ${item.element?.name} (group ${item.element?.group}); asked "${askFor(item)}"`,
-            expected: `"${numberWord(item.answerCount ?? 0)}".`,
-            observed: said,
-          };
-      }
-    },
-  }), [items]);
-
-  const runner = useJudgedScriptRunner<PeriodicTableItem>({
-    pack,
+  const clearTap = () => { setWrongTapNumber(null); setTappedName(null); };
+  const runner = useWorkspaceRunner<PeriodicTableItem>({
+    primitiveId: 'periodic-table',
+    assignment: periodicAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || items[0]?.challengeType || 'explore',
     instanceId: resolvedInstanceId,
-    gradeLevel: gradeBand || '6',
-    exhibitId,
-    onFinished: handleFinished,
-    onItemOpened: () => {
-      setWrongTapNumber(null);
-      tappedNameRef.current = null;
-    },
-    onCorrectionRetry: () => {
-      setWrongTapNumber(null);
-      tappedNameRef.current = null;
-    },
+    onFinished: finish,
+    onItemOpened: clearTap,
+    onCorrectionRetry: clearTap,
     onAffirmed: (item) => {
       const facts = item.kind === 'compare'
         ? item.pair?.find((e) => e.name === item.answerName) ?? null
@@ -241,37 +186,49 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className }) 
       setReveal({ facts, line });
     },
   });
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
+
+  // What the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation; every item is answerable once it opens.
+  useLayoutEffect(() => {
+    const item = runner.currentItem;
+    if (!item) return;
+    workspace.current = { ...periodicScene(item, tappedName), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
 
   const currentItem = runner.currentItem;
   // Pip: the table is the question side and every cell is a possible answer, so
   // Pip outlines the table as a region and watches it after a find tap; it never
   // rings a cell.
   const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The periodic table', finished: evaluation.hasSubmitted,
+    run: runner, instanceId: resolvedInstanceId, label: 'The periodic table', finished: showSummary,
     gesture: currentItem?.kind === 'find',
   });
 
-  // ── The tap IS the commit (find items only; one tap = one verdict) ────────
-  const handleCellTap = useCallback((element: ChemicalElement) => {
+  // ── The tap IS the commit (find items only; one tap = one checked attempt) ──
+  const handleCellTap = (element: ChemicalElement) => {
     const item = runner.currentItem;
     if (!item || item.kind !== 'find' || !item.element) return;
-    if (!runner.canAttempt || evaluation.hasSubmitted) return;
+    if (!runner.canAttempt || showSummary) return;
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
     pip.look('stimulus');
-    tappedNameRef.current = element.name;
-    if (element.number !== item.element.number) setWrongTapNumber(element.number);
-    runner.submitGestureAttempt(cellVerdictCue(item, element.name));
-  }, [runner, evaluation.hasSubmitted, pip]);
+    setTappedName(element.name);
+    const correct = cellMatches(item, element.number);
+    if (!correct) setWrongTapNumber(element.number);
+    commitGesture(runner, { response: `Tapped ${element.name}'s box.`, correct, cue: () => '' });
+  };
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => {
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => {
       const meta = MODE_META[item.kind];
       return { label: meta.badge, icon: meta.icon };
     });
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
   const revealNumbers = useMemo(
     () => (runner.revealHeld && reveal ? [reveal.facts.number] : []),
@@ -296,7 +253,7 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className }) 
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <LuminaCardTitle className="text-lg">{title || 'Periodic Table'}</LuminaCardTitle>
-          {!evaluation.hasSubmitted && currentItem && (
+          {!showSummary && currentItem && (
             <LuminaBadge accent={modeMeta.accent} className="text-xs">
               {modeMeta.icon} {modeMeta.badge}
             </LuminaBadge>
@@ -305,7 +262,7 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className }) 
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex items-center justify-center gap-4">
               <LuminaChallengeCounter
@@ -313,20 +270,6 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className }) 
                 total={items.length}
                 variant="dots"
               />
-              {/* Tap-to-hear the question again — never the answer. */}
-              <button
-                type="button"
-                onClick={runner.hearStimulus}
-                aria-label="Hear the question again"
-                className={`
-                  flex items-center justify-center w-10 h-10 rounded-full
-                  bg-amber-500/15 border-2 border-amber-500/30 text-amber-300
-                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
-                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
-                `}
-              >
-                <Volume2 size={18} />
-              </button>
             </div>
 
             {/* The table IS the page. No search, no filter chips, no modal —
@@ -340,11 +283,12 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className }) 
                 setHoveredCategory={noopHover}
                 revealNumbers={revealNumbers}
                 incorrectNumber={wrongTapNumber}
+                tapTargets
               />
             </div>
 
-            {/* Reveal-on-affirm: the element card, for exactly as long as the
-                tutor's affirmation is being spoken (runner.revealHeld). */}
+            {/* Reveal-on-credit: the element card, while the credit is held
+                (runner.revealHeld). */}
             {runner.revealHeld && reveal && (
               <div className="flex justify-center">
                 <div
@@ -366,15 +310,13 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className }) 
                 </div>
               </div>
             )}
-
-            <JudgedMicPanel run={runner} />
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Periodic Table Complete!"
             celebrationMessage={`You worked the table across ${items.length} rounds!`}
@@ -617,12 +559,15 @@ const PeriodicTableExplorer: React.FC<PeriodicTableProps> = ({ data, className }
 // Fork
 // ============================================================================
 
-const PeriodicTable: React.FC<PeriodicTableProps> = ({ data, className }) => {
-  // Challenges present = the lesson asked for a judged session. The fork is
-  // structural (per payload), so each child keeps its own hook order.
-  const hasChallenges = (data.challenges?.length ?? 0) > 0;
-  if (hasChallenges) return <PeriodicTableJudged data={data} className={className} />;
-  return <PeriodicTableExplorer data={data} className={className} />;
+/** Challenges run only on the teaching workspace; an unbound mount shows the "needs the tutor" card. */
+const PeriodicTableBound = withWorkspaceOnly<PeriodicTableProps>('periodic-table', PeriodicTableJudged,
+  (props) => props.data.title);
+
+/** A payload with an askable challenge is the judged table; anything else is the ungraded exploration table. */
+const PeriodicTable: React.FC<PeriodicTableProps> = (props) => {
+  // The fork is structural (per payload), so each child keeps its own hook order.
+  const askable = useMemo(() => periodicItems(props.data).length > 0, [props.data]);
+  return askable ? <PeriodicTableBound {...props} /> : <PeriodicTableExplorer data={props.data} className={props.className} />;
 };
 
 export default PeriodicTable;

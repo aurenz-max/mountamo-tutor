@@ -11,6 +11,8 @@ interface PeriodicTableGridProps {
   revealNumbers?: number[];
   /** DI wrong tap: red-ring this atomic number until the correction retry. */
   incorrectNumber?: number | null;
+  /** Mark each box `data-pip-object="element-<name>"` so a journey driver can tap it by name. */
+  tapTargets?: boolean;
 }
 
 /**
@@ -27,6 +29,7 @@ export const PeriodicTableGrid: React.FC<PeriodicTableGridProps> = ({
   setHoveredCategory,
   revealNumbers = [],
   incorrectNumber = null,
+  tapTargets = false,
 }) => {
   return (
     <div
@@ -65,6 +68,7 @@ export const PeriodicTableGrid: React.FC<PeriodicTableGridProps> = ({
           <div
             key={element.number}
             onClick={() => onSelectElement(element)}
+            data-pip-object={tapTargets ? `element-${element.name.toLowerCase()}` : undefined}
             onMouseEnter={() => setHoveredCategory(element.category)}
             onMouseLeave={() => setHoveredCategory(null)}
             className={`

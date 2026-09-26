@@ -48,7 +48,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'periodic-table',
-    description: 'Interactive periodic table of all 118 elements with group/period axes, element modal views (electron shells, stability, phase), and category filtering. Two surfaces: free EXPLORATION (clickable elements, search, family filters — ideal for introducing the table), and a live-judged DIRECT INSTRUCTION session when an eval mode is pinned — the spoken tutor asks, the child taps a box (Element Hunt) or answers OUT LOUD (element names, trend comparisons, outer-electron counts), and the tutor\'s own affirmation advances the lesson. Perfect for element properties, periodic trends, atomic structure, chemical families, and the organization of the table.',
+    description: 'Interactive periodic table of all 118 elements with group/period axes, element modal views (electron shells, stability, phase), and category filtering. Two surfaces: free EXPLORATION (clickable elements, search, family filters — ideal for introducing the table), and a live-judged DIRECT INSTRUCTION session when an eval mode is pinned — the spoken tutor asks, the child taps a box (Element Hunt) or answers OUT LOUD (element names, trend comparisons, outer-electron counts), and a credited answer advances the lesson. Perfect for element properties, periodic trends, atomic structure, chemical families, and the organization of the table.',
     constraints: 'Best for middle-school and above. Use for chemistry lessons on periodic trends, element properties, atomic structure, electron configuration, or chemical families. Judged sessions require the live tutor and a microphone; the manifest must NOT supply element lists or answer keys — every challenge is drawn and keyed in code from the element table.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'spoken'], role: ['introduce', 'apply'], minutes: 5 },
     // ── DI MODALITY (2026-08-19) — FIRST chemistry port. The tutor owns the
@@ -120,6 +120,17 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'trend', affordances: { answers: ['spoken'] }, label: 'Periodic Trends (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['trend'], description: 'DI judged, spoken: same-group size and reactivity comparisons plus main-group outer-electron counts, all keys computed from the table.' },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      guidance: 'The full periodic table is on screen with group numbers across the top and period numbers down the side; '
+        + 'every box shows its atomic number, symbol and name, and there is no search or filter. Element Hunt: the learner '
+        + 'taps the box for an element named by name, spelled symbol, atomic number or group and period; the activity '
+        + 'checks the tap. Before a tap never say where the box is, and on a group-and-period ask never say which element '
+        + 'is there. Name It: the learner reads the table and says the element\'s name; letters of the symbol read back '
+        + 'are not a name. Trends: the learner says which of two named elements is bigger or more reactive, or how many '
+        + 'electrons are in an element\'s outer shell; the group number is not the outer-electron count. Before an '
+        + 'attempt never say the answer or the rule that decides it for this pair. You cannot point at or highlight boxes.',
+    },
   },
   {
     id: 'matter-explorer',

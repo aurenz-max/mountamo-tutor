@@ -1,0 +1,58 @@
+{
+ "source": "qa/tutor-reports/periodic-table-runtime-trend-payload-2026-09-26.json",
+ "primitiveId": "periodic-table",
+ "evalMode": "trend",
+ "data": {
+  "title": "Periodic Table of Elements",
+  "description": "Explore the elements and their properties",
+  "highlightElements": [],
+  "challenges": [
+   {
+    "id": "pt-1-trend",
+    "challengeType": "trend",
+    "axis": "size",
+    "pairNumbers": [
+     34,
+     16
+    ]
+   },
+   {
+    "id": "pt-2-trend",
+    "challengeType": "trend",
+    "targetNumber": 8
+   },
+   {
+    "id": "pt-3-trend",
+    "challengeType": "trend",
+    "axis": "reactivity",
+    "pairNumbers": [
+     3,
+     19
+    ]
+   },
+   {
+    "id": "pt-4-trend",
+    "challengeType": "trend",
+    "axis": "size",
+    "pairNumbers": [
+     7,
+     15
+    ]
+   },
+   {
+    "id": "pt-5-trend",
+    "challengeType": "trend",
+    "targetNumber": 18
+   },
+   {
+    "id": "pt-6-trend",
+    "challengeType": "trend",
+    "axis": "reactivity",
+    "pairNumbers": [
+     11,
+     55
+    ]
+   }
+  ]
+ }
+}

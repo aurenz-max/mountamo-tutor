@@ -107,6 +107,7 @@ import { itemsFromChallenges as oralSentenceItems } from '../../primitives/visua
 import { oralSentenceJourneyAnswers } from '../../primitives/visual-primitives/literacy/oralSentenceStudioWorkspace';
 import { causeEffectItems, causeEffectJourneyAnswers } from '../../primitives/visual-primitives/history/causeEffectChainWorkspace';
 import { eraItems, eraJourneyAnswers } from '../../primitives/visual-primitives/history/eraExplorerWorkspace';
+import { periodicItems, periodicJourneyAnswers } from '../../primitives/chemistry-primitives/periodicTableWorkspace';
 import { statesItems } from './adapters/statesOfMatterLive';
 import { statesJourneyAnswers } from '../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
 import { solarItems } from './adapters/solarSystemExplorerLive';
@@ -1600,6 +1601,26 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const item = eraItems(ctx.data as never).find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current era-explorer item');
       const answers = eraJourneyAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'periodic-table': {
+    execution: 'workspace',
+    component: 'primitives/PeriodicTable.tsx',
+    instanceId: 'periodic-table',
+    defaults: { grade: 'Grade 8', mode: 'explore', di: false, topic: 'Organization of the periodic table' },
+    leakTokens: ['PT_ITEM', 'PT_MOVE', 'PT_COMPLETE', 'PT_HEAR', 'PT_TAP'],
+    prompts: WORKSPACE_PROMPTS,
+    // Element Hunt taps a box by element name (a wrong tap is a neighbouring box); the other asks are spoken.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = periodicItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current periodic-table item');
+      const answers = periodicJourneyAnswers(item);
+      if (answers.tap) {
+        return [{ type: 'touch', target: `element-${(intent === 'wrong' ? answers.tap.wrong : answers.tap.correct).toLowerCase()}` }];
+      }
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },

@@ -1,0 +1,48 @@
+{
+ "source": "qa/tutor-reports/periodic-table-runtime-explore-payload-2026-09-26.json",
+ "primitiveId": "periodic-table",
+ "evalMode": "explore",
+ "data": {
+  "title": "Periodic Table of Elements",
+  "description": "Explore the elements and their properties",
+  "highlightElements": [],
+  "challenges": [
+   {
+    "id": "pt-1-explore",
+    "challengeType": "explore",
+    "findBy": "name",
+    "targetNumber": 6
+   },
+   {
+    "id": "pt-2-explore",
+    "challengeType": "explore",
+    "findBy": "number",
+    "targetNumber": 7
+   },
+   {
+    "id": "pt-3-explore",
+    "challengeType": "explore",
+    "findBy": "position",
+    "targetNumber": 56
+   },
+   {
+    "id": "pt-4-explore",
+    "challengeType": "explore",
+    "findBy": "symbol",
+    "targetNumber": 18
+   },
+   {
+    "id": "pt-5-explore",
+    "challengeType": "explore",
+    "findBy": "name",
+    "targetNumber": 16
+   },
+   {
+    "id": "pt-6-explore",
+    "challengeType": "explore",
+    "findBy": "number",
+    "targetNumber": 8
+   }
+  ]
+ }
+}
