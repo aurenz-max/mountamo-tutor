@@ -51,6 +51,15 @@ export interface DiStageData {
   onEvaluationSubmit?: unknown;
 }
 
+/** What a pack's stimulus may read beyond its item: the committed steps (a pack that scribes each credited
+ *  step onto one shared problem), and, for a pack that sets `awaitsStimulus`, whether the learner's own
+ *  preparatory action (a roll) has happened yet. */
+export interface DiStageView {
+  committed: ReadonlySet<string>;
+  ready: boolean;
+  markReady: () => void;
+}
+
 export interface DiTeachingStageProps<Item extends { id: string }, M extends PrimitiveMetrics> {
   primitiveId: ComponentId;
   data: DiStageData;
@@ -60,15 +69,20 @@ export interface DiTeachingStageProps<Item extends { id: string }, M extends Pri
   className?: string;
   runtimePlanItemId?: string;
   assignment: (item: Item) => TeachingAssignment;
-  scene: (item: Item) => WorkspaceScene;
+  scene: (item: Item, view: { ready: boolean }) => WorkspaceScene;
   metrics: (result: TeachingEvaluationResult) => M;
   copy: { empty: string; title: string; badge: string; prompt: string; heading: string; celebration: string };
   /** The recap row for one item. `solved` is false for a missed item, whose recap must not
    *  print an answer the child never produced. */
   recapLabel: (item: Item, solved: boolean) => string;
-  stimulus: (item: Item, marks: readonly string[]) => ReactNode;
+  stimulus: (item: Item, marks: readonly string[], view: DiStageView) => ReactNode;
   /** Items the observer has already credited, for a reward trail under the stimulus. */
-  trail?: (committed: Item[]) => ReactNode;
+  trail?: (committed: Item[], current: Item) => ReactNode;
+  /** The item cannot be answered until the learner does something first (dice-roll's roll): until the
+   *  stimulus calls `markReady`, the workspace reports `readyForResponse: false`. */
+  awaitsStimulus?: boolean;
+  /** The progress dots, when an item is one step of a larger problem. Default: one dot per item. */
+  counter?: (item: Item, items: readonly Item[]) => { current: number; total: number };
 }
 
 /**
@@ -99,7 +113,8 @@ export default function DiTeachingStage<Item extends { id: string }, M extends P
 }
 
 function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>({ primitiveId, data, items,
-    evalMode, className, runtimePlanItemId, assignment, scene, metrics, copy, recapLabel, stimulus, trail }:
+    evalMode, className, runtimePlanItemId, assignment, scene, metrics, copy, recapLabel, stimulus, trail,
+    awaitsStimulus, counter }:
     DiTeachingStageProps<Item, M>) {
   const instance = useRef(data.instanceId || `${primitiveId}-${Date.now()}`);
   const workspace = useRef<TeachingWorkspace | null>(null);
@@ -117,12 +132,16 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
   const item = items[lesson.state.index];
   const committed = items.filter(candidate =>
     lesson.state.attempts.some(attempt => attempt.itemId === candidate.id && attempt.correct));
+  const committedKey = committed.map(candidate => candidate.id).join(' ');
+  const committedIds = useMemo(() => new Set(committedKey ? committedKey.split(' ') : []), [committedKey]);
+  const [readyItemId, setReadyItemId] = useState<string | null>(null);
+  const ready = !awaitsStimulus || readyItemId === item?.id;
 
   useLayoutEffect(() => {
     workspace.current = {
-      ...scene(item),
+      ...scene(item, { ready }),
       demonstration: marks,
-      readyForResponse: true, canDemonstrate: true, canPresent: false,
+      readyForResponse: ready, canDemonstrate: true, canPresent: false,
       mark, clearPresentation: () => mark([]),
     };
     lesson.publishWorkspace();
@@ -175,11 +194,14 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
       </div>
     </LuminaCardHeader>
     <LuminaCardContent className="space-y-6">
-      <LuminaChallengeCounter current={lesson.state.index + 1} total={items.length} variant="dots" />
-      <div ref={pip.ref('stimulus')} data-pip-object="stimulus">{stimulus(item, marks)}</div>
+      <LuminaChallengeCounter {...(counter?.(item, items) ?? { current: lesson.state.index + 1, total: items.length })}
+        variant="dots" />
+      <div ref={pip.ref('stimulus')} data-pip-object="stimulus">
+        {stimulus(item, marks, { committed: committedIds, ready, markReady: () => setReadyItemId(item.id) })}
+      </div>
       {/* Every answer is spoken, so no answer surface lies between the dock and the stimulus. */}
       {pipStore && <div ref={pip.dock} data-pip-dock={instance.current} className={PIP_DOCK_CLASS} />}
-      {trail?.(committed)}
+      {trail?.(committed, item)}
       <div className="flex justify-center"><LuminaReadAloudGlyph size={22} speaking={lesson.tutorSpeaking} /></div>
       <p className="text-center text-sm text-slate-400">{copy.prompt}</p>
     </LuminaCardContent>

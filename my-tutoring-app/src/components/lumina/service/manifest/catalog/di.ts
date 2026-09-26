@@ -832,6 +832,17 @@ export const DI_CATALOG: ComponentDefinition[] = [
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     evalModes: DI_SPOKEN_PRACTICE_EVAL_MODES,
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
+      guidance: 'The panel shows the stimulus: printed text, one picture, a group of pictures, two pictures side by side, '
+        + 'or nothing, in which case the question itself carries it. The child answers OUT LOUD, one short word or phrase, '
+        + 'or on explain items one idea in their own words. Nothing on screen names the answer: a group has no numeral, '
+        + 'a picture has no label, and a pair is unlabeled, so say both names when you ask. On a pair item read the whole '
+        + 'word menu; the answer is one of those words. The key names what else counts and the wrong answer that sounds '
+        + 'right. On explain items judge the idea, not the words; the stimulus read back or its name alone is not an '
+        + 'explanation. Where the facts say the learner reads printed text aloud, the text is the answer: let them read '
+        + 'it first. You cannot change the stimulus or add a picture.',
+    },
     misconceptionScope: 'primitive',
     audioInput: { manual_activity: true },
     tutoring: {

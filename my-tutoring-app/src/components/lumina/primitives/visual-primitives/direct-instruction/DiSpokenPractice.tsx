@@ -1,72 +1,33 @@
 'use client';
 
 /**
- * DiSpokenPractice — the DI family's content-generic pack. One component, N
- * skills: the stimulus is data, the script is data, and the judged loop is the
- * shared runner.
+ * DiSpokenPractice — the DI family's content-generic pack. One component, N skills: the stimulus is
+ * data and the ask is data. The child meets a stimulus (printed text, a picture, a group of pictures,
+ * two pictures side by side, or nothing at all — the tutor says it) and SAYS the answer.
  *
- * WHAT THE CHILD DOES. Meets a stimulus (printed text, a picture, a group of
- * pictures, or nothing at all — the tutor says it), hears one scripted ask, and
- * SAYS the answer. The tutor's affirmation is the advance: no Check button, no
- * Next button, no timer.
+ * The Live tutor teaches it on the shared tutor/JEV workspace through `DiTeachingStage` (workspace
+ * rollout C6; the scripted runner path is gone, one-path ruling 09-23). An unbound mount renders the
+ * stage's visible "needs the tutor" card.
  *
- * WHY IT IS SHORT. Everything that used to be re-rolled per pack now lives
- * above it — `useJudgedScriptRunner` owns the run lifecycle, progression,
- * correction cap and context sync; `diSpokenPracticeScript` owns the DISTAR
- * skeleton. What remains here is a stimulus renderer and a mic, which is the
- * measured residue of `WordFlip.tsx` (661 lines, one interactive element) and
- * `SoundSwap.tsx` (767 lines, one interactive element).
- *
- * ANSWER-LEAK RULE, STRUCTURALLY. Nothing on screen may name the answer before
- * the tutor affirms it. Two places that is enforced here rather than remembered:
- * `count_and_say` draws N pictures and NEVER a numeral, and tap-to-hear is
- * hidden entirely on `decode` items (where the stimulus IS the answer, so
- * speaking it would read the child their own task — phonics-blender's third-tap
- * defect, closed at the source).
+ * ANSWER-LEAK RULE, STRUCTURALLY. Nothing on screen names the answer before the observer credits it:
+ * `count_and_say` draws N pictures and never a numeral, a picture to name has no label, a `pair` prints
+ * neither label (the tutor names both), and `none` prints nothing. The tap-to-hear button is gone: with
+ * the tutor present, the learner asks the tutor to say it again.
  */
 
-import React, { useCallback, useMemo } from 'react';
-import {
-  LuminaCard,
-  LuminaCardContent,
-  LuminaCardHeader,
-  LuminaCardTitle,
-  LuminaBadge,
-  LuminaButton,
-  LuminaChallengeCounter,
-} from '../../../ui';
-import { usePrimitiveEvaluation } from '../../../evaluation';
-import type {
-  DiSpokenPracticeMetrics,
-  PrimitiveEvaluationResult,
-} from '../../../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
-import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import DiActionPanel from '../../../components/DiActionPanel';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
-import {
-  diSpokenPracticePackBase,
-  pronounceCue,
-  withSpokenPracticeAction,
-  type ActionableSpokenPracticeItem,
-  type SpokenPracticeItem,
-  type SpokenPracticeMode,
-} from './diSpokenPracticeScript';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { diSpokenPracticePipPose } from '../../../pip/diSpokenPracticePipPose';
+import React, { useMemo } from 'react';
+import type { DiSpokenPracticeMetrics, PrimitiveEvaluationResult } from '../../../evaluation/types';
+import DiTeachingStage, { diStageMetrics } from './DiTeachingStage';
+import type { SpokenPracticeItem, SpokenPracticeMode } from './diSpokenPracticeScript';
+import { spokenPracticeAssignment, spokenPracticeScene } from './diSpokenPracticeWorkspace';
 
 export type { SpokenPracticeItem, SpokenPracticeMode } from './diSpokenPracticeScript';
 
 export interface DiSpokenPracticeData {
   title: string;
   description: string;
-  /** 3-6 items, fully scripted by the generator. May be EMPTY: the generator
-   *  refuses to invent unscoped content, and an honest empty state beats
-   *  off-topic practice. */
+  /** 3-6 items, fully scripted by the generator. May be EMPTY: the generator refuses to invent
+   *  unscoped content, and an honest empty state beats off-topic practice. */
   items: SpokenPracticeItem[];
   /** Session task identity (the resolved eval mode). */
   challengeType: SpokenPracticeMode;
@@ -83,261 +44,78 @@ export interface DiSpokenPracticeData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<DiSpokenPracticeMetrics>) => void;
 }
 
-/** Misconception Loop S1 — the task identity, named so a distilled sentence
- *  stays self-limiting under this pack's primitive-scoped key. */
-const TASK_PHRASE: Record<SpokenPracticeMode, string> = {
-  say_answer: 'producing a spoken answer to a stimulus the child was not shown the answer to',
-  read_aloud: 'reading printed text aloud (decoding, not recall)',
-  count_and_say: 'counting a group of pictures and saying how many',
-  compare_choice:
-    'saying which word from a stated set describes two things shown side by side',
-  explain_concept:
-    'explaining in their own words what a shown instance means or what rule it follows',
+export interface DiSpokenPracticeProps {
+  data: DiSpokenPracticeData;
+  index?: number;
+  className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED eval mode from the live mount; never rebuilt from a label. */
+  runtimeEvalMode?: string;
+}
+
+const COPY = {
+  empty: 'No spoken practice was built for this objective.',
+  title: 'Say It Out Loud', badge: 'Say it out loud', prompt: 'Say the answer out loud, or ask for help.',
+  heading: 'Practice Complete!', celebration: 'You answered out loud the whole way through!',
 };
 
-/** PLATFORM PROP CONTRACT: registry primitives mount as
- *  `<Component data={…} index={…} />` — generated data arrives as ONE `data`
- *  prop with the evaluation props merged in, never spread. */
-export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: number }> = ({ data }) => {
-  const items = useMemo(
-    () => (data.items ?? []).map(withSpokenPracticeAction),
-    [data.items],
-  );
+const picture = (emoji: string, label: string) =>
+  <div className="text-center text-7xl leading-none" role="img" aria-label={label}>{emoji}</div>;
 
-  const resolvedInstanceId = useMemo(
-    () => data.instanceId || `di-spoken-practice-${Math.round(performance.now())}`,
-    [data.instanceId],
-  );
-
-  const { submitResult, hasSubmitted, submittedResult, elapsedMs } =
-    usePrimitiveEvaluation<DiSpokenPracticeMetrics>({
-      primitiveType: 'di-spoken-practice',
-      instanceId: resolvedInstanceId,
-      skillId: data.skillId,
-      subskillId: data.subskillId,
-      objectiveId: data.objectiveId,
-      exhibitId: data.exhibitId,
-      componentIntent: data.componentIntent,
-      objectiveText: data.objectiveText,
-      onSubmit: data.onEvaluationSubmit,
-    });
-
-  // ── The pack ──────────────────────────────────────────────────────────────
-  // The cue surface is exported ONCE from the script module and spread here —
-  // the DI drive harness names the same export, so the headless student replays
-  // production strings rather than a replica of them (judgedScriptContract's
-  // `JudgedCueSurface` note).
-  const pack = useMemo<JudgedScriptPack<SpokenPracticeItem>>(() => ({
-    ...diSpokenPracticePackBase(items),
-    // Only what DIFFERS from the runner's defaults.
-    statusLines: {
-      ready: (current) => withSpokenPracticeAction(current).actionContract.instruction,
-      retry: (current) => `Have another go. ${withSpokenPracticeAction(current).actionContract.instruction}`,
-      affirmedNext: 'Yes! You said it.',
-      done: 'Great talking today!',
-    },
-    // One record per attempt, right or corrected: the ask as spoken and what was heard; never the verdict.
-    observation: (item, { heard }) => ({
-      challenge:
-        `Direct Instruction spoken practice — ${TASK_PHRASE[item.mode]}. `
-        + `The tutor asked: "${item.ask}"`,
-      expected: item.expectedAnswer,
-      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
-    }),
-  }), [items]);
-
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
-    const metrics: DiSpokenPracticeMetrics = {
-      type: 'di-spoken-practice',
-      challengeType: data.challengeType,
-      totalChallenges: summary.outcomes.length,
-      correctCount: summary.solvedCount,
-      attemptsCount: summary.attemptsCount,
-      firstTryCount: summary.firstTryCount,
-      hintsViewed: summary.hearTaps,
-      overallAccuracy: summary.accuracy,
-      averageAttemptsPerChallenge:
-        summary.attemptsCount / Math.max(summary.outcomes.length, 1),
-    };
-    submitResult(summary.passed, summary.accuracy, metrics, { learningResponses: summary.learningResponses },
-      undefined, summary.diagnosisEvidence);
-  }, [data.challengeType, submitResult]);
-
-  const runner = useJudgedScriptRunner<SpokenPracticeItem>({
-    pack,
-    instanceId: resolvedInstanceId,
-    gradeLevel: data.gradeLevel || 'kindergarten',
-    exhibitId: data.exhibitId,
-    onFinished: handleFinished,
-  });
-
-  const item = runner.currentItem;
-  const actionItem: ActionableSpokenPracticeItem | null = item
-    ? withSpokenPracticeAction(item)
-    : null;
-  const canHear = !!item && pronounceCue(item) !== '';
-
-  const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (it) => ({
-      label: `${it.actionContract.label} — ${it.stimulusText2
-        ? `${it.stimulusText} / ${it.stimulusText2}` : it.stimulusText}`,
-      icon: it.actionContract.icon,
-    }));
-  }, [hasSubmitted, runner.summary, items]);
-
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the runner's phase onto the stimulus panel as a whole; Pip
-  // never answers, singles out a picture, or advances.
-  const pip = usePipTargets(item?.id ?? null, false);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !item || hasSubmitted) return null;
-    const targets = pip.targets(['stimulus'], () => 'The picture or words to answer about');
-    const pose = diSpokenPracticePipPose({
-      running: runner.running, preparing: runner.preparing,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
-      cueMatchesItem: runner.cuedItemId === item.id,
-      stimulusKind: item.stimulusKind, visibleIds: targets.map((target) => target.id),
-    });
-    return { instanceId: resolvedInstanceId, scopeId: item.id, label: 'Spoken practice', dock: pip.dock.current, targets, pose };
-  });
-
-  // ── Stimulus ──────────────────────────────────────────────────────────────
-  // The ONLY thing this component renders that a bespoke pack would. Nothing
-  // here may name the answer: 'objects' draws pictures and never a numeral,
-  // and 'none' prints nothing at all (the tutor says it).
-  const renderStimulus = () => {
-    if (!item) return null;
+/** The stimulus alone (a pair's pictures carry their names for a screen reader: the tutor says them
+ *  anyway, and the answer is the comparison word). A tutor mark outlines the whole panel, never one picture of a pair or a count. */
+function stimulus(item: SpokenPracticeItem, marks: readonly string[]) {
+  const marked = marks.includes('stimulus');
+  const body = (() => {
     switch (item.stimulusKind) {
       case 'text':
-        return (
-          <p className="text-center text-4xl font-semibold tracking-wide text-slate-100">
-            {item.stimulusText}
-          </p>
-        );
+        return <p className="text-center text-4xl font-semibold tracking-wide text-slate-100">{item.stimulusText}</p>;
       case 'emoji':
-        return (
-          <div className="text-center text-7xl leading-none" role="img" aria-label="picture clue">
-            {item.stimulusEmoji}
-          </div>
-        );
+        return picture(item.stimulusEmoji, 'picture clue');
       case 'pair':
-        // Two pictures, no labels: the tutor names both aloud (the unspoken-
-        // stimulus gate requires it), so printing them would only ask a
-        // pre-reader to read what they are already being told.
-        return (
-          <div className="flex items-center justify-center gap-6">
-            <div className="text-center text-7xl leading-none" role="img" aria-label={item.stimulusText}>
-              {item.stimulusEmoji}
-            </div>
-            <span className="text-2xl text-slate-500">·</span>
-            <div className="text-center text-7xl leading-none" role="img" aria-label={item.stimulusText2 ?? ''}>
-              {item.stimulusEmoji2}
-            </div>
-          </div>
-        );
+        return <div className="flex items-center justify-center gap-6">
+          {picture(item.stimulusEmoji, item.stimulusText)}
+          <span className="text-2xl text-slate-500">·</span>
+          {picture(item.stimulusEmoji2 ?? '', item.stimulusText2 ?? '')}
+        </div>;
       case 'objects':
-        return (
-          <div
-            className="flex flex-wrap items-center justify-center gap-3"
-            role="img"
-            aria-label={`a group of ${item.stimulusText}`}
-          >
-            {Array.from({ length: item.stimulusCount }, (_, i) => (
-              <span key={i} className="text-4xl leading-none">{item.stimulusEmoji}</span>
-            ))}
-          </div>
-        );
+        return <div className="flex flex-wrap items-center justify-center gap-3" role="img" aria-label="a group of pictures">
+          {Array.from({ length: item.stimulusCount }, (_, i) => <span key={i} className="text-4xl leading-none">{item.stimulusEmoji}</span>)}
+        </div>;
       case 'none':
       default:
-        return (
-          <p className="text-center text-sm uppercase tracking-[0.3em] text-slate-500">
-            listen
-          </p>
-        );
+        return <p className="text-center text-sm uppercase tracking-[0.3em] text-slate-500">listen</p>;
     }
-  };
+  })();
+  return <div data-spoken-object="stimulus" data-assignment-target="true" data-tutor-demonstration={marked}
+    className={`rounded-xl border border-white/10 bg-white/5 px-4 py-8 ${marked ? 'outline outline-2 outline-dashed outline-offset-4 outline-purple-400' : ''}`}>
+    {body}
+  </div>;
+}
 
-  if (items.length === 0) {
-    return (
-      <LuminaCard>
-        <LuminaCardContent className="py-10 text-center">
-          <p className="text-slate-300 text-sm">
-            No spoken practice was built for this objective.
-          </p>
-        </LuminaCardContent>
-      </LuminaCard>
-    );
-  }
+/** Credited answers, each with the answer the learner gave its credit for. */
+function creditedAnswers(done: SpokenPracticeItem[]) {
+  return done.length > 0 && <div className="flex flex-wrap justify-center gap-2" aria-label="Answers you have given">
+    {done.map(item => <span key={item.id} data-spoken-credited={item.id}
+      className="rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-sm font-semibold text-emerald-200">
+      {item.mode === 'explain_concept' ? item.conceptStatement : item.expectedAnswer}
+    </span>)}
+  </div>;
+}
 
-  return (
-    <LuminaCard>
-      <LuminaCardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <LuminaCardTitle className="text-lg">{data.title}</LuminaCardTitle>
-            <p className="text-slate-400 text-sm">{data.description}</p>
-          </div>
-          <LuminaBadge accent="cyan" className="text-xs">Say it out loud</LuminaBadge>
-        </div>
-      </LuminaCardHeader>
+/** A missed item recaps without its answer. */
+const recapLabel = (item: SpokenPracticeItem, solved: boolean) =>
+  solved ? item.expectedAnswer : 'a question';
 
-      <LuminaCardContent className="space-y-4">
-        {!hasSubmitted && (
-          <>
-            <div className="mb-2 flex justify-center">
-              <LuminaChallengeCounter
-                current={Math.min(runner.currentIndex + 1, items.length)}
-                total={items.length}
-                variant="dots"
-              />
-            </div>
-
-            <div ref={pip.ref('stimulus')} data-pip-object="stimulus"
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-8">
-              {renderStimulus()}
-            </div>
-
-            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
-
-            {canHear && (
-              <div className="flex justify-center">
-                <LuminaButton
-                  tone={runner.stimulusTapped ? 'primary' : 'subtle'}
-                  className="text-xs"
-                  onClick={runner.hearStimulus}
-                  disabled={!runner.running}
-                >
-                  🔊 Hear it
-                </LuminaButton>
-              </div>
-            )}
-
-            <DiActionPanel
-              run={runner}
-              running={runner.running}
-              stage={runner.stage}
-              currentItem={actionItem}
-              steps={actionItem ? [actionItem] : []}
-              startInstruction="Start the lesson, look or listen, then answer out loud."
-            />
-          </>
-        )}
-
-        {hasSubmitted && phaseResults.length > 0 && (
-          <PhaseSummaryPanel
-            phases={phaseResults}
-            overallScore={submittedResult?.score}
-            durationMs={elapsedMs}
-            heading="Practice Complete!"
-            celebrationMessage="You answered out loud the whole way through!"
-          />
-        )}
-      </LuminaCardContent>
-    </LuminaCard>
-  );
+/** PLATFORM PROP CONTRACT: registry primitives mount as `<Component data={…} index={…} />`. */
+export const DiSpokenPractice: React.FC<DiSpokenPracticeProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
+  const items = useMemo(() => data.items ?? [], [data.items]);
+  const evalMode = runtimeEvalMode || data.challengeType || 'say_answer';
+  return <DiTeachingStage<SpokenPracticeItem, DiSpokenPracticeMetrics> primitiveId="di-spoken-practice" data={data}
+    items={items} evalMode={evalMode} className={className} runtimePlanItemId={runtimePlanItemId}
+    assignment={spokenPracticeAssignment} scene={spokenPracticeScene} copy={COPY} stimulus={stimulus}
+    trail={creditedAnswers} recapLabel={recapLabel}
+    metrics={result => ({ type: 'di-spoken-practice', ...diStageMetrics(result, items, data.challengeType) })} />;
 };
 
 export default DiSpokenPractice;

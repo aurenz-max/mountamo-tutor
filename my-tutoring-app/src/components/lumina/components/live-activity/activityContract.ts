@@ -57,6 +57,7 @@ import { solarSystemExplorerLiveDomain } from './adapters/solarSystemExplorerLiv
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { diShapesLiveDomain } from './adapters/diShapesLive';
+import { diSpokenPracticeLiveDomain } from './adapters/diSpokenPracticeLive';
 import { spatialSceneLiveDomain } from './adapters/spatialSceneLive';
 import { workspaceAdapter, type LiveActivityAdapter } from './adapters/adapterContract';
 
@@ -120,6 +121,7 @@ export const LIVE_ADAPTERS = {
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
   'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),
+  'di-spoken-practice': workspaceAdapter('di-spoken-practice', diSpokenPracticeLiveDomain),
   'spatial-scene': workspaceAdapter('spatial-scene', spatialSceneLiveDomain),
 } satisfies Record<string, LiveActivityAdapter<any>>;
 

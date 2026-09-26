@@ -1,0 +1,145 @@
+{
+ "source": "qa/tutor-reports/di-spoken-practice-runtime-compare_choice-payload-2026-09-26.json",
+ "primitiveId": "di-spoken-practice",
+ "evalMode": "compare_choice",
+ "data": {
+  "title": "Comparing Lengths",
+  "description": "Listen to the items and answer out loud to tell whether things are longer or shorter.",
+  "challengeType": "compare_choice",
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+  "items": [
+   {
+    "id": "dsp-1",
+    "mode": "compare_choice",
+    "action": "compare_choice",
+    "answerKind": "voice",
+    "responseClass": "closed_set_choice",
+    "stimulusKind": "pair",
+    "answerSource": "recall",
+    "stimulusText": "a train",
+    "stimulusEmoji": "🚆",
+    "stimulusText2": "a toy car",
+    "stimulusEmoji2": "🚗",
+    "choices": [
+     "longer",
+     "shorter"
+    ],
+    "stimulusCount": 0,
+    "ask": "Here is a train, and here is a toy car. Is the train longer or shorter?",
+    "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+    "expectedAnswer": "longer",
+    "alternates": [],
+    "acceptRule": "Any clear spoken response that names the correct menu word.",
+    "signatureError": "Saying shorter because it is a different vehicle.",
+    "correctionBody": "The train is longer because it takes up more space from front to back than the toy car.",
+    "actionContract": {
+     "id": "compare_choice",
+     "label": "Which Word?",
+     "icon": "<>",
+     "answerKind": "voice",
+     "instruction": "Here is a train, and here is a toy car. Is the train longer or shorter?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   },
+   {
+    "id": "dsp-2",
+    "mode": "compare_choice",
+    "action": "compare_choice",
+    "answerKind": "voice",
+    "responseClass": "closed_set_choice",
+    "stimulusKind": "pair",
+    "answerSource": "recall",
+    "stimulusText": "a crayon",
+    "stimulusEmoji": "🖍️",
+    "stimulusText2": "a jump rope",
+    "stimulusEmoji2": "🧶",
+    "choices": [
+     "longer",
+     "shorter"
+    ],
+    "stimulusCount": 0,
+    "ask": "Here is a crayon, and here is a giant jump rope. Is the crayon longer or shorter?",
+    "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+    "expectedAnswer": "shorter",
+    "alternates": [],
+    "acceptRule": "Any clear spoken response that names the correct menu word.",
+    "signatureError": "Saying longer because crayons are fun to use.",
+    "correctionBody": "The crayon is shorter because it does not stretch out as far as the jump rope.",
+    "actionContract": {
+     "id": "compare_choice",
+     "label": "Which Word?",
+     "icon": "<>",
+     "answerKind": "voice",
+     "instruction": "Here is a crayon, and here is a giant jump rope. Is the crayon longer or shorter?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   },
+   {
+    "id": "dsp-3",
+    "mode": "compare_choice",
+    "action": "compare_choice",
+    "answerKind": "voice",
+    "responseClass": "closed_set_choice",
+    "stimulusKind": "pair",
+    "answerSource": "recall",
+    "stimulusText": "a garden snake",
+    "stimulusEmoji": "🐍",
+    "stimulusText2": "an earthworm",
+    "stimulusEmoji2": "🪱",
+    "choices": [
+     "longer",
+     "shorter"
+    ],
+    "stimulusCount": 0,
+    "ask": "Here is a garden snake, and here is an earthworm. Is the garden snake longer or shorter?",
+    "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+    "expectedAnswer": "longer",
+    "alternates": [],
+    "acceptRule": "Any clear spoken response that names the correct menu word.",
+    "signatureError": "Saying shorter because both are wiggly animals.",
+    "correctionBody": "The garden snake is longer because it stretches out further than the earthworm.",
+    "actionContract": {
+     "id": "compare_choice",
+     "label": "Which Word?",
+     "icon": "<>",
+     "answerKind": "voice",
+     "instruction": "Here is a garden snake, and here is an earthworm. Is the garden snake longer or shorter?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   },
+   {
+    "id": "dsp-4",
+    "mode": "compare_choice",
+    "action": "compare_choice",
+    "answerKind": "voice",
+    "responseClass": "closed_set_choice",
+    "stimulusKind": "pair",
+    "answerSource": "recall",
+    "stimulusText": "a pencil stub",
+    "stimulusEmoji": "✏️",
+    "stimulusText2": "a ruler",
+    "stimulusEmoji2": "📏",
+    "choices": [
+     "longer",
+     "shorter"
+    ],
+    "stimulusCount": 0,
+    "ask": "Here is a pencil stub, and here is a brand new ruler. Is the pencil stub longer or shorter?",
+    "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+    "expectedAnswer": "shorter",
+    "alternates": [],
+    "acceptRule": "Any clear spoken response that names the correct menu word.",
+    "signatureError": "Saying longer because pencils are for writing.",
+    "correctionBody": "The pencil stub is shorter because it has been used up and has less length than the ruler.",
+    "actionContract": {
+     "id": "compare_choice",
+     "label": "Which Word?",
+     "icon": "<>",
+     "answerKind": "voice",
+     "instruction": "Here is a pencil stub, and here is a brand new ruler. Is the pencil stub longer or shorter?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   }
+  ]
+ }
+}

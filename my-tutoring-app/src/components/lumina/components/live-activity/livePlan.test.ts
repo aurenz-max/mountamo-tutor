@@ -31,9 +31,10 @@ describe('live lesson plan projection', () => {
       // The DI pack spells its challenge type `challengeType`; the adapter's accessor is what
       // lets the mode gate read it. Under a hardcoded `c.type` it was skipped as "undefined".
       .toEqual([['item-1', 'addition-subtraction-scene', 'act_out', 'obj1'], ['item-2', 'ten-frame', 'build', 'obj1'],
-        ['item-3', 'number-line', 'jump', 'obj3'], ['item-4', 'di-math-facts', 'answer_fact', 'obj3']]);
+        ['item-3', 'di-spoken-practice', 'read_aloud', 'obj2'], ['item-4', 'number-line', 'jump', 'obj3'],
+        ['item-5', 'di-math-facts', 'answer_fact', 'obj3']]);
     const source = pkg.manifest.objectiveBlocks[2];
-    const line = plan.items[2];
+    const line = plan.items.find(i => i.primitiveId === 'number-line')!;
     const manifestComponent = source.components.find(c => c.instanceId === line.provenance.manifestInstanceId)!;
     expect(line.objective.text).toBe(source.objectiveText);
     expect(line.intent).toBe(manifestComponent.intent);
@@ -73,11 +74,13 @@ describe('live lesson plan projection', () => {
     expect(nextPlanItem(plan, two)?.itemId).toBe('item-3');
     const three = { ...two, 'item-3': { ...done['item-1'], itemId: 'item-3' } };
     expect(nextPlanItem(plan, three)?.itemId).toBe('item-4');
-    expect(nextPlanItem(plan, { ...three, 'item-4': { ...done['item-1'], itemId: 'item-4' } })).toBeNull();
+    const all = Object.fromEntries(plan.items.map(i => [i.itemId, { ...done['item-1'], itemId: i.itemId }]));
+    expect(nextPlanItem(plan, all)).toBeNull();
     const told = JSON.stringify(planForTutor(plan));
     expect(told).not.toContain('targetValues');
     expect(told).not.toContain('challenges');
-    expect(planForTutor(plan)[2]).toEqual({ itemId: 'item-3', primitiveId: 'number-line', title: plan.items[2].title,
-      evalMode: 'jump', objective: plan.items[2].objective.text });
+    const line = plan.items.find(i => i.primitiveId === 'number-line')!;
+    expect(planForTutor(plan).find(i => i.primitiveId === 'number-line')).toEqual({ itemId: line.itemId,
+      primitiveId: 'number-line', title: line.title, evalMode: 'jump', objective: line.objective.text });
   });
 });

@@ -102,6 +102,7 @@ import { solarItems } from './adapters/solarSystemExplorerLive';
 import { solarJourneyAnswers } from '../../primitives/visual-primitives/astronomy/solarSystemWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
+import { diSpokenPracticeHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
 
 /** One real learner action for the mounted driver to perform. */
@@ -970,6 +971,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-shape-object="shape"]' }, reward: { selector: '[data-shape-credited]', kind: 'count' } },
+  },
+  'di-spoken-practice': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx',
+    instanceId: 'spoken',
+    defaults: { grade: 'Grade 1', mode: 'compare_choice', di: false,
+      topic: 'Comparing lengths: longer and shorter' },
+    leakTokens: ['SAY_ITEM', 'SAY_MOVE', 'SAY_HEAR', 'SAY_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // One spoken answer per item: the key's own words, or a plainly different answer of the same kind.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.items ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current di-spoken-practice item');
+      const answers = diSpokenPracticeHarnessAnswers(c);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-spoken-object="stimulus"]' }, reward: { selector: '[data-spoken-credited]', kind: 'count' } },
   },
   'spatial-scene': {
     execution: 'workspace',

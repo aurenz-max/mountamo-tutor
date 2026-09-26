@@ -1,0 +1,121 @@
+{
+ "source": "qa/tutor-reports/di-spoken-practice-runtime-count_and_say-payload-2026-09-26.json",
+ "primitiveId": "di-spoken-practice",
+ "evalMode": "count_and_say",
+ "data": {
+  "title": "Fun Counting Practice",
+  "description": "You will count pictures out loud and tell how many there are.",
+  "challengeType": "count_and_say",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "items": [
+   {
+    "id": "dsp-1",
+    "mode": "count_and_say",
+    "action": "count_and_say",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "stimulusKind": "objects",
+    "answerSource": "recall",
+    "stimulusText": "stars",
+    "stimulusEmoji": "⭐",
+    "stimulusCount": 4,
+    "ask": "Count the stars out loud. How many stars are there?",
+    "howToPlay": "Count the pictures, then say how many out loud.",
+    "expectedAnswer": "four",
+    "alternates": [],
+    "acceptRule": "Counting aloud in order that ends on the number four counts as the correct answer.",
+    "signatureError": "Just naming a random number like five without counting is not the total.",
+    "correctionBody": "Let's count them together: one, two, three, four. There are four stars.",
+    "actionContract": {
+     "id": "count_and_say",
+     "label": "Count and Say",
+     "icon": "123",
+     "answerKind": "voice",
+     "instruction": "Count the stars out loud. How many stars are there?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   },
+   {
+    "id": "dsp-2",
+    "mode": "count_and_say",
+    "action": "count_and_say",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "stimulusKind": "objects",
+    "answerSource": "recall",
+    "stimulusText": "apples",
+    "stimulusEmoji": "🍎",
+    "stimulusCount": 9,
+    "ask": "Count the apples out loud. How many apples are there?",
+    "howToPlay": "Count the pictures, then say how many out loud.",
+    "expectedAnswer": "nine",
+    "alternates": [],
+    "acceptRule": "Counting aloud in order that ends on the number nine counts as the correct answer.",
+    "signatureError": "Repeating the last number counted too early, like eight, is not the total.",
+    "correctionBody": "Let's touch and count: one, two, three, four, five, six, seven, eight, nine. There are nine apples.",
+    "actionContract": {
+     "id": "count_and_say",
+     "label": "Count and Say",
+     "icon": "123",
+     "answerKind": "voice",
+     "instruction": "Count the apples out loud. How many apples are there?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   },
+   {
+    "id": "dsp-3",
+    "mode": "count_and_say",
+    "action": "count_and_say",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "stimulusKind": "objects",
+    "answerSource": "recall",
+    "stimulusText": "fish",
+    "stimulusEmoji": "🐟",
+    "stimulusCount": 8,
+    "ask": "Count the swimming fish out loud. How many fish are there?",
+    "howToPlay": "Count the pictures, then say how many out loud.",
+    "expectedAnswer": "eight",
+    "alternates": [],
+    "acceptRule": "Counting aloud in order that ends on the number eight counts as the correct answer.",
+    "signatureError": "Stopping early or skipping a number when counting means the total is wrong.",
+    "correctionBody": "Let's count them one by one: one, two, three, four, five, six, seven, eight. There are eight fish.",
+    "actionContract": {
+     "id": "count_and_say",
+     "label": "Count and Say",
+     "icon": "123",
+     "answerKind": "voice",
+     "instruction": "Count the swimming fish out loud. How many fish are there?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   },
+   {
+    "id": "dsp-4",
+    "mode": "count_and_say",
+    "action": "count_and_say",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "stimulusKind": "objects",
+    "answerSource": "recall",
+    "stimulusText": "blocks",
+    "stimulusEmoji": "🧱",
+    "stimulusCount": 3,
+    "ask": "Count the blocks out loud. How many blocks are there?",
+    "howToPlay": "Count the pictures, then say how many out loud.",
+    "expectedAnswer": "three",
+    "alternates": [],
+    "acceptRule": "Counting aloud in order that ends on the number three counts as the correct answer.",
+    "signatureError": "Saying a number higher than three when there are only three blocks is not correct.",
+    "correctionBody": "Let's count them carefully: one, two, three. There are three blocks.",
+    "actionContract": {
+     "id": "count_and_say",
+     "label": "Count and Say",
+     "icon": "123",
+     "answerKind": "voice",
+     "instruction": "Count the blocks out loud. How many blocks are there?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   }
+  ]
+ }
+}
