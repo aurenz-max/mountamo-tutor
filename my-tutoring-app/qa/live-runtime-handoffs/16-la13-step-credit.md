@@ -4,6 +4,14 @@ Date: 2026-09-26 · Owner: roadmap LA-13 · Executor: `/add-live-tutor-tools` (t
 criterion are in scope without a new ruling, user ruling 09-21; the measurement is the gate) · Prior:
 [14](14-la13-crediting-reply-abstains.md) (part 1, done 09-22), [C6 report](../tutor-reports/workspace-rollout-C6-2026-09-26.md)
 
+## Status (09-26): DONE
+
+Candidates 2 and 3 kept; candidate 1 kept as one instruction sentence (c1c) on a user ruling (word-reading
+`wrong_then_corrected` 3/3 → 2/3 in the probe accepted); plus a finished confirming reply that does not credit now
+reopens the item (no-dead-end gap). Final connected `--audio`: word-problem build_family 3/3, worked-procedure
+regroup 3/3, word-reading 3/3, counting-board 3/3, sentence-reading 2/3 (a cut-off show turn). 0 false credit.
+[Report](../tutor-reports/la13-step-credit-2026-09-26.md).
+
 ## Why this slice
 
 Rollout C6 put the first multi-step packs on the workspace: di-worked-procedure (one item per column step) and
