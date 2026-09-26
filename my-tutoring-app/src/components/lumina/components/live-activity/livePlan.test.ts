@@ -30,10 +30,10 @@ describe('live lesson plan projection', () => {
     expect(plan.items.map(i => [i.itemId, i.primitiveId, i.evalMode, i.objective.id]))
       // The DI pack spells its challenge type `challengeType`; the adapter's accessor is what
       // lets the mode gate read it. Under a hardcoded `c.type` it was skipped as "undefined".
-      .toEqual([['item-1', 'ten-frame', 'build', 'obj1'], ['item-2', 'number-line', 'jump', 'obj3'],
-        ['item-3', 'di-math-facts', 'answer_fact', 'obj3']]);
+      .toEqual([['item-1', 'addition-subtraction-scene', 'act_out', 'obj1'], ['item-2', 'ten-frame', 'build', 'obj1'],
+        ['item-3', 'number-line', 'jump', 'obj3'], ['item-4', 'di-math-facts', 'answer_fact', 'obj3']]);
     const source = pkg.manifest.objectiveBlocks[2];
-    const line = plan.items[1];
+    const line = plan.items[2];
     const manifestComponent = source.components.find(c => c.instanceId === line.provenance.manifestInstanceId)!;
     expect(line.objective.text).toBe(source.objectiveText);
     expect(line.intent).toBe(manifestComponent.intent);
@@ -71,11 +71,13 @@ describe('live lesson plan projection', () => {
     expect(nextPlanItem(plan, done)?.itemId).toBe('item-2');
     const two = { ...done, 'item-2': { ...done['item-1'], itemId: 'item-2' } };
     expect(nextPlanItem(plan, two)?.itemId).toBe('item-3');
-    expect(nextPlanItem(plan, { ...two, 'item-3': { ...done['item-1'], itemId: 'item-3' } })).toBeNull();
+    const three = { ...two, 'item-3': { ...done['item-1'], itemId: 'item-3' } };
+    expect(nextPlanItem(plan, three)?.itemId).toBe('item-4');
+    expect(nextPlanItem(plan, { ...three, 'item-4': { ...done['item-1'], itemId: 'item-4' } })).toBeNull();
     const told = JSON.stringify(planForTutor(plan));
     expect(told).not.toContain('targetValues');
     expect(told).not.toContain('challenges');
-    expect(planForTutor(plan)[1]).toEqual({ itemId: 'item-2', primitiveId: 'number-line', title: plan.items[1].title,
-      evalMode: 'jump', objective: plan.items[1].objective.text });
+    expect(planForTutor(plan)[2]).toEqual({ itemId: 'item-3', primitiveId: 'number-line', title: plan.items[2].title,
+      evalMode: 'jump', objective: plan.items[2].objective.text });
   });
 });

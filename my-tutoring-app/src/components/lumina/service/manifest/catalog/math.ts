@@ -3535,7 +3535,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'addition-subtraction-scene',
-    description: 'Live tutor-judged K-1 addition and subtraction story scenes (DI modality). The Live tutor reads the story aloud, asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the number OUT LOUD to solve a word problem (both grades) and to report how many there are now, or how many are left, after acting a story out at Grade 1; they answer WITH THEIR HANDS by acting the story out on the scene at Kindergarten (bring more in, send some away), by building the number sentence from tiles, and by making the scene that matches a given number sentence — in those three, constructing it IS the skill. Supports join, separate, compare, and part-part-whole story types. The bridge from manipulatives to symbolic math. ESSENTIAL for Kindergarten and Grade 1 addition and subtraction.',
+    description: 'Live K-1 addition and subtraction story scenes with a spoken tutor. The tutor reads the story aloud and asks, and a credited answer advances the lesson. What the child produces depends on the skill: they SAY the number OUT LOUD to solve a word problem (both grades) and to report how many there are now, or how many are left, after acting a story out at Grade 1; they answer WITH THEIR HANDS by acting the story out on the scene at Kindergarten (bring more in, send some away), by building the number sentence from tiles, and by making the scene that matches a given number sentence — in those three, constructing it IS the skill. Supports join, separate, compare, and part-part-whole story types. The bridge from manipulatives to symbolic math. ESSENTIAL for Kindergarten and Grade 1 addition and subtraction.',
     constraints: 'Best for Kindergarten and Grade 1. Requires a microphone: spoken answers are judged by the Live tutor and there is no Check button, no typed answer and no numeral menu anywhere. Numbers limited to maxNumber (5 for K, 10 for Grade 1), so every spoken answer is a number word from 1 to 20. Four challenge types: act-out, build-equation, solve-story, create-story; story contexts must match the scene theme. Stories are read aloud, so a story that states the number the child must find — or whose answer would be 0 — is discarded before the child ever sees it.',
     affordances: { representation: 'concrete', reader: 'none', answers: ['spoken', 'manipulate', 'build'], role: 'apply', minutes: 6 },
     tutoring: {
@@ -3644,7 +3644,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         challengeTypes: ['build-equation'],
         // β HELD — the answer surface is untouched (the same tile tray, the same
         // three checks), only the Check button is gone.
-        description: 'Represent the story as a number sentence built from tiles; the tutor judges the assembled sentence. Symbolic FORM is the skill, so the answer is written, not spoken.',
+        description: 'Represent the story as a number sentence built from tiles; the activity checks the assembled sentence. Symbolic FORM is the skill, so the answer is written, not spoken.',
       },
       {
         evalMode: 'solve_story',
@@ -3679,6 +3679,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'A story picture of objects. Read the story aloud and ask its question; the printed story states only its '
+        + 'own numbers, never the one the child must find. Solve-story and Grade 1 act-out are answered by saying the '
+        + 'number: counting aloud that ends on it counts, a number the story already said is not it. At Kindergarten '
+        + 'act-out and in create-story the child brings objects in with the add button or taps one to send it away, '
+        + 'and build-equation builds the number sentence from tiles; those are checked by the activity when the child '
+        + 'stops. When only the first group is in the picture, tell that part of the story, then use present to bring '
+        + 'in the ones that join. Before an attempt never say the answer or count the objects for the child. Hear the '
+        + 'story again asks you to repeat the story and question only. You cannot add, remove or place anything.',
+    },
   },
   {
     id: 'ordinal-line',

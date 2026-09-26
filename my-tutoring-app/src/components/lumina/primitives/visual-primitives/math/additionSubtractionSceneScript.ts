@@ -450,7 +450,7 @@ const questionFor = (item: AddSubSceneItem): string => {
     : `How many ${item.objectType} are left?`;
 };
 
-const askFor = (item: AddSubSceneItem): string => {
+export const askFor = (item: AddSubSceneItem): string => {
   switch (item.kind) {
     case 'act-out':
       // @K the enactment IS the answer; @1 the child enacts a departure (a

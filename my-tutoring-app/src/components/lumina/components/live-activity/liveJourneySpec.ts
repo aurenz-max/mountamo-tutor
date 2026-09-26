@@ -83,6 +83,8 @@ import { itemsFromChallenges as bridgeItems } from '../../primitives/visual-prim
 import { storyBridgeJourneyAnswers } from '../../primitives/visual-primitives/literacy/storyBridgeWorkspace';
 import { itemsFromChallenges as ribbonItems } from '../../primitives/visual-primitives/literacy/storyRibbonScript';
 import { storyRibbonJourneyAnswers } from '../../primitives/visual-primitives/literacy/storyRibbonWorkspace';
+import { itemsFromChallenges as addSubItems } from '../../primitives/visual-primitives/math/additionSubtractionSceneScript';
+import { additionSubtractionJourneyAnswers } from '../../primitives/visual-primitives/math/additionSubtractionSceneWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
@@ -1178,6 +1180,36 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="ribbon"]' } },
+  },
+  'addition-subtraction-scene': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/AdditionSubtractionScene.tsx',
+    instanceId: 'story',
+    defaults: { grade: 'Kindergarten', mode: 'act_out', di: false, topic: 'Ducks joining and leaving a pond' },
+    leakTokens: ['ASS_ITEM', 'ASS_MOVE', 'ASS_COMPLETE', 'ASS_HEAR', 'ASS_SCENE', 'ASS_EQUATION'],
+    prompts: WORKSPACE_PROMPTS,
+    // A spoken number; tiles pressed for a number sentence; or the picture brought to a count (the add
+    // button brings one in, a tap on the last object sends it away). Hands turns commit on stillness.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = addSubItems(ctx.data.challenges ?? [], { band: ctx.data.gradeBand ?? 'K' }).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current addition-subtraction-scene item');
+      const answers = additionSubtractionJourneyAnswers(item);
+      const wrong = intent === 'wrong';
+      if (answers.tapped) return (wrong ? answers.tapped.wrong : answers.tapped.correct).split(' ')
+        .map((tile): DriverInput => ({ type: 'choose', label: `Add tile ${tile}` }));
+      if (answers.placed) {
+        const now = Number(ctx.demand?.inPicture ?? 0);
+        // A wrong scene must be a move: when one short is where the picture starts, go one past instead.
+        const target = !wrong ? answers.placed.correct
+          : answers.placed.wrong !== now ? answers.placed.wrong : answers.placed.correct + 1;
+        return target >= now
+          ? Array.from({ length: target - now }, (): DriverInput => ({ type: 'choose', label: `Add one ${item.objectType}` }))
+          : Array.from({ length: now - target }, (_, i): DriverInput => ({ type: 'touch', target: `object-${now - 1 - i}` }));
+      }
+      return [{ type: 'answer', text: wrong ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="scene"]' } },
   },
 };
 

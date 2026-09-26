@@ -1,8 +1,11 @@
 'use client';
 
 /**
- * AdditionSubtractionScene — DI modality. The Live tutor owns the clock in every
- * mode (qa/di/BACKLOG.md item 18 P2; the second MATH port after ten-frame).
+ * AdditionSubtractionScene — story math. It runs only on the shared tutor/JEV teaching
+ * workspace (workspace rollout C4; the scripted runner was retired, LA-14, user ruling 09-23:
+ * one path). A spoken number is judged by the observer; an enacted picture or a built number
+ * sentence commits on stillness and the activity checks it; the runtime owns progression. An
+ * unbound mount shows the shared "needs the tutor" card.
  *
  * WHAT THE CHILD DOES, PER MODE.
  *  - solve-story (K + Grade 1): the tutor reads the story and asks the question;
@@ -64,7 +67,7 @@
  * chrome is hidden for pre-readers.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -81,24 +84,28 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { AdditionSubtractionSceneMetrics } from '../../../evaluation/types';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { judgedAnswerMix } from '../../../hooks/judgedScriptContract';
 import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
-import {
-  additionSubtractionScenePackBase,
-  equationSpoken,
-  equationVerdictCue,
   itemsFromChallenges,
   parseEquationTiles,
-  sceneVerdictCue,
   type AddSubBand,
   type AddSubSceneItem,
 } from './additionSubtractionSceneScript';
-import { numberWordFor } from './countingBoardScript';
+import {
+  additionSubtractionAssignment,
+  additionSubtractionScene,
+  describeEquation,
+  describeScene,
+  equationMatches,
+  hearStoryRequest,
+  sceneMatches,
+} from './additionSubtractionSceneWorkspace';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
@@ -205,13 +212,6 @@ const EQUATION_SETTLE_MS = 4500;
  *  on its way to becoming "3 + 2 = 10". Structural, never correctness-gated. */
 const EQUATION_COMPLETE_SETTLE_MS = 1200;
 
-/** A breath AFTER the tutor stops talking, before the change group arrives — so
- *  the join lands just after "…and one more duck joins them", not on top of it.
- *  Shorter than the family default (700ms): a join is a soft arrival, not a
- *  flash the child has to catch. The GATE it hangs off is the runner's
- *  (`onPresentStimulus`, 19c) — this is only how long the breath lasts. */
-const REVEAL_PREP_MS = 600;
-
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -273,9 +273,12 @@ const TenFrameHelper: React.FC<{ filled: number; max?: number }> = ({ filled, ma
 interface AdditionSubtractionSceneProps {
   data: AdditionSubtractionSceneData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
-const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ data, className }) => {
+function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: AdditionSubtractionSceneProps) {
   const {
     title,
     description,
@@ -295,6 +298,8 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
   } = data;
 
   const isPreReader = gradeBand === 'K';
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   // ── Stage-payload state (the runner owns progression; this is the scene) ──
   /** Objects currently in the picture, by STABLE slot id, so removing one leaves
@@ -305,7 +310,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
    *  1,2,3… in the order the child touches them (K.CC.4 one-to-one). */
   const [tappedObjects, setTappedObjects] = useState<number[]>([]);
   const [equationTiles, setEquationTiles] = useState<string[]>([]);
-  /** Has the change group arrived? Gated on the tutor's voice, never a clock. */
+  /** Has the change group arrived? The tutor's `present` (or the learner's Show me), never a clock. */
   const [changeRevealed, setChangeRevealed] = useState(false);
   /** The number sentence JUST affirmed — post-answer only (answer-leak rule).
    *  NOT cleared when the next item opens: that clear and the `onAffirmed` that
@@ -358,45 +363,6 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     [challenges],
   );
 
-  const pack = useMemo<JudgedScriptPack<AddSubSceneItem>>(() => ({
-    ...additionSubtractionScenePackBase(items),
-    // Only what DIFFERS from the runner's defaults.
-    statusLines: {
-      ready: (item) => item.answerKind === 'gesture'
-        ? 'Listen to the story, then show me.'
-        : 'Listen to the story, then say your answer out loud.',
-      retry: (item) => item.answerKind === 'gesture'
-        ? 'Have another go — show me again.'
-        : 'Have another go — say your answer.',
-      done: 'Great story math today!',
-    },
-    // One factual record per attempt, right or corrected: the story or number sentence given, and what was
-    // heard, built or left in the picture, read before the verdict resets the scene. Never the verdict.
-    observation: (item, { heard }) => {
-      if (item.answerKind === 'voice') {
-        return {
-          challenge: `${item.kind} (${item.unknownPosition} unknown): ${item.situation}`,
-          expected: `${numberWordFor(item.answer)} (${item.answer})`,
-          observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
-        };
-      }
-      if (item.kind === 'build-equation') {
-        return {
-          challenge: `build-equation: the story "${item.situation}"; build its number sentence with the tiles.`,
-          expected: item.equation,
-          observed: pendingTilesRef.current.length ? `Built "${pendingTilesRef.current.join(' ')}".` : 'Built nothing.',
-        };
-      }
-      return {
-        challenge: item.kind === 'create-story'
-          ? `create-story: the number sentence ${equationSpoken(item)}; make that story with the ${item.objectType} in the ${item.scene}.`
-          : `act-out: the story "${item.situation}"; act it out with the ${item.objectType} in the picture.`,
-        expected: `${item.answer} ${item.objectType}.`,
-        observed: `Ended with ${pendingSceneRef.current} ${item.objectType} in the picture.`,
-      };
-    },
-  }), [items]);
-
   // ── Per-item scene reset — every item owns its starting state ─────────────
   const resetSceneFor = useCallback((item: AddSubSceneItem) => {
     pip.clear();
@@ -405,7 +371,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     pendingTilesRef.current = [];
 
     // The change group is a stimulus on count-the-scene items, so it waits for
-    // her voice — the runner's gate fires `onPresentStimulus` when she is done.
+    // the story: the tutor's `present` (or the learner's Show me) brings it in.
     setChangeRevealed(!waitsForReveal(item));
 
     // Seeding, per contract R3:
@@ -427,7 +393,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
   }, [waitsForReveal]);
 
   // ── Metrics ───────────────────────────────────────────────────────────────
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const itemOf = (id: string) => items.find((i) => i.id === id);
     const accuracyOver = (kind: AddSubSceneItem['kind']) => {
       const scoped = summary.outcomes.filter((o) => itemOf(o.id)?.kind === kind);
@@ -452,34 +418,37 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
       summary.solvedCount === items.length,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items, challengeById, evaluation]);
+  };
 
-  const runner = useJudgedScriptRunner<AddSubSceneItem>({
-    pack,
+  const runner = useWorkspaceRunner<AddSubSceneItem>({
+    primitiveId: 'addition-subtraction-scene',
+    assignment: additionSubtractionAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    // Catalog modes are underscored (`act_out`); the item's kind is hyphenated (`act-out`).
+    evalMode: runtimeEvalMode || (items[0]?.kind ?? 'solve-story').replace('-', '_'),
     instanceId: resolvedInstanceId,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
-    exhibitId,
-    onFinished: handleFinished,
+    onFinished: finish,
     onItemOpened: resetSceneFor,
-    // THE TUTOR OWNS THE STIMULUS CLOCK — the change group arrives just after
-    // "…and one more duck joins them", never on a beat measured from item-open.
-    // The gate (and the two drives that shaped it) is the runner's; 19c.
+    // The change group arrives when the tutor presents it (or the learner presses Show me).
     onPresentStimulus: () => setChangeRevealed(true),
-    stimulus: { when: waitsForReveal, prepMs: REVEAL_PREP_MS },
     onAffirmed: (item) => {
       // The first moment a number may appear on screen; `revealHeld` keeps it
-      // there for the length of her affirmation (18b).
+      // there while the credit holds (18b).
       setChangeRevealed(true);
       setReward(item.equation);
     },
     onCorrectionRetry: (item) => {
-      // The tutor's correction re-modeled and re-asked in-band; restore the
-      // working surface for another go. The settle window and the reveal gate
-      // are both re-armed by the runner on this path.
+      // Try again restores the working surface for another go; the change group,
+      // once presented, stays (the story does not un-happen).
       pip.clear();
       if (item.kind === 'build-equation') {
         // The tray clears: the tiles are indistinguishable from each other, so
@@ -499,6 +468,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
 
   const currentItem = runner.currentItem;
   const currentSolved = runner.currentSolved;
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   // Pip's presentation is a projection of the runner's phase and the child's
   // own touches; it never adds, removes, builds, commits, or advances anything.
   const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
@@ -570,23 +540,26 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
   }, [currentItem]);
 
   // ── The gesture commits ───────────────────────────────────────────────────
-  // No Check control: nothing on screen may carry the child forward. The cue
-  // goes out through `submitGestureAttempt`, which opens the attempt when the
-  // cue is actually SENT — an attempt opened at commit time would block the very
-  // cue meant to provoke its verdict (cvc-speller's finding).
+  // No Check control: nothing on screen may carry the child forward. A hands
+  // turn commits on stillness and the activity checks it; a wrong scene commits
+  // exactly as readily as a right one.
   const commitScene = useCallback(() => {
     const item = runner.currentItem;
     if (!item || item.answerKind !== 'gesture' || item.kind === 'build-equation') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
-    runner.submitGestureAttempt(sceneVerdictCue(item, pendingSceneRef.current));
+    const placed = pendingSceneRef.current;
+    commitGesture(runner, { response: describeScene(item, placed), correct: sceneMatches(item, placed),
+      cue: () => describeScene(item, placed) });
   }, [runner]);
 
   const commitEquation = useCallback(() => {
     const item = runner.currentItem;
     if (!item || item.kind !== 'build-equation') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
-    if (pendingTilesRef.current.length === 0) return;
-    runner.submitGestureAttempt(equationVerdictCue(item, pendingTilesRef.current));
+    const tiles = [...pendingTilesRef.current];
+    if (tiles.length === 0) return;
+    commitGesture(runner, { response: describeEquation(tiles), correct: equationMatches(item, tiles),
+      cue: () => describeEquation(tiles) });
   }, [runner]);
 
   /** A hands turn closes on stillness. Any further touch resets the window, and
@@ -610,7 +583,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
   // from item 2 on (ten-frame drive 1). `canAttempt` reads the solved ledger.
   const handleObjectTap = useCallback((slotId: number) => {
     const item = runner.currentItem;
-    if (!item || !runner.canAttempt || evaluation.hasSubmitted) return;
+    if (!item || !runner.canAttempt || showSummary) return;
     if (runner.isAwaitingGesture()) return;
 
     // Sending an object away: every enacted scene, plus Grade-1 act-out
@@ -637,14 +610,14 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
       prev.includes(slotId) ? prev.filter((x) => x !== slotId) : [...prev, slotId],
     );
   }, [
-    runner, evaluation.hasSubmitted, isEnactedScene, removalsRemaining,
+    runner, showSummary, isEnactedScene, removalsRemaining,
     sceneSlots, armSceneSettle,
   ]);
 
   /** Bring one more object in — the addition interaction on any enacted scene. */
   const addSceneObject = useCallback(() => {
     const item = runner.currentItem;
-    if (!item || !isEnactedScene || !runner.canAttempt || evaluation.hasSubmitted) return;
+    if (!item || !isEnactedScene || !runner.canAttempt || showSummary) return;
     if (runner.isAwaitingGesture() || builtCount >= maxNumber) return;
     // Append the lowest unused slot id so re-adding after a removal fills the
     // gap rather than growing past the scene's laid-out capacity.
@@ -657,7 +630,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     if (item.answerKind === 'gesture') armSceneSettle(next.length);
     else pendingSceneRef.current = next.length;
   }, [
-    runner, isEnactedScene, evaluation.hasSubmitted, builtCount,
+    runner, isEnactedScene, showSummary, builtCount,
     maxNumber, sceneSlots, armSceneSettle,
   ]);
 
@@ -678,10 +651,25 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     armEquationSettle(next);
   }, [runner, equationTiles, armEquationSettle]);
 
-  // WHEN the change group arrives is the runner's `onPresentStimulus` gate
-  // (19c): the tutor has to have told the story for THIS item and stopped. The
-  // latch, the fallback timer, the prep-beat effect and the two footguns they
-  // carried used to be copied here from ten-frame; they are the runner's now.
+  const changeWaiting = !!currentItem && waitsForReveal(currentItem) && !changeRevealed;
+
+  // What the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets; `present` brings in a change group that waits for the story.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = {
+      ...additionSubtractionScene(currentItem, { inPicture: builtCount, changeWaiting }),
+      demonstration: [], canDemonstrate: false, canPresent: changeWaiting,
+      readyForResponse: !changeWaiting, mark: () => {}, clearPresentation: () => {},
+    };
+    runner.publishWorkspace();
+  });
+
+  /** Asks the tutor for the story again: a silent host request, never the answer. */
+  const hearStory = useCallback(() => {
+    if (!currentItem) return;
+    ctx.sendText(hearStoryRequest(currentItem), { silent: true, author: 'host' });
+  }, [ctx, currentItem]);
 
   // ── Equation tray palette (R6 AXIS-1 lever, unchanged) ────────────────────
   const equationTilePalette = useMemo(() => {
@@ -696,7 +684,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
   }, [currentItem, maxNumber]);
 
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     // Only what is in the picture right now: a change group still waiting on
     // the tutor's voice is not rendered, so it is never published.
     const visibleIds = [
@@ -708,9 +696,9 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
       id === 'scene' ? 'The story picture' : id === 'tray' ? 'The number sentence tray' : currentItem.objectType
     ));
     const pose = additionSubtractionScenePipPose({
-      running: runner.running, preparing: runner.preparing,
+      running: runner.running, preparing: false,
       currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      judging: runner.isAwaitingGesture(), tutorSpeaking: runner.tutorSpeaking,
       cueMatchesItem: runner.cuedItemId === currentItem.id,
       kind: currentItem.kind, gesture: currentItem.answerKind === 'gesture',
       visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
@@ -736,17 +724,17 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
   }, [items]);
 
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => (
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => (
       PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🔢' }
     ));
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
   // ============================================================================
   // Render
   // ============================================================================
 
-  if (items.length === 0) {
+  if (items.length === 0 || !currentItem) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-6">
@@ -762,7 +750,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
   const canAddObjects = isEnactedScene
     && !(currentItem?.kind === 'act-out' && currentItem.operation === 'subtraction' && currentItem.answerKind === 'voice');
 
-  const stageWord = runner.stage === 'judging'
+  const stageWord = runner.isAwaitingGesture()
     ? 'let’s see…'
     : currentSolved
       ? 'yes!'
@@ -798,7 +786,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && currentItem && (
+        {!showSummary && (
           <>
             {!isPreReader && (
               <div className="flex justify-center">
@@ -937,6 +925,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
               <div className="flex justify-center">
                 <button
                   type="button"
+                  aria-label={`Add one ${currentItem.objectType}`}
                   onClick={() => { pip.look('scene'); addSceneObject(); }}
                   disabled={!runner.canAttempt || builtCount >= maxNumber}
                   className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-br from-amber-400/25 to-orange-400/25 border-2 border-amber-300/40 text-amber-100 text-xl font-bold shadow-sm active:scale-95 transition hover:from-amber-400/40 hover:to-orange-400/40 disabled:opacity-40 disabled:pointer-events-none"
@@ -974,6 +963,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
                   {equationTilePalette.map((tile) => (
                     <LuminaButton
                       key={tile}
+                      aria-label={`Add tile ${tile}`}
                       className="text-slate-200 text-sm font-mono h-8 w-8 p-0"
                       onClick={() => { pip.look('tray'); addTile(tile); }}
                     >
@@ -1006,17 +996,24 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
               </p>
             )}
 
-            {/* "I’m listening" over an item whose answer is a placement is a lie
-                in the UI — the hands items hold the bracket, so the orb says
-                what the turn actually is. */}
-            <JudgedMicPanel run={runner} gestureLabel="Show me in the picture" />
+            {/* The change group waits for the story; the learner may bring it in themselves. */}
+            <div className="flex justify-center gap-3">
+              {changeWaiting && runner.canAttempt && (
+                <LuminaButton tone="primary" className="text-sm" onClick={() => runner.presentStimulus()}>
+                  Show me
+                </LuminaButton>
+              )}
+              <LuminaButton tone="ghost" className="text-sm" onClick={hearStory}>
+                Hear the story again
+              </LuminaButton>
+            </div>
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Story Complete!"
             celebrationMessage={celebrationMessage}
@@ -1036,6 +1033,10 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
       `}</style>
     </LuminaCard>
   );
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const AdditionSubtractionScene = withWorkspaceOnly<AdditionSubtractionSceneProps>(
+  'addition-subtraction-scene', AdditionSubtractionSceneSurface, props => props.data.title);
 
 export default AdditionSubtractionScene;

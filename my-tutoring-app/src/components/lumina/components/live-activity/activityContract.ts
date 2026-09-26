@@ -46,6 +46,7 @@ import { decodableReaderLiveDomain } from './adapters/decodableReaderLive';
 import { interactiveBookLiveDomain } from './adapters/interactiveBookLive';
 import { storyBridgeLiveDomain } from './adapters/storyBridgeLive';
 import { storyRibbonLiveDomain } from './adapters/storyRibbonLive';
+import { additionSubtractionSceneLiveDomain } from './adapters/additionSubtractionSceneLive';
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { diShapesLiveDomain } from './adapters/diShapesLive';
@@ -101,6 +102,7 @@ export const LIVE_ADAPTERS = {
   'interactive-book': workspaceAdapter('interactive-book', interactiveBookLiveDomain),
   'story-bridge': workspaceAdapter('story-bridge', storyBridgeLiveDomain),
   'story-ribbon': workspaceAdapter('story-ribbon', storyRibbonLiveDomain),
+  'addition-subtraction-scene': workspaceAdapter('addition-subtraction-scene', additionSubtractionSceneLiveDomain),
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
   'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),
