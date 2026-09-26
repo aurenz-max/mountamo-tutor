@@ -90,6 +90,8 @@ import { threeDShapeJourneyAnswers } from '../../primitives/visual-primitives/ma
 import type { CalendarExplorerChallenge } from '../../primitives/visual-primitives/calendar/CalendarExplorer';
 import { calendarSequenceItemsFromChallenges, calendarSequenceJourneyAnswers, isGridDateAnswer }
   from '../../primitives/visual-primitives/calendar/calendarExplorerWorkspace';
+import { itemsFromChallenges as arenaItems } from '../../primitives/visual-primitives/physics/pushPullArenaScript';
+import { pushPullArenaJourneyAnswers } from '../../primitives/visual-primitives/physics/pushPullArenaWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
@@ -1262,6 +1264,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'choose', label: c.options.find(o => o.trim().toLowerCase() === pick.trim().toLowerCase()) ?? pick }, check];
     },
     probes: { mounted: { selector: '[data-pip-object="grid"], [data-pip-object="offset"], [data-pip-object="stimulus"]' } },
+  },
+  'push-pull-arena': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/physics/PushPullArena.tsx',
+    instanceId: 'arena',
+    defaults: { grade: 'Grade 1', mode: 'observe', di: false, topic: 'Pushes and pulls move objects' },
+    leakTokens: ['ARENA_ITEM', 'ARENA_MOVE', 'ARENA_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one spoken word; observe first presses Go to watch the preset force.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = arenaItems(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current push-pull-arena item');
+      const answers = pushPullArenaJourneyAnswers(item);
+      const say: DriverInput = { type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct };
+      return item.kind === 'observe' && ctx.demand?.presentation !== 'ready' ? [{ type: 'choose', label: 'Go!' }, say] : [say];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
   },
 };
 

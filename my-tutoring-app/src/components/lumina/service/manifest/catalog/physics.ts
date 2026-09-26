@@ -76,7 +76,7 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'push-pull-arena',
-    description: 'Live tutor-judged force arena (DI modality) where the child watches and runs canvas physics simulations — pushes and pulls on ice, wood, carpet and grass — and ANSWERS OUT LOUD: the Live tutor asks with scripted lines, judges the spoken answer from the audio in-band, corrects with the physics idea, and its own affirmation advances. Modes: observe (watch the preset force, say "push" or "pull"), predict (say "moves" or "stays" before it runs; the sim reveals the truth as the answer is judged), compare (two objects, same push — say which slides farther), design (experiment with force controls, say whether the goal needs a big or little push). ESSENTIAL for K-5 Physical Science: pushes and pulls (K-PS2-1), motion from forces (K-PS2-2), balanced/unbalanced forces (3-PS2-1).',
+    description: 'Live force arena with a spoken tutor where the child watches and runs canvas physics simulations — pushes and pulls on ice, wood, carpet and grass — and ANSWERS OUT LOUD: the tutor asks, responds to the spoken answer, corrects with the physics idea, and a credited answer advances. Modes: observe (watch the preset force, say "push" or "pull"), predict (say "moves" or "stays" before it runs; the sim plays the push once the answer is credited), compare (two objects, same push — say which slides farther), design (experiment with force controls, say whether the goal needs a big or little push). ESSENTIAL for K-5 Physical Science: pushes and pulls (K-PS2-1), motion from forces (K-PS2-2), balanced/unbalanced forces (3-PS2-1).',
     constraints: 'Best for K-5. Use observe mode for K-1, predict for 1-2, compare for 2-3, design for 4-5. Keep object weights 1-10 for clarity. Answers are single spoken words judged by the microphone-enabled Lumina tutor; there is no Check button and no printed answer options.',
     // reader: 'none' — shipped judged-loop DI port (same pattern as di-dice-roll /
     // di-math-facts): the runner owns every cue, the child never reads anything, the
@@ -174,6 +174,16 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'A sim arena of objects on ice, wood, carpet or grass; every answer is one spoken word computed from the '
+        + 'sim\'s physics. Observe: the learner presses Go to watch the preset force, then says push or pull (away is a '
+        + 'push, closer is a pull). Predict: moves or stays, said before anything moves. Compare: two objects get the '
+        + 'same push and the learner names the one that slides farther (the lighter one; heavier does not slide '
+        + 'farther). Design: the learner experiments with direction, strength and Go, then says big or little. The '
+        + 'arena plays predict and compare once the answer is credited. A description of the motion or a restated '
+        + 'setup is not an answer. Before an attempt never say the answer. You cannot press Go or move an object.',
+    },
   },
   {
     id: 'race-track-lab',

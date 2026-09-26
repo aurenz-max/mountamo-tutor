@@ -1,0 +1,84 @@
+{
+ "source": "qa/tutor-reports/push-pull-arena-runtime-predict-payload-2026-09-25.json",
+ "primitiveId": "push-pull-arena",
+ "evalMode": "predict",
+ "data": {
+  "title": "Fun Force Adventure",
+  "description": "Explore how pushes and pulls move different objects across exciting surfaces!",
+  "theme": "playground",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "predict",
+    "instruction": "Think first: will the Tennis Ball move, or stay?",
+    "objectName": "Tennis Ball",
+    "objectWeight": 1,
+    "objectEmoji": "🎾",
+    "surface": "ice",
+    "pushStrength": 8,
+    "pushDirection": "push",
+    "spokenAnswer": "moves",
+    "spokenAlternates": [
+     "move",
+     "it moves",
+     "it will move",
+     "yes"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "predict",
+    "instruction": "Think first: will the Refrigerator move, or stay?",
+    "objectName": "Refrigerator",
+    "objectWeight": 10,
+    "objectEmoji": "🧊",
+    "surface": "carpet",
+    "pushStrength": 2,
+    "pushDirection": "push",
+    "spokenAnswer": "stays",
+    "spokenAlternates": [
+     "stay",
+     "stay still",
+     "it stays",
+     "no"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "predict",
+    "instruction": "Think first: will the Soccer Ball move, or stay?",
+    "objectName": "Soccer Ball",
+    "objectWeight": 2,
+    "objectEmoji": "⚽",
+    "surface": "wood",
+    "pushStrength": 5,
+    "pushDirection": "push",
+    "spokenAnswer": "moves",
+    "spokenAlternates": [
+     "move",
+     "it moves",
+     "it will move",
+     "yes"
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "predict",
+    "instruction": "Think first: will the Rock move, or stay?",
+    "objectName": "Rock",
+    "objectWeight": 9,
+    "objectEmoji": "🪨",
+    "surface": "grass",
+    "pushStrength": 2,
+    "pushDirection": "push",
+    "spokenAnswer": "stays",
+    "spokenAlternates": [
+     "stay",
+     "stay still",
+     "it stays",
+     "no"
+    ]
+   }
+  ]
+ }
+}

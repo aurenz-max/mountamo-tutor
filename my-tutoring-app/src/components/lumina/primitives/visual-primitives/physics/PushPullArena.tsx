@@ -1,16 +1,18 @@
 'use client';
 
 /**
- * PushPullArena — DI modality. The Live tutor owns the clock in every mode.
+ * PushPullArena — forces in a sim arena, every answer spoken. It runs only on the shared
+ * tutor/JEV teaching workspace (workspace rollout C4; the scripted runner was retired, LA-14,
+ * user ruling 09-23: one path). The observer judges the spoken answer and the runtime owns
+ * progression. An unbound mount shows the shared "needs the tutor" card.
  *
  * WHAT THE CHILD DOES, PER MODE.
  *  - observe: taps Go, watches the preset force move the object, and SAYS
  *    whether that was a push or a pull.
- *  - predict: answers "moves, or stays?" BEFORE anything moves; the sim
- *    auto-runs the moment their answer is committed, so the physics reveals
- *    the truth while the tutor judges what they SAID.
+ *  - predict: answers "moves, or stays?" BEFORE anything moves; the sim runs
+ *    the push once the answer is credited, so the physics confirms it.
  *  - compare: two objects get the same push; the child says WHICH ONE slides
- *    farther (by name); the sim auto-runs at commit, same reveal timing.
+ *    farther (by name); the sim runs once the answer is credited.
  *  - design: full controls (direction, force slider, Go) — the child
  *    experiments freely, then says whether the goal needs a big or little
  *    push.
@@ -35,7 +37,7 @@
  * the tutor is quiet by default; no visible timers; no advance affordance.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -48,20 +50,17 @@ import {
 } from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { PushPullArenaMetrics } from '../../../evaluation/types';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
-import {
-  askFor,
   itemsFromChallenges,
-  pushPullArenaPackBase,
   type ArenaChallengeLike,
   type ArenaItem,
 } from './pushPullArenaScript';
+import { pushPullArenaAssignment, pushPullArenaScene } from './pushPullArenaWorkspace';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -124,6 +123,9 @@ export interface PushPullArenaData {
 interface PushPullArenaProps {
   data: PushPullArenaData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // =============================================================================
@@ -426,7 +428,7 @@ function drawArena(
 // Main Component
 // =============================================================================
 
-export default function PushPullArena({ data, className = '' }: PushPullArenaProps) {
+function PushPullArenaSurface({ data, className = '', runtimePlanItemId, runtimeEvalMode }: PushPullArenaProps) {
   const {
     title,
     description,
@@ -439,6 +441,7 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
   } = data;
 
   const resolvedInstanceId = instanceId || 'push-pull-arena-default';
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   const { submitResult, hasSubmitted, submittedResult, elapsedMs } =
     usePrimitiveEvaluation<PushPullArenaMetrics>({
@@ -472,30 +475,7 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
     return map;
   }, [challenges]);
 
-  const pack = useMemo<JudgedScriptPack<ArenaItem>>(() => ({
-    ...pushPullArenaPackBase(items),
-    // Only what DIFFERS from the runner's defaults — and what only a mounted
-    // component can own.
-    statusLines: {
-      ready: (item) => item.kind === 'observe'
-        ? 'Tap Go, watch, then say what you saw.'
-        : item.kind === 'design'
-          ? 'Experiment, then say your answer.'
-          : 'Think, then say your answer.',
-      retry: () => 'Have another go — say your answer.',
-      affirmedNext: 'Yes! You said what the physics did.',
-      done: 'Great force science today!',
-    },
-    // One record per attempt, right or corrected: the ask as spoken (it names the objects and surface) and what
-    // was heard; never the verdict.
-    observation: (item, { heard }) => ({
-      challenge: `${PHASE_TYPE_CONFIG[item.kind]?.label ?? item.kind}: ${askFor(item)}`,
-      expected: item.spokenAnswer,
-      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
-    }),
-  }), [items]);
-
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const metrics: PushPullArenaMetrics = {
       type: 'push-pull-arena',
       // The mode actually ASKED — a dropped first challenge would otherwise
@@ -508,9 +488,10 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
       averageAttemptsPerChallenge:
         summary.attemptsCount / Math.max(summary.outcomes.length, 1),
     };
-    submitResult(summary.accuracy >= 70, summary.accuracy, metrics, { learningResponses: summary.learningResponses },
+    submitResult(summary.accuracy >= 70, summary.accuracy, metrics, { learningResponses: summary.learningResponses,
+      ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined, summary.diagnosisEvidence);
-  }, [items, submitResult]);
+  };
 
   // ── Canvas & physics state ───────────────────────────────────────
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -527,8 +508,10 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
   const [simRunning, setSimRunning] = useState(false);
   const [forceStrength, setForceStrength] = useState(5);
   const [forceDirection, setForceDirection] = useState<PushPullDirection>('push');
-  /** The reveal ran for this item (predict/compare auto-run at commit). */
+  /** The reveal ran for this item (predict/compare run the push once credited). */
   const revealRanRef = useRef(false);
+  /** observe: the learner pressed Go and watched the preset force. */
+  const [observed, setObserved] = useState(false);
 
   const initPhysics = useCallback((challenge: PushPullChallenge) => {
     const objs: PhysicsObject[] = [];
@@ -568,18 +551,22 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
   }, []);
 
   // ── The runner ───────────────────────────────────────────────────
-  const runner = useJudgedScriptRunner<ArenaItem>({
-    pack,
+  const runner = useWorkspaceRunner<ArenaItem>({
+    primitiveId: 'push-pull-arena',
+    assignment: pushPullArenaAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || (items[0]?.kind ?? 'observe'),
     instanceId: resolvedInstanceId,
-    // The arena has no band field; K matches the old hardcode and the K-2
-    // demand this port serves.
-    gradeLevel: 'Kindergarten',
-    exhibitId,
-    onFinished: handleFinished,
+    onFinished: finish,
     onItemOpened: (item) => {
       const challenge = challengeById.get(item.id);
       if (!challenge) return;
       revealRanRef.current = false;
+      setObserved(false);
       initPhysics(challenge);
       setForceStrength(challenge.pushStrength ?? 5);
       setForceDirection(challenge.pushDirection ?? 'push');
@@ -591,17 +578,18 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
           challenge.showForceArrows ?? true, challenge.showMotionReadout ?? true);
       }
     },
-    onEmission: (emission, item) => {
-      // predict/compare: the sim IS the reveal, and it runs the moment the
-      // child's answer is committed — the truth plays out on screen while
-      // the tutor judges what they SAID, not what they saw.
-      if (emission.kind !== 'attempt-open' || !item) return;
+    // Try again keeps the arena as it is: nothing moved before the answer, and observe's run stays seen.
+    onCorrectionRetry: () => {},
+    onAffirmed: (item) => {
+      // predict/compare: the sim is the reveal, run once the answer is credited, so a
+      // Try again never sees the physics before answering again.
       if ((item.kind === 'predict' || item.kind === 'compare') && !revealRanRef.current) {
         revealRanRef.current = true;
-        runPresetForce();
+        runPresetForceRef.current();
       }
     },
   });
+  const showSummary = hasSubmitted || !!runner.practiceSummary;
 
   const currentChallenge = runner.currentItem
     ? challengeById.get(runner.currentItem.id) ?? null
@@ -610,7 +598,7 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
   // Pip: the arena is the question side and the experiment; every answer is
   // spoken, so Pip outlines the arena and watches it, and never runs it.
   const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The arena', finished: hasSubmitted,
+    run: runner, instanceId: resolvedInstanceId, label: 'The arena', finished: showSummary,
   });
   const showForceArrows = currentChallenge?.showForceArrows ?? true;
   const showMotionReadout = currentChallenge?.showMotionReadout ?? true;
@@ -632,8 +620,20 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
   /** Run the item's PRESET force (observe's Go, predict/compare's reveal). */
   const runPresetForce = useCallback(() => {
     if (!currentChallenge) return;
+    if (currentChallenge.type === 'observe') setObserved(true);
     applyForce(currentChallenge.pushStrength ?? 5, currentChallenge.pushDirection ?? 'push');
   }, [applyForce, currentChallenge]);
+
+  // What the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation; observe is ready once the learner pressed Go.
+  useLayoutEffect(() => {
+    const item = runner.currentItem;
+    if (!item) return;
+    workspace.current = { ...pushPullArenaScene(item, { goal: currentChallenge?.goalDescription, observed }),
+      demonstration: [], canDemonstrate: false, canPresent: false,
+      readyForResponse: item.kind !== 'observe' || observed, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
   const runPresetForceRef = useRef(runPresetForce);
   runPresetForceRef.current = runPresetForce;
 
@@ -684,15 +684,15 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
 
   // ── Phase summary ────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!hasSubmitted) return [];
+    if (!runner.practiceSummary) return [];
     // Over ITEMS, not challenges: a challenge the build gate dropped was never
     // asked, so a summary row for it would report a 0 against a child who was
     // never shown it.
-    return phaseResultsFromSummary(items, runner.summary, (item) => {
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => {
       const config = PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🧲' };
       return { label: `${config.label} — ${item.objectName}`, icon: config.icon };
     });
-  }, [hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
   // =============================================================================
   // Render
@@ -720,7 +720,7 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!hasSubmitted && (
+        {!showSummary && (
           <>
             {items.length > 0 && (
               <div className="mb-2 flex justify-center">
@@ -805,16 +805,13 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
 
             <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
 
-            {/* Every item here is answered out loud — the sim is the stage,
-                the answer is the child saying what the forces did. */}
-            <JudgedMicPanel run={runner} />
           </>
         )}
 
-        {hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score}
+            overallScore={submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={elapsedMs}
             heading="Challenge Complete!"
             celebrationMessage="You explored pushes and pulls out loud!"
@@ -824,3 +821,8 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
     </LuminaCard>
   );
 }
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const PushPullArena = withWorkspaceOnly<PushPullArenaProps>('push-pull-arena', PushPullArenaSurface, props => props.data.title);
+
+export default PushPullArena;

@@ -49,6 +49,7 @@ import { storyRibbonLiveDomain } from './adapters/storyRibbonLive';
 import { additionSubtractionSceneLiveDomain } from './adapters/additionSubtractionSceneLive';
 import { threeDShapeExplorerLiveDomain } from './adapters/threeDShapeExplorerLive';
 import { calendarExplorerLiveDomain } from './adapters/calendarExplorerLive';
+import { pushPullArenaLiveDomain } from './adapters/pushPullArenaLive';
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { diShapesLiveDomain } from './adapters/diShapesLive';
@@ -107,6 +108,7 @@ export const LIVE_ADAPTERS = {
   'addition-subtraction-scene': workspaceAdapter('addition-subtraction-scene', additionSubtractionSceneLiveDomain),
   '3d-shape-explorer': workspaceAdapter('3d-shape-explorer', threeDShapeExplorerLiveDomain),
   'calendar-explorer': workspaceAdapter('calendar-explorer', calendarExplorerLiveDomain),
+  'push-pull-arena': workspaceAdapter('push-pull-arena', pushPullArenaLiveDomain),
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
   'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),

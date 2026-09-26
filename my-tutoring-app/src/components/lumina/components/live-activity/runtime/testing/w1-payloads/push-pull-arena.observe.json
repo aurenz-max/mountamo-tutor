@@ -1,0 +1,80 @@
+{
+ "source": "qa/tutor-reports/push-pull-arena-runtime-observe-payload-2026-09-25.json",
+ "primitiveId": "push-pull-arena",
+ "evalMode": "observe",
+ "data": {
+  "title": "Fun with Pushes and Pulls",
+  "description": "Watch how different objects move when we use a push or a pull!",
+  "theme": "playground",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "observe",
+    "instruction": "Tap Go and watch the Toy Car. What kind of force is that?",
+    "objectName": "Toy Car",
+    "objectWeight": 2,
+    "objectEmoji": "🚗",
+    "surface": "wood",
+    "pushStrength": 5,
+    "pushDirection": "push",
+    "spokenAnswer": "push",
+    "spokenAlternates": [
+     "a push",
+     "pushing",
+     "you pushed it"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "observe",
+    "instruction": "Tap Go and watch the Backpack. What kind of force is that?",
+    "objectName": "Backpack",
+    "objectWeight": 5,
+    "objectEmoji": "🎒",
+    "surface": "carpet",
+    "pushStrength": 7,
+    "pushDirection": "pull",
+    "spokenAnswer": "pull",
+    "spokenAlternates": [
+     "a pull",
+     "pulling",
+     "you pulled it"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "observe",
+    "instruction": "Tap Go and watch the Tennis Ball. What kind of force is that?",
+    "objectName": "Tennis Ball",
+    "objectWeight": 1,
+    "objectEmoji": "🎾",
+    "surface": "ice",
+    "pushStrength": 3,
+    "pushDirection": "push",
+    "spokenAnswer": "push",
+    "spokenAlternates": [
+     "a push",
+     "pushing",
+     "you pushed it"
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "observe",
+    "instruction": "Tap Go and watch the Soccer Ball. What kind of force is that?",
+    "objectName": "Soccer Ball",
+    "objectWeight": 2,
+    "objectEmoji": "⚽",
+    "surface": "grass",
+    "pushStrength": 4,
+    "pushDirection": "pull",
+    "spokenAnswer": "pull",
+    "spokenAlternates": [
+     "a pull",
+     "pulling",
+     "you pulled it"
+    ]
+   }
+  ]
+ }
+}
