@@ -9,9 +9,9 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 
 ## Status (2026-09-26)
 
-- Catalog: 212 primitive ids. On the workspace: 49 (8 at W2 from the pilots, 41 at W1), recounted 09-26
-  after C5, plus `adaptation-investigator` as an ungraded teaching surface (50 `teachingWorkspace` blocks). Queued:
-  Tier A 0, Tier B 0 (B1-B3 done), Tier C 132 (152 before C1). Held back: 31.
+- Catalog: 212 primitive ids. On the workspace: 54 (8 at W2 from the pilots, 46 at W1), recounted 09-26
+  after C6, plus `adaptation-investigator` as an ungraded teaching surface (55 `teachingWorkspace` blocks). Queued:
+  Tier A 0, Tier B 0 (B1-B3 done), Tier C 127 (152 before C1). Held back: 31.
 - **Recount:** catalog ids = `id: '...'` entries in `src/components/lumina/service/manifest/catalog/*.ts`
   (skip the test fixture id `x`); on the workspace = entries with a `teachingWorkspace: {` block.
   Runner-era surfaces: `rg -l "useJudgedScriptRunner<|useJudgedSpeechLoop<|= useJudgedScriptRunner|= useJudgedSpeechLoop" src/components/lumina/primitives --glob "!*test*"`.
@@ -41,6 +41,7 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 | C3: decodable-reader, interactive-book, story-bridge, story-ribbon (runner-era; interactive-book find-feature and four story-bridge modes are checked taps) | W1 | [workspace-rollout-C3-2026-09-25.md](../tutor-reports/workspace-rollout-C3-2026-09-25.md). 8 smokes PASS (story-bridge say_alike on r2); shared fix: a scene fact over 500 chars made the observer refuse every judgment (`sceneFacts.ts`, generic W1 contract case); open: the tutor praises a true one-story detail before asking for the comparison, and summarised instead of reading the stories |
 | C4: addition-subtraction-scene, 3d-shape-explorer, calendar-explorer, push-pull-arena (calendar's grid is plain shape, its chain runner-era) | W1 | [workspace-rollout-C4-2026-09-25.md](../tutor-reports/workspace-rollout-C4-2026-09-25.md). 8 smokes PASS (act_out on r2, a harness fix); nine runner-mock/click-era suites moved onto the real runtime; push-pull predict/compare now reveal on credit; open: the tutor skipped reading the second riddle's clues |
 | C5: habitat-diorama, matter-explorer, states-of-matter, solar-system-explorer (runner-era; each keeps its ungraded exploration face for a payload with no askable challenge) | W1 | [workspace-rollout-C5-2026-09-26.md](../tutor-reports/workspace-rollout-C5-2026-09-26.md). 8 smokes PASS, all first run; habitat connect/restore are checked taps; solar's spotlight now paints when the item opens (no `present` at W1); open: after a wrong answer the tutor often gives or nearly gives the answer (four families, a scoring question for `$student-data-loop`) |
+| C6: di-spoken-practice, di-dice-roll, di-deduction, di-worked-procedure, di-word-problem-setup (four on `DiTeachingStage`; word-problem's big-number step is a checked gesture) | W1 | [workspace-rollout-C6-2026-09-26.md](../tutor-reports/workspace-rollout-C6-2026-09-26.md). 10 smokes PASS (dice count_pips and worked-procedure on reruns after fixes), 3 rows FAIL: deduction cannot_tell (one-rule draws, `/eval-fix`), worked-procedure regroup `--audio` and word-problem build_family `--audio` (observer refuses step-framed credit; LA-13 evidence, handoff 14). Fixed in place: worked-procedure's decide ask gave the decision away; dice-roll ready from the tap |
 | DEAD: runner-owned sandbox handoff, `'di-runner'` owner value, `RUNNER_GUIDANCE`/`runnerLessonStart` (frontend) | — | 09-23, no report. **Residue, owned by LA-14 retirement (`07-census.md`):** the backend bridge `live_activity_tools.py` still accepts `teachingOwner: 'di-runner'` and emits `activity_ready` for it, and `run_live_runtime.py` (`judged_runner`), `run_live_lesson_plan.py` and `scripts/live-lesson-plan-fixture.mjs` still branch on it (the live route's `diPlan` probe was removed with it). No frontend adapter sends that value. |
 
 ## Queue
@@ -57,7 +58,7 @@ Order: Tier A, then runner-era K–2 (the recipe applies as written), then the r
 | C3 | R | K reading and oral language: `decodable-reader`, `interactive-book`, `story-bridge`, `story-ribbon` | done 09-25 (workspace only, every mode) |
 | C4 | R | K math and science: `addition-subtraction-scene`, `3d-shape-explorer`, `calendar-explorer`, `push-pull-arena` | done 09-25 (workspace only, every mode) |
 | C5 | R | K–2 science: `habitat-diorama`, `matter-explorer`, `states-of-matter`, `solar-system-explorer` | done 09-26 (workspace only, every mode) |
-| C6 | R | Spoken DI, older learners: `di-spoken-practice`, `di-dice-roll`, `di-deduction`, `di-worked-procedure`, `di-word-problem-setup` | open |
+| C6 | R | Spoken DI, older learners: `di-spoken-practice`, `di-dice-roll`, `di-deduction`, `di-worked-procedure`, `di-word-problem-setup` | done 09-26 (workspace only, every mode) |
 | C7 | R | Literacy G1–5 on the runner: `genre-explorer`, `sentence-analyzer`, `text-structure-analyzer`, `oral-sentence-studio`, `read-aloud-studio` | open |
 | C8 | R | Other runner-era: `knowledge-check`, `periodic-table`, `cause-effect-chain`, `era-explorer` | open |
 | C9 | P | K math: `math-fact-fluency`, `hundreds-chart`, `equation-builder`, `pattern-builder`, `strategy-picker` | open |
