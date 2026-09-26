@@ -1,6 +1,9 @@
 # Live runtime adoption handoffs
 
-**Next session:** [15: put every answerable primitive on the teaching workspace](15-workspace-rollout.md)
+**Next session:** [16: the observer refuses credit for one step of a larger problem](16-la13-step-credit.md)
+(`/add-live-tutor-tools`; LA-13 part 2, found in rollout C6). Then the rollout continues at C7.
+
+**Previously:** [15: put every answerable primitive on the teaching workspace](15-workspace-rollout.md)
 (`/add-live-tutor-tools`). 8 of ~212 primitives are on the workspace. Pilot a minimal binding (W1) on
 ten-frame and one more primitive, write the recipe into the skill, build `qa/workspace-rollout/ROLLOUT.md`,
 run batch A1. Custom scaffolding (W2) comes after, per primitive, only where testing shows a need.

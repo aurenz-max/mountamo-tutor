@@ -43,6 +43,9 @@ Already ruled out (do not retry):
   effect; one nudged a single case onto the threshold at a cost elsewhere).
 - **Doctrine in the backend session instruction:** measured worse (demonstrations 19→14/21), reverted.
 
+**Part 2 (09-26):** the C6 rows above are a new shape, an item that is one step of a larger problem.
+They are handed off in [16](16-la13-step-credit.md).
+
 ## Where the decision is made
 
 - Criteria: `service/typesafe/observeDialogue.ts`, `DIALOGUE_QUESTIONS.verdict`
