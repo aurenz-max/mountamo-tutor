@@ -8,41 +8,34 @@
  *   ORIENT / BODY_SELECTED / READ_ALOUD beats. Unchanged on purpose — the
  *   reader-fit suite pins this face.
  *
- *   JUDGED (challenges present): the DI modality. The tutor asks about the sky
- *   OUT LOUD, the child answers OUT LOUD with a planet's name, and the tutor's
- *   own affirmation advances the lesson (`useJudgedScriptRunner`). The click
- *   era's answer path — tap-to-select, confirm button, the three-tries reveal
- *   ladder, Next button, improvised [SOLAR_*] answer choreography — is gone.
- *   Tapping SURVIVES as what it honestly is: LOOKING. A tap opens a body's
- *   research card (the compare modes' own instrument); it never answers.
+ *   CHALLENGES (challenges present): runs only on the shared tutor/JEV teaching
+ *   workspace (workspace rollout C5; the scripted runner was retired, LA-14,
+ *   user ruling 09-23: one path). The tutor asks about the sky OUT LOUD, the
+ *   child answers OUT LOUD with a planet's name, the observer judges it and the
+ *   runtime owns progression. An unbound mount shows the "needs the tutor" card.
+ *   Tapping is LOOKING: a tap opens a body's research card (the compare modes'
+ *   own instrument); it never answers.
  *
- * Judged-stage rules carried from the family (see solarSystemScript.ts):
- *   - The identify SPOTLIGHT is a runner-gated stimulus (19c): it paints only
- *     after the tutor's ask for THIS item is spoken — declared via
- *     `onPresentStimulus` + `stimulus.when`, never a hand-rolled timer.
+ * Stage rules carried from the family (see solarSystemScript.ts):
+ *   - The identify / pair SPOTLIGHT paints when the item opens.
  *   - While an identify item is open, body LABELS are withheld — a printed
  *     name under the spotlit planet is the answer in pixels (defect 11).
- *   - The reveal renders behind `runner.revealHeld`, and its payload is NOT
- *     cleared in `onItemOpened` (18b — the same-dispatch advance).
- *   - Interaction gates ride `runner.canAttempt` / `runner.currentSolved`,
- *     never `runner.stage`.
+ *   - The reveal renders behind `runner.revealHeld`.
  */
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import * as d3 from 'd3';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { LuminaReadAloud } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { SolarSystemExplorerMetrics } from '../../../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { solarAssignment, solarScene } from './solarSystemWorkspace';
 import {
   itemsFromChallenges,
-  solarSystemPackBase,
-  askFor,
   revealTextFor,
   isPairFacet,
   type SolarItem,
@@ -50,7 +43,6 @@ import {
   type SolarBand,
 } from './solarSystemScript';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import { phaseResultsFromSummary, type PhaseConfig } from '../../../hooks/usePhaseResults';
 
@@ -130,6 +122,9 @@ export interface SolarSystemExplorerData {
 interface SolarSystemExplorerProps {
   data: SolarSystemExplorerData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
@@ -772,21 +767,19 @@ const ExploreFace: React.FC<ExploreFaceProps> = ({ data, isPreReader, resolvedIn
 interface JudgedFaceProps {
   data: SolarSystemExplorerData;
   items: SolarItem[];
-  rung: SolarBand;
   isPreReader: boolean;
   resolvedInstanceId: string;
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
 }
 
-const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader, resolvedInstanceId }) => {
-  // ── Stage-payload state (the runner owns progression; this is the sky) ────
+const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resolvedInstanceId, runtimePlanItemId, runtimeEvalMode }) => {
+  // ── Stage-payload state (the runtime owns progression; this is the sky) ───
   const [selectedBodyId, setSelectedBodyId] = useState<string | null>(null);
-  /** The runner-gated stimulus: which item's spotlight is on screen. */
-  const [presentedItemId, setPresentedItemId] = useState<string | null>(null);
-  /** Post-affirm only. NOT cleared when the next item opens — that clear and
-   *  the `onAffirmed` that set it land in one React batch (18b).
-   *  `runner.revealHeld` is the render gate. */
+  /** Post-credit only; `runner.revealHeld` is the render gate. */
   const [reward, setReward] = useState<{ text: string; bodyIds: string[] } | null>(null);
   const exploredBodiesRef = useRef<Set<string>>(new Set());
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   const evaluation = usePrimitiveEvaluation<SolarSystemExplorerMetrics>({
     primitiveType: 'solar-system-explorer',
@@ -798,23 +791,7 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader,
     onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const pack = useMemo<JudgedScriptPack<SolarItem>>(() => ({
-    ...solarSystemPackBase(items),
-    passThreshold: 70,
-    statusLines: {
-      ready: () => 'Listen, then say the planet\'s name out loud.',
-      retry: () => 'Have another go — say the planet\'s name.',
-      done: 'Great sky-watching today!',
-    },
-    // One record per attempt, right or corrected: the ask as spoken and what was heard; never the verdict.
-    observation: (item, { heard }) => ({
-      challenge: `${item.kind}/${item.facet}: ${askFor(item)}`,
-      expected: item.answerNames.join(' / '),
-      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
-    }),
-  }), [items]);
-
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const kindCounts = items.reduce<Record<string, number>>((acc, item) => {
       acc[item.kind] = (acc[item.kind] ?? 0) + 1;
       return acc;
@@ -835,39 +812,52 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader,
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items, evaluation]);
+  };
 
-  const runner = useJudgedScriptRunner<SolarItem>({
-    pack,
+  const runner = useWorkspaceRunner<SolarItem>({
+    primitiveId: 'solar-system-explorer',
+    assignment: solarAssignment,
+    items,
+    workspace,
+    objectiveId: data.objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || (items[0]?.kind ?? 'identify'),
     instanceId: resolvedInstanceId,
-    gradeLevel: rung === 'K' ? 'Kindergarten' : `Grade ${rung}`,
-    exhibitId: data.exhibitId,
-    onFinished: handleFinished,
+    onFinished: finish,
     onItemOpened: () => {
       setSelectedBodyId(null);
-      setPresentedItemId(null);
+      setReward(null);
     },
+    // Try again keeps the sky as it is: the spotlight and any open card stay.
+    onCorrectionRetry: () => {},
     onAffirmed: (item) => {
       // The first moment the answer may appear on screen.
       setReward({ text: revealTextFor(item), bodyIds: item.answerBodyIds });
     },
-    // The spotlight waits on HER voice: it paints only after the ask for this
-    // item has been spoken (and re-paints after a correction, on the same gate).
-    onPresentStimulus: (item) => setPresentedItemId(item.id),
-    stimulus: {
-      when: (item) => item.kind === 'identify' || isPairFacet(item.facet),
-    },
   });
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
   const currentItem = runner.currentItem;
+
+  // What the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation: the spotlight paints when the item opens.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...solarScene(currentItem, { preReader: isPreReader }), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
   // Pip: the sky is the question side. On identify items one body is spotlit and
   // unlabelled, so Pip outlines the whole sky and never rings a body.
   const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The solar system', finished: evaluation.hasSubmitted,
+    run: runner, instanceId: resolvedInstanceId, label: 'The solar system', finished: showSummary,
   });
 
   // A tap is LOOKING: it opens the research card (where the band allows one)
@@ -878,10 +868,10 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader,
   }, []);
 
   const spotlightBodyIds = useMemo(() => {
-    if (!currentItem || presentedItemId !== currentItem.id) return [];
+    if (!currentItem) return [];
     if (currentItem.kind === 'identify') return [currentItem.targetBodyId];
-    return currentItem.pairBodyIds;
-  }, [currentItem, presentedItemId]);
+    return isPairFacet(currentItem.facet) ? currentItem.pairBodyIds : [];
+  }, [currentItem]);
 
   const revealBodyIds = runner.revealHeld && reward ? reward.bodyIds : [];
 
@@ -890,33 +880,26 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader,
   const suppressLabels = currentItem?.kind === 'identify';
 
   // The research card would answer an identify item outright (it prints the
-  // body's name); on other kinds it is the model's own reference material,
-  // exactly as tappable as it was in the click era.
+  // body's name); on other kinds it is the model's own reference material.
   const selectedBody = useMemo(
     () => data.bodies.find((b) => b.id === selectedBodyId) ?? null,
     [data.bodies, selectedBodyId],
   );
-  const showCard = !!selectedBody && !isPreReader && currentItem?.kind !== 'identify'
-    && !evaluation.hasSubmitted;
+  const showCard = !!selectedBody && !isPreReader && currentItem?.kind !== 'identify' && !showSummary;
 
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => (
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => (
       PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🪐' }
     ));
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
-  const stageWord = runner.stage === 'judging'
-    ? 'let\'s see…'
-    : runner.currentSolved
-      ? 'yes!'
-      : runner.running
-        ? 'say it out loud'
-        : 'get ready';
+  const solvedIds = new Set((runner.practiceSummary?.outcomes ?? []).filter(o => o.solved).map(o => o.id));
+  const stageWord = runner.currentSolved ? 'yes!' : 'say it out loud';
 
   return (
     <>
-      {!evaluation.hasSubmitted && (
+      {!showSummary && (
         <>
           <div className="mb-3 flex items-center gap-2">
             {/* Progress dots — adult chrome at K-1, where the tutor's voice is
@@ -924,7 +907,7 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader,
             {!isPreReader && (
               <>
                 {items.map((item, i) => {
-                  const done = runner.solvedIds.has(item.id);
+                  const done = i < runner.currentIndex || solvedIds.has(item.id);
                   return (
                     <span
                       key={item.id}
@@ -941,18 +924,6 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader,
                 </span>
               </>
             )}
-            {/* Tap-to-hear — the QUESTION again, never a hint ladder. Never
-                withdrawn by band or tier. */}
-            <button
-              type="button"
-              onClick={runner.hearStimulus}
-              className={`ml-auto flex h-11 w-11 items-center justify-center rounded-full bg-amber-500/15 border-2 border-amber-500/30 hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all ${
-                runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''
-              }`}
-              aria-label="Hear the question again"
-            >
-              <span className="text-xl">🔁</span>
-            </button>
           </div>
 
           {pip.store && <div {...pip.dock} />}
@@ -994,11 +965,6 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader,
             </p>
           )}
 
-          {/* The orb tells the truth: every item in this pack is spoken. */}
-          <div className="mt-3">
-            <JudgedMicPanel run={runner} />
-          </div>
-
           {showCard && selectedBody && (
             <BodyCard
               body={selectedBody}
@@ -1009,11 +975,11 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader,
         </>
       )}
 
-      {evaluation.hasSubmitted && phaseResults.length > 0 && (
+      {showSummary && (
         <PhaseSummaryPanel
           className="mt-4"
           phases={phaseResults}
-          overallScore={evaluation.submittedResult?.score}
+          overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
           durationMs={evaluation.elapsedMs}
           heading="Your Space Journey"
           celebrationMessage="You called the planets by name — out loud, like a real astronomer!"
@@ -1029,33 +995,20 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader,
 
 const VALID_RUNGS: readonly SolarBand[] = ['K', '1', '2', '3', '4', '5'];
 
-const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, className = '' }) => {
-  const rung: SolarBand = VALID_RUNGS.includes(data.gradeLevel as SolarBand)
-    ? (data.gradeLevel as SolarBand)
-    : '3';
-  const isPreReader = rung === 'K' || rung === '1';
+const rungOf = (data: SolarSystemExplorerData): SolarBand => (VALID_RUNGS.includes(data.gradeLevel as SolarBand)
+  ? (data.gradeLevel as SolarBand)
+  : '3');
+
+type FrameProps = SolarSystemExplorerProps & { items: SolarItem[] };
+
+const SolarSystemFrame: React.FC<FrameProps> = ({ data, items, className = '', runtimePlanItemId, runtimeEvalMode }) => {
+  const isPreReader = rungOf(data) === 'K' || rungOf(data) === '1';
 
   const stableInstanceIdRef = useRef(
     data.instanceId || `solar-system-explorer-${Math.round(performance.now())}`,
   );
   const resolvedInstanceId = data.instanceId || stableInstanceIdRef.current;
-
-  // The judged items — challenges that survive the build gates. All-dropped is
-  // an honest degrade to exploration: shipping a broken ask would put a wrong
-  // line in the tutor's mouth, and free exploration is this primitive's floor.
-  const built = useMemo(
-    () => itemsFromChallenges(data.challenges ?? [], { bodies: data.bodies, rung }),
-    [data.challenges, data.bodies, rung],
-  );
-  const isJudged = built.items.length > 0;
-
-  useEffect(() => {
-    if ((data.challenges?.length ?? 0) > 0 && !isJudged) {
-      console.warn(
-        `[SolarSystemExplorer] all ${data.challenges?.length} challenges dropped by the build gates — running as free exploration`,
-      );
-    }
-  }, [data.challenges, isJudged]);
+  const isJudged = items.length > 0;
 
   return (
     <div className={`w-full ${className}`}>
@@ -1083,10 +1036,11 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
           {isJudged ? (
             <JudgedFace
               data={data}
-              items={built.items}
-              rung={rung}
+              items={items}
               isPreReader={isPreReader}
               resolvedInstanceId={resolvedInstanceId}
+              runtimePlanItemId={runtimePlanItemId}
+              runtimeEvalMode={runtimeEvalMode}
             />
           ) : (
             <ExploreFace
@@ -1099,6 +1053,32 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
       </div>
     </div>
   );
+};
+
+const SolarSystemBound = withWorkspaceOnly<FrameProps>('solar-system-explorer', SolarSystemFrame, (props) => props.data.title);
+
+/**
+ * Challenges run only on the teaching workspace (an unbound mount shows the "needs the tutor" card).
+ * All-dropped is an honest degrade to the ungraded free exploration, this primitive's floor.
+ */
+const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = (props) => {
+  const { data } = props;
+  const rung = rungOf(data);
+  const built = useMemo(
+    () => itemsFromChallenges(data.challenges ?? [], { bodies: data.bodies, rung }),
+    [data.challenges, data.bodies, rung],
+  );
+  const isJudged = built.items.length > 0;
+
+  useEffect(() => {
+    if ((data.challenges?.length ?? 0) > 0 && !isJudged) {
+      console.warn(
+        `[SolarSystemExplorer] all ${data.challenges?.length} challenges dropped by the build gates — running as free exploration`,
+      );
+    }
+  }, [data.challenges, isJudged]);
+
+  return isJudged ? <SolarSystemBound {...props} items={built.items} /> : <SolarSystemFrame {...props} items={[]} />;
 };
 
 // Star background component - memoized to prevent unnecessary re-renders

@@ -1,0 +1,228 @@
+{
+ "source": "qa/tutor-reports/solar-system-explorer-runtime-identify-payload-2026-09-26.json",
+ "primitiveId": "solar-system-explorer",
+ "evalMode": "identify",
+ "data": {
+  "title": "Explore Our Solar System",
+  "description": "Join us on a journey to discover the wonderful worlds that travel through space around our Sun. Let us look closely at how these celestial neighbors move and what makes each one unique.",
+  "bodies": [
+   {
+    "id": "sun",
+    "name": "Sun",
+    "type": "star",
+    "color": "#FDB813",
+    "radiusKm": 696000,
+    "distanceAu": 0,
+    "orbitalPeriodDays": 0,
+    "rotationPeriodHours": 609.12,
+    "moons": 0,
+    "description": "The Sun is our star! It is a giant ball of hot gas that gives us light and warmth.",
+    "textureGradient": "radial-gradient(circle, #FDB813 0%, #FD8813 50%, #FD6013 100%)",
+    "temperatureC": 5500,
+    "funFact": "The Sun is so big that over 1 million Earths could fit inside it!"
+   },
+   {
+    "id": "mercury",
+    "name": "Mercury",
+    "type": "planet",
+    "color": "#8C7853",
+    "radiusKm": 2440,
+    "distanceAu": 0.39,
+    "orbitalPeriodDays": 88,
+    "rotationPeriodHours": 1407.6,
+    "moons": 0,
+    "description": "Mercury is a rocky world with lots of craters on its surface.",
+    "textureGradient": "radial-gradient(circle, #8C7853 0%, #6E5D3E 50%, #4E412A 100%)",
+    "temperatureC": 167,
+    "funFact": "Mercury zips around the Sun in just 88 days."
+   },
+   {
+    "id": "venus",
+    "name": "Venus",
+    "type": "planet",
+    "color": "#FFC649",
+    "radiusKm": 6052,
+    "distanceAu": 0.72,
+    "orbitalPeriodDays": 225,
+    "rotationPeriodHours": 5832.5,
+    "moons": 0,
+    "description": "Venus is covered in thick clouds that trap heat very effectively.",
+    "textureGradient": "radial-gradient(circle, #FFC649 0%, #D49D2B 50%, #A67515 100%)",
+    "temperatureC": 464,
+    "funFact": "A day on Venus is longer than its year!"
+   },
+   {
+    "id": "earth",
+    "name": "Earth",
+    "type": "planet",
+    "color": "#4A90E2",
+    "radiusKm": 6371,
+    "distanceAu": 1,
+    "orbitalPeriodDays": 365.25,
+    "rotationPeriodHours": 24,
+    "moons": 1,
+    "description": "Earth is our home! It is the only known world with liquid water on the surface and abundant life.",
+    "textureGradient": "radial-gradient(circle, #4A90E2 0%, #2E5C8A 50%, #1E3A5A 100%)",
+    "temperatureC": 15,
+    "funFact": "Earth is the only planet not named after a god or goddess."
+   },
+   {
+    "id": "mars",
+    "name": "Mars",
+    "type": "planet",
+    "color": "#CD5C5C",
+    "radiusKm": 3390,
+    "distanceAu": 1.52,
+    "orbitalPeriodDays": 687,
+    "rotationPeriodHours": 24.6,
+    "moons": 2,
+    "description": "Mars has enormous volcanoes and deep canyons waiting to be explored.",
+    "textureGradient": "radial-gradient(circle, #CD5C5C 0%, #A04040 50%, #803030 100%)",
+    "temperatureC": -65,
+    "funFact": "Mars looks red because its soil contains rusty iron."
+   },
+   {
+    "id": "jupiter",
+    "name": "Jupiter",
+    "type": "planet",
+    "color": "#C88B3A",
+    "radiusKm": 69911,
+    "distanceAu": 5.2,
+    "orbitalPeriodDays": 4333,
+    "rotationPeriodHours": 9.9,
+    "moons": 95,
+    "description": "Jupiter is a massive gassy world featuring swirling cloud bands and a persistent great storm.",
+    "textureGradient": "radial-gradient(circle, #E5B88A 0%, #C88B3A 50%, #A06020 100%)",
+    "temperatureC": -110,
+    "funFact": "Jupiter has dozens of moons orbiting along with it!"
+   },
+   {
+    "id": "saturn",
+    "name": "Saturn",
+    "type": "planet",
+    "color": "#FAD5A5",
+    "radiusKm": 58232,
+    "distanceAu": 9.54,
+    "orbitalPeriodDays": 10759,
+    "rotationPeriodHours": 10.7,
+    "moons": 146,
+    "description": "Saturn is a gas giant surrounded by a magnificent system of wide rings.",
+    "textureGradient": "radial-gradient(circle, #FAD5A5 0%, #E5B88A 50%, #D0A070 100%)",
+    "temperatureC": -140,
+    "funFact": "Saturn is so light it could float in water if you had a big enough ocean."
+   },
+   {
+    "id": "uranus",
+    "name": "Uranus",
+    "type": "planet",
+    "color": "#4FD0E0",
+    "radiusKm": 25362,
+    "distanceAu": 19.19,
+    "orbitalPeriodDays": 30687,
+    "rotationPeriodHours": 17.2,
+    "moons": 28,
+    "description": "Uranus is an icy world that tilts intensely as it travels on its path.",
+    "textureGradient": "radial-gradient(circle, #4FD0E0 0%, #2DA5B8 50%, #157382 100%)",
+    "temperatureC": -195,
+    "funFact": "Uranus rolls around the Sun like a ball instead of spinning like a top."
+   },
+   {
+    "id": "neptune",
+    "name": "Neptune",
+    "type": "planet",
+    "color": "#4169E1",
+    "radiusKm": 24622,
+    "distanceAu": 30.07,
+    "orbitalPeriodDays": 60190,
+    "rotationPeriodHours": 16.1,
+    "moons": 16,
+    "description": "Neptune is a deep blue dynamic world with powerful weather systems.",
+    "textureGradient": "radial-gradient(circle, #4169E1 0%, #2748B8 50%, #162E80 100%)",
+    "temperatureC": -200,
+    "funFact": "Neptune experiences some of the most intense winds in the entire solar system."
+   },
+   {
+    "id": "pluto",
+    "name": "Pluto",
+    "type": "dwarf-planet",
+    "color": "#A0826D",
+    "radiusKm": 1188,
+    "distanceAu": 39.48,
+    "orbitalPeriodDays": 90560,
+    "rotationPeriodHours": 153.3,
+    "moons": 5,
+    "description": "Pluto is a small, distant icy world located far out in the outer realms.",
+    "textureGradient": "radial-gradient(circle, #A0826D 0%, #7D6452 50%, #59463A 100%)",
+    "temperatureC": -225,
+    "funFact": "Pluto has a distinctive heart-shaped region on its icy surface."
+   }
+  ],
+  "initialZoom": "system",
+  "timeScale": 5000,
+  "showOrbits": true,
+  "showLabels": true,
+  "scaleMode": "hybrid",
+  "showHabitableZone": true,
+  "showDistances": true,
+  "compareMode": true,
+  "gradeLevel": "3",
+  "dateTime": null,
+  "focusBody": "earth",
+  "challenges": [
+   {
+    "id": "ssc-1",
+    "type": "identify",
+    "facet": "name",
+    "answerBodyIds": [
+     "mercury"
+    ],
+    "prompt": "Look at the planet glowing bright. What planet is that?"
+   },
+   {
+    "id": "ssc-2",
+    "type": "identify",
+    "facet": "name",
+    "answerBodyIds": [
+     "venus"
+    ],
+    "prompt": "Look at the planet glowing bright. What planet is that?"
+   },
+   {
+    "id": "ssc-3",
+    "type": "identify",
+    "facet": "name",
+    "answerBodyIds": [
+     "earth"
+    ],
+    "prompt": "Look at the planet glowing bright. What planet is that?"
+   },
+   {
+    "id": "ssc-4",
+    "type": "identify",
+    "facet": "name",
+    "answerBodyIds": [
+     "mars"
+    ],
+    "prompt": "Look at the planet glowing bright. What planet is that?"
+   },
+   {
+    "id": "ssc-5",
+    "type": "identify",
+    "facet": "name",
+    "answerBodyIds": [
+     "jupiter"
+    ],
+    "prompt": "Look at the planet glowing bright. What planet is that?"
+   },
+   {
+    "id": "ssc-6",
+    "type": "identify",
+    "facet": "name",
+    "answerBodyIds": [
+     "saturn"
+    ],
+    "prompt": "Look at the planet glowing bright. What planet is that?"
+   }
+  ]
+ }
+}

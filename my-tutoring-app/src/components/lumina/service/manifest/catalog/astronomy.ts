@@ -172,6 +172,16 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'A live model of the Sun and planets; every answer is one planet name said out loud, computed from the bodies '
+        + 'on screen (classify accepts any one member of the kind). Tapping, zooming or panning is looking, never an answer. '
+        + 'Identify: one planet glows and no planet wears its name, so the name is the whole answer. Pair questions light the '
+        + 'two planets being compared. From Grade 2 a tap opens the card of facts for that planet; a Kindergarten or Grade 1 '
+        + 'learner has no cards and does not read, so say the question aloud. The Sun is a star, not a planet answer. A '
+        + 'colour or "that one" with no name does not answer. Before an attempt never say the answer or describe the '
+        + 'planets for them. You cannot move or mark a planet.',
+    },
   },
   {
     id: 'scale-comparator',

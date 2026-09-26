@@ -53,6 +53,7 @@ import { pushPullArenaLiveDomain } from './adapters/pushPullArenaLive';
 import { habitatDioramaLiveDomain } from './adapters/habitatDioramaLive';
 import { matterExplorerLiveDomain } from './adapters/matterExplorerLive';
 import { statesOfMatterLiveDomain } from './adapters/statesOfMatterLive';
+import { solarSystemExplorerLiveDomain } from './adapters/solarSystemExplorerLive';
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { diShapesLiveDomain } from './adapters/diShapesLive';
@@ -115,6 +116,7 @@ export const LIVE_ADAPTERS = {
   'habitat-diorama': workspaceAdapter('habitat-diorama', habitatDioramaLiveDomain),
   'matter-explorer': workspaceAdapter('matter-explorer', matterExplorerLiveDomain),
   'states-of-matter': workspaceAdapter('states-of-matter', statesOfMatterLiveDomain),
+  'solar-system-explorer': workspaceAdapter('solar-system-explorer', solarSystemExplorerLiveDomain),
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
   'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),

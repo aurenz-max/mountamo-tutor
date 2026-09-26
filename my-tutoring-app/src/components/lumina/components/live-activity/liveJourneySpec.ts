@@ -98,6 +98,8 @@ import { matterItems } from './adapters/matterExplorerLive';
 import { matterJourneyAnswers } from '../../primitives/visual-primitives/chemistry/matterExplorerWorkspace';
 import { statesItems } from './adapters/statesOfMatterLive';
 import { statesJourneyAnswers } from '../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
+import { solarItems } from './adapters/solarSystemExplorerLive';
+import { solarJourneyAnswers } from '../../primitives/visual-primitives/astronomy/solarSystemWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
@@ -1337,6 +1339,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const item = statesItems(ctx.data as never).find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current states-of-matter item');
       const answers = statesJourneyAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'solar-system-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/astronomy/SolarSystemExplorer.tsx',
+    instanceId: 'solar',
+    defaults: { grade: 'Grade 2', mode: 'identify', di: false, topic: 'The planets of our solar system' },
+    leakTokens: ['SOLAR_ITEM', 'SOLAR_MOVE', 'SOLAR_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one spoken planet name computed from the bodies on screen.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = solarItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current solar-system-explorer item');
+      const answers = solarJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
