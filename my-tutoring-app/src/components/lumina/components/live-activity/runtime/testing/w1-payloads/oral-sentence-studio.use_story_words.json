@@ -1,0 +1,97 @@
+{
+ "source": "qa/tutor-reports/oral-sentence-studio-runtime-use_story_words-payload-2026-09-26.json",
+ "primitiveId": "oral-sentence-studio",
+ "evalMode": "use_story_words",
+ "data": {
+  "title": "Oral Sentence Studio",
+  "description": "Use both new words in one complete sentence of your own.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "use_story_words",
+  "challenges": [
+   {
+    "id": "oral-sentence-studio-1",
+    "type": "use_story_words",
+    "sceneTitle": "Bunny in the Garden",
+    "settingEmoji": "🏡",
+    "settingLabel": "garden",
+    "actorEmoji": "🐰",
+    "actorLabel": "bunny",
+    "actionEmoji": "👀",
+    "actionLabel": "looking",
+    "objectEmoji": "🥕",
+    "objectLabel": "carrot",
+    "targetWords": [
+     "bright",
+     "fresh"
+    ],
+    "wordMeanings": [
+     "shining with a lot of light",
+     "new and cool"
+    ],
+    "sceneMeaning": "The bright sun shines while the hungry bunny finds a fresh carrot in the garden.",
+    "acceptedSentences": [
+     "I can see a bright star in the sky and eat a fresh apple.",
+     "The bright yellow flower grows next to some fresh green grass.",
+     "A bright bird sings a song near the fresh water puddle."
+    ],
+    "storyText": "The bright sun shines on the garden today. A cute bunny finds a fresh orange carrot to eat."
+   },
+   {
+    "id": "oral-sentence-studio-2",
+    "type": "use_story_words",
+    "sceneTitle": "Quiet Reading Time",
+    "settingEmoji": "🏫",
+    "settingLabel": "classroom",
+    "actorEmoji": "👧",
+    "actorLabel": "girl",
+    "actionEmoji": "📖",
+    "actionLabel": "reading",
+    "objectEmoji": "📚",
+    "objectLabel": "books",
+    "targetWords": [
+     "quiet",
+     "smart"
+    ],
+    "wordMeanings": [
+     "making very little sound",
+     "good at learning things"
+    ],
+    "sceneMeaning": "The quiet girl reads many smart books at the classroom table.",
+    "acceptedSentences": [
+     "That quiet dog looks very smart when it sits.",
+     "A smart turtle walked across the quiet path outside.",
+     "We must be quiet so the smart bird can sing."
+    ],
+    "storyText": "The girl sits in the quiet room. She reads a smart book about animals."
+   },
+   {
+    "id": "oral-sentence-studio-3",
+    "type": "use_story_words",
+    "sceneTitle": "Sunny Park Day",
+    "settingEmoji": "🌳",
+    "settingLabel": "green park",
+    "actorEmoji": "👧",
+    "actorLabel": "happy girl",
+    "actionEmoji": "🏃",
+    "actionLabel": "fast running",
+    "objectEmoji": "⚽",
+    "objectLabel": "red ball",
+    "targetWords": [
+     "swift",
+     "joyful"
+    ],
+    "wordMeanings": [
+     "moving very fast",
+     "feeling very happy"
+    ],
+    "sceneMeaning": "The swift girl ran across the park while feeling joyful with her red ball.",
+    "acceptedSentences": [
+     "The swift puppy ran across the green grass and felt joyful.",
+     "A joyful bird flew past the tall tree in a swift way.",
+     "Swift little frogs jumped in the pond and looked very joyful."
+    ],
+    "storyText": "The swift girl ran through the green park. She chased the red ball and felt joyful."
+   }
+  ]
+ }
+}

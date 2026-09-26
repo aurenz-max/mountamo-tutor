@@ -173,7 +173,7 @@ export const itemsFromChallenges = (
 const wordList = (item: OralSentenceStudioItem): string =>
   `${item.challenge.targetWords[0]} and ${item.challenge.targetWords[1]}`;
 
-const askFor = (item: OralSentenceStudioItem): string => {
+export const askFor = (item: OralSentenceStudioItem): string => {
   const [first, second] = item.challenge.targetWords;
   const [firstMeaning, secondMeaning] = item.challenge.wordMeanings;
   const words = `${first}, meaning ${firstMeaning}, and ${second}, meaning ${secondMeaning}`;

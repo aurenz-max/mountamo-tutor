@@ -1,11 +1,11 @@
-# Workspace rollout C7: genre-explorer, text-structure-analyzer, sentence-analyzer, read-aloud-studio (2026-09-26)
+# Workspace rollout C7: genre-explorer, text-structure-analyzer, sentence-analyzer, read-aloud-studio, oral-sentence-studio (2026-09-26)
 
 Queue: [`qa/workspace-rollout/ROLLOUT.md`](../workspace-rollout/ROLLOUT.md) row C7. Executor: `/add-live-tutor-tools`.
 
 ## What shipped
 
-Four of the five Grade 1–6 literacy families now run only on the teaching workspace, with every catalog mode
-bound (one-path ruling 09-23). The fifth, `oral-sentence-studio`, is held for a ruling (below).
+All five literacy families now run only on the teaching workspace, with every catalog mode bound (one-path
+ruling 09-23). `oral-sentence-studio` joined after its L1 eval modes landed (below).
 
 | Primitive | Commit | Items | Production (+/−) |
 | --- | --- | --- | --- |
@@ -83,19 +83,37 @@ for the "driver ended" error. Any family that logs per render would have hit thi
 - **genre at grade 3+: the tutor read every text aloud.** Harmless here (no text names its genre), so the guidance
   now permits it rather than forbidding something the tutor ignored.
 
-## Held: oral-sentence-studio (needs a ruling)
+## oral-sentence-studio (bound after its L1 eval modes)
 
-The catalog entry has no `evalModes`, so `pinnedModes` finds nothing to pin, the family can never bind, and a
-workspace-only switch would leave it showing only the needs-the-tutor card. Binding it takes one catalog mode
-(`describe_scene`, the only challenge type; the generator needs no change). That gives the `vocabulary_sentence`
-class an IRT prior and mode-keyed evidence, while its contract (`teachingItemContract.ts`) says a live
-microphone/judge acceptance sitting is owed "before adaptive mastery credit". That is student-record semantics, the
-user's call. Also to re-base on adoption: the pack's "two-correction cap is load-bearing" (workspace progression has
-no cap; the observer's committed outcome advances). Until then it stays on its runner.
+It was held because its catalog entry had no `evalModes`, so nothing could pin it. A separate slice raised it to
+L1 the same day (`f561b599`: `describe_scene` b 3.5, `guided_writing_rehearsal` b 4.0, `use_story_words` b 5.0;
+report `qa/eval-reports/oral-sentence-studio-2026-09-26-L1.md`), which settled the ruling. It is now bound on the
+workspace only, every mode (the binding commit follows `f561b599`).
+
+- Every item is one original spoken sentence, an open answer set: the observer's `expectedAnswer` is the pack's rubric
+  with its three example sentences as anchors, not a key. Story words refuses a story line said back; rehearsal
+  refuses a sentence about the step already written.
+- **Behaviour change:** the example sentence now appears only after credit. The runner also showed it on a retry
+  ("Build the missing part"), which let the child read it back for credit.
+- Runner-era requirement re-based: the pack's "two-correction cap is load-bearing" protected against endless
+  correction loops on an open response; on the workspace no cap exists and the observer's committed outcome advances.
+- The mic panel and the "Hear the words and directions again" button are gone.
+
+| Row | Result | Raw file |
+| --- | --- | --- |
+| oral-sentence-studio describe_scene text | PASS (first attempt refused: backend was down; restarted) | `oral-sentence-studio-w1-describe_scene-text-2026-09-26.json` |
+| oral-sentence-studio use_story_words `--audio` | PASS; the story line said back was refused | `oral-sentence-studio-w1-use_story_words-audio-2026-09-26.json` |
+
+Undriven: guided_writing_rehearsal (covered by the workspace test on the generator's fallback challenges). Recorded:
+the tutor never said the word meanings the guidance asks for; the generated story used "a smart book" (the L1
+report's anchor-quality item); scenes recur (bunny, garden, library, "happy").
 
 ## Checks
 
-- `typecheck:lumina` 0; full `tsc` 770 (baseline 770).
+- `typecheck:lumina` 0; full `tsc` 770 at the four-family close, 771 after: the extra error is
+  `.next/types/app/api/lumina/eval-test/route.ts`, generated when the dev server compiled that route (the L1 probe).
+  The route, unchanged since 09-09, exports a non-route helper (`validateChallengeTypes`) that Next's route type
+  check rejects. The same 771 with and without the oral binding; not fixed here.
 - Literacy, live-activity, pip and service/literacy: 181 files, 3,030 tests pass (4 skipped).
 - The generic W1 contract passes on the eight new payloads.
 

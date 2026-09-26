@@ -103,6 +103,8 @@ import { itemsFromPayload as sentenceItems } from '../../primitives/visual-primi
 import { sentenceJourneyAnswers } from '../../primitives/visual-primitives/literacy/sentenceAnalyzerWorkspace';
 import { readAloudItems } from './adapters/readAloudStudioLive';
 import { readAloudJourneyAnswers } from '../../primitives/visual-primitives/literacy/readAloudStudioWorkspace';
+import { itemsFromChallenges as oralSentenceItems } from '../../primitives/visual-primitives/literacy/oralSentenceStudioScript';
+import { oralSentenceJourneyAnswers } from '../../primitives/visual-primitives/literacy/oralSentenceStudioWorkspace';
 import { statesItems } from './adapters/statesOfMatterLive';
 import { statesJourneyAnswers } from '../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
 import { solarItems } from './adapters/solarSystemExplorerLive';
@@ -1539,6 +1541,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       if (!item) throw new Error('No current read-aloud-studio item');
       if (item.step === 'mark') throw new Error('read-aloud-studio expression mark: any phrase plan is accepted; undriven');
       const answers = readAloudJourneyAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'oral-sentence-studio': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/OralSentenceStudio.tsx',
+    instanceId: 'oral',
+    defaults: { grade: 'Kindergarten', mode: 'describe_scene', di: false, topic: 'Using new vocabulary words' },
+    leakTokens: ['OSS_ITEM', 'OSS_MOVE', 'OSS_COMPLETE', 'OSS_HEAR'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one original spoken sentence: a valid example, or the pack's signature wrong answer.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = oralSentenceItems((ctx.data as { challenges?: never[] }).challenges ?? []).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current oral-sentence-studio item');
+      const answers = oralSentenceJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },

@@ -2817,6 +2817,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
+      guidance: 'Each item asks for one original sentence said out loud, using the two printed words with their meanings. '
+        + 'Picture Sentences: about the pictured scene. Say It Before We Write: the sentence the class will write for the '
+        + 'pictured step that comes now, not the step already written, using the order word. Story Words: read the short '
+        + 'story aloud, then the learner makes a new sentence of their own; a story line said back is not it. The learner '
+        + 'does not read: say the ask, the words and their meanings aloud. Any wording that meets the task counts; a '
+        + 'fragment or the two words listed does not. Before an attempt never say an example sentence. You cannot point '
+        + 'at the picture.',
+    },
     audioInput: JUDGED_AUDIO_INPUT,
   },
   {

@@ -56,6 +56,7 @@ import { genreExplorerLiveDomain } from './adapters/genreExplorerLive';
 import { textStructureAnalyzerLiveDomain } from './adapters/textStructureAnalyzerLive';
 import { sentenceAnalyzerLiveDomain } from './adapters/sentenceAnalyzerLive';
 import { readAloudStudioLiveDomain } from './adapters/readAloudStudioLive';
+import { oralSentenceStudioLiveDomain } from './adapters/oralSentenceStudioLive';
 import { statesOfMatterLiveDomain } from './adapters/statesOfMatterLive';
 import { solarSystemExplorerLiveDomain } from './adapters/solarSystemExplorerLive';
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
@@ -128,6 +129,7 @@ export const LIVE_ADAPTERS = {
   'text-structure-analyzer': workspaceAdapter('text-structure-analyzer', textStructureAnalyzerLiveDomain),
   'sentence-analyzer': workspaceAdapter('sentence-analyzer', sentenceAnalyzerLiveDomain),
   'read-aloud-studio': workspaceAdapter('read-aloud-studio', readAloudStudioLiveDomain),
+  'oral-sentence-studio': workspaceAdapter('oral-sentence-studio', oralSentenceStudioLiveDomain),
   'states-of-matter': workspaceAdapter('states-of-matter', statesOfMatterLiveDomain),
   'solar-system-explorer': workspaceAdapter('solar-system-explorer', solarSystemExplorerLiveDomain),
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),

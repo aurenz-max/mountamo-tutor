@@ -1,0 +1,94 @@
+{
+ "source": "qa/tutor-reports/oral-sentence-studio-runtime-describe_scene-payload-2026-09-26.json",
+ "primitiveId": "oral-sentence-studio",
+ "evalMode": "describe_scene",
+ "data": {
+  "title": "Oral Sentence Studio",
+  "description": "Use both new words in one complete sentence of your own.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "describe_scene",
+  "challenges": [
+   {
+    "id": "oral-sentence-studio-1",
+    "type": "describe_scene",
+    "sceneTitle": "Bunny in the Garden",
+    "settingEmoji": "🏡",
+    "settingLabel": "sunny garden",
+    "actorEmoji": "🐰",
+    "actorLabel": "cute bunny",
+    "actionEmoji": "🥕",
+    "actionLabel": "finding food",
+    "objectEmoji": "🌿",
+    "objectLabel": "fresh leaves",
+    "targetWords": [
+     "hungry",
+     "happy"
+    ],
+    "wordMeanings": [
+     "wanting to eat food",
+     "feeling glad and smiling"
+    ],
+    "sceneMeaning": "The hungry bunny is very happy to find fresh leaves in the sunny garden.",
+    "acceptedSentences": [
+     "The hungry bunny feels happy when eating in the sunny garden.",
+     "A hungry little bunny is happy near the green leaves.",
+     "Feeling hungry, the bunny looks happy in the garden."
+    ]
+   },
+   {
+    "id": "oral-sentence-studio-2",
+    "type": "describe_scene",
+    "sceneTitle": "Reading in the library",
+    "settingEmoji": "🏫",
+    "settingLabel": "quiet library",
+    "actorEmoji": "👧",
+    "actorLabel": "happy girl",
+    "actionEmoji": "📖",
+    "actionLabel": "holding",
+    "objectEmoji": "📚",
+    "objectLabel": "big book",
+    "targetWords": [
+     "joyful",
+     "curious"
+    ],
+    "wordMeanings": [
+     "feeling very happy inside",
+     "wanting to learn more"
+    ],
+    "sceneMeaning": "The joyful girl felt curious while holding a big book in the library.",
+    "acceptedSentences": [
+     "The joyful girl looked curious while holding a big book in the library.",
+     "Holding a big book makes the curious girl feel joyful.",
+     "A joyful girl is curious to read a big book in the library."
+    ]
+   },
+   {
+    "id": "oral-sentence-studio-3",
+    "type": "describe_scene",
+    "sceneTitle": "Little duck swimming",
+    "settingEmoji": "🌊",
+    "settingLabel": "blue water",
+    "actorEmoji": "🦆",
+    "actorLabel": "yellow duck",
+    "actionEmoji": "🏊",
+    "actionLabel": "swimming fast",
+    "objectEmoji": "🌿",
+    "objectLabel": "green leaf",
+    "targetWords": [
+     "swift",
+     "glides"
+    ],
+    "wordMeanings": [
+     "moving very fast",
+     "moving smoothly"
+    ],
+    "sceneMeaning": "The swift yellow duck glides across the blue water.",
+    "acceptedSentences": [
+     "The swift yellow duck glides over the blue water.",
+     "A swift duck glides gently past the green leaf.",
+     "Our swift little duck glides in the pool."
+    ]
+   }
+  ]
+ }
+}

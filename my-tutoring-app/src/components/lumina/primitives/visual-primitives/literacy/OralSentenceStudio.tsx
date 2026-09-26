@@ -4,14 +4,16 @@
  * Oral Sentence Studio — original vocabulary use in complete child sentences.
  *
  * A meaningful scene and two new words stay visible while the child speaks.
- * The Live tutor judges complete thought + scene relevance + semantic word use,
- * never exact wording. Full model sentences are private until feedback.
+ * Runs only on the shared tutor/JEV teaching workspace (workspace rollout C7;
+ * the scripted runner was retired, LA-14, user ruling 09-23: one path): the
+ * observer judges complete thought + task relevance + semantic word use, never
+ * exact wording, and the runtime owns progression. An example sentence appears
+ * only after credit. An unbound mount shows the shared "needs the tutor" card.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaBadge,
-  LuminaButton,
   LuminaCard,
   LuminaCardContent,
   LuminaCardDescription,
@@ -24,18 +26,17 @@ import {
   LuminaReadAloudGlyph,
   LuminaSectionLabel,
 } from '../../../ui';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { OralSentenceStudioMetrics } from '../../../evaluation/types';
-import { useJudgedScriptRunner, type JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { phaseResultsFromSummary, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import {
-  itemsFromChallenges,
-  oralSentenceStudioPack,
-  type OralSentenceStudioItem,
-} from './oralSentenceStudioScript';
+import { itemsFromChallenges, type OralSentenceStudioItem } from './oralSentenceStudioScript';
+import { oralSentenceAssignment, oralSentenceScene } from './oralSentenceStudioWorkspace';
 
 /** Task identities (eval modes): describe a picture, rehearse the sentence
  * for the next step of a class writing piece, or reuse two story words in a
@@ -90,6 +91,9 @@ export interface OralSentenceStudioData {
 interface OralSentenceStudioProps {
   data: OralSentenceStudioData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 const PHASE_CONFIG: Record<OralSentenceStudioChallengeType, PhaseConfig> = {
@@ -104,23 +108,13 @@ const MODE_PROMPT: Record<OralSentenceStudioChallengeType, string> = {
   use_story_words: 'Listen to the story. Then make a new sentence of your own with both story words.',
 };
 
-type FeedbackKind = 'correct' | 'retry';
-
-const OralSentenceStudio: React.FC<OralSentenceStudioProps> = ({ data, className }) => (
-  <OralSentenceStudioSession
-    key={[data.instanceId ?? '', ...data.challenges.map((challenge) => challenge.id)].join('|')}
-    data={data}
-    className={className}
-  />
-);
-
-const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, className }) => {
+const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const items = useMemo(() => itemsFromChallenges(data.challenges), [data.challenges]);
   const stableInstanceIdRef = useRef(data.instanceId || `oral-sentence-studio-${Date.now()}`);
   const resolvedInstanceId = data.instanceId || stableInstanceIdRef.current;
-  const transcriptsRef = useRef<Record<string, string[]>>({});
-  const [feedbackItem, setFeedbackItem] = useState<OralSentenceStudioItem | null>(null);
-  const [feedbackKind, setFeedbackKind] = useState<FeedbackKind>('retry');
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  /** The credited item, whose example sentence may now be shown. */
+  const [creditedItem, setCreditedItem] = useState<OralSentenceStudioItem | null>(null);
 
   const evaluation = usePrimitiveEvaluation<OralSentenceStudioMetrics>({
     primitiveType: 'oral-sentence-studio',
@@ -132,7 +126,7 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
     onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const total = items.length;
     const metrics: OralSentenceStudioMetrics = {
       type: 'oral-sentence-studio',
@@ -141,7 +135,7 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
       correctCount: summary.solvedCount,
       attemptsCount: summary.attemptsCount,
       firstTryCount: summary.firstTryCount,
-      hintsViewed: summary.hearTaps,
+      hintsViewed: 0,
       overallAccuracy: summary.accuracy,
       averageAttemptsPerChallenge: total > 0 ? summary.attemptsCount / total : 0,
     };
@@ -149,49 +143,48 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
       summary.passed,
       summary.accuracy,
       metrics,
-      {
-        challengeResults: summary.outcomes,
-        observations: summary.observations,
-        learningResponses: summary.learningResponses,
-        transcripts: transcriptsRef.current,
-      },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [data.challengeType, evaluation, items.length]);
+  };
 
-  const pack = useMemo(() => oralSentenceStudioPack(items), [items]);
-  const runner = useJudgedScriptRunner<OralSentenceStudioItem>({
-    pack,
+  const runner = useWorkspaceRunner<OralSentenceStudioItem>({
+    primitiveId: 'oral-sentence-studio',
+    assignment: oralSentenceAssignment,
+    items,
+    workspace,
+    objectiveId: data.objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || (data.challengeType === 'mixed' ? 'mixed' : data.challengeType),
     instanceId: resolvedInstanceId,
-    gradeLevel: data.gradeLevel ?? 'K',
-    exhibitId: data.exhibitId,
-    silenceCloseMs: 1700,
-    onAffirmed: (item) => {
-      setFeedbackItem(item);
-      setFeedbackKind('correct');
-    },
-    onCorrectionRetry: (item) => {
-      setFeedbackItem(item);
-      setFeedbackKind('retry');
-    },
-    onFinished: handleFinished,
-    onEmission: (emission, item) => {
-      if (!item || emission.kind !== 'attempt-transcript') return;
-      (transcriptsRef.current[item.id] ??= []).push(emission.text);
-    },
+    onFinished: finish,
+    onAffirmed: (item) => setCreditedItem(item),
   });
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
   const currentItem = runner.currentItem ?? items[0] ?? null;
+
+  // What the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation; every item is answerable once it opens.
+  useLayoutEffect(() => {
+    if (!runner.currentItem) return;
+    workspace.current = { ...oralSentenceScene(runner.currentItem), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
   // Pip: the scene is the question side; the sentence is the child's own, so
   // Pip points only at the scene and watches it while the child speaks.
   const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The picture', finished: evaluation.hasSubmitted,
+    run: runner, instanceId: resolvedInstanceId, label: 'The picture', finished: showSummary,
   });
   const phaseResults = useMemo(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => PHASE_CONFIG[item.mode]);
-  }, [evaluation.hasSubmitted, items, runner.summary]);
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => PHASE_CONFIG[item.mode]);
+  }, [items, runner.practiceSummary]);
 
   if (!currentItem) {
     return (
@@ -205,8 +198,7 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
 
   const challenge = currentItem.challenge;
   const phase = PHASE_CONFIG[challenge.type];
-  const feedbackVisible = feedbackItem != null
-    && (feedbackItem.id === currentItem.id || runner.revealHeld);
+  const feedbackVisible = creditedItem != null && creditedItem.id === currentItem.id && runner.revealHeld;
 
   return (
     <LuminaCard className={className}>
@@ -216,14 +208,14 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
             <LuminaCardTitle className="text-lg">{data.title}</LuminaCardTitle>
             <LuminaCardDescription className="mt-1">{data.description}</LuminaCardDescription>
           </div>
-          {!evaluation.hasSubmitted && (
+          {!showSummary && (
             <LuminaBadge accent="cyan">{phase.icon} {phase.label}</LuminaBadge>
           )}
         </div>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-5">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex items-center justify-center gap-4">
               <LuminaChallengeCounter
@@ -314,35 +306,23 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
               </div>
             </LuminaPanel>
 
-            {feedbackVisible && feedbackItem && (
+            {feedbackVisible && creditedItem && (
               <LuminaFeedbackCard
-                status={feedbackKind === 'correct' ? 'correct' : 'incorrect'}
-                label={feedbackKind === 'correct' ? 'Your sentence worked' : 'Build the missing part'}
+                status="correct"
+                label="Your sentence worked"
                 teachingNote="This is one possible sentence. Your own wording can be different."
               >
-                {feedbackItem.modelResponse}
+                {creditedItem.modelResponse}
               </LuminaFeedbackCard>
             )}
 
-            <JudgedMicPanel
-              run={runner}
-              voiceLabel="Say your whole sentence"
-              idleLabel="Start sentence studio"
-              openingLabel="Opening sentence studio…"
-            >
-              {runner.running && (
-                <LuminaButton tone="ghost" onClick={runner.hearStimulus}>
-                  Hear the words and directions again
-                </LuminaButton>
-              )}
-            </JudgedMicPanel>
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Sentence Studio Complete!"
             celebrationMessage="You used new words to make complete picture sentences."
@@ -352,5 +332,16 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
     </LuminaCard>
   );
 };
+
+const OralSentenceStudioBound = withWorkspaceOnly<OralSentenceStudioProps>('oral-sentence-studio',
+  OralSentenceStudioSurface, (props) => props.data.title);
+
+/** Runs only on the teaching workspace; keyed so a new challenge set mounts a fresh session. */
+const OralSentenceStudio: React.FC<OralSentenceStudioProps> = (props) => (
+  <OralSentenceStudioBound
+    key={[props.data.instanceId ?? '', ...props.data.challenges.map((challenge) => challenge.id)].join('|')}
+    {...props}
+  />
+);
 
 export default OralSentenceStudio;
