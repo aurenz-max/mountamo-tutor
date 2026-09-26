@@ -1,0 +1,87 @@
+{
+ "source": "qa/tutor-reports/states-of-matter-runtime-observe-payload-2026-09-26.json",
+ "primitiveId": "states-of-matter",
+ "evalMode": "observe",
+ "data": {
+  "title": "What Heat Does",
+  "description": "Explore how adding and removing energy transforms solids into liquids and gases across different materials.",
+  "substance": {
+   "name": "Water",
+   "formula": "H₂O",
+   "meltingPoint": 0,
+   "boilingPoint": 100,
+   "currentTemp": 25,
+   "color": {
+    "solid": "#93c5fd",
+    "liquid": "#3b82f6",
+    "gas": "#e2e8f0"
+   }
+  },
+  "particleConfig": {
+   "count": 40,
+   "size": "medium",
+   "showTrails": true,
+   "showBonds": true
+  },
+  "showOptions": {
+   "showParticleView": true,
+   "showTemperatureSlider": true,
+   "showStateLabels": true,
+   "showEnergyGraph": true,
+   "showPhaseMarkers": true,
+   "showParticleSpeed": true
+  },
+  "substances": [
+   "water",
+   "chocolate",
+   "butter",
+   "iron"
+  ],
+  "gradeBand": "3-5",
+  "imagePrompt": "Ice cubes melting rapidly in a glass of warm lemonade on a bright sunny afternoon",
+  "challenges": [
+   {
+    "id": "som-1-observe",
+    "challengeType": "observe",
+    "kind": "name_state",
+    "substanceKey": "butter",
+    "startTemp": 12
+   },
+   {
+    "id": "som-2-observe",
+    "challengeType": "observe",
+    "kind": "name_state",
+    "substanceKey": "wax",
+    "startTemp": 400
+   },
+   {
+    "id": "som-3-observe",
+    "challengeType": "observe",
+    "kind": "name_state",
+    "substanceKey": "water",
+    "startTemp": 50
+   },
+   {
+    "id": "som-4-observe",
+    "challengeType": "observe",
+    "kind": "name_state",
+    "substanceKey": "oxygen",
+    "startTemp": -155
+   },
+   {
+    "id": "som-5-observe",
+    "challengeType": "observe",
+    "kind": "name_state",
+    "substanceKey": "mercury",
+    "startTemp": -60
+   },
+   {
+    "id": "som-6-observe",
+    "challengeType": "observe",
+    "kind": "name_state",
+    "substanceKey": "chocolate",
+    "startTemp": 55
+   }
+  ]
+ }
+}

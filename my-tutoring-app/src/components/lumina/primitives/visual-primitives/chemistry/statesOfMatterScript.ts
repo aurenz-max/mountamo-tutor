@@ -249,7 +249,7 @@ export const stateSynonymsFor = (s: SubstanceFacts, state: MatterState): string[
   return [];
 };
 
-const CHANGE_VERB: Record<PhaseChange, string> = {
+export const CHANGE_VERB: Record<PhaseChange, string> = {
   melting: 'melt',
   freezing: 'freeze',
   boiling: 'boil',
@@ -559,7 +559,7 @@ export const STATE_RULE_CLAUSE =
 export const PREDICT_RULE_CLAUSE =
   'Below the melting point it stays solid, between the two points it is a liquid, and above the boiling point it is a gas.';
 
-const modelLine = (item: StatesOfMatterItem): string => {
+export const modelLine = (item: StatesOfMatterItem): string => {
   switch (item.kind) {
     case 'name_state':
       return STATE_RULE_CLAUSE;
@@ -629,7 +629,7 @@ export const namesTheStateMenu = (item: StatesOfMatterItem): boolean =>
 
 export const STATE_MENU_CLAUSE = 'solid, liquid, or gas?';
 
-const askFor = (item: StatesOfMatterItem): string => {
+export const askFor = (item: StatesOfMatterItem): string => {
   switch (item.kind) {
     case 'name_state': {
       const s = item.substance!;

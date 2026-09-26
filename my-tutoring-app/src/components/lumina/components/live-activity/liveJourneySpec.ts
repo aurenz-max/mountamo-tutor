@@ -96,6 +96,8 @@ import { itemsFromChallenges as habitatItems } from '../../primitives/visual-pri
 import { habitatJourneyAnswers } from '../../primitives/visual-primitives/biology/habitatDioramaWorkspace';
 import { matterItems } from './adapters/matterExplorerLive';
 import { matterJourneyAnswers } from '../../primitives/visual-primitives/chemistry/matterExplorerWorkspace';
+import { statesItems } from './adapters/statesOfMatterLive';
+import { statesJourneyAnswers } from '../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
@@ -1318,6 +1320,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const item = matterItems(ctx.data as never).find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current matter-explorer item');
       const answers = matterJourneyAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'states-of-matter': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/chemistry/StatesOfMatter.tsx',
+    instanceId: 'states',
+    defaults: { grade: 'Grade 2', mode: 'observe', di: false, topic: 'Heating and cooling change solids, liquids and gases' },
+    leakTokens: ['SOM_ITEM', 'SOM_MOVE', 'SOM_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one spoken answer computed from the substance table.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = statesItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current states-of-matter item');
+      const answers = statesJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },

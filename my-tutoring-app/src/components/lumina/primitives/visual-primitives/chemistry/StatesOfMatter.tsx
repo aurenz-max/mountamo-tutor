@@ -3,11 +3,11 @@
 /**
  * StatesOfMatter — TWO surfaces, forked on whether judged challenges arrived:
  *
- *  - DI JUDGED LOOP (challenges present — the normal path now): the Live tutor
- *    owns the clock. It asks ONCE, waits, judges the spoken answer in-band,
- *    corrects contrastively, and its own affirmation is the advance. No advance
- *    timer, no Next button, no Check button, no push-to-talk mic, no printed
- *    answer before the affirm.
+ *  - TEACHING WORKSPACE (challenges present): runs only on the shared tutor/JEV
+ *    teaching workspace (workspace rollout C5; the scripted runner was retired,
+ *    LA-14, user ruling 09-23: one path). The observer judges the spoken answer
+ *    and the runtime owns progression. No Next, no Check, no printed answer
+ *    before credit. An unbound mount shows the shared "needs the tutor" card.
  *
  *  - EXPLORATION (no challenges, or every one dropped by a build gate): the
  *    free particle sim — slider, beaker, particle view, heating curve,
@@ -35,13 +35,11 @@
  *  - the SUBSTANCE SWITCHER — a compare item's other beaker is the question.
  * All of them return in the REVEAL, behind `runner.revealHeld` (18b).
  *
- * Cue lines, judging contracts, build gates and the substance table live in
- * `statesOfMatterScript.ts` (hand-authored, DISTAR). Nothing in this file
- * writes a spoken line.
+ * Asks, build gates and the substance table live in `statesOfMatterScript.ts`;
+ * the assignment and scene the tutor receives live in `statesOfMatterWorkspace.ts`.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Volume2 } from 'lucide-react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -59,23 +57,20 @@ import {
   LuminaChallengeCounter,
   type LuminaAccent,
 } from '../../../ui';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { statesAssignment, statesScene } from './statesOfMatterWorkspace';
 import {
   SUBSTANCES,
   carriesAnswerVocabulary,
   itemsFromChallenges,
   stateAt,
-  statesOfMatterPackBase,
   substanceFactsOf,
-  tempSpoken,
   type MatterState,
   type StatesBand,
   type StatesKind,
@@ -488,10 +483,13 @@ const EnergyGraph: React.FC<{
 interface StatesOfMatterProps {
   data: StatesOfMatterData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
-// Judged surface (DI modality)
+// Teaching surface
 // ============================================================================
 
 const MODE_META: Record<StatesKind, { badge: string; icon: string; accent: LuminaAccent }> = {
@@ -570,13 +568,12 @@ const MatterLab: React.FC<{
   );
 };
 
-const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }) => {
+type SurfaceProps = StatesOfMatterProps & { items: StatesOfMatterItem[] };
+
+const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className, runtimePlanItemId, runtimeEvalMode }) => {
   const {
     title,
-    challenges = [],
     particleConfig,
-    supportTier,
-    gradeBand = '3-5',
     instanceId,
     skillId,
     subskillId,
@@ -587,15 +584,8 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
 
   const stableInstanceIdRef = useRef(instanceId || `states-of-matter-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-  const tier: StatesTier = supportTier ?? 'medium';
   const particles = particleConfig ?? DEFAULT_PARTICLES;
-
-  /** Build gates drop what cannot be asked — a placeholder in a judged loop
-   *  becomes a spoken ask the tutor has to stand behind. */
-  const items = useMemo<StatesOfMatterItem[]>(
-    () => itemsFromChallenges(challenges, { band: gradeBand, tier }),
-    [challenges, gradeBand, tier],
-  );
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   /**
    * Defect 11, the PIXELS half done in strings: the lesson title is read by the
@@ -607,10 +597,7 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
     [title],
   );
 
-  /** The reveal payload (18b): set in `onAffirmed`, rendered behind
-   *  `runner.revealHeld`, deliberately NOT cleared in `onItemOpened` — the
-   *  runner fires both in ONE dispatch on the advance path, so clearing there
-   *  paints the reveal on the last item and nowhere else. */
+  /** The reveal payload (18b): set in `onAffirmed`, rendered behind `runner.revealHeld`. */
   const [reveal, setReveal] = useState<RevealPayload | null>(null);
   const [rampTemp, setRampTemp] = useState<number | null>(null);
 
@@ -624,7 +611,7 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const rate = (predicate: (item: StatesOfMatterItem) => boolean) => {
       const scoped = items.filter(predicate);
       if (scoped.length === 0) return 100;
@@ -651,64 +638,25 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items, evaluation]);
+  };
 
-  // ── The pack — wording lives in statesOfMatterScript.ts ────────────────────
-  // The cue surface is SPREAD, not re-declared, so the DI drive harness reads
-  // the same bytes this component sends.
-  const pack = useMemo<JudgedScriptPack<StatesOfMatterItem>>(() => ({
-    ...statesOfMatterPackBase(items),
-    statusLines: {
-      ready: () => 'Listen, then say your answer.',
-      retry: () => 'Listen again — then say your answer.',
-      done: 'Great science today!',
-    },
-    // One record per attempt, right or corrected: the substance, temperatures or pair given, and what was said.
-    // Never the verdict, because the same text is kept for right answers.
-    observation: (item, { heard: transcript }) => {
-      const heard = (transcript ?? '').trim();
-      const observed = heard ? `Said "${heard}".` : 'No transcript was captured.';
-      switch (item.kind) {
-        case 'name_state':
-          return {
-            challenge: `Read the particle view and name the state of ${item.substance?.name}.`,
-            expected: `"${item.answerState}".`,
-            observed,
-          };
-        case 'predict_state':
-          return {
-            challenge: `Predict the state of ${item.substance?.name} at ${tempSpoken(item.targetTemp ?? 0)}.`,
-            expected: `"${item.answerState}".`,
-            observed,
-          };
-        case 'predict_change':
-          return {
-            challenge: `Name the phase change ${item.substance?.name} goes through at ${tempSpoken(item.targetTemp ?? 0)}`
-              + `${item.startState && item.startTemp != null ? `, starting as a ${item.startState} at ${tempSpoken(item.startTemp)}` : ''}.`,
-            expected: `"${item.answerChange}".`,
-            observed,
-          };
-        case 'melt_first':
-        case 'stay_solid':
-          return {
-            challenge: `Melting-point comparison: ${item.pair?.[0].name} vs ${item.pair?.[1].name}.`,
-            expected: `"${item.answerName}".`,
-            observed,
-          };
-      }
-    },
-  }), [items]);
-
-  const runner = useJudgedScriptRunner<StatesOfMatterItem>({
-    pack,
+  const runner = useWorkspaceRunner<StatesOfMatterItem>({
+    primitiveId: 'states-of-matter',
+    assignment: statesAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || (items[0]?.challengeType ?? 'observe'),
     instanceId: resolvedInstanceId,
-    gradeLevel: gradeBand === 'K-2' ? 'Kindergarten' : 'Grade 3-5',
-    exhibitId,
-    onFinished: handleFinished,
+    onFinished: finish,
+    onItemOpened: () => setReveal(null),
     onAffirmed: (item) => {
       const from = item.startTemp ?? 0;
       const to = revealTempFor(item);
@@ -724,19 +672,27 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
       setReveal({ item, fromTemp: from, toTemp: to, line });
     },
   });
-
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   const showReveal = runner.revealHeld && reveal !== null;
 
+  // What the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation; every item is answerable once it opens.
+  useLayoutEffect(() => {
+    const item = runner.currentItem;
+    if (!item) return;
+    workspace.current = { ...statesScene(item), demonstration: [], canDemonstrate: false, canPresent: false,
+      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
   /**
-   * The experiment RUNS on the affirmation — the reveal ramps the beaker from
-   * where the child saw it to where the tutor said she was taking it, while she
-   * says so.
+   * The experiment RUNS on the credit — the reveal ramps the beaker from where
+   * the child saw it to where the question said it was going.
    *
    * ⚠️ Every dependency here is a PRIMITIVE. A timer effect that depends on
    * `runner` tears down and re-arms faster than it can fire, because the runner
-   * is a fresh object every render and the open mic re-renders many times a
-   * second — that is how ten-frame's subitize flash never once ran while
-   * passing 42 tests and a clean tsc.
+   * is a fresh object every render — that is how ten-frame's subitize flash
+   * never once ran while passing 42 tests and a clean tsc.
    */
   const revealId = reveal?.item.id ?? null;
   const revealFrom = reveal?.fromTemp ?? null;
@@ -761,33 +717,20 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
     return () => clearInterval(id);
   }, [showReveal, revealId, revealFrom, revealTo]);
 
-  useEffect(() => {
-    if (showReveal) SoundManager.playCorrect();
-  }, [showReveal, revealId]);
-
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => {
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => {
       const meta = MODE_META[item.kind];
       return { label: meta.badge, icon: meta.icon };
     });
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
-  const currentItem = runner.currentItem;
-
-  /**
-   * WHICH item is on the bench right now. On the advance path the runner opens
-   * the next item in the SAME dispatch as the affirmation, so by render time
-   * `currentItem` is already the NEXT one while the tutor is still saying the
-   * verdict for the last. The reveal therefore renders its OWN item — anything
-   * else puts the previous item's answer over the next item's substance.
-   */
-  const staged = showReveal && reveal ? reveal.item : currentItem;
+  const staged = showReveal && reveal ? reveal.item : runner.currentItem;
   // Pip: the substances on the bench are the question side; on a pair item both
   // are possible answers, so Pip outlines them together and never one.
   const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The substances on the bench', finished: evaluation.hasSubmitted,
+    run: runner, instanceId: resolvedInstanceId, label: 'The substances on the bench', finished: showSummary,
   });
   const stagedTemp = showReveal && rampTemp != null
     ? rampTemp
@@ -795,22 +738,12 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
 
   const modeMeta = MODE_META[staged?.kind ?? 'name_state'];
 
-  if (items.length === 0) {
-    return (
-      <LuminaCard className={className}>
-        <LuminaCardContent className="p-6">
-          <p className="text-slate-400 text-center">No challenges available.</p>
-        </LuminaCardContent>
-      </LuminaCard>
-    );
-  }
-
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <LuminaCardTitle className="text-lg">{safeTitle}</LuminaCardTitle>
-          {!evaluation.hasSubmitted && staged && (
+          {!showSummary && staged && (
             <LuminaBadge accent={modeMeta.accent} className="text-xs">
               {modeMeta.icon} {modeMeta.badge}
             </LuminaBadge>
@@ -819,7 +752,7 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex items-center justify-center gap-4">
               <LuminaChallengeCounter
@@ -827,20 +760,6 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
                 total={items.length}
                 variant="dots"
               />
-              {/* Tap-to-hear the question again — never the answer. */}
-              <button
-                type="button"
-                onClick={runner.hearStimulus}
-                aria-label="Hear the question again"
-                className={`
-                  flex items-center justify-center w-10 h-10 rounded-full
-                  bg-amber-500/15 border-2 border-amber-500/30 text-amber-300
-                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
-                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
-                `}
-              >
-                <Volume2 size={18} />
-              </button>
             </div>
 
             {/* THE BENCH. No slider, no thermometer readout, no phase markers,
@@ -870,8 +789,7 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
                   )}
             </div>
 
-            {/* Reveal-on-affirm: the state, in words, for exactly as long as
-                the tutor's affirmation is being spoken (runner.revealHeld). */}
+            {/* Reveal-on-credit: the state, in words, while the solved item is on screen. */}
             {showReveal && reveal && (
               <div className="flex justify-center">
                 <div className="flex items-center gap-3 rounded-2xl border-2 border-emerald-400/30 bg-emerald-500/10 px-5 py-2.5 animate-in fade-in duration-300">
@@ -888,15 +806,13 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
                 </div>
               </div>
             )}
-
-            <JudgedMicPanel run={runner} />
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Experiment Complete!"
             celebrationMessage={`You worked out what heat does across ${items.length} rounds — out loud!`}
@@ -907,6 +823,9 @@ const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }
     </LuminaCard>
   );
 };
+
+const StatesOfMatterBound = withWorkspaceOnly<SurfaceProps>('states-of-matter', StatesOfMatterSurface,
+  (props) => (props.data.title && !carriesAnswerVocabulary(props.data.title) ? props.data.title : 'States of Matter'));
 
 // ============================================================================
 // Exploration surface (pre-DI behavior, preserved)
@@ -1224,7 +1143,8 @@ const StatesOfMatterExplorer: React.FC<StatesOfMatterProps> = ({ data, className
 // Component — the fork
 // ============================================================================
 
-const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
+const StatesOfMatter: React.FC<StatesOfMatterProps> = (props) => {
+  const { data, className } = props;
   const band: StatesBand = data.gradeBand ?? '3-5';
   const judgedItems = useMemo(
     () => itemsFromChallenges(data.challenges ?? [], {
@@ -1236,7 +1156,7 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
 
   // A payload whose challenges ALL dropped degrades to exploration rather than
   // to an empty judged session — the build gates never repair, they drop, and
-  // the free sim is a real surface rather than a placeholder.
+  // the free sim is a real, ungraded surface rather than a placeholder.
   if (judgedItems.length === 0) {
     const explorerData: StatesOfMatterData = {
       ...data,
@@ -1249,7 +1169,8 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
     return <StatesOfMatterExplorer data={explorerData} className={className} />;
   }
 
-  return <StatesOfMatterJudged data={data} className={className} />;
+  // Challenges run only on the teaching workspace (an unbound mount shows the "needs the tutor" card).
+  return <StatesOfMatterBound {...props} items={judgedItems} />;
 };
 
 export default StatesOfMatter;

@@ -1,0 +1,93 @@
+{
+ "source": "qa/tutor-reports/states-of-matter-runtime-predict-payload-2026-09-26.json",
+ "primitiveId": "states-of-matter",
+ "evalMode": "predict",
+ "data": {
+  "title": "What Heat Does to Water",
+  "description": "Explore how adding energy changes water from ice into liquid and finally into an invisible gas!",
+  "substance": {
+   "name": "Water",
+   "formula": "H₂O",
+   "meltingPoint": 0,
+   "boilingPoint": 100,
+   "currentTemp": 20,
+   "color": {
+    "solid": "#93c5fd",
+    "liquid": "#3b82f6",
+    "gas": "#e2e8f0"
+   }
+  },
+  "particleConfig": {
+   "count": 40,
+   "size": "medium",
+   "showTrails": true,
+   "showBonds": true
+  },
+  "showOptions": {
+   "showParticleView": true,
+   "showTemperatureSlider": true,
+   "showStateLabels": true,
+   "showEnergyGraph": true,
+   "showPhaseMarkers": true,
+   "showParticleSpeed": true
+  },
+  "substances": [
+   "water",
+   "chocolate",
+   "butter",
+   "iron"
+  ],
+  "gradeBand": "3-5",
+  "imagePrompt": "Steam rising from a hot cup of cocoa on a chilly winter morning",
+  "challenges": [
+   {
+    "id": "som-1-predict",
+    "challengeType": "predict",
+    "kind": "predict_state",
+    "substanceKey": "water",
+    "startTemp": 50,
+    "targetTemp": 130
+   },
+   {
+    "id": "som-2-predict",
+    "challengeType": "predict",
+    "kind": "predict_state",
+    "substanceKey": "chocolate",
+    "startTemp": 14,
+    "targetTemp": 55
+   },
+   {
+    "id": "som-3-predict",
+    "challengeType": "predict",
+    "kind": "predict_change",
+    "substanceKey": "butter",
+    "startTemp": 50,
+    "targetTemp": 12
+   },
+   {
+    "id": "som-4-predict",
+    "challengeType": "predict",
+    "kind": "predict_change",
+    "substanceKey": "mercury",
+    "startTemp": -60,
+    "targetTemp": 160
+   },
+   {
+    "id": "som-5-predict",
+    "challengeType": "predict",
+    "kind": "predict_state",
+    "substanceKey": "wax",
+    "startTemp": 400,
+    "targetTemp": 420
+   },
+   {
+    "id": "som-6-predict",
+    "challengeType": "predict",
+    "kind": "predict_state",
+    "substanceKey": "nitrogen",
+    "startTemp": -230,
+    "targetTemp": -240
+   }
+  ]
+ }
+}

@@ -389,6 +389,17 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'compare', label: 'Compare (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['compare'], description: 'DI judged, spoken: two substances with real melting points, both solid on the bench — say which melts first, or which is still solid at a stated temperature. Every key computed from the substance table.' },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'A substance in a beaker beside its particle view; every answer is said out loud and computed from the '
+        + 'substance table. Observe: read the particles and say the state. Predict: from the melting and boiling points in '
+        + 'the question, say the state it will reach, or name the change (melting, freezing, boiling, condensing). Compare: '
+        + 'two substances, and the learner names the one that melts first or stays solid. The screen prints no temperature '
+        + 'or state until credit, so say the numbers in the question aloud; a young learner does not read them. The '
+        + 'substance named back, the state it is in now on a predict question, or the end state on a change question is not '
+        + 'the answer. When the scene has a rule you may say it before the ask; without one add no choices beyond those in '
+        + 'the question. Before an attempt never say the answer. You cannot change the temperature.',
+    },
   },
   {
     id: 'mixing-and-dissolving',
