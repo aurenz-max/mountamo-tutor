@@ -87,6 +87,9 @@ import { itemsFromChallenges as addSubItems } from '../../primitives/visual-prim
 import { additionSubtractionJourneyAnswers } from '../../primitives/visual-primitives/math/additionSubtractionSceneWorkspace';
 import { buildThreeDShapeItems } from '../../primitives/visual-primitives/math/threeDShapeExplorerScript';
 import { threeDShapeJourneyAnswers } from '../../primitives/visual-primitives/math/threeDShapeExplorerWorkspace';
+import type { CalendarExplorerChallenge } from '../../primitives/visual-primitives/calendar/CalendarExplorer';
+import { calendarSequenceItemsFromChallenges, calendarSequenceJourneyAnswers, isGridDateAnswer }
+  from '../../primitives/visual-primitives/calendar/calendarExplorerWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
@@ -1229,6 +1232,36 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'calendar-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/calendar/CalendarExplorer.tsx',
+    instanceId: 'calendar',
+    defaults: { grade: 'Grade 1', mode: 'identify', di: false, topic: 'Finding dates on a monthly calendar' },
+    leakTokens: ['CE_SEQUENCE_ITEM', 'CE_SEQUENCE_MOVE', 'CE_SEQUENCE_COMPLETE', 'CE_SEQUENCE_HEAR', 'ANSWER_CORRECT', 'NEXT_ITEM'],
+    prompts: WORKSPACE_PROMPTS,
+    // The chain answers aloud; a grid question taps a date or an option, then Check (a wrong pick is another one).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const wrong = intent === 'wrong';
+      const turn = calendarSequenceItemsFromChallenges(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
+      if (turn) {
+        const answers = calendarSequenceJourneyAnswers(turn);
+        return [{ type: 'answer', text: wrong ? answers.plainWrong : answers.correct }];
+      }
+      const c = (ctx.data.challenges ?? []).find((ch: CalendarExplorerChallenge) => ch.id === ctx.itemId) as CalendarExplorerChallenge | undefined;
+      if (!c) throw new Error('No current calendar-explorer question');
+      const check: DriverInput = { type: 'choose', label: 'Check Answer' };
+      if (isGridDateAnswer(c)) {
+        const right = Number(c.correctAnswer);
+        const day = wrong ? (right > 1 ? right - 1 : right + 1) : right;
+        return [{ type: 'touch', target: c.todayDate === day ? 'today' : `date-${day}` }, check];
+      }
+      const pick = wrong ? c.options.find(o => o.trim().toLowerCase() !== c.correctAnswer.trim().toLowerCase()) : c.correctAnswer;
+      if (!pick) throw new Error(`calendar-explorer ${c.type}: no wrong option to choose`);
+      return [{ type: 'choose', label: c.options.find(o => o.trim().toLowerCase() === pick.trim().toLowerCase()) ?? pick }, check];
+    },
+    probes: { mounted: { selector: '[data-pip-object="grid"], [data-pip-object="offset"], [data-pip-object="stimulus"]' } },
   },
 };
 

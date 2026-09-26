@@ -1,30 +1,47 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+/**
+ * CalendarExplorer — a monthly calendar (tap a date or an option, then Check) and a spoken
+ * day/month successor chain. Both run only on the shared tutor/JEV teaching workspace (workspace
+ * rollout C4; the scripted runner and the click-era Check/Next progression were retired, LA-14,
+ * user ruling 09-23: one path). The grid's Check is the activity's own check of the learner's pick;
+ * the chain's spoken answer is judged by the observer; the runtime owns progression on both. An
+ * unbound mount shows the shared "needs the tutor" card.
+ */
+
+import React, { useState, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { CalendarExplorerMetrics, PrimitiveEvaluationResult } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { phaseResultsFromSummary, usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { calendarGridPipPose, calendarSequencePipPose } from '../../../pip/calendarExplorerPipPose';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
+import type { CalendarSequenceItem } from './calendarExplorerScript';
 import {
-  calendarExplorerSequencePackBase,
-  type CalendarDaySequenceItem,
-  type CalendarSequenceItem,
-} from './calendarExplorerScript';
+  calendarGridAssignment,
+  calendarGridScene,
+  calendarSequenceAssignment,
+  calendarSequenceScene,
+  calendarSequenceItemsFromChallenges,
+  describeCalendarPick,
+  hearSequenceRequest,
+  isSpokenCalendarSession,
+} from './calendarExplorerWorkspace';
+
+export { calendarSequenceItemsFromChallenges, daySequenceItemsFromChallenges, isSpokenCalendarSession }
+  from './calendarExplorerWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -213,7 +230,18 @@ export function tutorRevealPolicy(tier?: 'easy' | 'medium' | 'hard'): string {
 /** PLATFORM PROP CONTRACT: registry primitives mount as
  *  `<Component data={…} index={…} />` — the generated data arrives as ONE `data`
  *  prop (evaluation props merged in), never spread across props. */
-const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: number }> = ({ data }) => {
+interface CalendarExplorerProps {
+  data: CalendarExplorerData;
+  index?: number;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
+}
+
+/** The teaching workspace is the grid's only controller: the runtime owns progression. */
+const useCalendarProgress = useWorkspaceProgressFor('calendar-explorer');
+
+const CalendarGridSurface = ({ data, runtimePlanItemId, runtimeEvalMode }: CalendarExplorerProps) => {
   const {
     title,
     description,
@@ -232,7 +260,15 @@ const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: numbe
 
   // ── Evaluation ──────────────────────────────────────────────────
   const resolvedInstanceId = instanceId || 'standalone';
-  const gradeLevel = gradeBand || 'K';
+  const ctx = useLuminaAIContext();
+  const liveRuntime = useLiveRuntime();
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const componentMounted = useRef(true);
+  useLayoutEffect(() => { componentMounted.current = true; return () => { componentMounted.current = false; }; }, []);
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  const learnerBlocked = () => !componentMounted.current || workspaceClosed.current
+    || !!liveRuntime && !['empty', 'active'].includes(liveRuntime.getSnapshot().status);
 
   const { submitResult } = usePrimitiveEvaluation<CalendarExplorerMetrics>({
     primitiveType: 'calendar-explorer',
@@ -247,6 +283,18 @@ const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: numbe
   });
 
   // ── Challenge Progress ──────────────────────────────────────────
+  const progress = useCalendarProgress<CalendarExplorerChallenge>({
+    challenges, getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || (new Set(challenges.map(c => c.type)).size === 1 ? challenges[0].type : 'mixed'),
+    workspace, assignment: calendarGridAssignment,
+    // A fresh challenge and Try again both start from a clean calendar. The setters are declared
+    // below; this runs only after render.
+    onItemOpened: () => {
+      setSelectedAnswer(null); setFeedback(null); setHighlightedDates(new Set()); setClickedDate(null); setShowHint(false);
+      challengeStartRef.current = Date.now();
+    },
+  });
   const {
     currentIndex,
     currentAttempts,
@@ -254,8 +302,8 @@ const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: numbe
     isComplete: allChallengesComplete,
     recordResult,
     incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+  } = progress;
+  workspaceClosed.current = progress.canAttempt === false;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -267,27 +315,7 @@ const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: numbe
 
   const currentChallenge = challenges[currentIndex];
 
-  // ── AI Tutoring ─────────────────────────────────────────────────
-  // Tracks the ACTIVE challenge — pinning this to challenges[0] left the tutor
-  // coaching question 1 for the whole session.
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    gradeBand,
-    currentChallenge: currentChallenge?.question ?? '',
-    challengeNumber: currentIndex + 1,
-    totalChallenges: challenges.length,
-    challengeType: currentChallenge?.type ?? '',
-    month: currentChallenge ? MONTH_NAMES[currentChallenge.month - 1] ?? '' : '',
-    year: currentChallenge?.year ?? '',
-    supportTier: supportTier ?? null,
-  }), [title, gradeBand, currentChallenge, currentIndex, challenges.length, supportTier]);
-
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'calendar-explorer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
-  });
+  const { isAudioPlaying, activePrimitiveId } = ctx;
 
   // ── Local State ─────────────────────────────────────────────────
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -330,117 +358,80 @@ const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: numbe
 
   // ── Handlers ────────────────────────────────────────────────────
   const handleDateClick = useCallback((day: number) => {
-    if (allChallengesComplete || !currentChallenge) return;
+    if (allChallengesComplete || !currentChallenge || learnerBlocked()) return;
     SoundManager.tap();        // ← tactile date press
     setClickedDate(day);
     // Only a DATE-answer identify challenge is answered by clicking the grid.
     if (isGridAnswerChallenge(currentChallenge)) {
       setSelectedAnswer(String(day));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allChallengesComplete, currentChallenge]);
 
   const handleOptionSelect = useCallback((option: string) => {
-    if (allChallengesComplete || feedback) return;
+    if (allChallengesComplete || feedback || learnerBlocked()) return;
     SoundManager.select();     // ← confirms a choice
     setSelectedAnswer(option);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allChallengesComplete, feedback]);
 
   const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge || selectedAnswer === null) return;
+    if (!currentChallenge || selectedAnswer === null || learnerBlocked()) return;
 
     const isCorrect = selectedAnswer.toLowerCase().trim() === currentChallenge.correctAnswer.toLowerCase().trim();
     incrementAttempts();
-    const policy = tutorRevealPolicy(supportTier);
-
+    recordResult({
+      challengeId: currentChallenge.id,
+      correct: isCorrect,
+      attempts: currentAttempts + 1,
+      timeMs: Date.now() - challengeStartRef.current,
+    });
     if (isCorrect) {
       SoundManager.playCorrect();
       setFeedback({ correct: true, message: 'Correct!' });
-      if (currentChallenge.highlightDates) {
-        setHighlightedDates(new Set(currentChallenge.highlightDates));
-      }
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-        timeMs: Date.now() - challengeStartRef.current,
-      });
-      sendText(
-        `[ANSWER_CORRECT] Student answered "${selectedAnswer}" correctly for: "${currentChallenge.question}". Congratulate briefly.`,
-        { silent: true },
-      );
+      if (currentChallenge.highlightDates) setHighlightedDates(new Set(currentChallenge.highlightDates));
     } else {
       SoundManager.playIncorrect();
-      setFeedback({ correct: false, message: 'Not quite. Try again!' });
-      if (currentAttempts + 1 >= 3) {
-        // After 3 attempts, record and move on
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: false,
-          attempts: currentAttempts + 1,
-          timeMs: Date.now() - challengeStartRef.current,
-        });
-        setFeedback({ correct: false, message: `The answer is ${currentChallenge.correctAnswer}.` });
-      }
-      // At `hard` the answer is withheld from the tutor as well — the on-screen
-      // scaffolds are gone, so a tutor holding the answer is the last leak path.
-      sendText(
-        supportTier === 'hard'
-          ? `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" for: "${currentChallenge.question}". `
-            + `That is not right. Attempt ${currentAttempts + 1}. Ask one guiding question. ${policy}`
-          : `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctAnswer}" for: "${currentChallenge.question}". Attempt ${currentAttempts + 1}. Give a hint.`
-            + (policy ? ` ${policy}` : ''),
-        { silent: true },
-      );
+      setFeedback({ correct: false, message: 'Not quite.' });
     }
-  }, [currentChallenge, selectedAnswer, currentAttempts, incrementAttempts, recordResult, sendText, supportTier]);
+    // The activity's own check: the workspace records it and the tutor hears what was picked, never the key.
+    progress.commitCheck?.(describeCalendarPick(currentChallenge, selectedAnswer), isCorrect);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge, selectedAnswer, currentAttempts, incrementAttempts, recordResult]);
 
-  const handleNext = useCallback(() => {
-    setSelectedAnswer(null);
-    setFeedback(null);
-    setHighlightedDates(new Set());
-    setClickedDate(null);
-    setShowHint(false);
-    challengeStartRef.current = Date.now();
-
-    if (!advanceProgress()) {
-      // All done — submit evaluation
-      const elapsedMs = Date.now() - startTimeRef.current;
-      const correct = challengeResults.filter(r => r.correct).length;
-      const total = challenges.length;
-      const score = Math.round((correct / total) * 100);
-
-      const metrics: CalendarExplorerMetrics = {
-        type: 'calendar-explorer',
-        questionsCorrect: correct,
-        questionsTotal: total,
-        accuracy: score,
-        attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
-      };
-
-      const success = score >= 60;
-      submitResult(success, score, metrics);
-      setSubmittedResult({ score });
-
-      const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${score}%. Give encouraging phase-specific feedback.`,
-        { silent: true },
-      );
-      return;
-    }
-
-    const policy = tutorRevealPolicy(supportTier);
-    sendText(
-      `[NEXT_ITEM] Moving to question ${currentIndex + 2} of ${challenges.length}. Introduce it briefly.`
-      + (policy ? ` ${policy}` : ''),
-      { silent: true },
-    );
-  }, [advanceProgress, challengeResults, challenges, currentIndex, phaseResults, sendText, submitResult, supportTier]);
+  // ── Session complete: submit once, and only under a lesson's evaluation provider ──
+  const submittedOnce = useRef(false);
+  useEffect(() => {
+    if (!allChallengesComplete || submittedOnce.current || !progress.recordsEvaluation) return;
+    submittedOnce.current = true;
+    const correct = challengeResults.filter(r => r.correct).length;
+    const total = challenges.length;
+    const score = Math.round((correct / total) * 100);
+    const metrics: CalendarExplorerMetrics = {
+      type: 'calendar-explorer',
+      questionsCorrect: correct,
+      questionsTotal: total,
+      accuracy: score,
+      attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
+    };
+    submitResult(score >= 60, score, metrics);
+    setSubmittedResult({ score });
+  }, [allChallengesComplete, challengeResults, challenges.length, progress.recordsEvaluation, submitResult]);
 
   // ── Determine if we can proceed ─────────────────────────────────
-  const hasAnsweredCurrent = challengeResults.some(r => r.challengeId === currentChallenge?.id);
-  const canCheckAnswer = selectedAnswer !== null && !feedback;
-  const canProceed = feedback?.correct || (feedback && !feedback.correct && currentAttempts >= 3);
+  // A checked miss reopens on Try again, so only a correct result closes the question.
+  const hasAnsweredCurrent = challengeResults.some(r => r.challengeId === currentChallenge?.id && r.correct);
+  const canCheckAnswer = selectedAnswer !== null && !feedback && progress.canAttempt !== false;
+
+  // What the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!currentChallenge) return;
+    workspace.current = { ...calendarGridScene(currentChallenge, { showDayHeaders, showMonthLabel, showTargetDayColumn,
+      revealPolicy: tutorRevealPolicy(supportTier) }),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    progress.publishWorkspace?.();
+  });
 
   // ── Pip shared surface ──────────────────────────────────────────
   // A projection of this question's check state, the tutor's speech on it, and
@@ -499,7 +490,7 @@ const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: numbe
       {allChallengesComplete && phaseResults.length > 0 && (
         <PhaseSummaryPanel
           phases={phaseResults}
-          overallScore={submittedResult?.score ?? 0}
+          overallScore={submittedResult?.score ?? progress.teachingResult?.accuracy ?? 0}
           durationMs={Date.now() - startTimeRef.current}
           heading="Challenge Complete!"
           celebrationMessage="Great work exploring the calendar!"
@@ -735,6 +726,7 @@ const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: numbe
                     variant="ghost"
                     onClick={handleCheckAnswer}
                     disabled={!canCheckAnswer}
+                    aria-label="Check Answer"
                     className="bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 text-blue-300 disabled:opacity-40"
                   >
                     Check Answer
@@ -748,15 +740,6 @@ const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: numbe
                     Hint
                   </Button>
                 </>
-              )}
-              {canProceed && (
-                <Button
-                  variant="ghost"
-                  onClick={handleNext}
-                  className="bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-300"
-                >
-                  {currentIndex + 1 < challenges.length ? 'Next Question' : 'See Results'}
-                </Button>
               )}
             </div>
 
@@ -773,57 +756,11 @@ const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: numbe
   );
 };
 
-export function daySequenceItemsFromChallenges(
-  challenges: CalendarExplorerChallenge[],
-): CalendarDaySequenceItem[] {
-  return calendarSequenceItemsFromChallenges(challenges).filter(
-    (item): item is CalendarDaySequenceItem => item.type === 'day_sequence',
-  );
-}
-
-export function calendarSequenceItemsFromChallenges(
-  challenges: CalendarExplorerChallenge[],
-): CalendarSequenceItem[] {
-  return challenges.flatMap((challenge, index): CalendarSequenceItem[] => {
-    if (
-      challenge.type === 'day_sequence'
-      && challenge.currentDay
-      && challenge.expectedDay
-    ) {
-      return [{
-        id: challenge.id,
-        type: 'day_sequence',
-        answerKind: 'voice',
-        responseClass: 'short_spoken_word',
-        action: 'day_sequence',
-        currentDay: challenge.currentDay,
-        expectedDay: challenge.expectedDay,
-        chainPosition: challenge.chainPosition ?? index + 1,
-      }];
-    }
-    if (
-      challenge.type === 'month_sequence'
-      && challenge.currentMonth
-      && challenge.expectedMonth
-    ) {
-      return [{
-        id: challenge.id,
-        type: 'month_sequence',
-        answerKind: 'voice',
-        responseClass: 'short_spoken_word',
-        action: 'month_sequence',
-        currentMonth: challenge.currentMonth,
-        expectedMonth: challenge.expectedMonth,
-        chainPosition: challenge.chainPosition ?? index + 1,
-      }];
-    }
-    return [];
-  });
-}
-
 /** Spoken mode is isolated from the calendar grid so each response channel has
  * one honest lifecycle: the tutor owns progression here; taps own it above. */
-const CalendarSequenceExplorer: React.FC<{ data: CalendarExplorerData }> = ({ data }) => {
+const CalendarSequenceSurface = ({ data, runtimePlanItemId, runtimeEvalMode }: CalendarExplorerProps) => {
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const items = useMemo(
     () => calendarSequenceItemsFromChallenges(data.challenges ?? []),
     [data.challenges],
@@ -844,32 +781,7 @@ const CalendarSequenceExplorer: React.FC<{ data: CalendarExplorerData }> = ({ da
     onSubmit: data.onEvaluationSubmit,
   });
 
-  const pack = useMemo<JudgedScriptPack<CalendarSequenceItem>>(() => ({
-    ...calendarExplorerSequencePackBase(items, {
-      title: data.title,
-      gradeBand: data.gradeBand ?? 'K',
-      supportTier: data.supportTier,
-    }),
-    statusLines: {
-      ready: () => `Listen for the ${unit}, then say what comes next.`,
-      retry: () => `Say the next ${unit} again.`,
-      affirmedNext: 'That keeps the chain going!',
-      done: `You finished the ${unit} chain!`,
-    },
-    // One record per attempt, right or corrected: the day or month given and what was heard; never the verdict.
-    observation: (item, { heard }) => {
-      const current = item.type === 'day_sequence' ? item.currentDay : item.currentMonth;
-      const expected = item.type === 'day_sequence' ? item.expectedDay : item.expectedMonth;
-      const itemUnit = item.type === 'day_sequence' ? 'day' : 'month';
-      return {
-        challenge: `Say the ${itemUnit} that comes after ${current}.`,
-        expected,
-        observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
-      };
-    },
-  }), [data.gradeBand, data.supportTier, data.title, items, unit]);
-
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const metrics: CalendarExplorerMetrics = {
       type: 'calendar-explorer',
       questionsCorrect: summary.solvedCount,
@@ -877,17 +789,39 @@ const CalendarSequenceExplorer: React.FC<{ data: CalendarExplorerData }> = ({ da
       accuracy: summary.accuracy,
       attemptsCount: summary.attemptsCount,
     };
-    evaluation.submitResult(summary.passed, summary.accuracy, metrics, { learningResponses: summary.learningResponses },
+    evaluation.submitResult(summary.passed, summary.accuracy, metrics, { learningResponses: summary.learningResponses,
+      ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
       undefined, summary.diagnosisEvidence);
-  }, [evaluation.submitResult]);
+  };
 
-  const runner = useJudgedScriptRunner<CalendarSequenceItem>({
-    pack,
+  const runner = useWorkspaceRunner<CalendarSequenceItem>({
+    primitiveId: 'calendar-explorer',
+    assignment: calendarSequenceAssignment,
+    items,
+    workspace,
+    objectiveId: data.objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || (monthOnly ? 'month_sequence' : dayOnly ? 'day_sequence' : 'mixed'),
     instanceId: resolvedInstanceId,
-    gradeLevel: data.gradeBand ?? 'K',
-    exhibitId: data.exhibitId,
-    onFinished: handleFinished,
+    onFinished: finish,
   });
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
+
+  // What the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!runner.currentItem) return;
+    workspace.current = { ...calendarSequenceScene(runner.currentItem), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
+  /** Asks the tutor for the question again: a silent host request, never the answer. */
+  const hearQuestion = useCallback(() => {
+    if (!runner.currentItem) return;
+    ctx.sendText(hearSequenceRequest(runner.currentItem), { silent: true, author: 'host' });
+  }, [ctx, runner.currentItem]);
 
   // ── Pip shared surface ──────────────────────────────────────────
   // A projection of the runner's phase onto the listen card; Pip never says,
@@ -895,12 +829,12 @@ const CalendarSequenceExplorer: React.FC<{ data: CalendarExplorerData }> = ({ da
   const sequenceItem = runner.currentItem;
   const pip = usePipTargets(sequenceItem?.id ?? null, false);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !sequenceItem || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !sequenceItem || showSummary) return null;
     const targets = pip.targets(['stimulus'], () => 'The listen card');
     const pose = calendarSequencePipPose({
-      running: runner.running, preparing: runner.preparing,
+      running: runner.running, preparing: false,
       currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      judging: false, tutorSpeaking: runner.tutorSpeaking,
       cueMatchesItem: runner.cuedItemId === sequenceItem.id,
       visibleIds: targets.map((target) => target.id),
     });
@@ -911,12 +845,12 @@ const CalendarSequenceExplorer: React.FC<{ data: CalendarExplorerData }> = ({ da
   });
 
   const phaseResults = useMemo(
-    () => phaseResultsFromSummary(items, runner.summary, (item) => ({
+    () => phaseResultsFromSummary(items, runner.practiceSummary ?? null, (item) => ({
       label: `${item.type === 'day_sequence' ? 'Day' : 'Month'} turn ${item.chainPosition}`,
       icon: item.type === 'day_sequence' ? '📅' : '🗓️',
       accentColor: 'cyan',
     })),
-    [items, runner.summary],
+    [items, runner.practiceSummary],
   );
 
   if (items.length === 0) {
@@ -946,7 +880,7 @@ const CalendarSequenceExplorer: React.FC<{ data: CalendarExplorerData }> = ({ da
           </div>
         </CardHeader>
         <CardContent className="p-6 space-y-5">
-          {!evaluation.hasSubmitted && (
+          {!showSummary && (
             <>
               <div className="flex justify-center">
                 <Badge className="bg-white/5 border border-white/20 text-slate-300 text-xs">
@@ -967,23 +901,23 @@ const CalendarSequenceExplorer: React.FC<{ data: CalendarExplorerData }> = ({ da
               {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
                 className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
 
-              <JudgedMicPanel run={runner} voiceLabel={`Say the next ${unit}`}>
+              <div className="flex justify-center">
                 <Button
                   variant="ghost"
-                  onClick={runner.hearStimulus}
-                  disabled={!runner.running}
+                  onClick={hearQuestion}
+                  aria-label="Hear the question again"
                   className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 text-xs"
                 >
                   🔊 Hear the question again
                 </Button>
-              </JudgedMicPanel>
+              </div>
             </>
           )}
 
-          {evaluation.hasSubmitted && phaseResults.length > 0 && (
+          {showSummary && (
             <PhaseSummaryPanel
               phases={phaseResults}
-              overallScore={evaluation.submittedResult?.score ?? 0}
+              overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy ?? 0}
               durationMs={evaluation.elapsedMs}
               heading={`${monthOnly ? 'Month' : dayOnly ? 'Day' : 'Calendar'} Chain Complete!`}
               celebrationMessage={`You kept the ${monthOnly ? 'months' : dayOnly ? 'days' : 'calendar sequences'} moving in order with your voice!`}
@@ -995,13 +929,14 @@ const CalendarSequenceExplorer: React.FC<{ data: CalendarExplorerData }> = ({ da
   );
 };
 
-export const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }> = (props) => {
-  const spokenOnly = props.data.challenges.length > 0
-    && props.data.challenges.every((challenge) =>
-      challenge.type === 'day_sequence' || challenge.type === 'month_sequence');
-  return spokenOnly
-    ? <CalendarSequenceExplorer data={props.data} />
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const CalendarGridExplorer = withWorkspaceOnly<CalendarExplorerProps>('calendar-explorer', CalendarGridSurface, props => props.data.title);
+const CalendarSequenceExplorer = withWorkspaceOnly<CalendarExplorerProps>('calendar-explorer', CalendarSequenceSurface, props => props.data.title);
+
+
+export const CalendarExplorer: React.FC<CalendarExplorerProps> = (props) =>
+  isSpokenCalendarSession(props.data.challenges)
+    ? <CalendarSequenceExplorer {...props} />
     : <CalendarGridExplorer {...props} />;
-};
 
 export default CalendarExplorer;

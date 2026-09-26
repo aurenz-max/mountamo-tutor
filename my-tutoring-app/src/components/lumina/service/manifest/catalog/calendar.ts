@@ -19,6 +19,16 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
       'Visual calendar modes require valid month/year context and code-verified keys for date arithmetic. '
       + 'Spoken sequence modes require at least five code-built successor turns, a random start, no printed sequence strip, '
       + 'and live tutor judgment.',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'Two kinds of session. The calendar: the learner taps a date or one of the printed options and presses '
+        + 'Check; the activity checks the pick and you are told what was picked, never the answer. Follow the reveal '
+        + 'policy in the scene facts: at the hard tier the day headers and the tinted days are gone on purpose, so do '
+        + 'not recite the day order or name the column. The chain: say the day or month you are given, then the '
+        + 'learner says the one that comes next; it is judged against the successor you are given, and the given day '
+        + 'said back is not it. There are no printed day or month names in the chain. Before an attempt never say the '
+        + 'answer. The replay button asks you to repeat the question only. You cannot tap, mark or change the calendar.',
+    },
     affordances: { representation: 'symbolic', answers: ['tap', 'spoken'], role: 'apply', minutes: 5 },
     audioInput: { manual_activity: true },
     tutoring: {

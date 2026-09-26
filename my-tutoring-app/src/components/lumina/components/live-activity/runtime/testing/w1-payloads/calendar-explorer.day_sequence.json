@@ -1,0 +1,82 @@
+{
+ "source": "qa/tutor-reports/calendar-explorer-runtime-day_sequence-payload-2026-09-25.json",
+ "primitiveId": "calendar-explorer",
+ "evalMode": "day_sequence",
+ "data": {
+  "title": "Days in Order: Finding dates on a monthly calendar",
+  "description": "Practice days in order on the calendar.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "day_sequence",
+    "question": "Listen to the tutor, then say the day that comes next.",
+    "month": 1,
+    "year": 2026,
+    "correctAnswer": "Sunday",
+    "options": [],
+    "hint": "Say the week together from Sunday, then try this day again.",
+    "narration": "Continue the spoken day chain from Saturday.",
+    "currentDay": "Saturday",
+    "expectedDay": "Sunday",
+    "chainPosition": 1
+   },
+   {
+    "id": "c2",
+    "type": "day_sequence",
+    "question": "Listen to the tutor, then say the day that comes next.",
+    "month": 1,
+    "year": 2026,
+    "correctAnswer": "Monday",
+    "options": [],
+    "hint": "Say the week together from Sunday, then try this day again.",
+    "narration": "Continue the spoken day chain from Sunday.",
+    "currentDay": "Sunday",
+    "expectedDay": "Monday",
+    "chainPosition": 2
+   },
+   {
+    "id": "c3",
+    "type": "day_sequence",
+    "question": "Listen to the tutor, then say the day that comes next.",
+    "month": 1,
+    "year": 2026,
+    "correctAnswer": "Tuesday",
+    "options": [],
+    "hint": "Say the week together from Sunday, then try this day again.",
+    "narration": "Continue the spoken day chain from Monday.",
+    "currentDay": "Monday",
+    "expectedDay": "Tuesday",
+    "chainPosition": 3
+   },
+   {
+    "id": "c4",
+    "type": "day_sequence",
+    "question": "Listen to the tutor, then say the day that comes next.",
+    "month": 1,
+    "year": 2026,
+    "correctAnswer": "Wednesday",
+    "options": [],
+    "hint": "Say the week together from Sunday, then try this day again.",
+    "narration": "Continue the spoken day chain from Tuesday.",
+    "currentDay": "Tuesday",
+    "expectedDay": "Wednesday",
+    "chainPosition": 4
+   },
+   {
+    "id": "c5",
+    "type": "day_sequence",
+    "question": "Listen to the tutor, then say the day that comes next.",
+    "month": 1,
+    "year": 2026,
+    "correctAnswer": "Thursday",
+    "options": [],
+    "hint": "Say the week together from Sunday, then try this day again.",
+    "narration": "Continue the spoken day chain from Wednesday.",
+    "currentDay": "Wednesday",
+    "expectedDay": "Thursday",
+    "chainPosition": 5
+   }
+  ],
+  "gradeBand": "K"
+ }
+}

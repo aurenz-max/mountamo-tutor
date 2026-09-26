@@ -1,0 +1,107 @@
+{
+ "source": "qa/tutor-reports/calendar-explorer-runtime-identify-payload-2026-09-25.json",
+ "primitiveId": "calendar-explorer",
+ "evalMode": "identify",
+ "data": {
+  "title": "Date Finding: Finding dates on a monthly calendar",
+  "description": "Practice date finding on the calendar.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "identify",
+    "question": "What day of the week is March 15, 2025?",
+    "month": 3,
+    "year": 2025,
+    "correctAnswer": "Saturday",
+    "options": [
+     "Thursday",
+     "Friday",
+     "Saturday",
+     "Sunday"
+    ],
+    "hint": "Find March 15 on the calendar and look at the top of that column for the day of the week.",
+    "narration": "Let's find out what day of the week March 15th falls on in 2025!",
+    "highlightDates": [
+     15
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "identify",
+    "question": "What date is the first Monday of October 2024?",
+    "month": 10,
+    "year": 2024,
+    "correctAnswer": "7",
+    "options": [
+     "5",
+     "6",
+     "7",
+     "8"
+    ],
+    "hint": "Look at the Monday column in October 2024 and find the very first number listed.",
+    "narration": "Can you help me find the date of the very first Monday in October 2024?",
+    "highlightDates": [
+     7
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "identify",
+    "question": "What day of the week is July 4, 2025?",
+    "month": 7,
+    "year": 2025,
+    "correctAnswer": "Friday",
+    "options": [
+     "Wednesday",
+     "Thursday",
+     "Friday",
+     "Saturday"
+    ],
+    "hint": "Find July 4 on the calendar and follow the column straight up to the day name.",
+    "narration": "Independence Day is July 4th! Let's check what day of the week it is in 2025.",
+    "highlightDates": [
+     4
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "identify",
+    "question": "What date is the third Wednesday of January 2025?",
+    "month": 1,
+    "year": 2025,
+    "correctAnswer": "15",
+    "options": [
+     "8",
+     "15",
+     "22",
+     "29"
+    ],
+    "hint": "Find the Wednesday column for January 2025 and count down to the third date.",
+    "narration": "Let's count down the Wednesdays in January 2025 to find the third one!",
+    "highlightDates": [
+     15
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "identify",
+    "question": "What day of the week is December 25, 2024?",
+    "month": 12,
+    "year": 2024,
+    "correctAnswer": "Wednesday",
+    "options": [
+     "Monday",
+     "Tuesday",
+     "Wednesday",
+     "Thursday"
+    ],
+    "hint": "Find December 25 on the calendar and look up to see which day column it is in.",
+    "narration": "Christmas Day is December 25th! What day of the week does it land on in 2024?",
+    "highlightDates": [
+     25
+    ]
+   }
+  ],
+  "gradeBand": "4-5"
+ }
+}
