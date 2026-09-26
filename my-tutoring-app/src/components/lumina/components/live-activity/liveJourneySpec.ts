@@ -92,6 +92,8 @@ import { calendarSequenceItemsFromChallenges, calendarSequenceJourneyAnswers, is
   from '../../primitives/visual-primitives/calendar/calendarExplorerWorkspace';
 import { itemsFromChallenges as arenaItems } from '../../primitives/visual-primitives/physics/pushPullArenaScript';
 import { pushPullArenaJourneyAnswers } from '../../primitives/visual-primitives/physics/pushPullArenaWorkspace';
+import { itemsFromChallenges as habitatItems } from '../../primitives/visual-primitives/biology/habitatDioramaScript';
+import { habitatJourneyAnswers } from '../../primitives/visual-primitives/biology/habitatDioramaWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
@@ -1280,6 +1282,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const answers = pushPullArenaJourneyAnswers(item);
       const say: DriverInput = { type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct };
       return item.kind === 'observe' && ctx.demand?.presentation !== 'ready' ? [{ type: 'choose', label: 'Go!' }, say] : [say];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'habitat-diorama': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/biology/HabitatDiorama.tsx',
+    instanceId: 'habitat',
+    defaults: { grade: 'Grade 2', mode: 'connect', di: false, topic: 'Animals and plants in a pond habitat depend on each other' },
+    leakTokens: ['HABITAT_ITEM', 'HABITAT_GESTURE', 'HABITAT_MOVE', 'HABITAT_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Observe, predict and defend are one spoken choice; connect taps the living thing, restore the zone.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = habitatItems(ctx.data.challenges ?? [], ctx.data as never).items.find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current habitat-diorama item');
+      const answers = habitatJourneyAnswers(item);
+      const pick = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      return [item.answerKind === 'gesture' ? { type: 'choose', label: pick } : { type: 'answer', text: pick }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
   },

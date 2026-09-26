@@ -11,7 +11,6 @@ import TextStructureAnalyzer from '../primitives/visual-primitives/literacy/Text
 import ReadAloudStudio from '../primitives/visual-primitives/literacy/ReadAloudStudio';
 import fixtures from './testing/workspaceFixtures.json';
 import SolarSystemExplorer from '../primitives/visual-primitives/astronomy/SolarSystemExplorer';
-import HabitatDiorama from '../primitives/visual-primitives/biology/HabitatDiorama';
 import MatterExplorer from '../primitives/visual-primitives/chemistry/MatterExplorer';
 import StatesOfMatter from '../primitives/visual-primitives/chemistry/StatesOfMatter';
 import CauseEffectChain from '../primitives/visual-primitives/history/CauseEffectChain';
@@ -89,7 +88,7 @@ describe('judged primitives share their stimulus panel with Pip', () => {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const SCIENCE: Array<[string, React.ComponentType<{ data: any }>]> = [
-    ['solar-system-explorer', SolarSystemExplorer], ['habitat-diorama', HabitatDiorama], ['matter-explorer', MatterExplorer],
+    ['solar-system-explorer', SolarSystemExplorer], ['matter-explorer', MatterExplorer],
     ['states-of-matter', StatesOfMatter],
     ['cause-effect-chain', CauseEffectChain], ['era-explorer', EraExplorer], ['sentence-analyzer', SentenceAnalyzer],
     ['di-deduction', DiDeduction], ['di-worked-procedure', DiWorkedProcedure], ['di-word-problem-setup', DiWordProblemSetup],

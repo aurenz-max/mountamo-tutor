@@ -3,24 +3,25 @@
 /**
  * Habitat Diorama — Living Ecosystem.
  *
- * Exploration remains available when no valid challenges exist. In assessment
- * sessions the Live tutor owns the clock: Observe, Predict, and Defend are
- * spoken; Connect and Restore are committed model-building turns.
+ * Exploration remains available, ungraded, when no valid challenges exist. Challenges run only
+ * on the shared tutor/JEV teaching workspace (workspace rollout C5; the scripted runner was
+ * retired, LA-14, user ruling 09-23: one path): Observe, Predict, and Defend are spoken and the
+ * observer judges them; Connect and Restore are model-building taps the activity checks. The
+ * runtime owns progression. An unbound mount shows the shared "needs the tutor" card.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Ear, Leaf, Link2, Sprout, Waves, Zap } from 'lucide-react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Leaf, Link2, Sprout, Waves, Zap } from 'lucide-react';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { HabitatDioramaMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { SoundManager } from '../../../utils/SoundManager';
 import {
   LuminaBadge,
@@ -43,16 +44,14 @@ import {
   dropZoneStateClasses,
   motion,
 } from '../../../ui';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import {
   askFor,
-  gestureVerdictCue,
-  habitatDioramaPackBase,
   itemsFromChallenges,
   revealTextFor,
   type HabitatItem,
 } from './habitatDioramaScript';
+import { ZONE_LABELS, describeHabitatMove, habitatAssignment, habitatMoveMatches, habitatScene } from './habitatDioramaWorkspace';
 
 export type HabitatChallengeType = 'observe' | 'connect' | 'predict' | 'restore' | 'defend';
 export type HabitatZone = 'canopy' | 'open-land' | 'water' | 'shoreline' | 'ground' | 'underground';
@@ -133,6 +132,9 @@ export interface HabitatDioramaProps {
   skillId?: string;
   exhibitId?: string;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
   onInteraction?: (interaction: {
     type: string;
     organismId?: string;
@@ -147,11 +149,6 @@ const MODE_TABS = [
   { value: 'predict', label: 'Predict' }, { value: 'restore', label: 'Restore' },
   { value: 'defend', label: 'Defend' },
 ];
-
-const ZONE_LABELS: Record<HabitatZone, string> = {
-  canopy: 'Canopy', 'open-land': 'Open land', water: 'Open water',
-  shoreline: 'Shoreline', ground: 'Ground layer', underground: 'Underground',
-};
 
 const ROLE_LABELS: Record<Organism['role'], string> = {
   producer: 'Producer', 'primary-consumer': 'Primary Consumer',
@@ -295,60 +292,61 @@ const ExploreFace: React.FC<ExploreFaceProps> = ({ data, resolvedInstanceId, onI
   );
 };
 
-interface JudgedFaceProps { data: HabitatDioramaData; items: HabitatItem[]; resolvedInstanceId: string; skillId?: string; exhibitId?: string; onInteraction?: HabitatDioramaProps['onInteraction'] }
+interface JudgedFaceProps { data: HabitatDioramaData; items: HabitatItem[]; resolvedInstanceId: string; skillId?: string; exhibitId?: string; runtimePlanItemId?: string; runtimeEvalMode?: string; onInteraction?: HabitatDioramaProps['onInteraction'] }
 
-const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId, skillId, exhibitId, onInteraction }) => {
+const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId, skillId, exhibitId, runtimePlanItemId, runtimeEvalMode, onInteraction }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reward, setReward] = useState<{ text: string; ids: string[] } | null>(null);
-  /** The last committed model move, for the attempt observation. */
-  const committedRef = useRef<{ toId?: string; zone?: HabitatZone } | null>(null);
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const isPreReader = data.gradeBand === 'K-2';
   const evaluation = usePrimitiveEvaluation<HabitatDioramaMetrics>({ primitiveType: 'habitat-diorama', instanceId: resolvedInstanceId, skillId: data.skillId ?? skillId, subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId ?? exhibitId, onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined });
-  const pack = useMemo<JudgedScriptPack<HabitatItem>>(() => ({
-    ...habitatDioramaPackBase(items), passThreshold: 70,
-    statusLines: { ready: (item) => item.answerKind === 'voice' ? 'Listen, study the ecosystem, then say your answer.' : 'Listen, then show your thinking on the ecosystem.', retry: (item) => item.answerKind === 'voice' ? 'Try once more — say the evidence or living thing.' : 'Try once more on the habitat model.', done: 'The ecosystem is still alive — and now you can read its story.' },
-    // One factual record per attempt, right or corrected: the ask and its choices, and what was heard or
-    // committed on the model (the commit ref is set just before each gesture is submitted). Never the verdict.
-    observation: (item, { heard }) => {
-      const names = item.organismNames;
-      const choices = item.optionTexts.length ? ` (choices: ${item.optionTexts.join('; ')})` : '';
-      const committed = committedRef.current;
-      const observed = item.answerKind === 'voice'
-        ? (heard ? `Heard "${heard}".` : 'No transcript was captured.')
-        : item.kind === 'connect'
-          ? (committed?.toId ? `Connected ${names[item.fromId ?? ''] ?? item.fromId} to ${names[committed.toId] ?? committed.toId}.` : 'Connected an organism; which one was not recorded.')
-          : (committed?.zone ? `Placed ${names[item.restorationEntityId ?? ''] ?? 'the organism'} in the ${ZONE_LABELS[committed.zone]} zone.` : 'Placed the organism; which zone was not recorded.');
-      return { challenge: `${item.kind}: ${askFor(item)}${choices}`, expected: item.answerText, observed };
-    },
-  }), [items]);
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const modeCounts = items.reduce<Record<string, number>>((counts, item) => ({ ...counts, [item.kind]: (counts[item.kind] ?? 0) + 1 }), {});
     const dominantMode = Object.entries(modeCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
-    evaluation.submitResult(summary.passed, summary.accuracy, { type: 'habitat-diorama', evalMode: dominantMode, totalChallenges: items.length, correctChallenges: summary.solvedCount, totalAttempts: summary.attemptsCount, accuracy: summary.accuracy, spokenChallenges: items.filter((item) => item.answerKind === 'voice').length, modelChallenges: items.filter((item) => item.answerKind === 'gesture').length, durationMs: evaluation.elapsedMs }, { challengeResults: summary.outcomes, learningResponses: summary.learningResponses }, undefined, summary.diagnosisEvidence);
-  }, [evaluation, items]);
-  const runner = useJudgedScriptRunner<HabitatItem>({
-    pack, instanceId: resolvedInstanceId, gradeLevel: data.gradeBand, exhibitId: data.exhibitId ?? exhibitId, onFinished: handleFinished,
-    onItemOpened: () => setSelectedId(null), onCorrectionRetry: () => setSelectedId(null),
+    evaluation.submitResult(summary.passed, summary.accuracy, { type: 'habitat-diorama', evalMode: dominantMode, totalChallenges: items.length, correctChallenges: summary.solvedCount, totalAttempts: summary.attemptsCount, accuracy: summary.accuracy, spokenChallenges: items.filter((item) => item.answerKind === 'voice').length, modelChallenges: items.filter((item) => item.answerKind === 'gesture').length, durationMs: evaluation.elapsedMs }, { challengeResults: summary.outcomes, learningResponses: summary.learningResponses, teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance }, undefined, summary.diagnosisEvidence);
+  };
+  const runner = useWorkspaceRunner<HabitatItem>({
+    primitiveId: 'habitat-diorama', assignment: habitatAssignment, items, workspace, objectiveId: data.objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || (items[0]?.kind ?? 'observe'),
+    instanceId: resolvedInstanceId, onFinished: finish,
+    onItemOpened: () => { setSelectedId(null); setReward(null); }, onCorrectionRetry: () => setSelectedId(null),
     onAffirmed: (item) => { const ids = item.kind === 'connect' ? [item.fromId, item.toId].filter(Boolean) as string[] : [item.focusOrganismId ?? item.restorationEntityId].filter(Boolean) as string[]; setReward({ text: revealTextFor(item), ids }); },
   });
   const current = runner.currentItem;
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
+  // What the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation; every item is answerable once it opens.
+  useLayoutEffect(() => {
+    if (!current) return;
+    workspace.current = { ...habitatScene(current, { habitatName: data.habitat.name, organismNames: data.organisms.map((organism) => organism.commonName), preReader: isPreReader }),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
   const activeIds = current?.kind === 'connect' && current.fromId ? [current.fromId] : current?.optionOrganismIds ?? [];
   const rewardIds = runner.revealHeld && reward ? reward.ids : [];
+  const commitMove = (item: HabitatItem, move: { toId?: string; zone?: HabitatZone }) =>
+    commitGesture(runner, { response: describeHabitatMove(item, move), correct: habitatMoveMatches(item, move), cue: () => '' });
   const handleOrganismTap = (id: string) => {
     SoundManager.tap(); setSelectedId(id); onInteraction?.({ type: 'organism_inspected', organismId: id, timestamp: Date.now() });
     if (!current || !runner.canAttempt || current.kind !== 'connect' || id === current.fromId) return;
     pip.look('stimulus');
-    committedRef.current = { toId: id };
-    runner.submitGestureAttempt(gestureVerdictCue(current, { fromId: current.fromId, toId: id }));
+    commitMove(current, { toId: id });
     onInteraction?.({ type: 'relationship_committed', organismId: id, relationshipType: current.relationshipType, timestamp: Date.now() });
   };
   // Pip: the habitat is the question side. A connect tap and a restore zone are
   // single committed taps: Pip looks at them and never makes one.
   const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The habitat', finished: evaluation.hasSubmitted,
+    run: runner, instanceId: resolvedInstanceId, label: 'The habitat', finished: showSummary,
     gesture: current?.answerKind === 'gesture',
   });
-  if (evaluation.hasSubmitted && runner.summary) return <LuminaPanel accent="emerald" className="py-8 text-center"><LuminaScoreRing score={runner.summary.accuracy} size={128} showTier /><h4 className="mt-4 text-xl font-bold text-slate-100">Ecosystem field report complete</h4><p className="mt-2 text-sm text-slate-300">You observed evidence, traced relationships, and reasoned about change.</p></LuminaPanel>;
+  if (showSummary) {
+    const outcomes = runner.practiceSummary?.outcomes ?? [];
+    const score = evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy
+      ?? Math.round(outcomes.reduce((sum, outcome) => sum + outcome.score, 0) / Math.max(outcomes.length, 1));
+    return <LuminaPanel accent="emerald" className="py-8 text-center"><LuminaScoreRing score={score} size={128} showTier /><h4 className="mt-4 text-xl font-bold text-slate-100">Ecosystem field report complete</h4><p className="mt-2 text-sm text-slate-300">You observed evidence, traced relationships, and reasoned about change.</p></LuminaPanel>;
+  }
   return (
     <div className="space-y-4">
       {current && <div className="flex flex-wrap items-center justify-between gap-3"><LuminaModeTabs tabs={MODE_TABS} active={current.kind} accent="emerald" /><LuminaChallengeCounter current={runner.currentIndex + 1} total={items.length} variant="dots" accent="emerald" /></div>}
@@ -357,27 +355,39 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId
       {current?.kind === 'predict' && <LuminaPanel accent="orange" className={`${accentGlow.orange} ${accentBorder.orange}`}><div className="flex items-start gap-3"><Zap className="mt-0.5 h-5 w-5 text-orange-300" /><div><p className="text-xs font-semibold uppercase tracking-wider text-orange-300">Ecosystem change</p><p className="mt-1 text-sm text-slate-200">{current.disruptionEvent}</p></div></div></LuminaPanel>}
       {pip.store && <div {...pip.dock} />}
       <div {...pip.target('stimulus')}><HabitatScene data={data} isPreReader={isPreReader} selectedId={selectedId} activeIds={activeIds} rewardIds={rewardIds} hideOrganismId={current?.kind === 'restore' ? current.restorationEntityId : undefined} onOrganismTap={handleOrganismTap} /></div>
-      {current?.kind === 'restore' && current.restorationEntityId && <LuminaPanel {...pip.target('zones')} accent="emerald"><div className="mb-3 flex items-center gap-3"><span className="text-3xl">{organismEmoji(data.organisms.find((organism) => organism.id === current.restorationEntityId)!)}</span><div><p className="text-xs uppercase tracking-wider text-emerald-300">Restoration candidate</p><p className="font-semibold text-slate-100">{current.organismNames[current.restorationEntityId]}</p></div></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{(Object.keys(ZONE_LABELS) as HabitatZone[]).map((zone) => <button key={zone} type="button" disabled={!runner.canAttempt} onClick={() => { SoundManager.tap(); pip.look('zones'); committedRef.current = { zone }; runner.submitGestureAttempt(gestureVerdictCue(current, { zone })); onInteraction?.({ type: 'restoration_committed', timestamp: Date.now() }); }} className={`rounded-xl px-3 py-4 text-sm font-semibold transition-all ${dropZoneStateClasses.idle} ${runner.canAttempt ? 'hover:scale-[1.02]' : 'opacity-50'}`}>{ZONE_LABELS[zone]}</button>)}</div></LuminaPanel>}
+      {current?.kind === 'restore' && current.restorationEntityId && <LuminaPanel {...pip.target('zones')} accent="emerald"><div className="mb-3 flex items-center gap-3"><span className="text-3xl">{organismEmoji(data.organisms.find((organism) => organism.id === current.restorationEntityId)!)}</span><div><p className="text-xs uppercase tracking-wider text-emerald-300">Restoration candidate</p><p className="font-semibold text-slate-100">{current.organismNames[current.restorationEntityId]}</p></div></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{(Object.keys(ZONE_LABELS) as HabitatZone[]).map((zone) => <button key={zone} type="button" disabled={!runner.canAttempt} onClick={() => { SoundManager.tap(); pip.look('zones'); commitMove(current, { zone }); onInteraction?.({ type: 'restoration_committed', timestamp: Date.now() }); }} className={`rounded-xl px-3 py-4 text-sm font-semibold transition-all ${dropZoneStateClasses.idle} ${runner.canAttempt ? 'hover:scale-[1.02]' : 'opacity-50'}`}>{ZONE_LABELS[zone]}</button>)}</div></LuminaPanel>}
       {current?.kind === 'defend' && current.evidenceChoices && <div className="grid gap-2 md:grid-cols-3" aria-label="Evidence choices">{current.evidenceChoices.map((choice, index) => <div key={choice.id} className={`rounded-xl border p-4 ${answerStateClasses.idle}`}><p className="text-[10px] font-semibold uppercase tracking-wider text-cyan-300">Evidence {index + 1}</p><p className="mt-2 text-sm leading-relaxed text-slate-100">{choice.text}</p></div>)}</div>}
       {current?.answerKind === 'voice' && current.kind !== 'defend' && <div className="flex flex-wrap justify-center gap-2" aria-label="Answer choices">{current.optionTexts.map((option) => <LuminaBadge key={option} accent="cyan" className="px-3 py-2 text-sm">{option}</LuminaBadge>)}</div>}
       {reward && runner.revealHeld && <LuminaPanel accent="emerald" className={`${motion.reveal} text-center`}><Sprout className="mx-auto h-6 w-6 text-emerald-300" /><p className="mt-2 font-semibold text-emerald-100">{reward.text}</p></LuminaPanel>}
-      <JudgedMicPanel run={runner} gestureLabel={current?.kind === 'connect' ? 'Build the connection' : 'Place it in the habitat'} voiceLabel="I’m listening"><LuminaButton tone="subtle" size="sm" onClick={runner.hearStimulus}><Ear className="mr-2 h-4 w-4" /> Hear the question again</LuminaButton></JudgedMicPanel>
     </div>
   );
 };
 
-const HabitatDiorama: React.FC<HabitatDioramaProps> = ({ data, instanceId, skillId, exhibitId, className = '', onInteraction }) => {
+type FrameProps = HabitatDioramaProps & { items: HabitatItem[] };
+
+const HabitatDioramaFrame: React.FC<FrameProps> = ({ data, items, instanceId, skillId, exhibitId, className = '', onInteraction, runtimePlanItemId, runtimeEvalMode }) => {
   const stableInstanceId = useRef(data.instanceId ?? instanceId ?? `habitat-diorama-${Math.round(performance.now())}`);
   const resolvedInstanceId = data.instanceId ?? instanceId ?? stableInstanceId.current;
-  const built = useMemo(() => itemsFromChallenges(data.challenges ?? [], data), [data]);
-  const isJudged = built.items.length > 0;
-  useEffect(() => { if ((data.challenges?.length ?? 0) > 0 && !isJudged) console.warn(`[HabitatDiorama] all ${data.challenges?.length} generated challenges failed the spoken/build gates; degrading to exploration`); }, [data.challenges, isJudged]);
+  const isJudged = items.length > 0;
   return (
     <LuminaCard topAccent="emerald" className={`w-full ${className}`}>
       <LuminaCardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><div className="mb-2 flex items-center gap-2"><Leaf className="h-5 w-5 text-emerald-300" /><LuminaBadge accent="emerald">{isJudged ? 'Living ecosystem mission' : 'Open ecosystem'}</LuminaBadge><LuminaBadge accent="cyan">{data.habitat.biome}</LuminaBadge></div><LuminaCardTitle className="text-2xl">{data.habitat.name}</LuminaCardTitle><LuminaCardDescription className="mt-2 max-w-3xl">{data.habitat.description}</LuminaCardDescription></div><div className="flex items-center gap-2 text-xs text-slate-400"><Waves className="h-4 w-4" /> {data.habitat.climate}</div></div></LuminaCardHeader>
-      <LuminaCardContent>{isJudged ? <JudgedFace data={data} items={built.items} resolvedInstanceId={resolvedInstanceId} skillId={skillId} exhibitId={exhibitId} onInteraction={onInteraction} /> : <ExploreFace data={data} resolvedInstanceId={resolvedInstanceId} onInteraction={onInteraction} />}</LuminaCardContent>
+      <LuminaCardContent>{isJudged ? <JudgedFace data={data} items={items} resolvedInstanceId={resolvedInstanceId} skillId={skillId} exhibitId={exhibitId} runtimePlanItemId={runtimePlanItemId} runtimeEvalMode={runtimeEvalMode} onInteraction={onInteraction} /> : <ExploreFace data={data} resolvedInstanceId={resolvedInstanceId} onInteraction={onInteraction} />}</LuminaCardContent>
     </LuminaCard>
   );
+};
+
+const HabitatDioramaBound = withWorkspaceOnly<FrameProps>('habitat-diorama', HabitatDioramaFrame, (props) => props.data.habitat?.name);
+
+/**
+ * Challenges run only on the teaching workspace (an unbound mount shows the "needs the tutor" card).
+ * A payload with no askable challenge is the ungraded free-exploration diorama.
+ */
+const HabitatDiorama: React.FC<HabitatDioramaProps> = (props) => {
+  const { data } = props;
+  const built = useMemo(() => itemsFromChallenges(data.challenges ?? [], data), [data]);
+  useEffect(() => { if ((data.challenges?.length ?? 0) > 0 && !built.items.length) console.warn(`[HabitatDiorama] all ${data.challenges?.length} generated challenges failed the spoken/build gates; degrading to exploration`); }, [data.challenges, built.items.length]);
+  return built.items.length ? <HabitatDioramaBound {...props} items={built.items} /> : <HabitatDioramaFrame {...props} items={[]} />;
 };
 
 export default HabitatDiorama;

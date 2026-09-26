@@ -1,0 +1,269 @@
+{
+ "source": "qa/tutor-reports/habitat-diorama-runtime-observe-payload-2026-09-26.json",
+ "primitiveId": "habitat-diorama",
+ "evalMode": "observe",
+ "data": {
+  "primitiveType": "habitat-diorama",
+  "habitat": {
+   "name": "Emerald Duck Pond",
+   "biome": "Freshwater Wetland",
+   "climate": "Temperate and humid with warm summers and cool winters",
+   "description": "A calm freshwater pond featuring a muddy bank, lush aquatic vegetation, open water zones, and a shallow sunlit bottom."
+  },
+  "organisms": [
+   {
+    "id": "org-algae",
+    "commonName": "Green Algae",
+    "role": "producer",
+    "imagePrompt": "vibrant green microscopic filaments forming mats on the water surface",
+    "position": {
+     "x": "15%",
+     "y": "75%"
+    },
+    "description": "Tiny photosynthetic organisms that form floating green mats and produce food from sunlight.",
+    "adaptations": [
+     "Rapid reproduction",
+     "Absorbs nutrients directly from water"
+    ]
+   },
+   {
+    "id": "org-cattail",
+    "commonName": "Cattail",
+    "role": "producer",
+    "imagePrompt": "tall green reed plants with brown cigar-shaped seed heads near the shore",
+    "position": {
+     "x": "80%",
+     "y": "20%"
+    },
+    "description": "Tall emergent wetland plants that provide vertical shelter and food along the shoreline.",
+    "adaptations": [
+     "Air channels in stems to survive underwater",
+     "Creeping underground roots"
+    ]
+   },
+   {
+    "id": "org-tadpole",
+    "commonName": "Tadpole",
+    "role": "primary-consumer",
+    "imagePrompt": "small aquatic larval frog with a long tail grazing on algae",
+    "position": {
+     "x": "30%",
+     "y": "80%"
+    },
+    "description": "Herbivorous larval amphibians that scrape algae from submerged rocks and stems.",
+    "adaptations": [
+     "Long tail for swimming",
+     "Horny beak for grazing algae"
+    ]
+   },
+   {
+    "id": "org-snail",
+    "commonName": "Pond Snail",
+    "role": "primary-consumer",
+    "imagePrompt": "small spiral shelled snail clinging to a plant stem",
+    "position": {
+     "x": "65%",
+     "y": "60%"
+    },
+    "description": "Slow-moving shelled gastropods that graze on decaying plant matter and microscopic algae.",
+    "adaptations": [
+     "Spiral hard shell for protection",
+     "Radula tongue for scraping food"
+    ]
+   },
+   {
+    "id": "org-mallard",
+    "commonName": "Mallard Duck",
+    "role": "secondary-consumer",
+    "imagePrompt": "colorful drake duck dabbling in the shallow water",
+    "position": {
+     "x": "45%",
+     "y": "40%"
+    },
+    "description": "Dabbling ducks that consume aquatic plants, seeds, snails, and small insects.",
+    "adaptations": [
+     "Flat bill for straining food from water",
+     "Waterproof feathers"
+    ]
+   },
+   {
+    "id": "org-frog",
+    "commonName": "Leopard Frog",
+    "role": "secondary-consumer",
+    "imagePrompt": "green spotted frog sitting on a lily pad",
+    "position": {
+     "x": "35%",
+     "y": "55%"
+    },
+    "description": "Carnivorous amphibians that ambush insects, worms, and small tadpoles near the water edge.",
+    "adaptations": [
+     "Powerful hind legs for jumping",
+     "Sticky tongue for catching prey"
+    ]
+   },
+   {
+    "id": "org-heron",
+    "commonName": "Great Blue Heron",
+    "role": "tertiary-consumer",
+    "imagePrompt": "tall grey wading bird standing still in shallow water",
+    "position": {
+     "x": "70%",
+     "y": "30%"
+    },
+    "description": "Large wading apex predators that spear fish, frogs, and large aquatic creatures.",
+    "adaptations": [
+     "Long dagger-like bill",
+     "Long wading legs for deep water"
+    ]
+   },
+   {
+    "id": "org-bacteria",
+    "commonName": "Pond Bacteria",
+    "role": "decomposer",
+    "imagePrompt": "microscopic view of detritivore microbes breaking down organic sludge",
+    "position": {
+     "x": "15%",
+     "y": "90%"
+    },
+    "description": "Microscopic organisms that break down dead leaves and animal waste, recycling nutrients into the soil and water.",
+    "adaptations": [
+     "Rapid anaerobic and aerobic metabolism",
+     "Secrete digestive enzymes"
+    ]
+   }
+  ],
+  "relationships": [
+   {
+    "fromId": "org-algae",
+    "toId": "org-tadpole",
+    "type": "predation",
+    "description": "Tadpoles consume green algae for energy."
+   },
+   {
+    "fromId": "org-cattail",
+    "toId": "org-snail",
+    "type": "symbiosis-commensalism",
+    "description": "Pond snails use cattail stems as surfaces for crawling and egg deposition without harming the plant."
+   },
+   {
+    "fromId": "org-tadpole",
+    "toId": "org-frog",
+    "type": "predation",
+    "description": "Frogs consume tadpoles and small aquatic animals."
+   },
+   {
+    "fromId": "org-snail",
+    "toId": "org-mallard",
+    "type": "predation",
+    "description": "Mallard ducks eat pond snails along with other aquatic snacks."
+   },
+   {
+    "fromId": "org-frog",
+    "toId": "org-heron",
+    "type": "predation",
+    "description": "Great blue herons hunt and consume frogs."
+   }
+  ],
+  "environmentalFeatures": [
+   {
+    "id": "feat-mud",
+    "name": "Benthic Mud",
+    "description": "Nutrient-rich sediment at the bottom of the pond where decomposers thrive.",
+    "position": {
+     "x": "20%",
+     "y": "85%"
+    }
+   },
+   {
+    "id": "feat-log",
+    "name": "Sunken Log",
+    "description": "A decaying wooden log providing shelter and perching spots.",
+    "position": {
+     "x": "55%",
+     "y": "65%"
+    }
+   }
+  ],
+  "challenges": [
+   {
+    "id": "chal-1",
+    "type": "observe",
+    "prompt": "Which microscopic organism forms floating green mats and uses sunlight to produce food?",
+    "explanation": "Green Algae are producers that capture sunlight to create their own food.",
+    "focusOrganismId": "org-algae",
+    "optionOrganismIds": [
+     "org-algae",
+     "org-snail",
+     "org-frog",
+     "org-heron"
+    ]
+   },
+   {
+    "id": "chal-2",
+    "type": "observe",
+    "prompt": "Which tall emergent wetland plant provides vertical shelter and has brown cigar-shaped seed heads?",
+    "explanation": "Cattails grow along the shore and offer structural support and shelter.",
+    "focusOrganismId": "org-cattail",
+    "optionOrganismIds": [
+     "org-cattail",
+     "org-tadpole",
+     "org-bacteria",
+     "org-mallard"
+    ]
+   },
+   {
+    "id": "chal-3",
+    "type": "observe",
+    "prompt": "Which herbivorous larval amphibian swims with a long tail and grazes on algae?",
+    "explanation": "Tadpoles scrape algae from underwater surfaces using specialized mouthparts.",
+    "focusOrganismId": "org-tadpole",
+    "optionOrganismIds": [
+     "org-tadpole",
+     "org-algae",
+     "org-frog",
+     "org-heron"
+    ]
+   },
+   {
+    "id": "chal-4",
+    "type": "observe",
+    "prompt": "Which slow-moving shelled gastropod crawls on plant stems and grazes on detritus?",
+    "explanation": "Pond Snails graze on decaying matter and algae while using plant stems for support.",
+    "focusOrganismId": "org-snail",
+    "optionOrganismIds": [
+     "org-snail",
+     "org-cattail",
+     "org-bacteria",
+     "org-mallard"
+    ]
+   },
+   {
+    "id": "chal-5",
+    "type": "observe",
+    "prompt": "Which large wading apex predator stands still in shallow water to spear fish and frogs?",
+    "explanation": "The Great Blue Heron is an apex predator relying on sharp vision and a dagger-like bill.",
+    "focusOrganismId": "org-heron",
+    "optionOrganismIds": [
+     "org-heron",
+     "org-tadpole",
+     "org-snail",
+     "org-mallard"
+    ]
+   }
+  ],
+  "gradeBand": "3-5",
+  "disruptionScenario": {
+   "event": "A sudden dry spell lowers the water level and reduces the surface area of floating green algae.",
+   "cascadeEffects": [
+    "Tadpoles have less algae to graze upon, causing their population to decline.",
+    "Frogs face reduced food availability, leading to fewer predators for higher trophic levels."
+   ],
+   "question": "How does a drop in the producer population ripple through the pond food chain?"
+  },
+  "targetEvalMode": "observe",
+  "challengeType": "observe",
+  "challengeTypes": [
+   "observe"
+  ]
+ }
+}

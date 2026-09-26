@@ -50,6 +50,7 @@ import { additionSubtractionSceneLiveDomain } from './adapters/additionSubtracti
 import { threeDShapeExplorerLiveDomain } from './adapters/threeDShapeExplorerLive';
 import { calendarExplorerLiveDomain } from './adapters/calendarExplorerLive';
 import { pushPullArenaLiveDomain } from './adapters/pushPullArenaLive';
+import { habitatDioramaLiveDomain } from './adapters/habitatDioramaLive';
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { diShapesLiveDomain } from './adapters/diShapesLive';
@@ -109,6 +110,7 @@ export const LIVE_ADAPTERS = {
   '3d-shape-explorer': workspaceAdapter('3d-shape-explorer', threeDShapeExplorerLiveDomain),
   'calendar-explorer': workspaceAdapter('calendar-explorer', calendarExplorerLiveDomain),
   'push-pull-arena': workspaceAdapter('push-pull-arena', pushPullArenaLiveDomain),
+  'habitat-diorama': workspaceAdapter('habitat-diorama', habitatDioramaLiveDomain),
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
   'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),

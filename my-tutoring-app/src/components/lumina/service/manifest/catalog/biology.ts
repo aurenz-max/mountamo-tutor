@@ -375,6 +375,16 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'One habitat scene of named living things. Observe, predict and defend are answered out loud with one of the '
+        + 'choices on screen (a living thing, or an evidence card); tapping does not answer them. Connect: one living thing is lit '
+        + 'as the start and the learner taps the one the relationship leads to (energy or benefit flows from the start: the '
+        + 'eaten to the eater, the host to the one that lives on it). Restore: the learner taps the zone where the missing '
+        + 'living thing can meet its needs. The activity checks both taps. A K-2 learner does not read: read the question, the '
+        + 'change and the choices aloud, and say names, never producer, consumer or decomposer. No living thing is mean; each '
+        + 'is finding food. Before an attempt never say the answer or which choice is right. You cannot tap or place for them.',
+    },
   },
   {
     id: 'bio-compare-contrast',

@@ -1,0 +1,251 @@
+{
+ "source": "qa/tutor-reports/habitat-diorama-runtime-connect-payload-2026-09-26.json",
+ "primitiveId": "habitat-diorama",
+ "evalMode": "connect",
+ "data": {
+  "primitiveType": "habitat-diorama",
+  "habitat": {
+   "name": "Emerald Willow Pond",
+   "biome": "Freshwater Wetland",
+   "climate": "Temperate with warm summers and cool winters",
+   "description": "A calm freshwater pond surrounded by cattails, lily pads, and weeping willows, teeming with interdependent aquatic and terrestrial life."
+  },
+  "organisms": [
+   {
+    "id": "org-algae",
+    "commonName": "Green Algae",
+    "role": "producer",
+    "imagePrompt": "vibrant green microscopic single-celled and filamentous algae floating in clear pond water",
+    "position": {
+     "x": "15%",
+     "y": "80%"
+    },
+    "description": "Microscopic and filamentous green plants that use sunlight to produce their own food.",
+    "adaptations": [
+     "Rapid reproduction rate",
+     "Ability to float near the sunlit surface"
+    ]
+   },
+   {
+    "id": "org-cattail",
+    "commonName": "Broadleaf Cattail",
+    "role": "producer",
+    "imagePrompt": "tall green wetland plants with brown sausage-shaped seed heads growing at the pond edge",
+    "position": {
+     "x": "10%",
+     "y": "25%"
+    },
+    "description": "An emergent aquatic plant that provides shelter and oxygen to the pond ecosystem.",
+    "adaptations": [
+     "Air channels in leaves and roots to survive in soggy mud",
+     "Sturdy stalks to withstand wind"
+    ]
+   },
+   {
+    "id": "org-snail",
+    "commonName": "Pond Snail",
+    "role": "primary-consumer",
+    "imagePrompt": "small spiral-shelled snail grazing on algae on a submerged rock",
+    "position": {
+     "x": "30%",
+     "y": "75%"
+    },
+    "description": "A slow-moving herbivore that scrapes algae off rocks and submerged plants.",
+    "adaptations": [
+     "Hard spiral shell for protection from predators",
+     "Radula tongue designed for scraping algae"
+    ]
+   },
+   {
+    "id": "org-tadpole",
+    "commonName": "Green Frog Tadpole",
+    "role": "primary-consumer",
+    "imagePrompt": "small swimming tadpole with a long tail nibbling on pond vegetation",
+    "position": {
+     "x": "45%",
+     "y": "85%"
+    },
+    "description": "The aquatic larval stage of a frog that feeds on algae and decaying matter.",
+    "adaptations": [
+     "Gills for breathing underwater",
+     "Long tail for swimming away from danger"
+    ]
+   },
+   {
+    "id": "org-duck",
+    "commonName": "Mallard Duck",
+    "role": "primary-consumer",
+    "imagePrompt": "colorful male mallard duck dabbling for plants at the water surface",
+    "position": {
+     "x": "60%",
+     "y": "40%"
+    },
+    "description": "A waterfowl that feeds on seeds, pond weeds, and small aquatic insects.",
+    "adaptations": [
+     "Flat bill with strainers to filter food from water",
+     "Waterproof feathers"
+    ]
+   },
+   {
+    "id": "org-sunfish",
+    "commonName": "Bluegill Sunfish",
+    "role": "secondary-consumer",
+    "imagePrompt": "small colorful panfish swimming among submerged roots",
+    "position": {
+     "x": "75%",
+     "y": "70%"
+    },
+    "description": "An active swimmer that preys upon small snails, insect larvae, and zooplankton.",
+    "adaptations": [
+     "Spiny fins for defense against larger fish",
+     "Compressed body shape for tight turns"
+    ]
+   },
+   {
+    "id": "org-heron",
+    "commonName": "Great Blue Heron",
+    "role": "tertiary-consumer",
+    "imagePrompt": "tall grey wading bird standing motionless in shallow water",
+    "position": {
+     "x": "85%",
+     "y": "20%"
+    },
+    "description": "A patient wading predator that hunts fish, frogs, and large insects.",
+    "adaptations": [
+     "Long stilt-like legs for wading",
+     "Sharp spear-like bill for catching fish"
+    ]
+   },
+   {
+    "id": "org-bacteria",
+    "commonName": "Pond Decomposer Bacteria",
+    "role": "decomposer",
+    "imagePrompt": "microscopic view of beneficial bacteria breaking down dead plant matter in mud",
+    "position": {
+     "x": "40%",
+     "y": "95%"
+    },
+    "description": "Microorganisms that break down dead plants and animals, recycling nutrients back into the soil.",
+    "adaptations": [
+     "Ability to thrive in low-oxygen mud environments",
+     "Enzymes that break down tough organic matter"
+    ]
+   }
+  ],
+  "relationships": [
+   {
+    "fromId": "org-algae",
+    "toId": "org-snail",
+    "type": "predation",
+    "description": "Pond snails consume green algae for food."
+   },
+   {
+    "fromId": "org-algae",
+    "toId": "org-tadpole",
+    "type": "predation",
+    "description": "Tadpoles graze on microscopic and filamentous green algae."
+   },
+   {
+    "fromId": "org-cattail",
+    "toId": "org-duck",
+    "type": "predation",
+    "description": "Mallard ducks eat cattail seeds and tender shoots."
+   },
+   {
+    "fromId": "org-snail",
+    "toId": "org-sunfish",
+    "type": "predation",
+    "description": "Bluegill sunfish eat small pond snails."
+   },
+   {
+    "fromId": "org-tadpole",
+    "toId": "org-heron",
+    "type": "predation",
+    "description": "Great blue herons hunt and eat frogs and tadpoles."
+   },
+   {
+    "fromId": "org-sunfish",
+    "toId": "org-heron",
+    "type": "predation",
+    "description": "Great blue herons catch and swallow bluegill sunfish."
+   }
+  ],
+  "environmentalFeatures": [
+   {
+    "id": "feat-rock",
+    "name": "Submerged Boulders",
+    "description": "Smooth granite rocks providing surfaces for algae growth and hiding spots for small fish.",
+    "position": {
+     "x": "25%",
+     "y": "85%"
+    }
+   },
+   {
+    "id": "feat-mud",
+    "name": "Benthic Mud",
+    "description": "Nutrient-rich sediment at the bottom of the pond where decomposers live.",
+    "position": {
+     "x": "50%",
+     "y": "90%"
+    }
+   }
+  ],
+  "challenges": [
+   {
+    "id": "chal-1",
+    "type": "connect",
+    "prompt": "Trace the flow of energy from Green Algae to determine which consumer eats it.",
+    "explanation": "Green Algae is eaten by the Pond Snail as it scrapes vegetation from rocks.",
+    "fromId": "org-algae",
+    "toId": "org-snail"
+   },
+   {
+    "id": "chal-2",
+    "type": "connect",
+    "prompt": "Identify the consumer that preys upon the Green Algae in this shallow aquatic habitat.",
+    "explanation": "Green Frog Tadpoles feed directly on algae to gain energy for growth.",
+    "fromId": "org-algae",
+    "toId": "org-tadpole"
+   },
+   {
+    "id": "chal-3",
+    "type": "connect",
+    "prompt": "Determine which organism feeds upon the Broadleaf Cattail.",
+    "explanation": "Mallard Ducks consume seeds and plant material from the broadleaf cattail.",
+    "fromId": "org-cattail",
+    "toId": "org-duck"
+   },
+   {
+    "id": "chal-4",
+    "type": "connect",
+    "prompt": "Follow the energy pathway from the Pond Snail to find its predator.",
+    "explanation": "Bluegill Sunfish hunt and eat small pond snails found among the rocks.",
+    "fromId": "org-snail",
+    "toId": "org-sunfish"
+   },
+   {
+    "id": "chal-5",
+    "type": "connect",
+    "prompt": "Trace the energy flow from the Bluegill Sunfish to its tertiary consumer.",
+    "explanation": "The Great Blue Heron is a wading predator that catches and eats bluegill sunfish.",
+    "fromId": "org-sunfish",
+    "toId": "org-heron"
+   }
+  ],
+  "gradeBand": "3-5",
+  "disruptionScenario": {
+   "event": "A period of heavy rainfall washes excess garden fertilizer into the pond, causing a massive algae bloom.",
+   "cascadeEffects": [
+    "Algae population surges rapidly across the water surface.",
+    "When the excess algae die, decomposer bacteria multiply and consume dissolved oxygen.",
+    "Fish and other aquatic animals struggle to find enough oxygen in the water."
+   ],
+   "question": "How does an unexpected surge in nutrients disrupt the balance of organisms living in the pond?"
+  },
+  "targetEvalMode": "connect",
+  "challengeType": "connect",
+  "challengeTypes": [
+   "connect"
+  ]
+ }
+}
