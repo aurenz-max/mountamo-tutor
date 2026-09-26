@@ -108,6 +108,7 @@ import { oralSentenceJourneyAnswers } from '../../primitives/visual-primitives/l
 import { causeEffectItems, causeEffectJourneyAnswers } from '../../primitives/visual-primitives/history/causeEffectChainWorkspace';
 import { eraItems, eraJourneyAnswers } from '../../primitives/visual-primitives/history/eraExplorerWorkspace';
 import { periodicItems, periodicJourneyAnswers } from '../../primitives/chemistry-primitives/periodicTableWorkspace';
+import { knowledgeCheckItems, knowledgeCheckJourneyAnswers } from '../../primitives/knowledgeCheckWorkspace';
 import { statesItems } from './adapters/statesOfMatterLive';
 import { statesJourneyAnswers } from '../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
 import { solarItems } from './adapters/solarSystemExplorerLive';
@@ -1624,6 +1625,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'knowledge-check': {
+    execution: 'workspace',
+    component: 'primitives/KnowledgeCheck.tsx',
+    instanceId: 'knowledge-check',
+    defaults: { grade: 'Grade 2', mode: 'recall', di: false, topic: 'Plants and what they need to grow' },
+    leakTokens: ['KC_ITEM', 'KC_MOVE', 'KC_COMPLETE', 'KC_HEAR', 'KC_TAP'],
+    prompts: WORKSPACE_PROMPTS,
+    // Spoken kinds answer with the pack's short form; a symbol menu or a sign in a number sentence is pressed.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = knowledgeCheckItems(ctx.data as never).items.find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current knowledge-check item');
+      const answers = knowledgeCheckJourneyAnswers(item);
+      if (answers.press) return [{ type: 'choose', label: intent === 'wrong' ? answers.press.wrong : answers.press.correct }];
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="question"]' } },
   },
 };
 

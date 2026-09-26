@@ -13,9 +13,9 @@ export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
       'Assessment checkpoint with single or multiple problems of various types (multiple choice, true/false, '
       + 'fill-in-blanks, matching, sequencing, categorization). SPOKEN-FIRST: with a microphone the Live tutor '
       + 'runs it as a live-judged Direct Instruction check — it reads each question aloud (and the choices, where '
-      + 'there are choices) and the student ANSWERS OUT LOUD; the tutor judges the audio and its own affirmation '
-      + 'advances. Symbol/KaTeX choices are answered by touching the one you mean. Without a microphone it is a '
-      + 'tap surface, one problem at a time.',
+      + 'there are choices) and the student ANSWERS OUT LOUD; the answer is judged from the audio and a credited '
+      + 'answer advances. Symbol/KaTeX choices are answered by touching the one you mean. A set that cannot be run '
+      + 'spoken is a tap surface, one problem at a time.',
     constraints: 'Typically one per exhibit, at the end. The spoken form requires the live tutor and a microphone.',
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken', 'tap'], role: 'assess', minutes: 4, maxPerLesson: 1 },
     // ── DI MODALITY (2026-08-18, qa/di/BACKLOG.md item 23 slice 2). The
@@ -161,6 +161,17 @@ export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8',
+        'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      guidance: 'The closing check of the lesson, one question at a time. Read every question aloud, and every choice where '
+        + 'the ask names them: the learner answers out loud with true or false, one choice (its words, the part that tells '
+        + 'it apart, its picture, or its place in the list), a partner, a group, the missing word, or what a card shows or '
+        + 'how many there are. A choice set in symbols is answered by touching it, and "touch the sign" asks by touching '
+        + 'the sign in the number sentence; the activity checks both. Before an attempt never say the answer, which choice '
+        + 'it is, or rule a choice out. Saying the statement, the item being sorted or matched, or a word-bank word back is '
+        + 'not an answer. For kindergarten, read every choice aloud each time. You cannot point at or highlight anything.',
+    },
     evalModes: [
       {
         evalMode: 'recall',

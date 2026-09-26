@@ -831,7 +831,7 @@ const NO_FLOOR_HANDBACK =
  */
 /** What the blind tutor is told a LEGACY item shows — the planned evidence
  *  (a number line, a picture key). Empty when the problem is text-only. */
-const evidenceDescription = (item: KnowledgeCheckItem): string => {
+export const evidenceDescription = (item: KnowledgeCheckItem): string => {
   const parts: string[] = [];
   if (item.inset) parts.push(`The screen shows this evidence: ${serializeInsetForPrompt(item.inset)}.`);
   if (item.visual?.type === 'object-collection') {

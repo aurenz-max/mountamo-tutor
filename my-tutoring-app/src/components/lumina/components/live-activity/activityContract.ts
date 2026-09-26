@@ -58,6 +58,7 @@ import { sentenceAnalyzerLiveDomain } from './adapters/sentenceAnalyzerLive';
 import { causeEffectChainLiveDomain } from './adapters/causeEffectChainLive';
 import { eraExplorerLiveDomain } from './adapters/eraExplorerLive';
 import { periodicTableLiveDomain } from './adapters/periodicTableLive';
+import { knowledgeCheckLiveDomain } from './adapters/knowledgeCheckLive';
 import { readAloudStudioLiveDomain } from './adapters/readAloudStudioLive';
 import { oralSentenceStudioLiveDomain } from './adapters/oralSentenceStudioLive';
 import { statesOfMatterLiveDomain } from './adapters/statesOfMatterLive';
@@ -134,6 +135,7 @@ export const LIVE_ADAPTERS = {
   'cause-effect-chain': workspaceAdapter('cause-effect-chain', causeEffectChainLiveDomain),
   'era-explorer': workspaceAdapter('era-explorer', eraExplorerLiveDomain),
   'periodic-table': workspaceAdapter('periodic-table', periodicTableLiveDomain),
+  'knowledge-check': workspaceAdapter('knowledge-check', knowledgeCheckLiveDomain),
   'read-aloud-studio': workspaceAdapter('read-aloud-studio', readAloudStudioLiveDomain),
   'oral-sentence-studio': workspaceAdapter('oral-sentence-studio', oralSentenceStudioLiveDomain),
   'states-of-matter': workspaceAdapter('states-of-matter', statesOfMatterLiveDomain),

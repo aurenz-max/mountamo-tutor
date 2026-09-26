@@ -250,3 +250,17 @@ problem needs a picture.
   **Owed:** browser walk of the three renderers + `point_to` gesture on the judged surface
   (HUMAN-CHECKS), headless `--di` drive of a production set, P4 kinds (`picture-scene`,
   `spoken-cue`, `read_it`, `sort_one`, `which_reason`), P5 journey adapter + β per kind.
+- 2026-09-26 — **Workspace rollout C8: the judged surface runs only on the teaching workspace.**
+  Runner-era wording re-based, not forked: "its own affirmation is the advance" protected one
+  progression owner and no unearned credit; on the workspace the observer's committed outcome
+  advances and JEV refuses unearned credit. The judging contracts' accepted short forms and
+  signature misses moved into each item's `expectedAnswer` (`knowledgeCheckWorkspace.ts`);
+  `choice_tap` and `point_to` are checked in code and publish no key. **R7/R8 unchanged:** the
+  per-problem bridges still submit `${instanceId}::pN` (workspace test: three problems, three
+  submissions). **R2:** the K read-aloud of the question and every choice is now a guidance and
+  scene-fact instruction to the tutor. **Fork:** a set whose every problem yields an item binds
+  the workspace (the adapter's `validate` mirrors `judgedViable`); any other set stays
+  `KnowledgeCheckTapFlow`. The render-time microphone probe is gone (the runtime owns the mic), so
+  a device without `getUserMedia` no longer falls back to the tap flow. The "Say that again"
+  button and mic panel are gone. Smoke: merged three-problem K set `--audio` PASS. Report:
+  `qa/tutor-reports/workspace-rollout-C8-2026-09-26.md`.

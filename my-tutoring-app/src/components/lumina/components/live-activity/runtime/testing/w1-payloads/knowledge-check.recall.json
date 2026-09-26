@@ -1,0 +1,107 @@
+{
+ "source": "qa/tutor-reports/knowledge-check-runtime-recall-payload-2026-09-26.json",
+ "primitiveId": "knowledge-check",
+ "evalMode": "recall",
+ "data": {
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "id": "mc_1_0",
+    "difficulty": "easy",
+    "gradeLevel": "kindergarten",
+    "question": "What is the number of stars: ⭐⭐⭐⭐⭐?",
+    "options": [
+     {
+      "id": "A",
+      "text": "4",
+      "emoji": "4️⃣"
+     },
+     {
+      "id": "B",
+      "text": "5",
+      "emoji": "5️⃣"
+     },
+     {
+      "id": "C",
+      "text": "6",
+      "emoji": "6️⃣"
+     }
+    ],
+    "correctOptionId": "B",
+    "rationale": "When we count each star one at a time, we say one, two, three, four, five. The last number counted tells us the total amount. Therefore, there are 5 stars.",
+    "teachingNote": "Encourage students to point to each star sticker with their finger as they count aloud to reinforce one-to-one correspondence.",
+    "successCriteria": [
+     "Count a collection of up to 5 objects with one-to-one correspondence.",
+     "Recognize and select the numeral that matches the counted quantity."
+    ],
+    "subject": "MATHEMATICS"
+   },
+   {
+    "type": "multiple_choice",
+    "id": "mc_1_1",
+    "difficulty": "easy",
+    "gradeLevel": "kindergarten",
+    "question": "What helps a plant grow big and strong?",
+    "options": [
+     {
+      "id": "A",
+      "text": "Sweet candy",
+      "emoji": "🍬"
+     },
+     {
+      "id": "B",
+      "text": "Warm sunshine",
+      "emoji": "☀️"
+     },
+     {
+      "id": "C",
+      "text": "Toy car",
+      "emoji": "🚗"
+     }
+    ],
+    "correctOptionId": "B",
+    "rationale": "Plants need sunshine and water to make food and grow healthy. Candy and toys cannot help living plants grow. Giving a plant sunlight keeps its leaves green and strong!",
+    "teachingNote": "Remind students that while animals and humans eat food, plants need natural sunlight and water to stay alive.",
+    "successCriteria": [
+     "Identify sunlight as a basic need for plants to grow."
+    ],
+    "subject": "SCIENCE"
+   },
+   {
+    "type": "multiple_choice",
+    "id": "mc_1_2",
+    "difficulty": "easy",
+    "gradeLevel": "kindergarten",
+    "question": "Which farm animal says moo?",
+    "options": [
+     {
+      "id": "A",
+      "text": "Pig",
+      "emoji": "🐷"
+     },
+     {
+      "id": "B",
+      "text": "Cow",
+      "emoji": "🐮"
+     },
+     {
+      "id": "C",
+      "text": "Duck",
+      "emoji": "🦆"
+     }
+    ],
+    "correctOptionId": "B",
+    "rationale": "A cow makes a loud moo sound on the farm. Pigs make an oink sound, and ducks make a quack sound. That means the cow is the animal that says moo!",
+    "teachingNote": "Have students practice imitating different animal sounds aloud to build strong auditory connections to farm animals.",
+    "successCriteria": [
+     "Identify the sound made by a cow",
+     "Distinguish between common farm animal sounds"
+    ],
+    "subject": "SCIENCE"
+   }
+  ],
+  "problemType": "orchestrated",
+  "topic": "Counting objects to 10",
+  "gradeContext": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+ }
+}

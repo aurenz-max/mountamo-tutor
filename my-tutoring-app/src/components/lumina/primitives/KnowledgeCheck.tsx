@@ -1,22 +1,21 @@
 'use client';
 
 /**
- * KnowledgeCheck — DI modality (qa/di/BACKLOG.md item 23 slice 2). The Live
- * tutor owns the clock: it asks the closing questions of the lesson, waits,
- * judges the child's answer from the audio in-band, corrects contrastively,
- * and its own affirmation is the advance. In the judged surface there is no
- * advance timer, no Next button, no Verify, no push-to-talk mic, and no
- * printed answer anywhere before the tutor's affirmation.
+ * KnowledgeCheck — the judged surface runs only on the shared tutor/JEV teaching
+ * workspace (workspace rollout C8; the scripted runner was retired, LA-14, user
+ * ruling 09-23: one path). The tutor reads the closing questions of the lesson,
+ * the observer judges each spoken answer, the activity checks each touch, and
+ * the runtime owns progression. There is no advance timer, no Next button, no
+ * Verify, no mic panel, and no printed answer anywhere before credit. An unbound
+ * mount shows the shared "needs the tutor" card.
  *
  * THE FORK (all-or-nothing). Knowledge-check completion is gated per problem
  * (`${instanceId}::pN` — KindergartenStage counts them), so a judged session
  * that dropped one problem would strand the whole check. The build is
  * therefore all-or-nothing: if every problem in the set yields at least one
- * judged item AND the mic pipeline exists, the judged surface renders;
- * otherwise the whole set renders as the tap surface
- * (`KnowledgeCheckTapFlow`) — the DI-off experience, including the slice-1
- * categorization microstep. Never both: a tap-answerable problem beside a
- * live judged mic is the voice-mode fork this family deletes.
+ * judged item, the judged surface renders; otherwise the whole set renders as
+ * the tap surface (`KnowledgeCheckTapFlow`), including the slice-1
+ * categorization microstep. Never both.
  *
  * WHAT THE JUDGED SURFACE REPLACES, per problem type — the answer-material
  * fork, gates and every spoken line live in `knowledgeCheckScript.ts`
@@ -25,7 +24,7 @@
  *    "true"/"false" (or "yes"/"no") and the tutor judges it.
  *  - multiple_choice: sayable options are a spoken menu (`closed_set_choice`
  *    — the child says which one); KaTeX/symbol draws are an honest POINT
- *    (tap), the one gesture in this pack.
+ *    (tap), checked by the activity.
  *  - fill_in_blanks: the child SAYS the missing word (the ruled
  *    letter-spotter case); the word bank stays on screen as the closed set.
  *  - matching: one ask per pair over a bank that never shrinks on screen; at
@@ -34,30 +33,31 @@
  *    in?" one item at a time.
  *
  * EVALUATION: one submission per PROBLEM (R7/R8), through hidden per-problem
- * bridges that each own a `usePrimitiveEvaluation` — the judged run's item
+ * bridges that each own a `usePrimitiveEvaluation` — the workspace's item
  * outcomes aggregate onto the same `::pN` identities the tap surface uses,
  * so KindergartenStage and per-objective attribution see no difference.
+ *
+ * Asks and build gates live in `knowledgeCheckScript.ts`; the assignment and
+ * scene the tutor receives live in `knowledgeCheckWorkspace.ts`.
  *
  * The summary is the family's (PhaseSummaryPanel): `solved` is not `solved
  * alone` — corrections show, honest-completion ruling.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { KnowledgeCheckData, ProblemData } from '../types';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../evaluation';
 import type { KnowledgeCheckJudgedMetrics } from '../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../hooks/useJudgedScriptRunner';
+import type { TeachingWorkspace } from '../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../components/live-activity/runtime/withTeachingWorkspace';
+import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../components/live-activity/runtime/useWorkspaceRunner';
 import { usePipSurface, usePipTargets } from '../pip/PipSurfaceContext';
 import { knowledgeCheckPipPose } from '../pip/knowledgeCheckPipPose';
-import type { JudgedScriptPack } from '../hooks/judgedScriptContract';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../hooks/usePhaseResults';
 import {
   LuminaChallengeCounter,
@@ -70,13 +70,10 @@ import { InsetRenderer, NumberSentenceTokens } from './problem-primitives/insets
 import { ObjectCollection, ComparisonPanel } from './visual-primitives';
 import type { VisualObjectCollection, VisualComparisonData } from '../types';
 import {
-  itemsFromProblems,
-  knowledgeCheckPackBase,
-  tapVerdictCue,
   correctOptionText,
-  stimulusDescription,
   type KnowledgeCheckItem,
 } from './knowledgeCheckScript';
+import { knowledgeCheckAssignment, knowledgeCheckItems, knowledgeCheckScene } from './knowledgeCheckWorkspace';
 
 interface KnowledgeCheckProps {
   data: KnowledgeCheckData | {
@@ -88,6 +85,10 @@ interface KnowledgeCheckProps {
     exhibitId?: string;
     onEvaluationSubmit?: (result: any) => void;
   };
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
+  className?: string;
 }
 
 function isLegacyKnowledgeCheck(data: any): data is KnowledgeCheckData {
@@ -155,18 +156,26 @@ const ProblemEvaluationBridge: React.FC<{
 
 // ─── The judged surface ──────────────────────────────────────────────────────
 
-const KnowledgeCheckJudged: React.FC<{
+interface JudgedProps {
   problems: ProblemData[];
   items: KnowledgeCheckItem[];
   instanceId: string;
+  objectiveId?: string;
   exhibitId?: string;
   onEvaluationSubmit?: (result: any) => void;
-}> = ({ problems, items, instanceId, exhibitId, onEvaluationSubmit }) => {
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
+  className?: string;
+}
+
+const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
+  problems, items, instanceId, objectiveId, exhibitId, onEvaluationSubmit, runtimePlanItemId, runtimeEvalMode,
+}) => {
   const preReader = useMemo(
     () => problems.some((p) => isPreReaderGrade((p as any).gradeLevel)),
     [problems],
   );
-  const gradeLevel = (problems[0] as any)?.gradeLevel || 'elementary';
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   // ── Per-problem submission bridges ────────────────────────────────────────
   const bridgesRef = useRef(new Map<number, BridgeSubmit>());
@@ -176,7 +185,7 @@ const KnowledgeCheckJudged: React.FC<{
 
   const [finished, setFinished] = useState(false);
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const handleFinished = (summary: TeachingEvaluationResult) => {
     const itemById = new Map(items.map((item) => [item.id, item]));
     const byProblem = new Map<number, typeof summary.outcomes>();
     for (const outcome of summary.outcomes) {
@@ -214,13 +223,15 @@ const KnowledgeCheckJudged: React.FC<{
         accuracy,
         metrics,
         { itemResults: outcomes,
-          learningResponses: (summary.learningResponses ?? []).filter((r) => itemById.get(r.itemId)?.problemIndex === index) },
+          learningResponses: summary.learningResponses.filter((r) => itemById.get(r.itemId)?.problemIndex === index),
+          teachingAttempts: summary.teachingAttempts.filter((a) => itemById.get(a.itemId)?.problemIndex === index),
+          assistanceProvenance: summary.assistanceProvenance },
         undefined,
         attachEvidence ? summary.diagnosisEvidence : undefined,
       );
     });
     setFinished(true);
-  }, [items, problems]);
+  };
 
   // ── Stage-payload state (the runner owns progression; this is the page) ───
   /** Post-answer only (answer-leak rule). Keyed to the AFFIRMED item so the
@@ -230,10 +241,8 @@ const KnowledgeCheckJudged: React.FC<{
   /** Sort items the tutor has AFFIRMED into their group — the microstep's
    *  board building up. Files only after the verdict, never before. */
   const [filed, setFiled] = useState<Record<string, { focus: string; group: string; problemIndex: number }>>({});
-  /** choice_tap: which option the child committed (pre-verdict selection). */
+  /** choice_tap / point_to: which option or sign the child committed (pre-verdict selection). */
   const [tappedId, setTappedId] = useState<string | null>(null);
-  /** The same commit, for the attempt observation: the pack closes over refs, not render state. */
-  const tappedIdRef = useRef<string | null>(null);
 
   const revealTextFor = (item: KnowledgeCheckItem): string => {
     switch (item.kind) {
@@ -246,48 +255,16 @@ const KnowledgeCheckJudged: React.FC<{
     }
   };
 
-  // ── The pack — everything the TUTOR is told lives in the shared cue
-  //    surface (knowledgeCheckScript.ts), which the DI drive harness reads
-  //    too. Only what the SCREEN owns stays here.
-  const pack = useMemo<JudgedScriptPack<KnowledgeCheckItem>>(() => ({
-    ...knowledgeCheckPackBase(items),
-    statusLines: {
-      ready: (item) => item.answerKind === 'gesture'
-        ? 'Listen, then touch the one you pick.'
-        : 'Listen, then say your answer out loud.',
-      retry: (item) => item.answerKind === 'gesture'
-        ? 'Have another look — touch the one you pick.'
-        : 'Have another go — say your answer.',
-      noVerdict: () => 'One more time — say it out loud.',
-      affirmedNext: 'Yes! Next question.',
-      done: 'Great thinking today!',
-    },
-    // One factual record per attempt, right or corrected: what the screen shows, the prompt and its options,
-    // and what was heard or touched (the tap is read before the retry clears it). Never the verdict.
-    observation: (item, { heard }) => {
-      const options = item.options?.length ? ` Options: ${item.options.map((o) => o.text).join(', ')}.`
-        : item.wordBank?.length ? ` Word bank: ${item.wordBank.join(', ')}.` : '';
-      let observed = heard ? `Heard "${heard}".` : 'No transcript was captured.';
-      if (item.answerKind === 'gesture') {
-        const id = tappedIdRef.current;
-        const touched = item.stimulus?.insetType === 'number-sentence' && item.kind === 'point_to'
-          ? item.stimulus.tokens.find((t) => t.id === id)?.text
-          : item.options?.find((o) => o.id === id)?.text;
-        observed = touched ? `Touched "${touched}".` : 'Touched a choice; which one was not recorded.';
-      }
-      return {
-        challenge: `${item.kind}: ${stimulusDescription(item)}${item.prompt}${item.focusText ? ` (${item.focusText})` : ''}${options}`,
-        expected: revealTextFor(item),
-        observed,
-      };
-    },
-  }), [items]);
-
-  const runner = useJudgedScriptRunner<KnowledgeCheckItem>({
-    pack,
+  const runner = useWorkspaceRunner<KnowledgeCheckItem>({
+    primitiveId: 'knowledge-check',
+    assignment: knowledgeCheckAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || 'mixed',
     instanceId,
-    gradeLevel,
-    exhibitId,
     onFinished: handleFinished,
     onAffirmed: (item) => {
       setReveal({ itemId: item.id, text: revealTextFor(item) });
@@ -312,6 +289,18 @@ const KnowledgeCheckJudged: React.FC<{
       pip.clear();
     },
   });
+  // The live host has no evaluation provider, so `onFinished` (and `finished`) never fire there.
+  const showSummary = finished || !!runner.practiceSummary;
+
+  // What the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation; every item is answerable once it opens.
+  useLayoutEffect(() => {
+    const item = runner.currentItem;
+    if (!item) return;
+    workspace.current = { ...knowledgeCheckScene(item, preReader), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
 
   const currentItem = runner.currentItem;
 
@@ -320,13 +309,13 @@ const KnowledgeCheckJudged: React.FC<{
   // own tap; Pip never answers, taps, or advances.
   const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
   const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || finished) return null;
+    if (!pip.dock.current || !currentItem || showSummary) return null;
     const targets = pip.targets(undefined, (id) => (id === 'question' ? 'The question' : 'A choice'));
     const pose = knowledgeCheckPipPose({
       gesture: currentItem.answerKind === 'gesture',
       running: runner.running, preparing: runner.preparing,
       currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      judging: false, tutorSpeaking: runner.tutorSpeaking,
       cueMatchesItem: runner.cuedItemId === currentItem.id,
       visibleIds: targets.map((target) => target.id),
       lastTouchedId: pip.lastTouchedId,
@@ -334,14 +323,14 @@ const KnowledgeCheckJudged: React.FC<{
     return { instanceId: instanceId, scopeId: currentItem.id, label: 'Knowledge check', dock: pip.dock.current, targets, pose };
   });
 
-  const handleTapChoice = (item: KnowledgeCheckItem, optionId: string, index: number) => {
+  const handleTapChoice = (item: KnowledgeCheckItem, optionId: string) => {
     if (!runner.canAttempt || item.answerKind !== 'gesture') return;
     if (runner.isAwaitingGesture()) return;
     pip.look(`option-${optionId}`);
     setTappedId(optionId);
-    tappedIdRef.current = optionId;
-    // The match is CODE-COMPUTED; the cue tells the tutor which line to say.
-    runner.submitGestureAttempt(tapVerdictCue(item, index));
+    // The match is CODE-COMPUTED.
+    const text = item.options?.find((o) => o.id === optionId)?.text ?? optionId;
+    commitGesture(runner, { response: `Touched "${text}".`, correct: optionId === item.correctOptionId, cue: () => '' });
   };
 
   /** point_to: the child touched a token of the printed number sentence. */
@@ -349,22 +338,21 @@ const KnowledgeCheckJudged: React.FC<{
     if (!runner.canAttempt || item.kind !== 'point_to') return;
     if (runner.isAwaitingGesture()) return;
     if (item.stimulus?.insetType !== 'number-sentence') return;
-    const index = item.stimulus.tokens.findIndex((t) => t.id === tokenId);
-    if (index < 0) return;
+    const token = item.stimulus.tokens.find((t) => t.id === tokenId);
+    if (!token) return;
     pip.look('question');
     setTappedId(tokenId);
-    tappedIdRef.current = tokenId;
-    runner.submitGestureAttempt(tapVerdictCue(item, index));
+    commitGesture(runner, { response: `Touched "${token.text}".`, correct: tokenId === item.targetTokenId, cue: () => '' });
   };
 
   // ── Phase summary — `solved` is not `solved alone` ────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!finished) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => ({
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => ({
       label: item.focusText ? `${item.focusText} — ${item.prompt}` : item.prompt,
       icon: ITEM_ICONS[item.kind],
     }));
-  }, [finished, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
   // ── Stage renderers ───────────────────────────────────────────────────────
 
@@ -400,7 +388,8 @@ const KnowledgeCheckJudged: React.FC<{
         data-pip-object={`option-${option.id}`}
         type="button"
         disabled={!runner.canAttempt}
-        onClick={() => handleTapChoice(item, option.id, index)}
+        aria-label={option.text}
+        onClick={() => handleTapChoice(item, option.id)}
         className={`${surface} ${runner.canAttempt ? 'cursor-pointer hover:border-white/25' : 'opacity-80'}`}
       >
         {inner}
@@ -568,7 +557,7 @@ const KnowledgeCheckJudged: React.FC<{
             <span className="text-xs font-mono uppercase tracking-widest text-blue-400">
               Knowledge Check — Out Loud
             </span>
-            {items.length > 1 && !finished && (
+            {items.length > 1 && !showSummary && (
               <LuminaChallengeCounter
                 variant="dots"
                 current={Math.min(runner.currentIndex + 1, items.length)}
@@ -581,30 +570,16 @@ const KnowledgeCheckJudged: React.FC<{
         <div className="p-6 md:p-10 space-y-5">
           {/* Pip's dock sits above the question card, which it outlines as a
               region; the choices are below it. */}
-          {pipStore && !finished && <div ref={pip.dock} data-pip-dock={instanceId}
+          {pipStore && !showSummary && <div ref={pip.dock} data-pip-dock={instanceId}
             className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
-          {!finished && currentItem && renderStage(currentItem)}
+          {!showSummary && currentItem && renderStage(currentItem)}
 
-          {!finished && (
-            <JudgedMicPanel run={runner} gestureLabel="Your turn — touch the one you pick">
-              <button
-                onClick={runner.hearStimulus}
-                disabled={!runner.running}
-                className={`text-xs text-blue-300/80 underline underline-offset-4 disabled:opacity-30 ${
-                  runner.stimulusTapped ? 'opacity-50' : ''
-                }`}
-              >
-                Say that again
-              </button>
-            </JudgedMicPanel>
-          )}
-
-          {finished && phaseResults.length > 0 && (
+          {showSummary && (
             <PhaseSummaryPanel
               phases={phaseResults}
-              overallScore={runner.summary?.accuracy}
+              overallScore={runner.teachingResult?.accuracy}
               heading={preReader ? '🎉 You did it!' : '🎉 Knowledge check complete'}
-              celebrationMessage={`You answered ${runner.summary?.firstTryCount ?? 0} of ${items.length} on the first try.`}
+              celebrationMessage={`You answered ${runner.teachingResult?.firstTryCount ?? 0} of ${items.length} on the first try.`}
             />
           )}
         </div>
@@ -628,7 +603,10 @@ const KnowledgeCheckJudged: React.FC<{
 
 // ─── Entry: the fork ─────────────────────────────────────────────────────────
 
-export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
+/** The judged set runs only on the teaching workspace; an unbound mount shows the "needs the tutor" card. */
+const KnowledgeCheckBound = withWorkspaceOnly<JudgedProps>('knowledge-check', KnowledgeCheckJudged, () => 'Knowledge check');
+
+export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data, runtimePlanItemId, runtimeEvalMode, className }) => {
   const problems: ProblemData[] = useMemo(() => {
     if (isLegacyKnowledgeCheck(data)) {
       return [{
@@ -656,10 +634,11 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
     [data],
   );
   const exhibitId = 'exhibitId' in data ? data.exhibitId : undefined;
+  const objectiveId = 'objectiveId' in data ? data.objectiveId : undefined;
   const onEvaluationSubmit =
     'onEvaluationSubmit' in data ? data.onEvaluationSubmit : undefined;
 
-  const build = useMemo(() => itemsFromProblems(problems), [problems]);
+  const build = useMemo(() => knowledgeCheckItems({ problems }), [problems]);
 
   useEffect(() => {
     if (build.judgedViable && build.dropped > 0) {
@@ -670,22 +649,23 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
     }
   }, [build]);
 
-  // Same render-time probe JudgedMicPanel runs — a surface with no usable
-  // microphone renders the tap flow rather than a dead orb.
-  const micSupported =
-    typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
-
-  if (!build.judgedViable || !micSupported || problems.length === 0) {
+  if (!build.judgedViable || problems.length === 0) {
     return <KnowledgeCheckTapFlow data={data} />;
   }
 
   return (
-    <KnowledgeCheckJudged
+    <KnowledgeCheckBound
       problems={problems}
       items={build.items}
       instanceId={instanceId}
+      objectiveId={objectiveId}
       exhibitId={exhibitId}
       onEvaluationSubmit={onEvaluationSubmit}
+      runtimePlanItemId={runtimePlanItemId}
+      runtimeEvalMode={runtimeEvalMode}
+      className={className}
     />
   );
 };
+
+export default KnowledgeCheck;
