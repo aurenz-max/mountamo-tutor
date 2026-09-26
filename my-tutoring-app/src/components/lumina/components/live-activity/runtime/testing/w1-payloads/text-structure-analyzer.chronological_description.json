@@ -1,0 +1,101 @@
+{
+ "source": "qa/tutor-reports/text-structure-analyzer-runtime-chronological_description-payload-2026-09-26.json",
+ "primitiveId": "text-structure-analyzer",
+ "evalMode": "chronological_description",
+ "data": {
+  "title": "How a Seed Grows",
+  "gradeLevel": "4",
+  "passage": "First, a tiny seed is planted in the dark soil. Next, the warm rain makes the ground wet. After that, a little green shoot pushes up into the bright sun. Later, green leaves open wide to catch the golden light. Finally, tall stems reach high toward the sky.",
+  "structureType": "chronological",
+  "signalWords": [
+   {
+    "word": "First",
+    "startIndex": 0,
+    "endIndex": 5
+   },
+   {
+    "word": "Next",
+    "startIndex": 48,
+    "endIndex": 52
+   },
+   {
+    "word": "After",
+    "startIndex": 90,
+    "endIndex": 95
+   },
+   {
+    "word": "Later",
+    "startIndex": 154,
+    "endIndex": 159
+   },
+   {
+    "word": "Finally",
+    "startIndex": 211,
+    "endIndex": 218
+   }
+  ],
+  "structureOptions": [
+   {
+    "type": "chronological",
+    "label": "Time Order",
+    "description": "Tells events in the order they happen from start to finish"
+   },
+   {
+    "type": "description",
+    "label": "Description",
+    "description": "Tells about a topic by giving facts and details"
+   },
+   {
+    "type": "cause-effect",
+    "label": "Cause and Effect",
+    "description": "Explains why something happened and what happened as a result"
+   },
+   {
+    "type": "compare-contrast",
+    "label": "Compare and Contrast",
+    "description": "Shows how things are alike and how they are different"
+   }
+  ],
+  "templateRegions": [
+   {
+    "regionId": "step1",
+    "label": "Before"
+   },
+   {
+    "regionId": "step2",
+    "label": "Middle"
+   },
+   {
+    "regionId": "step3",
+    "label": "After"
+   }
+  ],
+  "keyIdeas": [
+   {
+    "ideaId": "idea1",
+    "text": "A tiny seed is placed deep in the dark soil.",
+    "correctRegionId": "step1"
+   },
+   {
+    "ideaId": "idea2",
+    "text": "Warm rain makes the dry ground very wet.",
+    "correctRegionId": "step1"
+   },
+   {
+    "ideaId": "idea3",
+    "text": "A little green shoot pushes up toward the sun.",
+    "correctRegionId": "step2"
+   },
+   {
+    "ideaId": "idea4",
+    "text": "Green leaves open wide to catch the golden light.",
+    "correctRegionId": "step2"
+   },
+   {
+    "ideaId": "idea5",
+    "text": "Tall stems reach high toward the open sky.",
+    "correctRegionId": "step3"
+   }
+  ]
+ }
+}

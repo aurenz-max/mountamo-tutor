@@ -98,6 +98,7 @@ import { matterItems } from './adapters/matterExplorerLive';
 import { matterJourneyAnswers } from '../../primitives/visual-primitives/chemistry/matterExplorerWorkspace';
 import { itemsFromPayload as genreItems } from '../../primitives/visual-primitives/literacy/genreExplorerScript';
 import { genreJourneyAnswers } from '../../primitives/visual-primitives/literacy/genreExplorerWorkspace';
+import { textStructureItems, textStructureJourneyAnswers } from '../../primitives/visual-primitives/literacy/textStructureAnalyzerWorkspace';
 import { statesItems } from './adapters/statesOfMatterLive';
 import { statesJourneyAnswers } from '../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
 import { solarItems } from './adapters/solarSystemExplorerLive';
@@ -1481,6 +1482,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const item = genreItems(ctx.data as never).items.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current genre-explorer item');
       const answers = genreJourneyAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'text-structure-analyzer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/TextStructureAnalyzer.tsx',
+    instanceId: 'text-structure-analyzer',
+    defaults: { grade: 'Grade 4', mode: 'cause_effect', di: false, topic: 'Why rivers flood' },
+    leakTokens: ['TSA_ITEM', 'TSA_MOVE', 'TSA_COMPLETE', 'TSA_HEAR'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one spoken answer: the linking word, the structure, or the part an idea goes in.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = textStructureItems(ctx.data as never, 'text-structure-analyzer').items.find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current text-structure-analyzer item');
+      const answers = textStructureJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },

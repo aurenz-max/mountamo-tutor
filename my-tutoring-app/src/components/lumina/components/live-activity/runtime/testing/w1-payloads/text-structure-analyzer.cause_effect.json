@@ -1,0 +1,92 @@
+{
+ "source": "qa/tutor-reports/text-structure-analyzer-runtime-cause_effect-payload-2026-09-26.json",
+ "primitiveId": "text-structure-analyzer",
+ "evalMode": "cause_effect",
+ "data": {
+  "title": "Why Rivers Flood",
+  "gradeLevel": "4",
+  "passage": "Heavy spring rains fall on the mountains, so melting snow fills the riverbeds. This fast rushing water overflows the banks because the soil is already soaked with water. As a result, muddy water spreads across nearby farms. People build tall walls of sandbags to protect their homes. Therefore, communities stay safe during heavy storms.",
+  "structureType": "cause-effect",
+  "signalWords": [
+   {
+    "word": "so",
+    "startIndex": 42,
+    "endIndex": 44
+   },
+   {
+    "word": "because",
+    "startIndex": 123,
+    "endIndex": 130
+   },
+   {
+    "word": "As a result",
+    "startIndex": 170,
+    "endIndex": 181
+   },
+   {
+    "word": "Therefore",
+    "startIndex": 284,
+    "endIndex": 293
+   }
+  ],
+  "structureOptions": [
+   {
+    "type": "cause-effect",
+    "label": "Cause and Effect",
+    "description": "Shows why something happens and what happens next."
+   },
+   {
+    "type": "chronological",
+    "label": "Time Order",
+    "description": "Tells events in the order that they happen."
+   },
+   {
+    "type": "description",
+    "label": "Description",
+    "description": "Gives details and facts about a main topic."
+   },
+   {
+    "type": "compare-contrast",
+    "label": "Compare and Contrast",
+    "description": "Shows how things are alike and different."
+   }
+  ],
+  "templateRegions": [
+   {
+    "regionId": "cause",
+    "label": "Cause"
+   },
+   {
+    "regionId": "effect",
+    "label": "Effect"
+   }
+  ],
+  "keyIdeas": [
+   {
+    "ideaId": "idea1",
+    "text": "Heavy spring rains fall on the mountains",
+    "correctRegionId": "cause"
+   },
+   {
+    "ideaId": "idea2",
+    "text": "Melting snow fills the riverbeds",
+    "correctRegionId": "effect"
+   },
+   {
+    "ideaId": "idea3",
+    "text": "Soil is already soaked with water",
+    "correctRegionId": "cause"
+   },
+   {
+    "ideaId": "idea4",
+    "text": "Muddy water spreads across nearby farms",
+    "correctRegionId": "effect"
+   },
+   {
+    "ideaId": "idea5",
+    "text": "Communities stay safe during heavy storms",
+    "correctRegionId": "effect"
+   }
+  ]
+ }
+}

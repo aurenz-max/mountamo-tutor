@@ -1,12 +1,11 @@
 'use client';
 
 /**
- * TextStructureAnalyzer — DI modality (EIGHTEENTH literacy port, 2026-08-16;
- * qa/di/BACKLOG.md item 22, port 1 of the closed-set literacy frontier). The
- * Live tutor owns the clock: it points at a sentence, asks ONCE, waits, judges
- * the child's spoken answer from the audio in-band, corrects contrastively, and
- * its OWN affirmation is the advance. There is no advance timer, no Next button,
- * no push-to-talk mic, and no answer on screen before the tutor affirms.
+ * TextStructureAnalyzer — runs only on the shared tutor/JEV teaching workspace
+ * (workspace rollout C7; the scripted runner was retired, LA-14, user ruling
+ * 09-23: one path). The observer judges each spoken answer and the runtime owns
+ * progression. There is no Next button, no mic panel, and no answer on screen
+ * before credit. An unbound mount shows the shared "needs the tutor" card.
  *
  * THE MODALITY, in one sitting:
  *
@@ -49,14 +48,13 @@
  *    not a harder one.
  *  - The `easy` worked anchor, shown pre-placed on its mat and excluded from the
  *    asked items — an exemplar is page material, not a question.
- *  - Tap-to-hear, which re-speaks the QUESTION and is never withdrawn.
+ *  - (Tap-to-hear is gone: with the tutor present, the learner asks it to repeat.)
  *
- * Cue lines, judging contracts and build gates live in
- * `textStructureAnalyzerScript.ts` (hand-authored, DISTAR). Nothing in this file
- * writes a spoken line.
+ * Asks and build gates live in `textStructureAnalyzerScript.ts`; the items,
+ * assignment and scene the tutor receives live in `textStructureAnalyzerWorkspace.ts`.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaBadge,
   LuminaCard,
@@ -69,30 +67,26 @@ import {
   LuminaReadAloudGlyph,
   type DropZoneState,
 } from '../../../ui';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { TextStructureAnalyzerMetrics } from '../../../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
-import { stableShuffle } from '../../../utils/choiceOrder';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import {
-  itemsFromPayload,
-  textStructureAnalyzerPackBase,
   wordBoundedIndexOf,
   type StructureTypeId,
   type TextStructureAction,
   type TextStructureItem,
   type TextStructureTier,
 } from './textStructureAnalyzerScript';
+import { textStructureAssignment, textStructureItems, textStructureScene } from './textStructureAnalyzerWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -169,6 +163,9 @@ export interface TextStructureAnalyzerData {
 interface TextStructureAnalyzerProps {
   data: TextStructureAnalyzerData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -192,7 +189,11 @@ const MAT_COLORS = ['text-violet-300', 'text-sky-300', 'text-emerald-300', 'text
 // Component
 // ============================================================================
 
-const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, className }) => {
+/** The catalog mode a structure belongs to, for a mount that did not pass its resolved mode. */
+const evalModeFor = (structure: StructureType): string =>
+  structure === 'chronological' || structure === 'description' ? 'chronological_description' : structure.replace('-', '_');
+
+const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const {
     title,
     gradeLevel = '4',
@@ -211,37 +212,15 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
 
   const stableInstanceIdRef = useRef(instanceId || `text-structure-analyzer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
-  /** Build gates drop what cannot be asked — a placeholder in a judged loop
-   *  becomes a spoken ask the tutor has to stand behind. */
-  const { items, sentences } = useMemo(() => {
-    const built = itemsFromPayload(data);
-    return {
-      ...built,
-      items: built.items.map((item) => {
-        if (item.action !== 'name-structure' || item.choices.length < 2) return item;
-        const ordered = stableShuffle(
-          item.choices.map((choice, index) => ({ choice, note: item.choiceNotes[index] ?? '' })),
-          `${resolvedInstanceId}|${item.id}|${item.choices.join('|')}`,
-        );
-        return {
-          ...item,
-          choices: ordered.map(({ choice }) => choice),
-          choiceNotes: ordered.map(({ note }) => note),
-        };
-      }),
-    };
-  }, [data, resolvedInstanceId]);
+  /** Build gates drop what cannot be asked; the structure menu takes its per-instance order. */
+  const { items, sentences } = useMemo(() => textStructureItems(data, resolvedInstanceId), [data, resolvedInstanceId]);
 
-  /**
-   * The affirmed item's reveal payload. Set on the affirm and rendered behind
-   * `runner.revealHeld` — NOT `currentSolved` and NOT `stage`, and deliberately
-   * never cleared in `onItemOpened` (18b): the runner opens the next item in the
-   * SAME dispatch as the affirmation, so both of the obvious gates are already
-   * false by render time and a payload cleared there paints on the last item and
-   * nowhere else.
-   */
+  /** The credited item's reveal payload, rendered behind `runner.revealHeld`. */
   const [reveal, setReveal] = useState<{ action: TextStructureAction; answer: string } | null>(null);
+  /** Items credited so far: the only route by which a linking word or a filed idea reaches the screen. */
+  const [solvedIds, setSolvedIds] = useState<ReadonlySet<string>>(() => new Set());
 
   // ── Evaluation ─────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<TextStructureAnalyzerMetrics>({
@@ -254,7 +233,7 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const solvedOf = (action: TextStructureAction) => {
       const ids = new Set(items.filter((i) => i.action === action).map((i) => i.id));
       return summary.outcomes.filter((o) => ids.has(o.id) && o.solved).length;
@@ -278,74 +257,62 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
       summary.passed,
       summary.accuracy,
       metrics,
-      { itemResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
+      { itemResults: summary.outcomes, learningResponses: summary.learningResponses,
+        teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items, structureType, evaluation]);
+  };
 
-  // ── The pack — wording lives in textStructureAnalyzerScript.ts ─────────────
-  const pack = useMemo<JudgedScriptPack<TextStructureItem>>(() => ({
-    ...textStructureAnalyzerPackBase(items),
-    statusLines: {
-      idle: 'Tap the microphone to start reading.',
-      ready: () => 'Read the passage — then say your answer out loud.',
-      retry: () => 'Have another go — say your answer out loud.',
-      noVerdict: () => 'One more time — say your answer out loud.',
-      done: 'Great reading today!',
-    },
-    // One record per attempt, right or corrected: the sentence, idea or passage (clipped to stay inside the
-    // evidence limits), the choices, and what was said. Never the verdict.
-    observation: (item, { heard: transcript }) => {
-      const heard = transcript?.trim() ?? '';
-      const choices = item.choices.length ? ` (choices: ${item.choices.join(', ')})` : '';
-      const challenge = item.action === 'find-signal'
-        ? `Read one sentence, then say the word that links the ideas: "${item.stimulusText}"`
-        : item.action === 'name-structure'
-          ? `Read the whole passage, then say how it is organised${choices}. Passage: "${passage.length > 1200 ? `${passage.slice(0, 1200)}…` : passage}"`
-          : `Say which part of the chart an idea belongs in${choices}: "${item.stimulusText}"`;
-      return {
-        challenge,
-        expected: `"${item.answer}" said out loud.`,
-        observed: heard ? `Said "${heard}".` : 'No transcript was captured.',
-      };
-    },
-  }), [items, passage]);
-
-  const runner = useJudgedScriptRunner<TextStructureItem>({
-    pack,
+  const runner = useWorkspaceRunner<TextStructureItem>({
+    primitiveId: 'text-structure-analyzer',
+    assignment: textStructureAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || evalModeFor(structureType),
     instanceId: resolvedInstanceId,
-    gradeLevel,
-    exhibitId,
-    onFinished: handleFinished,
-    onAffirmed: (item) => setReveal({ action: item.action, answer: item.answer }),
+    onFinished: finish,
+    onAffirmed: (item) => {
+      setReveal({ action: item.action, answer: item.answer });
+      setSolvedIds((prev) => new Set(prev).add(item.id));
+    },
   });
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
   const currentItem = runner.currentItem;
   const actionMeta = ACTION_META[currentItem?.action ?? 'find-signal'];
+
+  // What the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation; every item is answerable once it opens.
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    workspace.current = { ...textStructureScene(currentItem, passage), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
   // Pip: the passage is the question side. On a place-idea item the idea card
   // is already marked on screen, so Pip may point at it; the structure menu and
   // the mats are answers and are never targets.
   const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The passage', finished: evaluation.hasSubmitted,
+    run: runner, instanceId: resolvedInstanceId, label: 'The passage', finished: showSummary,
     cueId: currentItem?.action === 'place-idea' ? 'idea' : 'stimulus',
   });
 
-  /**
-   * The linking words this run has already earned, by sentence. Read off the
-   * runner's solved ledger rather than a local set, so the only thing that can
-   * light a word up in the passage is a tutor affirmation.
-   */
+  /** The linking words this run has already earned, by sentence: only a credit lights one up. */
   const affirmedWordBySentence = useMemo(() => {
     const map = new Map<number, string>();
     for (const item of items) {
-      if (item.action !== 'find-signal' || !runner.solvedIds.has(item.id)) continue;
+      if (item.action !== 'find-signal' || !solvedIds.has(item.id)) continue;
       map.set(item.sentenceIndex, item.answer);
     }
     return map;
-  }, [items, runner.solvedIds]);
+  }, [items, solvedIds]);
 
-  /** Ideas already filed on their mats — same rule, same ledger. */
+  /** Ideas already filed on their mats — same rule. */
   const filedByRegion = useMemo(() => {
     const map = new Map<string, string[]>();
     if (anchorIdeaId) {
@@ -354,15 +321,13 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
       if (anchor && label) map.set(label, [anchor.text]);
     }
     for (const item of items) {
-      if (item.action !== 'place-idea' || !runner.solvedIds.has(item.id)) continue;
+      if (item.action !== 'place-idea' || !solvedIds.has(item.id)) continue;
       map.set(item.answer, [...(map.get(item.answer) ?? []), item.stimulusText]);
     }
     return map;
-  }, [items, runner.solvedIds, anchorIdeaId, keyIdeas, templateRegions]);
+  }, [items, solvedIds, anchorIdeaId, keyIdeas, templateRegions]);
 
-  /** The choice the tutor is affirming right now, for the reveal ring. Guarded
-   *  on the ACTION: by render time the surface may already point at the next
-   *  step, and ringing one of its choices would be wrong. */
+  /** The choice just credited, for the reveal ring. Guarded on the ACTION. */
   const revealedChoice =
     runner.revealHeld && reveal && reveal.action === currentItem?.action ? reveal.answer : null;
 
@@ -373,13 +338,13 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => ({
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => ({
       label: ACTION_META[item.action].label,
       icon: ACTION_META[item.action].icon,
       accentColor: ACTION_META[item.action].accent,
     }));
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
   // ============================================================================
   // Render
@@ -502,7 +467,7 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
             <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
           </div>
           {/* NO STRUCTURE BADGE. The click era printed the answer here. */}
-          {!evaluation.hasSubmitted && (
+          {!showSummary && (
             <LuminaBadge accent={actionMeta.accent} className="text-xs">
               {actionMeta.icon} {actionMeta.label}
             </LuminaBadge>
@@ -511,7 +476,7 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex items-center justify-center gap-4">
               <LuminaChallengeCounter
@@ -519,21 +484,6 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
                 total={items.length}
                 variant="dots"
               />
-              {/* Tap-to-hear — the question again, never a hint ladder, and
-                  never withdrawn by band or tier. */}
-              <button
-                type="button"
-                onClick={runner.hearStimulus}
-                className={`
-                  flex h-11 w-11 items-center justify-center rounded-full
-                  bg-amber-500/15 border-2 border-amber-500/30
-                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
-                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
-                `}
-                aria-label="Hear the question again"
-              >
-                <span className="text-xl">🔁</span>
-              </button>
               <LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} />
             </div>
 
@@ -553,15 +503,13 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
               </div>
             )}
 
-            {/* Open for the whole run — no tutor-busy gate, no push-to-talk. */}
-            <JudgedMicPanel run={runner} />
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Text Structure Complete!"
             celebrationMessage="Great reading — you told me every answer out loud!"
@@ -571,5 +519,9 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
     </LuminaCard>
   );
 };
+
+/** Runs only on the teaching workspace; an unbound mount shows the "needs the tutor" card. */
+const TextStructureAnalyzer = withWorkspaceOnly<TextStructureAnalyzerProps>('text-structure-analyzer',
+  TextStructureAnalyzerSurface, (props) => props.data.title);
 
 export default TextStructureAnalyzer;

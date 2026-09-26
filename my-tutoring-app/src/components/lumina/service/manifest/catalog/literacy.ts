@@ -4293,7 +4293,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'passage and ANSWERS OUT LOUD three ways: naming the linking word in a sentence the tutor points them at, '
       + 'naming how the whole passage is organised (cause-effect, compare-contrast, problem-solution, time order or '
       + 'description) from a printed menu, and naming which part of a chart each key idea belongs in. The tutor judges '
-      + 'each spoken answer, corrects contrastively, and its own affirmation advances the lesson. Nothing is tapped, '
+      + 'each spoken answer and teaches after a miss; a credited answer moves the lesson on. Nothing is tapped, '
       + 'highlighted or dragged. REQUIRES A MICROPHONE. ESSENTIAL for grades 2-6 informational reading.',
     constraints:
       'REQUIRES A MICROPHONE — every answer is spoken; there is no tap, highlight, drag or button path. '
@@ -4346,6 +4346,18 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'problem_solution', label: 'Problem-Solution (Tier 3)', beta: 4.0, scaffoldingMode: 3, challengeTypes: ['problem-solution'], description: 'SAY the linking word, then NAME the problem-solution structure aloud — the hardest discrimination in the set, since cause-effect also means "this leads to that" — then SAY whether each idea is the Problem or a Solution.' },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'One printed passage the learner reads; every answer is said out loud. Three kinds of question: the linking '
+        + 'word in a numbered sentence, how the whole passage is organised from the printed menu, and which labelled part '
+        + 'of the chart an idea belongs in. Never read the passage or any sentence of it aloud: reading it is the skill, '
+        + 'and the linking word is in the sentence. Ask for "the word that links the ideas" in "sentence one", "sentence '
+        + 'two": in a time-order passage your own "first", "next", "then" or "last" can be the answer. You may say an idea '
+        + 'card. A word that '
+        + 'names a thing or an action is not a linking word; saying the idea back is not a part; a close structure is '
+        + 'wrong. Before an attempt never say the answer. Nothing on screen marks a linking word or a structure until '
+        + 'credit. You cannot point at or highlight the passage.',
+    },
     tutoring: {
       // ⚠️ `challengeType` IS THE STEP, NOT THE EVAL MODE. This primitive's eval
       // modes ARE the structure types, so pushing the mode would park the

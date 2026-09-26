@@ -1,0 +1,76 @@
+/**
+ * Text structure analyzer on the shared tutor/JEV teaching workspace, W1 minimal binding
+ * (qa/workspace-rollout/ROLLOUT.md, batch C7). Its only teaching path: the scripted
+ * runner was retired (LA-14, user ruling 09-23: one path).
+ *
+ * Pure: the component, the adapter and the journey read the same items, assignment and scene.
+ * Every item is one spoken answer computed by the build gates: the linking word of a numbered
+ * sentence (find-signal), how the whole passage is organised from the printed menu
+ * (name-structure), or which labelled part an idea belongs in (place-idea). The passage is
+ * never read aloud: decoding it is the skill, and a find-signal answer is a word in it.
+ */
+import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { textFacts } from '../../../components/live-activity/runtime/sceneFacts';
+import { stableShuffle } from '../../../utils/choiceOrder';
+import {
+  askFor,
+  itemsFromPayload,
+  textStructureAnalyzerHarnessAnswers,
+  type TextStructureItem,
+  type TextStructurePayloadLike,
+} from './textStructureAnalyzerScript';
+
+/** The build gates' items with the structure menu in its per-instance screen order. */
+export function textStructureItems(payload: TextStructurePayloadLike, instanceId: string) {
+  const built = itemsFromPayload(payload);
+  return {
+    ...built,
+    items: built.items.map((item) => {
+      if (item.action !== 'name-structure' || item.choices.length < 2) return item;
+      const ordered = stableShuffle(
+        item.choices.map((choice, index) => ({ choice, note: item.choiceNotes[index] ?? '' })),
+        `${instanceId}|${item.id}|${item.choices.join('|')}`,
+      );
+      return { ...item, choices: ordered.map(({ choice }) => choice), choiceNotes: ordered.map(({ note }) => note) };
+    }),
+  };
+}
+
+/** The pack's own ask, without its "Your turn." hand-over. */
+const ask = (item: TextStructureItem) => askFor(item).replace(/\s*Your turn\.\s*/, ' ').replace(/\s+/g, ' ').trim();
+
+export function textStructureAssignment(item: TextStructureItem): TeachingAssignment {
+  let expectedAnswer: string;
+  switch (item.action) {
+    case 'find-signal':
+      expectedAnswer = `${item.answer}, the linking word in "${item.stimulusText}". It may come inside a little phrase `
+        + `("the word ${item.answer}"). Any other word of that sentence is wrong: words that name things and actions are `
+        + 'not linking words.';
+      break;
+    case 'name-structure':
+      expectedAnswer = `${item.answer}. The part of the label that tells it apart from the other choices counts, and so does `
+        + `its place in the printed list. A different structure is wrong even when it is close (choices: ${item.choices.join(', ')}).`;
+      break;
+    case 'place-idea':
+      expectedAnswer = `${item.answer} (parts: ${item.choices.join(', ')}). "The ${item.answer}" or "it goes in ${item.answer}" `
+        + 'counts. Saying the idea back is not an answer.';
+      break;
+  }
+  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer };
+}
+
+export function textStructureScene(item: TextStructureItem, passage: string): WorkspaceScene {
+  const facts: Record<string, string> = { ...textFacts('passage', passage) };
+  if (item.action === 'find-signal' && item.showFocusSentence) facts.focus = 'The asked sentence is highlighted in the passage.';
+  if (item.action === 'name-structure') facts.menu = `Printed structures: ${item.choices.join(', ')}.`;
+  if (item.action === 'place-idea') facts.shown = `The idea card "${item.stimulusText}" above the labelled parts: ${item.choices.join(', ')}.`;
+  facts.constraints = 'The learner reads the passage and answers out loud; never read the passage or a sentence of it aloud. '
+    + 'Nothing on screen marks a linking word or a structure until the answer is credited.';
+  return { objects: [], facts };
+}
+
+/** The journey's answers: the code-computed answer, or a plain wrong one. */
+export function textStructureJourneyAnswers(item: TextStructureItem): { correct: string; plainWrong: string } {
+  const { correct, plainWrong } = textStructureAnalyzerHarnessAnswers(item);
+  return { correct, plainWrong };
+}
