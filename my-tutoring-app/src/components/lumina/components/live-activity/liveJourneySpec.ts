@@ -105,6 +105,7 @@ import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direc
 import { diSpokenPracticeHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeWorkspace';
 import { diDiceRollHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diDiceRollWorkspace';
 import { deductionItems, diDeductionHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diDeductionWorkspace';
+import { diWorkedProcedureHarnessAnswers, workedProcedureItems } from '../../primitives/visual-primitives/direct-instruction/diWorkedProcedureWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
 
 /** One real learner action for the mounted driver to perform. */
@@ -1029,6 +1030,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-deduction-object="rule"]' }, reward: { selector: '[data-deduction-credited]', kind: 'count' } },
+  },
+  'di-worked-procedure': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/direct-instruction/DiWorkedProcedure.tsx',
+    instanceId: 'procedure',
+    defaults: { grade: 'Grade 2', mode: 'subtract_regroup', di: false,
+      topic: 'Two-digit subtraction with regrouping' },
+    leakTokens: ['WP_ITEM', 'WP_MOVE_ON', 'WP_COMPLETE', 'WP_HEAR'],
+    prompts: WORKSPACE_PROMPTS,
+    // One spoken step per item: the pack's canonical move or number, or the column's signature miss.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = workedProcedureItems(ctx.data as never).find(x => x.id === ctx.itemId);
+      if (!c) throw new Error('No current di-worked-procedure step');
+      const answers = diWorkedProcedureHarnessAnswers(c);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-procedure-object="problem"]' }, reward: { selector: '[data-procedure-digit]', kind: 'count' } },
   },
   'spatial-scene': {
     execution: 'workspace',

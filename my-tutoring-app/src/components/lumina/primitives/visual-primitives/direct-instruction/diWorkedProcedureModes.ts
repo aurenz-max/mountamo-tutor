@@ -46,9 +46,10 @@ const instructionFor = (item: WorkedProcedureModePlanItem): string => {
   if (item.kind === 'subtract') {
     return `Subtract the ${item.place} column${digits}, then say the result.`;
   }
-  return item.regroup
-    ? `Look at the ${item.place} column${digits}. Say why you need to regroup and what the digits become.`
-    : `Look at the ${item.place} column${digits}. Say that you do not regroup, then subtract and say the result.`;
+  // Whether to regroup IS the decide step's skill, so the ask never says which: "Say why you need to regroup"
+  // and "Say that you do not regroup" each handed the child the decision (C6, 2026-09-26; the pack's design
+  // ask was "Tell me what you do").
+  return `Look at the ${item.place} column${digits} and say what you do there.`;
 };
 
 const actionStep: DiModeStepDefinition<WorkedProcedureModePlanItem> = {

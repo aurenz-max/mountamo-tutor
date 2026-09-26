@@ -1,0 +1,31 @@
+{
+ "source": "qa/tutor-reports/di-worked-procedure-runtime-subtract_no_regroup-payload-2026-09-26.json",
+ "primitiveId": "di-worked-procedure",
+ "evalMode": "subtract_no_regroup",
+ "data": {
+  "title": "Speak And Subtract",
+  "description": "Say each step out loud, one column at a time.",
+  "challengeType": "subtract_no_regroup",
+  "problems": [
+   {
+    "id": "wp-1-35-10",
+    "minuend": 35,
+    "subtrahend": 10,
+    "challengeType": "subtract_no_regroup"
+   },
+   {
+    "id": "wp-2-97-55",
+    "minuend": 97,
+    "subtrahend": 55,
+    "challengeType": "subtract_no_regroup"
+   },
+   {
+    "id": "wp-3-96-62",
+    "minuend": 96,
+    "subtrahend": 62,
+    "challengeType": "subtract_no_regroup"
+   }
+  ],
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

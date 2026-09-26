@@ -961,6 +961,15 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // skill's signature errors. β mirrors backend problem_type_registry.py.
     evalModes: DI_WORKED_PROCEDURE_EVAL_MODES,
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 2', 'Grade 3', 'Grade 4'],
+      guidance: 'One subtraction is printed in columns with the current column ringed. The child works it OUT LOUD one '
+        + 'step at a time: what they do in the ringed column, then after a regroup the difference. The page writes a '
+        + 'step only once it is credited, so the child reads the digits and says the numbers; the answer is never '
+        + 'printed. A regroup counts only with both new numbers; the upside-down column is the common miss. After a '
+        + 'lend the crossed-out digit is no longer the top. Never say a column\'s numbers before the child tries. You '
+        + 'cannot write on the problem or change it.',
+    },
     misconceptionScope: 'primitive',
     audioInput: { manual_activity: true },
     tutoring: {
