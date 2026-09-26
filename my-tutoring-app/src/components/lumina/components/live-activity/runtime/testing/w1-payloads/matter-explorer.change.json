@@ -1,0 +1,149 @@
+{
+ "source": "qa/tutor-reports/matter-explorer-runtime-change-payload-2026-09-26.json",
+ "primitiveId": "matter-explorer",
+ "evalMode": "change",
+ "data": {
+  "title": "Matter Explorer Adventure",
+  "description": "Discover solids, liquids, and gases all around our everyday world!",
+  "objects": [
+   {
+    "id": "obj-ice",
+    "name": "ice cube",
+    "state": "solid",
+    "properties": {
+     "color": "white",
+     "texture": "smooth",
+     "transparency": "translucent",
+     "flexibility": "rigid",
+     "shape": "keeps_shape",
+     "weight": "light"
+    },
+    "canChangeState": true,
+    "everydayChange": "melt",
+    "imagePrompt": "A single clear ice cube sitting on a wooden kitchen table.",
+    "stateChangeTemp": 0
+   },
+   {
+    "id": "obj-water",
+    "name": "water",
+    "state": "liquid",
+    "properties": {
+     "color": "clear",
+     "texture": "smooth",
+     "transparency": "transparent",
+     "flexibility": "flows",
+     "shape": "takes_container",
+     "weight": "medium"
+    },
+    "canChangeState": true,
+    "everydayChange": "freeze",
+    "imagePrompt": "A glass of fresh clear water on a sunny kitchen counter.",
+    "stateChangeTemp": 0
+   },
+   {
+    "id": "obj-air",
+    "name": "air",
+    "state": "gas",
+    "properties": {
+     "color": "invisible",
+     "texture": "soft",
+     "transparency": "transparent",
+     "flexibility": "flows",
+     "shape": "fills_space",
+     "weight": "light"
+    },
+    "canChangeState": false,
+    "imagePrompt": "A wide blue sky with gentle fluffy clouds on a bright sunny day.",
+    "stateChangeTemp": null
+   },
+   {
+    "id": "obj-rock",
+    "name": "rock",
+    "state": "solid",
+    "properties": {
+     "color": "gray",
+     "texture": "rough",
+     "transparency": "opaque",
+     "flexibility": "rigid",
+     "shape": "keeps_shape",
+     "weight": "heavy"
+    },
+    "canChangeState": false,
+    "everydayChange": "tear",
+    "imagePrompt": "A smooth gray river rock resting outdoors in green grass.",
+    "stateChangeTemp": null
+   },
+   {
+    "id": "obj-milk",
+    "name": "milk",
+    "state": "liquid",
+    "properties": {
+     "color": "white",
+     "texture": "smooth",
+     "transparency": "opaque",
+     "flexibility": "flows",
+     "shape": "takes_container",
+     "weight": "medium"
+    },
+    "canChangeState": true,
+    "everydayChange": "freeze",
+    "imagePrompt": "A glass cup filled with fresh white milk on a breakfast table.",
+    "stateChangeTemp": 0
+   },
+   {
+    "id": "obj-paper",
+    "name": "paper",
+    "state": "solid",
+    "properties": {
+     "color": "white",
+     "texture": "smooth",
+     "transparency": "opaque",
+     "flexibility": "flexible",
+     "shape": "keeps_shape",
+     "weight": "light"
+    },
+    "canChangeState": false,
+    "everydayChange": "burn",
+    "imagePrompt": "A blank white sheet of writing paper on a school desk.",
+    "stateChangeTemp": null
+   }
+  ],
+  "challenges": [
+   {
+    "id": "chal-1",
+    "type": "change",
+    "objectId": "obj-ice",
+    "instruction": "Say what happens when this melts on a warm day.",
+    "narration": "I wonder what happens to the ice cube when the warm sun shines on it all afternoon?"
+   },
+   {
+    "id": "chal-2",
+    "type": "change",
+    "objectId": "obj-water",
+    "instruction": "Say what happens when this turns into ice in the freezer.",
+    "narration": "I wonder what happens when we leave the water in the freezer overnight?"
+   },
+   {
+    "id": "chal-3",
+    "type": "change",
+    "objectId": "obj-paper",
+    "instruction": "Say what happens to this when it is burned in a campfire.",
+    "narration": "I wonder what happens to the paper if it gets too close to the camp fire flame?"
+   },
+   {
+    "id": "chal-4",
+    "type": "change",
+    "objectId": "obj-milk",
+    "instruction": "Say what happens to this when it freezes in the coldest part of the fridge.",
+    "narration": "I wonder what happens to the milk if it turns completely solid in the freezer?"
+   }
+  ],
+  "showOptions": {
+   "showPropertyPanel": true,
+   "showTemperatureSlider": true,
+   "showParticleView": false,
+   "showVennDiagram": false
+  },
+  "gradeBand": "K-1"
+ }
+}

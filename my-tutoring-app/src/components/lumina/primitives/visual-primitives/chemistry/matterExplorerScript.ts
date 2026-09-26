@@ -817,7 +817,7 @@ export const PROPERTY_RULE_CLAUSE =
 export const CHANGE_RULE_CLAUSE =
   'Some changes can go back the way they were, and some changes are for ever.';
 
-const modelLine = (item: MatterExplorerItem): string => {
+export const modelLine = (item: MatterExplorerItem): string => {
   switch (item.kind) {
     case 'name_state':
     case 'mystery_state':
@@ -859,7 +859,7 @@ export const namesTheStateMenu = (item: MatterExplorerItem): boolean =>
 
 export const STATE_MENU_CLAUSE = 'solid, liquid, or gas?';
 
-const askFor = (item: MatterExplorerItem): string => {
+export const askFor = (item: MatterExplorerItem): string => {
   switch (item.kind) {
     case 'name_state': {
       const head = `Think about the ${item.objectName}. Your turn. Say what state it is`;

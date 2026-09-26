@@ -210,6 +210,16 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'mystery', label: 'Mystery Material (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['mystery'], description: 'DI judged, spoken: the object\'s name is withheld and the child names its state from two or three observable clues. Shape and flow clues are refused in code - they would hand over the answer.' },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
+      guidance: 'One everyday object at a time; every answer is said out loud and computed from the object. Sort and mystery: '
+        + 'solid, liquid or gas (mystery hides the object and gives clues; never name the secret thing before credit). '
+        + 'Property: what it does in a cup, one of the three things the question offers. Change: whether what happened can go '
+        + 'back the way it was or is changed for ever. The learner does not read: say the question, the change and the clues '
+        + 'aloud. Naming the object back, or a state word on a property or change question, is not an answer. When the scene '
+        + 'has a rule you may say it before the ask; without one, add no choices beyond those in the question. Before an attempt '
+        + 'never say the answer. You cannot move or show the object.',
+    },
   },
   {
     id: 'reaction-lab',

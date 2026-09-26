@@ -1,17 +1,17 @@
 'use client';
 
 /**
- * MatterExplorer — TWO surfaces, forked on whether judged challenges arrived:
+ * MatterExplorer — TWO surfaces, forked on whether askable challenges arrived:
  *
- *  - DI JUDGED LOOP (challenges present — the normal path now): the Live tutor
- *    owns the clock. It asks ONCE, waits, judges the spoken answer in-band,
- *    corrects contrastively, and its own affirmation is the advance. No advance
- *    timer, no Next button, no Check button, no push-to-talk mic, no printed
- *    answer before the affirm.
+ *  - TEACHING WORKSPACE (challenges present): runs only on the shared tutor/JEV
+ *    teaching workspace (workspace rollout C5; the scripted runner was retired,
+ *    LA-14, user ruling 09-23: one path). The observer judges the spoken answer
+ *    and the runtime owns progression. No Next, no Check, no printed answer
+ *    before credit. An unbound mount shows the shared "needs the tutor" card.
  *
  *  - EXPLORATION (no challenges, or every one dropped by a build gate): the
  *    free object shelf with its property panel, tutor as a silent guide. The
- *    honest degrade, and a real reference surface.
+ *    honest degrade, and a real reference surface. Ungraded.
  *
  * ⭐ ALL FOUR EVAL MODES ARE SPOKEN. sort says the state, property says what
  * the thing does in a cup, change says whether an everyday change to the
@@ -45,19 +45,17 @@
  *    era substring-matched what they typed against an LLM's free-text guess.
  * All of them return in the REVEAL, behind `runner.revealHeld` (18b).
  *
- * Cue lines, judging contracts and build gates live in `matterExplorerScript.ts`
- * (hand-authored, DISTAR). Nothing in this file writes a spoken line.
+ * Asks and build gates live in `matterExplorerScript.ts`; the assignment and
+ * scene the tutor receives live in `matterExplorerWorkspace.ts`.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Volume2 } from 'lucide-react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { MatterExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { SoundManager } from '../../../utils/SoundManager';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -67,20 +65,17 @@ import {
   LuminaChallengeCounter,
   type LuminaAccent,
 } from '../../../ui';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import {
   CHANGE_CATALOG,
   CHANGE_OPTIONS,
   itemsFromChallenges,
-  matterExplorerPackBase,
   nameCarriesAnswer,
   PROPERTY_OPTIONS,
   type EverydayChange,
@@ -89,6 +84,7 @@ import {
   type MatterKind,
   type MatterTier,
 } from './matterExplorerScript';
+import { matterAssignment, matterScene } from './matterExplorerWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -157,6 +153,9 @@ export interface MatterExplorerData {
 export interface MatterExplorerProps {
   data: MatterExplorerData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -265,7 +264,7 @@ const ObjectStage: React.FC<{
 };
 
 // ============================================================================
-// Exploration fallback — no judged challenges arrived
+// Exploration fallback — no askable challenges arrived
 // ============================================================================
 
 const ExplorationShelf: React.FC<{ objects: MatterObject[]; onInspect: (o: MatterObject) => void }> = ({
@@ -287,54 +286,85 @@ const ExplorationShelf: React.FC<{ objects: MatterObject[]; onInspect: (o: Matte
   </div>
 );
 
-// ============================================================================
-// Component
-// ============================================================================
+/**
+ * Defect 11, the PIXELS half done in strings: the lesson title is printed
+ * over the bench and read by the child, so a generated "Sort the Liquids!"
+ * answers a sort item before the tutor has finished asking.
+ */
+const safeTitleOf = (title?: string) => (title && !nameCarriesAnswer(title) ? title : 'Matter Explorer');
 
-const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
-  const {
-    title,
-    objects = [],
-    challenges = [],
-    gradeBand = 'K-1',
-    supportTier,
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onEvaluationSubmit,
-  } = data;
-
-  const resolvedInstanceId = instanceId ?? 'matter-explorer';
-
-  /**
-   * Defect 11, the PIXELS half done in strings: the lesson title is printed
-   * over the bench and read by the child, so a generated "Sort the Liquids!"
-   * answers a sort item before the tutor has finished asking.
-   */
-  const safeTitle = useMemo(
-    () => (title && !nameCarriesAnswer(title) ? title : 'Matter Explorer'),
-    [title],
-  );
-
-  const band: MatterBand = gradeBand === '1-2' ? '1-2' : 'K-1';
-
-  const items = useMemo(
-    () => itemsFromChallenges(
-      challenges.map((c) => ({ id: c.id, challengeType: c.type, objectId: c.objectId })),
-      objects,
-      { band, tier: supportTier },
-    ),
-    [challenges, objects, band, supportTier],
-  );
-
-  /** The reveal payload (18b): set in `onAffirmed`, rendered behind
-   *  `runner.revealHeld`, deliberately NOT cleared in `onItemOpened` — the
-   *  runner fires both in ONE dispatch on the advance path, so clearing there
-   *  paints the reveal on the last item and nowhere else. */
-  const [reveal, setReveal] = useState<RevealPayload | null>(null);
+const MatterExplorerShelf: React.FC<MatterExplorerProps> = ({ data, className }) => {
+  const { objects = [], instanceId } = data;
+  const safeTitle = safeTitleOf(data.title);
   const [inspected, setInspected] = useState<MatterObject | null>(null);
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'matter-explorer',
+    instanceId: instanceId ?? 'matter-explorer',
+    // Exploration-only context. `state` and `properties.shape` are deliberately
+    // absent: nothing is being judged, but the tutor is still guiding a child
+    // through the same classification and must not hand it over.
+    primitiveData: {
+      title: safeTitle,
+      objects: objects.map((o) => o.name),
+      selectedObject: inspected?.name ?? null,
+    },
+  });
+
+  useEffect(() => {
+    if (!isConnected || !inspected) return;
+    sendText(
+      `[OBJECT_SELECTED] The learner is looking at "${inspected.name}". `
+      + 'Wonder aloud with them about what it is like to hold. Do not classify it for them.',
+      { silent: true },
+    );
+  }, [isConnected, inspected, sendText]);
+
+  return (
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
+        <LuminaCardTitle className="text-lg">{safeTitle}</LuminaCardTitle>
+      </LuminaCardHeader>
+      <LuminaCardContent className="space-y-4">
+        {objects.length === 0 ? (
+          <p className="text-slate-400 text-center">No objects available.</p>
+        ) : (
+          <>
+            <p className="text-slate-400 text-sm text-center">
+              Tap anything to look at it closely.
+            </p>
+            <ExplorationShelf objects={objects} onInspect={setInspected} />
+            {inspected && (
+              <div className="flex flex-col items-center gap-2 rounded-2xl border-2 border-white/10 bg-slate-900/40 px-5 py-4">
+                <span className="text-5xl leading-none" aria-hidden>{getObjectEmoji(inspected.name)}</span>
+                <span className="text-slate-200 font-medium">{inspected.name}</span>
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  <LuminaBadge accent="cyan" className="text-xs">{inspected.properties.color}</LuminaBadge>
+                  <LuminaBadge accent="cyan" className="text-xs">{inspected.properties.texture}</LuminaBadge>
+                  <LuminaBadge accent="cyan" className="text-xs">{inspected.properties.weight}</LuminaBadge>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </LuminaCardContent>
+    </LuminaCard>
+  );
+};
+
+// ============================================================================
+// The teaching surface
+// ============================================================================
+
+type SurfaceProps = MatterExplorerProps & { items: MatterExplorerItem[] };
+
+const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className, runtimePlanItemId, runtimeEvalMode }) => {
+  const { skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+  const resolvedInstanceId = data.instanceId ?? 'matter-explorer';
+  const safeTitle = safeTitleOf(data.title);
+  const workspace = useRef<TeachingWorkspace | null>(null);
+
+  /** The reveal payload (18b): set in `onAffirmed`, rendered behind `runner.revealHeld`. */
+  const [reveal, setReveal] = useState<RevealPayload | null>(null);
 
   const evaluation = usePrimitiveEvaluation<MatterExplorerMetrics>({
     primitiveType: 'matter-explorer',
@@ -346,7 +376,7 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const solvedIn = (predicate: (item: MatterExplorerItem) => boolean) =>
       items.filter((i) => predicate(i) && summary.outcomes.find((o) => o.id === i.id)?.solved).length;
     const totalIn = (predicate: (item: MatterExplorerItem) => boolean) =>
@@ -354,8 +384,7 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
 
     const metrics: MatterExplorerMetrics = {
       type: 'matter-explorer',
-      // One OBJECT is one item now, so these counts finally mean what they say:
-      // the click era wrote sortingCorrect = objects.length or 0.
+      // One OBJECT is one item, so these counts mean what they say.
       sortingCorrect: solvedIn((i) => i.challengeType === 'sort'),
       sortingTotal: totalIn((i) => i.challengeType === 'sort'),
       propertiesIdentified: solvedIn((i) => i.challengeType === 'property'),
@@ -377,62 +406,25 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
+      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items, evaluation]);
+  };
 
-  // ── The pack — wording lives in matterExplorerScript.ts ────────────────────
-  // The cue surface is SPREAD, not re-declared, so the DI drive harness reads
-  // the same bytes this component sends.
-  const pack = useMemo<JudgedScriptPack<MatterExplorerItem>>(() => ({
-    ...matterExplorerPackBase(items),
-    statusLines: {
-      ready: () => 'Listen, then say your answer.',
-      retry: () => 'Listen again — then say your answer.',
-      done: 'Great science today!',
-    },
-    // One record per attempt, right or corrected: the object, change or clues given, and what was said. Never the
-    // verdict, because the same text is kept for right answers.
-    observation: (item, { heard: transcript }) => {
-      const heard = (transcript ?? '').trim();
-      const observed = heard ? `Said "${heard}".` : 'No transcript was captured.';
-      switch (item.kind) {
-        case 'name_state':
-          return {
-            challenge: `Name the state of ${item.objectName}.`,
-            expected: `"${item.answerState}".`,
-            observed,
-          };
-        case 'name_property':
-          return {
-            challenge: `Say what ${item.objectName} does in a cup.`,
-            expected: `"${PROPERTY_OPTIONS[item.answerShape].phrase}".`,
-            observed,
-          };
-        case 'name_undo':
-          return {
-            challenge: `Say whether the change to ${item.objectName}${item.change ? ` (${item.change.replace(/_/g, ' ')})` : ''} can be undone.`,
-            expected: `"${item.answerUndo ? CHANGE_OPTIONS[item.answerUndo].phrase : ''}".`,
-            observed,
-          };
-        case 'mystery_state':
-          return {
-            challenge: `Name the state of a withheld object (${item.objectName}) from ${item.clues?.length ?? 0} clues: ${(item.clues ?? []).join('; ')}.`,
-            expected: `"${item.answerState}".`,
-            observed,
-          };
-      }
-    },
-  }), [items]);
-
-  const runner = useJudgedScriptRunner<MatterExplorerItem>({
-    pack,
+  const runner = useWorkspaceRunner<MatterExplorerItem>({
+    primitiveId: 'matter-explorer',
+    assignment: matterAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || (items[0]?.challengeType ?? 'sort'),
     instanceId: resolvedInstanceId,
-    gradeLevel: band === 'K-1' ? 'Kindergarten' : 'Grade 1-2',
-    exhibitId,
-    onFinished: handleFinished,
+    onFinished: finish,
+    onItemOpened: () => setReveal(null),
     onAffirmed: (item) => {
       const line = item.kind === 'name_property'
         ? `${item.objectName} — ${PROPERTY_OPTIONS[item.answerShape].phrase}`
@@ -444,104 +436,42 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
       setReveal({ item, line });
     },
   });
-
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   const showReveal = runner.revealHeld && reveal !== null;
 
-  useEffect(() => {
-    if (showReveal) SoundManager.playCorrect();
-  }, [showReveal, reveal?.item.id]);
-
-  // ── Exploration fallback: the tutor as a silent guide ──────────────────────
-  const judged = items.length > 0;
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'matter-explorer',
-    instanceId: resolvedInstanceId,
-    // Exploration-only context. `state` and `properties.shape` are deliberately
-    // absent: on this surface nothing is being judged, but the tutor is still
-    // guiding a child through the same classification and must not hand it over.
-    primitiveData: {
-      title: safeTitle,
-      objects: objects.map((o) => o.name),
-      selectedObject: inspected?.name ?? null,
-    },
-    // The judged path owns the tutor through the runner; this hook is only the
-    // exploration surface's guide, and must never open a second channel to it.
-    enabled: !judged,
+  // What the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation; every item is answerable once it opens.
+  useLayoutEffect(() => {
+    const item = runner.currentItem;
+    if (!item) return;
+    workspace.current = { ...matterScene(item), demonstration: [], canDemonstrate: false, canPresent: false,
+      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
   });
-
-  useEffect(() => {
-    if (judged || !isConnected || !inspected) return;
-    sendText(
-      `[OBJECT_SELECTED] The learner is looking at "${inspected.name}". `
-      + 'Wonder aloud with them about what it is like to hold. Do not classify it for them.',
-      { silent: true },
-    );
-  }, [judged, isConnected, inspected, sendText]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => {
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => {
       const meta = MODE_META[item.kind];
       return { label: meta.badge, icon: meta.icon };
     });
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
-  /**
-   * WHICH item is on the bench right now. On the advance path the runner opens
-   * the next item in the SAME dispatch as the affirmation, so by render time
-   * `currentItem` is already the NEXT one while the tutor is still saying the
-   * verdict for the last. The reveal therefore renders its OWN item — anything
-   * else puts the previous item's answer over the next item's object.
-   */
   const staged = showReveal && reveal ? reveal.item : runner.currentItem;
   // Pip: the object on the bench is the question side; Pip outlines it during the
-  // ask and watches it while the child answers aloud. The explore face has none.
+  // ask and watches it while the child answers aloud.
   const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The object on the bench',
-    finished: evaluation.hasSubmitted || !judged,
+    run: runner, instanceId: resolvedInstanceId, label: 'The object on the bench', finished: showSummary,
   });
   const modeMeta = MODE_META[staged?.kind ?? 'name_state'];
-
-  if (!judged) {
-    return (
-      <LuminaCard className={className}>
-        <LuminaCardHeader className="pb-3">
-          <LuminaCardTitle className="text-lg">{safeTitle}</LuminaCardTitle>
-        </LuminaCardHeader>
-        <LuminaCardContent className="space-y-4">
-          {objects.length === 0 ? (
-            <p className="text-slate-400 text-center">No objects available.</p>
-          ) : (
-            <>
-              <p className="text-slate-400 text-sm text-center">
-                Tap anything to look at it closely.
-              </p>
-              <ExplorationShelf objects={objects} onInspect={setInspected} />
-              {inspected && (
-                <div className="flex flex-col items-center gap-2 rounded-2xl border-2 border-white/10 bg-slate-900/40 px-5 py-4">
-                  <span className="text-5xl leading-none" aria-hidden>{getObjectEmoji(inspected.name)}</span>
-                  <span className="text-slate-200 font-medium">{inspected.name}</span>
-                  <div className="flex flex-wrap justify-center gap-1.5">
-                    <LuminaBadge accent="cyan" className="text-xs">{inspected.properties.color}</LuminaBadge>
-                    <LuminaBadge accent="cyan" className="text-xs">{inspected.properties.texture}</LuminaBadge>
-                    <LuminaBadge accent="cyan" className="text-xs">{inspected.properties.weight}</LuminaBadge>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </LuminaCardContent>
-      </LuminaCard>
-    );
-  }
 
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <LuminaCardTitle className="text-lg">{safeTitle}</LuminaCardTitle>
-          {!evaluation.hasSubmitted && staged && (
+          {!showSummary && staged && (
             <LuminaBadge accent={modeMeta.accent} className="text-xs">
               {modeMeta.icon} {modeMeta.badge}
             </LuminaBadge>
@@ -550,7 +480,7 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex items-center justify-center gap-4">
               <LuminaChallengeCounter
@@ -558,20 +488,6 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
                 total={items.length}
                 variant="dots"
               />
-              {/* Tap-to-hear the question again — never the answer. */}
-              <button
-                type="button"
-                onClick={runner.hearStimulus}
-                aria-label="Hear the question again"
-                className={`
-                  flex items-center justify-center w-10 h-10 rounded-full
-                  bg-amber-500/15 border-2 border-amber-500/30 text-amber-300
-                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
-                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
-                `}
-              >
-                <Volume2 size={18} />
-              </button>
             </div>
 
             {/* THE BENCH. No bins, no property panel, no slider, no text box —
@@ -582,8 +498,7 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
               {staged && <ObjectStage item={staged} revealed={showReveal} />}
             </div>
 
-            {/* Reveal-on-affirm: the answer, in words, for exactly as long as
-                the tutor's affirmation is being spoken (runner.revealHeld). */}
+            {/* Reveal-on-credit: the answer, in words, while the solved item is on screen. */}
             {showReveal && reveal && (
               <div className="flex justify-center">
                 <div className="rounded-2xl border-2 border-emerald-400/30 bg-emerald-500/10 px-5 py-2.5 animate-in fade-in duration-300">
@@ -591,15 +506,13 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
                 </div>
               </div>
             )}
-
-            <JudgedMicPanel run={runner} />
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Great Science!"
             celebrationMessage={`You worked out what ${items.length} things are made of — out loud!`}
@@ -609,6 +522,26 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
       </LuminaCardContent>
     </LuminaCard>
   );
+};
+
+const MatterExplorerBound = withWorkspaceOnly<SurfaceProps>('matter-explorer', MatterExplorerSurface, (props) => safeTitleOf(props.data.title));
+
+/**
+ * Challenges run only on the teaching workspace (an unbound mount shows the "needs the tutor" card).
+ * A payload with no askable challenge is the ungraded exploration shelf.
+ */
+const MatterExplorer: React.FC<MatterExplorerProps> = (props) => {
+  const { challenges = [], objects = [], gradeBand = 'K-1', supportTier } = props.data;
+  const band: MatterBand = gradeBand === '1-2' ? '1-2' : 'K-1';
+  const items = useMemo(
+    () => itemsFromChallenges(
+      challenges.map((c) => ({ id: c.id, challengeType: c.type, objectId: c.objectId })),
+      objects,
+      { band, tier: supportTier },
+    ),
+    [challenges, objects, band, supportTier],
+  );
+  return items.length ? <MatterExplorerBound {...props} items={items} /> : <MatterExplorerShelf {...props} />;
 };
 
 export default MatterExplorer;

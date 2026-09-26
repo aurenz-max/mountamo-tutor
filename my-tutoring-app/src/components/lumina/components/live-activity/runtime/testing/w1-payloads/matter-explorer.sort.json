@@ -1,0 +1,144 @@
+{
+ "source": "qa/tutor-reports/matter-explorer-runtime-sort-payload-2026-09-26.json",
+ "primitiveId": "matter-explorer",
+ "evalMode": "sort",
+ "data": {
+  "title": "Kitchen and Yard Matter Adventure",
+  "description": "Let us discover how solids, liquids, and gases make up everything around us!",
+  "objects": [
+   {
+    "id": "obj-rock",
+    "name": "rock",
+    "state": "solid",
+    "properties": {
+     "color": "gray",
+     "texture": "rough",
+     "transparency": "opaque",
+     "flexibility": "rigid",
+     "shape": "keeps_shape",
+     "weight": "heavy"
+    },
+    "canChangeState": false,
+    "imagePrompt": "A smooth gray rock sitting on green grass outdoors",
+    "stateChangeTemp": null
+   },
+   {
+    "id": "obj-water",
+    "name": "water",
+    "state": "liquid",
+    "properties": {
+     "color": "clear",
+     "texture": "smooth",
+     "transparency": "transparent",
+     "flexibility": "flows",
+     "shape": "takes_container",
+     "weight": "medium"
+    },
+    "canChangeState": true,
+    "imagePrompt": "Clear water splashing inside a glass cup",
+    "stateChangeTemp": 0
+   },
+   {
+    "id": "obj-air",
+    "name": "air",
+    "state": "gas",
+    "properties": {
+     "color": "clear",
+     "texture": "smooth",
+     "transparency": "transparent",
+     "flexibility": "flows",
+     "shape": "fills_space",
+     "weight": "light"
+    },
+    "canChangeState": false,
+    "imagePrompt": "An open sunny blue sky with soft white clouds",
+    "stateChangeTemp": null
+   },
+   {
+    "id": "obj-honey",
+    "name": "honey",
+    "state": "liquid",
+    "properties": {
+     "color": "golden",
+     "texture": "smooth",
+     "transparency": "translucent",
+     "flexibility": "flows",
+     "shape": "takes_container",
+     "weight": "heavy"
+    },
+    "canChangeState": false,
+    "imagePrompt": "Golden honey dripping slowly from a wooden honey dipper",
+    "stateChangeTemp": null
+   },
+   {
+    "id": "obj-sand",
+    "name": "sand",
+    "state": "solid",
+    "properties": {
+     "color": "tan",
+     "texture": "bumpy",
+     "transparency": "opaque",
+     "flexibility": "rigid",
+     "shape": "keeps_shape",
+     "weight": "medium"
+    },
+    "canChangeState": false,
+    "imagePrompt": "A handful of sparkly golden beach sand in bright sunlight",
+    "stateChangeTemp": null
+   },
+   {
+    "id": "obj-steam",
+    "name": "steam",
+    "state": "gas",
+    "properties": {
+     "color": "white",
+     "texture": "smooth",
+     "transparency": "translucent",
+     "flexibility": "flows",
+     "shape": "fills_space",
+     "weight": "light"
+    },
+    "canChangeState": true,
+    "imagePrompt": "Gentle white steam rising up from a hot mug of soup",
+    "stateChangeTemp": 100
+   }
+  ],
+  "challenges": [
+   {
+    "id": "chal-rock",
+    "type": "sort",
+    "objectId": "obj-rock",
+    "instruction": "Is the rock a solid, a liquid, or a gas?",
+    "narration": "I wonder why this heavy rock stays the exact same shape wherever we put it!"
+   },
+   {
+    "id": "chal-water",
+    "type": "sort",
+    "objectId": "obj-water",
+    "instruction": "Is the water a solid, a liquid, or a gas?",
+    "narration": "Look at how this water slides and takes the shape of its cup! Is it a solid, liquid, or gas?"
+   },
+   {
+    "id": "chal-air",
+    "type": "sort",
+    "objectId": "obj-air",
+    "instruction": "Is the air a solid, a liquid, or a gas?",
+    "narration": "We cannot see it, but we can feel it when the wind blows. What state of matter is air?"
+   },
+   {
+    "id": "chal-honey",
+    "type": "sort",
+    "objectId": "obj-honey",
+    "instruction": "Is the honey a solid, a liquid, or a gas?",
+    "narration": "Even though it moves so slowly and feels thick, let us figure out if honey is a solid, liquid, or gas!"
+   }
+  ],
+  "showOptions": {
+   "showPropertyPanel": true,
+   "showTemperatureSlider": true,
+   "showParticleView": false,
+   "showVennDiagram": false
+  },
+  "gradeBand": "K-1"
+ }
+}

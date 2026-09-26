@@ -94,6 +94,8 @@ import { itemsFromChallenges as arenaItems } from '../../primitives/visual-primi
 import { pushPullArenaJourneyAnswers } from '../../primitives/visual-primitives/physics/pushPullArenaWorkspace';
 import { itemsFromChallenges as habitatItems } from '../../primitives/visual-primitives/biology/habitatDioramaScript';
 import { habitatJourneyAnswers } from '../../primitives/visual-primitives/biology/habitatDioramaWorkspace';
+import { matterItems } from './adapters/matterExplorerLive';
+import { matterJourneyAnswers } from '../../primitives/visual-primitives/chemistry/matterExplorerWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
@@ -1300,6 +1302,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const answers = habitatJourneyAnswers(item);
       const pick = intent === 'wrong' ? answers.plainWrong : answers.correct;
       return [item.answerKind === 'gesture' ? { type: 'choose', label: pick } : { type: 'answer', text: pick }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'matter-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/chemistry/MatterExplorer.tsx',
+    instanceId: 'matter',
+    defaults: { grade: 'Kindergarten', mode: 'sort', di: false, topic: 'Solids, liquids and gases around us' },
+    leakTokens: ['MEX_ITEM', 'MEX_MOVE', 'MEX_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one spoken answer computed from the object.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = matterItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current matter-explorer item');
+      const answers = matterJourneyAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
   },
