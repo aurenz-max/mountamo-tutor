@@ -7,7 +7,7 @@
 // conversation: the learner transcript, the tutor reply, the prior tutor turn and the
 // evidence state.
 //
-//   node scripts/tutor-verdict-probe.mjs [--shapes|--letters|--words|--trains|--facts|--links|--sentences] [out.json] [--dry]
+//   node scripts/tutor-verdict-probe.mjs [--shapes|--letters|--words|--trains|--facts|--links|--sentences|--procedure|--wordproblem] [out.json] [--dry]
 //
 // No domain flag runs counting-board. `--dry` prints each model input without calling the route.
 import { writeFileSync } from 'node:fs';
@@ -20,11 +20,12 @@ const server = await vite.createServer({ root: process.cwd(), configFile: false,
 const runner = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
 const domain = path => runner.import('/src/components/lumina/primitives/visual-primitives/' + path);
 
-const [board, shapes, sounds, words, facts, trains, links, sentences] = await Promise.all([
+const [board, shapes, sounds, words, facts, trains, links, sentences, procedure, wordProblem] = await Promise.all([
   'math/countingBoardDomain.ts', 'math/shapeSorterDomain.ts', 'direct-instruction/diLetterSoundsDomain.ts',
   'direct-instruction/diWordReadingDomain.ts', 'direct-instruction/diMathFactsDomain.ts',
   'math/numberSequencerDomain.ts', 'literacy/letterSoundLinkDomain.ts',
-  'direct-instruction/diSentenceReadingDomain.ts'].map(domain));
+  'direct-instruction/diSentenceReadingDomain.ts', 'direct-instruction/diWorkedProcedureWorkspace.ts',
+  'direct-instruction/diWordProblemWorkspace.ts'].map(domain));
 
 /** One built item per fixture. Built one at a time, because two builders drop an item that
  *  repeats a letter or shape an earlier item already named. */
@@ -424,6 +425,121 @@ const SENTENCE_CASES = [
   ['la13_quality_praise', 'The cat sat.', 'You read it smoothly, every single word!', 'correct', 'advance', 'cat', 'Read this sentence.'],
 ];
 
+// ── di-worked-procedure ─────────────────────────────────────────────────────
+// Each item is ONE step of a larger subtraction: a column decision or a column's difference. The risk
+// LA-13 part 2 measures is the reverse of counting-board's rows: the tutor's natural words for a correct
+// item ("step", "ready to subtract") read as partial credit on the whole problem. The false-credit risks
+// stay: the flipped column, the regroup without the decremented place, a sub-step of the item itself.
+const procedureItem = (minuend, subtrahend, challengeType, id) => {
+  const item = procedure.workedProcedureItems({ problems: [{ id: `p${minuend}`, minuend, subtrahend, challengeType }] })
+    .find(i => i.id === id);
+  if (!item) throw new Error(`Fixture ${id} built no item`);
+  return { assignment: procedure.workedProcedureAssignment(item), scene: procedure.workedProcedureScene(item) };
+};
+const PROCEDURE_ITEMS = {
+  clean_ones: procedureItem(69, 54, 'subtract_no_regroup', 'p69-c0-decide'),
+  regroup_ones: procedureItem(92, 75, 'subtract_regroup', 'p92-c0-decide'),
+  regroup_subtract: procedureItem(92, 75, 'subtract_regroup', 'p92-c0-subtract'),
+  regroup_tens: procedureItem(92, 75, 'subtract_regroup', 'p92-c1-decide'),
+  live_ones: procedureItem(66, 39, 'subtract_regroup', 'p66-c0-decide'),
+};
+const PROCEDURE_CASES = [
+  // Verbatim from C6 (`subtract_no_regroup-audio-r3`, `subtract_regroup-text-r2`); both pass once the task is
+  // the column instruction alone and no problem number reaches the observer (the binding's workarounds).
+  ['column_fact', 'nine minus four is five', 'Excellent, nine minus four is indeed five.', 'correct', 'advance', 'clean_ones',
+    'Look at the ones column. What do you do there?'],
+  ['tens_fact', 'eight minus seven is one', 'Spot on, eight minus seven gives us one!', 'correct', 'advance', 'regroup_tens',
+    'Now look at the tens column. What do you do there?'],
+  // Verbatim from `subtract_regroup-audio`: the first reply names both new numbers; the second is the
+  // confirming reply after `confirm_credit`, refused `unsupported` 3/3.
+  ['live_regroup', "I can't take nine from six, so I regroup five tens, 16 ones.",
+    'Exactly! You regrouped one ten from the tens place, leaving five tens and making sixteen ones.', 'correct', 'advance', 'live_ones',
+    "Not quite. Since we can't subtract the numbers that way, what do you need to do in the ones column to get ready to subtract?"],
+  ['live_regroup_confirming', "I can't take nine from six, so I regroup five tens, 16 ones.",
+    "That's right, you nailed the regrouping step and are ready to subtract!", 'correct', 'advance', 'live_ones',
+    "Not quite. Since we can't subtract the numbers that way, what do you need to do in the ones column to get ready to subtract?",
+    { confirming: true }],
+  // Step-framed praise. With no result it is honestly ambiguous in isolation; here the item IS the step, so
+  // crediting "that step" credits the task. Labelled before any run.
+  ['step_praise_no_result', 'twelve minus five is seven', 'Great job on that step!', 'correct', 'advance', 'regroup_subtract',
+    'Subtract the ones column. What do you get?'],
+  ['step_praise_result', 'twelve minus five is seven', 'Yes, seven ones. That step is done!', 'correct', 'advance', 'regroup_subtract',
+    'Subtract the ones column. What do you get?'],
+  ['flipped_praise', 'five minus two is three', 'Yes, three!', 'none', 'none', 'regroup_subtract'],
+  ['forgot_decrement_praise', 'I regroup, twelve ones', 'Right, twelve ones!', 'none', 'none', 'regroup_ones'],
+  // A sub-step OF the item: the tutor credits "regroup" and asks for the new numbers.
+  ['substep_of_item', 'I regroup', 'Yes, you need to regroup! Now what are the two new numbers?', 'none', 'none', 'regroup_ones',
+    'Look at the ones column. What do you do there?'],
+  ['wrong_step', 'three', 'Not quite, that takes the top from the bottom. Try the ones column again.', 'incorrect', 'retry', 'regroup_subtract'],
+  ['help', "I don't know", 'Look at the ones column. Is the top digit bigger or smaller than the bottom one?', 'none', 'none', 'regroup_ones'],
+  ['tutor_models', '', 'Here we take one ten, so we have eight tens and twelve ones.', 'none', 'none', 'regroup_ones'],
+  ['open_question', 'twelve minus five is seven', 'Seven is right. How did you work it out?', 'correct', 'none', 'regroup_subtract'],
+];
+
+// ── di-word-problem-setup ───────────────────────────────────────────────────
+// Each item is one setup step of a printed story. The build step is a checked gesture (the activity's
+// check decides correctness, the observer only reads whether the tutor settled it); the rest are spoken.
+const THEME = { nameA: 'Ben', nameB: 'Ava', nounPlural: 'shells', gainPast: 'picked', gainBase: 'pick', losePast: 'dropped', loseBase: 'drop' };
+const wordProblemItem = (problem, kind, familyShown = false) => {
+  const item = wordProblem.wordProblemItems({ problems: [problem] }).find(i => i.kind === kind);
+  if (!item) throw new Error(`Fixture ${problem.id} built no ${kind} item`);
+  return { assignment: wordProblem.wordProblemAssignment(item), scene: wordProblem.wordProblemScene(item, { familyShown }) };
+};
+const PART_WHOLE = { id: 'wps-1-part_whole-part', frameId: 'part_whole:part', theme: THEME, first: 7, second: 5, adjectivePair: 2, challengeType: 'build_family', maxNumber: 20 };
+const LOSS = { id: 'wps-2-change-loss_change', frameId: 'change:loss_change', theme: THEME, first: 12, second: 7, adjectivePair: 0, challengeType: 'build_family', maxNumber: 20 };
+const WORD_PROBLEM_ITEMS = {
+  build: wordProblemItem(PART_WHOLE, 'big_number'), build_loss: wordProblemItem(LOSS, 'big_number'),
+  family: wordProblemItem(PART_WHOLE, 'family', true), operation: wordProblemItem(PART_WHOLE, 'operation', true),
+  solve: wordProblemItem(PART_WHOLE, 'solve', true),
+};
+const built = (correct, response) => ({ phase: 'checked', lastResponse: { response, correct, assisted: false },
+  activity: { responseSource: 'gesture', attemptNumber: 1 } });
+const RIGHT_BUILD = built(true, 'Built the family with "striped shells" and "spotted shells" as the small amounts and "all the shells" as the big amount.');
+const WRONG_BUILD = built(false, 'Built the family with "all the shells" and "spotted shells" as the small amounts and "striped shells" as the big amount.');
+const RIGHT_LOSS = built(true, 'Built the family with "what Ben has now" and "what Ben dropped" as the small amounts and "what Ben started with" as the big amount.');
+/** A spoken answer already credited (`transition_uncertain`): the item is held in `checked` with the
+ *  learner's speech as its last response, and the next tutor reply must move it on. */
+const HELD_FAMILY = { phase: 'checked', lastResponse: { response: '5 + box = 7', correct: true, assisted: false },
+  activity: { responseSource: 'speech', attemptNumber: 1 } };
+// For a checked response the runtime reads only the transition (`DialogueObserver`): a certain `advance`
+// with no verdict also moves the lesson, so it passes too.
+const CHECKED_ADVANCE = { alsoAccept: [{ verdict: 'none', transition: 'advance' }] };
+const STORY_PART_WHOLE = 'There are 7 shells. 5 of them are striped. The rest are spotted. How many shells are spotted?';
+const FAMILY_ASK = 'Now, let\'s read the number family you built out loud, saying "box" for the unknown amount.';
+const WORD_PROBLEM_CASES = [
+  // Verbatim from `build_family-audio-r1`: verdict none 0.76, advance 0.87.
+  ['build_live_starting', '', 'Great job placing the starting number of shells in the big spot!', 'correct', 'advance', 'build_loss',
+    'Ben had 12 shells. Then Ben dropped some of them. Now Ben has 7 shells. How many shells did Ben drop?', { ...RIGHT_LOSS, ...CHECKED_ADVANCE }],
+  // Verbatim from `build_family-audio` (advanced at 0.99 in that run).
+  ['build_live_all', '', "That's exactly right, you put all the shells in the big spot!", 'correct', 'advance', 'build',
+    "Good try, but that part isn't the biggest amount. Let's try again.", { ...RIGHT_BUILD, ...CHECKED_ADVANCE }],
+  // `build_family-audio-r1` story 1, with the story's noun: refused uncertain.
+  ['build_step_praise', 'I am ready for the next one.', 'Excellent job placing the total number of shells in the big spot!', 'correct', 'advance', 'build',
+    STORY_PART_WHOLE, { ...RIGHT_BUILD, ...CHECKED_ADVANCE }],
+  ['build_step_no_result', '', 'Nice work on that step!', 'correct', 'advance', 'build', STORY_PART_WHOLE, { ...RIGHT_BUILD, ...CHECKED_ADVANCE }],
+  ['build_right_question', '', 'Yes, all the shells go in the big spot. Which card tells how many are striped?', 'correct', 'none', 'build',
+    STORY_PART_WHOLE, { ...RIGHT_BUILD, alsoAccept: [{ verdict: 'none', transition: 'none' }] }],
+  ['build_wrong_corrected', '', "Good try, but that part isn't the biggest amount. Let's try again.", 'incorrect', 'retry', 'build',
+    STORY_PART_WHOLE, WRONG_BUILD],
+  ['build_wrong_praise', '', 'Great job building the family!', 'none', 'none', 'build', STORY_PART_WHOLE, WRONG_BUILD],
+  // Verbatim from `build_family-audio`: the first reply went to `confirm_credit`, the confirming reply came
+  // back correct 0.94 with the transition uncertain, and the held item never advanced on the next reply.
+  ['family_live', '5 + box = 7', 'Perfect, you read that family just right!', 'correct', 'advance', 'family', FAMILY_ASK],
+  ['family_live_confirming', '5 + box = 7', 'You got it right by saying five plus box equals seven!---', 'correct', 'advance', 'family',
+    FAMILY_ASK, { confirming: true }],
+  ['family_live_held', 'I am ready to finish.', "You've done an amazing job setting up this problem, let's keep going!", 'correct', 'advance', 'family',
+    'You got it right by saying five plus box equals seven!---', { ...HELD_FAMILY, ...CHECKED_ADVANCE }],
+  ['family_step_no_result', '5 + box = 7', 'Great job with that step!', 'correct', 'advance', 'family', FAMILY_ASK],
+  ['family_step_result', '5 + box = 7', 'Yes, five plus box equals seven. That step is done!', 'correct', 'advance', 'family'],
+  ['family_misplaced_praise', 'seven plus box equals five', 'Yes, seven plus box equals five!', 'none', 'none', 'family'],
+  ['family_partial', 'five plus box', 'Good, five plus box. Now what does it equal?', 'none', 'none', 'family'],
+  ['operation', 'subtract', "That's right, we subtract because we are looking for a missing small part of the total.", 'correct', 'advance', 'operation',
+    'Will you add or subtract to find the missing number?'],
+  ['operation_wrong', 'add', 'Not quite. Look at where the box is, and try again.', 'incorrect', 'retry', 'operation'],
+  ['help', "I don't know", 'Which number in the story is the whole amount?', 'none', 'none', 'family'],
+  ['solve', 'two', "That's correct, there are two spotted shells!", 'correct', 'advance', 'solve'],
+];
+
 const DOMAINS = [
   { flag: '--shapes', report: 'shape-sorter', items: SHAPE_ITEMS, cases: SHAPE_CASES },
   { flag: '--letters', report: 'di-letter-sounds', items: SOUND_ITEMS, cases: SOUND_CASES },
@@ -432,6 +548,8 @@ const DOMAINS = [
   { flag: '--facts', report: 'di-math-facts', items: FACT_ITEMS, cases: FACT_CASES },
   { flag: '--links', report: 'letter-sound-link', items: LINK_ITEMS, cases: LINK_CASES },
   { flag: '--sentences', report: 'di-sentence-reading', items: SENTENCE_ITEMS, cases: SENTENCE_CASES },
+  { flag: '--procedure', report: 'di-worked-procedure', items: PROCEDURE_ITEMS, cases: PROCEDURE_CASES },
+  { flag: '--wordproblem', report: 'di-word-problem-setup', items: WORD_PROBLEM_ITEMS, cases: WORD_PROBLEM_CASES },
 ];
 const chosen = DOMAINS.find(d => process.argv.includes(d.flag))
   ?? { report: 'counting-board', items: BOARD_ITEMS, cases: BOARD_CASES };
@@ -445,7 +563,9 @@ function requestFor({ assignment, scene }, [, learner, tutor, , , , priorTutor, 
     ...(assignment.expectedAnswer !== undefined ? { expectedAnswer: assignment.expectedAnswer } : {}),
     ...(priorTutor ? { priorTutor } : {}),
     phase: extra.phase ?? 'working', learner, tutor, lastResponse: extra.lastResponse ?? null,
-    ...(learner ? { pendingResponse: { id: 'turn-1', text: learner } } : {}),
+    // A checked item has no pending answer: the learner's words are conversation, not a response.
+    ...(learner && extra.phase !== 'checked' ? { pendingResponse: { id: 'turn-1', text: learner } } : {}),
+    ...(extra.confirming ? { confirming: true } : {}),
     activity: { responseSource: null, attemptNumber: 0, objects: scene.objects, demonstration: [],
       facts: { ...scene.facts, response: assignment.response, presentation: 'ready' },
       assistance: { level: 0, answerExposure: 'none' }, ...extra.activity },
@@ -458,7 +578,7 @@ try {
     for (const c of chosen.cases) console.log(JSON.stringify({ name: c[0], input: requestFor(chosen.items[c[5]], c) }));
   } else {
     for (let repetition = 1; repetition <= 3; repetition++) for (const c of chosen.cases) {
-      const [name, , , verdict, transition, itemKey] = c;
+      const [name, , , verdict, transition, itemKey, , extra = {}] = c;
       const input = requestFor(chosen.items[itemKey], c);
       const response = await fetch('http://localhost:3000/api/lumina/live-activity/observe-dialogue', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) });
@@ -469,7 +589,7 @@ try {
       // the assignment open without awarding success credit.
       const expected = name === 'indirect_retry'
         ? [{ verdict: 'incorrect', transition: 'retry' }, { verdict: 'none', transition: 'none' }]
-        : [{ verdict, transition }];
+        : [{ verdict, transition }, ...(extra.alsoAccept ?? [])];
       // USER RULING 09-24 (no dead end after an answer): where no credit is expected, a below-gate
       // "not credited" retry and a confirm-credit request both grant nothing, so both pass.
       const noCredit = expected.every(e => e.verdict === 'none')

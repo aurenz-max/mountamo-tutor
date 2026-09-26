@@ -127,3 +127,49 @@ it("follows the tutor's plain confirmation below the gate: the flow is the tutor
   expect(decideDialogue({ ...spoken, confirming: true }, reply({ incorrect: .6, none: .3, correct: .1 }), 1)).toMatchObject({
     accepted: true, verdict: 'incorrect', transition: 'retry', resolution: 'not_credited' });
 });
+
+it('settles a checked-correct response on finished feedback without a certain verdict (LA-13 part 2)', () => {
+  // Captured probe answers for "Great job placing the starting number of shells in the big spot!" after a
+  // checked-correct build: verdict none .83, advance .89, feedback finished 1.
+  const stepPraise = { verdict: { type: 'choice', choice: 'none', confidence: .83, probabilities: { correct: .16, incorrect: .01, none: .83 } },
+    feedback: choice('finished', ['finished', 'open'], 1),
+    transition: { type: 'choice', choice: 'advance', confidence: .89, probabilities: { advance: .89, none: .11, retry: 0 } } };
+  expect(decideDialogue(input, stepPraise, 1)).toMatchObject({ accepted: true, verdict: 'none', transition: 'advance', confidence: 1,
+    reason: 'checked_success_feedback_finished' });
+  // Still refused: a checked-wrong response, an open reply, and a tutor who most likely disagrees with the check.
+  expect(decideDialogue({ ...input, lastResponse: { ...input.lastResponse!, correct: false } }, stepPraise, 1).transition).not.toBe('advance');
+  expect(decideDialogue(input, { ...stepPraise, feedback: choice('open', ['finished', 'open']) }, 1).accepted).toBe(false);
+  expect(decideDialogue(input, { ...stepPraise, verdict: { ...stepPraise.verdict, choice: 'incorrect',
+    probabilities: { correct: .1, incorrect: .6, none: .3 } } }, 1).accepted).toBe(false);
+});
+
+it('credits a confirming reply that clears the gate, not only one below it (LA-13 part 2)', () => {
+  const spoken = { ...input, phase: 'working', lastResponse: null, learner: '5 + box = 7', confirming: true,
+    pendingResponse: { id: 'speech:19', text: '5 + box = 7' },
+    activity: { responseSource: null, attemptNumber: 0, objects: [], demonstration: [], facts: { response: 'speech' },
+      assistance: { level: 0, answerExposure: 'none' as const } } };
+  // Captured: "You got it right by saying five plus box equals seven!" — correct .94, feedback finished .56.
+  const a = { verdict: { type: 'choice', choice: 'correct', confidence: .94, probabilities: { correct: .94, incorrect: .01, none: .05 } },
+    feedback: { type: 'choice', choice: 'finished', confidence: .56, probabilities: { finished: .56, open: .44 } },
+    transition: { type: 'choice', choice: 'advance', confidence: .59, probabilities: { advance: .59, none: .4, retry: .01 } } };
+  expect(decideDialogue(spoken, a, 1)).toMatchObject({ accepted: true, verdict: 'correct', transition: 'advance', resolution: 'confirmed_by_tutor' });
+  // Without the host's confirm request the same reply is a held credit, as before.
+  expect(decideDialogue({ ...spoken, confirming: undefined }, a, 1)).toMatchObject({ accepted: true, verdict: 'correct', transition: 'none' });
+});
+
+it('never leaves a finished confirming reply unresolved: one that does not credit reopens the item (09-26)', () => {
+  const spoken = { ...input, phase: 'working', lastResponse: null, learner: 'subtract', confirming: true,
+    pendingResponse: { id: 'speech:40', text: 'subtract' },
+    activity: { responseSource: null, attemptNumber: 0, objects: [], demonstration: [], facts: { response: 'speech' },
+      assistance: { level: 0, answerExposure: 'none' as const } } };
+  const reply = (p: Record<string, number>, finished = .9) => ({
+    verdict: { type: 'choice', choice: Object.entries(p).sort((x, y) => y[1] - x[1])[0][0], confidence: .5, probabilities: p },
+    feedback: { type: 'choice', choice: finished > .5 ? 'finished' : 'open', confidence: .8, probabilities: { finished, open: 1 - finished } },
+    transition: { type: 'choice', choice: 'none', confidence: .5, probabilities: { advance: .4, none: .5, retry: .1 } } });
+  // Captured shape: "You did it, you've solved this step!" read as `none`, below and at the gate.
+  for (const p of [{ none: .6, correct: .35, incorrect: .05 }, { none: .95, correct: .03, incorrect: .02 }])
+    expect(decideDialogue(spoken, reply(p), 1)).toMatchObject({ accepted: true, verdict: 'incorrect', transition: 'retry', resolution: 'not_credited' });
+  // An open confirming reply (a question) is still dialogue, and the first reply still asks for confirmation.
+  expect(decideDialogue(spoken, reply({ none: .6, correct: .35, incorrect: .05 }, .2), 1).accepted).toBe(false);
+  expect(decideDialogue({ ...spoken, confirming: undefined }, reply({ none: .6, correct: .35, incorrect: .05 }), 1).transition).not.toBe('retry');
+});
