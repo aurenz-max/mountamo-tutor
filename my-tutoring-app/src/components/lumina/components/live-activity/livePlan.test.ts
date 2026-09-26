@@ -31,8 +31,8 @@ describe('live lesson plan projection', () => {
       // The DI pack spells its challenge type `challengeType`; the adapter's accessor is what
       // lets the mode gate read it. Under a hardcoded `c.type` it was skipped as "undefined".
       .toEqual([['item-1', 'addition-subtraction-scene', 'act_out', 'obj1'], ['item-2', 'ten-frame', 'build', 'obj1'],
-        ['item-3', 'di-spoken-practice', 'read_aloud', 'obj2'], ['item-4', 'number-line', 'jump', 'obj3'],
-        ['item-5', 'di-math-facts', 'answer_fact', 'obj3']]);
+        ['item-3', 'di-dice-roll', 'sum_two_dice', 'obj1'], ['item-4', 'di-spoken-practice', 'read_aloud', 'obj2'],
+        ['item-5', 'number-line', 'jump', 'obj3'], ['item-6', 'di-math-facts', 'answer_fact', 'obj3']]);
     const source = pkg.manifest.objectiveBlocks[2];
     const line = plan.items.find(i => i.primitiveId === 'number-line')!;
     const manifestComponent = source.components.find(c => c.instanceId === line.provenance.manifestInstanceId)!;

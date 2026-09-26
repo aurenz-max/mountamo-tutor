@@ -103,6 +103,7 @@ import { solarJourneyAnswers } from '../../primitives/visual-primitives/astronom
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { diSpokenPracticeHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeWorkspace';
+import { diDiceRollHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diDiceRollWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
 
 /** One real learner action for the mounted driver to perform. */
@@ -989,6 +990,26 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-spoken-object="stimulus"]' }, reward: { selector: '[data-spoken-credited]', kind: 'count' } },
+  },
+  'di-dice-roll': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/direct-instruction/DiDiceRoll.tsx',
+    instanceId: 'dice',
+    defaults: { grade: 'Kindergarten', mode: 'count_pips', di: false,
+      topic: 'Counting the dots on a die' },
+    leakTokens: ['DICE_ITEM', 'DICE_MOVE_ON', 'DICE_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Roll first (the dice are covered until then), then one spoken answer, or a plainly different one.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current di-dice-roll item');
+      const answers = diDiceRollHarnessAnswers(c);
+      const say: DriverInput = { type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct };
+      return ctx.demand?.rolled === 'yes' ? [say]
+        : [{ type: 'choose', label: c.challengeType === 'count_pips' ? 'Roll the die' : 'Roll both dice' }, say];
+    },
+    probes: { mounted: { selector: '[data-dice-object="dice"]' }, reward: { selector: '[data-dice-trail]', kind: 'count' } },
   },
   'spatial-scene': {
     execution: 'workspace',

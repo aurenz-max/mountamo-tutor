@@ -441,6 +441,14 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // two sets; sum composes both sets and may produce totals through twelve.
     evalModes: DI_DICE_ROLL_EVAL_MODES,
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'The dice stay covered until the child taps them to roll; the roll is theirs, and there is nothing to '
+        + 'answer before it, so ask them to roll first. Then the child answers OUT LOUD: how many dots, which die has '
+        + 'more (left, right, or same), or how many dots altogether. No number is printed. Counting aloud and ending on '
+        + 'the right number is an answer. A different number is wrong however close. You cannot roll, change a die or '
+        + 'count for the child.',
+    },
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
     // The live tutor judges the child's number word inside the manual turn.

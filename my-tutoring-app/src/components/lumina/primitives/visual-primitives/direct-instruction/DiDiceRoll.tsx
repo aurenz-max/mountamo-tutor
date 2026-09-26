@@ -1,57 +1,25 @@
 'use client';
 
 /**
- * DiDiceRoll — a DI-native dice quantity, comparison, and addition primitive.
+ * DiDiceRoll — a DI-native dice quantity, comparison, and addition primitive. The child taps the die
+ * itself, watches a deterministic controlled roll, and answers aloud: how many dots, which die has
+ * more, or how many altogether. The finalized value lives in challenge data before the animation
+ * starts; intermediate faces are presentational and never announced.
  *
- * The child starts the Live tutor, taps the die itself, watches a deterministic
- * controlled roll, and answers the current pip task aloud. The tutor's in-band
- * verdict advances the run. The finalized value lives in challenge data before
- * animation starts; intermediate faces are presentational and never announced.
+ * The Live tutor teaches it on the shared tutor/JEV workspace through `DiTeachingStage` (workspace
+ * rollout C6; the judged runner is gone, one-path ruling 09-23). The roll is the learner's own act and
+ * never an answer: until the dice land the workspace is not ready for a response. An unbound mount
+ * renders the stage's visible "needs the tutor" card.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  LuminaBadge,
-  LuminaCard,
-  LuminaCardContent,
-  LuminaCardHeader,
-  LuminaCardTitle,
-  LuminaChallengeCounter,
-  LuminaPanel,
-  LuminaPrompt,
-  motion,
-} from '../../../ui';
-import { usePrimitiveEvaluation } from '../../../evaluation';
-import type {
-  DiDiceRollMetrics,
-  PrimitiveEvaluationResult,
-} from '../../../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
-import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import DiActionPanel from '../../../components/DiActionPanel';
-import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { motion } from '../../../ui';
+import type { DiDiceRollMetrics, PrimitiveEvaluationResult } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
-import {
-  completeCue,
-  contextFor,
-  diceValuesFor,
-  itemCue,
-  isTwoDiceChallenge,
-  moveOnCue,
-  retryPrompt,
-  studentPrompt,
-  withDiceRollAction,
-  type ActionableDiDiceRollChallenge,
-  type DiDiceRollChallenge,
-  type DiDiceRollChallengeType,
-  type DieValue,
-} from './diDiceRollScript';
-import { diDiceRollModePlan } from './diDiceRollModes';
+import DiTeachingStage, { diStageMetrics, type DiStageView } from './DiTeachingStage';
+import { diceValuesFor, isTwoDiceChallenge, type DiDiceRollChallenge, type DiDiceRollChallengeType,
+  type DieValue } from './diDiceRollScript';
+import { diceAssignment, diceScene } from './diDiceRollWorkspace';
 
 export type {
   DiDiceRollChallenge,
@@ -173,328 +141,119 @@ const rollFrames = (target: DieValue): DieValue[] => [
 const ROLL_START_DELAY_MS = 60;
 const ROLL_FRAME_MS = 90;
 
-export const DiDiceRoll: React.FC<{ data: DiDiceRollData; index?: number }> = ({ data }) => {
-  const items = useMemo(
-    () => (data.challenges ?? []).map(withDiceRollAction),
-    [data.challenges],
-  );
-  const [displayedValues, setDisplayedValues] = useState<DieValue[] | null>(null);
-  const [isRolling, setIsRolling] = useState(false);
-  const [reward, setReward] = useState<DiDiceRollChallenge | null>(null);
-  const timersRef = useRef<number[]>([]);
+const COPY = {
+  empty: 'No dice practice was built for this objective.',
+  title: 'Dice Time', badge: 'Roll & say', prompt: 'Roll, then say the answer out loud, or ask for help.',
+  heading: 'Dice Practice Complete!', celebration: 'You rolled, looked, and answered out loud!',
+};
 
-  const clearRollTimers = useCallback(() => {
-    timersRef.current.forEach((timer) => window.clearTimeout(timer));
-    timersRef.current = [];
-  }, []);
+const headline = (item: DiDiceRollChallenge) => item.challengeType === 'compare_dice'
+  ? item.comparison === 'same' ? 'Same amount' : `${item.comparison === 'left' ? 'Left' : 'Right'} has more`
+  : item.spokenAnswer;
+const detail = (item: DiDiceRollChallenge) => item.challengeType === 'count_pips'
+  ? `${item.value} ${item.value === 1 ? 'dot' : 'dots'}`
+  : item.challengeType === 'sum_two_dice'
+    ? `${item.value} + ${item.secondValue} = ${item.total}`
+    : `${item.value} dots · ${item.secondValue} dots`;
 
-  useEffect(() => () => clearRollTimers(), [clearRollTimers]);
-
-  const resolvedInstanceId = useMemo(
-    () => data.instanceId || `di-dice-roll-${Math.round(performance.now())}`,
-    [data.instanceId],
-  );
-
-  const { submitResult, hasSubmitted, submittedResult, elapsedMs } =
-    usePrimitiveEvaluation<DiDiceRollMetrics>({
-      primitiveType: 'di-dice-roll',
-      instanceId: resolvedInstanceId,
-      skillId: data.skillId,
-      subskillId: data.subskillId,
-      objectiveId: data.objectiveId,
-      exhibitId: data.exhibitId,
-      componentIntent: data.componentIntent,
-      objectiveText: data.objectiveText,
-      onSubmit: data.onEvaluationSubmit,
-    });
-
-  const pack = useMemo<JudgedScriptPack<ActionableDiDiceRollChallenge>>(() => ({
-    primitiveType: 'di-dice-roll',
-    activityLine: 'live direct instruction dice counting, comparing, and adding',
-    items,
-    itemCue,
-    moveOnCue,
-    completeCue,
-    contextFor,
-    statusLines: {
-      ready: (current) => studentPrompt(current),
-      retry: retryPrompt,
-      noVerdict: (current) => current.challengeType === 'compare_dice'
-        ? 'One more time — left, right, or same?'
-        : 'One more time — what is your number?',
-      affirmedNext: 'Yes! Get ready to roll again.',
-      done: 'Great dice work today!',
-    },
-    // One record per attempt, right or corrected: the pips shown and what was heard; never the verdict.
-    observation: (item, { heard }) => ({
-      challenge: item.challengeType === 'count_pips'
-        ? `Direct Instruction dice quantity recognition — one die showed ${item.value} pips.`
-        : item.challengeType === 'sum_two_dice'
-          ? `Direct Instruction dice addition — the dice showed ${item.value} and ${item.secondValue} pips.`
-          : `Direct Instruction quantity comparison — the left and right dice showed ${item.value} and ${item.secondValue} pips.`,
-      expected: item.challengeType === 'compare_dice'
-        ? `Say "${item.spokenAnswer}" to identify the larger side or equality.`
-        : `Say the number word "${item.spokenAnswer}".`,
-      observed: heard ? `Heard "${heard}".` : 'No transcript was captured.',
-    }),
-  }), [items]);
-
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
-    const timed = summary.outcomes.filter((outcome) => outcome.seconds != null);
-    const meanResponseMs = timed.length
-      ? Math.round(
-          timed.reduce((sum, outcome) => sum + (outcome.seconds ?? 0) * 1000, 0)
-          / timed.length,
-        )
-      : null;
-    const metrics: DiDiceRollMetrics = {
-      type: 'di-dice-roll',
-      challengeType: items[0]?.challengeType ?? data.challengeType,
-      challengeTypesTested: Array.from(new Set(items.map((challenge) => challenge.challengeType))),
-      totalChallenges: summary.outcomes.length,
-      correctCount: summary.solvedCount,
-      attemptsCount: summary.attemptsCount,
-      firstTryCount: summary.firstTryCount,
-      hintsViewed: 0,
-      overallAccuracy: summary.accuracy,
-      averageAttemptsPerChallenge:
-        summary.attemptsCount / Math.max(summary.outcomes.length, 1),
-      meanResponseMs,
-    };
-    submitResult(
-      summary.passed,
-      summary.accuracy,
-      metrics,
-      { outcomes: summary.outcomes, learningResponses: summary.learningResponses },
-      undefined,
-      summary.diagnosisEvidence,
-    );
-  }, [data.challengeType, items, submitResult]);
-
-  const handleItemOpened = useCallback(() => {
-    clearRollTimers();
-    setDisplayedValues(null);
-    setIsRolling(false);
-  }, [clearRollTimers]);
-
-  const runner = useJudgedScriptRunner<ActionableDiDiceRollChallenge>({
-    pack,
-    instanceId: resolvedInstanceId,
-    gradeLevel: data.gradeLevel || 'kindergarten',
-    exhibitId: data.exhibitId,
-    onFinished: handleFinished,
-    onItemOpened: handleItemOpened,
-    onAffirmed: setReward,
-  });
-
-  // Normalize again at the component boundary because stored payloads and
-  // runner test doubles may predate the shared action contract.
-  const item = runner.currentItem ? withDiceRollAction(runner.currentItem) : null;
-  // Pip: the dice panel is the question side. Pip points at it as a region during
-  // the cue and watches it while the child rolls and answers; it never rolls.
-  const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The dice', finished: hasSubmitted,
-  });
-
-  const handleRoll = useCallback(() => {
-    if (!item || !runner.canAttempt || isRolling || displayedValues != null) return;
-    clearRollTimers();
+/** The covered dice, the controlled roll, and, once credited, the answer under them. Keyed by item, so
+ *  a new item starts covered; Try again keeps the roll. */
+const DiceStage: React.FC<{ item: DiDiceRollChallenge; view: DiStageView; marked: boolean;
+  appearance?: DieProps['appearance'] }> = ({ item, view, marked, appearance }) => {
+  const [displayed, setDisplayed] = useState<DieValue[] | null>(view.ready ? [...diceValuesFor(item)] : null);
+  const [rolling, setRolling] = useState(false);
+  const timers = useRef<number[]>([]);
+  useEffect(() => () => timers.current.forEach(timer => window.clearTimeout(timer)), []);
+  const { markReady } = view;
+  const roll = useCallback(() => {
+    if (rolling || displayed != null) return;
     SoundManager.tap();
-
+    // The faces are final before the animation starts, so the item is answerable from the tap: a
+    // learner who speaks while the dice tumble is not answering too early for the workspace.
+    markReady();
     const targets = [...diceValuesFor(item)];
-
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reducedMotion) {
-      setDisplayedValues(targets);
-      SoundManager.snap();
-      return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setDisplayed(targets); SoundManager.snap(); return;
     }
-
-    setIsRolling(true);
+    setRolling(true);
     const frames = targets.map(rollFrames);
     frames[0].forEach((_frame, index) => {
-      const timer = window.setTimeout(() => {
-        setDisplayedValues(frames.map((dieFrames) => dieFrames[index]));
-        if (index === frames[0].length - 1) {
-          SoundManager.snap();
-          setIsRolling(false);
-        } else {
-          SoundManager.tick();
-        }
-      }, ROLL_START_DELAY_MS + index * ROLL_FRAME_MS);
-      timersRef.current.push(timer);
+      timers.current.push(window.setTimeout(() => {
+        setDisplayed(frames.map(dieFrames => dieFrames[index]));
+        if (index === frames[0].length - 1) { SoundManager.snap(); setRolling(false); }
+        else SoundManager.tick();
+      }, ROLL_START_DELAY_MS + index * ROLL_FRAME_MS));
     });
-  }, [clearRollTimers, displayedValues, isRolling, item, runner.canAttempt]);
+  }, [displayed, item, markReady, rolling]);
 
-  const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (challenge) => ({
-      label: challenge.challengeType === 'count_pips'
-        ? 'Count the dots'
-        : challenge.challengeType === 'compare_dice'
-          ? 'Compare the dice'
-          : 'Add the dice',
-      icon: '🎲',
-      accentColor: 'purple',
-    }));
-  }, [hasSubmitted, items, runner.summary]);
-
-  if (items.length === 0) {
-    return (
-      <LuminaCard>
-        <LuminaCardContent className="py-10 text-center text-sm text-slate-300">
-          No dice practice was built for this objective.
-        </LuminaCardContent>
-      </LuminaCard>
-    );
-  }
-
-  const reveal = runner.revealHeld && reward;
-  const visualItem = reveal ? reward : item;
-  const valuesToRender = reveal ? [...diceValuesFor(reward)] : displayedValues;
-  const usesTwoDice = visualItem ? isTwoDiceChallenge(visualItem) : false;
-  const dieLabel = valuesToRender == null
-    ? usesTwoDice ? 'Roll both dice' : 'Roll the die'
-    : reveal
-      ? reward.challengeType === 'count_pips'
-        ? `Die showing ${reward.spokenAnswer} ${reward.value === 1 ? 'dot' : 'dots'}.`
-        : reward.challengeType === 'sum_two_dice'
-          ? `Dice showing ${reward.value} and ${reward.secondValue}; ${reward.spokenAnswer} dots altogether.`
-          : `Left die ${reward.value}, right die ${reward.secondValue}; ${reward.spokenAnswer}.`
-      : visualItem?.challengeType === 'compare_dice'
-        ? 'Two dice with dot patterns. Say which has more: left, right, or same.'
-        : usesTwoDice
-          ? 'Two dice with dot patterns. Say how many dots there are altogether.'
-          : 'Die with a dot pattern. Say how many dots you see.';
-  const rewardHeadline = reveal
-    ? reward.challengeType === 'compare_dice'
-      ? reward.comparison === 'same'
-        ? 'Same amount'
-        : `${reward.comparison === 'left' ? 'Left' : 'Right'} has more`
-      : reward.spokenAnswer
-    : '';
-  const rewardDetail = reveal
-    ? reward.challengeType === 'count_pips'
-      ? `${reward.value} ${reward.value === 1 ? 'dot' : 'dots'}`
-      : reward.challengeType === 'sum_two_dice'
-        ? `${reward.value} + ${reward.secondValue} = ${reward.total}`
-        : `${reward.value} dots · ${reward.secondValue} dots`
-    : '';
-  const actionPlan = item ? diDiceRollModePlan(item) : null;
-  const actionSteps = actionPlan?.steps ?? [];
-  const rollStep = actionSteps[0] ?? null;
-  const answerStep = actionPlan?.answerStep ?? null;
-  const currentActionStep = valuesToRender == null ? rollStep : answerStep;
-  const completedActionIds = valuesToRender != null && rollStep
-    ? new Set([rollStep.id])
-    : new Set<string>();
-
-  return (
-    <LuminaCard surface="elevated" className="mx-auto max-w-3xl">
-      <LuminaCardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <LuminaCardTitle>{data.title || 'Dice Time'}</LuminaCardTitle>
-            <p className="text-sm text-slate-400">{data.description}</p>
+  const two = isTwoDiceChallenge(item);
+  const credited = view.committed.has(item.id);
+  const label = displayed == null ? (two ? 'Roll both dice' : 'Roll the die')
+    : item.challengeType === 'compare_dice' ? 'Two dice with dot patterns. Say which has more: left, right, or same.'
+      : two ? 'Two dice with dot patterns. Say how many dots there are altogether.'
+        : 'Die with a dot pattern. Say how many dots you see.';
+  return <div data-dice-object="dice" data-assignment-target="true" data-tutor-demonstration={marked}
+    className={`flex min-h-64 flex-col items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/5 py-8 ${marked ? 'outline outline-2 outline-dashed outline-offset-4 outline-purple-400' : ''}`}>
+    <button type="button" onClick={roll} disabled={rolling || displayed != null} aria-label={label}
+      className="rounded-[2rem] p-2 outline-none transition-transform hover:scale-[1.03] focus-visible:ring-4 focus-visible:ring-violet-400/70 disabled:cursor-default disabled:hover:scale-100">
+      <div className="flex items-end justify-center gap-5 sm:gap-8">
+        {Array.from({ length: two ? 2 : 1 }, (_, dieIndex) => (
+          <div key={dieIndex} className="flex flex-col items-center gap-2">
+            {item.challengeType === 'compare_dice' && <span aria-hidden="true"
+              className="text-xs font-bold uppercase tracking-[0.22em] text-slate-300">{dieIndex === 0 ? 'Left' : 'Right'}</span>}
+            {displayed == null
+              ? <div aria-hidden="true" className={`${two ? 'h-24 w-24' : 'h-32 w-32'} grid place-items-center rounded-[1.75rem] border-2 border-dashed border-violet-300/60 bg-violet-500/10 text-4xl font-semibold text-violet-200`}>?</div>
+              : <Die value={displayed[dieIndex]} size={two ? 'md' : 'lg'} rolling={rolling} appearance={appearance}
+                ariaLabel={item.challengeType === 'compare_dice' ? `${dieIndex === 0 ? 'Left' : 'Right'} die with a dot pattern` : 'Die with a dot pattern'}
+                className={credited ? motion.pop : motion.reveal} />}
           </div>
-          <LuminaBadge accent="purple" className="text-xs">Roll &amp; say</LuminaBadge>
-        </div>
-      </LuminaCardHeader>
+        ))}
+      </div>
+    </button>
+    {credited && <div className={`mt-5 text-center ${motion.pop}`} data-dice-credited={item.id}>
+      <div className="text-4xl font-bold capitalize text-emerald-300">{headline(item)}</div>
+      <div className="mt-1 text-lg font-semibold text-emerald-200">{detail(item)}</div>
+    </div>}
+  </div>;
+};
 
-      <LuminaCardContent className="space-y-4">
-        {!hasSubmitted && item && (
-          <>
-            <div className="flex justify-center">
-              <LuminaChallengeCounter
-                current={Math.min(runner.currentIndex + 1, items.length)}
-                total={items.length}
-                variant="dots"
-              />
-            </div>
+/** Credited rolls, each drawn small with its answer. */
+function creditedRolls(done: DiDiceRollChallenge[]) {
+  return done.length > 0 && <div className="flex flex-wrap justify-center gap-2" aria-label="Rolls you have answered">
+    {done.map(item => <div key={item.id} data-dice-trail={item.id}
+      className="flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-3 py-1">
+      {diceValuesFor(item).map((value, index) => <Die key={index} value={value} size="sm" className="!h-8 !w-8 !p-1" />)}
+      <span className="text-sm font-semibold text-emerald-200">{headline(item)}</span>
+    </div>)}
+  </div>;
+}
 
-            <LuminaPrompt>{studentPrompt(item)}</LuminaPrompt>
+/** A missed roll recaps without its answer. */
+const recapLabel = (item: DiDiceRollChallenge, solved: boolean) =>
+  solved ? `${headline(item)} (${detail(item)})` : item.challengeType === 'count_pips' ? 'Count the dots'
+    : item.challengeType === 'compare_dice' ? 'Compare the dice' : 'Add the dice';
 
-            {pip.store && <div {...pip.dock} />}
-            <LuminaPanel {...pip.target('stimulus')} accent="purple" className="flex min-h-64 flex-col items-center justify-center py-8">
-              <button
-                type="button"
-                onClick={handleRoll}
-                disabled={!runner.canAttempt || isRolling || displayedValues != null}
-                aria-label={dieLabel}
-                className="rounded-[2rem] p-2 outline-none transition-transform hover:scale-[1.03] focus-visible:ring-4 focus-visible:ring-violet-400/70 disabled:cursor-default disabled:hover:scale-100"
-              >
-                <div className="flex items-end justify-center gap-5 sm:gap-8">
-                  {Array.from({ length: usesTwoDice ? 2 : 1 }, (_, dieIndex) => (
-                    <div key={dieIndex} className="flex flex-col items-center gap-2">
-                      {visualItem?.challengeType === 'compare_dice' && (
-                        <span
-                          aria-hidden="true"
-                          className="text-xs font-bold uppercase tracking-[0.22em] text-slate-300"
-                        >
-                          {dieIndex === 0 ? 'Left' : 'Right'}
-                        </span>
-                      )}
-                      {valuesToRender == null ? (
-                        <div
-                          aria-hidden="true"
-                          className={`${usesTwoDice ? 'h-24 w-24' : 'h-32 w-32'} grid place-items-center rounded-[1.75rem] border-2 border-dashed border-violet-300/60 bg-violet-500/10 text-4xl font-semibold text-violet-200`}
-                        >
-                          ?
-                        </div>
-                      ) : (
-                        <Die
-                          value={valuesToRender[dieIndex]}
-                          size={usesTwoDice ? 'md' : 'lg'}
-                          rolling={isRolling}
-                          appearance={data.appearance}
-                          ariaLabel={visualItem?.challengeType === 'compare_dice'
-                            ? `${dieIndex === 0 ? 'Left' : 'Right'} die with a dot pattern`
-                            : 'Die with a dot pattern'}
-                          className={reveal ? motion.pop : motion.reveal}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </button>
+export interface DiDiceRollProps {
+  data: DiDiceRollData;
+  index?: number;
+  className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED eval mode from the live mount; never rebuilt from a label. */
+  runtimeEvalMode?: string;
+}
 
-              {reveal && (
-                <div className={`mt-5 text-center ${motion.pop}`}>
-                  <div className="text-4xl font-bold capitalize text-emerald-300">
-                    {rewardHeadline}
-                  </div>
-                  <div className="mt-1 text-lg font-semibold text-emerald-200">
-                    {rewardDetail}
-                  </div>
-                </div>
-              )}
-
-            </LuminaPanel>
-
-            <DiActionPanel
-              run={runner}
-              running={runner.running}
-              stage={runner.stage}
-              currentItem={currentActionStep}
-              steps={actionSteps}
-              completedIds={completedActionIds}
-              startInstruction="Start the lesson, then roll the dice and answer out loud."
-            />
-          </>
-        )}
-
-        {hasSubmitted && phaseResults.length > 0 && (
-          <PhaseSummaryPanel
-            phases={phaseResults}
-            overallScore={submittedResult?.score}
-            durationMs={elapsedMs}
-            heading="Dice Practice Complete!"
-            celebrationMessage="You rolled, looked, and answered out loud!"
-          />
-        )}
-      </LuminaCardContent>
-    </LuminaCard>
-  );
+/** PLATFORM PROP CONTRACT: registry primitives mount as `<Component data={…} index={…} />`. */
+export const DiDiceRoll: React.FC<DiDiceRollProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
+  const items = useMemo(() => data.challenges ?? [], [data.challenges]);
+  const evalMode = runtimeEvalMode || data.challengeType || 'count_pips';
+  return <DiTeachingStage<DiDiceRollChallenge, DiDiceRollMetrics> primitiveId="di-dice-roll" data={data}
+    items={items} evalMode={evalMode} className={className} runtimePlanItemId={runtimePlanItemId}
+    assignment={diceAssignment} scene={diceScene} copy={COPY} recapLabel={recapLabel} trail={creditedRolls}
+    awaitsStimulus
+    stimulus={(item, marks, view) => <DiceStage key={item.id} item={item} view={view} marked={marks.includes('dice')}
+      appearance={data.appearance} />}
+    metrics={result => ({ type: 'di-dice-roll', ...diStageMetrics(result, items, data.challengeType),
+      challengeTypesTested: Array.from(new Set(items.map(challenge => challenge.challengeType))), meanResponseMs: null })} />;
 };
 
 export default DiDiceRoll;

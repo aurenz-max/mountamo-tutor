@@ -1,0 +1,99 @@
+{
+ "source": "qa/tutor-reports/di-dice-roll-runtime-compare_dice-payload-2026-09-26.json",
+ "primitiveId": "di-dice-roll",
+ "evalMode": "compare_dice",
+ "data": {
+  "title": "Dice Duel",
+  "description": "Roll your dice, look closely at the dots, and say your choice aloud.",
+  "challengeType": "compare_dice",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "didr-1",
+    "challengeType": "compare_dice",
+    "action": "compare_dice",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "sides": 6,
+    "value": 3,
+    "secondValue": 1,
+    "comparison": "left",
+    "spokenAnswer": "left",
+    "asrAliases": [
+     "left",
+     "the left one",
+     "the left die"
+    ]
+   },
+   {
+    "id": "didr-2",
+    "challengeType": "compare_dice",
+    "action": "compare_dice",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "sides": 6,
+    "value": 1,
+    "secondValue": 2,
+    "comparison": "right",
+    "spokenAnswer": "right",
+    "asrAliases": [
+     "right",
+     "the right one",
+     "the right die"
+    ]
+   },
+   {
+    "id": "didr-3",
+    "challengeType": "compare_dice",
+    "action": "compare_dice",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "sides": 6,
+    "value": 1,
+    "secondValue": 1,
+    "comparison": "same",
+    "spokenAnswer": "same",
+    "asrAliases": [
+     "same",
+     "equal",
+     "tie",
+     "they are equal"
+    ]
+   },
+   {
+    "id": "didr-4",
+    "challengeType": "compare_dice",
+    "action": "compare_dice",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "sides": 6,
+    "value": 1,
+    "secondValue": 4,
+    "comparison": "right",
+    "spokenAnswer": "right",
+    "asrAliases": [
+     "right",
+     "the right one",
+     "the right die"
+    ]
+   },
+   {
+    "id": "didr-5",
+    "challengeType": "compare_dice",
+    "action": "compare_dice",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "sides": 6,
+    "value": 2,
+    "secondValue": 3,
+    "comparison": "right",
+    "spokenAnswer": "right",
+    "asrAliases": [
+     "right",
+     "the right one",
+     "the right die"
+    ]
+   }
+  ]
+ }
+}

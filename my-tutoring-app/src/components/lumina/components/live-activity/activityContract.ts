@@ -58,6 +58,7 @@ import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { diShapesLiveDomain } from './adapters/diShapesLive';
 import { diSpokenPracticeLiveDomain } from './adapters/diSpokenPracticeLive';
+import { diDiceRollLiveDomain } from './adapters/diDiceRollLive';
 import { spatialSceneLiveDomain } from './adapters/spatialSceneLive';
 import { workspaceAdapter, type LiveActivityAdapter } from './adapters/adapterContract';
 
@@ -122,6 +123,7 @@ export const LIVE_ADAPTERS = {
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
   'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),
   'di-spoken-practice': workspaceAdapter('di-spoken-practice', diSpokenPracticeLiveDomain),
+  'di-dice-roll': workspaceAdapter('di-dice-roll', diDiceRollLiveDomain),
   'spatial-scene': workspaceAdapter('spatial-scene', spatialSceneLiveDomain),
 } satisfies Record<string, LiveActivityAdapter<any>>;
 

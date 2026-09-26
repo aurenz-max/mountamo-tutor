@@ -1,0 +1,83 @@
+{
+ "source": "qa/tutor-reports/di-dice-roll-runtime-count_pips-payload-2026-09-26.json",
+ "primitiveId": "di-dice-roll",
+ "evalMode": "count_pips",
+ "data": {
+  "title": "Roll and Say",
+  "description": "Roll the cube, look at the cozy dots, and speak your answer out loud.",
+  "challengeType": "count_pips",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "didr-1",
+    "challengeType": "count_pips",
+    "action": "count_pips",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "sides": 6,
+    "value": 3,
+    "spokenAnswer": "three",
+    "asrAliases": [
+     "three",
+     "3"
+    ]
+   },
+   {
+    "id": "didr-2",
+    "challengeType": "count_pips",
+    "action": "count_pips",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "sides": 6,
+    "value": 6,
+    "spokenAnswer": "six",
+    "asrAliases": [
+     "six",
+     "6"
+    ]
+   },
+   {
+    "id": "didr-3",
+    "challengeType": "count_pips",
+    "action": "count_pips",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "sides": 6,
+    "value": 5,
+    "spokenAnswer": "five",
+    "asrAliases": [
+     "five",
+     "5"
+    ]
+   },
+   {
+    "id": "didr-4",
+    "challengeType": "count_pips",
+    "action": "count_pips",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "sides": 6,
+    "value": 1,
+    "spokenAnswer": "one",
+    "asrAliases": [
+     "one",
+     "1"
+    ]
+   },
+   {
+    "id": "didr-5",
+    "challengeType": "count_pips",
+    "action": "count_pips",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "sides": 6,
+    "value": 4,
+    "spokenAnswer": "four",
+    "asrAliases": [
+     "four",
+     "4"
+    ]
+   }
+  ]
+ }
+}
