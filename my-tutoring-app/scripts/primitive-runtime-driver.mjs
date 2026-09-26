@@ -12,8 +12,9 @@ import { JSDOM, VirtualConsole } from 'jsdom';
 import React from 'react';
 import * as vite from 'vite';
 
-// Keep the line protocol separate from component diagnostics.
-console.log = (...args) => process.stderr.write(args.join(' ') + '\n');
+// Keep the line protocol separate from component diagnostics: every console channel that
+// prints to stdout goes to stderr (a build gate's console.info broke genre-explorer's mount).
+console.log = console.info = console.debug = (...args) => process.stderr.write(args.join(' ') + '\n');
 // Required, never defaulted: a default here is a silent per-primitive assumption
 // in shared code, which is the thing this driver exists not to have.
 const primitiveId = process.argv[3];

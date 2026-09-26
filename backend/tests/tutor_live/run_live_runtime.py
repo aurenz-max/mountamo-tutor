@@ -27,9 +27,11 @@ import os
 import argparse
 import asyncio
 import base64
+import collections
 import json
 import re
 import subprocess
+import threading
 import time
 import uuid
 from datetime import date
@@ -60,7 +62,7 @@ class Session:
         self.process.stdin.write(json.dumps(message) + '\n'); self.process.stdin.flush()
         line = self.process.stdout.readline()
         if not line:
-            raise RuntimeError('Mounted driver ended: ' + self.process.stderr.read()[-2000:])
+            raise RuntimeError('Mounted driver ended: ' + ''.join(self.stderr_tail)[-2000:])
         return json.loads(line)
 
     async def step(self, message):
@@ -594,6 +596,10 @@ async def drive(args, token, live, index):
     s.process = subprocess.Popen(['node', 'scripts/primitive-runtime-driver.mjs', str(uuid.uuid4()), args.primitive],
         cwd=ROOT/'my-tutoring-app', env={**os.environ, 'LIVE_FRONTEND': args.frontend}, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
         stderr=subprocess.PIPE, text=True, encoding='utf-8')
+    # Drain stderr as it arrives: an unread pipe fills (4 KB on Windows) and blocks the driver
+    # mid-drive once a component logs on every render (genre-explorer's build gates, C7).
+    s.stderr_tail = collections.deque(maxlen=200)
+    threading.Thread(target=lambda: s.stderr_tail.extend(iter(s.process.stderr.readline, '')), daemon=True).start()
     try:
         ready = json.loads(await asyncio.wait_for(asyncio.to_thread(s.process.stdout.readline), 60))
         assert ready['ready'] and ready['journey']['primitiveId'] == args.primitive
