@@ -1,0 +1,101 @@
+{
+ "source": "qa/tutor-reports/era-explorer-runtime-era_sort-payload-2026-09-26.json",
+ "primitiveId": "era-explorer",
+ "evalMode": "era_sort",
+ "data": {
+  "title": "Explore Life in Pioneer Times",
+  "description": "Students will explore what everyday life was like for pioneers and decide whether certain details belong to the past, today, or both.",
+  "eraName": "Pioneer Times",
+  "eraPeriod": "about 150 years ago",
+  "priorEra": {
+   "name": "Early Colonial Days",
+   "body": "Before the western wagon trails were fully open, settlers lived in smaller eastern towns closer to the coast. Travel was even slower, mostly relying on small sailboats and horse trails instead of covered wagons."
+  },
+  "lenses": [
+   {
+    "title": "Daily Life",
+    "body": "Pioneer families lived in simple log cabins built by hand with few or no windows. They woke up before sunrise to start a fire in the hearth for heat and cooking. Water had to be carried in buckets from a nearby stream or hand-dug well.",
+    "icon": "🪵"
+   },
+   {
+    "title": "Technology",
+    "body": "Families did not have electricity, running water, or gas stoves. Instead, they relied on candles and oil lamps for light and heavy iron pots over an open fire to cook meals. Traveling long distances required walking, riding horses, or bumping along in covered wagons.",
+    "icon": "🕯️"
+   },
+   {
+    "title": "School & Work",
+    "body": "Children helped their parents with heavy daily chores like gathering firewood, feeding farm animals, and weeding the vegetable garden. When they went to school, all the students of different ages sat together in a single room with one teacher.",
+    "icon": "🏫"
+   }
+  ],
+  "challenges": [
+   {
+    "id": "era-era_sort-1",
+    "type": "era_sort",
+    "statement": "Children help their families by gathering firewood and feeding farm animals every single day.",
+    "options": [
+     "Pioneer Times",
+     "Today",
+     "Both then and now"
+    ],
+    "correctIndex": 2,
+    "explanation": "Children have always had important chores to help support their families, both in pioneer times and today.",
+    "lensHint": "School & Work"
+   },
+   {
+    "id": "era-era_sort-2",
+    "type": "era_sort",
+    "statement": "Families turn on a kitchen faucet to get clean running water instantly for cooking and washing.",
+    "options": [
+     "Pioneer Times",
+     "Today",
+     "Both then and now"
+    ],
+    "correctIndex": 1,
+    "explanation": "Indoor plumbing with running water is a modern convenience that pioneer families did not have in their log cabins.",
+    "lensHint": "Daily Life"
+   },
+   {
+    "id": "era-era_sort-3",
+    "type": "era_sort",
+    "statement": "Students of all different ages study together in a small one-room schoolhouse with a single teacher.",
+    "options": [
+     "Pioneer Times",
+     "Today",
+     "Both then and now"
+    ],
+    "correctIndex": 0,
+    "explanation": "Pioneer communities were small, so all grades shared one room and one teacher instead of going to large modern schools.",
+    "lensHint": "School & Work"
+   },
+   {
+    "id": "era-era_sort-4",
+    "type": "era_sort",
+    "statement": "People travel across the country by bumping along slowly in heavy covered wagons pulled by oxen.",
+    "options": [
+     "Pioneer Times",
+     "Today",
+     "Both then and now"
+    ],
+    "correctIndex": 0,
+    "explanation": "Pioneers had to rely on animal-drawn wagons because cars, trains, and airplanes had not been invented yet.",
+    "lensHint": "Technology"
+   },
+   {
+    "id": "era-era_sort-5",
+    "type": "era_sort",
+    "statement": "Children play games, run around outdoors, and spend time laughing with their friends.",
+    "options": [
+     "Pioneer Times",
+     "Today",
+     "Both then and now"
+    ],
+    "correctIndex": 2,
+    "explanation": "Playing and having fun with friends is something children do in every time period, past and present.",
+    "lensHint": "Daily Life"
+   }
+  ],
+  "challengeType": "era_sort",
+  "gradeLevel": "elementary"
+ }
+}

@@ -106,6 +106,7 @@ import { readAloudJourneyAnswers } from '../../primitives/visual-primitives/lite
 import { itemsFromChallenges as oralSentenceItems } from '../../primitives/visual-primitives/literacy/oralSentenceStudioScript';
 import { oralSentenceJourneyAnswers } from '../../primitives/visual-primitives/literacy/oralSentenceStudioWorkspace';
 import { causeEffectItems, causeEffectJourneyAnswers } from '../../primitives/visual-primitives/history/causeEffectChainWorkspace';
+import { eraItems, eraJourneyAnswers } from '../../primitives/visual-primitives/history/eraExplorerWorkspace';
 import { statesItems } from './adapters/statesOfMatterLive';
 import { statesJourneyAnswers } from '../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
 import { solarItems } from './adapters/solarSystemExplorerLive';
@@ -1582,6 +1583,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         return (intent === 'wrong' ? answers.order.wrong : answers.order.correct)
           .map(id => ({ type: 'choose' as const, label: `Place "${text(id)}"` }));
       }
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'era-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/history/EraExplorer.tsx',
+    instanceId: 'era-explorer',
+    defaults: { grade: 'Grade 2', mode: 'era_sort', di: false, topic: 'Life in pioneer times' },
+    leakTokens: ['ERA_ITEM', 'ERA_MOVE', 'ERA_COMPLETE', 'ERA_HEAR', 'ERA_SOURCE', 'ERA_EXPLORE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one spoken pick from the three-part menu the ask states.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = eraItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current era-explorer item');
+      const answers = eraJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },

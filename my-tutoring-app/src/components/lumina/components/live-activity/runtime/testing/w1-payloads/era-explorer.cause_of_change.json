@@ -1,0 +1,101 @@
+{
+ "source": "qa/tutor-reports/era-explorer-runtime-cause_of_change-payload-2026-09-26.json",
+ "primitiveId": "era-explorer",
+ "evalMode": "cause_of_change",
+ "data": {
+  "title": "Exploring the Early 1900s",
+  "description": "Explore everyday life, new inventions, and jobs from a century ago and discover what caused those ways of living to change.",
+  "eraName": "Early 1900s",
+  "eraPeriod": "about 100 years ago",
+  "priorEra": {
+   "name": "The 1800s",
+   "body": "Before the early 1900s, almost all work was done by hand or with the help of farm animals instead of machines. People relied on oil lamps for light because electricity was not yet common in homes."
+  },
+  "lenses": [
+   {
+    "title": "Daily Life",
+    "body": "Families cooked meals on heavy wood-burning stoves and cleaned clothes by scrubbing them on a metal washboard. Children spent their free time playing stickball in the street or marbles in the yard since television and video games did not exist.",
+    "icon": "🧺"
+   },
+   {
+    "title": "Technology",
+    "body": "Horses and carriages still shared dirt roads with early noisy automobiles and streetcars. Families gathered around large wooden box radios in the evening to listen to news and storytelling programs.",
+    "icon": "📻"
+   },
+   {
+    "title": "School & Work",
+    "body": "Many children attended one-room schoolhouses where all grades learned together from a single teacher. Adults often worked long factory shifts in textile mills or steel plants before labor laws limited working hours.",
+    "icon": "🏫"
+   }
+  ],
+  "challenges": [
+   {
+    "id": "era-cause_of_change-1",
+    "type": "cause_of_change",
+    "statement": "Families stopped washing dirty clothes by hand on metal washboards.",
+    "options": [
+     "electric washing machines were invented and put into homes",
+     "the local grocery store started selling disposable paper clothing",
+     "government laws made washing clothes illegal on weekends"
+    ],
+    "correctIndex": 0,
+    "explanation": "New electrical appliances were created to take over heavy household chores, which saved people hours of hard physical labor every week.",
+    "lensHint": "Daily Life"
+   },
+   {
+    "id": "era-cause_of_change-2",
+    "type": "cause_of_change",
+    "statement": "People stopped riding horses and carriages on dirt roads to get to work.",
+    "options": [
+     "cities passed strict laws banning horses from entering downtown areas",
+     "automobile factories began mass-producing affordable cars",
+     "train tracks were built down the center of every city street"
+    ],
+    "correctIndex": 1,
+    "explanation": "New manufacturing methods allowed factories to build cars quickly and cheaply, making gasoline-powered vehicles available to ordinary families.",
+    "lensHint": "Technology"
+   },
+   {
+    "id": "era-cause_of_change-3",
+    "type": "cause_of_change",
+    "statement": "Children stopped attending tiny one-room schoolhouses in rural areas.",
+    "options": [
+     "the invention of home computers allowed students to learn online",
+     "laws were passed that stopped children from going to school",
+     "school districts built larger centralized brick school buildings"
+    ],
+    "correctIndex": 2,
+    "explanation": "Communities raised funds to build bigger schools with separate classrooms for each grade so students could learn in better-equipped spaces.",
+    "lensHint": "School & Work"
+   },
+   {
+    "id": "era-cause_of_change-4",
+    "type": "cause_of_change",
+    "statement": "Families stopped using heavy wood-burning stoves to cook meals.",
+    "options": [
+     "gas and electric kitchen ranges became widely available",
+     "restaurants started delivering warm meals to every family daily",
+     "people stopped eating hot meals because food safety laws changed"
+    ],
+    "correctIndex": 0,
+    "explanation": "The spread of utility lines into neighborhoods brought reliable energy directly into kitchens, making cooking much faster and cleaner.",
+    "lensHint": "Daily Life"
+   },
+   {
+    "id": "era-cause_of_change-5",
+    "type": "cause_of_change",
+    "statement": "People stopped gathering around heavy wooden box radios for evening entertainment.",
+    "options": [
+     "government rules limited the hours that radio stations could broadcast",
+     "television sets were invented and placed in living rooms",
+     "new laws required everyone to turn off their radios after sunset"
+    ],
+    "correctIndex": 1,
+    "explanation": "The development of moving picture broadcast technology created a new home entertainment device that captured everyone's attention.",
+    "lensHint": "Technology"
+   }
+  ],
+  "challengeType": "cause_of_change",
+  "gradeLevel": "elementary"
+ }
+}

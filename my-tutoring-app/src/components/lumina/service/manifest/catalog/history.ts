@@ -283,5 +283,16 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'One life detail is printed at a time beside the era cards (three lenses, and the era before when two eras '
+        + 'are compared). Every answer is one of the three choices the ask names aloud: which lens the detail came from; '
+        + 'only back then, only today, or both; this era, the era before, or both; or which of three causes changed life. '
+        + 'Say the three choices every time you ask; the learner may answer with a short form or the choice\'s place. The '
+        + 'cards are open-book evidence: point the learner back to them, but never say which card or choice holds the '
+        + 'answer before an attempt. "Today" is not a choice when two past eras are compared, and saying what changed is '
+        + 'not a cause. For kindergarten and grade 1, read the detail aloud, and a card when the learner asks. No choice '
+        + 'is printed until credit. You cannot point at or open cards.',
+    },
   },
 ];

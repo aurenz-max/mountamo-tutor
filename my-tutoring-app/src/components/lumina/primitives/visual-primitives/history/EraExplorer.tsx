@@ -1,17 +1,12 @@
 'use client';
 
 /**
- * EraExplorer — TWO surfaces, forked on whether judged challenges arrived:
- *
- *  - DI JUDGED LOOP (challenges present — the normal path now): the Live tutor
- *    owns the clock. It reads one life detail, waits, judges the spoken answer
- *    in-band, corrects contrastively, and its own affirmation is the advance.
- *    No advance timer, no Next button, no Check button, no push-to-talk mic, no
- *    printed answer before the affirm.
- *
- *  - EXPLORATION (no challenges, or every one dropped by a build gate): the era
- *    card on its own, tutor as a silent guide. The honest degrade, and a real
- *    reference surface for a lesson that only wants the era.
+ * EraExplorer — runs only on the shared tutor/JEV teaching workspace (workspace
+ * rollout C8; the scripted runner was retired, LA-14, user ruling 09-23: one path).
+ * The observer judges each spoken pick and the runtime owns progression. There is
+ * no Next or Check button, no mic panel, and no answer on screen before credit. An
+ * unbound mount shows the shared "needs the tutor" card; the adapter refuses a
+ * lesson with no askable challenge.
  *
  * ⭐ ALL FOUR EVAL MODES ARE SPOKEN. lens_id says which lens, era_sort says
  * when, era_compare says which of two past times, cause_of_change says why. The
@@ -26,8 +21,9 @@
  *    (the mats rule); the BUTTON is what goes.
  *  - the CHECK button and the two-strikes REVEAL ladder — the tutor's verdict
  *    is the check, and its correction is the second try.
- *  - the NEXT button and the "Start the Questions" explore gate — the tutor
- *    owns the clock, so neither has anything to advance.
+ *  - the NEXT button and the "Start the Questions" explore gate — the runtime
+ *    owns progression, so neither has anything to advance.
+ *  - tap-to-hear the question: with the tutor present, the learner asks it to repeat.
  *  - the HINT DISCLOSURE — a hint the child dispenses to themselves is not a
  *    scaffold the tier can withdraw; the scripted correction re-models instead.
  *  - the EXPLANATION under the choices — it names the answer, so it is a
@@ -36,17 +32,16 @@
  * WHAT IT KEEPS, deliberately: the ERA CARD. This primitive is open-book by
  * design — the lens bodies are the evidence and consulting them IS the
  * historian's method, so the card is the PAGE in the teacher-at-a-table
- * picture, not apparatus. Its read-aloud (`sourceCue`) is the pre-reader's only
- * channel to that evidence and speaks a lens body, never a statement or an
- * option. `lensAccess: 'collapsible'` still folds it away between items at the
+ * picture, not apparatus. Its read-aloud (a silent host request) is the
+ * pre-reader's only channel to that evidence and asks for a lens body, never a
+ * statement or an option. `lensAccess: 'collapsible'` still folds it away between items at the
  * hard tier — the one L3 lever that survives as a render lever.
  *
- * Cue lines, judging contracts and build gates live in `eraExplorerScript.ts`
- * (hand-authored, DISTAR). Nothing in this file writes a spoken line.
+ * Asks and build gates live in `eraExplorerScript.ts`; the assignment and scene
+ * the tutor receives live in `eraExplorerWorkspace.ts`.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Volume2 } from 'lucide-react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard,
@@ -67,26 +62,21 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { EraExplorerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-} from '../../../hooks/useJudgedScriptRunner';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
   correctChoiceOf,
-  eraExplorerPackBase,
-  itemsFromChallenges,
-  sourceCue,
   type EraExplorerItem,
   type EraKind,
   type EraTier,
 } from './eraExplorerScript';
+import { eraAssignment, eraItems, eraScene, hearCardRequest } from './eraExplorerWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -206,6 +196,9 @@ export interface EraExplorerData {
 export interface EraExplorerProps {
   data: EraExplorerData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -321,7 +314,7 @@ const EraSourceCard: React.FC<{
 // Component
 // ============================================================================
 
-const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
+const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const {
     title,
     eraName,
@@ -341,41 +334,17 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
   } = data;
 
   const resolvedInstanceId = instanceId ?? 'era-explorer';
+  const workspace = useRef<TeachingWorkspace | null>(null);
 
   /** K-1 cannot read the lens bodies or the statement — the tutor's voice is
    *  their only channel, so the source read-aloud is sized to the tap tier. */
   const isPreReader = gradeLevel === 'K' || gradeLevel === '1';
 
-  const session = useMemo(() => ({
-    eraName,
-    priorEraName: priorEra?.name ?? '',
-    lensTitles: lenses.map((l) => l.title),
-    lensBodies: lenses.map((l) => l.body),
-  }), [eraName, priorEra?.name, lenses]);
-
   const items = useMemo(
-    () => itemsFromChallenges(
-      challenges.map((c) => ({
-        id: c.id,
-        type: c.type,
-        statement: c.statement,
-        options: c.options,
-        correctIndex: c.correctIndex,
-        explanation: c.explanation,
-      })),
-      session,
-      { tier: supportTier },
-    ),
-    [challenges, session, supportTier],
+    () => eraItems({ eraName, priorEra, lenses, challenges, supportTier }),
+    [eraName, priorEra, lenses, challenges, supportTier],
   );
-
-  const judged = items.length > 0;
-  const needsPriorEra = useMemo(
-    () => (judged
-      ? items.some((i) => i.kind === 'era_compare')
-      : challenges.some((c) => c.type === 'era_compare')),
-    [judged, items, challenges],
-  );
+  const needsPriorEra = useMemo(() => items.some((i) => i.kind === 'era_compare'), [items]);
 
   // ── Source state (the page, not the answer) ───────────────────────────────
   const [activeLens, setActiveLens] = useState(0);
@@ -413,7 +382,7 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
     return kinds.length === 1 ? kinds[0] : 'mixed';
   }, [items]);
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const metrics: EraExplorerMetrics = {
       type: 'era-explorer',
       challengeType: items.length > 0 ? sessionChallengeType : (data.challengeType ?? 'mixed'),
@@ -422,8 +391,7 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
       attemptsCount: summary.attemptsCount,
       firstTryCount: summary.firstTryCount,
       // The source read-aloud is BASELINE ACCESS to an open-book primitive, not
-      // a hint (it was never counted as one in the click era either), and the
-      // judged loop has no hint disclosure left to count. Reported honestly
+      // a hint, and there is no hint disclosure left to count. Reported honestly
       // rather than repurposed to keep a field non-zero.
       hintsViewed: 0,
       overallAccuracy: summary.accuracy,
@@ -436,39 +404,24 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
       summary.passed,
       summary.accuracy,
       metrics,
-      { eraName, challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses },
+      { eraName, challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
+        teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [items, sessionChallengeType, data.challengeType, eraName, evaluation]);
+  };
 
-  // ── The pack — wording lives in eraExplorerScript.ts ───────────────────────
-  // The cue surface is SPREAD, not re-declared, so the DI drive harness reads
-  // the same bytes this component sends.
-  const pack = useMemo<JudgedScriptPack<EraExplorerItem>>(() => ({
-    ...eraExplorerPackBase(items),
-    statusLines: {
-      ready: () => 'Listen, then say your answer.',
-      retry: () => 'Listen again — then say your answer.',
-      done: 'Great history today!',
-    },
-    // One record per attempt, right or corrected: the statement, the spoken menu, and what was said; never the verdict.
-    observation: (item, { heard: transcript }) => {
-      const heard = (transcript ?? '').trim();
-      return {
-        challenge: `${MODE_META[item.kind].badge}: ${item.statement} (choices: ${item.choices.map((c) => c.phrase).join('; ')})`,
-        expected: correctChoiceOf(item).phrase,
-        observed: heard ? `Said "${heard}".` : 'No transcript was captured.',
-      };
-    },
-  }), [items]);
-
-  const runner = useJudgedScriptRunner<EraExplorerItem>({
-    pack,
+  const runner = useWorkspaceRunner<EraExplorerItem>({
+    primitiveId: 'era-explorer',
+    assignment: eraAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || items[0]?.kind || 'era_sort',
     instanceId: resolvedInstanceId,
-    gradeLevel: gradeLevel || 'Elementary',
-    exhibitId,
-    onFinished: handleFinished,
+    onFinished: finish,
     onItemOpened: () => {
       // The page lever, re-applied per item: at the hard tier the source folds
       // away again, so one tap cannot downgrade the rest of the session.
@@ -479,95 +432,39 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
       setReveal({ item, line: c.label, note: item.explanation });
     },
   });
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
+
+  // What the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation; every item is answerable once it opens.
+  useLayoutEffect(() => {
+    const item = runner.currentItem;
+    if (!item) return;
+    workspace.current = { ...eraScene(item, data, sourceVisible, isPreReader), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
 
   const showReveal = runner.revealHeld && reveal !== null;
   const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The statement', finished: evaluation.hasSubmitted,
+    run: runner, instanceId: resolvedInstanceId, label: 'The statement', finished: showSummary,
   });
 
-  // Correct/incorrect used to fire on a Check press; the tutor's verdict is the
-  // check now, so the reward rides the REVEAL — which opens on her affirmation
-  // and closes when her next cue is sent. There is no `playIncorrect`
-  // counterpart: a wrong answer is answered by her correction, and a sound
-  // under it would talk over the teaching.
-  useEffect(() => {
-    if (showReveal) SoundManager.playCorrect();
-  }, [showReveal, reveal?.item.id]);
-
-  // ── The source read-aloud: the one cue the runner does not own ─────────────
-  // Sent exactly the way the runner sends its own tap-to-hear, so it lands as a
-  // cue and not as a turn the model owes a verdict on.
+  // ── The source read-aloud: a silent host request, never a choice ──────────
   const ctx = useLuminaAIContext();
-  const readLens = useCallback((lens: EraLens) => {
-    // `sourceCue` returns null for a body that cannot be safely spoken (it
-    // opens with a verdict sentinel, or carries a quote that would close the
-    // cue's own span). Nothing is sent rather than something that desyncs the
-    // loop; the card is still on screen for a reader.
-    const cue = lens?.body ? sourceCue(lens.title, lens.body) : null;
-    if (!cue) return;
-    ctx.sendText(cue, { silent: true, scripted: true });
-    // Context methods are stable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── Exploration fallback: the tutor as a silent guide ──────────────────────
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'era-explorer',
-    instanceId: resolvedInstanceId,
-    /**
-     * Exploration-only context, pushed under the SAME TWO KEYS the judged pack
-     * uses — `challengeType` and `stimulus` — with the sentinel value
-     * `free_explore` for the round type (states-of-matter's convention).
-     *
-     * Two reasons, and neither is cosmetic. The catalog interpolates exactly
-     * those two keys, so a fallback bag of its own left both of them arriving
-     * EMPTY on this surface while pushing five keys nothing reads. And the
-     * static tutor-test analyzer parses the first `primitiveData` literal it
-     * finds, so a divergent fallback bag makes a judged port read as
-     * context-key-unresolvable when the judged path is in fact fine.
-     *
-     * No statement, no option, no answer: nothing is judged here, but the tutor
-     * is still walking a child through the same era and must not do the
-     * reasoning for them.
-     */
-    primitiveData: {
-      challengeType: 'free_explore',
-      stimulus: `the era cards for ${eraName}, open for the learner to browse; `
-        + 'this state line is for you alone and is never spoken to the learner',
-    },
-    // The judged path owns the tutor through the runner; this hook is only the
-    // exploration surface's guide, and must never open a second channel to it.
-    enabled: !judged,
-    gradeLevel: gradeLevel || 'Elementary',
-  });
-
-  const [introduced, setIntroduced] = useState(false);
-  useEffect(() => {
-    if (judged || !isConnected || introduced) return;
-    setIntroduced(true);
-    sendText(
-      `[ERA_EXPLORE] The learner is looking at the era cards for "${eraName}" (${eraPeriod}). `
-      + 'Introduce the era warmly in one or two sentences and invite them to open each lens. '
-      + 'Do not quiz them.',
-      { silent: true },
-    );
-  }, [judged, isConnected, introduced, eraName, eraPeriod, sendText]);
+  const readLens = (lens: EraLens) => {
+    if (lens?.body) ctx.sendText(hearCardRequest(lens.title, lens.body), { silent: true, author: 'host' });
+  };
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, (item) => {
+    if (!runner.practiceSummary) return [];
+    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => {
       const meta = MODE_META[item.kind];
       return { label: meta.badge, icon: meta.icon };
     });
-  }, [evaluation.hasSubmitted, runner.summary, items]);
+  }, [runner.practiceSummary, items]);
 
-  /**
-   * WHICH item is on the bench right now. On the advance path the runner opens
-   * the next item in the SAME dispatch as the affirmation, so by render time
-   * `currentItem` is already the NEXT one while the tutor is still saying the
-   * verdict for the last. The reveal therefore renders its OWN item.
-   */
+  /** WHICH item is on the bench right now: the reveal renders its OWN item while it is held. */
   const staged = showReveal && reveal ? reveal.item : runner.currentItem;
   const modeMeta = MODE_META[staged?.kind ?? 'era_sort'];
 
@@ -587,7 +484,7 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
     />
   ) : null;
 
-  if (!judged) {
+  if (items.length === 0) {
     return (
       <LuminaCard className={className}>
         <LuminaCardHeader className="pb-3">
@@ -607,7 +504,7 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          {!evaluation.hasSubmitted && staged && (
+          {!showSummary && staged && (
             <LuminaBadge accent={modeMeta.accent} className="text-xs">
               {modeMeta.icon} {modeMeta.badge}
             </LuminaBadge>
@@ -616,7 +513,7 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!evaluation.hasSubmitted && (
+        {!showSummary && (
           <>
             <div className="flex items-center justify-center gap-4">
               <LuminaChallengeCounter
@@ -624,25 +521,11 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
                 total={items.length}
                 variant="dots"
               />
-              {/* Tap-to-hear the question again — never the answer, never a hint. */}
-              <button
-                type="button"
-                onClick={runner.hearStimulus}
-                aria-label="Hear the question again"
-                className={`
-                  flex items-center justify-center w-10 h-10 rounded-full
-                  bg-amber-500/15 border-2 border-amber-500/30 text-amber-300
-                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
-                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
-                `}
-              >
-                <Volume2 size={18} />
-              </button>
             </div>
 
             {/* THE STATEMENT. The question side, printed for a reader and read
                 aloud for everyone — no bins under it, no captions, no hint, no
-                explanation until the tutor has affirmed. */}
+                explanation until the answer is credited. */}
             {pip.store && <div {...pip.dock} />}
             {staged && (
               <LuminaPrompt {...pip.target('stimulus')} accent="amber" center>
@@ -650,8 +533,8 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
               </LuminaPrompt>
             )}
 
-            {/* Reveal-on-affirm: the answer, in words, for exactly as long as
-                the tutor's affirmation is being spoken (runner.revealHeld). */}
+            {/* Reveal-on-credit: the answer, in words, while the credit is held
+                (runner.revealHeld). */}
             {showReveal && reveal && (
               <div className="flex flex-col items-center gap-2">
                 <div className="rounded-2xl border-2 border-emerald-400/30 bg-emerald-500/10 px-5 py-2.5 animate-in fade-in duration-300">
@@ -678,15 +561,13 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
                 </LuminaButton>
               </div>
             )}
-
-            <JudgedMicPanel run={runner} />
           </>
         )}
 
-        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
             durationMs={evaluation.elapsedMs}
             heading="Good History!"
             celebrationMessage={`You judged ${items.length} things about the past — out loud!`}
@@ -697,5 +578,8 @@ const EraExplorer: React.FC<EraExplorerProps> = ({ data, className }) => {
     </LuminaCard>
   );
 };
+
+/** Runs only on the teaching workspace; an unbound mount shows the "needs the tutor" card. */
+const EraExplorer = withWorkspaceOnly<EraExplorerProps>('era-explorer', EraExplorerSurface, (props) => props.data.title);
 
 export default EraExplorer;

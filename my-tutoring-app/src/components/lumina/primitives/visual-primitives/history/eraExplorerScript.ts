@@ -710,7 +710,7 @@ const elicitFor = (item: EraExplorerItem): string => {
   }
 };
 
-const askFor = (item: EraExplorerItem): string =>
+export const askFor = (item: EraExplorerItem): string =>
   `Listen. ${item.statement} Your turn. ${elicitFor(item)} — ${menuClauseFor(item)}`;
 
 // ============================================================================
