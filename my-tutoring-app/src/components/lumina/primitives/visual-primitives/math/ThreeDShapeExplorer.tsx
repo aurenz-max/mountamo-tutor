@@ -1,22 +1,33 @@
 'use client';
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+/**
+ * ThreeDShapeExplorer — solids, flat shapes, everyday objects and riddles; every answer is
+ * spoken. It runs only on the shared tutor/JEV teaching workspace (workspace rollout C4; the
+ * scripted runner was retired, LA-14, user ruling 09-23: one path). The observer judges the
+ * spoken answer and the runtime owns progression. An unbound mount shows the shared "needs the
+ * tutor" card.
+ */
+
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaBadge, LuminaCard, LuminaCardContent, LuminaCardHeader, LuminaCardTitle,
   LuminaChallengeCounter, LuminaPanel, LuminaReadAloudGlyph,
 } from '../../../ui';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { ThreeDShapeExplorerMetrics } from '../../../evaluation/types';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
-import { useJudgedScriptRunner, type JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult }
+  from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
-  SHAPE_FACTS, SHAPE_LABELS, buildThreeDShapeItems, supportForItem, threeDShapeExplorerPackBase,
+  SHAPE_LABELS, buildThreeDShapeItems, supportForItem,
   wrapperTextForSession, type PropertyKey, type ThreeDShapeChallengeLike,
   type ThreeDShapeItem, type ThreeDShapeMode,
 } from './threeDShapeExplorerScript';
+import { hearQuestionRequest, threeDShapeAssignment, threeDShapeScene } from './threeDShapeExplorerWorkspace';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { stimulusPipPose } from '../../../pip/stimulusPipPose';
 import { PIP_DOCK_CLASS } from '../../../pip/useWorkspacePipSurface';
@@ -46,6 +57,12 @@ const MODE_META: Record<ThreeDShapeMode, {
   'match-to-real-world': { label: 'Real World', icon: '🌍', accent: 'emerald' },
   'faces-and-properties': { label: 'Properties', icon: '🔍', accent: 'amber' },
   'shape-riddle': { label: 'Shape Riddle', icon: '🕵️', accent: 'cyan' },
+};
+
+/** The catalog's eval-mode name for each item mode. */
+const CATALOG_MODE: Record<ThreeDShapeMode, string> = {
+  'identify-3d': 'identify_3d', '2d-vs-3d': '2d_vs_3d', 'match-to-real-world': 'match_real_world',
+  'faces-and-properties': 'faces_properties', 'shape-riddle': 'shape_riddle',
 };
 
 const elementLabels: Record<string, string[]> = {
@@ -100,16 +117,24 @@ export function Shape2DSVG({ shape, size = 150 }: { shape: string; size?: number
 
 const propertyLabel = (key?: PropertyKey) => ({ flatFaces: 'flat faces', curvedSurfaces: 'curved surfaces', faceShape: 'flat-face shape', canRoll: 'rolling', canStack: 'stacking', canSlide: 'sliding' }[key ?? 'flatFaces']);
 
-const averageFor = (summary: JudgedRunSummary, items: readonly ThreeDShapeItem[], predicate: (item: ThreeDShapeItem) => boolean): number | null => {
+const averageFor = (summary: TeachingEvaluationResult, items: readonly ThreeDShapeItem[], predicate: (item: ThreeDShapeItem) => boolean): number | null => {
   const subset = items.filter(predicate);
   if (!subset.length) return null;
   return Math.round(subset.reduce((sum, item) => sum + (summary.outcomes.find((o) => o.id === item.id)?.score ?? 0), 0) / subset.length);
 };
 
-interface ThreeDShapeExplorerProps { data: ThreeDShapeExplorerData; className?: string }
+interface ThreeDShapeExplorerProps {
+  data: ThreeDShapeExplorerData;
+  className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
+}
 
-const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, className }) => {
+function ThreeDShapeExplorerSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: ThreeDShapeExplorerProps) {
   const { challenges=[], gradeBand='K', show3dRotation=true, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const stableInstanceIdRef = useRef(instanceId || `3d-shape-explorer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   const build = useMemo(() => buildThreeDShapeItems(challenges), [challenges]);
@@ -121,7 +146,7 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
     objectiveId, exhibitId, onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+  const finish = (summary: TeachingEvaluationResult) => {
     const identification = averageFor(summary, items, (item) => ['identify_shape','classify_dimension','solve_riddle'].includes(item.kind));
     const property = averageFor(summary, items, (item) => ['count_property','judge_property','name_face_shape'].includes(item.kind));
     const realWorld = averageFor(summary, items, (item) => item.kind === 'match_object');
@@ -134,43 +159,47 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
       attemptsCount: summary.attemptsCount,
     };
     evaluation.submitResult(summary.passed, summary.accuracy, metrics, {
-      challengeResults: summary.outcomes, hearTaps: summary.hearTaps, learningResponses: summary.learningResponses,
+      challengeResults: summary.outcomes, hearTaps: 0, learningResponses: summary.learningResponses,
+      ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}),
       observedMetrics: { identification: identification != null, property: property != null, realWorld: realWorld != null },
       droppedChallenges: build.droppedChallenges, droppedItems: build.droppedItems,
     }, undefined, summary.diagnosisEvidence);
-  }, [build.droppedChallenges, build.droppedItems, evaluation, items]);
+  };
 
-  const pack = useMemo<JudgedScriptPack<ThreeDShapeItem>>(() => ({
-    ...threeDShapeExplorerPackBase(items),
-    statusLines: { idle: 'Tap the microphone to start.', ready: () => 'Look or listen, then say your answer out loud.', retry: () => 'Try the same shape again out loud.', noVerdict: () => 'Say one clear answer out loud.', done: 'Great solid-shape work!' },
-    // One factual record per attempt: the solid or object actually shown, by name and geometry, not the mode
-    // name alone (the distiller abstained on "identify_shape from the visible or spoken stimulus" in the
-    // judged-evidence census, 2026-09-14). The property kinds keep the script's stimulus, which names both.
-    observation: (item, { heard }) => {
-      const facts = item.shape3d ? SHAPE_FACTS[item.shape3d] : null;
-      const solid = item.shape3d && facts
-        ? `${SHAPE_LABELS[item.shape3d]} (${facts.flatFaces} flat faces, ${facts.curvedSurfaces} curved ${facts.curvedSurfaces === 1 ? 'surface' : 'surfaces'})`
-        : item.shape ?? 'a shape';
-      const shown = item.kind === 'identify_shape' ? `a ${solid} shown large, unlabeled; say its name`
-        : item.kind === 'classify_dimension' ? `${item.is3d ? `a ${solid}` : `a flat ${item.shape ?? 'shape'}`} shown; say whether it is flat or solid`
-        : item.kind === 'match_object' ? `${item.objectName ?? 'an object'}${item.emoji ? ` ${item.emoji}` : ''} pictured and named; say which solid it is shaped like`
-        : item.kind === 'name_face_shape' ? `a ${solid} shown with one flat face highlighted; say the flat shape of that face`
-        : item.kind === 'solve_riddle' ? `clues spoken: ${(item.clues ?? []).join('; ')}; say the solid they describe`
-        : item.stimulus;
-      return { challenge: `${item.kind}: ${shown}.`, expected: `Say "${item.answer}" aloud.`,
-        observed: heard?.trim() ? `Said "${heard.trim()}".` : 'No transcript was captured.' };
-    },
-  }), [items]);
-
-  const runner = useJudgedScriptRunner<ThreeDShapeItem>({
-    pack, instanceId: resolvedInstanceId, gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1', exhibitId,
-    onFinished: handleFinished, onAffirmed: (item) => setRevealedItemId(item.id),
+  const runner = useWorkspaceRunner<ThreeDShapeItem>({
+    primitiveId: '3d-shape-explorer',
+    assignment: threeDShapeAssignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
+    evalMode: runtimeEvalMode || CATALOG_MODE[items[0]?.sourceMode ?? 'identify-3d'],
+    instanceId: resolvedInstanceId,
+    onFinished: finish,
+    onAffirmed: (item) => setRevealedItemId(item.id),
   });
   const revealItem = runner.revealHeld ? items.find((entry) => entry.id === revealedItemId) ?? null : null;
   const item = revealItem ?? runner.currentItem;
   const displayedIndex = item ? items.findIndex((entry) => entry.id === item.id) : 0;
   const meta = MODE_META[item?.sourceMode ?? 'identify-3d'];
   const support = item ? supportForItem(item, !!revealItem) : null;
+  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
+
+  // What the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!runner.currentItem) return;
+    workspace.current = { ...threeDShapeScene(runner.currentItem), demonstration: [], canDemonstrate: false,
+      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    runner.publishWorkspace();
+  });
+
+  /** Asks the tutor for the question again: a silent host request, never the answer. */
+  const hearQuestion = useCallback(() => {
+    if (!runner.currentItem) return;
+    ctx.sendText(hearQuestionRequest(runner.currentItem), { silent: true, author: 'host' });
+  }, [ctx, runner.currentItem]);
 
   // ── Pip shared surface ───────────────────────────────────────────────────
   // Every answer is spoken; the solid, object, flat shape or clue list is the
@@ -178,20 +207,20 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
   const pip = usePipTargets(runner.currentItem?.id ?? null, false);
   const pipStore = usePipSurface(() => {
     const current = runner.currentItem;
-    if (!pip.dock.current || !current || evaluation.hasSubmitted) return null;
+    if (!pip.dock.current || !current || showSummary) return null;
     const targets = pip.targets(['stimulus'], () => 'The shape');
     const pose = stimulusPipPose({
-      running: runner.running, preparing: runner.preparing,
+      running: runner.running, preparing: false,
       currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      judging: false, tutorSpeaking: runner.tutorSpeaking,
       cueMatchesItem: runner.cuedItemId === current.id,
       visibleIds: targets.map((target) => target.id),
     });
     return { instanceId: resolvedInstanceId, scopeId: current.id, label: 'Solid shape lab', dock: pip.dock.current, targets, pose };
   });
-  const phases = useMemo<PhaseResult[]>(() => evaluation.hasSubmitted
-    ? phaseResultsFromSummary(items, runner.summary, (entry) => ({ label: MODE_META[entry.sourceMode].label, icon: MODE_META[entry.sourceMode].icon, accentColor: MODE_META[entry.sourceMode].accent }))
-    : [], [evaluation.hasSubmitted, items, runner.summary]);
+  const phases = useMemo<PhaseResult[]>(() => runner.practiceSummary
+    ? phaseResultsFromSummary(items, runner.practiceSummary, (entry) => ({ label: MODE_META[entry.sourceMode].label, icon: MODE_META[entry.sourceMode].icon, accentColor: MODE_META[entry.sourceMode].accent }))
+    : [], [runner.practiceSummary, items]);
 
   if (!items.length) return <LuminaCard className={className}><LuminaCardContent className="p-8 text-center text-slate-300">These shape challenges could not make a safe spoken activity. Please generate them again.</LuminaCardContent></LuminaCard>;
 
@@ -208,21 +237,23 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
   };
 
   return <LuminaCard className={className}>
-    <LuminaCardHeader className="pb-3"><div className="flex items-start justify-between gap-3"><div><LuminaCardTitle className="text-lg">{wrapper.title}</LuminaCardTitle>{wrapper.description && <p className="mt-1 text-sm text-slate-400">{wrapper.description}</p>}</div>{!evaluation.hasSubmitted && <div className="flex gap-2"><LuminaBadge className="text-xs">Grade {gradeBand}</LuminaBadge><LuminaBadge accent={meta.accent} className="text-xs">{meta.icon} {meta.label}</LuminaBadge></div>}</div></LuminaCardHeader>
+    <LuminaCardHeader className="pb-3"><div className="flex items-start justify-between gap-3"><div><LuminaCardTitle className="text-lg">{wrapper.title}</LuminaCardTitle>{wrapper.description && <p className="mt-1 text-sm text-slate-400">{wrapper.description}</p>}</div>{!showSummary && <div className="flex gap-2"><LuminaBadge className="text-xs">Grade {gradeBand}</LuminaBadge><LuminaBadge accent={meta.accent} className="text-xs">{meta.icon} {meta.label}</LuminaBadge></div>}</div></LuminaCardHeader>
     <LuminaCardContent className="space-y-5">
-      {!evaluation.hasSubmitted && item && <>
-        <div className="flex items-center justify-center gap-4"><LuminaChallengeCounter current={Math.max(1, displayedIndex + 1)} total={items.length} variant="dots" /><button type="button" onClick={runner.hearStimulus} className={`flex h-11 w-11 items-center justify-center rounded-full border-2 border-amber-500/30 bg-amber-500/15 transition hover:bg-amber-500/25 ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}`} aria-label="Hear the question again"><span aria-hidden>🔁</span></button></div>
+      {!showSummary && item && <>
+        <div className="flex items-center justify-center gap-4"><LuminaChallengeCounter current={Math.max(1, displayedIndex + 1)} total={items.length} variant="dots" /><button type="button" onClick={hearQuestion} className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-amber-500/30 bg-amber-500/15 transition hover:bg-amber-500/25" aria-label="Hear the question again"><span aria-hidden>🔁</span></button></div>
         {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId} className={PIP_DOCK_CLASS} />}
         <div ref={pip.ref('stimulus')} data-pip-object="stimulus" className="mx-auto w-fit">{renderStimulus(item)}</div>
         {item.sourceMode === 'faces-and-properties' && !revealItem && <p className="text-center text-xs uppercase tracking-wide text-slate-500">Look for: {propertyLabel(item.propertyKey)}</p>}
         {show3dRotation && item.shape3d && item.supportTier !== 'hard' && <p className="text-center text-xs text-slate-500">Look all the way around the solid.</p>}
         <div className="flex justify-center"><LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} /></div>
         {revealItem && <p className="text-center text-xl font-semibold capitalize text-emerald-300">{revealItem.answer}</p>}
-        <JudgedMicPanel run={runner} />
       </>}
-      {evaluation.hasSubmitted && phases.length > 0 && <PhaseSummaryPanel phases={phases} overallScore={evaluation.submittedResult?.score} durationMs={evaluation.elapsedMs} heading="Solid Shape Lab Complete!" celebrationMessage="Great shape work - you told me every answer out loud!" />}
+      {showSummary && <PhaseSummaryPanel phases={phases} overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy} durationMs={evaluation.elapsedMs} heading="Solid Shape Lab Complete!" celebrationMessage="Great shape work - you told me every answer out loud!" />}
     </LuminaCardContent>
   </LuminaCard>;
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const ThreeDShapeExplorer = withWorkspaceOnly<ThreeDShapeExplorerProps>('3d-shape-explorer', ThreeDShapeExplorerSurface, props => props.data.title);
 
 export default ThreeDShapeExplorer;

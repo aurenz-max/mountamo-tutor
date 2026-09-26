@@ -79,7 +79,7 @@ describe('ordinary lesson workspace eligibility', () => {
 
   it('every family that binds the workspace admits every one of its modes; no mode is withheld from lessons', () => {
     const bound = Object.entries(LIVE_ADAPTERS).filter(([, adapter]) => (adapter as LiveActivityAdapter).bindsTeachingWorkspace);
-    expect(bound.map(([id]) => id).sort()).toEqual(['adaptation-investigator', 'addition-subtraction-scene', 'balance-scale', 'bar-model', 'base-ten-blocks', 'compare-objects',
+    expect(bound.map(([id]) => id).sort()).toEqual(['3d-shape-explorer', 'adaptation-investigator', 'addition-subtraction-scene', 'balance-scale', 'bar-model', 'base-ten-blocks', 'compare-objects',
       'comparison-builder', 'counting-board', 'cvc-speller', 'decodable-reader', 'di-letter-sounds', 'di-math-facts', 'di-sentence-reading', 'di-shapes',
       'di-word-reading', 'fraction-circles', 'interactive-book', 'letter-sound-link', 'letter-spotter', 'number-bond', 'number-line', 'number-sequencer', 'number-tracer', 'ordinal-line', 'phoneme-explorer',
       'phonics-blender', 'picture-vocabulary', 'place-value-chart', 'ramp-lab', 'rhyme-studio', 'shape-sorter', 'sorting-station', 'sound-swap', 'spatial-scene', 'story-bridge', 'story-ribbon', 'syllable-clapper', 'ten-frame', 'word-builder', 'word-flip', 'word-sorter', 'word-workout',

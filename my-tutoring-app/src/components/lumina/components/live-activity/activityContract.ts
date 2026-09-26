@@ -47,6 +47,7 @@ import { interactiveBookLiveDomain } from './adapters/interactiveBookLive';
 import { storyBridgeLiveDomain } from './adapters/storyBridgeLive';
 import { storyRibbonLiveDomain } from './adapters/storyRibbonLive';
 import { additionSubtractionSceneLiveDomain } from './adapters/additionSubtractionSceneLive';
+import { threeDShapeExplorerLiveDomain } from './adapters/threeDShapeExplorerLive';
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { diShapesLiveDomain } from './adapters/diShapesLive';
@@ -103,6 +104,7 @@ export const LIVE_ADAPTERS = {
   'story-bridge': workspaceAdapter('story-bridge', storyBridgeLiveDomain),
   'story-ribbon': workspaceAdapter('story-ribbon', storyRibbonLiveDomain),
   'addition-subtraction-scene': workspaceAdapter('addition-subtraction-scene', additionSubtractionSceneLiveDomain),
+  '3d-shape-explorer': workspaceAdapter('3d-shape-explorer', threeDShapeExplorerLiveDomain),
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
   'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),

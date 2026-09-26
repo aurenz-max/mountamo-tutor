@@ -85,6 +85,8 @@ import { itemsFromChallenges as ribbonItems } from '../../primitives/visual-prim
 import { storyRibbonJourneyAnswers } from '../../primitives/visual-primitives/literacy/storyRibbonWorkspace';
 import { itemsFromChallenges as addSubItems } from '../../primitives/visual-primitives/math/additionSubtractionSceneScript';
 import { additionSubtractionJourneyAnswers } from '../../primitives/visual-primitives/math/additionSubtractionSceneWorkspace';
+import { buildThreeDShapeItems } from '../../primitives/visual-primitives/math/threeDShapeExplorerScript';
+import { threeDShapeJourneyAnswers } from '../../primitives/visual-primitives/math/threeDShapeExplorerWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
@@ -1210,6 +1212,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: wrong ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="scene"]' } },
+  },
+  '3d-shape-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/ThreeDShapeExplorer.tsx',
+    instanceId: 'solids',
+    defaults: { grade: 'Kindergarten', mode: 'identify_3d', di: false, topic: 'Naming solid shapes: cube, sphere, cylinder, cone' },
+    leakTokens: ['3DS_ITEM', '3DS_MOVE', '3DS_COMPLETE', '3DS_HEAR'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one spoken answer (a challenge may fan out into several items).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = buildThreeDShapeItems(ctx.data.challenges ?? []).items.find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current 3d-shape-explorer item');
+      const answers = threeDShapeJourneyAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
   },
 };
 

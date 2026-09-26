@@ -1,0 +1,54 @@
+{
+ "source": "qa/tutor-reports/3d-shape-explorer-runtime-identify_3d-payload-2026-09-25.json",
+ "primitiveId": "3d-shape-explorer",
+ "evalMode": "identify_3d",
+ "data": {
+  "title": "Solid Shapes Exploration",
+  "description": "Examine three-dimensional geometric objects and identify them by their mathematical names.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "identify-3d",
+    "shape3d": "cube",
+    "supportTier": "medium",
+    "showElementLabels": false,
+    "showFaceHighlight": false
+   },
+   {
+    "id": "c2",
+    "type": "identify-3d",
+    "shape3d": "sphere",
+    "supportTier": "medium",
+    "showElementLabels": false,
+    "showFaceHighlight": false
+   },
+   {
+    "id": "c3",
+    "type": "identify-3d",
+    "shape3d": "cylinder",
+    "supportTier": "medium",
+    "showElementLabels": false,
+    "showFaceHighlight": false
+   },
+   {
+    "id": "c4",
+    "type": "identify-3d",
+    "shape3d": "cone",
+    "supportTier": "medium",
+    "showElementLabels": false,
+    "showFaceHighlight": false
+   },
+   {
+    "id": "c5",
+    "type": "identify-3d",
+    "shape3d": "rectangular-prism",
+    "supportTier": "medium",
+    "showElementLabels": false,
+    "showFaceHighlight": false
+   }
+  ],
+  "gradeBand": "K",
+  "showUnfoldAnimation": false,
+  "show3dRotation": true
+ }
+}

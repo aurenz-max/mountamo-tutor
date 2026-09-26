@@ -56,11 +56,9 @@ vi.mock('@/lib/authApiClient', () => ({ authApi: { post: vi.fn(), get: vi.fn() }
 
 type Loader = () => Promise<{ default: React.ComponentType<{ data: Record<string, unknown> }> }>;
 const COMPONENTS: Record<string, Loader> = {
-  '3d-shape-explorer': () => import('../../primitives/visual-primitives/math/ThreeDShapeExplorer'),
   'compare-objects': () => import('../../primitives/visual-primitives/math/CompareObjects'),
   'counting-board': () => import('../../primitives/visual-primitives/math/CountingBoard'),
   'ten-frame': () => import('../../primitives/visual-primitives/math/TenFrame'),
-  'decodable-reader': () => import('../../primitives/visual-primitives/literacy/DecodableReader'),
   'di-deduction': () => import('../../primitives/visual-primitives/direct-instruction/DiDeduction'),
   'di-dice-roll': () => import('../../primitives/visual-primitives/direct-instruction/DiDiceRoll'),
   'di-word-problem-setup': () => import('../../primitives/visual-primitives/direct-instruction/DiWordProblemSetup'),

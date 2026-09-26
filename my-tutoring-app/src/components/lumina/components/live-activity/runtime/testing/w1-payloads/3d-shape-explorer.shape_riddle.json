@@ -1,0 +1,79 @@
+{
+ "source": "qa/tutor-reports/3d-shape-explorer-runtime-shape_riddle-payload-2026-09-25.json",
+ "primitiveId": "3d-shape-explorer",
+ "evalMode": "shape_riddle",
+ "data": {
+  "title": "Mystery Solid Challenge",
+  "description": "Listen to the clues and identify the secret solid shape.",
+  "challenges": [
+   {
+    "id": "riddle-1",
+    "type": "shape-riddle",
+    "shape3d": "cube",
+    "supportTier": "medium",
+    "showElementLabels": false,
+    "showFaceHighlight": false,
+    "clues": [
+     "I have six flat faces.",
+     "Every flat face is a square.",
+     "I can stack, but I do not roll smoothly."
+    ]
+   },
+   {
+    "id": "riddle-2",
+    "type": "shape-riddle",
+    "shape3d": "sphere",
+    "supportTier": "medium",
+    "showElementLabels": false,
+    "showFaceHighlight": false,
+    "clues": [
+     "I have no flat faces.",
+     "I have one curved surface.",
+     "I can roll in every direction."
+    ]
+   },
+   {
+    "id": "riddle-3",
+    "type": "shape-riddle",
+    "shape3d": "cylinder",
+    "supportTier": "medium",
+    "showElementLabels": false,
+    "showFaceHighlight": false,
+    "clues": [
+     "I have two flat circular faces.",
+     "I have one curved surface.",
+     "I can roll and I can stack."
+    ]
+   },
+   {
+    "id": "riddle-4",
+    "type": "shape-riddle",
+    "shape3d": "cone",
+    "supportTier": "medium",
+    "showElementLabels": false,
+    "showFaceHighlight": false,
+    "clues": [
+     "I have one flat circular face.",
+     "I have one point.",
+     "I can roll, but I do not stack."
+    ]
+   },
+   {
+    "id": "riddle-5",
+    "type": "shape-riddle",
+    "shape3d": "rectangular-prism",
+    "supportTier": "medium",
+    "showElementLabels": false,
+    "showFaceHighlight": false,
+    "clues": [
+     "I have six flat faces.",
+     "Every flat face is a rectangle.",
+     "I can stack, but I do not roll smoothly."
+    ]
+   }
+  ],
+  "gradeBand": "K",
+  "showUnfoldAnimation": true,
+  "show3dRotation": true
+ }
+}

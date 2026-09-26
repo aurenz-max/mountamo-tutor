@@ -4284,7 +4284,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: '3d-shape-explorer',
     misconceptionScope: 'primitive',
-    description: 'LIVE-JUDGED spoken solid-shape exploration for K-1. The child sees one code-drawn solid or familiar object, or hears one code-owned riddle, and SAYS one answer: a mathematical solid name, flat or solid, one property count, a yes/no property verdict, or a flat-face shape. The Live tutor judges the response in-band, teaches the exact misconception after a wrong answer, and its own affirmation advances the run.',
+    description: 'LIVE-JUDGED spoken solid-shape exploration for K-1. The child sees one code-drawn solid or familiar object, or hears one code-owned riddle, and SAYS one answer: a mathematical solid name, flat or solid, one property count, a yes/no property verdict, or a flat-face shape. The Live tutor responds to the answer, teaches the exact misconception after a wrong one, and a credited answer advances the run.',
     constraints: 'Requires a microphone. Every answer is spoken; there are no answer buttons, sorting bins, match grid, property grid, Check, or Next controls. Solids are limited to cube, sphere, cylinder, cone, and rectangular-prism; flat drawings are circle, square, triangle, and rectangle. Geometry facts and riddle clues come from the code-owned truth table. Number answers are 1-20; a zero count is reframed as a yes/no any-question. Compound generated collections fan out to one judged item per answer, capped at four children and six session items. Generated content with unknown names, contradictory dimensions or facts, object-name leaks, or non-unique riddles is discarded.',
     // reader: 'none' — every mode below is already spoken-only ("there are no answer buttons,
     // sorting bins, match grid, property grid, Check, or Next controls").
@@ -4315,6 +4315,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     audioInput: { manual_activity: true },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'One solid, flat shape, familiar object or riddle at a time, and every answer is spoken: a solid name, '
+        + 'flat or solid, a property count, yes or no, or the shape of a flat face. Solids are cube, sphere, cylinder, '
+        + 'cone and rectangular prism; the answer is judged against the name or fact you are given. Common misses to '
+        + 'teach from: a flat look-alike for a solid (circle for sphere), the object\'s own name instead of its solid, '
+        + 'the solid\'s name when the face was asked, a count one off, a riddle answer that fits only some clues. '
+        + 'Before an attempt never say the answer. The replay button asks you to repeat the question only. You cannot '
+        + 'rotate, mark or change the shape.',
+    },
     evalModes: [
       {
         evalMode: 'identify_3d',
