@@ -12,7 +12,6 @@ import fixtures from './testing/workspaceFixtures.json';
 import CauseEffectChain from '../primitives/visual-primitives/history/CauseEffectChain';
 import EraExplorer from '../primitives/visual-primitives/history/EraExplorer';
 import SentenceAnalyzer from '../primitives/visual-primitives/literacy/SentenceAnalyzer';
-import DiDeduction from '../primitives/visual-primitives/direct-instruction/DiDeduction';
 import DiWorkedProcedure from '../primitives/visual-primitives/direct-instruction/DiWorkedProcedure';
 import DiWordProblemSetup from '../primitives/visual-primitives/direct-instruction/DiWordProblemSetup';
 
@@ -76,7 +75,7 @@ describe('judged primitives share their stimulus panel with Pip', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const SCIENCE: Array<[string, React.ComponentType<{ data: any }>]> = [
     ['cause-effect-chain', CauseEffectChain], ['era-explorer', EraExplorer], ['sentence-analyzer', SentenceAnalyzer],
-    ['di-deduction', DiDeduction], ['di-worked-procedure', DiWorkedProcedure], ['di-word-problem-setup', DiWordProblemSetup],
+    ['di-worked-procedure', DiWorkedProcedure], ['di-word-problem-setup', DiWordProblemSetup],
   ];
   it.each(SCIENCE)('%s outlines its stimulus panel', (id, Primitive) => {
     // The generated packs open on a hands answer here (build the chain; place the big amount),

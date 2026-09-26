@@ -1,0 +1,79 @@
+{
+ "source": "qa/tutor-reports/di-deduction-runtime-conclude-payload-2026-09-26.json",
+ "primitiveId": "di-deduction",
+ "evalMode": "conclude",
+ "data": {
+  "title": "Solve the Secret Rule",
+  "description": "Read the rule and the clue to figure out what follows and explain how you know.",
+  "challengeType": "conclude",
+  "rules": [
+   {
+    "id": "dd-1-1",
+    "category": "insect",
+    "categoryPlural": "insects",
+    "propertyPlural": "have six legs",
+    "propertySingular": "has six legs",
+    "propertyNegated": "does not have six legs",
+    "kindNoun": "animal",
+    "members": [
+     "beetle",
+     "ant",
+     "bee"
+    ],
+    "nonMembers": [
+     "earthworm",
+     "snail"
+    ],
+    "lookalikes": [],
+    "shapes": [
+     "conclude"
+    ]
+   },
+   {
+    "id": "dd-1-2",
+    "category": "bird",
+    "categoryPlural": "birds",
+    "propertyPlural": "have feathers",
+    "propertySingular": "has feathers",
+    "propertyNegated": "does not have feathers",
+    "kindNoun": "animal",
+    "members": [
+     "robin",
+     "duck",
+     "owl"
+    ],
+    "nonMembers": [
+     "frog",
+     "snake"
+    ],
+    "lookalikes": [],
+    "shapes": [
+     "conclude"
+    ]
+   },
+   {
+    "id": "dd-1-3",
+    "category": "mammal",
+    "categoryPlural": "mammals",
+    "propertyPlural": "have hair or fur",
+    "propertySingular": "has hair or fur",
+    "propertyNegated": "does not have hair or fur",
+    "kindNoun": "animal",
+    "members": [
+     "dog",
+     "cat",
+     "bear"
+    ],
+    "nonMembers": [
+     "fish",
+     "turtle"
+    ],
+    "lookalikes": [],
+    "shapes": [
+     "conclude"
+    ]
+   }
+  ],
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

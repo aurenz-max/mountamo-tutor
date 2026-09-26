@@ -1,0 +1,82 @@
+{
+ "source": "qa/tutor-reports/di-deduction-runtime-deny-payload-2026-09-26.json",
+ "primitiveId": "di-deduction",
+ "evalMode": "deny",
+ "data": {
+  "title": "Follow the Magic Rule",
+  "description": "You will use a special rule to figure out what follows and explain how you know.",
+  "challengeType": "deny",
+  "rules": [
+   {
+    "id": "dd-1-1",
+    "category": "insect",
+    "categoryPlural": "insects",
+    "propertyPlural": "have six legs",
+    "propertySingular": "has six legs",
+    "propertyNegated": "does not have six legs",
+    "kindNoun": "animal",
+    "members": [
+     "ant",
+     "bee",
+     "fly"
+    ],
+    "nonMembers": [
+     "dog",
+     "fish",
+     "frog"
+    ],
+    "lookalikes": [],
+    "shapes": [
+     "deny"
+    ]
+   },
+   {
+    "id": "dd-1-2",
+    "category": "bird",
+    "categoryPlural": "birds",
+    "propertyPlural": "have feathers",
+    "propertySingular": "has feathers",
+    "propertyNegated": "does not have feathers",
+    "kindNoun": "animal",
+    "members": [
+     "robin",
+     "duck",
+     "owl"
+    ],
+    "nonMembers": [
+     "cat",
+     "snake",
+     "frog"
+    ],
+    "lookalikes": [],
+    "shapes": [
+     "deny"
+    ]
+   },
+   {
+    "id": "dd-1-3",
+    "category": "mammal",
+    "categoryPlural": "mammals",
+    "propertyPlural": "have hair or fur",
+    "propertySingular": "has hair or fur",
+    "propertyNegated": "does not have hair or fur",
+    "kindNoun": "animal",
+    "members": [
+     "lion",
+     "bear",
+     "whale"
+    ],
+    "nonMembers": [
+     "frog",
+     "robin",
+     "shark"
+    ],
+    "lookalikes": [],
+    "shapes": [
+     "deny"
+    ]
+   }
+  ],
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

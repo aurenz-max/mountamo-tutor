@@ -1,0 +1,38 @@
+{
+ "source": "qa/tutor-reports/di-deduction-runtime-cannot_tell-payload-2026-09-26.json",
+ "primitiveId": "di-deduction",
+ "evalMode": "cannot_tell",
+ "data": {
+  "title": "Follow the Clues",
+  "description": "You will use a rule to figure out what follows and explain how you know.",
+  "challengeType": "cannot_tell",
+  "rules": [
+   {
+    "id": "dd-1-2",
+    "category": "bird",
+    "categoryPlural": "birds",
+    "propertyPlural": "have feathers",
+    "propertySingular": "has feathers",
+    "propertyNegated": "does not have feathers",
+    "kindNoun": "animal",
+    "members": [
+     "robin",
+     "duck",
+     "owl"
+    ],
+    "nonMembers": [
+     "frog",
+     "snake",
+     "horse"
+    ],
+    "lookalikes": [
+     "pillow"
+    ],
+    "shapes": [
+     "cannot_tell"
+    ]
+   }
+  ],
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

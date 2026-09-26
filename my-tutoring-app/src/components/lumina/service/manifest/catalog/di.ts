@@ -1071,6 +1071,14 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // demand. β mirrors backend problem_type_registry.py.
     evalModes: DI_DEDUCTION_EVAL_MODES,
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'A rule card and a case card are printed. The child says aloud what the rule tells them about the case, '
+        + 'using only the rule, not what they already know. On a verdict case they say yes, no, or can\'t tell AND the '
+        + 'reason from the rule: a right verdict with no reason is not yet the answer, so ask how they know. The rule does '
+        + 'not run backwards: having the property does not make something a member, and the key names the thing that '
+        + 'shows it. Never state the conclusion before the child tries. You cannot change the rule or the case.',
+    },
     misconceptionScope: 'primitive',
     audioInput: { manual_activity: true },
     tutoring: {

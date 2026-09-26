@@ -104,6 +104,7 @@ import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { diSpokenPracticeHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeWorkspace';
 import { diDiceRollHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diDiceRollWorkspace';
+import { deductionItems, diDeductionHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diDeductionWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
 
 /** One real learner action for the mounted driver to perform. */
@@ -1010,6 +1011,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         : [{ type: 'choose', label: c.challengeType === 'count_pips' ? 'Roll the die' : 'Roll both dice' }, say];
     },
     probes: { mounted: { selector: '[data-dice-object="dice"]' }, reward: { selector: '[data-dice-trail]', kind: 'count' } },
+  },
+  'di-deduction': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/direct-instruction/DiDeduction.tsx',
+    instanceId: 'deduction',
+    defaults: { grade: 'Grade 3', mode: 'deny', di: false,
+      topic: 'Using a rule about animal groups to decide what follows' },
+    leakTokens: ['DD_ITEM', 'DD_MOVE_ON', 'DD_COMPLETE', 'DD_HEAR'],
+    prompts: WORKSPACE_PROMPTS,
+    // One spoken answer per case: the pack's canonical verdict and reason, or the plainest wrong verdict.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = deductionItems(ctx.data as never).find(x => x.id === ctx.itemId);
+      if (!c) throw new Error('No current di-deduction case');
+      const answers = diDeductionHarnessAnswers(c);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-deduction-object="rule"]' }, reward: { selector: '[data-deduction-credited]', kind: 'count' } },
   },
   'spatial-scene': {
     execution: 'workspace',
