@@ -9,9 +9,10 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 
 ## Status (2026-09-26)
 
-- Catalog: 212 primitive ids. On the workspace: 59 (8 at W2 from the pilots, 51 at W1), recounted 09-26
-  after C7, plus `adaptation-investigator` as an ungraded teaching surface (60 `teachingWorkspace` blocks). Queued:
-  Tier A 0, Tier B 0 (B1-B3 done), Tier C 122 (152 before C1). Held back: 31.
+- Catalog: 212 primitive ids. On the workspace: 63 (8 at W2 from the pilots, 55 at W1), recounted 09-26
+  after C8, plus `adaptation-investigator` as an ungraded teaching surface (64 `teachingWorkspace` blocks). Queued:
+  Tier A 0, Tier B 0 (B1-B3 done), Tier C 118 (152 before C1). Held back: 31. C8 closed the runner-era (R) rows;
+  every row left is plain shape (P).
 - **Recount:** catalog ids = `id: '...'` entries in `src/components/lumina/service/manifest/catalog/*.ts`
   (skip the test fixture id `x`); on the workspace = entries with a `teachingWorkspace: {` block.
   Runner-era surfaces: `rg -l "useJudgedScriptRunner<|useJudgedSpeechLoop<|= useJudgedScriptRunner|= useJudgedSpeechLoop" src/components/lumina/primitives --glob "!*test*"`.
@@ -43,6 +44,7 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 | C5: habitat-diorama, matter-explorer, states-of-matter, solar-system-explorer (runner-era; each keeps its ungraded exploration face for a payload with no askable challenge) | W1 | [workspace-rollout-C5-2026-09-26.md](../tutor-reports/workspace-rollout-C5-2026-09-26.md). 8 smokes PASS, all first run; habitat connect/restore are checked taps; solar's spotlight now paints when the item opens (no `present` at W1); open: after a wrong answer the tutor often gives or nearly gives the answer (four families, a scoring question for `$student-data-loop`) |
 | C6: di-spoken-practice, di-dice-roll, di-deduction, di-worked-procedure, di-word-problem-setup (four on `DiTeachingStage`; word-problem's big-number step is a checked gesture) | W1 | [workspace-rollout-C6-2026-09-26.md](../tutor-reports/workspace-rollout-C6-2026-09-26.md). 10 smokes PASS (dice count_pips and worked-procedure on reruns after fixes), 3 rows FAIL: deduction cannot_tell (one-rule draws, `/eval-fix`), worked-procedure regroup `--audio` and word-problem build_family `--audio` (observer refuses step-framed credit; LA-13 evidence, handoff 14). **Re-driven 09-26 after handoff 16** ([report](../tutor-reports/la13-step-credit-2026-09-26.md)): worked-procedure regroup `--audio` 3/3 PASS; word-problem build_family `--audio` 3/3 with the final changes (1/3 before the c1c sentence and the confirming-reply fix); deduction cannot_tell still open (`/eval-fix`). Fixed in place: worked-procedure's decide ask gave the decision away; dice-roll ready from the tap |
 | C7: genre-explorer, text-structure-analyzer, sentence-analyzer, read-aloud-studio, oral-sentence-studio (runner-era; read-aloud expression's phrase plan is a checked gesture that always commits) | W1 | [workspace-rollout-C7-2026-09-26.md](../tutor-reports/workspace-rollout-C7-2026-09-26.md). 10 smokes PASS (text-structure audio ×3). Harness fix `929ee350`: the driver's unread stderr pipe filled and blocked a drive once a component logged per render. Open: text-structure's tutor said "the first sentence" before the answer "First" (2 of 3 audio drives, W2 row below); `oral-sentence-studio` bound after its L1 eval modes (`f561b599`), example sentence now shown only after credit |
+| C8: cause-effect-chain, era-explorer, periodic-table, knowledge-check (runner-era; build_chain, periodic find and knowledge-check's symbol menu and number-sentence sign are checked gestures; periodic-table keeps its exploration table and knowledge-check its tap flow for payloads the workspace cannot run) | W1 | [workspace-rollout-C8-2026-09-26.md](../tutor-reports/workspace-rollout-C8-2026-09-26.md). 7 smokes PASS (knowledge-check on a merged three-problem K set via `--input`: the probe plans one problem without lesson objectives). Both runner-mock Pip suites ported and deleted. Open: the tutor's first ask skipped the menu and pointed at the answer (era cause_of_change) or asked the rule (periodic trend); model scratch text reached the learner once (knowledge-check); after-miss near-answers now in ten families |
 | DEAD: runner-owned sandbox handoff, `'di-runner'` owner value, `RUNNER_GUIDANCE`/`runnerLessonStart` (frontend) | — | 09-23, no report. **Residue, owned by LA-14 retirement (`07-census.md`):** the backend bridge `live_activity_tools.py` still accepts `teachingOwner: 'di-runner'` and emits `activity_ready` for it, and `run_live_runtime.py` (`judged_runner`), `run_live_lesson_plan.py` and `scripts/live-lesson-plan-fixture.mjs` still branch on it (the live route's `diPlan` probe was removed with it). No frontend adapter sends that value. |
 
 ## Queue
@@ -61,7 +63,7 @@ Order: Tier A, then runner-era K–2 (the recipe applies as written), then the r
 | C5 | R | K–2 science: `habitat-diorama`, `matter-explorer`, `states-of-matter`, `solar-system-explorer` | done 09-26 (workspace only, every mode) |
 | C6 | R | Spoken DI, older learners: `di-spoken-practice`, `di-dice-roll`, `di-deduction`, `di-worked-procedure`, `di-word-problem-setup` | done 09-26 (workspace only, every mode) |
 | C7 | R | Literacy G1–5 on the runner: `genre-explorer`, `sentence-analyzer`, `text-structure-analyzer`, `oral-sentence-studio`, `read-aloud-studio` | done 09-26 (workspace only, every mode) |
-| C8 | R | Other runner-era: `knowledge-check`, `periodic-table`, `cause-effect-chain`, `era-explorer` | open |
+| C8 | R | Other runner-era: `knowledge-check`, `periodic-table`, `cause-effect-chain`, `era-explorer` | done 09-26 (workspace only, every mode) |
 | C9 | P | K math: `math-fact-fluency`, `hundreds-chart`, `equation-builder`, `pattern-builder`, `strategy-picker` | open |
 | C10 | P | K measurement and time: `length-lab`, `measure-lab`, `analog-clock`, `time-sequencer`, `timeline-builder` | open |
 | C11 | P | K geometry: `shape-tracer`, `shape-composer`, `shape-builder`, `fast-fact` | open |
