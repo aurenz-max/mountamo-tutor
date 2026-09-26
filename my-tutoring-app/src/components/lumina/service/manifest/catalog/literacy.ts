@@ -2790,7 +2790,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'class stories, recipes, and other guided writing. ESSENTIAL for Kindergarten vocabulary use, complete oral sentences, '
       + 'scene description, and expressive language.',
     constraints:
-      'Requires a microphone and live tutor. Use exactly three content-bearing describe_scene challenges per session. '
+      'Requires a microphone and live tutor. Use exactly three content-bearing challenges per session. '
       + 'Keep the meaningful scene and exactly two target vocabulary words visible while the child answers; hide all '
       + 'model sentences and answer wording until feedback. Each response must be one child-generated complete oral '
       + 'sentence that describes the current scene and uses both target words coherently and with appropriate meaning. '
@@ -2799,6 +2799,23 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'sentences, and unrelated memorized responses. After an attempt, acknowledge conveyed meaning first, then model '
       + 'or prompt revision only for the specific missing word, meaning, or sentence structure. The manifest must NOT '
       + 'supply scenes, target words, or model sentences; the content-bearing generator builds all three challenges.',
+    evalModes: [
+      {
+        evalMode: 'describe_scene', label: 'Picture Sentences', beta: 3.5, discrimination: 1.6,
+        scaffoldingMode: 3, challengeTypes: ['describe_scene'],
+        description: 'Describe a visible scene in one original complete sentence that uses two shown words with their meanings.',
+      },
+      {
+        evalMode: 'guided_writing_rehearsal', label: 'Say It Before We Write', beta: 4.0, discrimination: 1.6,
+        scaffoldingMode: 4, challengeTypes: ['guided_writing_rehearsal'],
+        description: 'Oral rehearsal for shared writing (class story, recipe, how-to): say the sentence for the pictured next step with an order word and a vocabulary word.',
+      },
+      {
+        evalMode: 'use_story_words', label: 'Story Words', beta: 5.0, discrimination: 1.0,
+        scaffoldingMode: 4, challengeTypes: ['use_story_words'],
+        description: 'Hear two new words in a short story, then use both in a new sentence of their own, about the story or anything else; a story line said back does not count.',
+      },
+    ],
     supportsEvaluation: true,
     audioInput: JUDGED_AUDIO_INPUT,
   },

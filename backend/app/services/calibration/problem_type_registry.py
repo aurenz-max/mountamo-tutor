@@ -809,6 +809,11 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "sentence_frame":  PriorConfig(5.0, "Vocabulary in context — say the missing word of a spoken sentence frame (live-judged)"),
         "gradable_scale":  PriorConfig(6.0, "Gradable vocabulary — say the missing rung of a spoken low→high word gradient (live-judged)"),
     },
+    "oral-sentence-studio": {
+        "describe_scene":           PriorConfig(3.5, "Spoken production: describe a visible scene in one sentence using two shown words"),
+        "guided_writing_rehearsal": PriorConfig(4.0, "Spoken production: rehearse the sentence for the next step of a class writing piece"),
+        "use_story_words":          PriorConfig(5.0, "Transfer: reuse two words heard in a story in a new sentence, no copying"),
+    },
     "story-talk": {
         "who_what_where": PriorConfig(2.0, "Literal recall — answer who/what/where from a read-aloud story"),
         "feeling_check":  PriorConfig(3.0, "Emotion inference — how a character felt from story events (not stated)"),

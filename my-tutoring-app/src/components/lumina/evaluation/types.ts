@@ -2493,7 +2493,7 @@ export interface PictureVocabularyMetrics extends BasePrimitiveMetrics {
 
 export interface OralSentenceStudioMetrics extends BasePrimitiveMetrics {
   type: 'oral-sentence-studio';
-  challengeType: 'describe_scene';
+  challengeType: 'describe_scene' | 'guided_writing_rehearsal' | 'use_story_words' | 'mixed';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;

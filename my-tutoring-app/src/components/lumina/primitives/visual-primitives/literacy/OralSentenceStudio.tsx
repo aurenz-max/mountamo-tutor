@@ -37,9 +37,17 @@ import {
   type OralSentenceStudioItem,
 } from './oralSentenceStudioScript';
 
+/** Task identities (eval modes): describe a picture, rehearse the sentence
+ * for the next step of a class writing piece, or reuse two story words in a
+ * new sentence of one's own. */
+export type OralSentenceStudioChallengeType =
+  | 'describe_scene'
+  | 'guided_writing_rehearsal'
+  | 'use_story_words';
+
 export interface OralSentenceStudioChallenge {
   id: string;
-  type: 'describe_scene';
+  type: OralSentenceStudioChallengeType;
   sceneTitle: string;
   settingEmoji: string;
   settingLabel: string;
@@ -57,13 +65,18 @@ export interface OralSentenceStudioChallenge {
   sceneMeaning: string;
   /** Three private, distinct examples proving the answer set is open. */
   acceptedSentences: [string, string, string];
+  /** use_story_words only: the 2-3 sentence story the tutor reads aloud. */
+  storyText?: string;
+  /** guided_writing_rehearsal only: short label for the step already written. */
+  priorStepLabel?: string;
 }
 
 export interface OralSentenceStudioData {
   title: string;
   description: string;
   gradeLevel?: string;
-  challengeType: 'describe_scene';
+  /** Representative only; each challenge renders from its own `type`. */
+  challengeType: OralSentenceStudioChallengeType | 'mixed';
   /** Three long-form spoken challenges, built by the Fork B orchestrator. */
   challenges: OralSentenceStudioChallenge[];
   instanceId?: string;
@@ -79,8 +92,16 @@ interface OralSentenceStudioProps {
   className?: string;
 }
 
-const PHASE_CONFIG: Record<'describe_scene', PhaseConfig> = {
+const PHASE_CONFIG: Record<OralSentenceStudioChallengeType, PhaseConfig> = {
   describe_scene: { label: 'Picture Sentences', icon: '💬', accentColor: 'cyan' },
+  guided_writing_rehearsal: { label: 'Say It Before We Write', icon: '📝', accentColor: 'purple' },
+  use_story_words: { label: 'Story Words', icon: '📖', accentColor: 'amber' },
+};
+
+const MODE_PROMPT: Record<OralSentenceStudioChallengeType, string> = {
+  describe_scene: 'Look at the scene. Say one complete sentence that uses both new words.',
+  guided_writing_rehearsal: 'Look at the next step. Say the sentence we will write for it, using both words.',
+  use_story_words: 'Listen to the story. Then make a new sentence of your own with both story words.',
 };
 
 type FeedbackKind = 'correct' | 'retry';
@@ -115,7 +136,7 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
     const total = items.length;
     const metrics: OralSentenceStudioMetrics = {
       type: 'oral-sentence-studio',
-      challengeType: 'describe_scene',
+      challengeType: data.challengeType,
       totalChallenges: total,
       correctCount: summary.solvedCount,
       attemptsCount: summary.attemptsCount,
@@ -137,7 +158,7 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [evaluation, items.length]);
+  }, [data.challengeType, evaluation, items.length]);
 
   const pack = useMemo(() => oralSentenceStudioPack(items), [items]);
   const runner = useJudgedScriptRunner<OralSentenceStudioItem>({
@@ -169,7 +190,7 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
   });
   const phaseResults = useMemo(() => {
     if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(items, runner.summary, () => PHASE_CONFIG.describe_scene);
+    return phaseResultsFromSummary(items, runner.summary, (item) => PHASE_CONFIG[item.mode]);
   }, [evaluation.hasSubmitted, items, runner.summary]);
 
   if (!currentItem) {
@@ -183,6 +204,7 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
   }
 
   const challenge = currentItem.challenge;
+  const phase = PHASE_CONFIG[challenge.type];
   const feedbackVisible = feedbackItem != null
     && (feedbackItem.id === currentItem.id || runner.revealHeld);
 
@@ -195,7 +217,7 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
             <LuminaCardDescription className="mt-1">{data.description}</LuminaCardDescription>
           </div>
           {!evaluation.hasSubmitted && (
-            <LuminaBadge accent="cyan">💬 Picture Sentence</LuminaBadge>
+            <LuminaBadge accent="cyan">{phase.icon} {phase.label}</LuminaBadge>
           )}
         </div>
       </LuminaCardHeader>
@@ -212,19 +234,39 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
               <LuminaReadAloudGlyph size={32} speaking={runner.tutorSpeaking} />
             </div>
 
-            <LuminaPrompt>
-              Look at the scene. Say one complete sentence that uses both new words.
-            </LuminaPrompt>
+            <LuminaPrompt>{MODE_PROMPT[challenge.type]}</LuminaPrompt>
+
+            {challenge.type === 'use_story_words' && challenge.storyText && (
+              <LuminaPanel accent="amber">
+                <LuminaSectionLabel>The story</LuminaSectionLabel>
+                <p className="mt-2 text-lg leading-relaxed text-slate-100">{challenge.storyText}</p>
+              </LuminaPanel>
+            )}
 
             {pip.store && <div {...pip.dock} />}
             <LuminaPanel {...pip.target('stimulus')} accent="cyan" className="overflow-hidden">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
-                  <LuminaSectionLabel>Picture to describe</LuminaSectionLabel>
+                  <LuminaSectionLabel>
+                    {challenge.type === 'describe_scene' ? 'Picture to describe'
+                      : challenge.type === 'guided_writing_rehearsal' ? 'We are writing' : 'Story picture'}
+                  </LuminaSectionLabel>
                   <p className="mt-1 font-semibold text-slate-100">{challenge.sceneTitle}</p>
                 </div>
                 <LuminaBadge accent="cyan">Keep looking while you speak</LuminaBadge>
               </div>
+
+              {challenge.type === 'guided_writing_rehearsal' && challenge.priorStepLabel && (
+                <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+                  <span className="rounded-full bg-slate-950/45 px-3 py-1 text-slate-300">
+                    ✅ Already written: {challenge.priorStepLabel}
+                  </span>
+                  <span className="text-cyan-200/70" aria-hidden>→</span>
+                  <span className="rounded-full bg-cyan-400/15 px-3 py-1 font-semibold text-cyan-100">
+                    Now: this step
+                  </span>
+                </div>
+              )}
 
               <div className="relative min-h-56 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-sky-400/15 via-indigo-400/10 to-emerald-400/15 p-5">
                 <div className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-slate-950/45 px-3 py-1.5 text-xs font-semibold text-slate-200">
@@ -259,7 +301,9 @@ const OralSentenceStudioSession: React.FC<OralSentenceStudioProps> = ({ data, cl
             </LuminaPanel>
 
             <LuminaPanel accent="amber">
-              <LuminaSectionLabel>Use both new words</LuminaSectionLabel>
+              <LuminaSectionLabel>
+                {challenge.type === 'use_story_words' ? 'Use both story words' : 'Use both words'}
+              </LuminaSectionLabel>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {challenge.targetWords.map((word, index) => (
                   <div key={word} className="rounded-xl border border-amber-300/15 bg-amber-300/10 p-4">

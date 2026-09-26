@@ -1,5 +1,10 @@
 /**
- * L0 Fork B orchestrator for Oral Sentence Studio.
+ * Fork B orchestrator for Oral Sentence Studio.
+ *
+ * Three task identities (eval modes): describe_scene, guided_writing_rehearsal,
+ * use_story_words. The eval mode is resolved once per session; code schedules
+ * one type per slot (mixed = one of each, easiest first) and each slot's
+ * schema enum is narrowed to that type.
  *
  * Scene and sentence content is authored one challenge at a time by Gemini.
  * The response schema stays flat, then this module reconstructs the two-word
@@ -12,9 +17,20 @@
 import { Type, type Schema } from '@google/genai';
 import type {
   OralSentenceStudioChallenge,
+  OralSentenceStudioChallengeType,
   OralSentenceStudioData,
 } from '../../primitives/visual-primitives/literacy/OralSentenceStudio';
-import { challengeAskable } from '../../primitives/visual-primitives/literacy/oralSentenceStudioScript';
+import {
+  challengeAskable,
+  ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES,
+  REHEARSAL_ORDER_WORDS,
+} from '../../primitives/visual-primitives/literacy/oralSentenceStudioScript';
+import {
+  constrainChallengeTypeEnum,
+  resolveEvalModes,
+  type ChallengeTypeDoc,
+  type EvalModeResolution,
+} from '../evalMode';
 import { ai } from '../geminiClient';
 import type { GenerationContext } from '../generation/generationContext';
 import { buildScopePromptSection } from '../scopeContext';
@@ -22,6 +38,30 @@ import { buildScopePromptSection } from '../scopeContext';
 const MODEL = 'gemini-flash-lite-latest';
 const CHALLENGE_COUNT = 3;
 const MAX_GENERATION_ATTEMPTS = 3;
+
+const CHALLENGE_TYPE_DOCS: Record<OralSentenceStudioChallengeType, ChallengeTypeDoc> = {
+  describe_scene: {
+    promptDoc:
+      '"describe_scene": The child looks at one pictured scene (actor, action, object, setting) and two word cards '
+      + 'with meanings, then says one original complete sentence that describes the scene and uses both words.',
+    schemaDescription: "'describe_scene' (describe a picture with two words)",
+  },
+  guided_writing_rehearsal: {
+    promptDoc:
+      '"guided_writing_rehearsal": Oral rehearsal before shared writing. The class is writing a short how-to or class '
+      + 'story (sceneTitle names it). One step is already written (priorStepLabel); the picture shows the step that comes '
+      + 'now. The child says the sentence the class will write for THIS step, using an order word (targetWord0: next, '
+      + 'then, last, or finally) and one vocabulary word (targetWord1).',
+    schemaDescription: "'guided_writing_rehearsal' (say the next step's sentence before writing it)",
+  },
+  use_story_words: {
+    promptDoc:
+      '"use_story_words": The tutor reads a 2-3 sentence story (storyText) that uses two new words in context; the story '
+      + 'picture stays visible. The child makes a NEW sentence of their own with both story words, about the story or '
+      + 'anything else. A story sentence said back does not count.',
+    schemaDescription: "'use_story_words' (reuse two story words in a new sentence)",
+  },
+};
 
 const FLAT_FIELDS = [
   'type',
@@ -44,10 +84,22 @@ const FLAT_FIELDS = [
   'acceptedSentence2',
 ] as const;
 
-type FlatField = typeof FLAT_FIELDS[number];
+type FlatField = typeof FLAT_FIELDS[number] | 'storyText' | 'priorStepLabel';
+
+/** Extra flat fields a type carries beyond the shared scene/word/sentence set. */
+const EXTRA_FIELDS: Record<OralSentenceStudioChallengeType, FlatField[]> = {
+  describe_scene: [],
+  guided_writing_rehearsal: ['priorStepLabel'],
+  use_story_words: ['storyText'],
+};
+
+const fieldsFor = (type: OralSentenceStudioChallengeType): FlatField[] =>
+  [...FLAT_FIELDS, ...EXTRA_FIELDS[type]];
 
 const fieldDescription = (field: FlatField): string => {
-  if (field === 'type') return 'Always describe_scene.';
+  if (field === 'type') return 'The assigned challenge type.';
+  if (field === 'storyText') return 'Two or three short complete story sentences about the pictured scene that use both target words with clear meanings.';
+  if (field === 'priorStepLabel') return 'Short label for the step the class already wrote, 2-5 words, no sentence punctuation.';
   if (field === 'sceneTitle') return 'Warm title for the visible scene, 2-5 words, no ending punctuation.';
   if (field.endsWith('Emoji')) return 'Exactly one familiar emoji that literally pictures the matching label.';
   if (field.endsWith('Label')) return 'Concrete visible scene label, 1-5 simple words, no sentence punctuation.';
@@ -57,15 +109,20 @@ const fieldDescription = (field: FlatField): string => {
   return 'One distinct, complete child sentence about this exact scene that uses both target words exactly and meaningfully.';
 };
 
-const schema: Schema = {
-  type: Type.OBJECT,
-  properties: Object.fromEntries(FLAT_FIELDS.map((field) => [field, {
-    type: Type.STRING,
-    ...(field === 'type' ? { enum: ['describe_scene'] } : {}),
-    description: fieldDescription(field),
-  }])),
-  required: [...FLAT_FIELDS],
-};
+const schemaFor = (type: OralSentenceStudioChallengeType): Schema => constrainChallengeTypeEnum(
+  {
+    type: Type.OBJECT,
+    properties: Object.fromEntries(fieldsFor(type).map((field) => [field, {
+      type: Type.STRING,
+      ...(field === 'type' ? { enum: [...ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES] } : {}),
+      description: fieldDescription(field),
+    }])),
+    required: fieldsFor(type),
+  },
+  [type],
+  CHALLENGE_TYPE_DOCS,
+  { fieldName: 'type', rootLevel: true },
+);
 
 const text = (value: unknown): string => typeof value === 'string' ? value.trim() : '';
 const wordTokens = (value: string): string[] => value.toLowerCase().match(/[a-z]+(?:-[a-z]+)?/g) ?? [];
@@ -92,16 +149,17 @@ const sentencesGenuinelyDiffer = (sentences: readonly string[]): boolean => {
 export function validateOralSentenceStudioPayload(
   raw: unknown,
   index: number,
+  expectedType: OralSentenceStudioChallengeType = 'describe_scene',
 ): OralSentenceStudioChallenge | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const record = raw as Record<string, unknown>;
   const values = {} as Record<FlatField, string>;
-  for (const field of FLAT_FIELDS) {
+  for (const field of fieldsFor(expectedType)) {
     const value = text(record[field]);
     if (!value) return null;
     values[field] = value;
   }
-  if (values.type !== 'describe_scene') return null;
+  if (values.type !== expectedType) return null;
   if (![values.settingEmoji, values.actorEmoji, values.actionEmoji, values.objectEmoji]
     .every((emoji) => emojiPattern.test(emoji))) return null;
 
@@ -124,7 +182,7 @@ export function validateOralSentenceStudioPayload(
 
   const challenge: OralSentenceStudioChallenge = {
     id: `oral-sentence-studio-${index + 1}`,
-    type: 'describe_scene',
+    type: expectedType,
     sceneTitle: values.sceneTitle,
     settingEmoji: values.settingEmoji,
     settingLabel: values.settingLabel,
@@ -138,6 +196,8 @@ export function validateOralSentenceStudioPayload(
     wordMeanings,
     sceneMeaning: values.sceneMeaning,
     acceptedSentences,
+    ...(expectedType === 'use_story_words' ? { storyText: values.storyText } : {}),
+    ...(expectedType === 'guided_writing_rehearsal' ? { priorStepLabel: values.priorStepLabel } : {}),
   };
   return challengeAskable(challenge) ? challenge : null;
 }
@@ -271,7 +331,148 @@ export const ORAL_SENTENCE_STUDIO_FALLBACKS: OralSentenceStudioChallenge[] = [
       'I notice the rough shell while the student observes it.',
     ],
   },
+  {
+    id: 'oral-sentence-studio-fallback-7',
+    type: 'guided_writing_rehearsal',
+    sceneTitle: 'Our Fruit Salad Recipe',
+    settingEmoji: '🏫',
+    settingLabel: 'classroom kitchen',
+    actorEmoji: '🧒',
+    actorLabel: 'class',
+    actionEmoji: '🥄',
+    actionLabel: 'mixing the fruit',
+    objectEmoji: '🥣',
+    objectLabel: 'bowl of fruit',
+    targetWords: ['next', 'mix'],
+    wordMeanings: ['right after that', 'stir things together'],
+    priorStepLabel: 'washing the grapes',
+    sceneMeaning: 'Next, the class will mix the fruit in a big bowl.',
+    acceptedSentences: [
+      'Next, we mix the fruit in the big bowl.',
+      'Next, the class will mix all the fruit together.',
+      'We mix the fruit next so every bite is sweet.',
+    ],
+  },
+  {
+    id: 'oral-sentence-studio-fallback-8',
+    type: 'guided_writing_rehearsal',
+    sceneTitle: 'Our Seed Planting Story',
+    settingEmoji: '🪟',
+    settingLabel: 'classroom window',
+    actorEmoji: '🧒',
+    actorLabel: 'children',
+    actionEmoji: '💧',
+    actionLabel: 'watering the seeds',
+    objectEmoji: '🪴',
+    objectLabel: 'flower pot',
+    targetWords: ['then', 'sprinkle'],
+    wordMeanings: ['after that step', 'drop water softly'],
+    priorStepLabel: 'filling the pot with soil',
+    sceneMeaning: 'Then the children sprinkle water on the seeds in the pot.',
+    acceptedSentences: [
+      'Then the children sprinkle water on the seeds.',
+      'We sprinkle the pot with water, and then we wait.',
+      'Then we sprinkle a little water so the seeds can grow.',
+    ],
+  },
+  {
+    id: 'oral-sentence-studio-fallback-9',
+    type: 'guided_writing_rehearsal',
+    sceneTitle: 'Our Thank You Card',
+    settingEmoji: '🎨',
+    settingLabel: 'art table',
+    actorEmoji: '🧒',
+    actorLabel: 'students',
+    actionEmoji: '✍️',
+    actionLabel: 'signing their names',
+    objectEmoji: '✉️',
+    objectLabel: 'thank you card',
+    targetWords: ['last', 'sign'],
+    wordMeanings: ['at the very end', 'write your name'],
+    priorStepLabel: 'coloring a big sun',
+    sceneMeaning: 'Last, the students sign their names on the thank you card.',
+    acceptedSentences: [
+      'Last, the students sign their names on the card.',
+      'We sign the thank you card last.',
+      'Last of all, each student will sign the card with a pencil.',
+    ],
+  },
+  {
+    id: 'oral-sentence-studio-fallback-10',
+    type: 'use_story_words',
+    sceneTitle: 'The Brave Duckling',
+    settingEmoji: '🏞️',
+    settingLabel: 'pond',
+    actorEmoji: '🦆',
+    actorLabel: 'duckling',
+    actionEmoji: '🌊',
+    actionLabel: 'swimming across',
+    objectEmoji: '🌸',
+    objectLabel: 'water flower',
+    targetWords: ['brave', 'wobbly'],
+    wordMeanings: ['not afraid to try', 'shaky and not steady'],
+    storyText: 'The little duckling felt wobbly at the edge of the pond. She was brave and swam all the way to the flower.',
+    sceneMeaning: 'A brave duckling swims to a flower even though she feels wobbly.',
+    acceptedSentences: [
+      'I was brave when my legs felt wobbly on my new bike.',
+      'The wobbly table did not scare the brave cat.',
+      'My brave friend stood on the wobbly bridge.',
+    ],
+  },
+  {
+    id: 'oral-sentence-studio-fallback-11',
+    type: 'use_story_words',
+    sceneTitle: 'The Hungry Squirrel',
+    settingEmoji: '🌳',
+    settingLabel: 'oak tree',
+    actorEmoji: '🐿️',
+    actorLabel: 'squirrel',
+    actionEmoji: '🔍',
+    actionLabel: 'searching the ground',
+    objectEmoji: '🌰',
+    objectLabel: 'acorn',
+    targetWords: ['hungry', 'search'],
+    wordMeanings: ['wanting to eat', 'look carefully for'],
+    storyText: 'The squirrel was very hungry after the long night. He had to search under the leaves for an acorn. At last he found one!',
+    sceneMeaning: 'A hungry squirrel will search the ground for an acorn.',
+    acceptedSentences: [
+      'When I am hungry, I search the kitchen for a snack.',
+      'We search the yard for the hungry puppy.',
+      'The hungry bird will search the grass for a worm.',
+    ],
+  },
+  {
+    id: 'oral-sentence-studio-fallback-12',
+    type: 'use_story_words',
+    sceneTitle: 'The Sleepy Bear',
+    settingEmoji: '🌲',
+    settingLabel: 'forest',
+    actorEmoji: '🐻',
+    actorLabel: 'bear',
+    actionEmoji: '🥱',
+    actionLabel: 'yawning slowly',
+    objectEmoji: '🍯',
+    objectLabel: 'honey pot',
+    targetWords: ['sleepy', 'cozy'],
+    wordMeanings: ['ready to go to sleep', 'warm and comfy'],
+    storyText: 'The bear ate some honey and gave a big yawn. He felt sleepy, so he curled up in his cozy den.',
+    sceneMeaning: 'A sleepy bear yawns by the honey pot before a cozy nap.',
+    acceptedSentences: [
+      'My cozy sweater keeps me warm when I feel sleepy.',
+      'The sleepy kitten found a cozy spot in the sun.',
+      'I feel sleepy when I read in a cozy chair.',
+    ],
+  },
 ];
+
+const scheduleTypes = (resolution: EvalModeResolution | null): OralSentenceStudioChallengeType[] => {
+  // Mixed (no resolution) covers every task identity once, easiest first.
+  const source = (resolution?.allowedTypes ?? ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES)
+    .filter((type): type is OralSentenceStudioChallengeType =>
+      (ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES as readonly string[]).includes(type));
+  const types = source.length ? source : ['describe_scene' as const];
+  return Array.from({ length: CHALLENGE_COUNT }, (_, index) => types[index % types.length]);
+};
 
 const normalize = (value: string): string => wordTokens(value).join(' ');
 const sceneKey = (challenge: OralSentenceStudioChallenge): string => [
@@ -292,6 +493,21 @@ const rekeyChallenge = (
   acceptedSentences: [...challenge.acceptedSentences] as [string, string, string],
 });
 
+const TYPE_RULES: Record<OralSentenceStudioChallengeType, string> = {
+  describe_scene: `- The visible scene must show one actor, one action, one object, and one setting. Each emoji must literally match its label. Labels are short noun or action phrases, never sentences.
+- targetWord0 and targetWord1 are two DISTINCT lowercase single vocabulary words. Both must fit the topic and be naturally usable together to describe this exact scene. Do not choose proper names.
+- Every accepted sentence must explicitly name at least one word from the actor, action, or object label. Mentioning only the setting is not enough to describe the pictured event.`,
+  guided_writing_rehearsal: `- sceneTitle names the class writing piece, such as a simple recipe, how-to, or class story ("Our Fruit Salad Recipe"). It is not a sentence.
+- priorStepLabel is the step the class ALREADY wrote (2-5 words). The actor/action/object/setting picture shows the DIFFERENT step that comes right after it. Each emoji must literally match its label.
+- targetWord0 MUST be exactly the assigned order word given below. meaning0 explains that order word for a child. targetWord1 is one lowercase vocabulary word that names or describes this step. Do not choose proper names.
+- Every accepted sentence is a sentence the class could write for THIS step. It names at least one word from the actor, action, or object label, uses both target words, and never tells the earlier step.
+- Keep the steps safe: no knives, stoves, heat, or sharp tools.`,
+  use_story_words: `- storyText is a tiny story of 2 or 3 short complete sentences (at most 40 words) about the pictured actor, action, object, and setting. It uses BOTH target words with clear meanings. Each emoji must literally match its label.
+- targetWord0 and targetWord1 are two DISTINCT lowercase single vocabulary words that a Kindergartner could reuse in everyday life. Do not choose proper names.
+- The three accepted sentences are NEW sentences a child might make with both story words. At least two must be about something OTHER than the story (an animal, a place, the weather, school), and NONE may repeat or lightly reword a story sentence. Do not mention family members.
+- sceneMeaning states the story's gist, names the pictured actor or object, and uses both target words.`,
+};
+
 const VARIETY_INSPIRATIONS = [
   'a garden or nature observation',
   'a library, classroom, or reading moment',
@@ -301,12 +517,18 @@ const VARIETY_INSPIRATIONS = [
   'a simple science observation',
 ];
 
+/** Code, not the model, picks the order word: slots run next, then, last
+ * (a retry shifts one along) instead of the model collapsing to "then". */
+const orderWordFor = (index: number, attempt: number): string =>
+  REHEARSAL_ORDER_WORDS[(index + attempt) % REHEARSAL_ORDER_WORDS.length];
+
 const promptFor = (
   ctx: GenerationContext,
+  type: OralSentenceStudioChallengeType,
   index: number,
   attempt: number,
   usedScenes: readonly string[],
-): string => `Create ONE scene-description challenge for Oral Sentence Studio.
+): string => `Create ONE ${type} challenge for Oral Sentence Studio.
 
 Topic: ${ctx.topic}
 Grade ceiling: ${ctx.gradeContext} (${ctx.grade ?? ctx.gradeLevel})
@@ -317,14 +539,16 @@ ${buildScopePromptSection(ctx.scope)}
 Challenge ${index + 1}, attempt ${attempt + 1}. Variety inspiration: ${VARIETY_INSPIRATIONS[(index + attempt * CHALLENGE_COUNT) % VARIETY_INSPIRATIONS.length]}.
 The assigned topic, intent, objective, and scope take precedence over the variety inspiration. Keep every word concrete and understandable for Kindergarten. Use a familiar, culturally neutral scene. Avoid brands, holidays, religion, stereotypes, weapons, danger, romance, private information, and assumptions about a child's home or family.
 
-Return exactly the flat schema fields. Set type to describe_scene.
-- The visible scene must show one actor, one action, one object, and one setting. Each emoji must literally match its label. Labels are short noun or action phrases, never sentences.
-- targetWord0 and targetWord1 are two DISTINCT lowercase single vocabulary words. Both must fit the topic and be naturally usable together to describe this exact scene. Do not choose proper names.
+CHALLENGE TYPE for this slot:
+${CHALLENGE_TYPE_DOCS[type].promptDoc}
+
+Return exactly the flat schema fields. Set type to ${type}.
+${TYPE_RULES[type]}
 - meaning0 and meaning1 are aligned, child-friendly meaning phrases, not full sentences.
 - sceneMeaning is PRIVATE. Write one complete sentence that states the scene's semantic meaning and uses BOTH exact target words meaningfully.
-- acceptedSentence0, acceptedSentence1, and acceptedSentence2 are PRIVATE examples, never directions. Each is one complete child sentence of 3-20 words with ending punctuation. Every example must describe this exact scene and use BOTH exact target words with their intended meanings.
-- Every accepted sentence must explicitly name at least one word from the actor, action, or object label. Mentioning only the setting is not enough to describe the pictured event.
-- The three accepted sentences must genuinely differ in syntax and detail, not merely swap one small word or punctuation. Begin them differently and demonstrate that multiple original answers can pass.
+- acceptedSentence0, acceptedSentence1, and acceptedSentence2 are PRIVATE examples, never directions. Each is one complete child sentence of 3-20 words with ending punctuation that uses BOTH exact target words with their intended meanings.
+- acceptedSentence0 is shown to the child AFTER the attempt as one sentence that works, so make it the clearest, most natural example.
+${type === 'guided_writing_rehearsal' ? `- Assigned order word for this step: ${orderWordFor(index, attempt)}.\n` : ''}- The three accepted sentences must genuinely differ in syntax and detail, not merely swap one small word or punctuation. Begin them differently and demonstrate that multiple original answers can pass.
 - Never output a fragment, word list, definition, unrelated memorized sentence, quotation, dialogue, blank marker, bracket tag, instruction, judging label, or answer verdict in any content field.
 - Do not use double quotes, underscores, braces, or line breaks inside a field.
 
@@ -336,6 +560,15 @@ Generate fresh lesson content rather than copying a fixed example.`;
 export async function generateOralSentenceStudio(
   ctx: GenerationContext,
 ): Promise<OralSentenceStudioData> {
+  const resolution = await resolveEvalModes(
+    'oral-sentence-studio',
+    { targetEvalMode: ctx.targetEvalMode, intent: ctx.intent, objectiveText: ctx.objective.text },
+    CHALLENGE_TYPE_DOCS,
+  );
+  const slotTypes = scheduleTypes(resolution);
+  console.log(
+    `[OralSentenceStudio] modes: ${resolution ? `${resolution.modes.map((mode) => mode.evalMode).join('+')} (${resolution.source})` : 'mixed'} -> types [${slotTypes.join(', ')}]`,
+  );
   let rejectionCount = 0;
 
   const requestChallenge = async (
@@ -343,18 +576,19 @@ export async function generateOralSentenceStudio(
     attempt: number,
     usedScenes: readonly string[],
   ): Promise<OralSentenceStudioChallenge | null> => {
+    const type = slotTypes[index];
     try {
       const response = await ai.models.generateContent({
         model: MODEL,
-        contents: promptFor(ctx, index, attempt, usedScenes),
+        contents: promptFor(ctx, type, index, attempt, usedScenes),
         config: {
           responseMimeType: 'application/json',
-          responseSchema: schema,
+          responseSchema: schemaFor(type),
           systemInstruction: 'Author concrete Kindergarten vocabulary scene data. Every field is child-safe lesson content, never an instruction to a tutor or a grading verdict.',
         },
       });
       const decoded: unknown = JSON.parse(response.text ?? 'null');
-      const challenge = validateOralSentenceStudioPayload(decoded, index);
+      const challenge = validateOralSentenceStudioPayload(decoded, index, type);
       if (!challenge) rejectionCount++;
       return challenge;
     } catch {
@@ -411,7 +645,9 @@ export async function generateOralSentenceStudio(
     const fallback = Array.from(
       { length: ORAL_SENTENCE_STUDIO_FALLBACKS.length },
       (_, step) => ORAL_SENTENCE_STUDIO_FALLBACKS[(fallbackOffset + step) % ORAL_SENTENCE_STUDIO_FALLBACKS.length],
-    ).find((candidate) => challengeAskable(candidate) && !seen.has(sceneKey(candidate)));
+    ).find((candidate) => candidate.type === slotTypes[index]
+      && challengeAskable(candidate)
+      && !seen.has(sceneKey(candidate)));
     if (!fallback) {
       throw new Error('[oral-sentence-studio] No valid unique fallback scene remained.');
     }
@@ -430,13 +666,14 @@ export async function generateOralSentenceStudio(
   if (rejectionCount || fallbackCount) {
     console.warn(`[oral-sentence-studio] Rejected ${rejectionCount} invalid or duplicate payload(s); used ${fallbackCount} explicit fallback scene(s).`);
   }
-  console.info(`[OralSentenceStudio] Generated ${challenges.length} describe_scene challenges.`);
+  const sessionTypes = Array.from(new Set(challenges.map((challenge) => challenge.type)));
+  console.info(`[OralSentenceStudio] Generated ${challenges.length} challenges: ${challenges.map((challenge) => challenge.type).join(', ')}.`);
 
   return {
     title: 'Oral Sentence Studio',
-    description: 'Look at each scene and use both new words in one complete sentence of your own.',
+    description: 'Use both new words in one complete sentence of your own.',
     gradeLevel: ctx.gradeLevel,
-    challengeType: 'describe_scene',
+    challengeType: sessionTypes.length === 1 ? sessionTypes[0] : 'mixed',
     challenges,
   };
 }

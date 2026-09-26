@@ -66,6 +66,11 @@ DISCRIMINATION_REGISTRY: Dict[str, Dict[str, DiscriminationPrior]] = {
         "tell_past_account":      PATTERN_CONSTRUCTED_RESPONSE,
         "story_to_experience":    PATTERN_CREATIVE_OPEN_ENDED,
     },
+    "oral-sentence-studio": {
+        "describe_scene":           PATTERN_CONSTRUCTED_RESPONSE,
+        "guided_writing_rehearsal": PATTERN_CONSTRUCTED_RESPONSE,
+        "use_story_words":          PATTERN_CREATIVE_OPEN_ENDED,
+    },
     "you-and-me": {
         "describe_action": PATTERN_CONSTRUCTED_RESPONSE,
         "describe_independent_action": PATTERN_CONSTRUCTED_RESPONSE,
