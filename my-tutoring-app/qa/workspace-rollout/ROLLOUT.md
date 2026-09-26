@@ -9,9 +9,9 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 
 ## Status (2026-09-25)
 
-- Catalog: 212 primitive ids. On the workspace: 41 (8 at W2 from the pilots, 33 at W1), recounted 09-25
-  after C3, plus `adaptation-investigator` as an ungraded teaching surface (42 `teachingWorkspace` blocks). Queued:
-  Tier A 0, Tier B 0 (B1-B3 done), Tier C 140 (152 before C1). Held back: 31.
+- Catalog: 212 primitive ids. On the workspace: 45 (8 at W2 from the pilots, 37 at W1), recounted 09-25
+  after C4, plus `adaptation-investigator` as an ungraded teaching surface (46 `teachingWorkspace` blocks). Queued:
+  Tier A 0, Tier B 0 (B1-B3 done), Tier C 136 (152 before C1). Held back: 31.
 - **Recount:** catalog ids = `id: '...'` entries in `src/components/lumina/service/manifest/catalog/*.ts`
   (skip the test fixture id `x`); on the workspace = entries with a `teachingWorkspace: {` block.
   Runner-era surfaces: `rg -l "useJudgedScriptRunner<|useJudgedSpeechLoop<|= useJudgedScriptRunner|= useJudgedSpeechLoop" src/components/lumina/primitives --glob "!*test*"`.
@@ -39,6 +39,7 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 | C1: syllable-clapper, rhyme-studio, phoneme-explorer, word-workout (runner-era; word-workout picture match is a checked gesture) | W1 | [workspace-rollout-C1-2026-09-24.md](../tutor-reports/workspace-rollout-C1-2026-09-24.md). 8 smokes PASS (two on r2); rhyme-studio production/collection undriven (no code-owned answer); the tutor never answered `[LESSON_START]` in 2 of 10 drives, no resume involved: harness-only so far (not seen in live use, user 09-24; none in C2's 8 drives), a harness note to watch |
 | C2: word-builder, word-sorter, picture-vocabulary, letter-spotter (runner-era; picture-vocabulary receptive match and letter-spotter find/match are checked taps) | W1 | [workspace-rollout-C2-2026-09-24.md](../tutor-reports/workspace-rollout-C2-2026-09-24.md). 8 smokes PASS (two on r2); word-builder guidance fixed (no one-part question before an attempt); one markdown answer-key output recorded (picture-vocabulary naming r1) |
 | C3: decodable-reader, interactive-book, story-bridge, story-ribbon (runner-era; interactive-book find-feature and four story-bridge modes are checked taps) | W1 | [workspace-rollout-C3-2026-09-25.md](../tutor-reports/workspace-rollout-C3-2026-09-25.md). 8 smokes PASS (story-bridge say_alike on r2); shared fix: a scene fact over 500 chars made the observer refuse every judgment (`sceneFacts.ts`, generic W1 contract case); open: the tutor praises a true one-story detail before asking for the comparison, and summarised instead of reading the stories |
+| C4: addition-subtraction-scene, 3d-shape-explorer, calendar-explorer, push-pull-arena (calendar's grid is plain shape, its chain runner-era) | W1 | [workspace-rollout-C4-2026-09-25.md](../tutor-reports/workspace-rollout-C4-2026-09-25.md). 8 smokes PASS (act_out on r2, a harness fix); nine runner-mock/click-era suites moved onto the real runtime; push-pull predict/compare now reveal on credit; open: the tutor skipped reading the second riddle's clues |
 | DEAD: runner-owned sandbox handoff, `'di-runner'` owner value, `RUNNER_GUIDANCE`/`runnerLessonStart` (frontend) | — | 09-23, no report. **Residue, owned by LA-14 retirement (`07-census.md`):** the backend bridge `live_activity_tools.py` still accepts `teachingOwner: 'di-runner'` and emits `activity_ready` for it, and `run_live_runtime.py` (`judged_runner`), `run_live_lesson_plan.py` and `scripts/live-lesson-plan-fixture.mjs` still branch on it (the live route's `diPlan` probe was removed with it). No frontend adapter sends that value. |
 
 ## Queue
@@ -53,7 +54,7 @@ Order: Tier A, then runner-era K–2 (the recipe applies as written), then the r
 | C1 | R | K literacy sounds: `rhyme-studio`, `word-workout`, `phoneme-explorer`, `syllable-clapper` | done 09-24 (workspace only, every mode) |
 | C2 | R | K literacy words: `letter-spotter`, `word-sorter`, `word-builder`, `picture-vocabulary` | done 09-24 (workspace only, every mode) |
 | C3 | R | K reading and oral language: `decodable-reader`, `interactive-book`, `story-bridge`, `story-ribbon` | done 09-25 (workspace only, every mode) |
-| C4 | R | K math and science: `addition-subtraction-scene`, `3d-shape-explorer`, `calendar-explorer`, `push-pull-arena` | open |
+| C4 | R | K math and science: `addition-subtraction-scene`, `3d-shape-explorer`, `calendar-explorer`, `push-pull-arena` | done 09-25 (workspace only, every mode) |
 | C5 | R | K–2 science: `habitat-diorama`, `matter-explorer`, `states-of-matter`, `solar-system-explorer` | open |
 | C6 | R | Spoken DI, older learners: `di-spoken-practice`, `di-dice-roll`, `di-deduction`, `di-worked-procedure`, `di-word-problem-setup` | open |
 | C7 | R | Literacy G1–5 on the runner: `genre-explorer`, `sentence-analyzer`, `text-structure-analyzer`, `oral-sentence-studio`, `read-aloud-studio` | open |
