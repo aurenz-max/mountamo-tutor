@@ -2946,6 +2946,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
+      guidance: 'The chart checks the learner’s work itself: the learner taps numbers on the chart, or picks a choice, and '
+        + 'presses Check, and you are not told the answer. The learner may not read the instruction: say it in your own '
+        + 'words first; on a board that ends at 10 or 20 the task is counting in order, one tap per number. Which numbers '
+        + 'belong, the shape the highlighted cells make and the skip value are the answers: before the learner has checked, '
+        + 'never say them, never count the pattern on past the highlighted numbers, and never give the difference between '
+        + 'two highlighted numbers. You cannot tap or pick for the learner.',
+    },
   },
   {
     id: 'regrouping-workbench',

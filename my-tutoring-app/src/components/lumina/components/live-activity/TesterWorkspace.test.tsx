@@ -61,7 +61,7 @@ it.each(['say_what_it_shows', null])('a bound family (pin %s) mounts on the work
 });
 
 it('a family the catalog does not bind keeps the tester render and opens no session', () => {
-  mount('say_what_it_shows', 'hundreds-chart');
+  mount('say_what_it_shows', 'concept-card-grid');
   expect(screen.getByText('scripted tester render')).toBeTruthy();
   expect(seam.ai.connectLesson).not.toHaveBeenCalled();
 });

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -19,8 +20,10 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { HundredsChartMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { describeHundredsChartCheck, hundredsChartAssignment, hundredsChartMatches, hundredsChartScene } from './hundredsChartWorkspace';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -80,36 +83,6 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   find_skip_value:     { label: 'Find Skip', icon: '🧮', accentColor: 'amber' },
 };
 
-/**
- * Mode-aware tutor reveal clause — keeps the tutor's disclosure consistent with
- * the on-screen support tier so it never leaks what the tier withheld.
- * identify_pattern is a RECOGNITION mode (the shape IS the answer), so the tutor
- * must never name the pattern at ANY tier; there the tier only dials coaching depth.
- */
-function tutorRevealPolicy(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  type: string,
-): string {
-  if (!tier) return '';
-  if (type === 'identify_pattern') {
-    // Recognition: never name the correct shape, any tier.
-    return tier === 'easy'
-      ? ' [TIER easy] You may use shape vocabulary (rows vs columns, diagonal) to guide LOOKING, but never name the correct pattern.'
-      : tier === 'medium'
-        ? ' [TIER medium] Nudge where to look; do not name the correct pattern.'
-        : ' [TIER hard] Terse coaching only; never name or strongly hint the correct pattern.';
-  }
-  switch (tier) {
-    case 'easy':
-      return ' [TIER easy] You may NAME the strategy (count by the skip value; the ones digits repeat) and walk it step by step.';
-    case 'medium':
-      return ' [TIER medium] The strategy is on screen; nudge the execution, do not name the skip value or count-by rule.';
-    case 'hard':
-    default:
-      return ' [TIER hard] Do NOT name the count-by rule or skip value. Ask what changes from one highlighted cell to the next; never reveal the answer.';
-  }
-}
-
 const CELL_COLORS = [
   'bg-purple-500/60',
   'bg-blue-500/60',
@@ -119,6 +92,8 @@ const CELL_COLORS = [
   'bg-cyan-500/60',
 ];
 
+const RETRY_PENALTY = 0.15;
+
 // ============================================================================
 // Props
 // ============================================================================
@@ -126,19 +101,23 @@ const CELL_COLORS = [
 interface HundredsChartProps {
   data: HundredsChartData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
+
+const useHundredsChartProgress = useWorkspaceProgressFor('hundreds-chart');
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
+function HundredsChartSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: HundredsChartProps) {
   const {
     title,
     description,
     challenges = [],
     gridMax = 100,
-    gradeBand = '1',
     instanceId,
     skillId,
     subskillId,
@@ -147,22 +126,23 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // -------------------------------------------------------------------------
-  // State
-  // -------------------------------------------------------------------------
-  const [selectedCells, setSelectedCells] = useState<Set<number>>(new Set());
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
-  const [currentRetries, setCurrentRetries] = useState(0);
-  const RETRY_PENALTY = 0.15;
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const stableInstanceIdRef = useRef(instanceId || `hundreds-chart-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  /** Bound after the state it clears is declared; the progress hook calls it only after render. */
+  const reopen = useRef<(retry: boolean) => void>(() => {});
 
-  // Drag-to-paint state
-  const isDraggingRef = useRef(false);
-  const dragModeRef = useRef<'select' | 'deselect'>('select');
-  const gridRef = useRef<HTMLDivElement>(null);
-
-  // Challenge progress
+  // -------------------------------------------------------------------------
+  // Challenge progress: the teaching workspace owns it
+  // -------------------------------------------------------------------------
+  const progress = useHundredsChartProgress({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || 'mixed', workspace, assignment: hundredsChartAssignment,
+    onItemOpened: (_index, retry) => reopen.current(retry),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
@@ -170,11 +150,8 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
     isComplete: allChallengesComplete,
     recordResult,
     incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  const canAttempt = progress.canAttempt !== false;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -186,17 +163,37 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
 
   const currentChallenge = challenges[currentChallengeIndex] ?? null;
 
-  // Refs
-  const stableInstanceIdRef = useRef(instanceId || `hundreds-chart-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-  const startTimeRef = useRef(Date.now());
+  // -------------------------------------------------------------------------
+  // State
+  // -------------------------------------------------------------------------
+  const [selectedCells, setSelectedCells] = useState<Set<number>>(new Set());
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState('');
+  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
+  const [currentRetries, setCurrentRetries] = useState(0);
+
+  // Drag-to-paint state
+  const isDraggingRef = useRef(false);
+  const dragModeRef = useRef<'select' | 'deselect'>('select');
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  // A fresh challenge starts clean; Try again clears the rejected cells or choice.
+  reopen.current = (retry) => {
+    setSelectedCells(new Set());
+    setSelectedOption(null);
+    setFeedback('');
+    setFeedbackType('');
+    if (!retry) setCurrentRetries(0);
+  };
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
   // -------------------------------------------------------------------------
   const {
     submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
     submittedResult,
+    elapsedMs,
   } = usePrimitiveEvaluation<HundredsChartMetrics>({
     primitiveType: 'hundreds-chart',
     instanceId: resolvedInstanceId,
@@ -206,51 +203,6 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
     exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
-
-  // -------------------------------------------------------------------------
-  // AI Tutoring
-  // -------------------------------------------------------------------------
-  const gradeLevel = `Grade ${gradeBand}`;
-
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    challengeType: currentChallenge?.type ?? '',
-    instruction: currentChallenge?.instruction ?? '',
-    skipValue: currentChallenge?.skipValue ?? 0,
-    startNumber: currentChallenge?.startNumber ?? 1,
-    givenCells: currentChallenge?.givenCells?.join(', ') ?? '',
-    attemptNumber: currentAttempts + 1,
-    currentPhase: currentChallenge?.type ?? '',
-    selectedCount: selectedCells.size,
-    supportTier: currentChallenge?.supportTier ?? '',
-  }), [title, currentChallenge, currentAttempts, selectedCells.size]);
-
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'hundreds-chart',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
-  });
-
-  // ORIENT beat (reader-fit PRE, 2026-09-05). Every other K math drill fires an
-  // [ACTIVITY_START] so the tutor SAYS the first instruction; this one never
-  // did, so on a standalone 1-10 board a non-reader met "Tap every number in
-  // order" as on-screen text only ([NEXT_ITEM] already covers challenges 2+).
-  // The catalog aiDirective carries the same beat into the lesson greeting /
-  // [PRIMITIVE SWITCH] path, where a component clause alone would be dropped.
-  // Silent: claims no focus, never renders as chat.
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || !currentChallenge) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Hundreds chart, numbers 1 to ${gridMax}, ${gradeLevel}. `
-      + `${challenges.length} challenges. First challenge (${currentChallenge.type}): "${currentChallenge.instruction}". `
-      + `Say what to do in the child's own words — on a board that ends at 10 or 20 this is counting in order, one tap per number. `
-      + `One or two short sentences; never ask them to read the screen.`,
-      { silent: true },
-    );
-  }, [isConnected, currentChallenge, challenges.length, gridMax, gradeLevel, sendText]);
 
   // -------------------------------------------------------------------------
   // Grid
@@ -268,6 +220,10 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
 
   const isInteractive = currentChallenge?.type === 'highlight_sequence' ||
                         currentChallenge?.type === 'complete_sequence';
+
+  const currentSolved = challengeResults.some(r => r.challengeId === currentChallenge?.id && r.correct);
+  /** Learner input is closed while a checked answer waits for Try again, and once the challenge is solved. */
+  const learnerBlocked = () => !canAttempt || currentSolved || allChallengesComplete;
 
   // -------------------------------------------------------------------------
   // Drag-to-paint handlers
@@ -294,20 +250,27 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
     return attr ? parseInt(attr, 10) : null;
   }, []);
 
-  const handlePointerDown = useCallback((num: number) => {
-    if (allChallengesComplete || !isInteractive) return;
+  const handlePointerDown = (num: number) => {
+    if (learnerBlocked() || !isInteractive) return;
     if (givenSet.has(num)) return;
 
     isDraggingRef.current = true;
     // If cell is already selected, drag mode = deselect; otherwise select
     dragModeRef.current = selectedCells.has(num) ? 'deselect' : 'select';
     applyCellAction(num);
-  }, [allChallengesComplete, isInteractive, givenSet, selectedCells, applyCellAction]);
+  };
 
-  const handlePointerEnter = useCallback((num: number) => {
-    if (!isDraggingRef.current || !isInteractive) return;
+  const handlePointerEnter = (num: number) => {
+    if (!isDraggingRef.current || !isInteractive || learnerBlocked()) return;
     applyCellAction(num);
-  }, [isInteractive, applyCellAction]);
+  };
+
+  /** A keyboard (or assistive) activation arrives as a click with no pointer press behind it: one toggle. */
+  const handleKeyActivate = (num: number) => {
+    if (learnerBlocked() || !isInteractive || givenSet.has(num)) return;
+    dragModeRef.current = selectedCells.has(num) ? 'deselect' : 'select';
+    applyCellAction(num);
+  };
 
   // Global mouseup / touchend to stop drag
   useEffect(() => {
@@ -321,45 +284,30 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
   }, []);
 
   // Touch drag: touchmove doesn't fire on new elements, so use elementFromPoint
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDraggingRef.current || !isInteractive) return;
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDraggingRef.current || !isInteractive || learnerBlocked()) return;
     e.preventDefault(); // prevent scroll while painting
     const touch = e.touches[0];
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
     const num = getCellNumFromElement(el);
     if (num !== null) applyCellAction(num);
-  }, [isInteractive, applyCellAction, getCellNumFromElement]);
+  };
 
   // -------------------------------------------------------------------------
   // Other handlers
   // -------------------------------------------------------------------------
-  const handleOptionSelect = useCallback((option: string) => {
-    if (allChallengesComplete || !currentChallenge) return;
+  const handleOptionSelect = (option: string) => {
+    if (learnerBlocked() || !currentChallenge) return;
     SoundManager.select();
     setSelectedOption(option);
     setFeedback('');
     setFeedbackType('');
-  }, [allChallengesComplete, currentChallenge]);
+  };
 
-  const handleCheck = useCallback(() => {
-    if (!currentChallenge) return;
-    const { type, correctCells, correctAnswer, skipValue } = currentChallenge;
-
-    let isCorrect = false;
-
-    if (type === 'highlight_sequence' || type === 'complete_sequence') {
-      // For complete_sequence: only check the cells the student needed to add (not given)
-      const needed = new Set(correctCells.filter(c => !givenSet.has(c)));
-      const studentAdded = selectedCells;
-
-      // Correct if student selected exactly the needed cells
-      isCorrect = needed.size === studentAdded.size &&
-        Array.from(needed).every(c => studentAdded.has(c));
-    } else if (type === 'identify_pattern') {
-      isCorrect = selectedOption === correctAnswer;
-    } else if (type === 'find_skip_value') {
-      isCorrect = selectedOption === String(skipValue);
-    }
+  const handleCheck = () => {
+    if (!currentChallenge || learnerBlocked()) return;
+    const view = { cells: selectedCells, option: selectedOption };
+    const isCorrect = hundredsChartMatches(currentChallenge, view);
 
     incrementAttempts();
 
@@ -375,77 +323,37 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
         attempts: currentAttempts + 1,
         score,
       });
-
-      sendText(
-        `[ANSWER_CORRECT] Challenge ${currentChallengeIndex + 1}/${challenges.length}. ` +
-        `Type: ${type}. Student got it in ${currentAttempts + 1} attempt(s). Congratulate briefly.`,
-        { silent: true }
-      );
     } else {
       SoundManager.playIncorrect();
       setCurrentRetries(r => r + 1);
       setFeedback(currentChallenge.hint || 'Not quite. Try again!');
       setFeedbackType('error');
-
-      sendText(
-        `[ANSWER_INCORRECT] Challenge: "${currentChallenge.instruction}". ` +
-        `Type: ${type}. Skip value: ${skipValue}. Give a hint without revealing the answer.` +
-        tutorRevealPolicy(currentChallenge.supportTier, type),
-        { silent: true }
-      );
     }
-  }, [currentChallenge, selectedCells, selectedOption, givenSet, currentAttempts,
-      currentRetries, currentChallengeIndex, challenges.length, incrementAttempts,
-      recordResult, sendText]);
+    progress.commitCheck?.(describeHundredsChartCheck(currentChallenge, view), isCorrect);
+  };
 
-  const advanceToNext = useCallback(() => {
-    setSelectedCells(new Set());
-    setSelectedOption(null);
-    setFeedback('');
-    setFeedbackType('');
-    setCurrentRetries(0);
-
-    if (!advanceProgress()) {
-      // All challenges complete — submit evaluation
-      const totalCorrect = challengeResults.filter(r => r.correct).length;
-      const overallScore = Math.round(
-        challengeResults.reduce((sum, r) => sum + (r.score ?? 0), 0) / Math.max(challengeResults.length, 1)
-      );
-
-      const metrics: HundredsChartMetrics = {
-        type: 'hundreds-chart',
-        totalChallenges: challenges.length,
-        correctCount: totalCorrect,
-        accuracy: totalCorrect / Math.max(challenges.length, 1),
-        averageAttempts: challengeResults.reduce((s, r) => s + r.attempts, 0) / Math.max(challengeResults.length, 1),
-      };
-
-      submitEvaluation(
-        overallScore >= 70,
-        overallScore,
-        metrics,
-        { challengeResults }
-      );
-
-      const phaseScoreStr = phaseResults.map(
-        p => `${p.label} ${p.score}% (${p.attempts} attempts)`
-      ).join(', ');
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallScore}%. Give encouraging phase-specific feedback.`,
-        { silent: true }
-      );
-      return;
-    }
-
-    const nextCh = challenges[currentChallengeIndex + 1];
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. ` +
-      `Introduce it briefly.` +
-      (nextCh ? tutorRevealPolicy(nextCh.supportTier, nextCh.type) : ''),
-      { silent: true }
+  // -------------------------------------------------------------------------
+  // Completion: the runtime advances; once every challenge is solved, submit once
+  // -------------------------------------------------------------------------
+  const hasAutoSubmittedRef = useRef(false);
+  useEffect(() => {
+    if (!allChallengesComplete || hasSubmittedEvaluation || hasAutoSubmittedRef.current) return;
+    // The live host has no evaluation provider; a workspace family submits only under one.
+    if (progress.recordsEvaluation === false) return;
+    hasAutoSubmittedRef.current = true;
+    const totalCorrect = challengeResults.filter(r => r.correct).length;
+    const overallScore = Math.round(
+      challengeResults.reduce((sum, r) => sum + (r.score ?? 0), 0) / Math.max(challengeResults.length, 1)
     );
-  }, [advanceProgress, challengeResults, challenges, currentChallengeIndex,
-      phaseResults, sendText, submitEvaluation]);
+    const metrics: HundredsChartMetrics = {
+      type: 'hundreds-chart',
+      totalChallenges: challenges.length,
+      correctCount: totalCorrect,
+      accuracy: totalCorrect / Math.max(challenges.length, 1),
+      averageAttempts: challengeResults.reduce((s, r) => s + r.attempts, 0) / Math.max(challengeResults.length, 1),
+    };
+    submitEvaluation(overallScore >= 70, overallScore, metrics, { challengeResults });
+  }, [allChallengesComplete, hasSubmittedEvaluation, progress.recordsEvaluation, challengeResults, challenges.length, submitEvaluation]);
 
   // -------------------------------------------------------------------------
   // Derived
@@ -459,9 +367,14 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
       ? selectedOption !== null
       : false;
 
-  const lastResult = challengeResults[challengeResults.length - 1];
-  const showNext = lastResult?.correct && !allChallengesComplete &&
-    challengeResults.length === currentChallengeIndex + 1;
+  // What the tutor and the observer are shown, republished every render. Derived from the challenge
+  // alone, so opening an item adds no revision after the advance.
+  useLayoutEffect(() => {
+    if (!currentChallenge) return;
+    workspace.current = { ...hundredsChartScene(currentChallenge, { gridMax }), demonstration: [],
+      canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    progress.publishWorkspace?.();
+  });
 
   // -------------------------------------------------------------------------
   // Pip shared surface
@@ -470,9 +383,9 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
   // the cell or option the child last touched; Pip never selects, checks, or
   // advances. Tutor audio counts only while the tutor is on this block and began
   // on this challenge.
-  const currentSolved = challengeResults.some(r => r.challengeId === currentChallenge?.id && r.correct);
   const pip = usePipTargets(currentChallenge?.id ?? null, !currentSolved && !allChallengesComplete);
-  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const tutorSpeaking = ctx.isAudioPlaying && !!currentChallenge
+    && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId);
   const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
   const pipStore = usePipSurface(() => {
     if (!pip.dock.current || !currentChallenge || allChallengesComplete) return null;
@@ -524,7 +437,7 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
           <PhaseSummaryPanel
             phases={phaseResults}
             overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={Date.now() - startTimeRef.current}
+            durationMs={elapsedMs}
             heading="Challenge Complete!"
             celebrationMessage="You mastered the hundreds chart patterns!"
             className="mb-6"
@@ -566,11 +479,12 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
               }
 
               // Non-clickable states
-              const clickable = !allChallengesComplete && isInteractive && !isGiven;
+              const clickable = !allChallengesComplete && !currentSolved && canAttempt && isInteractive && !isGiven;
 
               return (
                 <button
                   key={num}
+                  type="button"
                   data-cell={num}
                   ref={pip.ref(`cell-${num}`)}
                   data-pip-object={`cell-${num}`}
@@ -584,6 +498,11 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
                   }}
                   onTouchStart={() => {
                     if (clickable) { pip.look(`cell-${num}`); handlePointerDown(num); }
+                  }}
+                  onClick={(e) => {
+                    // A pointer press already toggled on mousedown/touchstart; only a click with no press
+                    // behind it (keyboard, assistive tech) toggles here.
+                    if (e.detail === 0 && clickable) { pip.look(`cell-${num}`); handleKeyActivate(num); }
                   }}
                   disabled={!clickable && !isGiven}
                   className={`
@@ -614,9 +533,8 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
         {isMultipleChoice && currentChallenge && !allChallengesComplete && (
           <div className="flex flex-wrap gap-2 justify-center">
             {currentChallenge.options.map((opt) => {
-              const answeredCorrect = showNext;
               let state: AnswerChoiceState;
-              if (answeredCorrect) {
+              if (currentSolved) {
                 state = selectedOption === opt ? 'correct' : 'dimmed';
               } else {
                 state = selectedOption === opt ? 'selected' : 'idle';
@@ -627,8 +545,8 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
                   ref={pip.ref(`option-${opt}`)}
                   data-pip-object={`option-${opt}`}
                   state={state}
-                  onClick={() => { pip.look(`option-${opt}`); handleOptionSelect(opt); }}
-                  disabled={answeredCorrect}
+                  onClick={() => { if (learnerBlocked()) return; pip.look(`option-${opt}`); handleOptionSelect(opt); }}
+                  disabled={currentSolved || !canAttempt}
                   className="w-auto p-3 text-center"
                 >
                   {opt}
@@ -645,29 +563,22 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
           </LuminaFeedbackCard>
         )}
 
-        {/* Action buttons */}
-        {!allChallengesComplete && currentChallenge && (
+        {/* The chart's own Check; the runtime advances. */}
+        {!allChallengesComplete && currentChallenge && !currentSolved && (
           <div className="flex justify-center gap-3">
-            {!showNext && (
-              <LuminaActionButton
-                action="check"
-                onClick={handleCheck}
-                disabled={!canCheck}
-              />
-            )}
-            {showNext && (
-              <LuminaActionButton
-                action="next"
-                onClick={advanceToNext}
-              >
-                Next Challenge
-              </LuminaActionButton>
-            )}
+            <LuminaActionButton
+              action="check"
+              onClick={handleCheck}
+              disabled={!canCheck || !canAttempt}
+            />
           </div>
         )}
       </LuminaCardContent>
     </LuminaCard>
   );
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const HundredsChart = withWorkspaceOnly<HundredsChartProps>('hundreds-chart', HundredsChartSurface, props => props.data.title);
 
 export default HundredsChart;

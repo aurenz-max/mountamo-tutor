@@ -163,7 +163,7 @@ below instead of step 2; steps 1, 3, 4, 5 and the checks are the same.
 Grep `components/live-activity` tests (including `runtime/`) for the id. Expected-id lists
 (`lessonWorkspacePlan.test.ts`) gain it. Since batch A2 every live adapter is
 catalog-declared, so a test that needs "a family the catalog does not declare" uses a non-live
-catalog id such as `hundreds-chart`.
+catalog id such as `concept-card-grid` (display-only, held back).
 
 **Plain shape (P).** The lever is `useChallengeProgress`, which most plain primitives call.
 `runtime/useWorkspaceProgress.ts` returns the same shape backed by the workspace. Examples:

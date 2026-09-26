@@ -121,6 +121,7 @@ import { deductionItems, diDeductionHarnessAnswers } from '../../primitives/visu
 import { diWorkedProcedureHarnessAnswers, workedProcedureItems } from '../../primitives/visual-primitives/direct-instruction/diWorkedProcedureWorkspace';
 import { diWordProblemHarnessAnswers, wordProblemHarnessPlacements, wordProblemItems } from '../../primitives/visual-primitives/direct-instruction/diWordProblemWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
+import { hundredsChartHarnessInputs } from '../../primitives/visual-primitives/math/hundredsChartWorkspace';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -1643,6 +1644,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="question"]' } },
+  },
+  'hundreds-chart': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/HundredsChart.tsx',
+    instanceId: 'chart',
+    defaults: { grade: 'Grade 1', mode: 'highlight_sequence', di: false, topic: 'Skip counting by 2s, 5s and 10s on the hundreds chart' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: each needed cell, or a choice, then Check. Derived from the
+    // mounted challenge, never from Python.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current hundreds-chart challenge');
+      return hundredsChartHarnessInputs(c, intent === 'wrong', ctx.data.gridMax ?? 100);
+    },
+    probes: { mounted: { selector: '[data-pip-object="chart"]' } },
   },
 };
 

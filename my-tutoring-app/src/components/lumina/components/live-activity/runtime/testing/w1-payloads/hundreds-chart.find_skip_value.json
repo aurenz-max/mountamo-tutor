@@ -1,0 +1,94 @@
+{
+ "source": "qa/tutor-reports/hundreds-chart-runtime-find_skip_value-payload-2026-09-26.json",
+ "primitiveId": "hundreds-chart",
+ "evalMode": "find_skip_value",
+ "data": {
+  "title": "Skip-Count Detectives!",
+  "description": "Examine the highlighted footprints on the chart and discover the secret jumping pattern.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "find_skip_value",
+    "instruction": "Look at the highlighted numbers. What is the skip value (how much is added each step)?",
+    "skipValue": 2,
+    "startNumber": 2,
+    "givenCells": [
+     2,
+     4,
+     6,
+     8
+    ],
+    "correctCells": [
+     2,
+     4,
+     6,
+     8
+    ],
+    "correctAnswer": "2",
+    "options": [
+     "10",
+     "2",
+     "5",
+     "3"
+    ],
+    "hint": "Look closely at how many steps are taken between each highlighted number."
+   },
+   {
+    "id": "c2",
+    "type": "find_skip_value",
+    "instruction": "Look at the highlighted numbers. What is the skip value (how much is added each step)?",
+    "skipValue": 5,
+    "startNumber": 5,
+    "givenCells": [
+     5,
+     10,
+     15,
+     20
+    ],
+    "correctCells": [
+     5,
+     10,
+     15,
+     20
+    ],
+    "correctAnswer": "5",
+    "options": [
+     "2",
+     "5",
+     "10",
+     "3"
+    ],
+    "hint": "Count the spaces from one highlighted number to the next to find the pattern."
+   },
+   {
+    "id": "c3",
+    "type": "find_skip_value",
+    "instruction": "Look at the highlighted numbers. What is the skip value (how much is added each step)?",
+    "skipValue": 10,
+    "startNumber": 10,
+    "givenCells": [
+     10,
+     20,
+     30,
+     40
+    ],
+    "correctCells": [
+     10,
+     20,
+     30,
+     40
+    ],
+    "correctAnswer": "10",
+    "options": [
+     "20",
+     "2",
+     "10",
+     "5"
+    ],
+    "hint": "Observe how the column or row changes with each jump on the grid."
+   }
+  ],
+  "gridMax": 100,
+  "gradeBand": "2"
+ }
+}

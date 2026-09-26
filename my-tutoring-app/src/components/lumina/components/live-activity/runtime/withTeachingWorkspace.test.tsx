@@ -9,9 +9,9 @@ import { LiveLessonRuntime } from './LiveLessonRuntime';
 afterEach(cleanup);
 const Teaching = () => <p>teaching</p>;
 const Scripted = () => <p>scripted</p>;
-// The catalog decides: number-sequencer declares `teachingWorkspace`, hundreds-chart does not.
+// The catalog decides: number-sequencer declares `teachingWorkspace`, concept-card-grid (display-only, held back) does not.
 const Train = withTeachingWorkspace('number-sequencer', Teaching, Scripted);
-const Line = withTeachingWorkspace('hundreds-chart', Teaching, Scripted);
+const Line = withTeachingWorkspace('concept-card-grid', Teaching, Scripted);
 const mounted = (Family: React.FC<{ runtimeEvalMode?: string }>, pin?: string, runtime = true) => render(runtime
   ? <LiveRuntimeContext.Provider value={new LiveLessonRuntime('switch')}><Family runtimeEvalMode={pin} /></LiveRuntimeContext.Provider>
   : <Family runtimeEvalMode={pin} />).container.textContent;

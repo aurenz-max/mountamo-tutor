@@ -1,15 +1,21 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PipSurfaceContext } from './PipSurfaceContext';
 import { PipSurfaceStore } from './PipSurfaceStore';
 import HundredsChart, { type HundredsChartChallenge, type HundredsChartData } from '../primitives/visual-primitives/math/HundredsChart';
+import { LiveLessonRuntime } from '../components/live-activity/runtime/LiveLessonRuntime';
+import { LiveRuntimeContext } from '../components/live-activity/runtime/LiveRuntimeContext';
+import { LiveRuntimeSurface } from '../components/live-activity/runtime/LiveRuntimeSurface';
 
 const tutor = vi.hoisted(() => ({ isAudioPlaying: false, activePrimitiveId: 'chart' }));
-vi.mock('../hooks/useLuminaAI', () => ({
-  useLuminaAI: () => ({ sendText: vi.fn(), isConnected: false, ...tutor }),
-}));
+vi.mock('@/lib/firebase', () => ({ auth: { currentUser: null, onAuthStateChanged: () => () => {} }, db: {}, app: {} }));
+// The hundreds chart runs only on the teaching workspace: Pip is exercised there, and hears the shared context.
+vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
+  isConnected: true, isListening: true, sessionMode: 'lesson', sendText: vi.fn(), conversation: [],
+  sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} }, ...tutor,
+}) }));
 vi.mock('../evaluation', () => ({
   usePrimitiveEvaluation: () => ({ submitResult: vi.fn(), hasSubmitted: false, submittedResult: null, elapsedMs: 0 }),
   useEvaluationContext: () => null,
@@ -28,21 +34,34 @@ const data = (challenges: HundredsChartChallenge[]): HundredsChartData => ({ tit
 function mount(input: HundredsChartData) {
   const store = new PipSurfaceStore();
   store.setActive('chart');
-  const ui = () => <PipSurfaceContext.Provider value={store}><HundredsChart data={input} /></PipSurfaceContext.Provider>;
+  const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
+  const ui = () => <PipSurfaceContext.Provider value={store}><LiveRuntimeContext.Provider value={runtime}>
+    <LiveRuntimeSurface runtime={runtime}><HundredsChart data={input} runtimePlanItemId="plan-chart" runtimeEvalMode="mixed" /></LiveRuntimeSurface>
+  </LiveRuntimeContext.Provider></PipSurfaceContext.Provider>;
   const view = render(ui());
-  const speak = (on: boolean) => { tutor.isAudioPlaying = on; view.rerender(ui()); };
+  const speak = (on: boolean) => { tutor.isAudioPlaying = on; act(() => { view.rerender(ui()); }); };
   const paint = (n: number) => {
     fireEvent.mouseDown(view.container.querySelector(`[data-pip-object="cell-${n}"]`)!);
     fireEvent.mouseUp(window);
   };
-  return { store, speak, paint, ...view };
+  /** The runtime's Try again or advance after a checked answer, as the shell offers it. */
+  const offer = (type: 'retry' | 'advance') => {
+    const s = runtime.getSnapshot();
+    const a = s.affordances.find(x => x.action.type === type);
+    expect(a, `no ${type} offered`).toBeTruthy();
+    const commandId = crypto.randomUUID();
+    act(() => { runtime.dispatch({ sessionEpoch: 'test', commandId, instanceId: 'chart', itemId: s.task!.itemId,
+      expectedRevision: s.revision, action: a!.action }); });
+    act(() => { runtime.confirmVisibleResponse(commandId); });
+  };
+  return { store, speak, paint, offer, ...view };
 }
 const pose = (store: PipSurfaceStore) => store.getActive()?.pose;
 const before = (a: Element | null, b: Element | null) => !!a && !!b && !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
 describe('Hundreds Chart drives Pip from its check state', () => {
   it('points at the chart as a whole, never a cell; watches painted cells; celebrates only the full sequence', () => {
-    const { store, speak, paint } = mount(data([highlight, findSkip]));
+    const { store, speak, paint, offer } = mount(data([highlight, findSkip]));
     speak(true);
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'chart' });
     speak(false);
@@ -50,12 +69,14 @@ describe('Hundreds Chart drives Pip from its check state', () => {
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'cell-4' });
     fireEvent.click(screen.getByRole('button', { name: /check/i }));
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'cell-4' });
-    for (const n of [2, 6, 8, 10]) paint(n);
+    // The miss waits for Try again, which clears the painted cells.
+    offer('retry');
+    for (const n of [2, 4, 6, 8, 10]) paint(n);
     fireEvent.click(screen.getByRole('button', { name: /check/i }));
     expect(pose(store)).toEqual({ phase: 'celebrating', gesture: 'none' });
     // Praise that began on this challenge never makes Pip point into the next one.
     speak(true);
-    fireEvent.click(screen.getByRole('button', { name: /next challenge/i }));
+    offer('advance');
     expect(store.getActive()?.scopeId).toBe('f1');
     expect(pose(store)).toEqual({ phase: 'idle', gesture: 'none' });
   });
