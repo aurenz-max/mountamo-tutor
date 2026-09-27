@@ -199,6 +199,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       guidance: 'The learner places points or jumps on the line and presses Check; the line checks the work itself, and '
         + 'talk about a half-placed line is teaching, not a verdict. The target values are not yours to say. You cannot '
         + 'place, move, clear or highlight points.',
+      levers: true,
     },
     misconceptionScope: 'skill',
     observationDelivery: 'server',

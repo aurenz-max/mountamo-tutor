@@ -22,6 +22,7 @@
 import type { SupportArtifact } from './runtime/contract';
 import type { LivePrimitiveId } from './activityContract';
 import { itemsFromChallenges as shapeItems, shapeSorterHarnessAnswers } from '../../primitives/visual-primitives/math/shapeSorterScript';
+import { simplerJump } from '../../primitives/visual-primitives/math/numberLineLevers';
 import { buildSequencerItems as sequencerItems, sequencerHarnessAnswers }
   from '../../primitives/visual-primitives/math/numberSequencerDomain';
 import { buildLetterSoundItems, letterSoundHarnessAnswers }
@@ -271,12 +272,18 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     prompts: WORKSPACE_PROMPTS,
     // The landing the jump actually reaches; one past it is the wrong placement the
     // line's own Check rejects. Derived from the mounted challenge, not from Python.
+    // An easier practice jump (the simplify lever) is not a generated challenge: rebuild it with the
+    // same deterministic builder the component used, from the item it stands in for.
     inputsFor: (intent, ctx) => {
-      const landing = ctx.challenge?.targetValues?.[0];
+      const parent = ctx.itemId?.endsWith('~simpler')
+        ? (ctx.data.challenges ?? []).find((c: { id: string }) => `${c.id}~simpler` === ctx.itemId) : null;
+      const challenge = parent ? simplerJump(parent, ctx.data.range) : ctx.challenge;
+      const landing = challenge?.targetValues?.[0];
       if (intent === 'warmup' || typeof landing !== 'number') return [];
       return [{ type: 'place', value: intent === 'wrong' ? landing + 1 : landing }, { type: 'check' }];
     },
-    probes: { mounted: { selector: 'svg[viewBox="0 0 760 240"]' } },
+    probes: { mounted: { selector: 'svg[viewBox="0 0 760 240"]' },
+      leverMarks: { selector: '[data-lever] text', kind: 'count' }, modelHop: { selector: '[data-lever="model-hop"]', kind: 'count' } },
   },
 
   'ten-frame': {

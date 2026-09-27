@@ -23,10 +23,13 @@ export function teachingEvaluation(items: readonly TeachingItem[], state: Teachi
       observed: spoken ? `Heard (speech transcript, may be noisy): "${attempt.response}"` : attempt.response,
       verdict: attempt.correct ? 'affirmed' : 'corrected', source: spoken ? 'voice' : 'gesture',
       priorCorrections, hearTapsSoFar: 0,
-      support: `Recorded assistance: ${attempt.assisted}; answer exposure: ${attempt.answerExposure}. Verbal assistance is recorded by explicit tutor actions; absence does not establish independence.`
+      support: `Recorded assistance: ${attempt.assisted}; answer exposure: ${attempt.answerExposure}`
+        + (attempt.levers?.length ? `; levers pulled: ${attempt.levers.join(', ')}` : '') + `. Verbal assistance is recorded by explicit tutor actions; absence does not establish independence.`
         + (spoken && attempt.tutorResponse ? ` Tutor replied: "${attempt.tutorResponse.slice(0, 600)}".` : '') + scoring };
   });
-  const firstTryCount = scored.summary.outcomes.filter(o => o.solved && o.corrections === 0).length;
+  // A first try made with a lever pulled is assisted work, never a first-response success.
+  const firstTryCount = scored.summary.outcomes.filter(o => o.solved && o.corrections === 0
+    && !scored.attempts.find(a => a.itemId === o.id && a.correct)?.levers?.length).length;
   const wrong = learningResponses.filter(r => r.verdict === 'corrected');
   const wrongAttempts = scored.attempts.filter(a => !a.correct);
   const tutorCorrections = wrongAttempts.map(a => a.tutorResponse).filter((t): t is string => !!t);

@@ -146,6 +146,7 @@ def runtime_tool(spec=None):
         parameters=types.Schema(type="OBJECT", properties={
             "actionId": types.Schema(type="STRING", description="Exact opaque ticket from a currently advertised choice. Never construct it."),
             "targets": types.Schema(type="ARRAY", items=types.Schema(type="STRING"), description="Workspace actions only: IDs of visible objects from task.workspace.objects. Empty list clears a demonstration."),
+            "lever": types.Schema(type="STRING", description="pull_lever only: the id of one lever from task.workspace.levers."),
         }, required=["actionId"]),
     )])
 
@@ -230,7 +231,8 @@ class LiveRuntimeTools:
             await self.demonstrate(call, args)
             return
         if (call.name != "perform_runtime_action" or not isinstance(args, dict)
-                or not {"actionId"} <= set(args) <= {"actionId", "targets"} or not isinstance(args["actionId"], str)
+                or not {"actionId"} <= set(args) <= {"actionId", "targets", "lever"} or not isinstance(args["actionId"], str)
+                or ("lever" in args and not (isinstance(args["lever"], str) and 0 < len(args["lever"]) <= 200 and "targets" not in args))
                 or ("targets" in args and not (isinstance(args["targets"], list) and len(args["targets"]) <= 30
                     and all(isinstance(t, str) and 0 < len(t) <= 200 for t in args["targets"])
                     and len(set(args["targets"])) == len(args["targets"])))):
@@ -246,7 +248,7 @@ class LiveRuntimeTools:
             await self.respond(call, "stale", reason="That ticket is no longer advertised. Use the refreshed choices.")
             return
         action = dict(choice["action"])
-        parameters = {k: args[k] for k in ("targets",) if k in args}
+        parameters = {k: args[k] for k in ("targets", "lever") if k in args}
         if parameters and action.get("type") != "workspace":
             await self.respond(call, "invalid", reason="This action takes no workspace parameters")
             return

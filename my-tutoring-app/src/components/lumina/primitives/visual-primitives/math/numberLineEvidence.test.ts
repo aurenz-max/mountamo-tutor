@@ -43,7 +43,7 @@ describe('jump response evidence', () => {
       itemId: 'show_jump-0#try1', phase: 'single jump',
       challenge: 'Start at 8 and add 3 (3 spaces right)', expected: 'landing at 11',
       observed: 'Incorrect: landing placed at 10, 2 spaces right of 8',
-      support: 'Start marked; no jump arc drawn; first try',
+      support: 'Start marked; no hops drawn; first try',
     });
     expect(evidence.phases![2].observed).toBe('Incorrect: landing placed at 12, 3 spaces left of 15');
     expect(evidence.phases![3].support).toContain('try 2, after "not quite" feedback');

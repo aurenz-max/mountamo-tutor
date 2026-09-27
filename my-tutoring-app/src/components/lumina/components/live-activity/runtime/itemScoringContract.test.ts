@@ -8,7 +8,7 @@ const attempt = (itemId: string, response: string, correct: boolean, source: Tea
   tutorResponse?: string): TeachingAttempt => ({ itemId, response, correct, source, assisted: false, answerExposure: 'none',
   ...(tutorResponse ? { tutorResponse, judgment: 'tutor' as const } : {}) });
 const state = (attempts: TeachingAttempt[]): TeachingState =>
-  ({ index: 1, phase: 'completed', assisted: false, answerExposure: 'none', lastResponse: attempts.at(-1) ?? null, attempts });
+  ({ index: 1, phase: 'completed', assisted: false, answerExposure: 'none', levers: [], practice: null, lastResponse: attempts.at(-1) ?? null, attempts });
 const items: TeachingItem[] = [{ id: 'a', task: 'What sound does s make?', expectedAnswer: '/s/', response: 'speech', checkResponse: () => null },
   { id: 'b', task: 'Tap the red card.', response: 'gesture', checkResponse: () => null }];
 

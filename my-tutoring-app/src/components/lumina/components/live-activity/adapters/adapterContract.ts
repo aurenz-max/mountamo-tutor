@@ -86,8 +86,18 @@ export const WORKSPACE_DOCTRINE = 'You own the teaching: one step at a time, and
   + 'first. After a mistake, invite another try. The host records your feedback and handles retry and advance; '
   + 'call no recording or progression tool. No correction cap, no scripted wording.';
 
+/**
+ * What every family with in-item levers tells the tutor, written once. Only lever families carry it,
+ * so the families that offer no lever keep their guidance under the cap. The 2026-09-27 number-line
+ * bench: with the lever named only in the tool's own description, the tutor coached in words and
+ * pulled nothing in 2 of 3 journeys.
+ */
+export const LEVER_DOCTRINE = 'When the learner is stuck and pull_lever is offered, let the screen help before words: '
+  + 'pull the lever in workspace.levers whose "when" fits, then talk about what changed. Here begin_help is for help in words only.';
+
 /** A workspace family's guidance: its own domain facts, then the shared doctrine. */
-export const workspaceGuidance = (domain: string) => `${domain} ${WORKSPACE_DOCTRINE}`;
+export const workspaceGuidance = (domain: string, levers = false) =>
+  `${domain} ${WORKSPACE_DOCTRINE}${levers ? ` ${LEVER_DOCTRINE}` : ''}`;
 
 /**
  * What every UNGRADED teaching surface tells the tutor, written once (user ruling 2026-09-24:
@@ -154,7 +164,7 @@ export function workspaceAdapter<T>(primitiveId: string, domain: WorkspaceDomain
     copy: { label, checkbox: label, title: `Learn with ${label}`,
       lessons: ungraded ? [[UNGRADED_MODE, 'Teach'] as const] : (entry.evalModes ?? []).map(m => [m.evalMode, m.label] as const) },
     lessonStart: workspaceLessonStart(primitiveId, primitiveId),
-    guidance: ungraded ? `${declared.guidance} ${TEACHING_DOCTRINE}` : workspaceGuidance(declared.guidance),
+    guidance: ungraded ? `${declared.guidance} ${TEACHING_DOCTRINE}` : workspaceGuidance(declared.guidance, !!declared.levers),
     validate: domain.validate,
     initialState: domain.initialState,
   };

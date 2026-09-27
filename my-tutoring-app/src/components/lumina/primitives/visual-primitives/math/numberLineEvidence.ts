@@ -12,13 +12,17 @@ export interface JumpResponse {
   expectedLandings: number[];
   placedLandings: number[];
   correct: boolean;
+  /** Numbered hops were on the line for this try (the easy starting position or a pulled lever). */
   arcShown: boolean;
+  /** Levers the tutor pulled on this item before this try. Absent when none were: the try was unaided by a pull. */
+  levers?: string[];
 }
 
 export function jumpResponseFor(
   challengeId: string, attempt: number,
   operations: readonly { type: 'add' | 'subtract'; startValue: number; changeValue: number; showJumpArc?: boolean }[],
   placedLandings: readonly number[], snapPrecision: number,
+  onScreen: readonly string[] = [], pulled: readonly string[] = [],
 ): JumpResponse {
   const expectedLandings = operations.map(op => op.type === 'add' ? op.startValue + op.changeValue : op.startValue - op.changeValue);
   return {
@@ -27,7 +31,8 @@ export function jumpResponseFor(
     expectedLandings, placedLandings: [...placedLandings],
     correct: expectedLandings.length > 0 && expectedLandings.length === placedLandings.length
       && expectedLandings.every((e, i) => isSnappedPlacementExact(placedLandings[i], e, snapPrecision)),
-    arcShown: operations.some(op => op.showJumpArc === true),
+    arcShown: operations.some(op => op.showJumpArc === true) || onScreen.includes('numbered_hops'),
+    ...(pulled.length ? { levers: [...pulled] } : {}),
   };
 }
 
@@ -64,7 +69,8 @@ export function buildJumpDiagnosisEvidence(
       challenge: askText(r),
       expected: expectedText(r),
       observed: `${r.correct ? 'Correct' : 'Incorrect'}: ${observedText(r)}`,
-      support: `${r.arcShown ? 'Jump arc and hop size drawn on the line' : 'Start marked; no jump arc drawn'}; `
+      support: `${r.arcShown ? "Numbered hops drawn on the learner's jump" : 'Start marked; no hops drawn'}; `
+        + (r.levers?.length ? `tutor pulled ${r.levers.join(', ')}; ` : '')
         + (r.attempt > 1 ? `try ${r.attempt}, after "not quite" feedback and the written hint` : 'first try'),
     })),
     priorAttempts: wrong.slice(0, -1).slice(-4).map(r => ({ challenge: askText(r), observed: observedText(r) })),
@@ -73,6 +79,7 @@ export function buildJumpDiagnosisEvidence(
 
 /** Percent of jump challenges whose FIRST Check was correct; undefined if none were checked. */
 export function jumpFirstResponseScore(responses: readonly JumpResponse[]): number | undefined {
+  // A first try made after the tutor pulled a lever is assisted, never a first-response success.
   const firsts = responses.filter(r => r.attempt === 1);
-  return firsts.length ? Math.round((firsts.filter(r => r.correct).length / firsts.length) * 100) : undefined;
+  return firsts.length ? Math.round((firsts.filter(r => r.correct && !r.levers?.length).length / firsts.length) * 100) : undefined;
 }

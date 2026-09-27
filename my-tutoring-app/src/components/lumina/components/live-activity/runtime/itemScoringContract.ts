@@ -60,10 +60,12 @@ export interface ScoredSession { attempts: ScoredAttempt[]; summary: TeachingSum
  * first try = 100, after one miss = 67, later = 33, never = 0.
  */
 export function scoreSession(itemIds: readonly string[], state: TeachingState, grades: readonly (AttemptGrade | undefined)[]): ScoredSession {
-  const attempts: ScoredAttempt[] = state.attempts.map((a, i) => {
+  // Work on a simpler item a simplify lever opened is ungraded: it is never part of the record.
+  const attempts: ScoredAttempt[] = state.attempts.flatMap((a, i) => {
+    if (a.practice) return [];
     const grade = a.source === 'speech' ? grades[i] ?? 'unclear' : 'activity_check';
     const correct = grade === 'correct' ? true : grade === 'not_correct' ? false : a.correct;
-    return { ...a, correct, flowCorrect: a.correct, grade };
+    return [{ ...a, correct, flowCorrect: a.correct, grade }];
   });
   const outcomes = itemIds.map(id => {
     const mine = attempts.filter(a => a.itemId === id);

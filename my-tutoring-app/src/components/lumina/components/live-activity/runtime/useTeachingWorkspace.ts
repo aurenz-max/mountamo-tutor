@@ -10,7 +10,7 @@ import { abstainItemScore, gradeOf, scoreSession, type AttemptGrade, type ItemSc
 import { postObservation } from './observationContract';
 import { SoundManager } from '../../../utils/SoundManager';
 import { latestLearnerUtterance } from './learnerUtterance';
-import type { ExecutableAffordance, RuntimeMount } from './contract';
+import type { ExecutableAffordance, RuntimeMount, WorkspaceLever } from './contract';
 
 export interface TeachingItem {
   id: string;
@@ -30,7 +30,18 @@ export interface TeachingWorkspace {
   canPresent: boolean;
   mark: (ids: string[]) => void;
   clearPresentation: () => void;
+  /** The levers the primitive declares on its current item (`/add-support-tiers`). */
+  levers?: WorkspaceLever[];
+  /**
+   * Pull one lever as a synchronous commit: the screen and the scene change before this returns.
+   * `true` for a help lever; for a simplify lever, the simpler item now on screen in place of the
+   * current one; or a refusal the tutor reads, leaving everything unchanged.
+   */
+  pullLever?: (id: string) => LeverPull;
+  /** The simpler item is done: put the session item back on screen. Retry on the simpler item keeps it. */
+  endPractice?: () => void;
 }
+export type LeverPull = true | string | { practice: TeachingAssignment };
 /** An item as the tutor and the outcome observer are told it, without the private checker. */
 export type TeachingAssignment = Omit<TeachingItem, 'checkResponse'>;
 /**
@@ -51,6 +62,8 @@ export interface TeachingWorkspaceOptions {
    * reveals or records on success reads its own state here rather than from a later render.
    */
   onSolved?: (index: number, response: string) => void;
+  /** The activity's own check of a gesture on a simpler (practice) item, as `checkResponse` for a session item. */
+  checkPractice?: (itemId: string, response: string) => boolean | null;
 }
 const noSubscription = () => () => {};
 const scoreAttempt = postObservation<ItemScoreRequest, ItemScoreDecision>('/api/lumina/observe-item-score', abstainItemScore);
@@ -80,8 +93,12 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
   const wasReady = useRef(false);
   const examinedSpeech = useRef(new Set<string>());
   const pendingSpeech = useRef<{ id: string; text: string } | null>(null);
-  const item = options.items[state.index];
-  const currentItem = () => latest.current.items[session.getSnapshot().index];
+  /** The simpler item a simplify lever put on screen; the session holds only its id. */
+  const practiceItem = useRef<TeachingItem | null>(null);
+  const itemAt = (s: { index: number; practice: string | null }) =>
+    s.practice && practiceItem.current?.id === s.practice ? practiceItem.current : latest.current.items[s.index];
+  const item = state.practice && practiceItem.current?.id === state.practice ? practiceItem.current : options.items[state.index];
+  const currentItem = () => itemAt(session.getSnapshot());
   const lastSpeech = () => {
     if (aiRef.current.sharedVoiceTurns?.isVoiceActive()) return null;
     return latestLearnerUtterance(aiRef.current.conversation, speechFloor.current);
@@ -92,6 +109,19 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     let applied = false;
     flushSync(() => { applied = fn(); });
     return applied;
+  };
+  /** A new response scope on the same surface: speech heard before it is not an answer to it. */
+  const rescope = () => {
+    pendingSpeech.current = null;
+    speechFloor.current = aiRef.current.conversation.length;
+    wasReady.current = false;
+  };
+  const closePractice = () => {
+    if (!session.closePractice()) return false;
+    practiceItem.current = null;
+    latest.current.workspace.current?.endPractice?.();
+    reset();
+    return true;
   };
   const reset = () => {
     pendingSpeech.current = null;
@@ -122,6 +152,8 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
           demand: { ...w?.facts, response: i.response, presentation: w?.readyForResponse ? 'ready' : 'not ready' },
           support: { level: s.assisted ? 2 : 0, answerExposure: s.answerExposure },
           workspace: { progression: 'observer', objects: w?.objects ?? [], demonstration: w?.demonstration ?? [],
+            ...(w?.levers?.length ? { levers: w.levers } : {}),
+            ...(s.practice ? { practice: { returnsTo: latest.current.items[s.index].id } } : {}),
             ...(i.expectedAnswer !== undefined ? { expectedAnswer: i.expectedAnswer } : {}),
             ...(pendingSpeech.current ? { pendingResponse: pendingSpeech.current } : {}),
             lastResponse: response, attempts: s.attempts.slice(-20) } };
@@ -134,7 +166,13 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
           actions.push({ action: { type: 'workspace', operation: name }, description, execute,
             ...(assisted ? { assistance: { level: 2, answerExposure: exposure } } : {}) });
         };
-        operation('begin_help', 'Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.',
+        // A lever on offer changes the screen and records the help itself; begin_help described as THE
+        // step before guiding questions drew the tutor into words instead (number-line bench 09-27: 0/3 pulls).
+        const leverOffered = !!w?.pullLever && !!w.levers?.some(l => !l.pulled) && !s.practice;
+        operation('begin_help', leverOffered
+          ? 'Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. '
+            + 'When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.'
+          : 'Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.',
           input => !input?.targets?.length && commit(() => session.assist()), true);
         if (w?.objects.length && w.canDemonstrate) {
           operation('demonstrate', 'Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.', input => {
@@ -144,6 +182,35 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
             return commit(() => { session.assist('full'); latest.current.workspace.current!.mark(input.targets!); return true; });
           }, true, 'full');
         }
+        const pullable = w?.levers?.filter(l => !l.pulled) ?? [];
+        if (pullable.length && w?.pullLever && !s.practice && !(s.phase === 'checked' && s.lastResponse?.correct)) operation('pull_lever',
+          'Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose "when" fits why. '
+          + 'It changes the screen and is recorded as help. Supply lever: its id. Wait for the visible result, then say what changed, '
+          + 'in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.',
+          input => {
+            const id = input?.lever, levers = latest.current.workspace.current?.levers ?? [];
+            if (!id) return `pull_lever needs lever: one of ${levers.filter(l => !l.pulled).map(l => l.id).join(', ')}.`;
+            const lever = levers.find(l => l.id === id);
+            if (!lever) return `No lever ${id} here. Levers: ${levers.map(l => l.id).join(', ')}.`;
+            if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+            let refusal: string | null = null;
+            const applied = commit(() => {
+              const pulled = latest.current.workspace.current?.pullLever?.(id);
+              if (pulled === undefined || typeof pulled === 'string') { refusal = pulled ?? 'This item has no levers now.'; return false; }
+              if (pulled !== true) {
+                practiceItem.current = { ...pulled.practice, checkResponse: response =>
+                  latest.current.checkPractice?.(pulled.practice.id, response) ?? null };
+                if (!session.openPractice(pulled.practice.id)) {
+                  practiceItem.current = null; latest.current.workspace.current?.endPractice?.();
+                  refusal = 'The easier item could not open here.'; return false;
+                }
+                rescope();
+              }
+              session.assist('none', id);
+              return true;
+            });
+            return refusal ?? applied;
+          }, true);
         if (w?.canPresent && latest.current.onPresentStimulus && s.phase === 'working') operation('present',
           'Present this timed stimulus. Use only after preparing the learner; a repeat is assisted practice. No parameters.', input =>
           !input?.targets?.length && present(), presentations.current.has(i.id));
@@ -156,9 +223,10 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
             return commit(() => {
               if (!session.submit(speech.id, speech.text, 'speech', d.verdict === 'correct', true, d.tutor)) return false;
               pendingSpeech.current = null;
-              if (d.verdict === 'correct') latest.current.onSolved?.(session.getSnapshot().index, speech.text);
+              if (d.verdict === 'correct' && !session.getSnapshot().practice) latest.current.onSolved?.(session.getSnapshot().index, speech.text);
               if (d.transition === 'retry') { session.retry(); reset(); }
-              if (d.transition === 'advance') {
+              if (d.transition === 'advance' && session.getSnapshot().practice) closePractice();
+              else if (d.transition === 'advance') {
                 session.advance();
                 if (session.getSnapshot().phase !== 'completed') reset();
                 else runtime?.afterVisibleResponse(() => { if (mounted.current) runtime.requestCompletion(); });
@@ -169,7 +237,10 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
         if (s.phase === 'checked') actions.push({ controller: 'observer', action: { type: 'retry' },
           description: 'Reopen this same item and clear the working surface. Preserve all attempts and assistance. No automatic correction or speech.',
           execute: () => commit(() => { if (!session.retry()) return false; reset(); return true; }) });
-        if (s.phase === 'checked' && s.lastResponse?.correct) actions.push({ controller: 'observer', action: { type: 'advance' },
+        if (s.phase === 'checked' && s.lastResponse?.correct && s.practice) actions.push({ controller: 'observer', action: { type: 'advance' },
+          description: 'After discussing the easier practice item, return to the full item it stood in for, blank. Its levers and assistance stay recorded.',
+          execute: () => commit(closePractice) });
+        else if (s.phase === 'checked' && s.lastResponse?.correct) actions.push({ controller: 'observer', action: { type: 'advance' },
           description: 'After discussing the checked success, open the next blank item, or finish if this is the last. The new item has no inherited assistance.',
           execute: () => commit(() => {
             if (!session.advance()) return false;
@@ -177,6 +248,9 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
             else runtime?.afterVisibleResponse(() => { if (mounted.current) runtime.requestCompletion(); });
             return true;
           }) });
+        // The lever first: a stuck learner's tutor reads the choices in order.
+        const lever = actions.findIndex(a => a.action.type === 'workspace' && a.action.operation === 'pull_lever');
+        if (lever > 0) actions.unshift(...actions.splice(lever, 1));
         return actions;
       },
       suspension: { suspend: () => { suspended.current = true; latest.current.workspace.current?.clearPresentation(); },
@@ -271,12 +345,13 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     if (!mounted.current || !activeRef.current || suspended.current || currentItem().id !== item.id || currentItem().response !== 'gesture') return;
     const correct = checkResponse(response);
     if (correct === null || !session.submit(`gesture:${++gestureSequence.current}`, response, 'gesture', correct)) return;
-    if (correct) latest.current.onSolved?.(session.getSnapshot().index, response);
+    if (correct && !session.getSnapshot().practice) latest.current.onSolved?.(session.getSnapshot().index, response);
     // Facts trigger the live conversation. No prescribed words; the browser has already checked the response.
     const facts = `The learner submitted their selection. Current workspace response: ${JSON.stringify(session.getSnapshot().lastResponse)}. Respond to the learner using the current task and workspace.`;
     aiRef.current.sendText(facts, { scripted: false, author: 'host' });
   };
   return { state, item, summary, scored, submitGestureResponse, publishWorkspace, present: () => currentItem().id === item.id && present(),
+    currentItemId: () => currentItem().id,
     canAttempt: active && state.phase === 'working' && !suspended.current,
     isBlocked: () => !mounted.current || !activeRef.current || suspended.current || currentItem().id !== item.id || session.getSnapshot().phase !== 'working',
     tutorSpeaking: ai.isAudioPlaying, stop: () => runtime?.stop() };

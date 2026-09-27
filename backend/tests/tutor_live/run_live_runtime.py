@@ -416,6 +416,17 @@ async def workspace_turn(s, label, prompt=None, until=lambda state: True):
                 reply = await s.step({'type': 'command', 'command': event['command']})
                 if reply['dom'].get('demonstration', 0):
                     s.record('visible_demonstration', state=s.state, dom=reply['dom'])
+                action = event['command']['action']
+                if action.get('operation') == 'pull_lever':
+                    # What the tutor pulled, and what the line shows right after the commit, before any narration.
+                    # A refused pull (no lever named, already pulled) changes nothing and is recorded apart.
+                    task = s.state.get('task') or {}
+                    lever = (action.get('input') or {}).get('lever')
+                    committed = (task.get('workspace') or {}).get('practice') or any(
+                        l['id'] == lever and l['pulled'] for l in (task.get('workspace') or {}).get('levers', []))
+                    s.record('lever_pull' if committed else 'lever_refused', phase=label, lever=(action.get('input') or {}).get('lever'), dom=reply['dom'],
+                             itemId=task.get('itemId'), demand=task.get('demand'), levers=(task.get('workspace') or {}).get('levers'))
+                    print(f"Run {s.index} {label}: pull_lever {action.get('input')} -> item {task.get('itemId')}, dom {reply['dom']}", flush=True)
             elif kind == 'runtime_request_demonstration':
                 # LA-15: the tutor's own diagnosis, authored and shown through the real route and runtime.
                 s.record('demonstration_request', phase=label, need=event['need'])
@@ -503,6 +514,74 @@ async def demonstration_detour(s):
     await turn('correct')
 
 
+def credited(s, item_id):
+    """The item's recorded attempts, and whether one was credited correct. A tutor affirming and the item
+    advancing is not proof of credit: the 2026-09-26 number-line run passed with none."""
+    attempts = [a for a in ((s.state.get('task') or {}).get('workspace') or {}).get('attempts', []) if a['itemId'] == item_id]
+    return attempts, any(a['correct'] for a in attempts)
+
+
+async def lever_journey(s):
+    """Handoff 18: a wrong answer, then "I'm stuck" with no tool named. The tutor must pull a lever from what
+    it sees; the line changes before it is described; no lever fact states the landing; the next attempt records
+    the lever; an easier practice jump is ungraded; the learner answers the full item and only that is credited;
+    the lesson then continues."""
+    turn = lambda label, prompt=None, until=lambda state: True: workspace_turn(s, label, prompt, until)
+    async with asyncio.timeout(30):
+        while json.loads(await s.ws.recv()).get('type') != 'session_ready':
+            pass
+    await s.step({'type': 'poll'})
+    await turn('lesson-entry', '[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.')
+    first = s.state['task']['itemId']
+    assert (s.state['task'].get('workspace') or {}).get('levers'), 'The item declares no levers'
+    challenge = next(c for c in s.data['challenges'] if c['id'] == first)
+    landings = {str(v) for v in challenge['targetValues']}
+    await s.learner('wrong')
+    await turn('wrong')
+    pulls = lambda: [e for e in s.events if e['type'] == 'lever_pull']
+    for label, prompt in (('stuck', "I'm stuck. I don't know how to do this one."),
+                          ('stuck-again', "I still don't get it.")):
+        if not pulls():
+            await turn(label, prompt)
+    assert pulls(), 'The tutor never pulled a lever'
+    for pull in pulls():
+        facts = ' '.join(str((pull['demand'] or {}).get(k, '')) for k in ('onScreen', 'practice'))
+        assert not landings & set(re.findall(r'\d+', facts)), 'A lever fact states the landing: ' + facts
+        assert pull['dom'].get('leverMarks', 0) > 0 or (pull['itemId'] or '').endswith('~simpler'), 'The pull changed nothing on screen'
+
+    async def press(action):
+        await s.step({'type': 'learner_progress', 'action': action})
+        s.record('learner_pressed', action=action, state=s.state)
+    practice = lambda: bool((s.state['task'].get('workspace') or {}).get('practice'))
+    if practice():
+        if s.state['task']['phase'] != 'working':
+            await press('retry')
+        await s.learner('correct')
+        await turn('practice', until=lambda st: not (st['task'].get('workspace') or {}).get('practice'))
+        if practice():
+            await press('advance')
+        assert not practice(), 'The easier jump never returned to the full item'
+    assert s.state['task']['itemId'] == first, 'The lever left the item'
+    if s.state['task']['phase'] != 'working':
+        await turn('retry', 'Can I try again?', lambda st: st['task']['phase'] == 'working')
+        if s.state['task']['phase'] != 'working':
+            await press('retry')
+    await s.learner('correct')
+    await turn('correct', until=lambda st: st['task']['itemId'] != first or st['task']['evidence']['correctness'] == 'correct')
+    attempts, ok = credited(s, first)
+    assert ok, 'The correct answer on the full item was never credited'
+    solving = next(a for a in attempts if a['correct'])
+    assert solving.get('levers') and solving.get('assisted'), 'The credited attempt does not record the lever'
+    every = (s.state['task'].get('workspace') or {}).get('attempts', [])
+    assert all(a.get('practice') for a in every if a['itemId'].endswith('~simpler')), 'Easier-jump work was recorded as a session item'
+    if s.state['task']['itemId'] == first:
+        await turn('advance', 'I am ready for the next one.', lambda st: st['task']['itemId'] != first)
+        if s.state['task']['itemId'] == first:
+            await press('advance')
+    assert s.state['task']['itemId'] != first, 'The lesson did not continue to the next item'
+    s.record('lever_complete', state=s.state, pulled=[p['lever'] for p in pulls()], credited=solving)
+
+
 async def teaching_workspace(s):
     """Natural learner requests against shared workspace facts, without requested tool names."""
     turn = lambda label, prompt=None, until=lambda state: True: workspace_turn(s, label, prompt, until)
@@ -562,6 +641,7 @@ async def teaching_workspace(s):
             await press('retry', lambda st: st['task']['phase'] == 'working')
     await s.learner('correct')
     await turn('correct', until=lambda st: st['task']['itemId'] != first or st['task']['evidence']['correctness'] == 'correct')
+    assert credited(s, first)[1], 'The correct answer was never credited'
     if s.state['task']['itemId'] == first:
         await turn('advance', 'I am ready for the next one.')
         if s.state['task']['itemId'] == first:
@@ -681,8 +761,10 @@ async def drive(args, token, live, index):
                 'lesson_context': {'topic': args.topic, 'grade_level': args.grade,
                                    'objectives': [], 'ordered_components': []}}))
             workspace = journey.get('execution') == 'workspace' or bool((s.state.get('task') or {}).get('workspace'))
-            if args.demonstration:
-                await demonstration_detour(s)
+            if args.demonstration or args.lever:
+                await (demonstration_detour(s) if args.demonstration else lever_journey(s))
+                receipts = [e['result'] for e in s.events if e['type'] == 'runtime_result']
+                assert all(r['status'] == 'visible' for r in receipts), 'An action did not reach visible'
                 return {'passed': True, 'primitiveId': args.primitive, 'events': s.events,
                         'providerResumes': sum(e['type'] == 'provider_resume' and e.get('event') == 'session_resuming' for e in s.events)}
             await (teaching_surface(s) if teaching else teaching_workspace(s) if workspace else PROGRAMS[activity['teachingOwner']](s))
@@ -737,11 +819,13 @@ async def main():
     parser.add_argument('--audio', action='store_true', help='Use synthetic learner audio and actual provider transcription for workspace journeys')
     parser.add_argument('--answer-prefix', default='', help='Natural conversational preface for actual spoken answers; requires --audio')
     parser.add_argument('--demonstration', action='store_true', help='LA-15: wrong answer, a request to be shown, a composed demonstration detour and return (requires --lesson-entry)')
+    parser.add_argument('--lever', action='store_true', help='Handoff 18: wrong answer, "I am stuck", an unprompted lever pull, then the full item credited (requires --lesson-entry)')
     parser.add_argument('--objective', help='Objective text the demonstration author reads; defaults to the topic')
     parser.add_argument('--progression-only', action='store_true', help='Reproduce wrong answer, correction, next challenge and finish without a help detour')
     args = parser.parse_args()
     if args.lesson_entry and args.startup: parser.error('--lesson-entry uses prepared content; do not combine with --startup')
     if args.demonstration and not args.lesson_entry: parser.error('--demonstration is a lesson feature; add --lesson-entry')
+    if args.lever and (not args.lesson_entry or args.demonstration): parser.error('--lever is its own lesson journey; add --lesson-entry, not --demonstration')
     if args.answer_prefix and not args.audio: parser.error('--answer-prefix requires --audio so the actual provider transcript owns submission')
 
     # The production envelope the model is given, and — separately, never mixed into

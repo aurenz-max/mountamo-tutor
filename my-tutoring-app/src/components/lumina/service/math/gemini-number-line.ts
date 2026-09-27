@@ -108,8 +108,9 @@ function resolveCount(type: ChallengeType): number {
 //     to read a position. getLabelInterval() then derives label density from it.
 //   • highlights[] (NumberLineData)  → benchmark anchor dots ("a helper mark") the
 //     student reads from. NEVER the target value (leak guard, see addAnchors()).
-//   • operations[].showJumpArc       → the worked arc + ±N label = near-complete
-//     worked example; ON only at EASY, withdrawn by MEDIUM.
+//   • operations[].showJumpArc       → the numbered-hops lever starts pulled (EASY
+//     only): hop 1 from the start is drawn and the learner's hops are numbered. It
+//     never draws the landing (numberLineLevers.ts); the tutor can pull it later.
 //   • operations[] length            → STRUCTURAL steps-to-solve: 1 op (easy/med)
 //     → 2 chained ops (hard). Cumulative landing clamped inside `range`.
 //   • instruction/hint tone          → modality #2 (text), shaped via promptLines.
@@ -124,7 +125,7 @@ interface SupportScaffold {
   /** Show a benchmark anchor highlight NEAR (never equal to) each target so the
    *  student counts from a helper mark. plot_point / find_between only. */
   showAnchors: boolean;
-  /** show_jump only: draw the worked arc + ±N (a worked example). EASY only. */
+  /** show_jump only: the numbered-hops lever starts pulled. EASY only. */
   showJumpArc: boolean;
   /** show_jump only: STRUCTURAL steps-to-solve. 1 op (easy/med) → 2 chained (hard). */
   jumpSteps: 1 | 2;
@@ -150,7 +151,7 @@ function resolveSupportStructure(type: ChallengeType, tier: SupportTier): Suppor
         promptLines: [
           TIER_GUARDRAIL,
           tier === 'easy'
-            ? 'EASY: a single jump, and the worked arc + size are drawn on the line. The hint may NAME the hop count ("count 3 hops to the right").'
+            ? 'EASY: a single jump; hop 1 from the start is drawn and each hop the student places is numbered. The hint may NAME the hop count ("count 3 hops to the right").'
             : tier === 'medium'
               ? 'MEDIUM: a single jump, the start marker is shown but the arc is hidden — the student counts the hops themselves. The hint nudges direction/count without naming the landing.'
               : 'HARD: TWO chained jumps (multi-step) — the student performs the first hop, then jumps again from where they landed. No arc, no anchors. Hint is terse: ask which way each jump goes; never name a landing value.',

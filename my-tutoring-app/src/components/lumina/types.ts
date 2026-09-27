@@ -1903,7 +1903,9 @@ export interface ComponentDefinition {
    * Done. Such a family declares no eval modes and binds as `mixed` (user ruling 2026-09-24,
    * adaptation-investigator). `TEACHING_DOCTRINE` replaces `WORKSPACE_DOCTRINE` in its guidance.
    */
-  teachingWorkspace?: { guidance: string; grades: readonly string[]; ungraded?: true };
+  teachingWorkspace?: { guidance: string; grades: readonly string[]; ungraded?: true;
+    /** The primitive publishes in-item levers (`/add-support-tiers`): its guidance also carries `LEVER_DOCTRINE`. */
+    levers?: true };
   /** Optional Gemini Live audio-input request (e.g. manual voice-activity for
    *  DI live-judged packs). Sent at WebSocket auth; a lesson session applies it
    *  when ANY of its manifest items declares one. */

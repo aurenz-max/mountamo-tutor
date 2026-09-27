@@ -155,10 +155,12 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
     // At the commit, while the primitive still shows this item: a verdict that also advances
     // never renders the solved state, and the next item's reset would run first.
     onSolved: (index, response) => affirm(latest.current.items[index], response),
+    checkPractice: itemId => checked.current?.itemId === itemId ? checked.current.correct : null,
   });
   const { state } = lesson;
   const item = items[state.index];
-  const solved = state.phase === 'checked' && !!state.lastResponse?.correct;
+  // A simpler item's success is practice: it never affirms, reveals or closes the session item.
+  const solved = state.phase === 'checked' && !!state.lastResponse?.correct && !state.practice;
 
   useEffect(() => { if (solved) affirm(item, state.lastResponse?.response); }, [solved, item, affirm, state.lastResponse]);
 
@@ -186,7 +188,7 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
     clearStillness,
     commitGesture: ({ response, correct }) => {
       clearStillness();
-      checked.current = { itemId: item.id, correct };
+      checked.current = { itemId: lesson.currentItemId(), correct };
       lesson.submitGestureResponse(response);
     },
     presentStimulus: () => !!lesson.present(), publishWorkspace: lesson.publishWorkspace,

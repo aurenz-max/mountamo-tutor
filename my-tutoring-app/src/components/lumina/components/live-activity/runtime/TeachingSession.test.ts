@@ -49,4 +49,31 @@ describe('teaching state without a speech script', () => {
     expect(s.retry()).toBe(false);
     expect(s.assist()).toBe(false);
   });
+  it('records levers on the next attempt and keeps them through retry, clearing them on advance', () => {
+    const s = new TeachingSession(['one', 'two']);
+    s.submit('a', 'six', 'gesture', false);
+    s.assist('none', 'hops'); s.assist('none', 'hops');
+    s.retry(); s.submit('b', 'five', 'gesture', true);
+    expect(s.getSnapshot().attempts.map(a => a.levers)).toEqual([undefined, ['hops']]);
+    s.advance();
+    expect(s.getSnapshot().levers).toEqual([]);
+  });
+  it('a simpler item is ungraded practice: never an outcome, never advanced past, then the same item returns', () => {
+    const s = new TeachingSession(['one', 'two']);
+    expect(s.openPractice('one')).toBe(false);
+    s.assist('none', 'simpler');
+    expect(s.openPractice('one~simpler')).toBe(true);
+    expect(s.openPractice('again')).toBe(false);
+    s.submit('p1', 'right', 'gesture', true);
+    expect(s.advance()).toBe(false);
+    expect(s.getSnapshot()).toMatchObject({ index: 0, practice: 'one~simpler', phase: 'checked' });
+    expect(s.closePractice()).toBe(true);
+    expect(s.getSnapshot()).toMatchObject({ index: 0, practice: null, phase: 'working', lastResponse: null, levers: ['simpler'] });
+    expect(s.openPractice('one~simpler')).toBe(false);
+    s.submit('f1', 'right', 'gesture', true); s.advance();
+    s.submit('f2', 'right', 'gesture', true); s.advance();
+    expect(teachingSummary(['one', 'two'], s.getSnapshot())!.outcomes.map(o => [o.id, o.attempts, o.score])).toEqual([['one', 1, 100], ['two', 1, 100]]);
+    expect(s.getSnapshot().attempts.map(a => [a.itemId, !!a.practice, a.levers])).toEqual([
+      ['one~simpler', true, ['simpler']], ['one', false, ['simpler']], ['two', false, undefined]]);
+  });
 });

@@ -24,7 +24,18 @@ export interface TutorCommand {
 export type TeachingOwner = 'tutor' | 'runner' | 'support' | 'none';
 export type AnswerExposure = 'none' | 'partial' | 'full';
 /** Parameters carry learner words or named scene objects, never executable code. */
-export interface WorkspaceInput { targets?: string[]; dialogue?: {
+/** The in-item levers a primitive declares on its current item (`/add-support-tiers`). Data only: the runtime names no primitive. */
+export interface WorkspaceLever {
+  id: string;
+  kind: 'help' | 'simplify';
+  /** When to pull it: the failure it answers, in the tutor's terms. */
+  when: string;
+  /** What changes on screen when it is pulled. Never the answer. */
+  does: string;
+  carrier: 'shown' | 'voiced' | 'both';
+  pulled: boolean;
+}
+export interface WorkspaceInput { targets?: string[]; lever?: string; dialogue?: {
   responseId: string; verdict: 'correct' | 'incorrect'; transition: 'none' | 'retry' | 'advance'; tutor: string;
 } }
 export interface TutorPrimitiveState {
@@ -63,9 +74,14 @@ export interface TutorPrimitiveState {
     expectedAnswer?: string;
     objects: Array<{ id: string; label: string; selected: boolean; group?: string }>;
     demonstration: string[];
+    /** Present when the primitive declares levers on this item. */
+    levers?: WorkspaceLever[];
+    /** Present while a simplify lever's simpler item stands in for the session item: ungraded practice. */
+    practice?: { returnsTo: string };
     lastResponse: { response: string; correct: boolean; assisted: boolean } | null;
     /** Recent session-local evidence, including assistance, retained across item changes. Not a mastery write. */
-    attempts: Array<{ itemId: string; response: string; source: 'speech' | 'gesture'; correct: boolean; assisted: boolean; answerExposure: AnswerExposure }>;
+    attempts: Array<{ itemId: string; response: string; source: 'speech' | 'gesture'; correct: boolean; assisted: boolean; answerExposure: AnswerExposure;
+      levers?: string[]; practice?: true }>;
   };
 }
 
@@ -444,7 +460,8 @@ export function actionKey(a: TutorAction): string {
 }
 
 export function validWorkspaceInput(v: unknown): v is WorkspaceInput {
-  return object(v) && Object.keys(v).every(k => k === 'targets' || k === 'dialogue')
+  return object(v) && Object.keys(v).every(k => k === 'targets' || k === 'dialogue' || k === 'lever')
+    && (v.lever === undefined || v.targets === undefined && v.dialogue === undefined && id(v.lever))
     && (v.dialogue === undefined || v.targets === undefined && object(v.dialogue)
       && exactKeys(v.dialogue, ['responseId', 'verdict', 'transition', 'tutor']) && id(v.dialogue.responseId)
       && ['correct', 'incorrect'].includes(v.dialogue.verdict as string)

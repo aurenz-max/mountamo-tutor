@@ -20,6 +20,18 @@ class RuntimeToolsTest(IsolatedAsyncioTestCase):
             'type': 'workspace', 'operation': 'demonstrate', 'input': {'targets': ['object-0', 'object-2']}})
         self.assertEqual(self.events[-1]['command']['expectedRevision'], 1)
 
+    async def test_workspace_lever_travels_as_input_and_is_bounded(self):
+        state = packet()
+        state['choices'][0]['action'] = {'type': 'workspace', 'operation': 'pull_lever'}
+        self.bridge.update(state)
+        for n, bad in enumerate([{'lever': ''}, {'lever': 3}, {'lever': 'x' * 201}, {'lever': 'hops', 'targets': ['a']}]):
+            await self.bridge.call(self.call(f'bad{n}', **bad))
+            self.assertEqual(self.replies[-1].response['status'], 'invalid')
+        self.assertFalse(self.events)
+        await self.bridge.call(self.call(lever='numbered_hops'))
+        self.assertEqual(self.events[-1]['command']['action'], {
+            'type': 'workspace', 'operation': 'pull_lever', 'input': {'lever': 'numbered_hops'}})
+
     async def test_non_workspace_action_cannot_receive_parameters(self):
         await self.bridge.call(self.call(utterance='three'))
         self.assertEqual(self.replies[-1].response['status'], 'invalid')
@@ -171,7 +183,7 @@ class RuntimeToolsTest(IsolatedAsyncioTestCase):
     async def test_config_and_nonblocking_declaration(self):
         self.assertEqual(runtime_tool().function_declarations[0].behavior.value, "NON_BLOCKING")
         schema = runtime_tool().function_declarations[0].parameters
-        self.assertEqual(set(schema.properties), {'actionId', 'targets'})
+        self.assertEqual(set(schema.properties), {'actionId', 'targets', 'lever'})
         self.assertEqual(schema.required, ['actionId'])
         spec = {"sessionEpoch": "test", "initialState": packet()}
         self.assertEqual(parse_runtime_spec(spec, activity_enabled=True), spec)

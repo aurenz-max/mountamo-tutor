@@ -36,6 +36,7 @@ import { withWorkspaceController } from '../../../components/live-activity/runti
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { describeLine, workspaceAssignment, workspaceScene, type NumberLineView } from './numberLineWorkspace';
+import { HOPS_LEVER, SIMPLER_LEVER, hopsLeak, jumpLevers, learnerHops, modelHop, simplerJump, type Hop } from './numberLineLevers';
 import { flushSync } from 'react-dom';
 
 // ============================================================================
@@ -322,6 +323,10 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
 
   // Jump mode
   const [jumpEndPoints, setJumpEndPoints] = useState<number[]>([]);
+  // In-item levers (`numberLineLevers.ts`), keyed by the session item they were pulled on, and the
+  // easier practice jump a simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<NumberLineChallenge | null>(null);
   // Every Check on a jump, including tries later corrected. Evidence only; grading is unchanged.
   const jumpResponsesRef = useRef<JumpResponse[]>([]);
 
@@ -333,8 +338,10 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     evalMode: runtimeEvalMode || interactionMode, workspace, assignment: workspaceAssignment,
-    // A fresh challenge and Try again both start from an empty line.
-    onItemOpened: () => {
+    // A fresh challenge and Try again both start from an empty line. Try again on the easier
+    // practice jump keeps it; only a fresh challenge or the workspace's endPractice removes it.
+    onItemOpened: (_index, retry) => {
+      if (!retry) setPractice(null);
       setFeedback(''); setFeedbackType('');
       setPlacedPoints([]); setJumpEndPoints([]); setOrderedPlacements(new Map()); setSelectedOrderValue(null);
     },
@@ -366,7 +373,14 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
   // Refs
   const promptRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const currentChallenge = challenges[currentChallengeIndex] || null;
+  const sessionChallenge = challenges[currentChallengeIndex] || null;
+  const currentChallenge = practice ?? sessionChallenge;
+  // easy starts with the hops lever pulled (the generator's `showJumpArc`); a pull adds to that.
+  const startPulled = sessionChallenge?.operations?.[0]?.showJumpArc ? [HOPS_LEVER] : [];
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : startPulled;
+  /** Levers the tutor pulled on this item at runtime; the starting position is not a pull. */
+  const runtimeLevers = pulledLevers.filter(l => !startPulled.includes(l));
+  const hopsOn = currentChallenge?.type === 'show_jump' && pulledLevers.includes(HOPS_LEVER);
   const currentPhase: InteractionPhase = currentChallenge
     ? challengeTypeToPhase(currentChallenge.type)
     : 'explore';
@@ -662,8 +676,8 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
             totalError += error;
           }
           correct = allCorrect;
-          jumpResponsesRef.current.push(jumpResponseFor(currentChallenge.id, currentAttempts + 1,
-            activeOperations, jumpEndPoints, tolerance));
+          if (!practice) jumpResponsesRef.current.push(jumpResponseFor(currentChallenge.id, currentAttempts + 1,
+            activeOperations, jumpEndPoints, tolerance, pulledLevers, runtimeLevers));
           const avgError = totalError / activeOperations.length;
           accuracy = correct ? Math.max(0, 100 - (avgError / Math.max(rangeMax - rangeMin, 1)) * 100) : 0;
         }
@@ -702,7 +716,7 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
       SoundManager.playCorrect();
       setFeedback(isK2 ? 'Great job!' : 'Correct!');
       setFeedbackType('success');
-      recordResult({
+      if (!practice) recordResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: currentAttempts + 1,
@@ -730,7 +744,7 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
         { silent: true }
       );
     }
-  }, [currentChallenge, placedPoints, jumpEndPoints, orderedPlacements, activeOperations,
+  }, [currentChallenge, placedPoints, jumpEndPoints, orderedPlacements, activeOperations, practice, pulledLevers, runtimeLevers,
       activeNumberType, zoomLevel, rangeMin, rangeMax, isK2, currentAttempts, sendText,
       incrementAttempts, recordResult, supportTier, challengeResults, runtimePlanItemId, challenges, liveRuntime, currentChallengeIndex,
       progress, tutorOwned]);
@@ -879,9 +893,38 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentChallenge) return;
+    const range = { min: rangeMin, max: rangeMax };
+    const levers = practice ? [] : jumpLevers(sessionChallenge, pulledLevers, range);
     workspace.current = { ...workspaceScene(currentChallenge, { rangeMin, rangeMax, numberType: activeNumberType,
-      operations: activeOperations, points: placedPoints, endpoints: jumpEndPoints, ordered: orderedPlacements }),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+      operations: activeOperations, points: placedPoints, endpoints: jumpEndPoints, ordered: orderedPlacements,
+      hops: hopsOn, practice: !!practice }),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {},
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the line changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!sessionChallenge || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === HOPS_LEVER) {
+          const model = modelHop(activeOperations[0]);
+          if (model && hopsLeak(activeOperations[0], [model])) return 'Numbered hops would show the landing here.';
+          // Nothing would change on screen: a one-hop jump has no safe model hop until the learner places it.
+          if (!model && jumpEndPoints.length === 0) return 'Nothing to number yet: this is a jump of 1. Ask the learner to place their jump first.';
+          setLeverState({ item: sessionChallenge.id, pulled: [...pulledLevers, id] });
+          return true;
+        }
+        if (id === SIMPLER_LEVER) {
+          const simpler = simplerJump(sessionChallenge, range);
+          if (!simpler) return 'There is no easier jump for this item.';
+          setLeverState({ item: sessionChallenge.id, pulled: [...pulledLevers, id] });
+          setPractice(simpler);
+          setJumpEndPoints([]); setFeedback(''); setFeedbackType('');
+          return { practice: workspaceAssignment(simpler) };
+        }
+        return `No lever ${id} on this item.`;
+      },
+      endPractice: () => { setPractice(null); setJumpEndPoints([]); setFeedback(''); setFeedbackType(''); },
+    };
     progress.publishWorkspace?.();
   });
 
@@ -960,6 +1003,18 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
       </g>
     );
   }, [valueToX]);
+
+  /** One numbered unit hop, appearing one after another. */
+  const renderHop = (h: Hop, color: string, order: number) => {
+    const a = valueToX(h.from), b = valueToX(h.to), mid = (a + b) / 2;
+    const lift = Math.min(36, 12 + Math.abs(b - a) * 0.5);
+    return (
+      <g key={`hop-${h.from}-${h.to}`} style={{ animation: `nl-hop-in 0.25s ease-out ${order * 0.2}s both` }}>
+        <path d={`M ${a} ${LINE_Y - 3} Q ${mid} ${LINE_Y - lift * 2} ${b} ${LINE_Y - 3}`} fill="none" stroke={color} strokeWidth={2.5} />
+        <text x={mid} y={LINE_Y - lift - 8} textAnchor="middle" fill={color} fontSize={isK2 ? 16 : 13} fontWeight="bold">{h.label}</text>
+      </g>
+    );
+  };
 
   // -------------------------------------------------------------------------
   // Render
@@ -1134,6 +1189,7 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
             {/* Border */}
             <rect x={1} y={1} width={SVG_WIDTH - 2} height={SVG_HEIGHT - 2}
               rx={12} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+            <style>{'@keyframes nl-hop-in { from { opacity: 0 } to { opacity: 1 } }'}</style>
 
             {/* Main Number Line */}
             <line
@@ -1191,19 +1247,12 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
               );
             })}
 
-            {/* Operation Jump Arcs (pre-defined, shown as reference) */}
-            {activeOperations.map((op, i) => {
-              if (!op.showJumpArc) return null;
-              const endVal = op.type === 'add'
-                ? op.startValue + op.changeValue
-                : op.startValue - op.changeValue;
-              return renderJumpArc(
-                op.startValue,
-                endVal,
-                op.type === 'add' ? '#34d399' : '#f87171',
-                `${op.type === 'add' ? '+' : '-'}${op.changeValue}`
-              );
-            })}
+            {/* Numbered-hops lever: hop 1 from the start as a model. It never reaches the landing
+                (modelHop is null for a jump of 1); the whole worked arc used to, and stated the answer. */}
+            {hopsOn && jumpEndPoints.length === 0 && (() => {
+              const model = modelHop(activeOperations[0]);
+              return model ? <g data-lever="model-hop">{renderHop(model, '#93c5fd', 0)}</g> : null;
+            })()}
 
             {/* Jump Mode: Start Point */}
             {currentChallenge?.type === 'show_jump' && activeOperations.length > 0 && (
@@ -1229,14 +1278,16 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
               </g>
             )}
 
-            {/* Jump Mode: Student's Jump Arcs */}
-            {currentChallenge?.type === 'show_jump' && activeOperations.length > 0 && jumpEndPoints.map((endPt, i) => (
-              renderJumpArc(
-                activeOperations[i].startValue,
-                endPt,
-                feedbackType === 'success' ? '#34d399' : feedbackType === 'error' ? '#f87171' : '#fbbf24',
-              )
-            ))}
+            {/* Jump Mode: Student's Jump Arcs, each from where the learner's previous jump landed
+                (never from the item's own intermediate landing). With the hops lever, numbered unit hops. */}
+            {currentChallenge?.type === 'show_jump' && activeOperations.length > 0 && jumpEndPoints.map((endPt, i) => {
+              const from = i === 0 ? activeOperations[0].startValue : jumpEndPoints[i - 1];
+              const color = feedbackType === 'success' ? '#34d399' : feedbackType === 'error' ? '#f87171' : '#fbbf24';
+              const hops = hopsOn ? learnerHops(from, endPt) : [];
+              return hops.length
+                ? <g key={`hops-${i}-${from}-${endPt}`} data-lever="learner-hops">{hops.map((h, k) => renderHop(h, color, k))}</g>
+                : renderJumpArc(from, endPt, color);
+            })}
 
             {/* Jump Mode: Student's Endpoints */}
             {currentChallenge?.type === 'show_jump' && jumpEndPoints.map((endPt, i) => (
