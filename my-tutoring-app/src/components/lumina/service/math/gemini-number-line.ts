@@ -1001,6 +1001,23 @@ function emptySubResult(interactionMode: SubResult['interactionMode']): SubResul
   };
 }
 
+/**
+ * The K-2 line (contract C1): integer bounds, never below -1, capped at 30, or 120 for an
+ * explicit Grade-1 domain. A domain wholly above the cap falls back to 0-cap rather than
+ * an empty line.
+ */
+export function clampK2Range(range: { min: number; max: number }, cap: number): { min: number; max: number } {
+  const min = Math.max(-1, Math.round(range.min));
+  const max = Math.min(cap, Math.round(range.max));
+  return min < max ? { min, max } : { min: 0, max: cap };
+}
+
+/** Every value an item asks the child to find or place on the line. */
+export function challengeValues(ch: NumberLineChallenge): number[] {
+  return [ch.startValue, ch.exactTargetValue, ...(ch.targetValues ?? []),
+    ...(ch.operations ?? []).map(o => o.startValue)].filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+}
+
 function resolveGradeBand(gradeLevel: string): 'K-2' | '3-5' {
   const lower = gradeLevel.toLowerCase();
   return lower.includes('k') || lower.includes('1') || lower.includes('2') ? 'K-2' : '3-5';
@@ -1579,9 +1596,6 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
     }
   }
 
-  const pool = createSubRangePool(resolvedRange, { sorted: true, unique: true, maxSpan: 25 });
-  console.log(`[NumberLine] display:`, pool?.displayRange ?? 'none', `pool:`, pool?.numbers ?? 'none', `difficulty:`, config?.difficulty ?? 'none');
-
   // Canonical objective grade wins; the prose parser is only the fallback.
   const canonicalBand = numberLineGradeBandFromGrade(ctx.grade);
   const explicitGradeOneMagnitudeWindow = ctx.grade === '1'
@@ -1590,11 +1604,25 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
     && resolvedRange.max <= 120
     && (config.numberRange != null || resolvedScope?.hasExplicitRange === true);
 
+  // The K-2 legibility clamp (contract C1) decides the line the child SEES, so decide it
+  // before any sub-generator draws a value. Clamped only after generation, a 0-100 topic
+  // drew 53-2 and 84+2 onto a 0-30 line the component then zoomed and snapped to 30
+  // (2026-09-27: 7 of 8 jump items off the line). The late clamp below stays as a guard.
+  const displayBand = canonicalBand ?? resolveGradeBand(gradeLevel);
+  const displayRange = resolvedRange && displayBand === 'K-2'
+    ? clampK2Range(resolvedRange, explicitGradeOneMagnitudeWindow ? 120 : 30) : resolvedRange;
+  const focusRange = displayRange && resolvedScope?.focusRange
+    && resolvedScope.focusRange.min >= displayRange.min && resolvedScope.focusRange.max <= displayRange.max
+    ? resolvedScope.focusRange : undefined;
+
+  const pool = createSubRangePool(displayRange, { sorted: true, unique: true, maxSpan: 25 });
+  console.log(`[NumberLine] display:`, pool?.displayRange ?? 'none', `pool:`, pool?.numbers ?? 'none', `difficulty:`, config?.difficulty ?? 'none');
+
   const subConfig = {
     jumpOperation: resolvedScope?.jumpOperation,
     targetEvalMode: config?.targetEvalMode,
-    numberRange: resolvedRange,
-    focusRange: resolvedScope?.focusRange,
+    numberRange: displayRange,
+    focusRange,
     exactMissingNumber: ctx.grade === '1'
       && resolvedScope?.requiresExactMissingNumber === true,
     difficulty: config?.difficulty,
@@ -1669,6 +1697,15 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
     data.range.max = explicitGradeOneMagnitudeWindow
       ? Math.min(120, Math.round(data.range.max))
       : Math.min(30, Math.round(data.range.max));
+  }
+
+  // Every value an item asks the child to place must be on the line that renders: the
+  // component drops out-of-range values from its zoom and snaps a click to the edge, so an
+  // off-line item cannot be answered. An item that fails this is dropped, never moved.
+  const offLine = (data.challenges ?? []).filter(ch => challengeValues(ch).some(v => v < data.range.min || v > data.range.max));
+  if (offLine.length) {
+    console.warn(`[NumberLine] dropped ${offLine.length} item(s) off the ${data.range.min}-${data.range.max} line:`, offLine.map(ch => ch.id));
+    data.challenges = (data.challenges ?? []).filter(ch => !offLine.includes(ch));
   }
 
   if (!data.challenges || data.challenges.length === 0) {

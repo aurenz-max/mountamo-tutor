@@ -205,6 +205,9 @@ try {
     if (input.type === 'mount') {
       if (typeof input.evalMode !== 'string' || !input.evalMode) throw new Error('Mount needs the resolved session evalMode');
       evalMode = input.evalMode;
+      // The same gate a lesson applies before binding a section (lessonWorkspacePlan.ts): content a
+      // lesson would refuse must fail the journey, not be driven. It throws with the reason.
+      LIVE_ADAPTERS[primitiveId].validate(input.data);
       data = { ...input.data, instanceId };
       diItems = input.diItems ?? [];
       render();

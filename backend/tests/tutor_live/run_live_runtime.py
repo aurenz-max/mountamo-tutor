@@ -59,7 +59,11 @@ class Session:
         self.events.append({'type': kind, 't': round(time.monotonic() - self.started, 2), **fields})
 
     def exchange(self, message):
-        self.process.stdin.write(json.dumps(message) + '\n'); self.process.stdin.flush()
+        try:
+            self.process.stdin.write(json.dumps(message) + '\n'); self.process.stdin.flush()
+        except OSError:
+            # The driver already exited; its stderr says why, the broken pipe does not.
+            raise RuntimeError('Mounted driver ended: ' + ''.join(self.stderr_tail)[-2000:])
         line = self.process.stdout.readline()
         if not line:
             raise RuntimeError('Mounted driver ended: ' + ''.join(self.stderr_tail)[-2000:])
@@ -712,7 +716,8 @@ async def drive(args, token, live, index):
         return {'passed': False, 'primitiveId': args.primitive, 'events': s.events,
                 'providerResumes': sum(e['type'] == 'provider_resume' and e.get('event') == 'session_resuming' for e in s.events)}
     finally:
-        s.process.stdin.close()
+        try: s.process.stdin.close()
+        except OSError: pass
         try: await asyncio.to_thread(s.process.wait, timeout=5)
         except subprocess.TimeoutExpired: s.process.terminate(); await asyncio.to_thread(s.process.wait)
 
