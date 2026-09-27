@@ -75,6 +75,14 @@ it('offers pull_lever on a jump with both levers declared, and states no landing
   expect(JSON.stringify(h.state().task)).not.toMatch(/\b5\b/);
 });
 
+it('a pull without a lever pulls the help lever, as the observer would', () => {
+  const h = mount();
+  h.tap(6); h.check();
+  expect(h.dispatch('pull_lever', {}).status).toBe('committed');
+  expect(levers(h).filter(l => l.pulled).map(l => l.id)).toEqual(['numbered_hops']);
+  expect(h.hopLabels('learner-hops')).toEqual(['1', '2']);
+});
+
 it('numbers the learner\'s own wrong jump in the same commit, and records the lever on the next attempt', () => {
   const h = mount();
   h.tap(6); h.check();

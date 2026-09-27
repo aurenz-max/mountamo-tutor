@@ -130,7 +130,8 @@ export class RuntimeTransport {
       input: { itemId: s.task.itemId, lever } });
     if (status !== 'visible' || this.closed) return;
     this.send({ type: 'text', scripted: false, content: `The learner said they were stuck, so the host pulled the ${lever} lever `
-      + `(${declared.kind}). It is on screen now: ${declared.does} Talk about what changed and let the learner try.` });
+      + `(${declared.kind}). It is on screen now: ${declared.does} First point the learner to it: say what is now drawn and where to look. `
+      + (declared.kind === 'simplify' ? 'Then let them try the easier item on screen.' : 'Then let them try the same question again; do not work it through for them.') });
   }
   private async dispatch(input: unknown, observed = false): Promise<string | undefined> {
     const command = parseTutorCommand(input);

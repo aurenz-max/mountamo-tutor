@@ -10,6 +10,7 @@ import { abstainItemScore, gradeOf, scoreSession, type AttemptGrade, type ItemSc
 import { postObservation } from './observationContract';
 import { SoundManager } from '../../../utils/SoundManager';
 import { latestLearnerUtterance } from './learnerUtterance';
+import { nextLever } from './observerLever';
 import type { ExecutableAffordance, RuntimeMount, WorkspaceLever } from './contract';
 
 export interface TeachingItem {
@@ -185,11 +186,13 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
         const pullable = w?.levers?.filter(l => !l.pulled) ?? [];
         if (pullable.length && w?.pullLever && !s.practice && !(s.phase === 'checked' && s.lastResponse?.correct)) operation('pull_lever',
           'Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose "when" fits why. '
-          + 'It changes the screen and is recorded as help. Supply lever: its id. Wait for the visible result, then say what changed, '
+          + 'It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, '
           + 'in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.',
           input => {
-            const id = input?.lever, levers = latest.current.workspace.current?.levers ?? [];
-            if (!id) return `pull_lever needs lever: one of ${levers.filter(l => !l.pulled).map(l => l.id).join(', ')}.`;
+            // A call without a lever pulls the one the observer would (number-line --audio 09-27: the tutor sent
+            // pull_lever {} and the refusal left the stuck learner waiting for the observer).
+            const levers = latest.current.workspace.current?.levers ?? [], id = input?.lever || nextLever(levers);
+            if (!id) return 'Every lever on this item is already pulled; their changes are on screen.';
             const lever = levers.find(l => l.id === id);
             if (!lever) return `No lever ${id} here. Levers: ${levers.map(l => l.id).join(', ')}.`;
             if (lever.pulled) return `${id} is already pulled; its change is on screen.`;

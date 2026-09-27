@@ -13,6 +13,11 @@ export function observerLever(state: RuntimeSnapshot, helpRequested: boolean): s
   if (!helpRequested || state.status !== 'active' || !task || !workspace?.levers?.length || workspace.practice) return null;
   if (!state.affordances.some(a => a.action.type === 'workspace' && a.action.operation === 'pull_lever')) return null;
   if (!workspace.attempts.some(a => a.itemId === task.itemId && !a.correct)) return null;
-  const open = workspace.levers.filter(l => !l.pulled);
+  return nextLever(workspace.levers);
+}
+
+/** The next lever to pull when no one named one: help before simplify, then the declared order. */
+export function nextLever(levers: readonly { id: string; kind: string; pulled?: boolean }[]): string | null {
+  const open = levers.filter(l => !l.pulled);
   return (open.find(l => l.kind === 'help') ?? open.find(l => l.kind === 'simplify'))?.id ?? null;
 }
