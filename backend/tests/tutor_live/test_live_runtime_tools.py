@@ -214,6 +214,44 @@ class RuntimeToolsTest(IsolatedAsyncioTestCase):
         await self.bridge.call(SimpleNamespace(id="off", name="compose_move", args=args))
         self.assertEqual(self.replies[-1].response["status"], "invalid")
 
+    async def test_lesson_demonstration_relays_the_need_and_honours_availability(self):
+        """LA-15: the tutor's three strings travel verbatim; the packet's flag gates the lane."""
+        ready = {**packet(), "canRequestDemonstration": True}
+        spec = parse_runtime_spec({"sessionEpoch": "test", "initialState": ready, "demonstrations": True},
+                                  activity_enabled=False, lesson_enabled=True)
+        self.assertEqual([d.name for d in runtime_tool(spec).function_declarations],
+                         ["observe_runtime", "request_demonstration", "perform_runtime_action"])
+        events, replies = [], []
+        async def emit(event): events.append(event)
+        async def reply(response): replies.append(response)
+        bridge = LiveRuntimeTools(emit, reply, spec, demonstration_timeout=.02)
+        need = {"obstacle": " counts the start as the first hop ", "evidence": "said 12 minus 3 is 10", "purpose": "each hop is a move"}
+        await bridge.call(SimpleNamespace(id="bad", name="request_demonstration", args={**need, "values": [1]}))
+        self.assertEqual(replies[-1].response["status"], "invalid")
+        await bridge.call(SimpleNamespace(id="demo", name="request_demonstration", args=need))
+        self.assertEqual(events[-1]["type"], "runtime_request_demonstration")
+        self.assertEqual(events[-1]["need"]["obstacle"], "counts the start as the first hop")
+        self.assertEqual(events[-1]["scope"], {"sessionEpoch": "test", "instanceId": "mounted", "itemId": "one", "expectedRevision": 1})
+        shown = {**packet(2), "canRequestDemonstration": False}
+        self.assertTrue(await bridge.result({"commandId": "demo", "status": "visible", "state": shown}))
+        self.assertEqual(replies[-1].response["status"], "visible")
+        # The host withdrew the lane (one detour per item), so the bridge refuses without a browser trip.
+        await bridge.call(SimpleNamespace(id="again", name="request_demonstration", args=need))
+        self.assertEqual(replies[-1].response["status"], "blocked")
+        self.assertEqual(len(events), 1)
+        # An authoring call that never lands times out and cancels in the browser.
+        bridge.update({**packet(3), "canRequestDemonstration": True})
+        await bridge.call(SimpleNamespace(id="slow", name="request_demonstration", args=need))
+        await asyncio.sleep(.05)
+        self.assertEqual(events[-1], {"type": "runtime_cancelled", "commandId": "slow"})
+        self.assertEqual(replies[-1].response["status"], "timeout")
+        # A lesson that did not enable demonstrations never declares or relays the tool.
+        plain = parse_runtime_spec({"sessionEpoch": "test", "initialState": ready}, activity_enabled=False, lesson_enabled=True)
+        self.assertNotIn("request_demonstration", [d.name for d in runtime_tool(plain).function_declarations])
+        off = LiveRuntimeTools(emit, reply, plain)
+        await off.call(SimpleNamespace(id="off", name="request_demonstration", args=need))
+        self.assertEqual(replies[-1].response["status"], "invalid")
+
     async def test_later_student_state_supersedes_an_older_visible_receipt(self):
         await self.bridge.call(self.call())
         self.bridge.update(packet(3))

@@ -412,6 +412,17 @@ async def workspace_turn(s, label, prompt=None, until=lambda state: True):
                 reply = await s.step({'type': 'command', 'command': event['command']})
                 if reply['dom'].get('demonstration', 0):
                     s.record('visible_demonstration', state=s.state, dom=reply['dom'])
+            elif kind == 'runtime_request_demonstration':
+                # LA-15: the tutor's own diagnosis, authored and shown through the real route and runtime.
+                s.record('demonstration_request', phase=label, need=event['need'])
+                print(f"Run {s.index} {label}: request_demonstration {event['need']}", flush=True)
+                await s.step({'type': 'demonstration', 'commandId': event['commandId'], 'scope': event['scope'], 'need': event['need'],
+                              'context': {'topic': s.args.topic, 'objectiveText': s.args.objective or s.args.topic,
+                                          'grade': precise_grade(s.args.grade),
+                                          'gradeLevel': 'kindergarten' if precise_grade(s.args.grade) == 'K' else 'elementary'}})
+                artifact = s.state.get('supportArtifact') or {}
+                if artifact.get('kind') == 'demonstration':
+                    s.record('visible_detour', artifact=artifact, state=s.state)
             elif kind == 'ai_transcription':
                 ended = False
                 transcript += event.get('content', '')
@@ -444,6 +455,48 @@ async def workspace_turn(s, label, prompt=None, until=lambda state: True):
                 s.record('mounted_generated_payload', state=s.state)
             elif kind in ('activity_request', 'activity_command'):
                 raise AssertionError('Tutor replaced the unfinished workspace')
+
+
+def precise_grade(grade):
+    """'Kindergarten' / 'Grade 1' / '1' -> 'K' / '1', the objective grade a lesson section carries."""
+    return 'K' if str(grade).lower().startswith(('k', 'pre')) else re.sub(r'\D', '', str(grade)) or str(grade)
+
+
+async def demonstration_detour(s):
+    """LA-15: a wrong answer, a plain request to be shown, a demonstration on screen, and a return to the same item.
+
+    The learner never names a tool. The tutor diagnoses from the wrong answer and decides to ask for a
+    demonstration; the author picks the piece; the runtime pauses the item and brings it back.
+    """
+    turn = lambda label, prompt=None, until=lambda state: True: workspace_turn(s, label, prompt, until)
+    async with asyncio.timeout(30):
+        while json.loads(await s.ws.recv()).get('type') != 'session_ready':
+            pass
+    await s.step({'type': 'poll'})
+    await turn('lesson-entry', '[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.')
+    first = s.state['task']['itemId']
+    assert s.state.get('canRequestDemonstration') is True, 'The lesson runtime did not offer demonstrations'
+    await s.learner('wrong')
+    await turn('wrong')
+    shown = lambda: any(e['type'] == 'visible_detour' for e in s.events)
+    for label, prompt in (('stuck', "I don't get it. Can you show me how it works?"),
+                          ('stuck-again', "I still don't understand. Can you show me an example?")):
+        if not shown():
+            await turn(label, prompt)
+    assert any(e['type'] == 'demonstration_request' for e in s.events), 'The tutor never asked for a demonstration'
+    assert shown(), 'A demonstration was requested but never reached the screen'
+    if s.state.get('status') == 'support':
+        await turn('return', 'Okay. Can I try mine again now?', lambda st: st.get('status') == 'active')
+    assert s.state.get('status') == 'active', 'The detour never returned to the task'
+    assert s.state['task']['itemId'] == first, 'The detour did not return to the same item'
+    s.record('returned', state=s.state)
+    # The wrong answer may still be checked and closed (the tutor answered it with a question, so
+    # no verdict reopened it). A child then presses the shell's own Try again, as in teaching_workspace.
+    if s.state['task']['phase'] != 'working':
+        await s.step({'type': 'learner_progress', 'action': 'retry'})
+        s.record('learner_pressed', action='retry', state=s.state)
+    await s.learner('correct')
+    await turn('correct')
 
 
 async def teaching_workspace(s):
@@ -594,7 +647,8 @@ async def drive(args, token, live, index):
         s = Session(args, journey, spec, data, [i for i in (live.get('diPlan') or {}).get('items', [])], index)
         assert not pool or len(s.data[pool]) == 2, 'Probe needs two generated items'
     s.process = subprocess.Popen(['node', 'scripts/primitive-runtime-driver.mjs', str(uuid.uuid4()), args.primitive],
-        cwd=ROOT/'my-tutoring-app', env={**os.environ, 'LIVE_FRONTEND': args.frontend}, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        cwd=ROOT/'my-tutoring-app', env={**os.environ, 'LIVE_FRONTEND': args.frontend, **({'LIVE_DEMONSTRATIONS': '1'} if args.demonstration else {})},
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
         stderr=subprocess.PIPE, text=True, encoding='utf-8')
     # Drain stderr as it arrives: an unread pipe fills (4 KB on Windows) and blocks the driver
     # mid-drive once a component logs on every render (genre-explorer's build gates, C7).
@@ -616,12 +670,17 @@ async def drive(args, token, live, index):
                           'tutoring': mounted.get('tutoring', args.tutoring), 'grade_level': args.grade, 'owns_opening': True,
                           'audio_input': {'manual_activity': True}}
             await ws.send(json.dumps({'type': 'authenticate', 'token': token, 'session_mode': 'lesson',
-                **({'runtime_lesson': {'sessionEpoch': s.state['sessionEpoch'], 'initialState': s.state}} if args.lesson_entry else {
+                **({'runtime_lesson': {'sessionEpoch': s.state['sessionEpoch'], 'initialState': s.state,
+                                       **({'demonstrations': True} if args.demonstration else {})}} if args.lesson_entry else {
                     'runtime_sandbox': {'sessionEpoch': s.state['sessionEpoch'], 'initialState': s.state}, 'activity_sandbox': spec}),
                 'primitive_context': empty if args.startup else mountedctx,
                 'lesson_context': {'topic': args.topic, 'grade_level': args.grade,
                                    'objectives': [], 'ordered_components': []}}))
             workspace = journey.get('execution') == 'workspace' or bool((s.state.get('task') or {}).get('workspace'))
+            if args.demonstration:
+                await demonstration_detour(s)
+                return {'passed': True, 'primitiveId': args.primitive, 'events': s.events,
+                        'providerResumes': sum(e['type'] == 'provider_resume' and e.get('event') == 'session_resuming' for e in s.events)}
             await (teaching_surface(s) if teaching else teaching_workspace(s) if workspace else PROGRAMS[activity['teachingOwner']](s))
         receipts = [e['result'] for e in s.events if e['type'] == 'runtime_result']
         # Real audio can finish an answer while the model is choosing an action
@@ -672,9 +731,12 @@ async def main():
     parser.add_argument('--lesson-entry', action='store_true', help='Use the ordinary lesson runtime protocol without activity generation tools; mounted host layout is covered separately')
     parser.add_argument('--audio', action='store_true', help='Use synthetic learner audio and actual provider transcription for workspace journeys')
     parser.add_argument('--answer-prefix', default='', help='Natural conversational preface for actual spoken answers; requires --audio')
+    parser.add_argument('--demonstration', action='store_true', help='LA-15: wrong answer, a request to be shown, a composed demonstration detour and return (requires --lesson-entry)')
+    parser.add_argument('--objective', help='Objective text the demonstration author reads; defaults to the topic')
     parser.add_argument('--progression-only', action='store_true', help='Reproduce wrong answer, correction, next challenge and finish without a help detour')
     args = parser.parse_args()
     if args.lesson_entry and args.startup: parser.error('--lesson-entry uses prepared content; do not combine with --startup')
+    if args.demonstration and not args.lesson_entry: parser.error('--demonstration is a lesson feature; add --lesson-entry')
     if args.answer_prefix and not args.audio: parser.error('--answer-prefix requires --audio so the actual provider transcript owns submission')
 
     # The production envelope the model is given, and — separately, never mixed into

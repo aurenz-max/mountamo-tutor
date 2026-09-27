@@ -92,6 +92,16 @@ then say your nextAction and hand the task back. If the move is refused, read th
 a cheaper move or carry on with words. One detour per item.
 """
 
+DEMONSTRATION_INSTRUCTION = """
+request_demonstration asks the host to draw a worked demonstration of the step this learner
+is missing, on a DIFFERENT example. Use it when words have not reached them and
+liveRuntime.canRequestDemonstration is true. Name their specific mistake as the obstacle,
+what they said or did as evidence, and what the demonstration should let them see as the
+purpose. Wait for status=visible, then teach it like any support detour. If it is refused or
+unsupported, teach the step in words.
+"""
+
+
 MOVE_DELTAS = ["attend", "reveal-aid", "microstep", "re-represent", "contrast", "model-process", "illustrate"]
 MOVE_OPERATIONS = ["make-ten", "subtract", "count"]
 
@@ -117,12 +127,21 @@ def runtime_tool(spec=None):
             "targets": types.Schema(type="ARRAY", items=types.Schema(type="STRING"), description="attend only: which parts of the child's OWN work to draw attention to, copied from liveRuntime.moveOptions.attentionTargets. Send every part the move covers, e.g. all the empty spaces. An attend draws nothing new, so send empty values."),
         }, required=["obstacle", "delta", "representation", "nextAction", "values"]),
     )] if spec and spec.get("teachingMoves") else []
+    demonstrate = [types.FunctionDeclaration(
+        name="request_demonstration", behavior=types.Behavior.NON_BLOCKING,
+        description="Ask for a worked demonstration, on a different example, of the step this learner is missing. The host chooses and draws it. Wait for status=visible before describing it.",
+        parameters=types.Schema(type="OBJECT", properties={
+            "obstacle": types.Schema(type="STRING", description="The learner's specific mistake, e.g. 'counts the starting number as the first hop'."),
+            "evidence": types.Schema(type="STRING", description="What the learner said or did that shows it, e.g. 'said 12 minus 3 is 10'."),
+            "purpose": types.Schema(type="STRING", description="What the demonstration should let them see, e.g. 'that each hop is a move, so counting starts on the next number'."),
+        }, required=["obstacle", "evidence", "purpose"]),
+    )] if spec and spec.get("demonstrations") else []
     observe = [types.FunctionDeclaration(
         name="observe_runtime", behavior=types.Behavior.NON_BLOCKING,
         description="Read the mounted lesson workspace and subscribe to silent task updates. Call at lesson entry or after reconnect. This does not grade, advance, or change the screen.",
         parameters=types.Schema(type="OBJECT", properties={}),
     )] if spec and spec.get("lesson") else []
-    return types.Tool(function_declarations=observe + moves + [types.FunctionDeclaration(
+    return types.Tool(function_declarations=observe + moves + demonstrate + [types.FunctionDeclaration(
         name="perform_runtime_action", behavior=types.Behavior.NON_BLOCKING,
         description="Perform one currently advertised action. Copy its exact actionId ticket from liveRuntime. The ticket is scoped to that item and revision. Wait for visible before describing a screen change.",
         parameters=types.Schema(type="OBJECT", properties={
@@ -148,8 +167,9 @@ def valid_packet(packet, epoch):
 def parse_runtime_spec(spec, *, activity_enabled, lesson_enabled=False):
     if not activity_enabled and not lesson_enabled:
         raise ValueError("Runtime controls require an activity sandbox; the connected fixture has been retired")
-    if (not isinstance(spec, dict) or not {"sessionEpoch", "initialState"} <= set(spec) <= {"sessionEpoch", "initialState", "teachingMoves"}
+    if (not isinstance(spec, dict) or not {"sessionEpoch", "initialState"} <= set(spec) <= {"sessionEpoch", "initialState", "teachingMoves", "demonstrations"}
             or not isinstance(spec.get("teachingMoves", False), bool)
+            or not isinstance(spec.get("demonstrations", False), bool)
             or not isinstance(spec.get("sessionEpoch"), str) or not 1 <= len(spec["sessionEpoch"]) <= 200
             or not valid_packet(spec.get("initialState"), spec["sessionEpoch"])):
         raise ValueError("Invalid runtime sandbox configuration")
@@ -157,8 +177,10 @@ def parse_runtime_spec(spec, *, activity_enabled, lesson_enabled=False):
 
 
 class LiveRuntimeTools:
-    def __init__(self, emit, reply, spec, timeout=8, picture_timeout=60):
+    def __init__(self, emit, reply, spec, timeout=8, picture_timeout=60, demonstration_timeout=30):
         self.emit, self.reply, self.timeout, self.picture_timeout = emit, reply, timeout, picture_timeout
+        self.demonstration_timeout = demonstration_timeout
+        self.demonstrations = bool(spec.get("demonstrations"))
         self.lesson = bool(spec.get("lesson"))
         self.observation_call = None
         self.moves = bool(spec.get("teachingMoves"))
@@ -204,6 +226,9 @@ class LiveRuntimeTools:
             return
         if call.name == "compose_move":
             await self.compose(call, args)
+            return
+        if call.name == "request_demonstration":
+            await self.demonstrate(call, args)
             return
         if (call.name != "perform_runtime_action" or not isinstance(args, dict)
                 or not {"actionId"} <= set(args) <= {"actionId", "targets"} or not isinstance(args["actionId"], str)
@@ -281,6 +306,30 @@ class LiveRuntimeTools:
             move["targets"] = [t.strip() for t in args["targets"]]
         await self.emit({"type": "runtime_compose_move", "commandId": call.id, "scope": scope, "move": move})
 
+    async def demonstrate(self, call, args):
+        """Relay the tutor's diagnosis. The browser authors, builds and shows the demonstration.
+
+        Nothing here knows a primitive or a piece: three strings travel as the tutor sent them.
+        """
+        text = lambda v, n: isinstance(v, str) and 0 < len(v.strip()) <= n
+        fields = {"obstacle", "evidence", "purpose"}
+        if (not self.demonstrations or not isinstance(args, dict) or set(args) != fields
+                or not text(args["obstacle"], 300) or not text(args["evidence"], 300) or not text(args["purpose"], 300)):
+            await self.respond(call, "invalid", reason="Give obstacle, evidence and purpose, each a short sentence")
+            return
+        if self.pending:
+            await self.respond(call, "blocked", reason="Another action is awaiting its browser receipt")
+            return
+        if not self.state.get("task") or not self.state.get("canRequestDemonstration"):
+            await self.respond(call, "blocked", reason="A demonstration is not available now. Teach in words.")
+            return
+        scope = {"sessionEpoch": self.epoch, "instanceId": self.state["instanceId"],
+                 "itemId": self.state["task"]["itemId"], "expectedRevision": self.state["revision"]}
+        self.pending = SimpleNamespace(id=call.id, name=call.name, args=scope, response_speech=None)
+        self.timer = asyncio.create_task(self.expire(call.id, self.demonstration_timeout))
+        await self.emit({"type": "runtime_request_demonstration", "commandId": call.id, "scope": scope,
+                         "need": {k: args[k].strip() for k in fields}})
+
     async def result(self, message):
         call = self.pending
         if not call or message.get("commandId") != call.id:
@@ -341,7 +390,7 @@ class CombinedLiveTools:
                 and state.get('status') not in ('empty', 'completed', 'stopped')):
             await self.runtime.respond(call, 'blocked', reason='An unfinished activity is already mounted. Use its current runtime choices; do not request a replacement.')
             return
-        await (self.runtime if call.name in ("perform_runtime_action", "compose_move", "observe_runtime") else self.activity).call(call)
+        await (self.runtime if call.name in ("perform_runtime_action", "compose_move", "request_demonstration", "observe_runtime") else self.activity).call(call)
 
     async def cancelled_by_model(self, ids):
         await self.activity.cancelled_by_model(ids)

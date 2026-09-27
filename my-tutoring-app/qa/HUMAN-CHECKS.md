@@ -9,9 +9,33 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 
 ## Open — ONE list, newest first (as of 2026-09-09, K Language Arts atlas refresh)
 
-> **119 rows open.** **Newest:** #168 counting-board THE THIRD BRANCH — say "can you help me" mid-item and hear an answer, not the correction line; #167 live runtime lab (help/return; mic after adoption); #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
+> **121 rows open.** **Newest:** #170 lesson demonstration detour (LA-15 D2); #169 composed demonstrations (LA-15) in the runtime lab; #168 counting-board THE THIRD BRANCH — say "can you help me" mid-item and hear an answer, not the correction line; #167 live runtime lab (help/return; mic after adoption); #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
 > tablet + MIC · #144 You & Me role-switch MIC · #143 Letter Workshop manuscript/touch/audio ·
-> #142 ten-frame teen numbers. Next free ID is **#169**.
+> #142 ten-frame teen numbers. Next free ID is **#171**.
+
+### #170 — **a lesson tutor opens a demonstration when the child is stuck, and comes back** (LA-15 D2)
+
+**Drive it:** start an ordinary lesson whose section binds the workspace. A Grade 1 subtraction lesson with a number line works. Connect the tutor, answer the first jump wrong on purpose, then say "I don't get it, can you show me?"
+Check:
+1. A worked demonstration card replaces the task within a few seconds, and your work is kept.
+2. The tutor talks through its steps with the real numbers.
+3. "Okay, can I try mine?" brings back the same task.
+4. Nothing was marked as an answer.
+
+Machine evidence: 5/5 real-model journeys opened and returned (`qa/tutor-reports/detour-bench-2026-09-26/REPORT.md`, D2).
+
+### #169 — **composed demonstrations: do the five worked demos teach, and look right?** (LA-15)
+
+**Drive it:** `npm run dev` → `/lumina/live-activity/runtime` → scroll to **Composed demonstrations**.
+Click each of the five (subtract-hops, fraction-add, make-a-ten, compare-digits, clock-minutes)
+and step through with **Next step**. The line above each card shows the student's mistake the demo
+answers. Check on a desktop AND a phone:
+1. The drawing matches every caption (the hop count, which place is highlighted, the minute labels).
+2. A child with that mistake would see the missing step, and the demo is not their own problem.
+3. The fraction number line is readable at phone width. The headless shot says it is small but legible.
+
+Headless evidence: 28 frames shot at 1280 and 390 px, no page errors, no horizontal scroll.
+Report: `qa/tutor-reports/detour-bench-2026-09-26/REPORT.md`.
 
 ### #168 — **counting-board: the tutor answers a question instead of correcting it (THE THIRD BRANCH)**
 

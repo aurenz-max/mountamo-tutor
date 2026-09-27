@@ -3,13 +3,14 @@ import { TeachingTrace } from './TeachingTrace';
 import { LearnerSignalTracker } from './learnerSignals';
 import {
   actionKey, attentionRefusal, parseTutorCommand, spokenLine, supportLabel, validateSupportArtifact, SUPPORT_PURPOSE,
-  type Affordance, type AssistanceEvent, type ExecutableAffordance, type MoveOptions, type RuntimeMount,
+  type Affordance, type AssistanceEvent, type DemonstrationSupport, type ExecutableAffordance, type MoveOptions, type RuntimeMount,
   type RuntimeSnapshot, type TeachingOwner, type TransitionReceipt, type TutorAction, type TutorCommand,
 } from './contract';
 import {
   buildMoveArtifact, moveCarrier, movePayloadRefusal, representationRefusal, IN_PLACE_DELTAS,
   type ComposedMove, type MoveDelta,
 } from './moveContract';
+import type { Demonstration } from '../demo/demoContract';
 
 function immutable<T>(value: T): T {
   const copy = structuredClone(value);
@@ -71,7 +72,9 @@ export class LiveLessonRuntime {
   private images = new Map<string, string>();
 
   constructor(readonly sessionEpoch: string, private policy: { maxSupportLevel: number; allowAnswerExposure: boolean;
-    allowSupportArtifacts: boolean; allowGeneratedSupport?: boolean } = { maxSupportLevel: 3, allowAnswerExposure: false, allowSupportArtifacts: false }) {
+    allowSupportArtifacts: boolean; allowGeneratedSupport?: boolean;
+    /** LA-15: the tutor may ask for a composed demonstration detour on any item that can pause. */
+    allowDemonstrations?: boolean } = { maxSupportLevel: 3, allowAnswerExposure: false, allowSupportArtifacts: false }) {
     if (!sessionEpoch.trim()) throw new Error('A session epoch is required');
     this.snapshot = this.buildSnapshot();
   }
@@ -368,6 +371,56 @@ export class LiveLessonRuntime {
   }
 
   /**
+   * Why a demonstration detour cannot open now, or null (LA-15). Asked before the authoring
+   * call is paid for, and again on commit, because authoring takes seconds and the child keeps
+   * working. Nothing here is per primitive: any mounted item that can pause may take one detour.
+   */
+  demonstrationRefusal(scope: { instanceId: string; itemId: string }): string | null {
+    if (!this.policy.allowDemonstrations) return 'Demonstrations are not enabled';
+    if (!this.mount || scope.instanceId !== this.mount.instanceId
+        || scope.itemId !== this.mount.adapter.getTutorState().itemId) return 'The task changed; use the refreshed state';
+    if (this.status !== 'active') return `Activity is ${this.status}`;
+    const blocked = this.blockedReason();
+    if (blocked) return blocked;
+    if (!this.mount.adapter.suspension) return 'This activity cannot pause for a detour; teach with words';
+    if (this.detours.has(this.itemKey())) return 'This item already had its one detour';
+    return null;
+  }
+
+  /** Commits a demonstration built by code from the authoring call; the shell draws it and the tutor narrates it. */
+  openDemonstration(scope: { instanceId: string; itemId: string }, demonstration: Demonstration, obstacle: string): TransitionReceipt {
+    const receipt = (status: TransitionReceipt['status'], reason?: string): TransitionReceipt =>
+      ({ commandId: null, status, ...(reason ? { reason } : {}), state: this.snapshot });
+    if (this.busy) return receipt('conflict', 'Another transition is committing');
+    const refusal = this.demonstrationRefusal(scope);
+    if (refusal) return receipt('blocked', refusal);
+    this.busy = true;
+    try {
+      const artifact: DemonstrationSupport = { id: `demo-${this.revision + 1}`, kind: 'demonstration', title: demonstration.title,
+        demonstration, altText: demonstration.frames.map((f, i) => `Step ${i + 1}: ${f.caption}`).join(' '),
+        answerExposure: demonstration.answerExposure, provenance: 'prepared' };
+      validateSupportArtifact(artifact);
+      this.mount!.adapter.suspension!.suspend();
+      this.savedOwner = this.owner;
+      this.images.clear();
+      this.support = immutable(artifact);
+      this.detours.add(this.itemKey());
+      this.owner = 'support';
+      this.status = 'support';
+      const nextAction = 'Watch the example, then try your own task again';
+      this.assistance.push({ instanceId: scope.instanceId, itemId: scope.itemId, revision: this.revision + 1,
+        action: { type: 'request_support', artifactId: artifact.id }, level: 6, answerExposure: artifact.answerExposure,
+        move: { obstacle, delta: 'model-process', representation: demonstration.piece, nextAction },
+        ...this.announcement({ type: 'request_support', artifactId: artifact.id }, nextAction, 'model-process') });
+      this.publish();
+      return { ...receipt('committed'), state: this.snapshot };
+    } catch {
+      this.status = 'faulted'; this.owner = 'none'; this.publish();
+      return receipt('failed', 'Adapter transition failed; activity requires recovery');
+    } finally { this.busy = false; }
+  }
+
+  /**
    * What the tutor may compose right now. Null until an adapter declares what it draws and
    * can sweep its own answer, so a primitive opts into the open lane by publishing facts.
    */
@@ -444,6 +497,8 @@ export class LiveLessonRuntime {
       canGenerateSupport: !!m && this.status === 'active' && !!this.policy.allowGeneratedSupport && this.policy.allowSupportArtifacts
         && !this.blockedReason() && !!m.adapter.suspension && !!m.adapter.drawsTask && !this.detours.has(this.itemKey()),
       moveOptions: this.status === 'active' && !this.blockedReason() && !this.detours.has(this.itemKey()) ? this.moveOptions() : null,
+      ...(this.policy.allowDemonstrations ? { canRequestDemonstration: !!m && this.status === 'active' && !this.blockedReason()
+        && !!m.adapter.suspension && !this.detours.has(this.itemKey()) } : {}),
       markedTargetIds: this.marked?.itemKey === this.itemKey() ? [...this.marked.targetIds] : [],
       assistance: this.assistance });
   }

@@ -18,7 +18,7 @@ from google.genai.types import LiveConnectConfig, SpeechConfig, VoiceConfig, Pre
 from ...core.config import settings
 from ...services.session_ledger import SessionLedger, classify_cue
 from ...services.live_activity_tools import LiveActivityTools, activity_tool, parse_activity_spec, activity_instruction
-from ...services.live_runtime_tools import LiveRuntimeTools, CombinedLiveTools, runtime_tool, parse_runtime_spec, RUNTIME_INSTRUCTION, MOVE_INSTRUCTION
+from ...services.live_runtime_tools import LiveRuntimeTools, CombinedLiveTools, runtime_tool, parse_runtime_spec, RUNTIME_INSTRUCTION, MOVE_INSTRUCTION, DEMONSTRATION_INSTRUCTION
 
 # Enhanced logging configuration
 logging.basicConfig(
@@ -1027,7 +1027,7 @@ async def lumina_tutor_session(websocket: WebSocket):
         if sandbox_spec:
             system_instruction += "\n" + activity_instruction(sandbox_spec)
         if runtime_spec:
-            system_instruction += "\n" + RUNTIME_INSTRUCTION + (MOVE_INSTRUCTION if runtime_spec.get("teachingMoves") else "")
+            system_instruction += "\n" + RUNTIME_INSTRUCTION + (MOVE_INSTRUCTION if runtime_spec.get("teachingMoves") else "") + (DEMONSTRATION_INSTRUCTION if runtime_spec.get("demonstrations") else "")
 
         speech_config = SpeechConfig(
             voice_config=VoiceConfig(

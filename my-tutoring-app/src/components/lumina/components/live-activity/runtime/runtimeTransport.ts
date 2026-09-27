@@ -6,6 +6,10 @@ import { itemScopeKey } from './observationContract';
 import { parseTutorCommand, type RuntimeSnapshot } from './contract';
 import type { LiveLessonRuntime } from './LiveLessonRuntime';
 import type { ComposedMove } from './moveContract';
+import type { Demonstration } from '../demo/demoContract';
+
+/** What the tutor sends with `request_demonstration`: its diagnosis, in its own words. */
+export interface DemonstrationNeed { obstacle: string; evidence: string; purpose: string }
 import { waitForVisible } from './waitForVisible';
 
 /**
@@ -151,6 +155,35 @@ export class RuntimeTransport {
       imageUrl = drawn.imageUrl;
     }
     const receipt = this.runtime.openComposedMove(scope, move, imageUrl);
+    if (receipt.status !== 'committed') return reply(receipt.status, receipt.reason);
+    const rendered = await waitForVisible(this.runtime, receipt.state.revision, { signal: abort.signal });
+    return reply(rendered.status, undefined, { elapsedMs: rendered.elapsedMs });
+  }
+  /**
+   * The tutor asked for a demonstration of the step the child is missing (LA-15). Refuse
+   * before paying for authoring, author off the main thread, then commit only if the task is
+   * still the one the tutor was looking at. `none` from the author is a refusal, not a fault:
+   * no piece draws this obstacle, so the tutor teaches in words.
+   */
+  async requestDemonstration(commandId: string, scope: { instanceId: string; itemId: string }, need: DemonstrationNeed,
+      compose: (need: DemonstrationNeed, signal: AbortSignal) => Promise<{ demonstration: Demonstration } | { refused: string }>) {
+    if (this.closed || this.pending.has(commandId)) return null;
+    const abort = new AbortController();
+    this.pending.set(commandId, abort);
+    const reply = (status: string, reason?: string, extra: Record<string, unknown> = {}) => {
+      this.pending.delete(commandId);
+      if (!this.closed && !abort.signal.aborted) this.send({ type: 'runtime_result', commandId, status, reason,
+        state: this.packet(), ...extra });
+      return { status, reason };
+    };
+    const refusal = this.runtime.demonstrationRefusal(scope);
+    if (refusal) return reply('blocked', refusal);
+    let composed: Awaited<ReturnType<typeof compose>>;
+    try { composed = await compose(need, abort.signal); }
+    catch { return abort.signal.aborted ? null : reply('failed', 'The demonstration could not be prepared. Teach this step in words.'); }
+    if (abort.signal.aborted) return null;
+    if ('refused' in composed) return reply('unsupported', composed.refused);
+    const receipt = this.runtime.openDemonstration(scope, composed.demonstration, need.obstacle);
     if (receipt.status !== 'committed') return reply(receipt.status, receipt.reason);
     const rendered = await waitForVisible(this.runtime, receipt.state.revision, { signal: abort.signal });
     return reply(rendered.status, undefined, { elapsedMs: rendered.elapsedMs });

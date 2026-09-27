@@ -4,7 +4,8 @@ import React, { createContext, useCallback, useContext, useEffect, useLayoutEffe
 import { LuminaAIProvider, useLuminaAIContext, type LessonConnectionInfo } from '@/contexts/LuminaAIContext';
 import type { ExhibitData } from '../../types';
 import { LiveLessonRuntime } from './runtime/LiveLessonRuntime';
-import { RuntimeTransport, runtimePacket } from './runtime/runtimeTransport';
+import { RuntimeTransport, runtimePacket, type DemonstrationNeed } from './runtime/runtimeTransport';
+import type { Demonstration } from './demo/demoContract';
 import { lessonPrimitiveContext, lessonWorkspaceItems, type LessonWorkspaceItem } from './lessonWorkspacePlan';
 import { waitForVisible } from './runtime/waitForVisible';
 import { LiveRuntimeActiveContext, LiveRuntimeConnectionContext, LiveRuntimeContext } from './runtime/LiveRuntimeContext';
@@ -17,6 +18,21 @@ interface LessonWorkspaceContextValue {
   focus: (id: string) => void;
   /** The learner's Try again / Next challenge on a checked item, through the lesson's own transport. */
   learnerProgress: (type: 'advance' | 'retry') => void;
+  /** LA-15: the lesson facts a demonstration is authored against, per section. Absent = no demonstrations. */
+  demonstrationContext?: (instanceId: string) => DemonstrationContext | null;
+}
+
+/** What the demonstration author needs about the section beyond the runtime's own snapshot. */
+export interface DemonstrationContext { topic: string; gradeLevel: string; grade: string; objectiveText: string }
+
+/** Reads a lesson section's objective and grade from the manifest layout the flatten step stamped. */
+export function lessonDemonstrationContext(exhibit: ExhibitData) {
+  return (instanceId: string): DemonstrationContext | null => {
+    const config = exhibit.manifest?.layout?.find(item => item.instanceId === instanceId)?.config;
+    const objectiveText = typeof config?.objectiveText === 'string' ? config.objectiveText : null;
+    const grade = typeof config?.objectiveGrade === 'string' ? config.objectiveGrade : null;
+    return objectiveText && grade ? { topic: exhibit.topic, gradeLevel: exhibit.manifest?.gradeLevel ?? 'elementary', grade, objectiveText } : null;
+  };
 }
 const Context = createContext<LessonWorkspaceContextValue | null>(null);
 export const useLessonWorkspace = () => useContext(Context);
@@ -24,7 +40,8 @@ export const useLessonWorkspace = () => useContext(Context);
 /** Normal lesson entry. Primitives submit through the existing evaluation provider. */
 export function LessonWorkspaceProvider({ exhibit, children }: { exhibit: ExhibitData; children: React.ReactNode }) {
   const items = useMemo(() => lessonWorkspaceItems(exhibit), [exhibit]);
-  return <WorkspaceHostProvider scope="lesson" items={items}
+  const demonstrationContext = useMemo(() => lessonDemonstrationContext(exhibit), [exhibit]);
+  return <WorkspaceHostProvider scope="lesson" items={items} demonstrationContext={demonstrationContext}
     initialActiveId={exhibit.orderedComponents?.find(s => s.audience !== 'caregiver')?.instanceId ?? null}>{children}</WorkspaceHostProvider>;
 }
 
@@ -33,18 +50,20 @@ export function LessonWorkspaceProvider({ exhibit, children }: { exhibit: Exhibi
  * binds; Pulse passes its one current item and remounts the scope per item. With no bound
  * item the provider carries no runtime, so every primitive keeps its ordinary path.
  */
-export function WorkspaceHostProvider({ scope, items, initialActiveId, children }: {
-  scope: string; items: Map<string, LessonWorkspaceItem>; initialActiveId: string | null; children: React.ReactNode;
+export function WorkspaceHostProvider({ scope, items, initialActiveId, demonstrationContext, children }: {
+  scope: string; items: Map<string, LessonWorkspaceItem>; initialActiveId: string | null;
+  demonstrationContext?: (instanceId: string) => DemonstrationContext | null; children: React.ReactNode;
 }) {
   const runtime = useMemo(() => new LiveLessonRuntime(`${scope}-${crypto.randomUUID()}`,
-    { maxSupportLevel: 3, allowAnswerExposure: true, allowSupportArtifacts: false }), [scope, items]);
+    { maxSupportLevel: 3, allowAnswerExposure: true, allowSupportArtifacts: false, allowDemonstrations: !!demonstrationContext }),
+    [scope, items, demonstrationContext]);
   const [activeId, setActiveId] = useState<string | null>(initialActiveId);
   const handler = useRef<(event: Record<string, any>) => void>(() => {});
   const onEvent = useCallback((event: Record<string, any>) => handler.current(event), []);
   const progress = useRef<(type: 'advance' | 'retry') => void>(() => {});
   const learnerProgress = useCallback((type: 'advance' | 'retry') => progress.current(type), []);
-  const value = useMemo(() => ({ runtime, items, activeId, focus: setActiveId, learnerProgress }),
-    [runtime, items, activeId, learnerProgress]);
+  const value = useMemo(() => ({ runtime, items, activeId, focus: setActiveId, learnerProgress, demonstrationContext }),
+    [runtime, items, activeId, learnerProgress, demonstrationContext]);
   return <Context.Provider value={value}>
     <LuminaAIProvider liveLessonRuntime={items.size ? runtime : undefined} onActivityEvent={onEvent}>
       <LessonWorkspaceBridge handler={handler} progress={progress} />{children}
@@ -79,11 +98,33 @@ export function WorkspaceSection({ instanceId, children }: { instanceId: string;
   </LiveRuntimeContext.Provider>;
 }
 
+/** The learner's last checked answer as the activity words it, marked right or wrong; the tutor's paraphrase often drops it. */
+export function lastAnswerOf(task: { workspace?: { lastResponse: { response: string; correct: boolean } | null } }): string | undefined {
+  const last = task.workspace?.lastResponse;
+  return last ? `${last.response.slice(0, 280)} (${last.correct ? 'correct' : 'incorrect'})` : undefined;
+}
+
+/** Author a demonstration for the section the tutor is looking at, from the runtime's own snapshot and the lesson facts. */
+async function composeLessonDemonstration(host: LessonWorkspaceContextValue, need: DemonstrationNeed, signal: AbortSignal)
+    : Promise<{ demonstration: Demonstration } | { refused: string }> {
+  const state = host.runtime.getSnapshot();
+  const context = state.instanceId ? host.demonstrationContext?.(state.instanceId) : null;
+  if (!context || !state.primitiveId || !state.task) return { refused: 'This section has no lesson objective to demonstrate against. Teach in words.' };
+  const response = await fetch('/api/lumina/demonstration', { method: 'POST', signal, headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ need, parent: { componentId: state.primitiveId, evalMode: state.evalMode, currentTask: state.task.task,
+      lastAnswer: lastAnswerOf(state.task), ...context } }) });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'Demonstration failed');
+  return result.kind === 'demonstration' ? { demonstration: result.demonstration }
+    : { refused: 'No drawn demonstration fits this step. Teach it in words, with a different example.' };
+}
+
 function LessonWorkspaceBridge({ handler, progress }: {
   handler: React.MutableRefObject<(event: Record<string, any>) => void>;
   progress: React.MutableRefObject<(type: 'advance' | 'retry') => void>;
 }) {
   const host = useLessonWorkspace()!;
+  const hostRef = useRef(host); hostRef.current = host;
   const ai = useLuminaAIContext();
   const aiRef = useRef(ai); aiRef.current = ai;
   const transport = useRef<RuntimeTransport | null>(null);
@@ -100,6 +141,8 @@ function LessonWorkspaceBridge({ handler, progress }: {
       switch (event.type) {
         case 'runtime_command': void t?.command(event.command); break;
         case 'runtime_cancelled': t?.cancel(event.commandId); break;
+        case 'runtime_request_demonstration': void t?.requestDemonstration(event.commandId, event.scope, event.need,
+          (need, signal) => composeLessonDemonstration(hostRef.current, need, signal)); break;
         case 'runtime_turn_output': t?.beginTurn(String(event.text ?? '')); break;
         case 'runtime_learner_text': t?.learnerText(String(event.text ?? ''), event.finished === true); break;
         case 'runtime_host_text': t?.hostText(); break;
@@ -138,7 +181,8 @@ function LessonWorkspaceBridge({ handler, progress }: {
 export function workspaceConnectionInfo(info: LessonConnectionInfo, host: LessonWorkspaceContextValue | null): LessonConnectionInfo {
   if (!host?.items.size) return info;
   const binding = host.items.get(info.firstPrimitive.instance_id);
-  return { ...info, runtimeLesson: { sessionEpoch: host.runtime.sessionEpoch, initialState: runtimePacket(host.runtime.getSnapshot()) },
+  return { ...info, runtimeLesson: { sessionEpoch: host.runtime.sessionEpoch, initialState: runtimePacket(host.runtime.getSnapshot()),
+      ...(host.demonstrationContext ? { demonstrations: true } : {}) },
     firstPrimitive: binding ? { ...info.firstPrimitive, ...lessonPrimitiveContext({ componentId: binding.primitiveId, instanceId: binding.instanceId,
       data: info.firstPrimitive.primitive_data, title: '' }, binding) } : info.firstPrimitive };
 }

@@ -130,7 +130,7 @@ export type SessionMode = 'idle' | 'standalone' | 'lesson';
 
 // Info needed to start a lesson-mode session
 export interface LessonConnectionInfo {
-  runtimeLesson?: { sessionEpoch: string; initialState: Record<string, unknown> };
+  runtimeLesson?: { sessionEpoch: string; initialState: Record<string, unknown>; demonstrations?: boolean };
   runtimeSandbox?: { sessionEpoch: string; initialState: Record<string, unknown> };
   /** Reference demo can start with text; established lesson callers still open the mic. */
   microphone?: boolean;
@@ -539,7 +539,7 @@ export const LuminaAIProvider: React.FC<{
         if (runtimeEnabledRef.current && ['ai_audio', 'ai_transcription', 'ai_response'].includes(messageType)) {
           activityEventRef.current?.({ type: 'runtime_turn_output', text: messageType === 'ai_audio' ? '' : message.content });
         }
-        if (runtimeEnabledRef.current && ['runtime_command', 'runtime_compose_move', 'runtime_cancelled', 'session_resuming', 'session_resumed', 'session_ended'].includes(messageType)) {
+        if (runtimeEnabledRef.current && ['runtime_command', 'runtime_compose_move', 'runtime_request_demonstration', 'runtime_cancelled', 'session_resuming', 'session_resumed', 'session_ended'].includes(messageType)) {
           activityEventRef.current?.(message);
         }
 
@@ -911,7 +911,8 @@ export const LuminaAIProvider: React.FC<{
             session_mode: 'lesson',
             activity_sandbox: info.activitySandbox,
             runtime_sandbox: info.runtimeSandbox,
-            runtime_lesson: info.runtimeLesson && liveLessonRuntime ? { sessionEpoch: liveLessonRuntime.sessionEpoch, initialState: runtimePacket(liveLessonRuntime.getSnapshot()) } : undefined,
+            runtime_lesson: info.runtimeLesson && liveLessonRuntime ? { sessionEpoch: liveLessonRuntime.sessionEpoch, initialState: runtimePacket(liveLessonRuntime.getSnapshot()),
+              ...(info.runtimeLesson.demonstrations ? { demonstrations: true } : {}) } : undefined,
             token,
             client_run_id: getClientRunId(),
             resumption_handle: resumeHandle,
