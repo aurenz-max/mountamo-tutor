@@ -1,261 +1,173 @@
 ---
 name: add-support-tiers
 description: >-
-  Make a primitive's config.difficulty change what the student sees — withdrawing
-  on-screen scaffolds like counts, named strategies, or pre-built equations for
-  stronger tiers — without changing the numbers or the eval mode. Use when
-  easy/medium/hard currently produce byte-identical content. Not for making the
-  problem itself harder by shape (/add-structural-difficulty).
+  Give a primitive the in-item levers a tutor or JEV can pull when a learner cannot do the
+  current item — help levers (the representation shows or does more) and simplify levers (the
+  same task, one step simpler in shape) — designed from why learners fail that primitive. Also
+  sets where the levers start from config.difficulty. Use when a primitive's live workspace
+  offers the tutor nothing but begin_help, or its tiers only toggle text. Not for a new task
+  identity or harder-than-full content (/add-eval-modes, /lumina-densify-primitives).
 ---
 
-# Add Support Tiers to a Primitive
+# Add Support Levers to a Primitive
 
-This skill makes a primitive's `config.difficulty` actually change what the student sees, so that **a struggling student and a strong student working the *same* skill get genuinely different content** — the struggling one keeps on-screen scaffolds (a count readout, a named strategy, a pre-built equation), the strong one works unaided and justifies their thinking.
+This skill gives a primitive the levers that let a learner who cannot do the item in front of them get part of it right and then finish the full item, **without leaving the primitive, the eval mode or the skill**. The manifest already picks the right primitive and mode for the objective; this skill makes that item teachable.
 
 ## The outcome you're designing for
 
-> **easy = the workspace helps the student self-check. hard = the student works unaided and justifies their thinking.**
+> **For every way a learner is known to fail this primitive, there is a lever the tutor or JEV can pull on the current item that changes the screen, never states the answer, and is recorded as help.**
 
-`config.difficulty` ('easy' | 'medium' | 'hard') is the *second* field of the two-field contract `/add-eval-modes` sets up — `targetEvalMode` = WHICH skill (the task identity), `difficulty` = HOW MUCH support within it. It drives up to **two dials** (build whichever the primitive supports — many support only one):
+Two kinds of lever, one skill:
 
-1. **How much help?** — *scaffolding withdrawal.* Same problem, less on-screen / instructional support.
-2. **How hard a problem, structurally?** — *structural difficulty.* A genuinely harder problem, made harder by **shape** (gaps, steps, multipliers, steps-to-solve), never by bigger numbers.
+| Kind | What changes | Examples |
+|---|---|---|
+| **help** | The representation shows or does more. The problem is unchanged. | Numbered hops on the learner's own arc; each reference slice split into k parts; a picture beside the spoken word; a denser tick-label window. |
+| **simplify** | The problem asks for less, in the same mode and skill. Code builds it. | One operation instead of two; two choices with a far foil instead of three; a far-apart comparison pair; a denominator that is a multiple of the reference. |
 
-A strong tier usually does both: a harder problem **and** less help.
+`config.difficulty` from the manifest only sets **where the levers start**: easy starts with some help levers pulled, hard starts with all of them released. This skill never makes an item harder than the manifest chose, and adds no within-mode β or routing. Harder content is a harder eval mode, owned by `/add-eval-modes` and `/lumina-densify-primitives`.
 
-## The one hard rule (the guardrail, not the goal)
+The tutor decides when to pull a lever and says it in its own words. There are no scripted responses. A missing prerequisite is not this skill's job: it is a lesson-level finding, acted on in the next lesson.
 
-**A support tier never changes the numbers.** A harder tier must not just make the quantity bigger — that is the retired numeric-difficulty path that was reversed because it didn't work (`5×+5 ≈ 7×-3`; see [[structural-difficulty-not-numeric]], [[feedback_llm-window-code-builds-structure]]). Magnitude is owned by the pedagogical scope and the per-mode count/range tables; the tier never pushes past them, and never pushes the problem into a *different* eval mode (the eval mode is the task identity). Keep this in your pocket as the review test for every lever — but design the outcome first, then check each lever against the rule.
-
-## Why this skill exists
-
-The manifest already emits `config.difficulty` ('easy'|'medium'|'hard') for **every** component (`gemini-manifest.ts`), and `/add-eval-modes` registration already spreads `...item.config` to every generator — so the value *reaches* all ~100 generators. But almost all of them **drop it on the floor**: a struggling vs. a strong student gets byte-identical content. This skill closes that no-op, one primitive at a time.
-
-It is deliberately **per-primitive creative work**, not an auto-rollout: "scaffolding" means something different for every primitive (a ten-frame's support ≠ a number line's ≠ a pH simulation's ≠ a sight-word card's). The skill gives you a fixed harness and a disciplined way to discover *that primitive's* support levers.
-
-## Architecture (the dataflow)
+## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  gemini-manifest.ts                                          │
-│  emits config.difficulty: 'easy'|'medium'|'hard' per component│
-└───────────────┬──────────────────────────────────────────────┘
-                │ ...item.config spread (add-eval-modes registration)
-                ▼
-┌──────────────────────────────────────────────────────────────┐
-│  generator: gemini-[primitive].ts                            │
-│  normalizeSupportTier(config.difficulty) → tier              │  ← FIXED harness
-│  resolveSupportStructure(mode, tier) → {scaffold, promptLines}│
-│  [optional] resolveProblemShape(mode, tier) → structural params│  ← 2nd axis
-│  applied PER CHALLENGE at the END, after structural fixups   │
-└───────────────┬──────────────────────────────────────────────┘
-                │ challenge.showOptions / structural fields / supportTier
-                ▼
-┌──────────────────────────────────────────────────────────────┐
-│  [Primitive].tsx — renders FEWER scaffolds at harder tiers    │
-│  live tutor (if any) reads supportTier → calibrates reveal     │
-└──────────────────────────────────────────────────────────────┘
+failure inventory (Phase 1)            why learners fail THIS primitive, per mode, with evidence class
+        │
+        ▼
+lever table (Phase 2)                  failure → lever (help | simplify) → carrier → leak rule → cost
+        │
+        ▼
+primitive (Phases 4-5)                 lever state lives in the COMPONENT, not only in challenge props
+  workspace.current.levers[]           published with the scene, each { id, kind, when, does, carrier, pulled }
+  workspace.current.pullLever(id)      synchronous commit: the screen changes, the scene fact changes
+        │
+        ▼
+shared workspace (useTeachingWorkspace)  operation `pull_lever` { lever }  →  validate → session.assist() → pullLever
+        │                                (the tutor and JEV see the levers in the packet; the backend names no primitive)
+        ▼
+next attempt carries { lever, kind }   assisted, never credited as independent; the item keeps its mode β
+        │
+        ▼
+generator (Phase 6)                    config.difficulty → which levers start pulled; simplify builders live here too
 ```
 
-This is a **generator + component** task (plus a tutor touch if one exists). No backend, no manifest changes — the difficulty value already arrives at every generator; the work is making the generator *honor* it.
+> **Status (2026-09-27): the shared lever mechanism does not exist yet.** In `components/live-activity/runtime/useTeachingWorkspace.ts` (`getAffordances`, lines 129-179) the tutor's operations are `begin_help`, `demonstrate` (only when the scene publishes `objects` and `canDemonstrate`) and `present` (only for a timed stimulus). `apply_tutor_verdict`, `retry` and `advance` are observer-only. Other tutor tools exist outside it (`show` on `useTeachingSurface.ts`, the lesson's global `request_demonstration`), but none changes what a primitive shows on its item. Four pieces are missing, and the first adopter, the number-line jump pilot, builds them once as a shared change under `/add-live-tutor-tools` rules:
+> 1. `workspace.current.levers` + `pullLever(id)` on the scene, and a `pull_lever` operation in `useTeachingWorkspace`;
+> 2. the lever on the attempt record (`TeachingAttempt` in `TeachingSession.ts` has only `assisted` and `answerExposure`; `assist()` takes only an exposure);
+> 3. a way for a simplify lever to put a simpler item in front of the learner and return to the original (`TeachingSession` fixes its item ids at construction, `TeachingSession.ts:50`);
+> 4. the scene fact naming which levers are pulled.
+>
+> **Until the pilot lands, a session running this skill on any other primitive does Phases 1-3 only**: it writes the failure inventory and lever table into `qa/eval-reports/<id>-levers-<date>.md`, updates the contract, and stops. Treat every name above as the target contract, and check the source before copying it.
 
-## What's fixed vs. what you invent
+## When to use / not
 
-Most of the harness is copy-paste; the value is in per-primitive lever discovery (the **bespoke** `SupportScaffold` fields + `resolveSupportStructure()` mapping). The architecture diagram above marks what's fixed; Phases 2–3 give the exact code.
+- **Use** when a primitive's live workspace gives the tutor nothing to do on the screen (the tutor's only choice is `begin_help`), or its tiers only toggle text, or a pre-reader band gets no working support.
+- **Not** for a new task identity: `/add-eval-modes`. Not for spacing between modes: `/lumina-densify-primitives`. Not for tutor wiring of an unbound primitive: `/add-live-tutor-tools` first. Not for text hints routed by misstep: `runtime/liveScaffolds.ts` already owns those, and they are the weakest help lever. Prefer a lever that changes the representation.
+- **Pilot-then-sweep:** never fan this out across primitives until one pilot has passed Phase 7 at runtime and the user has seen it.
 
-> **The single most important step is lever discovery — and you do it by reading the COMPONENT, not the generator.** Levers live in the `.tsx`'s `showOptions` and per-challenge structural fields (`arrangement`, unknown position); the generator only tells you the *modes*. (One family — instruction-as-scaffold — lives in the generator instead; see the modality catalog.)
+## Phase 1: Failure inventory (per mode)
 
-**Every worked example here is a math primitive** — math (~29 generators) is the only domain wired. The other ~95 generators (chemistry, physics, literacy, engineering, …) are the frontier and expose the same lever families. On a non-math primitive, **don't pattern-match the math examples** (no count-readout or `compareGap` exists) — classify by **archetype** (below) and read the math example that shares its *archetype*, not its subject. The fixed harness is identical across domains.
+1. Run `/primitive-contract` for the primitive, or read `docs/contracts/<id>.md`. Levers must not break what other consuming skills depend on.
+2. List every eval mode from the catalog entry (what it asks, its β, its defining property).
+3. For each mode, list why learners fail it, and tag each failure with an **evidence class**:
 
-## Primitive archetypes — find yours first, then sweep its modalities
+| Class | Where it comes from |
+|---|---|
+| observed-real | a real learner: human sittings, production attempts |
+| observed-synthetic | harness or bench runs, scripted wrong answers (e.g. the live journey's "landing + 1") |
+| documented | catalog `commonStruggles`, misconception text, remediation modules |
+| inferred | your reasoning from the task |
 
-Before discovering levers, classify the primitive by **how the student interacts with it** (archetype), not by subject. The archetype predicts which modalities carry the weight and which math example to read as a structural template. Most primitives are one archetype; a few blend two (a multi-step solver *over* a simulation).
+   Sources to read: `my-tutoring-app/logs/demonstrations/*.jsonl` (the author's diagnoses; grep the primitive id), `qa/tutor-reports/`, `qa/misconception/`, `qa/eval-reports/`, the catalog tutoring block (`commonStruggles`), `service/**/*Remediation.ts` (camelCase, e.g. `tenFrameRemediation.ts`), and the primitive's DI script if it has one (its scripted wrong answers name the misses it was built for). Many of these are empty for a given primitive; say which, and carry on with the rest. Say plainly when a class is empty. The 2026-09-26 and 09-27 audits found no real-learner evidence for any of four primitives, so most inventories will be synthetic, documented or inferred, and the report must say so.
+4. **Fix what corrupts the evidence first.** If generated content is broken (a value outside the rendered range, an answer the checker rejects), failures observed on it are artifacts. Queue the fix under `/eval-fix` and do it before measuring any lever.
 
-| Archetype | What it is | Examples (math · non-math) | Lead modalities | Structural-difficulty lever | Math template to read |
-|---|---|---|---|---|---|
-| **Manipulative / quantity** | Student builds or reads a concrete quantity | ten-frame, base-ten · AtomBuilder, MoleculeConstructor | #1 perception + #3 CPA | parts to coordinate (1 group → many) | ten-frame, counting-board |
-| **Multi-step solver** | Identify → set up → execute over a figure/passage | angle-workshop, tape-diagram · ContextCluesDetective, FigurativeLanguageFinder | #2 instruction + #5 answer-form | step count / scenario complexity | **angle-workshop** |
-| **Living simulation** | Student drives a physics/chemistry sim with real consequences | (none in math) · PhExplorer, GasLawsSimulator, physics sims | #1 sim overlays (readouts, vectors, trace, gridlines) | # interacting / coupled variables; initial-condition complexity | bar-model (overlay-as-scaffold) |
-| **Recognition card** | Recognize / recall a single item | (flashcard-shaped) · SightWordCard, RhymingPairs, SoundSort | #5 recognition↔recall + #1 cue (audio replay, picture, letter highlight) | distractor similarity (far → near) | — (#5-led; see CAUTION) |
-| **Graph / data** | Read or build a plotted dataset | bar-model, coordinate-graph · distribution-explorer | #1 tick labels/gridlines | axis step coarseness; dataset ambiguity | **bar-model** |
-| **Builder / constructor** | Assemble parts into a valid whole | equation-builder, number-bond · EquationBalancer, word-builder | #1 slot hints/templates + #2 setup pre-assembly | # of parts; constraint count | bar-model (`answerBarIndex` decouple) |
+## Phase 2: Lever table (confirm with the user before building)
 
-> The lever **families** (#1–#5 below) are universal — PhExplorer has a `showOptions` struct exactly like ten-frame's; ContextCluesDetective has a `showDictionary` compare-view (#3), highlight cues (#1), a multi-phase identify→define flow (#2), and distractor options (#5). What differs by archetype is *which* families dominate and *what the structural lever is called* — never the procedure. The simulation/recognition archetypes are also where memory's [[feedback_direct-manipulation-first]] and [[feedback_living-simulation-pattern]] apply: withdraw overlays/cues, never the manipulable object itself.
+Present the table to the user before Phase 4. In a non-interactive run, write it into the report and stop there.
 
-## Support modalities — the lever families to sweep
+For each failure with at least documented evidence, design ONE lever and fill a row. An inferred failure gets a lever only if it is cheap or the same lever covers a documented one. When no lever can pass the leak rule (every hint for "decompose: one part empty" names a pair), write "no lever" and the reason in the row; that is a finding, not a gap to paper over.
 
-Scaffolding is not one thing. In Phase 1 sweep the **whole menu**, not just `showOptions`. Most primitives expose 2–3; the richest tiers combine families. Every family obeys the one hard rule — **withdraw help, never change the numbers or the task identity.** (The archetype table above lists each family's non-math instances.)
+| Mode | Failure (class) | Lever | Kind | Carrier | Leak rule | Exists today? | Cost |
+|---|---|---|---|---|---|---|---|
+| jump | counts the start as hop 1 (synthetic) | numbered hops on the learner's own arc, from the start | help | shown + voiced | never draws past the start or to the landing | no: single endpoint click | interaction state + render |
+| jump | loses the intermediate landing on a chained jump (inferred) | drop the second operation | simplify | shown | new item; not the learner's own values | builder exists at generation only | code builder + runtime swap |
 
-| # | Family | Where it lives | What you withdraw | Priority |
-|---|--------|----------------|-------------------|----------|
-| **1** | **Perception / tracking aids** | `showOptions` + per-challenge structural fields | on-screen marks that offload *seeing* the quantity/state — count readout, running tally, `arrangement`, tick labels, reading-cue dot, right-angle marks; in sims = overlays (readouts, vectors, trace, gridlines). The skill's original focus (ten-frame, counting-board). | **P1** |
-| **3** | **Representational support (CPA)** | generator + component | easy pairs a concrete/visual model with the symbol; hard = symbol-only. Withdraw the model, keep the number/word (array beside the product → drop it). | **P1** |
-| **2** | **Instruction-as-scaffold** (task-step withdrawal) | the generator's instruction text (usually NO component change) | **highest-leverage, cheapest, most generalizable.** Decompose the task into cognitive sub-steps, hand the student fewer per tier: *strategy naming* (does the text name which rule applies?), *structure pre-assembly* (is the equation handed over? easy `solve_algebraic` hands `(2x+10)+(x+5)=90`, hard hands nothing), *hint-explicitness ladder*. Applies to **any** task with ≥2 steps; changes only words, so every number is byte-identical. | **P2** (complements P1; the *only* ladder for primitives with no visual levers — AngleWorkshop) |
-| **4** | **Worked-example fading** | needs an example surface | easy = full worked parallel example, medium = partial, hard = none. Strong but heavier to build. | P3 |
-| **5** | **Answer-form** (recognition vs. recall) | component | easy = choose among options (fewer/dissimilar distractors); hard = free production. Dominant for **recognition-card** archetypes. **CAUTION:** a support axis *only* if the task is unchanged — if changing the form changes what's assessed, that's a new eval mode (`/add-eval-modes`), not a tier. | P3 |
+Rules for the table:
+- **Carrier.** `shown`, `voiced` or `both`. `shown` means what the child can take in without reading: a picture, a mark, a gesture target, a moved or split object. Digits and words are text: for a pre-reader band, a lever that only adds text is real only if the tutor's voice carries it; say how.
+- **Leak rule.** State in one sentence what the lever must never draw or say for this mode. Where the relationship IS the answer (recognition, identify), the lever acts on a model outside the item, never on the item itself.
+- **Exists today?** Read the COMPONENT, not the generator: `showOptions`, per-challenge fields, render paths, interaction handlers. A lever that exists only as a generation-time flag counts as "no runtime path".
+- **Add capability when it is missing.** If the failure needs a degree of freedom the primitive lacks, the lever adds it (render, data field, interaction), with its cost stated. That is the point of this skill: the 2026-09-26 audits found the needed levers mostly did not exist.
+- **Simplify stays in the mode.** A simpler item that crosses the mode's defining property is a different mode (production turned into a choice among pictures is identification), so it is not a simplify lever.
 
-For each candidate ask: *does this primitive expose this lever, and does withdrawing it leave the answer and the task identity intact?* If not → not a support lever. **The bespoke interaction-surface scaffolds (P1) come first — they're the pedagogical core and the creative 20%.**
+Lever families to sweep when looking for help levers (all must pass the leak rule):
 
-## The second axis — structural problem difficulty (now its own skill)
+| Family | Examples |
+|---|---|
+| Perception / tracking | counts, tallies, tick labels, arrangement, overlays, highlights |
+| Representation (concrete ↔ symbol) | a model beside the symbol; a split or overlay of the model |
+| Process made visible | numbered steps, hop-by-hop placement, a partition drawn in |
+| Voice | the tutor models a contrast on a pair outside the item, the pair shown as pictures |
+| Answer form | fewer or farther choices (as simplify, when the task is unchanged) |
 
-The modalities above all answer *"how much help?"* — same problem, scaffolding withdrawn. But a primitive feels weak if easy/med/hard produce **byte-identical problems** with only the help toggled. The second axis answers *"how hard a problem, structurally?"* — a genuinely harder problem by **shape** (gaps/steps/regroup-count/coupled-variables), never by bigger numbers, entirely generator-side.
+## Phase 3: Contract check
 
-That axis rides this skill's harness but is a substantial procedure of its own (an in-mode structural lever per mode, plus **code-enforced re-selection** of the answer-bearing values — don't trust the LLM to land an exact gap/regroup-count). It now lives in its own skill:
+Write the new requirements into `docs/contracts/<id>.md` (`/primitive-contract`, then `--check` on your edit). Each lever adds: its leak rule, its assistance record, and, for simplify, its mode floor.
 
-> **Run `/add-structural-difficulty` after this one** to add the structural axis. It reuses the `normalizeSupportTier` harness and the `if (supportTier)` block you build here, upgrades `buildTierPromptSection` to merge both axes, and renames `NUMBERS_NEVER_CHANGE` → `TIER_GUARDRAIL`. Worked references: `gemini-regrouping-workbench.ts` (code-enforced operand re-selection) and `gemini-bar-model.ts` (multi-mode lever table). A primitive may legitimately support **only** the scaffolding axis, **only** structural, or **both** — build what fits.
+## Phase 4: Build help levers
 
-> Two gotchas apply once you build certain levers — **answer-bearing levers** (tier code writes a field the checker reads) and **a live tutor that can leak what a tier hid.** Both are covered in **Gotchas** after the workflow; Phase 4 points back to them.
+1. **Lever state lives in the component**, keyed by item, and resets when the item changes. The generation tier only sets its initial value; a challenge prop alone cannot be pulled.
+2. **Pulling is a synchronous commit.** `pullLever(id)` changes state and returns `true`, or returns a refusal string (wrong mode, already pulled, would leak). It never schedules state and reports success.
+3. **Publish it.** Add the lever to `workspace.current.levers` with `pulled` state, and add a scene fact that says what is now on screen, in terms the tutor and JEV can read. The fact must not state the answer. The tutor reads scene facts as `task.demand`.
+4. **Leak rule in code.** Each lever's leak rule is a pure function beside the domain module, unit-tested per mode.
 
-## Prerequisites & when NOT to use
+## Phase 5: Build simplify levers
 
-Run `/add-eval-modes` **first** — the primitive needs a generator that resolves a mode (via `resolveEvalModes` *or* legacy `resolveEvalModeConstraint`; resolver-agnostic — the gate keys off "exactly one mode pinned") plus catalog `evalModes`. It also needs **either** a component with `showOptions` / per-challenge structural fields **or** a multi-step task whose instruction can withdraw sub-steps (#2) — visual levers are not required.
+A simplify lever replaces the current item with a simpler item of the same mode, built by code.
 
-- **No real levers across the whole modality catalog** (a genuinely single-step task — a bare flashcard) → it can't have meaningful tiers; stop and tell the user. But check #2 first: most "single display" primitives still have an identify/setup step the instruction can scaffold.
-- **Don't use this to scale magnitude by tier** — bigger/smaller numbers is the retired numeric path (already banned by the one hard rule). If a generator still scales magnitude from a theta/band, *remove* it here (Phase 4).
+1. **Builder.** Count the shape of the current item, and derive the simpler one deterministically: same mode, one structural step less. Recompute its answer from its new values, and keep the solvability rules (subtraction M>S, the options still contain the answer, the comparison still has a winner).
+2. **Mode floor and band.** The simpler item keeps the mode's defining property and its magnitude band.
+3. **Never the learner's own item.** The simpler item must not repeat the item the learner is stuck on or reveal its answer, and code checks it. The parked LA-15 branch (`park/la15-prerequisite-detour`, `composeDetourActivity.ts` `dropParentRepeats`) has a generic check, and its measured result: a prompt instruction alone still repeated the learner's item in 3 of 5 generations; the code check brought it to 0 of 5.
+4. **A new item, and the full item stays open.** The simpler item gets its own item id. Work on it is ungraded: no mastery write (user ruling 1, handoff 17: detour work is ungraded; a fresh parent item checks transfer). The learner then returns to the full item, or to a fresh item of the same mode, and only that answer, given without the lever, is credited.
+5. **Where the builders live.** A generation-time builder that already exists (`gemini-regrouping-workbench.ts` operand re-selection, `gemini-bar-model.ts` gap/step clamps) is the starting point. Move the pure part into a module the component can call at runtime. Do not call the LLM at runtime for a simplify lever.
 
-> **Pilot-then-sweep gate (mandatory):** never fan this skill out across multiple primitives (workflow / parallel subagents / batch) until ONE pilot has passed Phase 5 **at runtime** — tiers toggled in the Primitives Tester or `/eval-test`-swept with real generations — and the user has seen the result. A type-checked pilot is not a validated pilot; a sweep multiplies whatever the pilot got wrong (CLAUDE.md Verification Doctrine).
+## Phase 6: Starting positions from `config.difficulty`
 
-## Step-by-Step Workflow
+The generator maps the tier to which levers start pulled, per challenge, from that challenge's own mode. Harness (keep as is where it exists):
 
-### Phase 1: Discover the support levers (the creative core)
+```typescript
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+```
 
-1. **Ask which primitive, then classify its archetype.** Get the `id` and domain, and place it on the **archetype map** (manipulative / multi-step solver / living simulation / recognition card / graph-data / builder). The archetype tells you which modalities to expect to carry the weight, what the structural lever will be called, and which math reference to read as a template — *especially important for non-math primitives, where no count-readout/`compareGap` analog exists.*
+- New tier code applies per challenge at the end of the generator, from each challenge's own mode, gated only on a tier being present. No tier means the output is unchanged. Some existing harnesses do not do this (ten-frame writes session-level `showOptions` and is gated on a pinned mode, `gemini-ten-frame.ts:510-513`); leave them as they are unless your lever work has to change the same code.
+- easy = the help levers that make self-checking possible start pulled; hard = all released. A tier never changes the numbers, the eval mode, or makes the item harder than the manifest chose.
+- Existing tier implementations (ten-frame, counting-board, angle-workshop, bar-model, skip-counting-runner, regrouping-workbench) remain valid as starting positions. They are not runtime levers until Phases 4-5 are done.
 
-2. **Read the COMPONENT first** — `primitives/visual-primitives/[domain]/[Primitive].tsx`:
-   - List every field in `showOptions` (e.g. `showCount`, `showEquation`, `showRunningCount`, `showGroupCircles`, `showLastNumber`, `flashDuration`). Each is a candidate **perception-aid** lever (modality #1).
-   - List per-challenge structural fields that affect *how hard the task is to do without changing the number*: `arrangement` (line vs scattered), flash window, number-of-distractors, unknown position, whether a worked step is shown.
-   - **Also read the instruction/hint text the generator builds** (modality #2). Even a primitive with no `showOptions` at all almost always has an instruction-as-scaffold lever: break its task into sub-steps and ask which the instruction hands over. AngleWorkshop has *zero* `showOptions` and still got a full easy→hard ladder this way.
-   - For each candidate (any modality), decide: does withdrawing it make the student work more unaided **without changing the answer or the task identity**? If yes → it's a support lever. If withdrawing it changes the answer or breaks the UI → it's not.
+## Phase 7: Verify
 
-3. **Read the generator** — `service/[domain]/gemini-[primitive].ts`:
-   - Confirm how the mode is resolved (`resolveEvalModes` → `resolution.modes.length === 1`; or `resolveEvalModeConstraint` → `evalConstraint.allowedTypes.length === 1`).
-   - Note where `showOptions` is set and where any structural fixups / force-enables happen (e.g. counting-board force-enables `showGroupCircles` when group challenges exist). **Your tier application must run AFTER those** so a hard tier can withdraw them.
+1. **Unit:** each leak rule per lever × mode; each simplify builder over many random items (exact shape, in band, solvable, never the source item).
+2. **Workspace test** (`<X>.workspace.test.tsx`, mounted through `runtime/testing/workspaceHarness.tsx`): `pull_lever` changes the screen and the scene fact in the same commit; the next attempt records the lever; a refused pull changes nothing; a simplify pull opens a new item and the full item is reachable after it.
+3. **Typecheck:** `npm run typecheck:lumina` = 0; full `tsc` not above baseline.
+4. **Runtime:** one connected journey where the tutor pulls a lever after a wrong answer (`liveJourneySpec.ts` row + `backend/tests/tutor_live/run_live_runtime.py`). Read the transcript: the tutor must not describe a change before its visible receipt.
+5. **Content:** `/eval-test` tier sweep for the starting positions; `/oracle-test` if the primitive has an oracle (add the leak rules to it).
+6. **Report** in `qa/eval-reports/<id>-levers-<date>.md`: the failure inventory with evidence classes, the lever table, what was built, what was measured, and which failures still have no lever.
 
-4. **Design the easy→hard gradient per mode** and present it to the user as a small table before coding. Principle: **easy = the workspace helps the student self-check; hard = the student works unaided and justifies their thinking.** Map each lever, and note mode-specific exceptions (e.g. subitize is flashed, so a count readout is irrelevant; group rings only exist for group modes).
+## Getting this wrong
 
-   Example (counting-board, for shape):
+- **A lever that answers the item.** The 2026-09-26 audits found two easy tiers that stated the answer and shipped as "no leak": fraction-circles identify ("N equal pieces, M shaded") and the number-line jump arc drawn to the landing. Review did not catch them; a code leak rule would have.
+- **Answer-bearing fields.** If a lever writes a field the checker reads (`hiddenPositions`, `answerBarIndex`), the checker must still accept the correct answer. Give the answer its own field, separate from the display lever.
+- **The tutor and JEV read the scene.** A fact added for a lever reaches both. It says what is drawn, never the key. Board counts appear only where the board is what the item asks about.
+- **Pre-readers.** A text-only lever does nothing at K. rhyme-studio's K tiers were all no-ops for this reason.
+- **Credit.** Assisted work that reaches the first-response gate or the distiller as independent corrupts mastery. Record the lever on the attempt, not only on the item.
+- **Simplify becoming a different mode.** Check the mode floor before building the builder, not after.
 
-   | Mode | easy | medium | hard |
-   |---|---|---|---|
-   | count_all / count_on | line, running tally + number tags on | varied, tags on, tally off | scattered, tracking aids off |
-   | subitize | line/cluster (easy to perceive) | varied | scattered (must decompose) |
-   | group_count / compare | grouping rings on | rings on | rings off (mentally segment) |
+## Reference
 
-### Phase 2: Add the fixed scaffold (copy verbatim)
-
-5. **Add the tier types + normalizer** near the top of the generator, after `CHALLENGE_TYPE_DOCS`:
-
-   ```typescript
-   type SupportTier = 'easy' | 'medium' | 'hard';
-   const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
-
-   /** STRICT lookup — the manifest enum-constrains config.difficulty to these.
-    *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
-   function normalizeSupportTier(difficulty?: string): SupportTier | null {
-     const d = difficulty?.toLowerCase().trim() ?? '';
-     return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
-   }
-   ```
-
-6. **Add `difficulty?: string` to the generator's config type:**
-
-   ```typescript
-   /**
-    * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-    * Second axis of the two-field contract: targetEvalMode = which skill,
-    * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
-    */
-   difficulty?: string;
-   ```
-
-### Phase 3: Write the bespoke scaffold (the creative 20%)
-
-7. **Define `SupportScaffold`** — one field per lever you found in Phase 1. This interface is **primitive-specific**; do not try to share it. Fields may be booleans *or* enums (counting-board's `arrangement` is `'line' | 'scattered' | null`, where `null` = "let the LLM vary it" for the medium tier).
-
-8. **Write `resolveSupportStructure(pinnedType, tier)`** — returns the scaffold + `promptLines`. Always include a leading prompt line stating the tier is scaffolding-only and never changes the numbers, then per-mode lines describing the withdrawal. Use ten-frame / counting-board as templates.
-
-9. **Resolve the tier in the generator function** (place after mode resolution):
-
-   ```typescript
-   const supportTier = normalizeSupportTier(config?.difficulty); // the STUDENT's tier — DRIVES application (single OR blend)
-   // pinnedType is ONLY for the prompt tone (a curated BLEND has no single mode to describe to the LLM).
-   // (resolveEvalModes:)         resolution && resolution.modes.length === 1 ? resolution.allowedTypes[0] : undefined
-   // (resolveEvalModeConstraint:) evalConstraint?.allowedTypes.length === 1 ? evalConstraint.allowedTypes[0] : undefined
-   const pinnedType = /* per resolver, see above */ as ChallengeType | undefined;
-   const tierScaffold = pinnedType && supportTier
-     ? resolveSupportStructure(pinnedType, supportTier) : null; // tierSection tone only — NOT the application
-   const tierSection = tierScaffold
-     ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
-     : '';
-   ```
-
-10. **Inject `${tierSection}`** into the prompt, immediately after the challenge-type section.
-
-### Phase 3b (optional): the structural problem-difficulty axis → `/add-structural-difficulty`
-
-If the primitive has a clean **in-mode structural lever** (gap / step / regroup-count / coupled-variable), add the second axis so easy/med/hard stop producing byte-identical problems — but do it via the dedicated **`/add-structural-difficulty`** skill, which builds `resolveProblemShape`, upgrades `tierSection` → `buildTierPromptSection` (merging both axes), code-enforces the exact numeric lever, and renames `NUMBERS_NEVER_CHANGE` → `TIER_GUARDRAIL`. It reuses the harness and the `if (supportTier)` block from this skill, so finish Phases 1–5 here first.
-
-### Phase 4: Apply deterministically + clean up
-
-11. **Apply the scaffold in code at the END of the generator** — after the empty-fallback and all structural fixups/force-enables, before `return`. **Gate only on `supportTier` being present, and resolve each challenge's scaffold from its OWN mode (`ch.type`), applying per challenge.** This is the global rule: difficulty is a *student* property, so a blended/auto session must get it too — single-mode just happens to give every challenge the same scaffold. (Do NOT gate on `pinnedType` — that silently drops difficulty for every blended session, the exact no-op this skill exists to kill.) Code owns the support *structure*; the LLM only chose the numbers. Guard each lever to its relevant modes, and protect UI contracts (e.g. ten-frame keeps subitize's count display off at every tier; counting-board only relaxes `subitize_perceptual` toward `scattered`, never `line`). End with a log line:
-
-    ```typescript
-    if (supportTier) {
-      for (const ch of challenges) {
-        const sc = resolveSupportStructure(ch.type, supportTier); // per-challenge, mode-correct
-        // ...assign each lever from sc, guarded by ch.type; protect UI contracts...
-      }
-      console.log(`[Primitive] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`);
-    }
-    ```
-
-11b. **If the primitive has a live tutor, keep it in sync** (mandatory for modality #2) — see **Gotcha #2** below. A tier that hides something on screen but lets the tutor reveal it is only half-applied.
-
-12. **Delete any dead `difficulty?: number` config field.** The old numeric-difficulty path (`service/difficulty/difficultyContext.ts` / `computeDifficultyTuple`) is fully removed from the repo, so usually there's nothing to do — but a vestigial `difficulty?: number` field declared-but-never-read can shadow the new `config.difficulty?: string`; remove it. If a generator genuinely still scales magnitude from a theta/band, remove that too (grep to confirm; don't trust the obsolete "known wirers" list).
-
-### Phase 5: Verify
-
-13. **Type check** — from the memory [[tsc-verification-integrity]] rule, run the project-local compiler and compare to baseline, do **not** run bare `npx tsc` from repo root:
-    ```bash
-    cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit
-    ```
-    Confirm zero new errors vs. the baseline global count (~1444).
-
-14. **Report**: levers discovered (and where in the component), the easy→hard table, files modified, any numeric-difficulty wiring removed.
-
-15. **Remind the user to test**: in the Primitives Tester, pin the mode and toggle difficulty easy/med/hard → confirm scaffolds visibly withdraw and **the numbers stay in range**. Then run `/eval-test` (the Step 2b sweep covers easy/med/hard + a scope-conflict case).
-
-## Gotchas (read before shipping)
-
-**1. Answer-bearing levers — keep the checker, instruction, and recomputed value in sync.** Most levers are *display-only* (withdrawing a count readout changes nothing the checker reads). But a lever is **answer-bearing** if the component's check function reads the field your tier code writes (`checkFillMissing` reads `hiddenPositions`; a bar checker reads `answerBarIndex`). Get this wrong and the primitive **rejects the student's correct answer** — "50 doesn't fit" when 50 is exactly right. Three invariants:
-- **Honor the LLM's valid choice; only top-up/trim for the tier *count*.** The lever controls *how many* gaps (1→2→3), not *which* — the LLM picked positions and wrote the question around them. Synthesize extras only to reach the count; never swap a valid choice for an arbitrary one.
-- **Never narrow the candidate set so the instruction's answer becomes invalid.** The real SCR bug: the hideable pool excluded `endAt`, so the LLM's end-referencing gap was filtered out and a mid-sequence position substituted. Exclude only positions that genuinely break the checker (`startFrom` is always a landing spot → unsolvable if hidden; but `endAt` is a normal answer → keep it).
-- **Verify `instruction → answer` still passes at every tier** (the `/eval-test` post-fix check).
-- **Cleaner pattern — decouple the answer from the scaffold** (bar-model's `answerBarIndex`): give the answer its *own* field the checker reads, independent of the display lever, so withdrawing a scaffold at hard can't leak *or* invalidate it.
-
-**2. The tutor is a second scaffold channel** (esp. modality #2). If the primitive has a live AI tutor, it sees the full challenge data and can **leak what a tier withheld**. Whenever you apply a tier — always for #2 — thread the tier in and calibrate reveal: easy → name the strategy, walk the setup; medium → nudge execution only; hard → do NOT name the strategy the instruction hid, ask what the student sees, never reveal the answer. Three changes: add `supportTier` to the data type (set whenever a tier is present, per challenge) + the component's `aiPrimitiveData`, and a mode-aware tier clause in the `sendText` prompts. **Watch recognition modes** — where the relationship IS the answer, the tutor never names it at any tier. `/add-tutoring-scaffold` owns the wiring; this skill owns the reveal level. (AngleWorkshop's `tutorRevealPolicy(tier, challengeType)` is the worked example.)
-
-## Reference implementations
-
-All worked examples are **math** — the only domain wired so far. Read them by **archetype, not subject**: the archetype map tells you which one is the structural template for *your* primitive (a chemistry simulation reads bar-model for its overlay/structural pattern; a phonics card is #5-led with no direct math twin and leans on the modality catalog). The *differences* between these examples are the lesson — each anchors a different modality:
-
-| | Modality | Levers | Notable |
-|---|---|---|---|
-| **ten-frame** | #1 perception | `showCount`, `showEquation`, `flashDuration` (continuous) | `service/math/gemini-ten-frame.ts` — `resolveSupportStructure`, applied ~end of `generateTenFrame`. Subitize keeps count display off at every tier. |
-| **counting-board** | #1 perception | `showRunningCount`, `showLastNumber`, `showGroupCircles`, `arrangement` (enum) | `service/math/gemini-counting-board.ts` — richer lever set; group rings withdrawn at hard; `arrangement` is the perception lever for count/subitize; `subitize_perceptual` only relaxed toward scattered. |
-| **angle-workshop** | #1 + **#2 instruction-as-scaffold** | `showReadingCue`, `showPerceptionMarks`; `nameRelationship`, `hintLevel`, `showEquationSetup` | `service/math/gemini-angle-workshop.ts` — **zero `showOptions`; the strongest tiers are text-only.** `solve_algebraic` withdraws one sub-step per tier (solve → set-up → identify) via `easyAlgInstruction` / `genericInstruction` / `conceptHint`. The proof that a primitive needs no visual levers to earn a real ladder. |
-| **bar-model** | #1 perception + **structural problem difficulty** | scaffolds `showBarValues`, `showTargetHighlight` (+ `answerBarIndex` answer-guard); structural `compareGap`, `forcedStep`, `iconValue` | `service/math/gemini-bar-model.ts` — **the worked reference for the second axis.** `resolveSupportStructure` (scaffolding) **and** `resolveProblemShape` (structural), merged by `buildTierPromptSection`; one in-mode structural lever per mode (gap / step / multiplier / operation depth), numeric levers code-enforced in each sub-generator's post-process. |
-| **skip-counting-runner** | #1 perception + **answer-bearing structural lever** | scaffolds `showTrackLabels`, `showSequenceChips`, `showSkipValueBadge`, `showJumpArcs`; structural `hiddenCount` (1→2→3 gaps) | `service/math/gemini-skip-counting-runner.ts` — **the worked reference for the answer-bearing-lever rule.** `fill_missing`'s `hiddenCount` writes `hiddenPositions`, which `checkFillMissing` validates against. The hideable pool must exclude only `startFrom` (always a landing spot → unsolvable if hidden) and **keep `endAt`** (a valid, LLM-preferred "what's the last number?" answer) — excluding it desynced the gap from the instruction and rejected the correct answer. |
-
-## Checklist
-
-- [ ] `/add-eval-modes` run first; classified the **archetype** and read the math reference that shares it (not its subject)
-- [ ] Swept the **full modality catalog** (not just `showOptions`); considered #2 instruction-as-scaffold explicitly; each lever withdraws *support* without changing the *answer* or *task identity*
-- [ ] Designed + confirmed the easy→hard gradient per mode with the user
-- [ ] Fixed harness verbatim (`SupportTier`/`SUPPORT_TIERS`/`normalizeSupportTier`, `difficulty?: string`); bespoke `SupportScaffold` + `resolveSupportStructure`
-- [ ] Applied the scaffold at the END, **per challenge** (`resolveSupportStructure(ch.type, tier)`), gated only on a tier being present (NOT `pinnedType`); `${tierSection}` injected; UI contracts guarded per mode; log line present
-- [ ] **Answer-bearing levers** (Gotcha #1): honored LLM choices, top-up only to the tier *count*, no instruction-referenceable answer (e.g. `endAt`) excluded, `instruction → answer` passes at every tier
-- [ ] **Live tutor** (Gotcha #2): `supportTier` threaded into data + `aiPrimitiveData` + a tier reveal-clause in `sendText` (mandatory for #2)
-- [ ] **(Optional 2nd axis)** if the primitive has a clean in-mode structural lever, follow up with **`/add-structural-difficulty`** (builds `resolveProblemShape`, merges `buildTierPromptSection`, code-enforces the lever, renames `NUMBERS_NEVER_CHANGE` → `TIER_GUARDRAIL`)
-- [ ] Deleted any dead `difficulty?: number` field; tier never inflates magnitude beyond scope
-- [ ] Project-local `tsc --noEmit` clean vs. baseline (not bare `npx tsc`); reminded user to test easy/med/hard + `/eval-test`
+- Design brief and the three audits: `my-tutoring-app/src/components/lumina/docs/SUPPORT_LEVERS_BRIEF.md`.
+- Workspace binding rules: `/add-live-tutor-tools`, `docs/TEACHING_WORKSPACE.md`.
+- Generation-time starting positions: the tier harness above; `gemini-bar-model.ts` (`resolveSupportStructure`, `resolveProblemShape`), `gemini-regrouping-workbench.ts` (code-enforced operand builders), `gemini-skip-counting-runner.ts` (answer-bearing `hiddenPositions`).
+- Runtime lever reference: none yet. The number-line jump pilot becomes it.

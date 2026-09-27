@@ -880,8 +880,7 @@ Print it in the report AND save a copy to `my-tutoring-app/qa/eval-reports/<id>-
 |---|-------|-------|----------------------|
 | 1 | `/add-eval-modes` | L1 eval-dense | Ladder candidates: <types the design/PRD implied beyond `<coreType>`, or "design from scratch"> |
 | 2 | `/add-tutoring-scaffold` | L2 tutored | contextKeys candidates: <key data fields from Phase 2c>; struggles seen in QA: <...> |
-| 3 | `/add-support-tiers` | L3 tiered | Scaffolding intrinsic to the interaction that could withdraw: <...> |
-| 4 | `/add-structural-difficulty` | L4 shaped | (requires L3) Candidate structural lever by archetype: <...> |
+| 3 | `/add-support-tiers` | L3 levered | Why learners fail each mode, as seen in this birth's QA: <...>; help/simplify lever candidates: <...> |
 | 5 | `/add-sound` | L5 polished | 2-4 candidate sound points: <manipulation handlers, check-answer moments> |
 | 6 | `/add-voice-control` | L5 polished | <only if a spoken-production primitive; else omit this row. Doctrine + push-to-talk reference: `docs/SPOKEN_INTERACTION_DOCTRINE.md`> |
 | ✓ | `/eval-test <id>` | QA loop | Run after EVERY layer lands (`/eval-fix` for findings) — a layer only counts when eval-test passes at that layer |

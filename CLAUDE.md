@@ -62,7 +62,7 @@ over memory and over stale reports. Mechanics + registers: `/pm`.
 - **Check the ratio before writing the report.** If comments + tests + report dwarf production code, say so plainly rather than letting a well-documented small move read as a large one (one rung shipped 66 production lines under 187 of comments, 449 of tests, a 132-line report).
 - **This is not anti-testing and does not touch the Verification Doctrine below** — gates still run per slice, and rationale docblocks still earn their space. It re-orders where the *remaining* effort goes: the next lever, not a fifth paragraph about this one.
 - **If your own residual names the next executor skill and it is in scope, run it in the same push.** Naming a gap in a report is not closing it. Queue it only when it genuinely needs a separate decision, new data, or a user ruling.
-- **A single ladder rung can be structurally low-yield.** Where `/add-support-tiers` only toggles help text and the problems stay byte-identical, the visible change is `/add-structural-difficulty` — pair them rather than shipping the rung alone.
+- **A lever that only toggles text is low-yield.** `/add-support-tiers` builds levers the tutor can pull on the current item — help (the representation does more) and simplify (the same task, one step simpler). A tier that changes only help text and leaves the screen the same is not the outcome.
 
 ### Plain prose
 

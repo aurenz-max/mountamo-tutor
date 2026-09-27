@@ -5,7 +5,7 @@ description: >-
   existing primitive's generator, resolving which skill(s) to run from intent and
   constraining schema output accordingly. Use when a primitive needs multiple task
   types or IRT beta priors registered. Not for difficulty progression within a mode
-  (/add-support-tiers, /add-structural-difficulty).
+  (/add-support-tiers).
 ---
 
 # Add Eval Modes to a Primitive

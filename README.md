@@ -108,8 +108,7 @@ Primitives are built in layers, not in one pass. Each layer is owned by one Clau
 | L0 Born | Component, Gemini generator, catalog entry, tester, answer-leak audit | `/primitive` |
 | L1 Eval-dense | Task-identity ladder with IRT beta priors | `/add-eval-modes` |
 | L2 Tutored | Catalog tutoring block so the Live tutor can speak about it | `/add-tutoring-scaffold` |
-| L3 Tiered | `config.difficulty` withdraws scaffolding | `/add-support-tiers` |
-| L4 Shaped | `config.difficulty` also changes problem shape | `/add-structural-difficulty` |
+| L3 Levered | In-item help and simplify levers the tutor pulls when a learner fails; `config.difficulty` sets where they start | `/add-support-tiers` |
 | L5 Polished | Tactile sound, and the tutor-owned spoken Direct Instruction loop | `/add-sound`, `/add-di-loop` |
 
 Full ladder and detection signals: [`PRIMITIVE_LIFECYCLE.md`](my-tutoring-app/src/components/lumina/docs/PRIMITIVE_LIFECYCLE.md). Human reference for adding one: [`ADDING_PRIMITIVES.md`](my-tutoring-app/src/components/lumina/docs/ADDING_PRIMITIVES.md).
