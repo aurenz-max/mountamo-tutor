@@ -87,9 +87,21 @@ Authored curriculum map (channel 3): no fraction-circles subskills (2026-09-27).
 - **Evidence:** commit `21c70759`; `pip/FractionCircles.surface.test.tsx`.
 - **Probe:** `npm test -- src/components/lumina/pip/FractionCircles`.
 
+### R12 — Help levers change the screen and state no answer · OBSERVED
+- **Property:** `mark_pieces`, `part_whole`, `running_count`, `split_reference` and `overlay` each change the circle in the pull's commit, carry no digit in their drawing, lever text or scene fact, and never state the shaded count (R5) or which side is larger. `split_reference` is offered only when each reference slice splits into a whole number; `running_count` counts only the learner's own shading.
+- **Demanded by:** live tutor workspace (handoff 18 B2), every plain mode.
+- **Evidence:** `fractionCirclesLevers.ts`; `qa/eval-reports/fraction-circles-levers-2026-09-27.md`.
+- **Probe:** `npm test -- src/components/lumina/primitives/visual-primitives/math/fractionCirclesLevers src/components/lumina/primitives/visual-primitives/math/FractionCircles.levers`.
+
+### R13 — A simplify lever keeps the mode and never repeats the item · OBSERVED
+- **Property:** `fewer_pieces`, `unit_build`, `double_split`, `far_pair` and `two_pictures` open a new, deterministic item of the same mode in the band's denominators, never the learner's fraction (or pair) or an equal value; its work is ungraded practice and only the full item, answered after it, is credited, with the lever on its attempt.
+- **Demanded by:** live tutor workspace; mastery accounting (assisted work is never independent).
+- **Evidence:** as R12.
+- **Probe:** as R12 (builder sweeps over every band fraction; mounted practice-then-full-item flows).
+
 ## Conflicts
 
-None open. Note for the B2 lever work (handoff 18): any help lever on identify must keep R5 (it may number or outline slices, but must not print or say the shaded count), and any lever fact reaching the tutor must keep R7.
+None open. The B2 levers (R12, R13) were built under R5 and R7: no lever prints or says the shaded count, and no lever fact carries a key.
 
 ## Catalog projection (proposed, not applied)
 
@@ -100,3 +112,4 @@ None open. Note for the B2 lever work (handoff 18): any help lever on identify m
 ## Changelog
 
 - 2026-09-27 — derived (initial). 11 requirements, 0 conflicts. Channels: census, QA registers, git log; calibration not read.
+- 2026-09-27 — R12, R13 added with the support levers (handoff 18 B2). `--check`: R1-R11 probes re-run after the edit (vitest), COMPATIBLE.

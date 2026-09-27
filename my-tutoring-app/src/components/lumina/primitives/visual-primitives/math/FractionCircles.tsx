@@ -30,6 +30,10 @@ import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResult
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { buildFractionCompareEvidence, type FractionCompareResponse } from './fractionCompareEvidence';
+import {
+  COUNT_LEVER, FRAME_LEVER, OVERLAY_LEVER, PIECES_LEVER, SPLIT_LEVER,
+  fractionLevers, simplerItem, splitFactor, startLevers,
+} from './fractionCirclesLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -56,6 +60,8 @@ export interface FractionCirclesChallenge {
   showFractionLabels?: boolean;
   /** within-mode support tier the generator resolved the scaffolds above from */
   supportTier?: 'easy' | 'medium' | 'hard';
+  /** Help levers the tier starts pulled (`fractionCirclesLevers.ts`); a starting position is not a pull. */
+  startLevers?: string[];
 }
 
 import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
@@ -103,9 +109,15 @@ function renderFractionCircle(
     shadedSet?: Set<number>;
     onSliceClick?: (index: number) => void;
     accentColor?: string;
+    /** mark_pieces lever: bold edges and one dot in every piece, shaded or not. */
+    markPieces?: boolean;
+    /** split_reference lever: each slice cut into this many thinner slices by lines. */
+    splitK?: number | null;
+    /** overlay lever: another circle's shaded part, outlined over this one. */
+    overlay?: { numerator: number; denominator: number } | null;
   },
 ) {
-  const { interactive, shadedSet, onSliceClick, accentColor = '#3b82f6' } = options || {};
+  const { interactive, shadedSet, onSliceClick, accentColor = '#3b82f6', markPieces, splitK, overlay } = options || {};
   const r = size / 2 - 4;
   const cx = size / 2;
   const cy = size / 2;
@@ -130,8 +142,8 @@ function renderFractionCircle(
         d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`}
         fill={isShaded ? accentColor : 'rgba(255,255,255,0.04)'}
         fillOpacity={isShaded ? 0.6 : 1}
-        stroke="rgba(255,255,255,0.15)"
-        strokeWidth={1.5}
+        stroke={markPieces ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.15)'}
+        strokeWidth={markPieces ? 2.5 : 1.5}
         className={interactive ? 'cursor-pointer hover:brightness-125 transition-all' : ''}
         data-pip-object={interactive ? `slice-${i}` : undefined}
         onClick={interactive && onSliceClick ? () => onSliceClick(i) : undefined}
@@ -139,13 +151,54 @@ function renderFractionCircle(
     );
   }
 
+  const at = (turn: number, radius: number) =>
+    [cx + radius * Math.cos(turn * 2 * Math.PI - Math.PI / 2), cy + radius * Math.sin(turn * 2 * Math.PI - Math.PI / 2)];
+  // Levers draw over the slices and never take a tap: the learner's work stays theirs.
+  const dots = markPieces && (
+    <g data-lever="mark-pieces" pointerEvents="none">
+      {Array.from({ length: denominator }, (_, i) => {
+        const [x, y] = at((i + 0.5) / denominator, r * 0.62);
+        return <circle key={i} cx={x} cy={y} r={Math.max(2.5, size / 45)} fill="rgba(255,255,255,0.9)" />;
+      })}
+    </g>
+  );
+  const splits = !!splitK && splitK > 1 && (
+    <g data-lever="split-reference" pointerEvents="none" stroke="rgba(255,255,255,0.7)" strokeWidth={1} strokeDasharray="3 2">
+      {Array.from({ length: denominator * splitK }, (_, j) => j).filter(j => j % splitK !== 0).map(j => {
+        const [x, y] = at(j / (denominator * splitK), r);
+        return <line key={j} x1={cx} y1={cy} x2={x} y2={y} />;
+      })}
+    </g>
+  );
+  const outline = overlay && overlay.numerator > 0 && (() => {
+    const turn = overlay.numerator / overlay.denominator;
+    const [x1, y1] = at(0, r), [x2, y2] = at(turn, r);
+    const d = turn >= 1 ? `M ${cx - r} ${cy} A ${r} ${r} 0 1 1 ${cx + r} ${cy} A ${r} ${r} 0 1 1 ${cx - r} ${cy}`
+      : `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${turn > 0.5 ? 1 : 0} 1 ${x2} ${y2} Z`;
+    return <path data-lever="overlay" pointerEvents="none" d={d} fill="none" stroke="#60a5fa" strokeWidth={3} strokeDasharray="6 4" />;
+  })();
+
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="drop-shadow-lg">
       {/* Background circle */}
       <circle cx={cx} cy={cy} r={r} fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
       {slices}
+      {splits}
+      {dots}
+      {outline}
       {/* Border ring */}
       <circle cx={cx} cy={cy} r={r} fill="none" stroke={interactive ? 'rgba(168,85,247,0.5)' : 'rgba(255,255,255,0.15)'} strokeWidth={interactive ? 2.5 : 1.5} />
+    </svg>
+  );
+}
+
+/** part_whole lever: one shaded piece over the whole circle, pictures only. Never a digit. */
+function PartWholeFrame() {
+  return (
+    <svg data-lever="part-whole" width={70} height={96} viewBox="0 0 70 96" aria-label="Shaded pieces over all the pieces">
+      <path d="M 35 36 L 35 6 A 30 30 0 0 1 61 21 Z" fill="#a855f7" fillOpacity={0.7} stroke="rgba(255,255,255,0.6)" />
+      <line x1={6} x2={64} y1={46} y2={46} stroke="rgba(255,255,255,0.8)" strokeWidth={2.5} />
+      <circle cx={35} cy={72} r={20} fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth={2} />
     </svg>
   );
 }
@@ -227,7 +280,9 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
     workspace, assignment: workspaceAssignment,
     // A fresh challenge and Try again both start from a blank circle. The setters are declared
     // below; this runs only after render.
-    onItemOpened: () => {
+    // Try again on an easier practice item keeps it; only a fresh challenge or endPractice removes it.
+    onItemOpened: (_index, retry) => {
+      if (!retry) setPractice(null);
       setShadedSlices(new Set()); setIdentifyInput(''); setCompareChoice('');
       setFeedback(''); setFeedbackType('');
     },
@@ -253,10 +308,21 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
   // -------------------------------------------------------------------------
   // Domain state
   // -------------------------------------------------------------------------
-  const currentChallenge = useMemo(
+  const sessionChallenge = useMemo(
     () => challenges[currentChallengeIndex] || null,
     [challenges, currentChallengeIndex],
   );
+  // In-item levers (`fractionCirclesLevers.ts`), keyed by the session item they were pulled on, and the
+  // easier practice item a simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<FractionCirclesChallenge | null>(null);
+  /** What is on screen: the easier practice item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const startPulled = startLevers(sessionChallenge);
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : startPulled;
+  const leverOn = (id: string) => pulledLevers.includes(id);
+  /** A runtime pull is marked for the live journey; the tier's starting position is not a pull. */
+  const pulledMark = (id: string) => (leverOn(id) && !startPulled.includes(id) ? { 'data-lever': id } : {});
 
   // Build / equivalent mode: which slices the student has toggled
   const [shadedSlices, setShadedSlices] = useState<Set<number>>(new Set());
@@ -338,13 +404,13 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
       SoundManager.playCorrect();
       setFeedback(`Correct! ${currentChallenge.numerator}/${currentChallenge.denominator} is right!`);
       setFeedbackType('success');
-      recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
+      if (!practice) recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
     } else {
       SoundManager.playIncorrect();
       setFeedback(`Not quite. Look at how many pieces are shaded out of the total.`);
       setFeedbackType('error');
     }
-  }, [currentChallenge, identifyInput, currentAttempts, incrementAttempts, recordResult, progress]);
+  }, [currentChallenge, identifyInput, currentAttempts, incrementAttempts, recordResult, progress, practice]);
 
   const checkBuild = useCallback(() => {
     if (!currentChallenge) return;
@@ -357,13 +423,13 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
       SoundManager.playCorrect();
       setFeedback(`Great job! You built ${currentChallenge.numerator}/${currentChallenge.denominator}!`);
       setFeedbackType('success');
-      recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
+      if (!practice) recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
     } else {
       SoundManager.playIncorrect();
       setFeedback(`You shaded ${shadedSlices.size}/${currentChallenge.denominator}. The target is ${currentChallenge.numerator}/${currentChallenge.denominator}.`);
       setFeedbackType('error');
     }
-  }, [currentChallenge, shadedSlices.size, currentAttempts, incrementAttempts, recordResult, progress]);
+  }, [currentChallenge, shadedSlices.size, currentAttempts, incrementAttempts, recordResult, progress, practice]);
 
   const checkCompare = useCallback(() => {
     if (!currentChallenge || !currentChallenge.compareFraction || !compareChoice) return;
@@ -375,7 +441,7 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
     const correctChoice: 'left' | 'right' | 'equal' = areEqual ? 'equal' : leftVal > rightVal ? 'left' : 'right';
     const correct = compareChoice === correctChoice;
     progress.commitCheck?.(describeWork(currentChallenge, { typed: '', shaded: 0, choice: compareChoice }), correct);
-    compareResponsesRef.current.push({
+    if (!practice) compareResponsesRef.current.push({
       itemId: currentChallenge.id,
       left: { numerator: currentChallenge.numerator, denominator: currentChallenge.denominator },
       right: { ...currentChallenge.compareFraction },
@@ -393,7 +459,7 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
       SoundManager.playCorrect();
       setFeedback(msg);
       setFeedbackType('success');
-      recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
+      if (!practice) recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
     } else {
       SoundManager.playIncorrect();
       setFeedback(areEqual
@@ -401,7 +467,7 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
         : `Look again at how much of each circle is shaded.`);
       setFeedbackType('error');
     }
-  }, [currentChallenge, compareChoice, currentAttempts, incrementAttempts, recordResult, progress]);
+  }, [currentChallenge, compareChoice, currentAttempts, incrementAttempts, recordResult, progress, practice]);
 
   const checkEquivalent = useCallback(() => {
     if (!currentChallenge || !currentChallenge.equivalentDenominator) return;
@@ -418,13 +484,13 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
       SoundManager.playCorrect();
       setFeedback(`Excellent! ${builtNum}/${equivDen} is equivalent to ${targetNum}/${targetDen}!`);
       setFeedbackType('success');
-      recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
+      if (!practice) recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
     } else {
       SoundManager.playIncorrect();
       setFeedback(`${builtNum}/${equivDen} is not equivalent to ${targetNum}/${targetDen}. Try adjusting the shaded slices.`);
       setFeedbackType('error');
     }
-  }, [currentChallenge, shadedSlices.size, currentAttempts, incrementAttempts, recordResult, progress]);
+  }, [currentChallenge, shadedSlices.size, currentAttempts, incrementAttempts, recordResult, progress, practice]);
 
   // -------------------------------------------------------------------------
   // Unified check answer
@@ -517,8 +583,29 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    workspace.current = { ...workspaceScene(currentChallenge, { typed: identifyInput, shaded: shadedSlices.size, choice: compareChoice }),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    const levers = practice ? [] : fractionLevers(sessionChallenge, pulledLevers, gradeBand);
+    const clear = () => { setShadedSlices(new Set()); setIdentifyInput(''); setCompareChoice(''); setFeedback(''); setFeedbackType(''); };
+    workspace.current = { ...workspaceScene(currentChallenge, { typed: identifyInput, shaded: shadedSlices.size, choice: compareChoice,
+      levers: pulledLevers, practice: !!practice }),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {},
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the circle changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        if (lever.kind === 'simplify') {
+          const easier = simplerItem(sessionChallenge, gradeBand);
+          if (!easier) return 'There is no easier item for this one.';
+          setLeverState({ item: sessionChallenge.id, pulled: [...pulledLevers, id] });
+          setPractice(easier); clear();
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState({ item: sessionChallenge.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => { setPractice(null); clear(); },
+    };
     progress.publishWorkspace?.();
   });
   const finishedRef = useRef(onWorkspaceFinished); finishedRef.current = onWorkspaceFinished;
@@ -552,7 +639,9 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
           <div className="flex flex-col items-center gap-4">
             {/* Show pre-shaded circle */}
             <div className="flex justify-center">
-              {renderFractionCircle(currentChallenge.numerator, currentChallenge.denominator, CIRCLE_SIZE)}
+              {renderFractionCircle(currentChallenge.numerator, currentChallenge.denominator, CIRCLE_SIZE,
+                { markPieces: leverOn(PIECES_LEVER) })}
+              {leverOn(FRAME_LEVER) && <div className="ml-4 self-center"><PartWholeFrame /></div>}
             </div>
             {/* Total-pieces caption, withdrawn by support tier. Never the shaded count, whatever the data says:
                 counting the shaded slices is the task, and "N equal pieces, M shaded" is the answer written out. */}
@@ -590,11 +679,12 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
                 onSliceClick: handleSliceClick,
                 accentColor: '#a855f7',
               })}
+              {leverOn(FRAME_LEVER) && <div className="ml-4 self-center"><PartWholeFrame /></div>}
             </div>
-            {/* Count readout — withdrawn by support tier (running tally → total-only → none) */}
-            <p className="text-slate-400 text-xs">
+            {/* Count readout: the running_count lever (the tier's starting position, or a pull), else the total, else none */}
+            <p className="text-slate-400 text-xs" {...pulledMark(COUNT_LEVER)}>
               Click slices to shade them
-              {currentChallenge.showWorkingCount !== false
+              {leverOn(COUNT_LEVER)
                 ? ` (${shadedSlices.size}/${currentChallenge.denominator} shaded)`
                 : currentChallenge.showTotalPieces !== false
                   ? ` (${currentChallenge.denominator} slices)`
@@ -627,6 +717,7 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
               <div className="flex flex-col items-center gap-2">
                 {renderFractionCircle(cmp.numerator, cmp.denominator, CIRCLE_SIZE_SM, {
                   accentColor: '#f59e0b',
+                  overlay: leverOn(OVERLAY_LEVER) ? { numerator: currentChallenge.numerator, denominator: currentChallenge.denominator } : null,
                 })}
                 {showLabels && (
                   <span className="text-slate-200 font-mono text-lg">
@@ -683,7 +774,8 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
             {/* Reference fraction */}
             <div className="flex items-center gap-6">
               <div className="flex flex-col items-center gap-2">
-                {renderFractionCircle(currentChallenge.numerator, currentChallenge.denominator, CIRCLE_SIZE_SM)}
+                {renderFractionCircle(currentChallenge.numerator, currentChallenge.denominator, CIRCLE_SIZE_SM,
+                  { splitK: leverOn(SPLIT_LEVER) ? splitFactor(currentChallenge) : null })}
                 <span className="text-slate-200 font-mono text-lg">
                   {currentChallenge.numerator}/{currentChallenge.denominator}
                 </span>
@@ -700,9 +792,9 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
                   onSliceClick: handleSliceClick,
                   accentColor: '#10b981',
                 })}
-                {/* Live built tally — withdrawn at hard so the student self-tracks */}
-                <span className="text-slate-200 font-mono text-lg">
-                  {currentChallenge.showWorkingCount !== false ? `${shadedSlices.size}/${equivDen}` : `?/${equivDen}`}
+                {/* Live built tally: the running_count lever (the tier's starting position, or a pull) */}
+                <span className="text-slate-200 font-mono text-lg" {...pulledMark(COUNT_LEVER)}>
+                  {leverOn(COUNT_LEVER) ? `${shadedSlices.size}/${equivDen}` : `?/${equivDen}`}
                 </span>
                 <span className="text-slate-500 text-xs">Build equivalent</span>
               </div>

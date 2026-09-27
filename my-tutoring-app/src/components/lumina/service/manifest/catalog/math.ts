@@ -373,6 +373,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'fraction-circles',
     teachingWorkspace: {
       grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      levers: true,
       guidance: 'Circles are cut into equal slices. The learner types the fraction a shaded circle shows, shades slices to '
         + 'build a fraction or an equal one, or picks which of two circles is larger, then presses Check; the circle checks '
         + 'the answer and you are not told it. When the fraction labels are hidden, talk about how much of each circle is '

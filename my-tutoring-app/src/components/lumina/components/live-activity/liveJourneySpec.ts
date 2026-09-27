@@ -23,6 +23,14 @@ import type { SupportArtifact } from './runtime/contract';
 import type { LivePrimitiveId } from './activityContract';
 import { itemsFromChallenges as shapeItems, shapeSorterHarnessAnswers } from '../../primitives/visual-primitives/math/shapeSorterScript';
 import { simplerJump } from '../../primitives/visual-primitives/math/numberLineLevers';
+import { simplerItem as simplerFraction } from '../../primitives/visual-primitives/math/fractionCirclesLevers';
+import { buildFractionTouchItems, twoPictureItem } from '../../primitives/visual-primitives/math/fractionCirclesWorkspace';
+
+/** touch_fraction's easier item (two_pictures) as the fraction to touch; the builder reads only the parent's fraction. */
+const twoPictureFraction = (parent: any) => {
+  const easier = twoPictureItem(buildFractionTouchItems([parent])[0]);
+  return easier ? { numerator: easier.numerator, denominator: easier.denominator } : {};
+};
 import { smallerBuild } from '../../primitives/visual-primitives/math/tenFrameLevers';
 import { buildSequencerItems as sequencerItems, sequencerHarnessAnswers }
   from '../../primitives/visual-primitives/math/numberSequencerDomain';
@@ -536,7 +544,12 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // choice, then Check. A wrong answer is one slice or one numerator off, or another choice.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((ch: { id: string }) => ch.id === ctx.itemId);
+      // An easier practice item (a simplify lever) is not a generated challenge: rebuild it from its parent
+      // with the same deterministic builder. touch_fraction's easier item needs only its own fraction.
+      const [parentId, easier] = (ctx.itemId ?? '').split('~');
+      const parent = (ctx.data.challenges ?? []).find((ch: { id: string }) => ch.id === parentId);
+      const c = !easier ? parent : !parent ? null : parent.type === 'touch_fraction'
+        ? { ...parent, ...twoPictureFraction(parent) } : simplerFraction(parent, ctx.data.gradeBand);
       if (!c) throw new Error('No current fraction-circles assignment');
       const wrong = intent === 'wrong';
       const off = (n: number, max: number) => (n + 1 <= max ? n + 1 : n - 1);

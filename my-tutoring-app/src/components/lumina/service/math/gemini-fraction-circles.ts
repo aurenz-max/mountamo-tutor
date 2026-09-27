@@ -209,10 +209,10 @@ function resolveSupportStructure(type: FractionChallengeType, tier: SupportTier)
       return { showTotalPieces: false, showWorkingCount: false, showFractionLabels: false, promptLines: ['touch_fraction: no fraction labels or hints that identify the matching picture. Use proper fractions in halves, thirds, fourths only.'] };
     case 'identify':
       if (tier === 'easy')
-        // Never the shaded count: "N equal pieces, M shaded" is the answer written out. Easy and medium match
-        // until /add-support-tiers gives identify its levers (handoff 18 B2).
+        // Never the shaded count: "N equal pieces, M shaded" is the answer written out. Easy differs from
+        // medium by starting with every piece marked (the mark_pieces lever, set below).
         return { showTotalPieces: true, showWorkingCount: false, showFractionLabels: true,
-          promptLines: ['identify: only the TOTAL slice count is shown; the student counts the shaded slices. Hint may name the total but NOT the shaded count.'] };
+          promptLines: ['identify: the TOTAL slice count is shown and every piece is marked with a dot; the student counts the shaded slices. Hint may name the total but NOT the shaded count.'] };
       if (tier === 'medium')
         return { showTotalPieces: true, showWorkingCount: false, showFractionLabels: true,
           promptLines: ['identify: only the TOTAL slice count is shown; the student counts the shaded slices alone. Hint may name the total but NOT the shaded count.'] };
@@ -811,6 +811,9 @@ Return the complete fraction circles configuration.
       ch.showWorkingCount = sc.showWorkingCount;
       // showFractionLabels is a compare-only lever; leave others undefined (renders unaffected).
       ch.showFractionLabels = ch.type === 'compare' ? sc.showFractionLabels : undefined;
+      // Where the in-item levers start (fractionCirclesLevers.ts). build/equivalent's running count
+      // starts from showWorkingCount; identify easy starts with every piece marked.
+      ch.startLevers = ch.type === 'identify' && supportTier === 'easy' ? ['mark_pieces'] : undefined;
     }
     console.log(`[FractionCircles] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`);
   }

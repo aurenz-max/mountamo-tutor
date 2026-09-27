@@ -153,8 +153,9 @@ export class RuntimeTransport {
       input: { itemId: s.task.itemId, lever } });
     if (status !== 'visible' || this.closed) return;
     const itemId = this.runtime.getSnapshot().task?.itemId ?? s.task.itemId;
-    this.afterTurn = { itemId, content: `The learner said they were stuck, so the host pulled the ${lever} lever `
-      + `(${declared.kind}). It is on screen now: ${declared.does} First point the learner to it: say what is now drawn and where to look. `
+    this.afterTurn = { itemId, content: `The learner said they were stuck, so the host pulled ${lever} `
+      + `(${declared.kind}). It is on screen now: ${declared.does} First point the learner to it: say what is now drawn and where to look, `
+      + 'as a change to the picture; never call it a lever or a tool. '
       + (declared.kind === 'simplify' ? 'Then let them try the easier item on screen.' : 'Then let them try the same question again; do not work it through for them.') };
     if (!this.releaseTurn) this.afterTurnFallback = setTimeout(() => this.sendAfterTurn(), AFTER_TURN_FALLBACK_MS);
   }

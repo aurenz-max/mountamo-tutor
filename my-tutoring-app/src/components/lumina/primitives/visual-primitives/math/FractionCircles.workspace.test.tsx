@@ -103,7 +103,7 @@ it.each(MODES)('%s binds the workspace under tutor ownership: no scripted cue, n
   const h = mount(mode, [challengeFor(mode)]);
   expect(h.state().owner).toBe('tutor');
   expect(h.state().task!.task).not.toMatch(/Say exactly|\[FT_/);
-  expect(tutorTools(h)).toEqual(['begin_help']);
+  expect(tutorTools(h)).toEqual(['begin_help', 'pull_lever']);
   expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
   expect(seam.send.mock.calls.flat().join(' ')).not.toMatch(/FT_|IDENTIFY_|BUILD_|COMPARE_|EQUIVALENT_|ACTIVITY_START|ALL_COMPLETE|PHASE_TRANSITION/);
   expect(screen.queryByRole('button', { name: /next challenge|say that again/i })).toBeNull();

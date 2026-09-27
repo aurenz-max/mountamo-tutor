@@ -5,8 +5,8 @@ import DiActionPanel from '../../../components/DiActionPanel';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { FractionCirclesMetrics } from '../../../evaluation/types';
 import type { FractionCirclesData } from './FractionCircles';
-import { buildFractionTouchItems, describeTouch, touchAssignment, touchMatches, touchScene, type FractionPicture }
-  from './fractionCirclesWorkspace';
+import { buildFractionTouchItems, describeTouch, touchAssignment, touchLevers, touchMatches, touchScene, twoPictureItem,
+  type FractionPicture, type FractionTouchItem } from './fractionCirclesWorkspace';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { stimulusPipPose } from '../../../pip/stimulusPipPose';
 import { PIP_DOCK_CLASS } from '../../../pip/useWorkspacePipSurface';
@@ -60,12 +60,19 @@ function FractionTouchSurface({ data, className, localOnly = false, runtimePlanI
     }, undefined, summary.diagnosisEvidence);
   }, [evaluation, items]);
   const resetTap = () => { setSelected(null); pip.clear(); };
+  // The two_pictures lever (`twoPictureItem`): pulled once per session item, and the easier touch it put
+  // on screen in its place. Try again on the easier touch keeps it; a fresh item or endPractice removes it.
+  const [pulled, setPulled] = useState<{ item: string; levers: string[] }>({ item: '', levers: [] });
+  const [practice, setPractice] = useState<FractionTouchItem | null>(null);
   const runner = useWorkspaceRunner({ items, workspace, instanceId: instance.current, primitiveId: 'fraction-circles',
     assignment: touchAssignment, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
     evalMode: runtimeEvalMode || 'touch_fraction',
-    onFinished: finished, onItemOpened: resetTap, onCorrectionRetry: resetTap,
+    onFinished: finished, onItemOpened: () => { setPractice(null); resetTap(); }, onCorrectionRetry: resetTap,
   });
-  const item = runner.currentItem ?? items[0];
+  const sessionItem = runner.currentItem ?? items[0];
+  /** What is on screen: the easier touch while the simplify lever holds it, else the session item. */
+  const item = practice ?? sessionItem;
+  const pulledLevers = pulled.item === sessionItem?.id ? pulled.levers : [];
   // The finish shows without an evaluation provider (the live host has none).
   const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
   const finishedRef = useRef(onWorkspaceFinished); finishedRef.current = onWorkspaceFinished;
@@ -95,8 +102,23 @@ function FractionTouchSurface({ data, className, localOnly = false, runtimePlanI
   // W1 offers no demonstration targets and no presentation; the pictures show from the start.
   useLayoutEffect(() => {
     if (!item) return;
+    const levers = practice ? [] : touchLevers(sessionItem, pulledLevers);
     workspace.current = { ...touchScene(item), demonstration: [], canDemonstrate: false, canPresent: false,
-      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+      readyForResponse: true, mark: () => {}, clearPresentation: () => {},
+      levers,
+      // A synchronous commit: the easier touch replaces the pictures before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        const easier = twoPictureItem(sessionItem);
+        if (!easier) return 'There is no easier touch for this item.';
+        setPulled({ item: sessionItem.id, levers: [...pulledLevers, id] });
+        setPractice(easier); resetTap();
+        return { practice: touchAssignment(easier) };
+      },
+      endPractice: () => { setPractice(null); resetTap(); },
+    };
     runner.publishWorkspace();
   });
   if (!item) return <p>No fraction pictures are available.</p>;
@@ -116,7 +138,8 @@ function FractionTouchSurface({ data, className, localOnly = false, runtimePlanI
       {showSummary ? <p className="text-center text-lg text-slate-100">You finished your fraction pictures.</p> : <>
         <LuminaChallengeCounter current={runner.currentIndex + 1} total={items.length} variant="dots" />
         {pipStore && <div ref={pip.dock} data-pip-dock={instance.current} className={PIP_DOCK_CLASS} />}
-        <div ref={pip.ref('stimulus')} data-pip-object="stimulus" className="grid grid-cols-3 gap-2 sm:gap-5" aria-label="Fraction pictures">
+        <div ref={pip.ref('stimulus')} data-pip-object="stimulus" aria-label="Fraction pictures"
+          className={`grid ${item.choices.length === 2 ? 'grid-cols-2' : 'grid-cols-3'} gap-2 sm:gap-5`}>
           {item.choices.map((picture, index) => <button key={picture.id} type="button"
             ref={pip.ref(pictureObject(picture))} data-pip-object={pictureObject(picture)}
             aria-label={`Picture ${index + 1}: ${picture.numerator} of ${picture.denominator} equal parts shaded`}
