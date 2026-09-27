@@ -1,0 +1,117 @@
+{
+  "scenario": "g1-subtract-hops",
+  "arm": "demo-evidence",
+  "componentId": "demo:number-line/subtract",
+  "rationale": "The student counted the starting number as the first count ('12, 11, 10') instead of counting the hops/transitions backward (12 -> 11 is 1 hop, 11 -> 10 is 2 hops, 10 -> 9 is 3 hops). A number line subtraction demonstration modeling hops back helps correct counting the numbers rather than the hops.",
+  "script": {
+    "piece": "number-line",
+    "operation": "subtract",
+    "values": [
+      14,
+      3
+    ],
+    "denominator": 1,
+    "focus": "each backward hop from 14 to see that 3 hops lands on 11, not counting 14 as the first hop",
+    "studentValues": [
+      12,
+      3
+    ]
+  },
+  "intent": "Demonstrate subtract on the number-line with values [14,3]. Tutor points at: each backward hop from 14 to see that 3 hops lands on 11, not counting 14 as the first hop",
+  "pickMs": 1545,
+  "content": {
+    "title": "Counting back, one hop at a time",
+    "frames": [
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 1,
+          "min": 9,
+          "max": 16,
+          "marks": [
+            {
+              "at": 14,
+              "tone": "focus"
+            }
+          ],
+          "hops": []
+        },
+        "caption": "Start at 14. We are standing here; we have not hopped yet."
+      },
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 1,
+          "min": 9,
+          "max": 16,
+          "marks": [
+            {
+              "at": 14,
+              "tone": "faded"
+            },
+            {
+              "at": 13,
+              "tone": "focus"
+            }
+          ],
+          "hops": [
+            {
+              "from": 14,
+              "to": 13,
+              "label": "1"
+            }
+          ]
+        },
+        "caption": "Hop 1 moves one back and lands on 13. The first number we count is where we land, not where we started."
+      },
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 1,
+          "min": 9,
+          "max": 16,
+          "marks": [
+            {
+              "at": 14,
+              "tone": "faded"
+            },
+            {
+              "at": 11,
+              "tone": "done"
+            }
+          ],
+          "hops": [
+            {
+              "from": 14,
+              "to": 13,
+              "label": "1"
+            },
+            {
+              "from": 13,
+              "to": 12,
+              "label": "2"
+            },
+            {
+              "from": 12,
+              "to": 11,
+              "label": "3"
+            }
+          ]
+        },
+        "caption": "Hop 3 lands on 11. 3 hops, so 14 − 3 = 11."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The demonstration explicitly addresses the student's exact misconception ('We are standing here; we have not hopped yet' and 'The first number we count is where we land, not where we started'). It uses a passive worked demo on a fresh problem (14 - 3 instead of 12 - 3) to lower the cognitive load.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, this demo directly targets counting the starting number by explicitly highlighting that standing still is not a hop."
+  },
+  "rep": 1
+}

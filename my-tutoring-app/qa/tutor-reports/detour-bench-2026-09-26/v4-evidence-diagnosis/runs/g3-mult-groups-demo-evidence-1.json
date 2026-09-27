@@ -1,0 +1,8 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The learner evaluated 4 x 3 as 4 + 3 = 7, confusing multiplication with addition. None of the available manipulatives directly render arrays or repeated addition equal groups for multiplication.",
+  "pickMs": 1001,
+  "rep": 1
+}

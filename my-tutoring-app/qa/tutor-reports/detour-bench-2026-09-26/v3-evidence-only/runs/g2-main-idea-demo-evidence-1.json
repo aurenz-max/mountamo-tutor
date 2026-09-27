@@ -1,0 +1,8 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The lesson is an English Language Arts (ELA) lesson focused on reading comprehension ('Finding the main idea' of a multi-paragraph text). None of the available mathematical visual manipulatives (number line, place-value columns, or clock face) are applicable to finding the main topic or idea of a reading passage.",
+  "pickMs": 1159,
+  "rep": 1
+}

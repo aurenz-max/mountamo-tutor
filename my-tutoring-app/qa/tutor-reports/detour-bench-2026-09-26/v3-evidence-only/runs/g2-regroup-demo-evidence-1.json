@@ -1,0 +1,103 @@
+{
+  "scenario": "g2-regroup",
+  "arm": "demo-evidence",
+  "componentId": "demo:place-value/make-a-ten",
+  "rationale": "The student added 30+20=50 and 7+6=13, writing 513 side-by-side instead of regrouping 10 ones into 1 ten. Demonstrating 'make-a-ten' shows how a sum of ones greater than 9 bundles into a ten and remaining ones.",
+  "script": {
+    "piece": "place-value",
+    "operation": "make-a-ten",
+    "values": [
+      15
+    ],
+    "denominator": 1,
+    "focus": "ten ones regrouping into one ten",
+    "studentValues": [
+      13
+    ]
+  },
+  "intent": "Demonstrate make-a-ten on the place-value with values [15]. Tutor points at: ten ones regrouping into one ten",
+  "pickMs": 986,
+  "content": {
+    "title": "Ten ones make one ten",
+    "frames": [
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "15 ones",
+              "digits": [
+                null,
+                null
+              ]
+            }
+          ],
+          "focusPlace": 1,
+          "looseOnes": 15,
+          "bundles": 0
+        },
+        "caption": "Here are 15 ones. That is too many for the ones place: it can only hold 0 to 9."
+      },
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "15 ones",
+              "digits": [
+                null,
+                null
+              ]
+            }
+          ],
+          "focusPlace": 0,
+          "looseOnes": 5,
+          "bundles": 1
+        },
+        "caption": "Bundle ten of them. Ten ones make one ten, so the bundle moves to the tens place. 5 ones are left."
+      },
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "15",
+              "digits": [
+                1,
+                5
+              ]
+            }
+          ],
+          "focusPlace": null,
+          "looseOnes": 5,
+          "bundles": 1
+        },
+        "caption": "Write 1 in the tens place and 5 in the ones place: 15. One digit per place."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The student wrote 513 for 37 + 26 because they do not realize the ones place cannot hold two digits and that 13 ones must be regrouped into 1 ten and 3 ones. This demo directly addresses that rule ('the ones place can only hold 0 to 9') by showing 15 ones bundled into 1 ten and 5 ones, clearly highlighting place-value constraints. It is simpler than full 2-digit addition and does not leak the answer to 37 + 26.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would definitely use this concise demo to explain why two digits cannot sit in the ones place before returning to the full addition problem."
+  },
+  "rep": 1
+}

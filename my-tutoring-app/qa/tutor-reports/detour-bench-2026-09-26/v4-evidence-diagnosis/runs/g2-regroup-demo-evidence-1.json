@@ -1,0 +1,104 @@
+{
+  "scenario": "g2-regroup",
+  "arm": "demo-evidence",
+  "componentId": "demo:place-value/make-a-ten",
+  "diagnosis": "Writes the full sum of the ones place beside the sum of the tens place instead of regrouping ten ones into a ten.",
+  "rationale": "The student computed 7 + 6 = 13 and 3 + 2 = 5, writing them side-by-side as 513. The place-value / make-a-ten tool directly addresses this by demonstrating how a group of ones greater than 9 bundles into one ten and leftover ones.",
+  "script": {
+    "piece": "place-value",
+    "operation": "make-a-ten",
+    "values": [
+      15
+    ],
+    "denominator": 1,
+    "focus": "ten ones bundling into one ten",
+    "studentValues": [
+      13
+    ]
+  },
+  "intent": "Demonstrate make-a-ten on the place-value with values [15]. Tutor points at: ten ones bundling into one ten",
+  "pickMs": 1448,
+  "content": {
+    "title": "Ten ones make one ten",
+    "frames": [
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "15 ones",
+              "digits": [
+                null,
+                null
+              ]
+            }
+          ],
+          "focusPlace": 1,
+          "looseOnes": 15,
+          "bundles": 0
+        },
+        "caption": "Here are 15 ones. That is too many for the ones place: it can only hold 0 to 9."
+      },
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "15 ones",
+              "digits": [
+                null,
+                null
+              ]
+            }
+          ],
+          "focusPlace": 0,
+          "looseOnes": 5,
+          "bundles": 1
+        },
+        "caption": "Bundle ten of them. Ten ones make one ten, so the bundle moves to the tens place. 5 ones are left."
+      },
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "15",
+              "digits": [
+                1,
+                5
+              ]
+            }
+          ],
+          "focusPlace": null,
+          "looseOnes": 5,
+          "bundles": 1
+        },
+        "caption": "Write 1 in the tens place and 5 in the ones place: 15. One digit per place."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The student wrote 513 for 37 + 26 because they wrote 13 in the ones place rather than regrouping 10 ones into 1 ten. This detour uses a clean place-value chart demonstration with 15 ones, explicitly addressing the rule that a place can only hold digits 0-9 and showing the bundle of ten ones moving to the tens place. It addresses the exact misconception using an analogous number (15 instead of 13) without leaking the exact answer.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, this demo directly targets the misconception that more than 9 ones can stay in the ones place by clearly demonstrating bundling ten ones into one ten."
+  },
+  "rep": 1
+}

@@ -93,12 +93,13 @@ a cheaper move or carry on with words. One detour per item.
 """
 
 DEMONSTRATION_INSTRUCTION = """
-request_demonstration asks the host to draw a worked demonstration of the step this learner
-is missing, on a DIFFERENT example. Use it when words have not reached them and
-liveRuntime.canRequestDemonstration is true. Name their specific mistake as the obstacle,
-what they said or did as evidence, and what the demonstration should let them see as the
-purpose. Wait for status=visible, then teach it like any support detour. If it is refused or
-unsupported, teach the step in words.
+request_demonstration asks the host to show a worked demonstration, on a DIFFERENT example,
+of the step this learner is missing. Use it when words have not reached them and
+liveRuntime.canRequestDemonstration is true. The host reads what the learner actually did
+from the activity and diagnoses it; add a short note only for what the activity cannot see,
+such as something the learner said. Wait for status=visible. supportArtifact.diagnosis says
+what their answers show: link the example to it kindly, then teach it like any support
+detour. If it is refused or unsupported, its reason carries the diagnosis: teach that step in words.
 """
 
 
@@ -129,12 +130,10 @@ def runtime_tool(spec=None):
     )] if spec and spec.get("teachingMoves") else []
     demonstrate = [types.FunctionDeclaration(
         name="request_demonstration", behavior=types.Behavior.NON_BLOCKING,
-        description="Ask for a worked demonstration, on a different example, of the step this learner is missing. The host chooses and draws it. Wait for status=visible before describing it.",
+        description="Ask for a worked demonstration, on a different example, of the step this learner is missing. The host diagnoses it from the learner's work and draws it. Wait for status=visible before describing it.",
         parameters=types.Schema(type="OBJECT", properties={
-            "obstacle": types.Schema(type="STRING", description="The learner's specific mistake, e.g. 'counts the starting number as the first hop'."),
-            "evidence": types.Schema(type="STRING", description="What the learner said or did that shows it, e.g. 'said 12 minus 3 is 10'."),
-            "purpose": types.Schema(type="STRING", description="What the demonstration should let them see, e.g. 'that each hop is a move, so counting starts on the next number'."),
-        }, required=["obstacle", "evidence", "purpose"]),
+            "note": types.Schema(type="STRING", description="Optional. Only what the activity cannot see, e.g. something the learner said: 'said she always starts counting on the first number'."),
+        }),
     )] if spec and spec.get("demonstrations") else []
     observe = [types.FunctionDeclaration(
         name="observe_runtime", behavior=types.Behavior.NON_BLOCKING,
@@ -307,15 +306,13 @@ class LiveRuntimeTools:
         await self.emit({"type": "runtime_compose_move", "commandId": call.id, "scope": scope, "move": move})
 
     async def demonstrate(self, call, args):
-        """Relay the tutor's diagnosis. The browser authors, builds and shows the demonstration.
+        """Relay the request. The browser diagnoses from the activity's evidence, then authors and shows it.
 
-        Nothing here knows a primitive or a piece: three strings travel as the tutor sent them.
+        Nothing here knows a primitive or a piece: the tutor's optional note travels as it was sent.
         """
-        text = lambda v, n: isinstance(v, str) and 0 < len(v.strip()) <= n
-        fields = {"obstacle", "evidence", "purpose"}
-        if (not self.demonstrations or not isinstance(args, dict) or set(args) != fields
-                or not text(args["obstacle"], 300) or not text(args["evidence"], 300) or not text(args["purpose"], 300)):
-            await self.respond(call, "invalid", reason="Give obstacle, evidence and purpose, each a short sentence")
+        if (not self.demonstrations or not isinstance(args, dict) or not set(args) <= {"note"}
+                or ("note" in args and not (isinstance(args["note"], str) and len(args["note"]) <= 300))):
+            await self.respond(call, "invalid", reason="Send no arguments, or a short note of at most 300 characters")
             return
         if self.pending:
             await self.respond(call, "blocked", reason="Another action is awaiting its browser receipt")
@@ -327,8 +324,9 @@ class LiveRuntimeTools:
                  "itemId": self.state["task"]["itemId"], "expectedRevision": self.state["revision"]}
         self.pending = SimpleNamespace(id=call.id, name=call.name, args=scope, response_speech=None)
         self.timer = asyncio.create_task(self.expire(call.id, self.demonstration_timeout))
+        note = args.get("note", "").strip()
         await self.emit({"type": "runtime_request_demonstration", "commandId": call.id, "scope": scope,
-                         "need": {k: args[k].strip() for k in fields}})
+                         "need": {"note": note} if note else {}})
 
     async def result(self, message):
         call = self.pending

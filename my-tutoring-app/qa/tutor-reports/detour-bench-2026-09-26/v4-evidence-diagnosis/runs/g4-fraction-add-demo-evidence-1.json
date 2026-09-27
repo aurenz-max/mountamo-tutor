@@ -1,0 +1,113 @@
+{
+  "scenario": "g4-fraction-add",
+  "arm": "demo-evidence",
+  "componentId": "demo:number-line/add",
+  "diagnosis": "Adds the denominators together instead of keeping the common denominator.",
+  "rationale": "The learner correctly added the numerators (2 + 1 = 3) but also added the denominators (5 + 5 = 10). Showing hops along a fraction number line demonstrates that adding fifths results in more fifths, keeping the unit size unchanged.",
+  "script": {
+    "piece": "number-line",
+    "operation": "add",
+    "values": [
+      3,
+      2
+    ],
+    "denominator": 6,
+    "focus": "The tick marks and denominator remain fifths as you count hops.",
+    "studentValues": [
+      2,
+      1
+    ]
+  },
+  "intent": "Demonstrate add on the number-line with values [3,2] (unit 1/6). Tutor points at: The tick marks and denominator remain fifths as you count hops.",
+  "pickMs": 1138,
+  "content": {
+    "title": "Hopping in sixths",
+    "frames": [
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 6,
+          "min": 0,
+          "max": 6,
+          "marks": [
+            {
+              "at": 3,
+              "tone": "focus"
+            }
+          ],
+          "hops": []
+        },
+        "caption": "Start at 3/6. We are standing here; we have not hopped yet."
+      },
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 6,
+          "min": 0,
+          "max": 6,
+          "marks": [
+            {
+              "at": 3,
+              "tone": "faded"
+            },
+            {
+              "at": 4,
+              "tone": "focus"
+            }
+          ],
+          "hops": [
+            {
+              "from": 3,
+              "to": 4,
+              "label": "1"
+            }
+          ]
+        },
+        "caption": "Hop 1 moves 1/6 forward and lands on 4/6. One hop is one sixth."
+      },
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 6,
+          "min": 0,
+          "max": 6,
+          "marks": [
+            {
+              "at": 3,
+              "tone": "faded"
+            },
+            {
+              "at": 5,
+              "tone": "done"
+            }
+          ],
+          "hops": [
+            {
+              "from": 3,
+              "to": 4,
+              "label": "1"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "2"
+            }
+          ]
+        },
+        "caption": "Hop 2 lands on 5/6. 2 hops, so 3/6 + 2/6 = 5/6. Every hop was one sixth; the size of the pieces never changed, only how many."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The demonstration explicitly highlights that each hop is one sixth and that the denominator (the unit size) remains unchanged when adding hops, directly tackling the misconception of adding denominators. It switches from a fraction bar to a number line representation and is passive/ungraded worked demo, making it easier and lower cognitive load.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, this worked example clearly demonstrates why the denominator remains unchanged when hopping along a number line without giving away the original problem's answer."
+  },
+  "rep": 1
+}

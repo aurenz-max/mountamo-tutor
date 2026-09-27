@@ -1,0 +1,74 @@
+{
+  "scenario": "g3-clock-minutes",
+  "arm": "demo-evidence",
+  "componentId": "demo:clock/minutes-from-numeral",
+  "rationale": "The student interpreted the numeral 4 that the minute hand points to directly as 4 minutes instead of counting by fives (4 × 5 = 20 minutes). A worked demonstration using clock / minutes-from-numeral counts by 5s around the clock face to show how numeral positions map to minutes.",
+  "script": {
+    "piece": "clock",
+    "operation": "minutes-from-numeral",
+    "values": [
+      2,
+      3
+    ],
+    "denominator": 1,
+    "focus": "counting by fives to convert numeral to minutes",
+    "studentValues": [
+      3,
+      4
+    ]
+  },
+  "intent": "Demonstrate minutes-from-numeral on the clock with values [2,3]. Tutor points at: counting by fives to convert numeral to minutes",
+  "pickMs": 1269,
+  "content": {
+    "title": "Each number is 5 minutes",
+    "frames": [
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": []
+        },
+        "caption": "The long hand points to the 3. That 3 does not mean 3 minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Count by fives from the 12: 5, 10, 15. Each number on the clock is 5 more minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Keep counting by fives to the 3. That makes 15 minutes, so the time is 2:15."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The demonstration explicitly addresses the exact misconception ('minute hand on 3 does not mean 3 minutes') and models counting by fives around the dial (5, 10, 15) to reach 2:15. It uses a step-by-step worked demo representation, perfectly in scope and usable.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, a teacher would definitely use this clear worked example to correct the exact error of reading numerals directly as minutes."
+  },
+  "rep": 0
+}

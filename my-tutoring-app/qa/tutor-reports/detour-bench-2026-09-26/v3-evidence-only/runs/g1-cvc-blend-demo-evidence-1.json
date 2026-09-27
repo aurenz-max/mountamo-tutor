@@ -1,0 +1,8 @@
+{
+  "scenario": "g1-cvc-blend",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The student is working on reading short-vowel CVC words (decoding/phonics). None of the available mathematical visual pieces (number-line, place-value, clock) support reading or blending phonemes.",
+  "pickMs": 1153,
+  "rep": 1
+}

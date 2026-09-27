@@ -1,0 +1,8 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The student struggles with one-to-one correspondence when counting physical discrete objects (touching twice, skipping objects). None of the available representations (number-line, place-value, clock) display discrete movable objects or tracking counted vs uncounted objects in a set; hops on a number line or place value columns do not address physical one-to-one touch counting.",
+  "pickMs": 1271,
+  "rep": 0
+}

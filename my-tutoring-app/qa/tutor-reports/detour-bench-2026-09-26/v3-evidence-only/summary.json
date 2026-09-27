@@ -1,0 +1,30 @@
+{
+  "demo": {
+    "n": 15,
+    "medianReadyMs": 1274,
+    "maxReadyMs": 4244,
+    "errors": 0,
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaks": 0,
+    "nonSingleMode": 0,
+    "none": 15
+  },
+  "demo-evidence": {
+    "n": 16,
+    "medianReadyMs": 1216,
+    "maxReadyMs": 2993,
+    "errors": 0,
+    "targetsObstacle": 1.88,
+    "easierOrPrerequisite": 1.88,
+    "differentRepresentation": 1.19,
+    "inScope": 1.94,
+    "contentUsable": 2,
+    "leaks": 0,
+    "nonSingleMode": 0,
+    "none": 14
+  }
+}

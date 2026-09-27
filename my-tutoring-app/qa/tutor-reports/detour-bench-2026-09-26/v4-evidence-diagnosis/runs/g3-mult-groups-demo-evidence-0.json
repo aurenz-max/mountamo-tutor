@@ -1,0 +1,8 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "None of the available visual pieces (number-line add/subtract single hops, place-value comparison or make-a-ten, or clock minutes) can represent multiplication as equal groups or arrays.",
+  "pickMs": 1467,
+  "rep": 0
+}

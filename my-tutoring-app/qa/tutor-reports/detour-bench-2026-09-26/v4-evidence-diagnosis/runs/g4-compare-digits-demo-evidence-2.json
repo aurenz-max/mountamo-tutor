@@ -1,0 +1,106 @@
+{
+  "scenario": "g4-compare-digits",
+  "arm": "demo-evidence",
+  "componentId": "demo:place-value/compare",
+  "diagnosis": "Either: Compares digits based on their face value rather than starting with the greatest place value. Or: Judges the size of a number by summing all the individual digits together.",
+  "rationale": "The student chose 3,999 over 4,001 because 'it has nines', ignoring that the thousands place in 4,001 (4 thousands) is greater than the thousands place in 3,999 (3 thousands). Demonstrating comparison in place-value columns from the largest place value down shows why the thousands place decides the comparison immediately.",
+  "script": {
+    "piece": "place-value",
+    "operation": "compare",
+    "values": [
+      2999,
+      3001
+    ],
+    "denominator": 1,
+    "focus": "The thousands column, where 3 thousands is more than 2 thousands before looking at any other digits.",
+    "studentValues": [
+      3999,
+      4001
+    ]
+  },
+  "intent": "Demonstrate compare on the place-value with values [2999,3001]. Tutor points at: The thousands column, where 3 thousands is more than 2 thousands before looking at any other digits.",
+  "pickMs": 1437,
+  "content": {
+    "title": "Compare from the biggest place",
+    "frames": [
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "thousands",
+            "hundreds",
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "2,999",
+              "digits": [
+                2,
+                9,
+                9,
+                9
+              ]
+            },
+            {
+              "label": "3,001",
+              "digits": [
+                3,
+                0,
+                0,
+                1
+              ]
+            }
+          ],
+          "focusPlace": null
+        },
+        "caption": "Line up 2,999 and 3,001 by place. Start with the biggest place."
+      },
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "thousands",
+            "hundreds",
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "2,999",
+              "digits": [
+                2,
+                9,
+                9,
+                9
+              ]
+            },
+            {
+              "label": "3,001",
+              "digits": [
+                3,
+                0,
+                0,
+                1
+              ]
+            }
+          ],
+          "focusPlace": 0
+        },
+        "caption": "3 thousands is more than 2 thousands, so 3,001 is greater than 2,999. The smaller places cannot catch up, even if they are 9s."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The demonstration explicitly tackles the student's exact misconception ('because it has nines') using an analogous pair (2,999 vs 3,001). It highlights the thousands column and directly explains that smaller places cannot catch up even if they are 9s. As a pure worked demo, it provides an easier prerequisite/scaffolded view without leaking the exact numbers (3,999 vs 4,001).",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would immediately show this demonstration because it directly addresses the belief that nines make a number larger."
+  },
+  "rep": 2
+}

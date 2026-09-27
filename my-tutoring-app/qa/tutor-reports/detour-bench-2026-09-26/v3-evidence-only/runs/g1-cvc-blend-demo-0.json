@@ -1,0 +1,8 @@
+{
+  "scenario": "g1-cvc-blend",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The lesson focus is reading and blending short-vowel CVC words in Grade 1 phonics. None of the available math-oriented visual pieces (number-line, place-value, or clock) can visually model phoneme blending.",
+  "pickMs": 1052,
+  "rep": 0
+}

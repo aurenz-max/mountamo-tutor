@@ -1,0 +1,8 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The learner answered 7 for 4 x 3 because 4 + 3 = 7. None of the available manipulatives (which support single-step addition/subtraction hops up to 10 on a number line, place-value comparison/bundling, or clock skip-counting by fives) model equal groups or arrays for whole-number multiplication.",
+  "pickMs": 1200,
+  "rep": 2
+}

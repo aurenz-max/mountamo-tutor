@@ -1,0 +1,8 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The learner's task is reading comprehension about finding the main idea of a passage, which is a literacy skill not represented by any of the available math visual pieces (number-line, place-value, or clock).",
+  "pickMs": 1193,
+  "rep": 2
+}

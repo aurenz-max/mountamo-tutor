@@ -1,0 +1,8 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The lesson is about finding the main idea in reading comprehension (ELA), but all available interactive manipulatives (number-line, place-value, clock) are designed for elementary math concepts and cannot represent reading comprehension or distinguishing main ideas from supporting details.",
+  "pickMs": 1313,
+  "rep": 2
+}

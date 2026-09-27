@@ -36,10 +36,6 @@ export interface DetourParent {
   topic: string;
   /** Coarse grade band used by generators ('kindergarten', 'elementary', ...). */
   gradeLevel: string;
-  /** The task text on screen when the tutor paused it, so an example can avoid it. */
-  currentTask?: string;
-  /** The learner's last checked answer on it, as the activity describes it (a workspace's `lastResponse`). */
-  lastAnswer?: string;
 }
 
 export interface DetourResolution {

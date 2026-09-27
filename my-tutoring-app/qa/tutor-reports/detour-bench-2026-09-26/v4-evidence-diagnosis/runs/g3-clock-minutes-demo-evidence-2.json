@@ -1,0 +1,75 @@
+{
+  "scenario": "g3-clock-minutes",
+  "arm": "demo-evidence",
+  "componentId": "demo:clock/minutes-from-numeral",
+  "diagnosis": "Reads the clock face numeral pointed to by the minute hand as the minute count rather than counting by fives.",
+  "rationale": "The student read the minute hand on the 4 directly as 4 minutes instead of multiplying by 5 (20 minutes). Demonstrating how each numeral represents 5 minutes on an analog clock directly targets this misunderstanding.",
+  "script": {
+    "piece": "clock",
+    "operation": "minutes-from-numeral",
+    "values": [
+      2,
+      3
+    ],
+    "denominator": 1,
+    "focus": "Counting by fives for each numeral to find the minutes",
+    "studentValues": [
+      3,
+      4
+    ]
+  },
+  "intent": "Demonstrate minutes-from-numeral on the clock with values [2,3]. Tutor points at: Counting by fives for each numeral to find the minutes",
+  "pickMs": 1279,
+  "content": {
+    "title": "Each number is 5 minutes",
+    "frames": [
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": []
+        },
+        "caption": "The long hand points to the 3. That 3 does not mean 3 minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Count by fives from the 12: 5, 10, 15. Each number on the clock is 5 more minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Keep counting by fives to the 3. That makes 15 minutes, so the time is 2:15."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The demonstration directly addresses the exact misconception ('minute hand on 3 does not mean 3 minutes') and models counting by fives around the dial (5, 10, 15 = 2:15). It provides a prerequisite worked example using an analog clock with step-by-step skip-counting labels.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, this directly confronts the student's exact error with a clear, step-by-step skip-counting demonstration."
+  },
+  "rep": 2
+}

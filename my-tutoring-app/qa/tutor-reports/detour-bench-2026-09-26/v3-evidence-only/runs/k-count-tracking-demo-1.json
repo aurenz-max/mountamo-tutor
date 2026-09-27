@@ -1,0 +1,8 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The student struggles with one-to-one correspondence when counting discrete objects (counting bears on a counting board). None of the available visual pieces (number line hops for arithmetic, place-value chart comparison or bundling, or clock minutes) represent tagging and tracking discrete physical objects one by one without double-counting or skipping.",
+  "pickMs": 1163,
+  "rep": 1
+}

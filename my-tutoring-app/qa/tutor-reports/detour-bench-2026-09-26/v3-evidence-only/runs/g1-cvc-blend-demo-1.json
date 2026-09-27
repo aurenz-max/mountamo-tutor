@@ -1,0 +1,8 @@
+{
+  "scenario": "g1-cvc-blend",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The lesson focus is decoding and blending CVC words in reading, but all available visual pieces are math tools (number line, place value, clock). None of the available pieces can demonstrate blending phonemes into a word.",
+  "pickMs": 2130,
+  "rep": 1
+}

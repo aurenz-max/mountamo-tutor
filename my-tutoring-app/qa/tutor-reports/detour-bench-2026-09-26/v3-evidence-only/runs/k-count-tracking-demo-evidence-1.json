@@ -1,0 +1,8 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The student struggled with one-to-one correspondence while counting objects up to 10 (double-counting objects). None of the available tools (hops on a number-line for addition/subtraction, place-value comparison, place-value make-a-ten, or clock reading) demonstrate one-to-one counting of discrete object sets or tagged counting on a counting board.",
+  "pickMs": 1123,
+  "rep": 1
+}

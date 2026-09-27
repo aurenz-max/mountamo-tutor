@@ -1,0 +1,75 @@
+{
+  "scenario": "g3-clock-minutes",
+  "arm": "demo-evidence",
+  "componentId": "demo:clock/minutes-from-numeral",
+  "diagnosis": "Reads the number the minute hand points to directly as the minutes instead of counting by fives.",
+  "rationale": "The student saw the minute hand pointing to the numeral 4 and wrote ':04' rather than converting the numeral to 20 minutes by counting by fives.",
+  "script": {
+    "piece": "clock",
+    "operation": "minutes-from-numeral",
+    "values": [
+      2,
+      3
+    ],
+    "denominator": 1,
+    "focus": "the jumps counting by fives to the minute hand",
+    "studentValues": [
+      3,
+      4
+    ]
+  },
+  "intent": "Demonstrate minutes-from-numeral on the clock with values [2,3]. Tutor points at: the jumps counting by fives to the minute hand",
+  "pickMs": 1072,
+  "content": {
+    "title": "Each number is 5 minutes",
+    "frames": [
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": []
+        },
+        "caption": "The long hand points to the 3. That 3 does not mean 3 minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Count by fives from the 12: 5, 10, 15. Each number on the clock is 5 more minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Keep counting by fives to the 3. That makes 15 minutes, so the time is 2:15."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The demonstration directly tackles the misconception that the minute hand's numeral equals the minute count, explicitly showing why the numeral 3 means 15 minutes by counting by fives.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would definitely use this clear worked example to correct the student's direct reading of the minute numeral."
+  },
+  "rep": 0
+}

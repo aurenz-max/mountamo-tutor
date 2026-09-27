@@ -84,3 +84,5 @@ my-tutoring-app/qa/misconception/*.txt
 # (payload/jev/workspace/smoke/criterion probes) are scratch that piles up
 # fast. 128 pre-existing JSON files stay tracked; this only stops new ones.
 my-tutoring-app/qa/tutor-reports/*.json
+# LA-15 demonstration diagnosis log (dev JSONL; evidence ships curated under qa/)
+my-tutoring-app/logs/

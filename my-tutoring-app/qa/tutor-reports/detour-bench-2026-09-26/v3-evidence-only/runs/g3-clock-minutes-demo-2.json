@@ -1,0 +1,76 @@
+{
+  "scenario": "g3-clock-minutes",
+  "arm": "demo",
+  "componentId": "demo:clock/minutes-from-numeral",
+  "rationale": "The student confuses the numeral pointed to by the minute hand with the minute count, reading numeral 4 as 4 minutes instead of counting by fives to 20. The clock/minutes-from-numeral piece demonstrates counting by fives around the rim to convert the numeral into minutes.",
+  "script": {
+    "piece": "clock",
+    "operation": "minutes-from-numeral",
+    "values": [
+      2,
+      5
+    ],
+    "denominator": 1,
+    "focus": "each number on the face counts 5 minutes, not 1",
+    "studentValues": [
+      3,
+      4
+    ]
+  },
+  "intent": "Demonstrate minutes-from-numeral on the clock with values [2,5]. Tutor points at: each number on the face counts 5 minutes, not 1",
+  "pickMs": 1099,
+  "content": {
+    "title": "Each number is 5 minutes",
+    "frames": [
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 5,
+          "labelled": []
+        },
+        "caption": "The long hand points to the 5. That 5 does not mean 5 minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 5,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Count by fives from the 12: 5, 10, 15. Each number on the clock is 5 more minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 5,
+          "labelled": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "caption": "Keep counting by fives to the 5. That makes 25 minutes, so the time is 2:25."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The student mistakenly reads the numeral pointed to by the minute hand directly as the minute value (e.g., pointing to 4 means :04). The generated worked example directly addresses this misconception by demonstrating a minute hand pointing to 5, explicitly stating that it does not mean 5 minutes, and showing the skip-counting by fives up to 25. This makes the prerequisite counting step visible and concrete.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, a teacher would definitely use this worked demo because it explicitly confronts and clarifies the student's exact misconception using clear visual labels and skip-counting."
+  },
+  "rep": 2
+}

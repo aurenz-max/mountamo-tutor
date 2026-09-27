@@ -184,6 +184,8 @@ export interface DemonstrationSupport {
   kind: 'demonstration';
   title: string;
   demonstration: Demonstration;
+  /** What the learner's own responses show they are missing, from the primitive's evidence. The tutor connects the example to it. */
+  diagnosis?: string;
   altText: string;
   answerExposure: AnswerExposure;
   provenance: 'prepared';

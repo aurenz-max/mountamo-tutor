@@ -1,0 +1,8 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The student double-counted items while counting objects, showing a lack of 1-to-1 correspondence. None of the available visual pieces (number line hops for arithmetic, place-value comparison or bundling, or clock minute counting) model counting a set of discrete objects with 1-to-1 touch counting.",
+  "pickMs": 986,
+  "rep": 2
+}

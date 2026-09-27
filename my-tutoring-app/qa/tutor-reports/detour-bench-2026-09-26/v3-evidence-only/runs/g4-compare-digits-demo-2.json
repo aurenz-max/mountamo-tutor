@@ -1,0 +1,105 @@
+{
+  "scenario": "g4-compare-digits",
+  "arm": "demo",
+  "componentId": "demo:place-value/compare",
+  "rationale": "The student focuses on individual digit size ('nines') instead of comparing the highest place value first (thousands). A place-value comparison demonstration with numbers contrasting high leading digits against high trailing digits directly targets this misconception.",
+  "script": {
+    "piece": "place-value",
+    "operation": "compare",
+    "values": [
+      2998,
+      3002
+    ],
+    "denominator": 1,
+    "focus": "the thousands column",
+    "studentValues": [
+      3999,
+      4001
+    ]
+  },
+  "intent": "Demonstrate compare on the place-value with values [2998,3002]. Tutor points at: the thousands column",
+  "pickMs": 1311,
+  "content": {
+    "title": "Compare from the biggest place",
+    "frames": [
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "thousands",
+            "hundreds",
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "2,998",
+              "digits": [
+                2,
+                9,
+                9,
+                8
+              ]
+            },
+            {
+              "label": "3,002",
+              "digits": [
+                3,
+                0,
+                0,
+                2
+              ]
+            }
+          ],
+          "focusPlace": null
+        },
+        "caption": "Line up 2,998 and 3,002 by place. Start with the biggest place."
+      },
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "thousands",
+            "hundreds",
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "2,998",
+              "digits": [
+                2,
+                9,
+                9,
+                8
+              ]
+            },
+            {
+              "label": "3,002",
+              "digits": [
+                3,
+                0,
+                0,
+                2
+              ]
+            }
+          ],
+          "focusPlace": 0
+        },
+        "caption": "3 thousands is more than 2 thousands, so 3,002 is greater than 2,998. The smaller places cannot catch up, even if they are 9s."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The demonstration directly addresses the exact obstacle ('The smaller places cannot catch up, even if they are 9s') using an isomorphic pair of numbers (2,998 vs 3,002). It models comparing the largest place value first in an explicit, low-cognitive-load worked example format.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would immediately use this targeted worked demo because it explicitly refutes the 'all nines' misconception using an analogous comparison."
+  },
+  "rep": 2
+}

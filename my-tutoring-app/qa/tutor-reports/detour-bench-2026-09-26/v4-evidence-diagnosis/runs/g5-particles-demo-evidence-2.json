@@ -1,0 +1,8 @@
+{
+  "scenario": "g5-particles",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The learner thinks particles in ice are completely stationary. However, none of the math manipulative tools (number-line, place-value, clock) can model particle motion in solids, liquids, or gases.",
+  "pickMs": 2349,
+  "rep": 2
+}

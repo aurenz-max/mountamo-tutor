@@ -1,0 +1,8 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The student is adding the factors (4 + 3 = 7) instead of interpreting multiplication as equal groups (4 groups of 3). None of the available visual manipulatives (single-hop number line, place value compare/bundle, or clock face) can demonstrate repeated equal groups or array structures.",
+  "pickMs": 2135,
+  "rep": 0
+}

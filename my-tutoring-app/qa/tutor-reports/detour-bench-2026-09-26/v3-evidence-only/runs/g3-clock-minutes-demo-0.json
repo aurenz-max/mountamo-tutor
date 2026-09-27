@@ -1,0 +1,76 @@
+{
+  "scenario": "g3-clock-minutes",
+  "arm": "demo",
+  "componentId": "demo:clock/minutes-from-numeral",
+  "rationale": "The student reads the numeral the minute hand points to (4) as literal minutes (:04) instead of counting by 5s. A clock demonstration showing hops of 5 minutes around the rim to a numeral will show why each numeral represents 5 minutes.",
+  "script": {
+    "piece": "clock",
+    "operation": "minutes-from-numeral",
+    "values": [
+      2,
+      5
+    ],
+    "denominator": 1,
+    "focus": "the skip-counts of 5 for each clock number up to the minute hand",
+    "studentValues": [
+      3,
+      4
+    ]
+  },
+  "intent": "Demonstrate minutes-from-numeral on the clock with values [2,5]. Tutor points at: the skip-counts of 5 for each clock number up to the minute hand",
+  "pickMs": 1347,
+  "content": {
+    "title": "Each number is 5 minutes",
+    "frames": [
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 5,
+          "labelled": []
+        },
+        "caption": "The long hand points to the 5. That 5 does not mean 5 minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 5,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Count by fives from the 12: 5, 10, 15. Each number on the clock is 5 more minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 5,
+          "labelled": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "caption": "Keep counting by fives to the 5. That makes 25 minutes, so the time is 2:25."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The student confuses the face numeral with the minute count (reading minute hand on 4 as :04). This demonstration directly addresses that exact misconception ('The long hand points to the 5. That 5 does not mean 5 minutes') and shows skip-counting by fives up to the numeral to find the true minutes (25). It is visual, explicit, easier (worked demo), in scope for Grade 3, and uses a different example (2:25 vs 3:04).",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, this directly confronts the student's exact misconception with a clear, step-by-step visual demonstration of skip-counting by fives."
+  },
+  "rep": 0
+}

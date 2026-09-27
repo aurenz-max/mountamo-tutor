@@ -225,12 +225,13 @@ class RuntimeToolsTest(IsolatedAsyncioTestCase):
         async def emit(event): events.append(event)
         async def reply(response): replies.append(response)
         bridge = LiveRuntimeTools(emit, reply, spec, demonstration_timeout=.02)
-        need = {"obstacle": " counts the start as the first hop ", "evidence": "said 12 minus 3 is 10", "purpose": "each hop is a move"}
-        await bridge.call(SimpleNamespace(id="bad", name="request_demonstration", args={**need, "values": [1]}))
+        need = {"note": " said she always counts the first number "}
+        await bridge.call(SimpleNamespace(id="bad", name="request_demonstration", args={"obstacle": "anything"}))
         self.assertEqual(replies[-1].response["status"], "invalid")
         await bridge.call(SimpleNamespace(id="demo", name="request_demonstration", args=need))
         self.assertEqual(events[-1]["type"], "runtime_request_demonstration")
-        self.assertEqual(events[-1]["need"]["obstacle"], "counts the start as the first hop")
+        # The diagnosis is the browser's, from the activity's evidence; the tutor's note rides along.
+        self.assertEqual(events[-1]["need"], {"note": "said she always counts the first number"})
         self.assertEqual(events[-1]["scope"], {"sessionEpoch": "test", "instanceId": "mounted", "itemId": "one", "expectedRevision": 1})
         shown = {**packet(2), "canRequestDemonstration": False}
         self.assertTrue(await bridge.result({"commandId": "demo", "status": "visible", "state": shown}))
@@ -241,7 +242,8 @@ class RuntimeToolsTest(IsolatedAsyncioTestCase):
         self.assertEqual(len(events), 1)
         # An authoring call that never lands times out and cancels in the browser.
         bridge.update({**packet(3), "canRequestDemonstration": True})
-        await bridge.call(SimpleNamespace(id="slow", name="request_demonstration", args=need))
+        await bridge.call(SimpleNamespace(id="slow", name="request_demonstration", args={}))
+        self.assertEqual(events[-1]["need"], {})
         await asyncio.sleep(.05)
         self.assertEqual(events[-1], {"type": "runtime_cancelled", "commandId": "slow"})
         self.assertEqual(replies[-1].response["status"], "timeout")

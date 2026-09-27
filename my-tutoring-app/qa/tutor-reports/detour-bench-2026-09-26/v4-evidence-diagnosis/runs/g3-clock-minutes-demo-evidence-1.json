@@ -1,0 +1,75 @@
+{
+  "scenario": "g3-clock-minutes",
+  "arm": "demo-evidence",
+  "componentId": "demo:clock/minutes-from-numeral",
+  "diagnosis": "Reads the number the minute hand points to directly as minutes instead of counting by fives.",
+  "rationale": "The student read 3:04 because the minute hand was pointing directly at the numeral 4. Demonstrating how each numeral represents 5 minutes around the clock face will address this misconception directly.",
+  "script": {
+    "piece": "clock",
+    "operation": "minutes-from-numeral",
+    "values": [
+      2,
+      3
+    ],
+    "denominator": 1,
+    "focus": "Counting by fives for each numeral from the 12 to find the minutes",
+    "studentValues": [
+      3,
+      4
+    ]
+  },
+  "intent": "Demonstrate minutes-from-numeral on the clock with values [2,3]. Tutor points at: Counting by fives for each numeral from the 12 to find the minutes",
+  "pickMs": 1173,
+  "content": {
+    "title": "Each number is 5 minutes",
+    "frames": [
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": []
+        },
+        "caption": "The long hand points to the 3. That 3 does not mean 3 minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Count by fives from the 12: 5, 10, 15. Each number on the clock is 5 more minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Keep counting by fives to the 3. That makes 15 minutes, so the time is 2:15."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The student confuses the numeral pointed to by the minute hand for the literal minute count (reading 4 as :04). The generated detour specifically addresses this misconception directly by explicitly showing that pointing to 3 does not mean 3 minutes, then counting by fives (5, 10, 15) to demonstrate how to convert the numeral to minutes. It is a clear, guided worked demo (easier/prerequisite) and completely on-topic.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, a teacher would immediately use this targeted demonstration to directly tackle the misconception that the minute hand's numeral represents literal minutes."
+  },
+  "rep": 1
+}

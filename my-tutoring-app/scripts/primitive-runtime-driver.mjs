@@ -71,6 +71,7 @@ const { LiveRuntimeContext } = await load.import(base + 'components/live-activit
 const { LiveRuntimeSurface } = await load.import(base + 'components/live-activity/runtime/LiveRuntimeSurface.tsx');
 const { RuntimeTransport, runtimePacket } = await load.import(base + 'components/live-activity/runtime/runtimeTransport.ts');
 const { generatedActivityState, LIVE_ADAPTERS } = await load.import(base + 'components/live-activity/activityContract.ts');
+const { demonstrationEvidence, requestDemonstration } = await load.import(base + 'components/live-activity/demo/demonstrationEvidence.ts');
 const runtime = new LiveLessonRuntime(process.argv[2], { maxSupportLevel: 3, allowAnswerExposure: true, allowSupportArtifacts: true,
   allowDemonstrations: process.env.LIVE_DEMONSTRATIONS === '1' });
 let messages = [], data, evalMode, diItems = [], close, controls, listening = false;
@@ -222,19 +223,10 @@ try {
     }
     if (input.type === 'command') await transport.command(input.command);
     // LA-15: author through the same route the lesson host calls, then open the detour on the real runtime.
-    if (input.type === 'demonstration') await transport.requestDemonstration(input.commandId, input.scope, input.need, async (need, signal) => {
-      const state = runtime.getSnapshot();
-      const response = await fetch((process.env.LIVE_FRONTEND || 'http://localhost:3000') + '/api/lumina/demonstration', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
-        body: JSON.stringify({ need, parent: { componentId: primitiveId, evalMode, currentTask: state.task?.task,
-          lastAnswer: state.task?.workspace?.lastResponse ? `${state.task.workspace.lastResponse.response.slice(0, 280)} (${state.task.workspace.lastResponse.correct ? 'correct' : 'incorrect'})` : undefined,
-          ...input.context } }) });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Demonstration failed');
-      process.stderr.write(`[demonstration] ${result.kind} in ${result.elapsedMs}ms: ${result.rationale ?? ''}` + String.fromCharCode(10));
-      return result.kind === 'demonstration' ? { demonstration: result.demonstration }
-        : { refused: 'No drawn demonstration fits this step. Teach it in words, with a different example.' };
-    });
+    if (input.type === 'demonstration') await transport.requestDemonstration(input.commandId, input.scope, input.need, (need, signal) =>
+      requestDemonstration(process.env.LIVE_FRONTEND || 'http://localhost:3000',
+        { lesson: input.context, evidence: demonstrationEvidence(runtime.getSnapshot()), note: need.note }, signal)
+        .then(result => { process.stderr.write(`[demonstration] ${JSON.stringify(result.diagnosis ?? null)}` + String.fromCharCode(10)); return result; }));
     // The learner's own Try again / Next challenge on the shared shell (LiveRuntimeSurface).
     if (input.type === 'learner_progress') await transport.learnerProgress(input.action);
     // ONE learner opcode. The spec turns an intent into this primitive's real actions.

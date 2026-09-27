@@ -8,8 +8,14 @@ import type { LiveLessonRuntime } from './LiveLessonRuntime';
 import type { ComposedMove } from './moveContract';
 import type { Demonstration } from '../demo/demoContract';
 
-/** What the tutor sends with `request_demonstration`: its diagnosis, in its own words. */
-export interface DemonstrationNeed { obstacle: string; evidence: string; purpose: string }
+/**
+ * What the tutor sends with `request_demonstration`: a trigger and an optional note. The
+ * diagnosis comes from the primitive's own evidence (`demo/demonstrationEvidence.ts`).
+ */
+export interface DemonstrationNeed { note?: string }
+
+/** The author's answer: a demonstration to show, or a refusal; either way what the evidence shows. */
+export type ComposedDemonstration = { demonstration: Demonstration; diagnosis: string } | { refused: string; diagnosis?: string };
 import { waitForVisible } from './waitForVisible';
 
 /**
@@ -166,7 +172,7 @@ export class RuntimeTransport {
    * no piece draws this obstacle, so the tutor teaches in words.
    */
   async requestDemonstration(commandId: string, scope: { instanceId: string; itemId: string }, need: DemonstrationNeed,
-      compose: (need: DemonstrationNeed, signal: AbortSignal) => Promise<{ demonstration: Demonstration } | { refused: string }>) {
+      compose: (need: DemonstrationNeed, signal: AbortSignal) => Promise<ComposedDemonstration>) {
     if (this.closed || this.pending.has(commandId)) return null;
     const abort = new AbortController();
     this.pending.set(commandId, abort);
@@ -182,8 +188,11 @@ export class RuntimeTransport {
     try { composed = await compose(need, abort.signal); }
     catch { return abort.signal.aborted ? null : reply('failed', 'The demonstration could not be prepared. Teach this step in words.'); }
     if (abort.signal.aborted) return null;
-    if ('refused' in composed) return reply('unsupported', composed.refused);
-    const receipt = this.runtime.openDemonstration(scope, composed.demonstration, need.obstacle);
+    this.runtime.trace.record({ stage: 'demonstration', status: 'refused' in composed ? 'none' : 'drawn',
+      reason: composed.diagnosis, input: need, result: 'refused' in composed ? composed.refused : composed.demonstration.title });
+    if ('refused' in composed) return reply('unsupported', composed.diagnosis
+      ? `${composed.refused} What the learner's answers show: ${composed.diagnosis}` : composed.refused);
+    const receipt = this.runtime.openDemonstration(scope, composed.demonstration, composed.diagnosis);
     if (receipt.status !== 'committed') return reply(receipt.status, receipt.reason);
     const rendered = await waitForVisible(this.runtime, receipt.state.revision, { signal: abort.signal });
     return reply(rendered.status, undefined, { elapsedMs: rendered.elapsedMs });

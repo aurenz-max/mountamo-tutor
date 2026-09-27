@@ -1,0 +1,8 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The lesson focus is reading comprehension (identifying the main idea versus a detail), which cannot be modeled by math visual manipulatives such as a number line, place value chart, or clock.",
+  "pickMs": 2423,
+  "rep": 1
+}

@@ -1,0 +1,8 @@
+{
+  "scenario": "g5-particles",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The lesson is about particle motion in states of matter (solids, liquids, gases), which is a science topic. None of the available mathematical visualizer pieces (number line, place value, clock) can represent particle arrangements or vibrations in solids.",
+  "pickMs": 1089,
+  "rep": 2
+}

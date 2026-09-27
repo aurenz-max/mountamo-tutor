@@ -388,7 +388,7 @@ export class LiveLessonRuntime {
   }
 
   /** Commits a demonstration built by code from the authoring call; the shell draws it and the tutor narrates it. */
-  openDemonstration(scope: { instanceId: string; itemId: string }, demonstration: Demonstration, obstacle: string): TransitionReceipt {
+  openDemonstration(scope: { instanceId: string; itemId: string }, demonstration: Demonstration, diagnosis: string): TransitionReceipt {
     const receipt = (status: TransitionReceipt['status'], reason?: string): TransitionReceipt =>
       ({ commandId: null, status, ...(reason ? { reason } : {}), state: this.snapshot });
     if (this.busy) return receipt('conflict', 'Another transition is committing');
@@ -397,7 +397,7 @@ export class LiveLessonRuntime {
     this.busy = true;
     try {
       const artifact: DemonstrationSupport = { id: `demo-${this.revision + 1}`, kind: 'demonstration', title: demonstration.title,
-        demonstration, altText: demonstration.frames.map((f, i) => `Step ${i + 1}: ${f.caption}`).join(' '),
+        demonstration, ...(diagnosis ? { diagnosis } : {}), altText: demonstration.frames.map((f, i) => `Step ${i + 1}: ${f.caption}`).join(' '),
         answerExposure: demonstration.answerExposure, provenance: 'prepared' };
       validateSupportArtifact(artifact);
       this.mount!.adapter.suspension!.suspend();
@@ -410,7 +410,7 @@ export class LiveLessonRuntime {
       const nextAction = 'Watch the example, then try your own task again';
       this.assistance.push({ instanceId: scope.instanceId, itemId: scope.itemId, revision: this.revision + 1,
         action: { type: 'request_support', artifactId: artifact.id }, level: 6, answerExposure: artifact.answerExposure,
-        move: { obstacle, delta: 'model-process', representation: demonstration.piece, nextAction },
+        move: { obstacle: diagnosis || 'not diagnosed', delta: 'model-process', representation: demonstration.piece, nextAction },
         ...this.announcement({ type: 'request_support', artifactId: artifact.id }, nextAction, 'model-process') });
       this.publish();
       return { ...receipt('committed'), state: this.snapshot };

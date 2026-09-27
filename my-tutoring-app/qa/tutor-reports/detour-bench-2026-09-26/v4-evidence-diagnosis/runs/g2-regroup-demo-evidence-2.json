@@ -1,0 +1,104 @@
+{
+  "scenario": "g2-regroup",
+  "arm": "demo-evidence",
+  "componentId": "demo:place-value/make-a-ten",
+  "diagnosis": "Writes the sum of each column side by side instead of regrouping ten ones into one ten.",
+  "rationale": "The student added 3 + 2 = 5 and 7 + 6 = 13, writing 513 side by side. Demonstrating how a group of ones greater than nine bundles into one ten will help them see that ones must be regrouped rather than written as a two-digit number in the ones place.",
+  "script": {
+    "piece": "place-value",
+    "operation": "make-a-ten",
+    "values": [
+      15
+    ],
+    "denominator": 1,
+    "focus": "ten ones bundle into one ten",
+    "studentValues": [
+      13
+    ]
+  },
+  "intent": "Demonstrate make-a-ten on the place-value with values [15]. Tutor points at: ten ones bundle into one ten",
+  "pickMs": 1260,
+  "content": {
+    "title": "Ten ones make one ten",
+    "frames": [
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "15 ones",
+              "digits": [
+                null,
+                null
+              ]
+            }
+          ],
+          "focusPlace": 1,
+          "looseOnes": 15,
+          "bundles": 0
+        },
+        "caption": "Here are 15 ones. That is too many for the ones place: it can only hold 0 to 9."
+      },
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "15 ones",
+              "digits": [
+                null,
+                null
+              ]
+            }
+          ],
+          "focusPlace": 0,
+          "looseOnes": 5,
+          "bundles": 1
+        },
+        "caption": "Bundle ten of them. Ten ones make one ten, so the bundle moves to the tens place. 5 ones are left."
+      },
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "15",
+              "digits": [
+                1,
+                5
+              ]
+            }
+          ],
+          "focusPlace": null,
+          "looseOnes": 5,
+          "bundles": 1
+        },
+        "caption": "Write 1 in the tens place and 5 in the ones place: 15. One digit per place."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The student wrote 513 for 37 + 26 because they wrote the two-digit sum (13) directly into the ones place. The chosen demonstration directly isolates why a place value column cannot hold more than 9 and shows bundling 10 ones into 1 ten, perfectly addressing the prerequisite misconception without giving away the exact answer to 37 + 26.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, this cleanly demonstrates the core concept of bundling 10 ones into 1 ten to explain why 13 cannot be written in the ones column."
+  },
+  "rep": 2
+}

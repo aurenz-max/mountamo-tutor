@@ -1,0 +1,8 @@
+{
+  "scenario": "g5-particles",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The science concept of particle motion in solids cannot be visually represented by the available math manipulatives (number-line, place-value, or clock).",
+  "pickMs": 1057,
+  "rep": 0
+}

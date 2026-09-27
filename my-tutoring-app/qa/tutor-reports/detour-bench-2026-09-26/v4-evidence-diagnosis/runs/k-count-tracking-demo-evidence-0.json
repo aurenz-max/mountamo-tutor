@@ -1,0 +1,8 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "None of the available visual pieces (number-line hops, place-value comparison, place-value make-a-ten, or clock) model tagging and counting discrete objects with one-to-one correspondence.",
+  "pickMs": 1087,
+  "rep": 0
+}

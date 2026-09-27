@@ -1,0 +1,8 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The lesson is on reading comprehension (identifying the main idea of a text in Grade 2), which cannot be modeled by any of the available math manipulatives (number line, place value, or clock).",
+  "pickMs": 946,
+  "rep": 2
+}

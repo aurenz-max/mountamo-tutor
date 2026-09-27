@@ -1,0 +1,8 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The student struggles with one-to-one correspondence when counting discrete physical objects (tagging objects twice or skipping). The available visual pieces (number line hops, place value comparison/bundling, or clock) model abstract arithmetic, place value structure, or skip-counting time, none of which models tagging discrete objects or organizing a physical count of items.",
+  "pickMs": 1158,
+  "rep": 2
+}

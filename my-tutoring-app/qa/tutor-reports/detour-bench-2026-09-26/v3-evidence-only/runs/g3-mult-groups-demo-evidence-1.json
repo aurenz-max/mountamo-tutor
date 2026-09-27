@@ -1,0 +1,8 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The student added 4 and 3 to get 7 instead of multiplying. The available visualizers (number line single hop add/subtract, place value compare/make-a-ten, and clock minute counting) cannot demonstrate repeated addition, equal groups, or multiplication arrays.",
+  "pickMs": 1140,
+  "rep": 1
+}

@@ -123,3 +123,37 @@ Raw rows: `v0-curator-view/results.md`, `v1-two-stage/results.md`. Per-run JSON 
   - In both, the demonstration for the four-hop item 6 − 4 was a different three-hop example, 7 − 3 = 4, rather than a neighbouring single hop.
   - The third timed out before any detour: the tutor never spoke its lesson opening, which is a session-start failure unrelated to this path.
 - **Tutor wording:** its `obstacle` was specific in 1 of 2 runs ("counts the starting number as the first hop"). The author no longer depends on it.
+
+## Evidence-first diagnosis (same day, user direction)
+
+**Question:** the tutor's own diagnosis is the weak link. Can the primitive's evidence carry it instead?
+**Ablation (`v3-evidence-only`):** the tutor's diagnosis was withheld, so the author saw only the task and the learner's answer.
+- On the five drawable scenarios the demos were unchanged: 15/15 at 2/2.
+- In live runs the tutor had named the actual error in only 3 of 7 requests.
+
+**Change:**
+- `request_demonstration` is now a trigger with an optional `note`, for things only the tutor heard.
+- The host builds `DemonstrationEvidence` from the runtime snapshot (`demo/demonstrationEvidence.ts`): the task, its values and facts, and every response on this item. The builder names no primitive.
+- The author diagnoses from that evidence and returns `diagnosis` on the artifact (`supportArtifact.diagnosis`). The tutor is told to link the example to it. On `none` the diagnosis rides in the refusal reason, so the tutor can teach the step in words.
+
+**Ambiguity is stated by code.** A single response often fits two mistakes: 5 − 3 answered 3 is either "counts the start as a hop" or "lands on the number of hops".
+- Asking the prompt to say so named both in 0/3 runs.
+- A schema field `sameAnswerOtherMistake`, which code turns into "Either … Or …", named both in 4/4 probes.
+- On the bench, "Either" appears only on the two genuinely ambiguous scenarios (subtraction hops, compare digits) and never on the clear-cut ones.
+
+**Same-answer repair.** The model kept choosing a swapped example with the same sum: 1/5 + 2/5 for 2/5 + 1/5, three times running even after the refusal. `repairScript` now shifts the example one step and re-checks it against every refusal, instead of asking again.
+
+**Diagnosis log.** `/api/lumina/demonstration` writes one record per request: primitive, mode, grade, task, responses, note, diagnosis, piece and values, with no learner identity.
+- It goes to stdout always and to `my-tutoring-app/logs/demonstrations/<date>.jsonl` in dev (gitignored).
+- The runtime trace records it, and the Jev inspector shows it.
+- The item's assistance entry carries the diagnosis as its obstacle.
+- Recurring diagnoses per primitive are the candidates for code-classified patterns. A durable cross-session store would need a separate `/student-data-loop` decision.
+
+**Results:**
+- **Bench `v4-evidence-diagnosis`, evidence only, 3 reps:** 15/15 at 2/2 on targets-obstacle and usable; 0 leaks; 15/15 correct abstentions (the K-counting miss from v3 is gone); median ready time 1.3 s.
+- **Real model:**
+  - In 3 journeys the tutor called with no diagnosis at all (`{}` or a generic note). Each time the author diagnosed from the child's actual response, the demonstration opened and the item returned, and the one run on the ambiguous 10 − 4 item named both readings, true one first.
+  - Two further runs timed out before any detour because the tutor never spoke its lesson opening. That is a session-start issue on this model, separate from this path.
+- **Evidence files:** `d2-evidence-first-x3.json`, `d2-evidence-first-final.json`.
+
+**Still open:** the tutor rarely says the diagnosis aloud. It narrates the example but does not link it to the child's mistake. The next measurement is whether it should, which is a pedagogy question for the sitting (#170).

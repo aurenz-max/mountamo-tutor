@@ -1,0 +1,8 @@
+{
+  "scenario": "g1-cvc-blend",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The lesson is on reading short-vowel CVC words (decoding/phonics), specifically blending phonemes. None of the available mathematical visual manipulatives (number-line, place-value, clock) can model phoneme blending.",
+  "pickMs": 1548,
+  "rep": 2
+}

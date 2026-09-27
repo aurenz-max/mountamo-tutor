@@ -1,0 +1,8 @@
+{
+  "scenario": "g5-particles",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The lesson is on science (States of matter and particles in Grade 5), specifically addressing how particles vibrate even in a solid. None of the available mathematical manipulatives (number-line, place-value, clock) can visualize or address particle movement in solids, liquids, and gases.",
+  "pickMs": 1249,
+  "rep": 0
+}

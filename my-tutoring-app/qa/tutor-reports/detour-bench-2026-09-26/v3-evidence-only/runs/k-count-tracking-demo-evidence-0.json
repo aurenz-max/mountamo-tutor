@@ -1,0 +1,132 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "demo-evidence",
+  "componentId": "demo:number-line/add",
+  "rationale": "The student touched the same bear twice while counting to 8, confusing one-to-one correspondence. A number-line demonstration showing single sequential hops starting from 0 models counting each item exactly once.",
+  "script": {
+    "piece": "number-line",
+    "operation": "add",
+    "values": [
+      0,
+      6
+    ],
+    "denominator": 1,
+    "focus": "each hop matching one count without repeating",
+    "studentValues": [
+      0,
+      8
+    ]
+  },
+  "intent": "Demonstrate add on the number-line with values [0,6]. Tutor points at: each hop matching one count without repeating",
+  "pickMs": 1427,
+  "content": {
+    "title": "Counting on, one hop at a time",
+    "frames": [
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 1,
+          "min": 0,
+          "max": 8,
+          "marks": [
+            {
+              "at": 0,
+              "tone": "focus"
+            }
+          ],
+          "hops": []
+        },
+        "caption": "Start at 0. We are standing here; we have not hopped yet."
+      },
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 1,
+          "min": 0,
+          "max": 8,
+          "marks": [
+            {
+              "at": 0,
+              "tone": "faded"
+            },
+            {
+              "at": 1,
+              "tone": "focus"
+            }
+          ],
+          "hops": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "1"
+            }
+          ]
+        },
+        "caption": "Hop 1 moves one forward and lands on 1. The first number we count is where we land, not where we started."
+      },
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 1,
+          "min": 0,
+          "max": 8,
+          "marks": [
+            {
+              "at": 0,
+              "tone": "faded"
+            },
+            {
+              "at": 6,
+              "tone": "done"
+            }
+          ],
+          "hops": [
+            {
+              "from": 0,
+              "to": 1,
+              "label": "1"
+            },
+            {
+              "from": 1,
+              "to": 2,
+              "label": "2"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "3"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "4"
+            },
+            {
+              "from": 4,
+              "to": 5,
+              "label": "5"
+            },
+            {
+              "from": 5,
+              "to": 6,
+              "label": "6"
+            }
+          ]
+        },
+        "caption": "Hop 6 lands on 6. 6 hops, so 0 + 6 = 6."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The student struggles with one-to-one correspondence when counting discrete physical objects (bears), double-counting or skipping objects. The chosen detour uses a continuous number line showing 0 + 6 = 6 via hopping, which is an abstract addition concept far beyond the kindergarten student's immediate need to track and tag physical objects accurately.",
+    "targetsObstacle": 0,
+    "easierOrPrerequisite": 0,
+    "differentRepresentation": 2,
+    "inScope": 1,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would not use an addition number-line demonstration to remediate a kindergarten student's lack of one-to-one correspondence when counting discrete objects."
+  },
+  "rep": 0
+}

@@ -1,0 +1,8 @@
+{
+  "scenario": "g5-particles",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The science lesson concerns particle theory and states of matter, which cannot be represented using math visual pieces like number lines, place value, or clocks.",
+  "pickMs": 1232,
+  "rep": 1
+}

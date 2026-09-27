@@ -1,7 +1,7 @@
 export interface TeachingTraceEntry {
   id: number;
   at: number;
-  stage: 'learner_response' | 'dialogue' | 'learner_intent' | 'item_scoring';
+  stage: 'learner_response' | 'dialogue' | 'learner_intent' | 'item_scoring' | 'demonstration';
   status: string;
   reason?: string;
   input?: unknown;

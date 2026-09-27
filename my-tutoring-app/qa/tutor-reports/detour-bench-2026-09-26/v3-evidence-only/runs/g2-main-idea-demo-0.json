@@ -1,0 +1,8 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The lesson focus is identifying the main idea of a reading passage, which is a literacy skill. None of the available mathematical manipulatives (number line, place value chart, clock) can visualize distinguishing a main idea from a supporting detail in a text.",
+  "pickMs": 1480,
+  "rep": 0
+}

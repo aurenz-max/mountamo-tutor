@@ -126,13 +126,28 @@ Return the request_activity arguments.`;
     return { componentId: r.item.componentId, modeKind: r.modeKind, shortlist: r.shortlist, rationale: r.rationale, item: r.item, topic: s.topic };
   }
 
+  // The primitive's evidence as the lesson host would read it: the scenario's wrong answer is the checked response.
+  const lessonOf = s => ({ topic: s.topic, grade: s.grade, gradeLevel: s.gradeLevel, objectiveText: s.objectiveText });
+  const evidenceOf = s => ({ primitiveId: s.parent, evalMode: null, task: s.objectiveText, facts: {},
+    attempts: [{ response: s.need.evidence, correct: false, source: 'gesture' }] });
+
   // Demo arm: a composed demonstration; code builds the frames, so there is no generator call.
   async function demoPick(s) {
-    const r = await composeDemonstration({ componentId: s.parent, objectiveText: s.objectiveText, grade: s.grade, topic: s.topic,
-      gradeLevel: s.gradeLevel, objectiveId: s.id }, s.need);
+    const r = await composeDemonstration(lessonOf(s), evidenceOf(s), `${s.need.obstacle}. ${s.need.purpose}`);
     if (r.kind === 'none') return { none: true, rationale: r.rationale };
     const d = r.demonstration;
-    return { componentId: `demo:${d.piece}/${d.operation}`, rationale: r.rationale, topic: s.topic, script: r.script,
+    return { componentId: `demo:${d.piece}/${d.operation}`, rationale: r.rationale, diagnosis: r.diagnosis, topic: s.topic, script: r.script,
+      item: { intent: `Demonstrate ${d.operation} on the ${d.piece} with values ${JSON.stringify(r.script.values)}${r.script.denominator > 1 ? ` (unit 1/${r.script.denominator})` : ''}. Tutor points at: ${d.focus}` },
+      content: { title: d.title, frames: d.frames } };
+  }
+
+  // Evidence-only arm: the tutor's diagnosis is withheld. The author sees only a bare help request plus
+  // what the primitive itself knows: the task and the learner's actual answer (the scenario's evidence).
+  async function demoEvidencePick(s) {
+    const r = await composeDemonstration(lessonOf(s), evidenceOf(s));
+    if (r.kind === 'none') return { none: true, rationale: r.rationale };
+    const d = r.demonstration;
+    return { componentId: `demo:${d.piece}/${d.operation}`, rationale: r.rationale, diagnosis: r.diagnosis, topic: s.topic, script: r.script,
       item: { intent: `Demonstrate ${d.operation} on the ${d.piece} with values ${JSON.stringify(r.script.values)}${r.script.denominator > 1 ? ` (unit 1/${r.script.denominator})` : ''}. Tutor points at: ${d.focus}` },
       content: { title: d.title, frames: d.frames } };
   }
@@ -169,7 +184,7 @@ Score strictly. The detour succeeds only if a student with THIS obstacle would, 
     try {
       const pick = await pickFn(s);
       if (pick.none) { Object.assign(rec, { none: true, rationale: pick.rationale, pickMs: Date.now() - t0 }); say(`${s.id} ${name}: NONE (${pick.rationale})`); return rec; }
-      Object.assign(rec, { componentId: pick.componentId, shortlist: pick.shortlist, modeKind: pick.modeKind, modeValid: pick.modeValid, rationale: pick.rationale,
+      Object.assign(rec, { componentId: pick.componentId, diagnosis: pick.diagnosis, shortlist: pick.shortlist, modeKind: pick.modeKind, modeValid: pick.modeValid, rationale: pick.rationale,
         targetEvalMode: pick.item.config?.targetEvalMode, script: pick.script, intent: pick.item.intent, pickMs: Date.now() - t0 });
       const t1 = Date.now();
       if (pick.content) rec.content = pick.content;
@@ -184,7 +199,7 @@ Score strictly. The detour succeeds only if a student with THIS obstacle would, 
 
   const jobs = [];
   for (let rep = 0; rep < reps; rep++) for (const s of scenarios)
-    for (const [name, fn] of [['sandbox', sandboxPick], ['resolver', resolverPick], ['demo', demoPick]].filter(([n]) => arms.includes(n))) jobs.push(() => arm(s, name, fn).then(r => ({ ...r, rep })));
+    for (const [name, fn] of [['sandbox', sandboxPick], ['resolver', resolverPick], ['demo', demoPick], ['demo-evidence', demoEvidencePick]].filter(([n]) => arms.includes(n))) jobs.push(() => arm(s, name, fn).then(r => ({ ...r, rep })));
   const results = [];
   const pool = Array.from({ length: 4 }, async () => { while (jobs.length) results.push(await jobs.shift()()); });
   await Promise.all(pool);

@@ -1,0 +1,8 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The lesson is reading comprehension (finding the main idea in a Grade 2 text about bees), but all the provided manipulatives/pieces are math visualizers (number-line, place-value, clock). None of them can represent finding a main idea or distinguishing a detail from a central topic.",
+  "pickMs": 1213,
+  "rep": 0
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildDemonstration, demoRefusal, type DemoScript } from './demoContract';
+import { buildDemonstration, demoRefusal, repairScript, type DemoScript } from './demoContract';
 
 const script = (s: Partial<DemoScript>): DemoScript => ({
   piece: 'number-line', operation: 'subtract', values: [14, 3], focus: 'the first hop', studentValues: [], ...s,
@@ -15,6 +15,13 @@ describe('composed demonstrations', () => {
   it('refuses an example with the same answer', () => {
     expect(demoRefusal(script({ operation: 'add', denominator: 5, values: [1, 2], studentValues: [2, 1] }))).toMatch(/same answer/);
     expect(demoRefusal(script({ values: [13, 2], studentValues: [12, 1] }))).toMatch(/same answer/);
+  });
+
+  it('repairs a same-answer example by one step instead of asking the model again', () => {
+    const repaired = repairScript(script({ operation: 'add', denominator: 5, values: [1, 2], studentValues: [2, 1] }))!;
+    expect(repaired.values).toEqual([1, 3]);
+    expect(demoRefusal(repaired)).toBeNull();
+    expect(repairScript(script({ piece: 'clock', operation: 'minutes-from-numeral', values: [3, 4], studentValues: [3, 4] }))).toBeNull();
   });
 
   it('refuses what a piece cannot draw', () => {

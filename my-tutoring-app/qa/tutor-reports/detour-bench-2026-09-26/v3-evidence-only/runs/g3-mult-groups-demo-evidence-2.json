@@ -1,0 +1,8 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The student added 4 + 3 = 7 instead of multiplying 4 x 3 (equal groups / repeated addition). None of the available manipulatives (hops on a number-line for a single addition/subtraction, place-value comparison or make-a-ten, or minute-reading clock) model multiplication as equal groups or array models.",
+  "pickMs": 1216,
+  "rep": 2
+}

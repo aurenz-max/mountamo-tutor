@@ -204,6 +204,21 @@ function clock(s: DemoScript): { title: string; frames: DemoFrame[] } {
   ] };
 }
 
+/**
+ * A model asked for "a different example" of the same size keeps choosing one with the same
+ * answer (1/5 + 2/5 for 2/5 + 1/5, three times running on 2026-09-26). Shift the example one
+ * step instead of asking again: code owns structure, and the result passes every refusal.
+ */
+export function repairScript(s: DemoScript): DemoScript | null {
+  if (s.operation !== 'add' && s.operation !== 'subtract') return null;
+  const [start, change] = s.values;
+  for (const values of [[start, change + 1], [start + 1, change], [start, change - 1], [start - 1, change]]) {
+    const candidate = { ...s, values };
+    if (!demoRefusal(candidate)) return candidate;
+  }
+  return null;
+}
+
 /** Code builds the whole demonstration from a validated script. Throws on a refused script. */
 export function buildDemonstration(s: DemoScript): Demonstration {
   const refusal = demoRefusal(s);

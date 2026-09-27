@@ -1,0 +1,103 @@
+{
+  "scenario": "g2-regroup",
+  "arm": "demo",
+  "componentId": "demo:place-value/make-a-ten",
+  "rationale": "The student computed 7 + 6 = 13 and wrote '13' directly into the ones place, resulting in 513 instead of regrouping 10 ones into 1 ten. The 'make-a-ten' operation directly models bundling 10 ones into 1 ten and leaving the leftover ones.",
+  "script": {
+    "piece": "place-value",
+    "operation": "make-a-ten",
+    "values": [
+      14
+    ],
+    "denominator": 1,
+    "focus": "10 ones bundling into 1 ten, leaving 4 ones",
+    "studentValues": [
+      13
+    ]
+  },
+  "intent": "Demonstrate make-a-ten on the place-value with values [14]. Tutor points at: 10 ones bundling into 1 ten, leaving 4 ones",
+  "pickMs": 1171,
+  "content": {
+    "title": "Ten ones make one ten",
+    "frames": [
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "14 ones",
+              "digits": [
+                null,
+                null
+              ]
+            }
+          ],
+          "focusPlace": 1,
+          "looseOnes": 14,
+          "bundles": 0
+        },
+        "caption": "Here are 14 ones. That is too many for the ones place: it can only hold 0 to 9."
+      },
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "14 ones",
+              "digits": [
+                null,
+                null
+              ]
+            }
+          ],
+          "focusPlace": 0,
+          "looseOnes": 4,
+          "bundles": 1
+        },
+        "caption": "Bundle ten of them. Ten ones make one ten, so the bundle moves to the tens place. 4 ones are left."
+      },
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "14",
+              "digits": [
+                1,
+                4
+              ]
+            }
+          ],
+          "focusPlace": null,
+          "looseOnes": 4,
+          "bundles": 1
+        },
+        "caption": "Write 1 in the tens place and 4 in the ones place: 14. One digit per place."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The student writes both digits of the ones sum in the ones column (e.g., writing 513 for 37 + 26). This demo directly targets the obstacle by showing 14 ones, explicitly explaining that the ones place can only hold digits 0-9, and demonstrating how bundling 10 ones into 1 ten results in 1 ten and 4 ones (1 in the tens place, 4 in the ones place). It is an easier, prerequisite concept demonstration using a clean worked example.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, this demo directly explains why a two-digit sum cannot stay in the ones place and clearly shows how bundling makes 1 ten and leftover ones."
+  },
+  "rep": 1
+}

@@ -4,8 +4,8 @@ import React, { createContext, useCallback, useContext, useEffect, useLayoutEffe
 import { LuminaAIProvider, useLuminaAIContext, type LessonConnectionInfo } from '@/contexts/LuminaAIContext';
 import type { ExhibitData } from '../../types';
 import { LiveLessonRuntime } from './runtime/LiveLessonRuntime';
-import { RuntimeTransport, runtimePacket, type DemonstrationNeed } from './runtime/runtimeTransport';
-import type { Demonstration } from './demo/demoContract';
+import { RuntimeTransport, runtimePacket, type ComposedDemonstration, type DemonstrationNeed } from './runtime/runtimeTransport';
+import { demonstrationEvidence, requestDemonstration } from './demo/demonstrationEvidence';
 import { lessonPrimitiveContext, lessonWorkspaceItems, type LessonWorkspaceItem } from './lessonWorkspacePlan';
 import { waitForVisible } from './runtime/waitForVisible';
 import { LiveRuntimeActiveContext, LiveRuntimeConnectionContext, LiveRuntimeContext } from './runtime/LiveRuntimeContext';
@@ -98,25 +98,13 @@ export function WorkspaceSection({ instanceId, children }: { instanceId: string;
   </LiveRuntimeContext.Provider>;
 }
 
-/** The learner's last checked answer as the activity words it, marked right or wrong; the tutor's paraphrase often drops it. */
-export function lastAnswerOf(task: { workspace?: { lastResponse: { response: string; correct: boolean } | null } }): string | undefined {
-  const last = task.workspace?.lastResponse;
-  return last ? `${last.response.slice(0, 280)} (${last.correct ? 'correct' : 'incorrect'})` : undefined;
-}
-
 /** Author a demonstration for the section the tutor is looking at, from the runtime's own snapshot and the lesson facts. */
-async function composeLessonDemonstration(host: LessonWorkspaceContextValue, need: DemonstrationNeed, signal: AbortSignal)
-    : Promise<{ demonstration: Demonstration } | { refused: string }> {
+async function composeLessonDemonstration(host: LessonWorkspaceContextValue, need: DemonstrationNeed, signal: AbortSignal): Promise<ComposedDemonstration> {
   const state = host.runtime.getSnapshot();
-  const context = state.instanceId ? host.demonstrationContext?.(state.instanceId) : null;
-  if (!context || !state.primitiveId || !state.task) return { refused: 'This section has no lesson objective to demonstrate against. Teach in words.' };
-  const response = await fetch('/api/lumina/demonstration', { method: 'POST', signal, headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ need, parent: { componentId: state.primitiveId, evalMode: state.evalMode, currentTask: state.task.task,
-      lastAnswer: lastAnswerOf(state.task), ...context } }) });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error || 'Demonstration failed');
-  return result.kind === 'demonstration' ? { demonstration: result.demonstration }
-    : { refused: 'No drawn demonstration fits this step. Teach it in words, with a different example.' };
+  const lesson = state.instanceId ? host.demonstrationContext?.(state.instanceId) : null;
+  const evidence = demonstrationEvidence(state);
+  if (!lesson || !evidence) return { refused: 'This section has no lesson objective to demonstrate against. Teach in words.' };
+  return requestDemonstration('', { lesson, evidence, note: need.note }, signal);
 }
 
 function LessonWorkspaceBridge({ handler, progress }: {

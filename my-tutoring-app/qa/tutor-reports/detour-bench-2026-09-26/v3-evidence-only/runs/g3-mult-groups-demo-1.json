@@ -1,0 +1,8 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The student conflated multiplication with addition (4 x 3 = 4 + 3 = 7). None of the available pieces (single hop number line, place value comparison, make-a-ten bundling, or minute counting on a clock) can model multiplication as equal groups or repeated addition (multiple equal hops/groups). Therefore, piece 'none' is selected.",
+  "pickMs": 1420,
+  "rep": 1
+}

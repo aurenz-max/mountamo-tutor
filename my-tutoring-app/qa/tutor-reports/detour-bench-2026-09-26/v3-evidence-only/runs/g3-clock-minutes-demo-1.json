@@ -1,0 +1,74 @@
+{
+  "scenario": "g3-clock-minutes",
+  "arm": "demo",
+  "componentId": "demo:clock/minutes-from-numeral",
+  "rationale": "The student confuses the numeral pointed to by the minute hand with the minute count itself, stating 3:04 when the minute hand points to 4. We use 'clock' with 'minutes-from-numeral' to count by fives from 12 to the indicated numeral, demonstrating how numerals map to minutes in 5-minute increments.",
+  "script": {
+    "piece": "clock",
+    "operation": "minutes-from-numeral",
+    "values": [
+      2,
+      3
+    ],
+    "denominator": 1,
+    "focus": "Counting by fives for each numeral around the clock face to find the minutes.",
+    "studentValues": [
+      3,
+      4
+    ]
+  },
+  "intent": "Demonstrate minutes-from-numeral on the clock with values [2,3]. Tutor points at: Counting by fives for each numeral around the clock face to find the minutes.",
+  "pickMs": 1247,
+  "content": {
+    "title": "Each number is 5 minutes",
+    "frames": [
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": []
+        },
+        "caption": "The long hand points to the 3. That 3 does not mean 3 minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Count by fives from the 12: 5, 10, 15. Each number on the clock is 5 more minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Keep counting by fives to the 3. That makes 15 minutes, so the time is 2:15."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The demonstration directly addresses the exact misconception ('reading the number pointed to as the minutes') by explicitly showing that the minute hand pointing to 3 means 15 minutes, not 3 minutes, via counting by fives. It provides a worked demonstration (passive scaffold) rather than demanding an answer, simplifying the task while staying within Grade 3 scope.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would definitely use this clear worked example to directly refute the misconception before returning to practice."
+  },
+  "rep": 1
+}

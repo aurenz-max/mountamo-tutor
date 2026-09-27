@@ -1,0 +1,74 @@
+{
+  "scenario": "g3-clock-minutes",
+  "arm": "demo-evidence",
+  "componentId": "demo:clock/minutes-from-numeral",
+  "rationale": "The student treated the minute hand pointing to the numeral 4 as 4 minutes instead of multiplying by 5 (counting by fives to 20). Demonstrating how numerals correspond to minutes counted by fives on an analog clock directly targets this misconception.",
+  "script": {
+    "piece": "clock",
+    "operation": "minutes-from-numeral",
+    "values": [
+      2,
+      3
+    ],
+    "denominator": 1,
+    "focus": "counting by fives from 12 to the numeral",
+    "studentValues": [
+      3,
+      4
+    ]
+  },
+  "intent": "Demonstrate minutes-from-numeral on the clock with values [2,3]. Tutor points at: counting by fives from 12 to the numeral",
+  "pickMs": 1159,
+  "content": {
+    "title": "Each number is 5 minutes",
+    "frames": [
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": []
+        },
+        "caption": "The long hand points to the 3. That 3 does not mean 3 minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Count by fives from the 12: 5, 10, 15. Each number on the clock is 5 more minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Keep counting by fives to the 3. That makes 15 minutes, so the time is 2:15."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The demonstration explicitly tackles the misconception where the student reads the numeral directly as the minutes (e.g. 'That 3 does not mean 3 minutes'), and demonstrates counting by fives starting from 12 up to the numeral. It provides a clear, stepped visual representation of counting 5, 10, 15.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, this directly addresses the student's exact misconception with a clear, prerequisite demonstration of counting by fives."
+  },
+  "rep": 1
+}

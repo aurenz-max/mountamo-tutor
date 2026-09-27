@@ -1,0 +1,8 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The learner needs practice matching one count word to each discrete item without double-counting. None of the available pieces (number-line, place-value, clock) represent discrete object counting or 1-to-1 correspondence with movable counters or pictures, so 'none' is selected.",
+  "pickMs": 1440,
+  "rep": 2
+}

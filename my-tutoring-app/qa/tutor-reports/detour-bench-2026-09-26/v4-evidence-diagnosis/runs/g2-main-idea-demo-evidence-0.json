@@ -1,0 +1,8 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "demo-evidence",
+  "none": true,
+  "rationale": "The learner's task is reading comprehension about identifying the main idea of a text. None of the available mathematical visual pieces (number-line, place-value, clock) model textual main ideas or reading comprehension.",
+  "pickMs": 1301,
+  "rep": 0
+}
