@@ -1,0 +1,112 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "sandbox",
+  "componentId": "counting-board",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "count",
+  "intent": "Practise one-to-one correspondence when counting up to 8 objects, tracking counted items to ensure each is counted once without skips or double-counts.",
+  "pickMs": 1131,
+  "content": {
+    "type": "counting-board",
+    "instanceId": "sandbox-k-count-tracking",
+    "data": {
+      "title": "Count the Fish!",
+      "description": "Practise one-to-one correspondence by counting friendly fish one by one up to eight.",
+      "objects": {
+        "type": "fish"
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "count_all",
+          "instruction": "Can you count all the fish? Tap each one!",
+          "targetAnswer": 3,
+          "count": 3,
+          "arrangement": "line",
+          "hint": "Try tapping them slowly one by one from left to right.",
+          "narration": "Let us count these friendly fish together in a straight line."
+        },
+        {
+          "id": "c2",
+          "type": "count_all",
+          "instruction": "Let us count a few more fish. Touch each one as we go!",
+          "targetAnswer": 4,
+          "count": 4,
+          "arrangement": "line",
+          "hint": "Remember to touch every single fish once without skipping any.",
+          "narration": "Here are some more fish swimming in a row. Can you count them?"
+        },
+        {
+          "id": "c3",
+          "type": "count_all",
+          "instruction": "How many fish do you see in this line? Tap to find out!",
+          "targetAnswer": 5,
+          "count": 5,
+          "arrangement": "line",
+          "hint": "Take your time and tap each fish as you say its number.",
+          "narration": "Keep up the great counting! Let us count this line of fish."
+        },
+        {
+          "id": "c4",
+          "type": "count_all",
+          "instruction": "Can you count this row of fish? Touch every one!",
+          "targetAnswer": 6,
+          "count": 6,
+          "arrangement": "line",
+          "hint": "Watch the running count as you tap each fish to keep track.",
+          "narration": "Look at this longer line of fish. Let us count them all carefully."
+        },
+        {
+          "id": "c5",
+          "type": "count_all",
+          "instruction": "Wonderful counting! Let us count even more fish in a line.",
+          "targetAnswer": 7,
+          "count": 7,
+          "arrangement": "line",
+          "hint": "Make sure you do not double-tap the same fish twice.",
+          "narration": "We are getting higher! Let us count all seven fish together."
+        },
+        {
+          "id": "c6",
+          "type": "count_all",
+          "instruction": "Can you count all the fish in this wonderful line?",
+          "targetAnswer": 8,
+          "count": 8,
+          "arrangement": "line",
+          "hint": "Tap slowly and check the number on each fish as you go.",
+          "narration": "This is our biggest line yet. Let us count up to eight fish!"
+        },
+        {
+          "id": "c7",
+          "type": "count_all",
+          "instruction": "One more time! Count all the fish to show your skills.",
+          "targetAnswer": 8,
+          "count": 8,
+          "arrangement": "line",
+          "hint": "Touch each fish and listen to the counting song in your head.",
+          "narration": "You are a counting star! Let us count these eight fish one final time."
+        }
+      ],
+      "showOptions": {
+        "showRunningCount": true,
+        "showGroupCircles": false,
+        "highlightOnTap": true,
+        "showLastNumber": true
+      },
+      "gradeBand": "K"
+    }
+  },
+  "generateMs": 3076,
+  "judgement": {
+    "reasoning": "The student struggles with one-to-one correspondence and tracking (double counting / skipping). The detour uses the same activity engine, but drops the count down to 3, arranges items strictly in a line, enables highlight-on-tap and running counts, and gradually scales back up to 8.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, starting with smaller sets arranged in a clean line with tap highlighting directly scaffolds tracking and one-to-one correspondence."
+  },
+  "rep": 0
+}

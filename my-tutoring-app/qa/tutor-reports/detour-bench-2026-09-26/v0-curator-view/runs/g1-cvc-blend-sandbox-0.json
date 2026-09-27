@@ -1,0 +1,153 @@
+{
+  "scenario": "g1-cvc-blend",
+  "arm": "sandbox",
+  "componentId": "phonics-blender",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "cvc",
+  "intent": "Practice blending three individual sounds into a single CVC word.",
+  "pickMs": 1004,
+  "content": {
+    "type": "phonics-blender",
+    "instanceId": "sandbox-g1-cvc-blend",
+    "data": {
+      "title": "Fun Animal CVC Word Blending",
+      "gradeLevel": "1",
+      "patternType": "cvc",
+      "words": [
+        {
+          "id": "w1",
+          "targetWord": "cat",
+          "phonemes": [
+            {
+              "id": "w1_p1",
+              "sound": "/k/",
+              "letters": "c"
+            },
+            {
+              "id": "w1_p2",
+              "sound": "/æ/",
+              "letters": "a"
+            },
+            {
+              "id": "w1_p3",
+              "sound": "/t/",
+              "letters": "t"
+            }
+          ],
+          "emoji": "🐱",
+          "imageDescription": "a small furry cat"
+        },
+        {
+          "id": "w2",
+          "targetWord": "dog",
+          "phonemes": [
+            {
+              "id": "w2_p1",
+              "sound": "/d/",
+              "letters": "d"
+            },
+            {
+              "id": "w2_p2",
+              "sound": "/ɒ/",
+              "letters": "o"
+            },
+            {
+              "id": "w2_p3",
+              "sound": "/ɡ/",
+              "letters": "g"
+            }
+          ],
+          "emoji": "🐶",
+          "imageDescription": "a friendly dog"
+        },
+        {
+          "id": "w3",
+          "targetWord": "pig",
+          "phonemes": [
+            {
+              "id": "w3_p1",
+              "sound": "/p/",
+              "letters": "p"
+            },
+            {
+              "id": "w3_p2",
+              "sound": "/ɪ/",
+              "letters": "i"
+            },
+            {
+              "id": "w3_p3",
+              "sound": "/ɡ/",
+              "letters": "g"
+            }
+          ],
+          "emoji": "🐷",
+          "imageDescription": "a pink farm pig"
+        },
+        {
+          "id": "w4",
+          "targetWord": "sun",
+          "phonemes": [
+            {
+              "id": "w4_p1",
+              "sound": "/s/",
+              "letters": "s"
+            },
+            {
+              "id": "w4_p2",
+              "sound": "/ʌ/",
+              "letters": "u"
+            },
+            {
+              "id": "w4_p3",
+              "sound": "/n/",
+              "letters": "n"
+            }
+          ],
+          "emoji": "☀️",
+          "imageDescription": "a bright yellow sun"
+        },
+        {
+          "id": "w5",
+          "targetWord": "bus",
+          "phonemes": [
+            {
+              "id": "w5_p1",
+              "sound": "/b/",
+              "letters": "b"
+            },
+            {
+              "id": "w5_p2",
+              "sound": "/ʌ/",
+              "letters": "u"
+            },
+            {
+              "id": "w5_p3",
+              "sound": "/s/",
+              "letters": "s"
+            }
+          ],
+          "emoji": "🚌",
+          "imageDescription": "a yellow school bus"
+        }
+      ],
+      "supportTier": "easy",
+      "showBlendPreview": "full",
+      "showSlotCount": true,
+      "showTileLetters": true,
+      "nameTargetPhonemes": true
+    }
+  },
+  "generateMs": 2307,
+  "judgement": {
+    "reasoning": "The student can segment/sound out individual letters (/m/ /a/ /t/) but struggles to synthesize/blend them into whole spoken words. The phonics-blender activity isolates this exact step by offering sound-by-sound audio synthesis with tile supports and blend previews, which directly models and scaffolds the blending process.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "This is an ideal detour that isolates phoneme blending with interactive audio support before returning to full decodable text reading."
+  },
+  "rep": 0
+}

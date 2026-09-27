@@ -1,0 +1,125 @@
+{
+  "scenario": "g1-subtract-hops",
+  "arm": "sandbox",
+  "componentId": "number-line",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "jump",
+  "intent": "Practice counting back on a number line where each hop corresponds to moving to the next number rather than counting the start number",
+  "pickMs": 1120,
+  "content": {
+    "type": "number-line",
+    "instanceId": "sandbox-g1-subtract-hops",
+    "data": {
+      "title": "Hop Back on the Number Line",
+      "description": "Learn how to subtract numbers within 20 by counting back on a number line.",
+      "range": {
+        "min": 0,
+        "max": 20
+      },
+      "gradeBand": "K-2",
+      "numberType": "integer",
+      "interactionMode": "jump",
+      "challenges": [
+        {
+          "id": "show_jump-0",
+          "type": "show_jump",
+          "instruction": "Put your finger on the number 8, and hop back 2 spaces to the left to see where you land!",
+          "targetValues": [
+            6
+          ],
+          "hint": "Count the hops one by one as you move 2 spaces to the left from 8.",
+          "startValue": 8,
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 8,
+              "changeValue": 2,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        },
+        {
+          "id": "show_jump-1",
+          "type": "show_jump",
+          "instruction": "Let us try another jump! Start at 5 on the number line and hop backward 4 spaces to the left.",
+          "targetValues": [
+            1
+          ],
+          "hint": "Put your finger on 5 and carefully count 4 individual hops to the left.",
+          "startValue": 5,
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 5,
+              "changeValue": 4,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        },
+        {
+          "id": "show_jump-2",
+          "type": "show_jump",
+          "instruction": "Put your frog on the number 16. Now, hop backward 2 spaces to the left!",
+          "targetValues": [
+            14
+          ],
+          "hint": "Count each hop backward one by one: 1... 2...",
+          "startValue": 16,
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 16,
+              "changeValue": 2,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        },
+        {
+          "id": "show_jump-3",
+          "type": "show_jump",
+          "instruction": "Put your finger on 18, and get ready to hop backward 4 spaces to see where you land!",
+          "targetValues": [
+            14
+          ],
+          "hint": "Follow the drawn jump arc and count each hop backward one by one as you go.",
+          "startValue": 18,
+          "operations": [
+            {
+              "type": "subtract",
+              "startValue": 18,
+              "changeValue": 4,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        }
+      ],
+      "highlights": [],
+      "operations": [
+        {
+          "type": "subtract",
+          "startValue": 8,
+          "changeValue": 2,
+          "showJumpArc": true
+        }
+      ],
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 1745,
+  "judgement": {
+    "reasoning": "The activity uses the exact same number-line representation and simply prompts the student to make jumps (e.g., hop back 2 from 8), but with showJumpArc: true. While focusing on hops addresses moving spaces, it doesn't offer a fundamentally new perspective or isolate the starting count vs hop mismatch any better than the original activity, staying on the same tool.",
+    "targetsObstacle": 1,
+    "easierOrPrerequisite": 1,
+    "differentRepresentation": 0,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "This keeps the student on the same tool without effectively highlighting why counting the starting point is incorrect."
+  },
+  "rep": 0
+}

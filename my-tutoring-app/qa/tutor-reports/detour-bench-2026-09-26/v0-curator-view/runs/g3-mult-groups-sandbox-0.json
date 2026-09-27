@@ -1,0 +1,97 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "sandbox",
+  "componentId": "counting-board",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "group",
+  "intent": "Help student visualize multiplication as equal groups rather than addition by grouping objects into 4 groups of 3 to understand 4 x 3",
+  "pickMs": 1171,
+  "content": {
+    "type": "counting-board",
+    "instanceId": "sandbox-g3-mult-groups",
+    "data": {
+      "title": "Equal Groups of Apples!",
+      "description": "Learn to multiply by putting apples into equal groups.",
+      "objects": {
+        "type": "apples"
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "group_count",
+          "instruction": "Can you count all the apples in the groups?",
+          "targetAnswer": 9,
+          "count": 9,
+          "arrangement": "groups",
+          "hint": "Count the apples in each group one by one!",
+          "narration": "Let's look at these groups of apples together.",
+          "groupSize": 3
+        },
+        {
+          "id": "c2",
+          "type": "group_count",
+          "instruction": "How many apples do we have now in these groups?",
+          "targetAnswer": 9,
+          "count": 9,
+          "arrangement": "groups",
+          "hint": "Try counting the apples group by group.",
+          "narration": "Here are more apples arranged in equal groups.",
+          "groupSize": 3
+        },
+        {
+          "id": "c3",
+          "type": "group_count",
+          "instruction": "Count all the apples in these groups to find the total.",
+          "targetAnswer": 9,
+          "count": 9,
+          "arrangement": "groups",
+          "hint": "Remember to count every apple in each group.",
+          "narration": "We have even more groups to count!",
+          "groupSize": 3
+        },
+        {
+          "id": "c4",
+          "type": "group_count",
+          "instruction": "Can you count the apples in this new set of groups?",
+          "targetAnswer": 8,
+          "count": 8,
+          "arrangement": "groups",
+          "hint": "Take your time and tap each apple as you count.",
+          "narration": "Let's count these groups carefully.",
+          "groupSize": 4
+        },
+        {
+          "id": "c5",
+          "type": "group_count",
+          "instruction": "Find the total number of apples in these groups!",
+          "targetAnswer": 8,
+          "count": 8,
+          "arrangement": "groups",
+          "hint": "Count each group one at a time to get the final answer.",
+          "narration": "This is our last challenge with equal groups!",
+          "groupSize": 4
+        }
+      ],
+      "showOptions": {
+        "showRunningCount": true,
+        "showGroupCircles": true,
+        "highlightOnTap": true,
+        "showLastNumber": true
+      },
+      "gradeBand": "1"
+    }
+  },
+  "generateMs": 2190,
+  "judgement": {
+    "reasoning": "The student computed 4 + 3 = 7 instead of 4 x 3. The detour uses a Grade 1 counting-board with equal groups shown, but the generator completely missed the prompt's instruction to model 4 groups of 3 (it gave 3 groups of 3 and 2 groups of 4). Furthermore, the counting-board activity is designed for Pre-K to Grade 1 counting rather than connecting group counts to multiplication notation or factor meaning.",
+    "targetsObstacle": 1,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 1,
+    "contentUsable": 1,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would not use this detour because it drops down to a Grade 1 counting activity that doesn't explicitly link groups back to multiplication factors or address 4 x 3."
+  },
+  "rep": 0
+}

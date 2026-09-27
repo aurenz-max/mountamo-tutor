@@ -1,0 +1,93 @@
+{
+  "scenario": "g4-fraction-add",
+  "arm": "sandbox",
+  "componentId": "fraction-circles",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "build",
+  "intent": "Help the student see that the size of the parts stays the same (fifths) when combining 2/5 and 1/5, rather than adding the denominators to get tenths.",
+  "pickMs": 1299,
+  "content": {
+    "type": "fraction-circles",
+    "instanceId": "sandbox-g4-fraction-add",
+    "data": {
+      "title": "Exploring Fraction Circles",
+      "challenges": [
+        {
+          "id": "fc1",
+          "type": "build",
+          "instruction": "Shade the circle to show 1/2.",
+          "denominator": 2,
+          "numerator": 1,
+          "hint": "Look at the equal parts and the amount you need to shade.",
+          "narration": "Shade the circle to show 1/2.",
+          "supportTier": "easy",
+          "showTotalPieces": true,
+          "showWorkingCount": true
+        },
+        {
+          "id": "fc2",
+          "type": "build",
+          "instruction": "Shade the circle to show 1/3.",
+          "denominator": 3,
+          "numerator": 1,
+          "hint": "Look at the equal parts and the amount you need to shade.",
+          "narration": "Shade the circle to show 1/3.",
+          "supportTier": "easy",
+          "showTotalPieces": true,
+          "showWorkingCount": true
+        },
+        {
+          "id": "fc3",
+          "type": "build",
+          "instruction": "Shade the circle to show 2/4.",
+          "denominator": 4,
+          "numerator": 2,
+          "hint": "Look at the equal parts and the amount you need to shade.",
+          "narration": "Shade the circle to show 2/4.",
+          "supportTier": "easy",
+          "showTotalPieces": true,
+          "showWorkingCount": true
+        },
+        {
+          "id": "fc4",
+          "type": "build",
+          "instruction": "Shade the circle to show 1/5.",
+          "denominator": 5,
+          "numerator": 1,
+          "hint": "Look at the equal parts and the amount you need to shade.",
+          "narration": "Shade the circle to show 1/5.",
+          "supportTier": "easy",
+          "showTotalPieces": true,
+          "showWorkingCount": true
+        },
+        {
+          "id": "fc5",
+          "type": "build",
+          "instruction": "Shade the circle to show 3/10.",
+          "denominator": 10,
+          "numerator": 3,
+          "hint": "Look at the equal parts and the amount you need to shade.",
+          "narration": "Shade the circle to show 3/10.",
+          "supportTier": "easy",
+          "showTotalPieces": true,
+          "showWorkingCount": true
+        }
+      ],
+      "description": "Practice building fractions using visual circle models with denominators from 2 to 10.",
+      "gradeBand": "3-5"
+    }
+  },
+  "generateMs": 2179,
+  "judgement": {
+    "reasoning": "The student added both numerators and denominators (2/5 + 1/5 = 3/10). The generated activity just asks the student to shade single fractions (1/2, 1/3, 2/4, 1/5, 3/10) isolated on circle models. It never combines fractions or demonstrates that adding fifths keeps pieces as fifths, completely missing the target obstacle of denominator addition.",
+    "targetsObstacle": 0,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 1,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "No teacher would use this detour because it only practices building isolated unit/simple fractions and does not address why adding fifths leaves the denominator unchanged."
+  },
+  "rep": 0
+}

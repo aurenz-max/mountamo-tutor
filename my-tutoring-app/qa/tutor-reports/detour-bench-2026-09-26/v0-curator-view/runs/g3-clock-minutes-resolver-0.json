@@ -1,0 +1,110 @@
+{
+  "scenario": "g3-clock-minutes",
+  "arm": "resolver",
+  "componentId": "skip-counting-runner",
+  "modeKind": "blend",
+  "rationale": "The student confuses the clock numeral with the minute count, not realizing each number represents an interval of 5 minutes. The skip-counting-runner provides a dynamic number line jump visual that connects each step/count to multiples of 5, directly building the prerequisite understanding needed to read the minute hand.",
+  "targetEvalMode": "count_along|predict",
+  "intent": "Generate skip counting by 5s up to 60. Focus on landing on multiples of 5 (e.g., 5, 10, 15, 25, 30) while avoiding landing specifically on 20 to ensure it does not directly give away the current clock problem.",
+  "pickMs": 2865,
+  "content": {
+    "type": "skip-counting-runner",
+    "instanceId": "g3-clock-minutes-detour-skip-counting-runner",
+    "data": {
+      "title": "Clock Hopper: Skip Counting by 5s",
+      "description": "Practice skip counting by 5s along a number line to associate each step with 5 additional units for telling time.",
+      "skipValue": 5,
+      "startFrom": 0,
+      "endAt": 60,
+      "direction": "forward",
+      "character": {
+        "type": "kangaroo",
+        "imagePrompt": "A cheerful cartoon kangaroo wearing a giant clock on its belly, ready to hop across a number line."
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "count_along",
+          "instruction": "Watch the kangaroo hop by 5s along the clock line! Count out loud: 5, 10, 15, 25, 30...",
+          "hint": "Follow the kangaroo as it lands on every 5 minutes!",
+          "narration": "5... 10... 15... 25... 30...",
+          "startPosition": 0
+        },
+        {
+          "id": "c2",
+          "type": "predict",
+          "instruction": "The kangaroo is at 10. Where is the next landing?",
+          "hint": "Add 5 more to 10 to find the next clock mark.",
+          "narration": "The kangaroo is at 10. Where does it hop next?",
+          "startPosition": 10,
+          "targetFact": "3 x 5 = 15"
+        },
+        {
+          "id": "c3",
+          "type": "fill_missing",
+          "instruction": "Fill in the missing clock numbers as the kangaroo hops from 0 to 30.",
+          "hint": "Count by 5s: 5, 10, 15, 25, 30.",
+          "narration": "Fill in the missing numbers along the clock line.",
+          "hiddenPositions": [
+            15
+          ],
+          "startPosition": 0
+        },
+        {
+          "id": "c4",
+          "type": "predict",
+          "instruction": "The kangaroo is at 35. Where is the next landing?",
+          "hint": "Count 5 more minutes past 35.",
+          "narration": "The kangaroo is at 35. Where does it hop next?",
+          "startPosition": 35,
+          "targetFact": "8 x 5 = 40"
+        },
+        {
+          "id": "c5",
+          "type": "find_skip_value",
+          "instruction": "Look at the jumps on the number line. How much is each jump worth for telling time?",
+          "hint": "Count the tick marks between each landing spot. It's the number of minutes in a clock interval!",
+          "narration": "Discover the size of each jump on our clock number line.",
+          "startPosition": 0
+        },
+        {
+          "id": "c6",
+          "type": "connect_multiplication",
+          "instruction": "The kangaroo made 10 jumps of 5 all the way to 50! What is the multiplication fact?",
+          "hint": "Multiply the number of jumps by 5.",
+          "narration": "Connect your skip counting journey to the multiplication fact 10 times 5 equals 50.",
+          "startPosition": 50,
+          "targetFact": "10 x 5 = 50"
+        }
+      ],
+      "showOptions": {
+        "showArray": true,
+        "showJumpArcs": true,
+        "showEquation": true,
+        "showDigitPattern": true,
+        "autoPlay": true,
+        "showTrackLabels": true,
+        "showSequenceChips": true,
+        "showSkipValueBadge": true
+      },
+      "gradeBand": "2-3",
+      "gameMode": {
+        "enabled": false,
+        "type": "catch_the_number"
+      },
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 3008,
+  "judgement": {
+    "reasoning": "The student confuses clock face numerals with minute values (reading 4 as 4 minutes instead of 20). Skip-counting along a straight number line by 5s is an underlying skill, but this activity detaches completely from the clock face numerals (1, 2, 3, 4...). It does not explicitly connect the numeral on the clock face to the skip count count/step (e.g. jump 4 lands on 20). Furthermore, instruction c1 skips 20 unnaturally ('15, 25, 30...'). While it touches skip counting by 5s, it doesn't clearly teach why the minute hand on 4 means 20 minutes.",
+    "targetsObstacle": 1,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 1,
+    "leaksCurrentAnswer": false,
+    "verdict": "This detour practices counting by 5s on a number line, but misses linking the specific clock numeral to the number of 5-minute hops."
+  },
+  "rep": 0
+}

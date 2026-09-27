@@ -1,0 +1,106 @@
+{
+  "scenario": "g2-regroup",
+  "arm": "resolver",
+  "componentId": "ten-frame",
+  "shortlist": [
+    "base-ten-blocks",
+    "ten-frame",
+    "place-value-chart",
+    "annotated-example"
+  ],
+  "modeKind": "single",
+  "rationale": "The student treated 13 ones as digits placed directly side-by-side (513) instead of seeing 13 as 1 ten and 3 ones. Finding the ten on a double frame directly builds the understanding that a teen quantity consists of one group of ten plus leftover ones.",
+  "targetEvalMode": "decompose_teen",
+  "intent": "Target decomposing teen numbers (11 to 19) into one full ten and remaining ones using a double ten-frame. Keep numbers strictly within 11-19, and use numbers other than 13 (such as 14, 15, or 12) so as not to give away the current problem's answer directly.",
+  "pickMs": 3333,
+  "content": {
+    "type": "ten-frame",
+    "instanceId": "g2-regroup-detour-ten-frame",
+    "data": {
+      "title": "Finding the Ten in Teen Numbers",
+      "description": "Decompose teen numbers into one full ten and leftover ones using a double ten-frame.",
+      "mode": "double",
+      "counters": {
+        "count": 0,
+        "color": "red",
+        "positions": []
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "decompose_teen",
+          "targetCount": 11,
+          "hint": "Count them out one at a time and stop at ten.",
+          "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+          "instruction": "Here are 11 counters. Turn 10 of them yellow!"
+        },
+        {
+          "id": "c2",
+          "type": "decompose_teen",
+          "targetCount": 12,
+          "hint": "Count them out one at a time and stop at ten.",
+          "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+          "instruction": "Here are 12 counters. Turn 10 of them yellow!"
+        },
+        {
+          "id": "c3",
+          "type": "decompose_teen",
+          "targetCount": 13,
+          "hint": "Count them out one at a time and stop at ten.",
+          "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+          "instruction": "Here are 13 counters. Turn 10 of them yellow!"
+        },
+        {
+          "id": "c4",
+          "type": "decompose_teen",
+          "targetCount": 14,
+          "hint": "Count them out one at a time and stop at ten.",
+          "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+          "instruction": "Here are 14 counters. Turn 10 of them yellow!"
+        },
+        {
+          "id": "c5",
+          "type": "decompose_teen",
+          "targetCount": 15,
+          "hint": "Count them out one at a time and stop at ten.",
+          "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+          "instruction": "Here are 15 counters. Turn 10 of them yellow!"
+        },
+        {
+          "id": "c6",
+          "type": "decompose_teen",
+          "targetCount": 16,
+          "hint": "Count them out one at a time and stop at ten.",
+          "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+          "instruction": "Here are 16 counters. Turn 10 of them yellow!"
+        }
+      ],
+      "showOptions": {
+        "showCount": false,
+        "showEquation": false,
+        "showEmptyCount": false,
+        "allowFlip": true
+      },
+      "gradeBand": "K",
+      "twoColorMode": {
+        "enabled": false,
+        "color1Count": 0,
+        "color2Count": 0,
+        "color1": "red",
+        "color2": "yellow"
+      }
+    }
+  },
+  "generateMs": 2790,
+  "judgement": {
+    "reasoning": "The student wrote 513 for 37 + 26 because they do not see 13 ones as 1 ten and 3 ones that must be regrouped. The detour steps back to decomposing teen numbers into a group of 10 and leftover ones using a double ten-frame manipulative, which directly targets this concept using a distinct visual representation. However, challenge c3 uses 13 counters, directly duplicating the intermediate ones sum (7 + 6 = 13) despite instructions to avoid 13, though it does not give away the whole 37 + 26 addition problem answer.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "This is an effective detour that grounds the student in seeing ten ones inside a teen number using a ten-frame before returning to regrouping."
+  },
+  "rep": 0
+}

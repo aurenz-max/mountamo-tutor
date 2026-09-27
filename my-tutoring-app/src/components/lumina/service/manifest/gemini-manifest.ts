@@ -353,6 +353,22 @@ SPECIALIST SUGGESTIONS (a fast typed ranker read the whole catalog against each 
 ${lines.join('\n')}`;
 };
 
+/**
+ * The catalog as the curator sees it: one line per primitive (description,
+ * constraints, affordance facts) plus the affordance legend. Shared with the
+ * live detour resolver so both selectors read the same catalog.
+ */
+export const buildCatalogContext = (
+  affordanceTags: boolean = AFFORDANCE_TAGS_DEFAULT,
+  catalog: typeof UNIVERSAL_CATALOG = UNIVERSAL_CATALOG,
+): { catalogContext: string; affordanceLegend: string } => ({
+  catalogContext: catalog.map(c => {
+    const tag = affordanceTags ? renderAffordanceTag(c) : '';
+    return `- ${c.id}: ${c.description}${c.constraints ? ` [${c.constraints}]` : ''}${tag ? ` ${tag}` : ''}`;
+  }).join('\n'),
+  affordanceLegend: affordanceTags && hasAffordanceTags(catalog) ? `\n\n${AFFORDANCE_LEGEND}` : '',
+});
+
 export const generateExhibitManifestStreaming = async (
   topic: string,
   gradeLevel: string = 'elementary',
@@ -375,13 +391,7 @@ export const generateExhibitManifestStreaming = async (
     // plus a legend that reads them as facts, never bans. Untagged lines are
     // byte-identical to before — see catalog/affordances.ts for why this is
     // metadata and not a grade floor.
-    const catalogContext = UNIVERSAL_CATALOG.map(c => {
-      const tag = affordanceTags ? renderAffordanceTag(c) : '';
-      return `- ${c.id}: ${c.description}${c.constraints ? ` [${c.constraints}]` : ''}${tag ? ` ${tag}` : ''}`;
-    }).join('\n');
-    const affordanceLegend = affordanceTags && hasAffordanceTags(UNIVERSAL_CATALOG)
-      ? `\n\n${AFFORDANCE_LEGEND}`
-      : '';
+    const { catalogContext, affordanceLegend } = buildCatalogContext(affordanceTags);
 
     // Within-block ordering rule: the Introduce / Visualize / Apply phase ladder.
     //

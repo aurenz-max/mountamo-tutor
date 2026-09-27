@@ -1,0 +1,125 @@
+{
+  "scenario": "g3-clock-minutes",
+  "arm": "sandbox",
+  "componentId": "number-line",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "jump",
+  "intent": "Practice jumping by 5s from 0 to 20 to demonstrate that each number on the clock represents 5 minutes.",
+  "pickMs": 1415,
+  "content": {
+    "type": "number-line",
+    "instanceId": "sandbox-g3-clock-minutes",
+    "data": {
+      "title": "Time Traveler's Jump: Counting by Fives",
+      "description": "Practice skip-counting by fives on a number line to understand how the minutes on a clock move forward.",
+      "range": {
+        "min": 0,
+        "max": 20
+      },
+      "gradeBand": "3-5",
+      "numberType": "integer",
+      "interactionMode": "jump",
+      "challenges": [
+        {
+          "id": "show_jump-0",
+          "type": "show_jump",
+          "instruction": "Put your finger on the number 6, then make a big jump forward of 5 steps to the right.",
+          "targetValues": [
+            11
+          ],
+          "hint": "Follow the drawn arc on the number line and count 5 individual tick marks as you hop to the right.",
+          "startValue": 6,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 6,
+              "changeValue": 5,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        },
+        {
+          "id": "show_jump-1",
+          "type": "show_jump",
+          "instruction": "Put your finger on 9, then make a big jump forward of 5 spaces to see where you land.",
+          "targetValues": [
+            14
+          ],
+          "hint": "Count 5 hops to the right one by one.",
+          "startValue": 9,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 9,
+              "changeValue": 5,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        },
+        {
+          "id": "show_jump-2",
+          "type": "show_jump",
+          "instruction": "Put your finger on the number 1, and make a big jump forward of 5 steps to the right.",
+          "targetValues": [
+            6
+          ],
+          "hint": "Count 5 tick marks to the right from your starting spot.",
+          "startValue": 1,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 1,
+              "changeValue": 5,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        },
+        {
+          "id": "show_jump-3",
+          "type": "show_jump",
+          "instruction": "Put your finger on 12 and make a big jump of 5 forward to see where you land.",
+          "targetValues": [
+            17
+          ],
+          "hint": "Count 5 tick marks to the right from 12.",
+          "startValue": 12,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 12,
+              "changeValue": 5,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        }
+      ],
+      "highlights": [],
+      "operations": [
+        {
+          "type": "add",
+          "startValue": 6,
+          "changeValue": 5,
+          "showJumpArc": true
+        }
+      ],
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 1708,
+  "judgement": {
+    "reasoning": "The obstacle is reading clock face numerals directly as minutes (e.g., pointing to 4 means :04 rather than :20). While the generator prompt asked to jump by 5s from 0 to 20, the generated content has students jumping by 5 from arbitrary starting numbers (6 to 11, 9 to 14, 1 to 6, 12 to 17), which fails to practice skip-counting multiples of 5 (5, 10, 15, 20) or mapping clock numbers to multiples of 5.",
+    "targetsObstacle": 0,
+    "easierOrPrerequisite": 1,
+    "differentRepresentation": 2,
+    "inScope": 1,
+    "contentUsable": 1,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would not use this detour because jumping by 5 starting from 6, 9, or 12 does not help the student learn that clock numerals represent multiples of 5 minutes."
+  },
+  "rep": 0
+}

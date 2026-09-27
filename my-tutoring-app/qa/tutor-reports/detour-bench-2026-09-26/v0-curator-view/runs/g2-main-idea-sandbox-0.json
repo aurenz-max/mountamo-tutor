@@ -1,0 +1,262 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "sandbox",
+  "componentId": "decodable-reader",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "main_idea",
+  "intent": "Help the student distinguish the central idea of a text from isolated interesting details.",
+  "pickMs": 1171,
+  "content": {
+    "type": "decodable-reader",
+    "instanceId": "sandbox-g2-main-idea",
+    "data": {
+      "title": "A Day at the Farm",
+      "gradeLevel": "2",
+      "passage": {
+        "sentences": [
+          {
+            "id": "s1",
+            "words": [
+              {
+                "id": "s1_w1",
+                "text": "The",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s1_w2",
+                "text": "farm",
+                "phonicsPattern": "r-controlled"
+              },
+              {
+                "id": "s1_w3",
+                "text": "has",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s1_w4",
+                "text": "many",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s1_w5",
+                "text": "animals.",
+                "phonicsPattern": "cvc"
+              }
+            ]
+          },
+          {
+            "id": "s2",
+            "words": [
+              {
+                "id": "s2_w1",
+                "text": "A",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s2_w2",
+                "text": "big",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s2_w3",
+                "text": "bird",
+                "phonicsPattern": "r-controlled"
+              },
+              {
+                "id": "s2_w4",
+                "text": "sings",
+                "phonicsPattern": "digraph"
+              },
+              {
+                "id": "s2_w5",
+                "text": "in",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s2_w6",
+                "text": "the",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s2_w7",
+                "text": "tree.",
+                "phonicsPattern": "blend"
+              }
+            ]
+          },
+          {
+            "id": "s3",
+            "words": [
+              {
+                "id": "s3_w1",
+                "text": "A",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s3_w2",
+                "text": "small",
+                "phonicsPattern": "blend"
+              },
+              {
+                "id": "s3_w3",
+                "text": "pig",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s3_w4",
+                "text": "digs",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s3_w5",
+                "text": "in",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s3_w6",
+                "text": "the",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s3_w7",
+                "text": "mud.",
+                "phonicsPattern": "cvc"
+              }
+            ]
+          },
+          {
+            "id": "s4",
+            "words": [
+              {
+                "id": "s4_w1",
+                "text": "A",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s4_w2",
+                "text": "fast",
+                "phonicsPattern": "blend"
+              },
+              {
+                "id": "s4_w3",
+                "text": "horse",
+                "phonicsPattern": "cvce"
+              },
+              {
+                "id": "s4_w4",
+                "text": "runs",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s4_w5",
+                "text": "by",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s4_w6",
+                "text": "the",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s4_w7",
+                "text": "barn.",
+                "phonicsPattern": "r-controlled"
+              }
+            ]
+          },
+          {
+            "id": "s5",
+            "words": [
+              {
+                "id": "s5_w1",
+                "text": "Every",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s5_w2",
+                "text": "animal",
+                "phonicsPattern": "other"
+              },
+              {
+                "id": "s5_w3",
+                "text": "lives",
+                "phonicsPattern": "cvce"
+              },
+              {
+                "id": "s5_w4",
+                "text": "on",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s5_w5",
+                "text": "this",
+                "phonicsPattern": "digraph"
+              },
+              {
+                "id": "s5_w6",
+                "text": "farm.",
+                "phonicsPattern": "r-controlled"
+              }
+            ]
+          }
+        ],
+        "imageDescription": "A sunny farm with a singing bird, a pig digging in mud, and a horse running near a barn"
+      },
+      "phonicsPatternsInPassage": [
+        "sight",
+        "r-controlled",
+        "cvc",
+        "digraph",
+        "blend",
+        "cvce",
+        "other"
+      ],
+      "comprehensionQuestions": [
+        {
+          "question": "What is the whole story mostly about?",
+          "options": [
+            {
+              "id": "A",
+              "text": "The farm has many animals.",
+              "emoji": "🚜"
+            },
+            {
+              "id": "B",
+              "text": "A bird sings in trees.",
+              "emoji": "🐦"
+            },
+            {
+              "id": "C",
+              "text": "A pig digs in mud.",
+              "emoji": "🐖"
+            },
+            {
+              "id": "D",
+              "text": "A horse runs fast.",
+              "emoji": "🐎"
+            }
+          ],
+          "correctOptionId": "A"
+        }
+      ],
+      "comprehensionType": "main_idea",
+      "intent": "Help the student distinguish the central idea of a text from isolated interesting details.",
+      "difficulty": "easy",
+      "objectiveGrade": "2",
+      "readingMode": "decode"
+    }
+  },
+  "generateMs": 4084,
+  "judgement": {
+    "reasoning": "The decodable reader activity primarily targets early decoding skills and oral reading fluency rather than deep comprehension strategy practice. While the comprehension question explicitly sets up the contrast between the main idea ('The farm has many animals') and individual details (bird, pig, horse), the medium itself (reading aloud one controlled-vocabulary sentence at a time with phonics tagging) is an awkward tool for targeting a higher-level comprehension misconception, though the question does provide a simpler prerequisite check.",
+    "targetsObstacle": 1,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "While the question nicely contrasts a central idea against specific details using simpler text, a decodable-reader detour adds unnecessary oral-decoding overhead to address a purely conceptual comprehension obstacle."
+  },
+  "rep": 0
+}

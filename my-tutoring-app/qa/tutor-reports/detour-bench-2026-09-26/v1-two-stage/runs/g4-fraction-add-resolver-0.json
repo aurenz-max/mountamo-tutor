@@ -1,0 +1,131 @@
+{
+  "scenario": "g4-fraction-add",
+  "arm": "resolver",
+  "componentId": "number-line",
+  "shortlist": [
+    "fraction-circles",
+    "number-line",
+    "tape-diagram",
+    "annotated-example"
+  ],
+  "modeKind": "single",
+  "rationale": "Using a number line with jumps visually demonstrates that adding unit fractions moves along intervals of the same unit size without changing the denominator partition. Seeing jumps of fifths land on subsequent fifths clarifies why the denominator stays unchanged.",
+  "targetEvalMode": "jump",
+  "intent": "Guide the student through addition of fractions with like denominators using jump operations on a number line partitioned into unit fractions (e.g., jump 1/4 from 2/4, or jump 2/6 from 1/6). Keep denominators between 3 and 8, ensuring problems strictly differ from 2/5 + 1/5.",
+  "pickMs": 3183,
+  "content": {
+    "type": "number-line",
+    "instanceId": "g4-fraction-add-detour-number-line",
+    "data": {
+      "title": "Fraction Hopper Adventures",
+      "description": "Learn to add fractions with like denominators by making jumps on the number line.",
+      "range": {
+        "min": 0,
+        "max": 10
+      },
+      "gradeBand": "3-5",
+      "numberType": "integer",
+      "interactionMode": "jump",
+      "challenges": [
+        {
+          "id": "show_jump-0",
+          "type": "show_jump",
+          "instruction": "Place your finger on 7 on the number line, and make a single jump to the right.",
+          "targetValues": [
+            10
+          ],
+          "hint": "Count 3 hops to the right from 7 to find where you land.",
+          "startValue": 7,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 7,
+              "changeValue": 3,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        },
+        {
+          "id": "show_jump-1",
+          "type": "show_jump",
+          "instruction": "Place your finger on 3, and then hop forward 3 spaces to the right to see where you land!",
+          "targetValues": [
+            6
+          ],
+          "hint": "Count 3 hops to the right from your starting point to find your new spot.",
+          "startValue": 3,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 3,
+              "changeValue": 3,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        },
+        {
+          "id": "show_jump-2",
+          "type": "show_jump",
+          "instruction": "Place your finger on 5 on the number line, and make a single jump of 2 units to the right.",
+          "targetValues": [
+            7
+          ],
+          "hint": "Count 2 hops to the right from your starting position to find where you land.",
+          "startValue": 5,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 5,
+              "changeValue": 2,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        },
+        {
+          "id": "show_jump-3",
+          "type": "show_jump",
+          "instruction": "Put your finger on 0, and hop forward 3 spaces along the line to see where you land!",
+          "targetValues": [
+            3
+          ],
+          "hint": "Count 3 hops to the right from the starting spot.",
+          "startValue": 0,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 0,
+              "changeValue": 3,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        }
+      ],
+      "highlights": [],
+      "operations": [
+        {
+          "type": "add",
+          "startValue": 7,
+          "changeValue": 3,
+          "showJumpArc": true
+        }
+      ],
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 1611,
+  "judgement": {
+    "reasoning": "The generator completely failed to produce fractions. Instead, it set the number line to integer mode (range 0 to 10) and has the student jumping whole numbers (e.g., 7 + 3 = 10, 3 + 3 = 6). This completely misses the lesson objective and does nothing to address adding denominators.",
+    "targetsObstacle": 0,
+    "easierOrPrerequisite": 0,
+    "differentRepresentation": 0,
+    "inScope": 0,
+    "contentUsable": 0,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would reject this immediately because it generates whole-number addition jumps instead of fractions, failing to address the fraction denominator misconception entirely."
+  },
+  "rep": 0
+}

@@ -1,0 +1,24 @@
+{
+  "sandbox": {
+    "n": 10,
+    "errors": 0,
+    "targetsObstacle": 1,
+    "easierOrPrerequisite": 1.5,
+    "differentRepresentation": 1.1,
+    "inScope": 1.6,
+    "contentUsable": 1.6,
+    "leaks": 0,
+    "nonSingleMode": 0
+  },
+  "resolver": {
+    "n": 10,
+    "errors": 0,
+    "targetsObstacle": 1.7,
+    "easierOrPrerequisite": 1.6,
+    "differentRepresentation": 1.9,
+    "inScope": 2,
+    "contentUsable": 1.5,
+    "leaks": 0,
+    "nonSingleMode": 6
+  }
+}

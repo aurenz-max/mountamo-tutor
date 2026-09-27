@@ -1,0 +1,267 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "sandbox",
+  "componentId": "decodable-reader",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "main_idea",
+  "intent": "Differentiate between the overall main idea of a text and supporting details.",
+  "pickMs": 1144,
+  "content": {
+    "type": "decodable-reader",
+    "instanceId": "sandbox-g2-main-idea",
+    "data": {
+      "title": "A Day at the Farm",
+      "gradeLevel": "2",
+      "passage": {
+        "sentences": [
+          {
+            "id": "s1",
+            "words": [
+              {
+                "id": "s1_w1",
+                "text": "The",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s1_w2",
+                "text": "farm",
+                "phonicsPattern": "r-controlled"
+              },
+              {
+                "id": "s1_w3",
+                "text": "is",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s1_w4",
+                "text": "a",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s1_w5",
+                "text": "busy",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s1_w6",
+                "text": "place.",
+                "phonicsPattern": "cvce"
+              }
+            ]
+          },
+          {
+            "id": "s2",
+            "words": [
+              {
+                "id": "s2_w1",
+                "text": "A",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s2_w2",
+                "text": "black",
+                "phonicsPattern": "blend"
+              },
+              {
+                "id": "s2_w3",
+                "text": "bird",
+                "phonicsPattern": "r-controlled"
+              },
+              {
+                "id": "s2_w4",
+                "text": "sings",
+                "phonicsPattern": "digraph"
+              },
+              {
+                "id": "s2_w5",
+                "text": "in",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s2_w6",
+                "text": "the",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s2_w7",
+                "text": "tree.",
+                "phonicsPattern": "digraph"
+              }
+            ]
+          },
+          {
+            "id": "s3",
+            "words": [
+              {
+                "id": "s3_w1",
+                "text": "Bright",
+                "phonicsPattern": "blend"
+              },
+              {
+                "id": "s3_w2",
+                "text": "corn",
+                "phonicsPattern": "r-controlled"
+              },
+              {
+                "id": "s3_w3",
+                "text": "grows",
+                "phonicsPattern": "blend"
+              },
+              {
+                "id": "s3_w4",
+                "text": "in",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s3_w5",
+                "text": "the",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s3_w6",
+                "text": "garden.",
+                "phonicsPattern": "other"
+              }
+            ]
+          },
+          {
+            "id": "s4",
+            "words": [
+              {
+                "id": "s4_w1",
+                "text": "A",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s4_w2",
+                "text": "fat",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s4_w3",
+                "text": "pig",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s4_w4",
+                "text": "digs",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s4_w5",
+                "text": "in",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s4_w6",
+                "text": "the",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s4_w7",
+                "text": "mud.",
+                "phonicsPattern": "cvc"
+              }
+            ]
+          },
+          {
+            "id": "s5",
+            "words": [
+              {
+                "id": "s5_w1",
+                "text": "All",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s5_w2",
+                "text": "these",
+                "phonicsPattern": "cvce"
+              },
+              {
+                "id": "s5_w3",
+                "text": "things",
+                "phonicsPattern": "digraph"
+              },
+              {
+                "id": "s5_w4",
+                "text": "make",
+                "phonicsPattern": "cvce"
+              },
+              {
+                "id": "s5_w5",
+                "text": "up",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s5_w6",
+                "text": "farm",
+                "phonicsPattern": "r-controlled"
+              },
+              {
+                "id": "s5_w7",
+                "text": "life.",
+                "phonicsPattern": "cvce"
+              }
+            ]
+          }
+        ],
+        "imageDescription": "A sunny farm scene with a bird in a tree, corn growing, and a pig in the mud"
+      },
+      "phonicsPatternsInPassage": [
+        "sight",
+        "r-controlled",
+        "cvce",
+        "blend",
+        "digraph",
+        "cvc",
+        "other"
+      ],
+      "comprehensionQuestions": [
+        {
+          "question": "What is the whole story mostly about?",
+          "options": [
+            {
+              "id": "A",
+              "text": "The farm is a very busy place.",
+              "emoji": "🏡"
+            },
+            {
+              "id": "B",
+              "text": "A bird sings in the green tree.",
+              "emoji": "🐦"
+            },
+            {
+              "id": "C",
+              "text": "Bright corn grows inside the garden.",
+              "emoji": "🌽"
+            },
+            {
+              "id": "D",
+              "text": "A fat pig digs in the mud.",
+              "emoji": "🐷"
+            }
+          ],
+          "correctOptionId": "A"
+        }
+      ],
+      "comprehensionType": "main_idea",
+      "intent": "Differentiate between the overall main idea of a text and supporting details.",
+      "difficulty": "easy",
+      "objectiveGrade": "2",
+      "readingMode": "decode"
+    }
+  },
+  "generateMs": 3627,
+  "judgement": {
+    "reasoning": "The activity chosen is a decodable-reader, which focuses heavily on phonics decoding word-by-word via speech. However, the student's obstacle is conceptual comprehension (distinguishing a main idea from a supporting detail), not phonics or decoding fluency. While the generated comprehension question cleanly contrasts the main idea with specific details mentioned in the text, the decoding format adds unnecessary mechanical reading friction rather than directly scaffolding the concept of main idea vs. detail.",
+    "targetsObstacle": 1,
+    "easierOrPrerequisite": 1,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "While the comprehension question contrasts a main idea with details, switching to an oral decodable reader adds phonics-decoding friction rather than directly scaffolding the comprehension concept."
+  },
+  "rep": 0
+}

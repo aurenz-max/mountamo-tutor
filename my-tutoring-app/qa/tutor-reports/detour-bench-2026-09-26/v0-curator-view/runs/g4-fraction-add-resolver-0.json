@@ -1,0 +1,93 @@
+{
+  "scenario": "g4-fraction-add",
+  "arm": "resolver",
+  "componentId": "fraction-circles",
+  "modeKind": "single",
+  "rationale": "The student mistakenly added the denominators (getting tenths instead of fifths), failing to recognize that the denominator defines the unit size which remains constant during addition. Switching from a fraction bar to interactive circular slices in fraction-circles lets the student physically combine pieces into a single whole circle and observe directly that joining fifths results in more fifths, not tenths.",
+  "targetEvalMode": "build",
+  "intent": "Focus on visual fraction addition and building fractions with common denominators like fourths, sixths, or eighths (avoid fifths to prevent giving away the active challenge 2/5 + 1/5). Provide challenges where the student builds and compares shaded slices in a circle to directly visualize that adding parts leaves the denominator unchanged.",
+  "pickMs": 4381,
+  "content": {
+    "type": "fraction-circles",
+    "instanceId": "g4-fraction-add-detour-fraction-circles",
+    "data": {
+      "title": "Adding Fractions with Like Denominators",
+      "challenges": [
+        {
+          "id": "fc1",
+          "type": "build",
+          "instruction": "Shade the circle to show 1/4.",
+          "denominator": 4,
+          "numerator": 1,
+          "hint": "Look at the equal parts and the amount you need to shade.",
+          "narration": "Shade the circle to show 1/4.",
+          "supportTier": "easy",
+          "showTotalPieces": true,
+          "showWorkingCount": true
+        },
+        {
+          "id": "fc2",
+          "type": "build",
+          "instruction": "Shade the circle to show 2/3.",
+          "denominator": 3,
+          "numerator": 2,
+          "hint": "Look at the equal parts and the amount you need to shade.",
+          "narration": "Shade the circle to show 2/3.",
+          "supportTier": "easy",
+          "showTotalPieces": true,
+          "showWorkingCount": true
+        },
+        {
+          "id": "fc3",
+          "type": "build",
+          "instruction": "Shade the circle to show 4/6.",
+          "denominator": 6,
+          "numerator": 4,
+          "hint": "Look at the equal parts and the amount you need to shade.",
+          "narration": "Shade the circle to show 4/6.",
+          "supportTier": "easy",
+          "showTotalPieces": true,
+          "showWorkingCount": true
+        },
+        {
+          "id": "fc4",
+          "type": "build",
+          "instruction": "Shade the circle to show 7/12.",
+          "denominator": 12,
+          "numerator": 7,
+          "hint": "Look at the equal parts and the amount you need to shade.",
+          "narration": "Shade the circle to show 7/12.",
+          "supportTier": "easy",
+          "showTotalPieces": true,
+          "showWorkingCount": true
+        },
+        {
+          "id": "fc5",
+          "type": "build",
+          "instruction": "Shade the circle to show 6/10.",
+          "denominator": 10,
+          "numerator": 6,
+          "hint": "Look at the equal parts and the amount you need to shade.",
+          "narration": "Shade the circle to show 6/10.",
+          "supportTier": "easy",
+          "showTotalPieces": true,
+          "showWorkingCount": true
+        }
+      ],
+      "description": "Practise building visual fractions using circles with denominators from the fraction pool to understand addition concepts.",
+      "gradeBand": "3-5"
+    }
+  },
+  "generateMs": 2344,
+  "judgement": {
+    "reasoning": "The student obstacle is adding the denominators (e.g., answering 3/10 for 2/5 + 1/5). The generated content merely asks the student to shade static individual fractions on a circle (e.g., shade 1/4, shade 2/3). It does not present any addition context, combining parts, or visual addition steps to demonstrate that the size/number of total pieces remains unchanged during addition.",
+    "targetsObstacle": 0,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "No teacher would use this detour right now because it only has students shade single fractions rather than addressing or illustrating fraction addition."
+  },
+  "rep": 0
+}

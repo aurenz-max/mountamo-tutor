@@ -1,0 +1,125 @@
+{
+  "scenario": "g3-clock-minutes",
+  "arm": "sandbox",
+  "componentId": "number-line",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "jump",
+  "intent": "Practice skip counting by 5s to connect clock numbers to elapsed minutes",
+  "pickMs": 1104,
+  "content": {
+    "type": "number-line",
+    "instanceId": "sandbox-g3-clock-minutes",
+    "data": {
+      "title": "Time Traveler's Number Line",
+      "description": "Learn how to read and write time to the nearest five minutes by jumping along a 60-minute number line.",
+      "range": {
+        "min": 0,
+        "max": 60
+      },
+      "gradeBand": "3-5",
+      "numberType": "integer",
+      "interactionMode": "jump",
+      "challenges": [
+        {
+          "id": "show_jump-0",
+          "type": "show_jump",
+          "instruction": "Place your finger on 36 minutes, and make a single jump forward by 3 minutes to find the new time.",
+          "targetValues": [
+            39
+          ],
+          "hint": "Start at 36 and count 3 hops to the right on the number line.",
+          "startValue": 36,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 36,
+              "changeValue": 3,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        },
+        {
+          "id": "show_jump-1",
+          "type": "show_jump",
+          "instruction": "Put your finger on 26 on the number line. Make a jump forward by 2.",
+          "targetValues": [
+            28
+          ],
+          "hint": "Count 2 hops to the right from 26 to find your new spot.",
+          "startValue": 26,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 26,
+              "changeValue": 2,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        },
+        {
+          "id": "show_jump-2",
+          "type": "show_jump",
+          "instruction": "Put your finger on 51 and make a jump of 2 spaces to the right.",
+          "targetValues": [
+            53
+          ],
+          "hint": "Count 2 hops to the right from 51.",
+          "startValue": 51,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 51,
+              "changeValue": 2,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        },
+        {
+          "id": "show_jump-3",
+          "type": "show_jump",
+          "instruction": "Place your finger on 5 on the number line and make a jump of 10 to the right.",
+          "targetValues": [
+            15
+          ],
+          "hint": "Count 10 hops to the right from 5 to find where you land.",
+          "startValue": 5,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 5,
+              "changeValue": 10,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        }
+      ],
+      "highlights": [],
+      "operations": [
+        {
+          "type": "add",
+          "startValue": 36,
+          "changeValue": 3,
+          "showJumpArc": true
+        }
+      ],
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 1753,
+  "judgement": {
+    "reasoning": "The obstacle is confusing clock face numerals with minute values (e.g., reading 4 as 4 minutes instead of 20 minutes). The generator was asked to practice skip-counting by 5s to connect clock numbers to minutes, but instead generated random addition jumps on a number line (e.g., 36 + 3, 26 + 2, 51 + 2) which completely miss skip-counting by 5s or connecting clock numbers to minute values.",
+    "targetsObstacle": 0,
+    "easierOrPrerequisite": 1,
+    "differentRepresentation": 2,
+    "inScope": 1,
+    "contentUsable": 1,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would not use this detour because it practices arbitrary single-digit addition jumps rather than skip-counting by 5s to understand clock minute markings."
+  },
+  "rep": 0
+}

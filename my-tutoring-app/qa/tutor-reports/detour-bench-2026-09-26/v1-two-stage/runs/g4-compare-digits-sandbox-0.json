@@ -1,0 +1,130 @@
+{
+  "scenario": "g4-compare-digits",
+  "arm": "sandbox",
+  "componentId": "place-value-chart",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "compare",
+  "intent": "Help student compare two 4-digit numbers (such as 3,999 and 4,001) by comparing the highest place value (thousands place) first rather than looking at individual larger digits.",
+  "pickMs": 1027,
+  "content": {
+    "type": "place-value-chart",
+    "instanceId": "sandbox-g4-compare-digits",
+    "data": {
+      "title": "Comparing Numbers with Place Value",
+      "description": "Join your tutor to explore multi-digit numbers across three interactive phases by identifying places, speaking their values out loud, and writing numbers into the chart.",
+      "challenges": [
+        {
+          "id": "pvc-1",
+          "targetNumber": 8719,
+          "highlightedDigitPlace": 3,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Hundreds",
+            "Ten Thousands",
+            "Thousands",
+            "Tens"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 800,
+              "wordForm": "Eight Hundred"
+            },
+            {
+              "value": 8000,
+              "wordForm": "Eight Thousand"
+            },
+            {
+              "value": 80000,
+              "wordForm": "Eighty Thousand"
+            },
+            {
+              "value": 80,
+              "wordForm": "Eighty"
+            }
+          ]
+        },
+        {
+          "id": "pvc-2",
+          "targetNumber": 5157,
+          "highlightedDigitPlace": 0,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Tens",
+            "Tenths",
+            "Hundreds",
+            "Ones"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 7,
+              "wordForm": "Seven"
+            },
+            {
+              "value": 0.7000000000000001,
+              "wordForm": "Seven Tenths"
+            },
+            {
+              "value": 70,
+              "wordForm": "Seventy"
+            },
+            {
+              "value": 0.07,
+              "wordForm": "Seven Hundredths"
+            }
+          ]
+        },
+        {
+          "id": "pvc-3",
+          "targetNumber": 7219,
+          "highlightedDigitPlace": 3,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Hundreds",
+            "Thousands",
+            "Ten Thousands",
+            "Tens"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 700,
+              "wordForm": "Seven Hundred"
+            },
+            {
+              "value": 7000,
+              "wordForm": "Seven Thousand"
+            },
+            {
+              "value": 70000,
+              "wordForm": "Seventy Thousand"
+            },
+            {
+              "value": 70,
+              "wordForm": "Seventy"
+            }
+          ]
+        }
+      ],
+      "challengeType": "compare",
+      "showExpandedForm": true,
+      "showMultipliers": true,
+      "supportTier": "easy",
+      "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+    }
+  },
+  "generateMs": 1306,
+  "judgement": {
+    "reasoning": "The student mistakenly thinks 3,999 is larger than 4,001 because it contains nines, needing instruction on comparing the greatest place value first. The generated detour uses the exact same activity format (identifying place names and single-digit values of isolated 4-digit numbers) rather than presenting a comparison task, missing the obstacle entirely.",
+    "targetsObstacle": 0,
+    "easierOrPrerequisite": 1,
+    "differentRepresentation": 0,
+    "inScope": 2,
+    "contentUsable": 1,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would not use this detour because it repeats isolated place-value identification instead of helping the student compare two numbers by their highest place value."
+  },
+  "rep": 0
+}

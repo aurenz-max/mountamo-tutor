@@ -1,0 +1,153 @@
+{
+  "scenario": "g1-cvc-blend",
+  "arm": "sandbox",
+  "componentId": "phonics-blender",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "cvc",
+  "intent": "Practice blending three letter sounds into a single CVC word.",
+  "pickMs": 1091,
+  "content": {
+    "type": "phonics-blender",
+    "instanceId": "sandbox-g1-cvc-blend",
+    "data": {
+      "title": "Fun Animal CVC Word Blending!",
+      "gradeLevel": "1",
+      "patternType": "cvc",
+      "words": [
+        {
+          "id": "w1",
+          "targetWord": "cat",
+          "phonemes": [
+            {
+              "id": "w1_p1",
+              "sound": "/k/",
+              "letters": "c"
+            },
+            {
+              "id": "w1_p2",
+              "sound": "/æ/",
+              "letters": "a"
+            },
+            {
+              "id": "w1_p3",
+              "sound": "/t/",
+              "letters": "t"
+            }
+          ],
+          "emoji": "🐱",
+          "imageDescription": "a small furry cat"
+        },
+        {
+          "id": "w2",
+          "targetWord": "dog",
+          "phonemes": [
+            {
+              "id": "w2_p1",
+              "sound": "/d/",
+              "letters": "d"
+            },
+            {
+              "id": "w2_p2",
+              "sound": "/ɒ/",
+              "letters": "o"
+            },
+            {
+              "id": "w2_p3",
+              "sound": "/g/",
+              "letters": "g"
+            }
+          ],
+          "emoji": "🐶",
+          "imageDescription": "a friendly dog"
+        },
+        {
+          "id": "w3",
+          "targetWord": "sun",
+          "phonemes": [
+            {
+              "id": "w3_p1",
+              "sound": "/s/",
+              "letters": "s"
+            },
+            {
+              "id": "w3_p2",
+              "sound": "/ʌ/",
+              "letters": "u"
+            },
+            {
+              "id": "w3_p3",
+              "sound": "/n/",
+              "letters": "n"
+            }
+          ],
+          "emoji": "☀️",
+          "imageDescription": "a bright yellow sun"
+        },
+        {
+          "id": "w4",
+          "targetWord": "pig",
+          "phonemes": [
+            {
+              "id": "w4_p1",
+              "sound": "/p/",
+              "letters": "p"
+            },
+            {
+              "id": "w4_p2",
+              "sound": "/ɪ/",
+              "letters": "i"
+            },
+            {
+              "id": "w4_p3",
+              "sound": "/g/",
+              "letters": "g"
+            }
+          ],
+          "emoji": "🐷",
+          "imageDescription": "a cute pink pig"
+        },
+        {
+          "id": "w5",
+          "targetWord": "hat",
+          "phonemes": [
+            {
+              "id": "w5_p1",
+              "sound": "/h/",
+              "letters": "h"
+            },
+            {
+              "id": "w5_p2",
+              "sound": "/æ/",
+              "letters": "a"
+            },
+            {
+              "id": "w5_p3",
+              "sound": "/t/",
+              "letters": "t"
+            }
+          ],
+          "emoji": "🎩",
+          "imageDescription": "a stylish hat"
+        }
+      ],
+      "supportTier": "easy",
+      "showBlendPreview": "full",
+      "showSlotCount": true,
+      "showTileLetters": true,
+      "nameTargetPhonemes": true
+    }
+  },
+  "generateMs": 2325,
+  "judgement": {
+    "reasoning": "The student can segment individual phonemes ('/m/ /a/ /t/') but struggles to blend them into a whole word. The phonics-blender tool isolates the exact blending mechanic using interactive phoneme tiles and audio playback, moving from connected sounds to the full word before returning to connected text.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would immediately use this targeted blending detour to help the student bridge the gap between individual sounds and blended CVC words."
+  },
+  "rep": 0
+}

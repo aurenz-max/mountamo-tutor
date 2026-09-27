@@ -1,0 +1,71 @@
+{
+  "scenario": "g2-regroup",
+  "arm": "sandbox",
+  "componentId": "base-ten-blocks",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "regroup",
+  "intent": "Help the student understand place value regrouping by trading 10 ones for 1 ten when adding ones that total 13.",
+  "pickMs": 1396,
+  "content": {
+    "type": "base-ten-blocks",
+    "instanceId": "sandbox-g2-regroup",
+    "data": {
+      "title": "Trading Blocks Adventure",
+      "description": "Learn how to regroup base-ten blocks by trading ones for tens to build numbers correctly.",
+      "numberValue": 307,
+      "challenges": [
+        {
+          "type": "regroup",
+          "instruction": "Examine the blocks on your mat and predict what will happen when you trade.",
+          "targetNumber": 310,
+          "hint": "Count how many ones blocks you have. Remember that ten ones can be traded for one ten.",
+          "showColumnCounts": true,
+          "showBlocksTotal": true
+        },
+        {
+          "type": "regroup",
+          "instruction": "Look at the current blocks and prepare to make your next trade.",
+          "targetNumber": 285,
+          "hint": "Check the ones column and see if you have enough blocks to make a trade into the tens place.",
+          "showColumnCounts": true,
+          "showBlocksTotal": true
+        },
+        {
+          "type": "regroup",
+          "instruction": "Review the blocks currently on your mat before trading.",
+          "targetNumber": 68,
+          "hint": "Look closely at the ones place to decide when a trade is needed.",
+          "showColumnCounts": true,
+          "showBlocksTotal": true
+        },
+        {
+          "type": "regroup",
+          "instruction": "Observe the blocks on your mat and predict the outcome of a trade.",
+          "targetNumber": 92,
+          "hint": "Count your ones blocks carefully to see if you can trade them for a ten.",
+          "showColumnCounts": true,
+          "showBlocksTotal": true
+        }
+      ],
+      "gradeBand": "2-3",
+      "interactionMode": "regroup",
+      "decimalMode": false,
+      "maxPlace": "hundreds",
+      "supplyTray": true,
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 1465,
+  "judgement": {
+    "reasoning": "The activity uses physical base-ten regrouping tasks where the student practices trading 10 ones for 1 ten, directly addressing the underlying concept of place value and trading that they missed when writing 513. However, the target numbers jump around in the hundreds (310, 285) rather than focusing simply on two-digit combinations or the specific 13 ones to 1 ten and 3 ones trade, though it remains a solid prerequisite representation.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would use this detour because it isolates the physical action of trading 10 ones for 1 ten before returning to the written algorithm."
+  },
+  "rep": 0
+}

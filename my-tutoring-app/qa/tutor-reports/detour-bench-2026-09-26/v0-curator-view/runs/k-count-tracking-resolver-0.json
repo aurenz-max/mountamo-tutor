@@ -1,0 +1,101 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "resolver",
+  "componentId": "ten-frame",
+  "modeKind": "single",
+  "rationale": "The student struggles with one-to-one correspondence and keeping track of counted items in a scattered or unorganized set, resulting in counting some objects twice and skipping others. A structured ten-frame provides discrete, fixed physical slots so the student places one counter per slot while counting, visually anchoring exactly one number word to each object.",
+  "targetEvalMode": "build",
+  "intent": "Focus on the 'build' mode where the student places counters one by one into the 2x5 grid up to target quantities between 4 and 7 (avoiding 8, the current problem's count). Emphasize touching each space once as each number is counted so no counter is counted twice or missed.",
+  "pickMs": 3001,
+  "content": {
+    "type": "ten-frame",
+    "instanceId": "k-count-tracking-detour-ten-frame",
+    "data": {
+      "title": "Counting Objects to 10",
+      "description": "Place counters into a ten-frame one at a time while counting to maintain one-to-one correspondence.",
+      "mode": "single",
+      "counters": {
+        "count": 0,
+        "color": "blue",
+        "positions": []
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "build",
+          "targetCount": 4,
+          "hint": "Touch each space as you place 4 counters one by one.",
+          "narration": "Let's build a group of 4 counters on the frame. Remember to place them one at a time!",
+          "instruction": "Put 4 counters on the ten frame!"
+        },
+        {
+          "id": "c2",
+          "type": "build",
+          "targetCount": 5,
+          "hint": "Fill the top row completely to make 5.",
+          "narration": "Can you put 5 counters on the frame? Fill the top row first!",
+          "instruction": "Put 5 counters on the ten frame!"
+        },
+        {
+          "id": "c3",
+          "type": "build",
+          "targetCount": 5,
+          "hint": "Let's practice 5 again to make sure we count carefully.",
+          "narration": "Let's place 5 counters on the frame again, one by one.",
+          "instruction": "Put 5 counters on the ten frame!"
+        },
+        {
+          "id": "c4",
+          "type": "build",
+          "targetCount": 6,
+          "hint": "Put 5 on the top row, and just 1 more on the bottom row.",
+          "narration": "Now let's build 6 counters. That's a full top row and one more on the bottom.",
+          "instruction": "Put 6 counters on the ten frame!"
+        },
+        {
+          "id": "c5",
+          "type": "build",
+          "targetCount": 6,
+          "hint": "Count slowly: 1, 2, 3, 4, 5, and 6.",
+          "narration": "Let's build 6 counters on the frame one more time.",
+          "instruction": "Put 6 counters on the ten frame!"
+        },
+        {
+          "id": "c6",
+          "type": "build",
+          "targetCount": 7,
+          "hint": "Fill the top row of 5, then add 2 more on the bottom.",
+          "narration": "Can you place 7 counters on the frame? Take your time counting each one.",
+          "instruction": "Put 7 counters on the ten frame!"
+        },
+        {
+          "id": "c7",
+          "type": "build",
+          "targetCount": 7,
+          "hint": "Check your work by pointing to each of the 7 counters.",
+          "narration": "Great job! Let's do one final challenge and build 7 counters carefully.",
+          "instruction": "Put 7 counters on the ten frame!"
+        }
+      ],
+      "showOptions": {
+        "showCount": true,
+        "showEquation": false,
+        "showEmptyCount": false,
+        "allowFlip": false
+      },
+      "gradeBand": "K"
+    }
+  },
+  "generateMs": 2561,
+  "judgement": {
+    "reasoning": "The student struggles with one-to-one correspondence and keeping track (counting objects twice or skipping). Using a ten-frame 'build' mode forces 1-to-1 placement into explicit discrete boxes (one counter per box), which directly scaffolds keeping track and preventing double-counting. The numbers (4-7) are simpler than 8, avoiding the failed item while practising the exact missing skill with a structured spatial manipulative.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would immediately use this structured ten-frame build activity to anchor one-to-one correspondence and physical tracking."
+  },
+  "rep": 0
+}

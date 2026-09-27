@@ -1,0 +1,92 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "sandbox",
+  "componentId": "counting-board",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "recount_moved",
+  "intent": "Practise one-to-one correspondence up to 8 objects by moving items as they are counted to keep track of counted vs uncounted objects.",
+  "pickMs": 1120,
+  "content": {
+    "type": "counting-board",
+    "instanceId": "sandbox-k-count-tracking",
+    "data": {
+      "title": "Moving Butterflies",
+      "description": "Practise one-to-one correspondence by recounting butterflies as they move to new spots.",
+      "objects": {
+        "type": "butterflies"
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "recount_moved",
+          "instruction": "Count the butterflies. Then watch them move!",
+          "targetAnswer": 6,
+          "count": 6,
+          "arrangement": "line",
+          "hint": "Tap each butterfly one at a time as you count them.",
+          "narration": "Let's count these lovely butterflies lined up together."
+        },
+        {
+          "id": "c2",
+          "type": "recount_moved",
+          "instruction": "Count the butterflies. Then watch them move!",
+          "targetAnswer": 5,
+          "count": 5,
+          "arrangement": "line",
+          "hint": "Touch each butterfly slowly to keep track of your count.",
+          "narration": "Now let's count this line of butterflies."
+        },
+        {
+          "id": "c3",
+          "type": "recount_moved",
+          "instruction": "Count the butterflies. Then watch them move!",
+          "targetAnswer": 8,
+          "count": 8,
+          "arrangement": "line",
+          "hint": "Keep counting carefully from the beginning to the end.",
+          "narration": "Wonderful! Let's count this new set of butterflies."
+        },
+        {
+          "id": "c4",
+          "type": "recount_moved",
+          "instruction": "Count the butterflies. Then watch them move!",
+          "targetAnswer": 7,
+          "count": 7,
+          "arrangement": "line",
+          "hint": "Take your time and touch each butterfly as you count.",
+          "narration": "Let's count this larger group of butterflies together."
+        },
+        {
+          "id": "c5",
+          "type": "recount_moved",
+          "instruction": "Count the butterflies. Then watch them move!",
+          "targetAnswer": 3,
+          "count": 3,
+          "arrangement": "line",
+          "hint": "Count every single butterfly to make sure you get the right total.",
+          "narration": "You are doing amazing. Let's count this final line of butterflies!"
+        }
+      ],
+      "showOptions": {
+        "showRunningCount": true,
+        "showGroupCircles": false,
+        "highlightOnTap": true,
+        "showLastNumber": true
+      },
+      "gradeBand": "K"
+    }
+  },
+  "generateMs": 2435,
+  "judgement": {
+    "reasoning": "The obstacle is losing track (double-counting or skipping objects). The generated task puts objects in a line and activates 'highlightOnTap' and 'showRunningCount', which visually tracks counted vs uncounted items. However, the generator chose 'recount_moved' (a conservation task) rather than moving items to sort counted from uncounted, though the line arrangement with highlight visual feedback effectively addresses the tracking issue.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 1,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would use this detour because the linear arrangement and highlight-on-tap feature directly scaffold one-to-one correspondence and prevent double counting."
+  },
+  "rep": 0
+}

@@ -1,0 +1,108 @@
+{
+  "scenario": "g2-regroup",
+  "arm": "resolver",
+  "componentId": "ten-frame",
+  "modeKind": "blend",
+  "rationale": "The student does not understand place-value bundling and writes the two-digit ones total directly into the ones position. Ten-frame provides a tactile, concrete structure to visualize teen numbers as one full ten and leftover ones, directly correcting the misunderstanding before returning to the algorithm.",
+  "targetEvalMode": "build_teen|decompose_teen",
+  "intent": "Target teen number decomposition (11–18) using the double ten-frame in hands-on building or decompose mode. Focus on showing that when ones exceed 9, a full group of 10 is formed with remaining individual ones. Use numbers like 14, 12, or 15 so as not to duplicate the current problem (13 ones from 37 + 26). Ensure challenges emphasize seeing 1 ten and leftover ones.",
+  "pickMs": 3176,
+  "content": {
+    "type": "ten-frame",
+    "instanceId": "g2-regroup-detour-ten-frame",
+    "data": {
+      "title": "Decomposing Teen Numbers",
+      "description": "Explore teen numbers by seeing them as a full group of ten and some leftover ones on a double ten-frame.",
+      "mode": "double",
+      "counters": {
+        "count": 0,
+        "color": "red",
+        "positions": []
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "build_teen",
+          "targetCount": 11,
+          "hint": "The top frame is a whole ten. Count on from ten.",
+          "narration": "The top frame is full — that is one ten. Now make the number.",
+          "instruction": "The top frame is full — that is 10. Make 11!"
+        },
+        {
+          "id": "c2",
+          "type": "decompose_teen",
+          "targetCount": 12,
+          "hint": "Count them out one at a time and stop at ten.",
+          "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+          "instruction": "Here are 12 counters. Turn 10 of them yellow!"
+        },
+        {
+          "id": "c3",
+          "type": "build_teen",
+          "targetCount": 13,
+          "hint": "The top frame is a whole ten. Count on from ten.",
+          "narration": "The top frame is full — that is one ten. Now make the number.",
+          "instruction": "The top frame is full — that is 10. Make 13!"
+        },
+        {
+          "id": "c4",
+          "type": "decompose_teen",
+          "targetCount": 14,
+          "hint": "Count them out one at a time and stop at ten.",
+          "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+          "instruction": "Here are 14 counters. Turn 10 of them yellow!"
+        },
+        {
+          "id": "c5",
+          "type": "build_teen",
+          "targetCount": 15,
+          "hint": "The top frame is a whole ten. Count on from ten.",
+          "narration": "The top frame is full — that is one ten. Now make the number.",
+          "instruction": "The top frame is full — that is 10. Make 15!"
+        },
+        {
+          "id": "c6",
+          "type": "decompose_teen",
+          "targetCount": 16,
+          "hint": "Count them out one at a time and stop at ten.",
+          "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+          "instruction": "Here are 16 counters. Turn 10 of them yellow!"
+        },
+        {
+          "id": "c7",
+          "type": "build_teen",
+          "targetCount": 17,
+          "hint": "The top frame is a whole ten. Count on from ten.",
+          "narration": "The top frame is full — that is one ten. Now make the number.",
+          "instruction": "The top frame is full — that is 10. Make 17!"
+        }
+      ],
+      "showOptions": {
+        "showCount": true,
+        "showEquation": false,
+        "showEmptyCount": false,
+        "allowFlip": true
+      },
+      "gradeBand": "1-2",
+      "twoColorMode": {
+        "enabled": true,
+        "color1Count": 10,
+        "color2Count": 0,
+        "color1": "yellow",
+        "color2": "red"
+      }
+    }
+  },
+  "generateMs": 3257,
+  "judgement": {
+    "reasoning": "The student wrote 513 for 37 + 26 because they do not recognize teen numbers (specifically 13 ones) as 1 ten and leftover ones that need regrouping. Using a double ten-frame to explicitly build and decompose teen numbers into a group of 10 and extra ones directly targets this missing conceptual foundation using a different, simpler, and highly visual representation.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "This detour directly addresses the student's misconception by using a double ten-frame to show that teen numbers consist of a full ten and leftover ones."
+  },
+  "rep": 0
+}

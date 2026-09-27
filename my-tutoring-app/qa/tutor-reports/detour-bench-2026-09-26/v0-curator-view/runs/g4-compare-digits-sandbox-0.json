@@ -1,0 +1,130 @@
+{
+  "scenario": "g4-compare-digits",
+  "arm": "sandbox",
+  "componentId": "place-value-chart",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "compare",
+  "intent": "Compare two multi-digit numbers (such as 3,999 and 4,001) by examining the value of the largest place value first rather than the magnitude of individual digits.",
+  "pickMs": 1148,
+  "content": {
+    "type": "place-value-chart",
+    "instanceId": "sandbox-g4-compare-digits",
+    "data": {
+      "title": "Comparing Numbers with Place Value — Grade 3",
+      "description": "Join your live tutor to explore how places give digits their value across three numbers. You will speak the place names and values out loud and write digits in the chart.",
+      "challenges": [
+        {
+          "id": "pvc-1",
+          "targetNumber": 5348,
+          "highlightedDigitPlace": 0,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Tens",
+            "Ones",
+            "Tenths",
+            "Hundreds"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 0.8,
+              "wordForm": "Eight Tenths"
+            },
+            {
+              "value": 80,
+              "wordForm": "Eighty"
+            },
+            {
+              "value": 8,
+              "wordForm": "Eight"
+            },
+            {
+              "value": 0.08,
+              "wordForm": "Eight Hundredths"
+            }
+          ]
+        },
+        {
+          "id": "pvc-2",
+          "targetNumber": 7508,
+          "highlightedDigitPlace": 0,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Tens",
+            "Ones",
+            "Tenths",
+            "Hundreds"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 0.8,
+              "wordForm": "Eight Tenths"
+            },
+            {
+              "value": 8,
+              "wordForm": "Eight"
+            },
+            {
+              "value": 80,
+              "wordForm": "Eighty"
+            },
+            {
+              "value": 0.08,
+              "wordForm": "Eight Hundredths"
+            }
+          ]
+        },
+        {
+          "id": "pvc-3",
+          "targetNumber": 1299,
+          "highlightedDigitPlace": 3,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Thousands",
+            "Hundreds",
+            "Ten Thousands",
+            "Tens"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 100,
+              "wordForm": "One Hundred"
+            },
+            {
+              "value": 10000,
+              "wordForm": "Ten Thousand"
+            },
+            {
+              "value": 1000,
+              "wordForm": "One Thousand"
+            },
+            {
+              "value": 10,
+              "wordForm": "Ten"
+            }
+          ]
+        }
+      ],
+      "challengeType": "compare",
+      "showExpandedForm": true,
+      "showMultipliers": true,
+      "supportTier": "easy",
+      "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+    }
+  },
+  "generateMs": 962,
+  "judgement": {
+    "reasoning": "The student fails to realize that the largest place value determines the overall comparison, confusing digit face value with place value. However, the generated detour simply asks isolated place-value questions (identifying the place name and value of a highlighted digit in single isolated numbers) rather than setting up an explicit side-by-side comparison between numbers where smaller digits hold higher places. Furthermore, it introduces decimals (tenths, hundredths) which are unnecessary and confusing for Grade 3/4 whole numbers.",
+    "targetsObstacle": 1,
+    "easierOrPrerequisite": 1,
+    "differentRepresentation": 0,
+    "inScope": 1,
+    "contentUsable": 1,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would not use this detour because it reviews isolated place identification instead of actively comparing two numbers to address the 'bigger digits win' misconception."
+  },
+  "rep": 0
+}

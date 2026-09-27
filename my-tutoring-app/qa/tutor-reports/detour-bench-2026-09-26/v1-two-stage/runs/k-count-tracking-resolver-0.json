@@ -1,0 +1,114 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "resolver",
+  "componentId": "ten-frame",
+  "shortlist": [
+    "ten-frame",
+    "bar-model",
+    "hundreds-chart",
+    "comparison-panel"
+  ],
+  "modeKind": "single",
+  "rationale": "The student struggles with one-to-one correspondence, double-counting and skipping objects. Placing counters onto a structured ten-frame reinforces placing exactly one counter per slot and per number word, establishing a physical tracking constraint.",
+  "targetEvalMode": "build",
+  "intent": "Target one-to-one counting discipline within 1 to 7 using concrete counter placement on a single ten-frame; avoid using 8 objects so as not to duplicate the student's current task.",
+  "pickMs": 2916,
+  "content": {
+    "type": "ten-frame",
+    "instanceId": "k-count-tracking-detour-ten-frame",
+    "data": {
+      "title": "Counting Objects to 7",
+      "description": "Place counters one by one on the ten-frame to practice one-to-one counting up to 7.",
+      "mode": "single",
+      "counters": {
+        "count": 0,
+        "color": "red",
+        "positions": []
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "build",
+          "targetCount": 2,
+          "hint": "Place two red counters on the frame one at a time.",
+          "narration": "Let's start by placing two counters on our ten-frame.",
+          "instruction": "Put 2 counters on the ten frame!"
+        },
+        {
+          "id": "c2",
+          "type": "build",
+          "targetCount": 3,
+          "hint": "Count carefully as you place three counters on the frame.",
+          "narration": "Now, let's put three counters on the frame.",
+          "instruction": "Put 3 counters on the ten frame!"
+        },
+        {
+          "id": "c3",
+          "type": "build",
+          "targetCount": 4,
+          "hint": "Fill the top row as you count up to four.",
+          "narration": "Can you place four counters on the frame?",
+          "instruction": "Put 4 counters on the ten frame!"
+        },
+        {
+          "id": "c4",
+          "type": "build",
+          "targetCount": 5,
+          "hint": "Fill the entire top row of the ten-frame.",
+          "narration": "Let's fill the entire top row by placing five counters.",
+          "instruction": "Put 5 counters on the ten frame!"
+        },
+        {
+          "id": "c5",
+          "type": "build",
+          "targetCount": 6,
+          "hint": "Put five on top, and one more on the bottom row.",
+          "narration": "Great job! Now let's build the number six.",
+          "instruction": "Put 6 counters on the ten frame!"
+        },
+        {
+          "id": "c6",
+          "type": "build",
+          "targetCount": 7,
+          "hint": "Place five on the top row and two on the bottom row.",
+          "narration": "Let's make seven counters on the frame.",
+          "instruction": "Put 7 counters on the ten frame!"
+        },
+        {
+          "id": "c7",
+          "type": "build",
+          "targetCount": 7,
+          "hint": "Check your count to make sure you have exactly seven counters.",
+          "narration": "Let's practice our final challenge and build seven counters again.",
+          "instruction": "Put 7 counters on the ten frame!"
+        }
+      ],
+      "showOptions": {
+        "showCount": true,
+        "showEquation": false,
+        "showEmptyCount": false,
+        "allowFlip": false
+      },
+      "gradeBand": "K",
+      "twoColorMode": {
+        "enabled": false,
+        "color1Count": 0,
+        "color2Count": 0,
+        "color1": "red",
+        "color2": "yellow"
+      }
+    }
+  },
+  "generateMs": 2461,
+  "judgement": {
+    "reasoning": "The student struggles with one-to-one correspondence and keeping track of counted items in a scattered or unorganized set (counting 8 as 10). Placing counters one-by-one into distinct cells of a ten-frame directly constrains the spatial organization (one item per box), preventing double-counting or skipping. The progression starts low (2, 3) and scaffolds up to 7 without repeating 8.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, using structured placement on a ten-frame provides the exact spatial grounding needed to fix skipping and double-counting."
+  },
+  "rep": 0
+}

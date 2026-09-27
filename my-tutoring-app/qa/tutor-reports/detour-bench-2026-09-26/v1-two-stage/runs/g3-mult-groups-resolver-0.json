@@ -1,0 +1,135 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "resolver",
+  "componentId": "multiplication-explorer",
+  "shortlist": [
+    "multiplication-explorer",
+    "comparison-panel",
+    "skip-counting-runner",
+    "annotated-example"
+  ],
+  "modeKind": "single",
+  "rationale": "The student conflates multiplication with addition by adding the two factors (4 + 3 = 7). Building equal groups directly shows that multiplication represents repeated groups of items rather than combining single numbers.",
+  "targetEvalMode": "build",
+  "intent": "Guide the student to build visual equal groups for basic single-digit facts (e.g., 3 groups of 2, or 2 groups of 5). Do not use the fact 4 x 3 so the student can apply the concept back to their original problem afterwards. Emphasize how many groups there are and how many items are in each group compared to simple addition of the factors (e.g., 3 groups of 2 is 6, not 3 + 2 = 5). Range: factors 2 to 5, products up to 20.",
+  "pickMs": 2954,
+  "content": {
+    "type": "multiplication-explorer",
+    "instanceId": "g3-mult-groups-detour-multiplication-explorer",
+    "data": {
+      "title": "Sticker Packs and Equal Groups",
+      "description": "Construct equal groups of items to see multiplication as groups of objects rather than adding two single numbers.",
+      "fact": {
+        "factor1": 5,
+        "factor2": 5,
+        "product": 25
+      },
+      "representations": {
+        "equalGroups": true,
+        "array": true,
+        "repeatedAddition": true,
+        "numberLine": true,
+        "areaModel": true
+      },
+      "activeRepresentation": "groups",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "build",
+          "instruction": "Look at the 5 groups with 5 stickers in each group. How many stickers are there in total?",
+          "targetFact": "5 × 5 = 25",
+          "hint": "Count by fives: 5, 10, 15, 20, 25.",
+          "narration": "Great job! Let's count our sticker packs together.",
+          "hiddenValue": "product",
+          "timeLimit": null,
+          "fact": {
+            "factor1": 5,
+            "factor2": 5
+          },
+          "representation": "groups"
+        },
+        {
+          "id": "c2",
+          "type": "build",
+          "instruction": "Look at the 4 groups with 2 wheels in each group. How many wheels are there in total?",
+          "targetFact": "4 × 2 = 8",
+          "hint": "Count by twos: 2, 4, 6, 8.",
+          "narration": "Wonderful! Let's count the wheels on the cars.",
+          "hiddenValue": "product",
+          "timeLimit": null,
+          "fact": {
+            "factor1": 4,
+            "factor2": 2
+          },
+          "representation": "array"
+        },
+        {
+          "id": "c3",
+          "type": "build",
+          "instruction": "Look at the 6 groups with 8 items in each group. How many items are there in total?",
+          "targetFact": "6 × 8 = 48",
+          "hint": "Count by eights: 8, 16, 24, 32, 40, 48.",
+          "narration": "Keep going! You are doing amazing with these larger groups.",
+          "hiddenValue": "product",
+          "timeLimit": null,
+          "fact": {
+            "factor1": 6,
+            "factor2": 8
+          },
+          "representation": "repeated_addition"
+        },
+        {
+          "id": "c4",
+          "type": "build",
+          "instruction": "Look at the 3 groups with 3 items in each group. How many items are there in total?",
+          "targetFact": "3 × 3 = 9",
+          "hint": "Count by threes: 3, 6, 9.",
+          "narration": "Awesome work! Let's count these three groups.",
+          "hiddenValue": "product",
+          "timeLimit": null,
+          "fact": {
+            "factor1": 3,
+            "factor2": 3
+          },
+          "representation": "number_line"
+        },
+        {
+          "id": "c5",
+          "type": "build",
+          "instruction": "Look at the 8 groups with 2 items in each group. How many items are there in total?",
+          "targetFact": "8 × 2 = 16",
+          "hint": "Count by twos: 2, 4, 6, 8, 10, 12, 14, 16.",
+          "narration": "You are at the final challenge! Count the total number of items.",
+          "hiddenValue": "product",
+          "timeLimit": null,
+          "fact": {
+            "factor1": 8,
+            "factor2": 2
+          },
+          "representation": "area_model"
+        }
+      ],
+      "showOptions": {
+        "showProduct": false,
+        "showFactFamily": false,
+        "showCommutativeFlip": false,
+        "showDistributiveBreakdown": false
+      },
+      "gradeBand": "2-3",
+      "imagePrompt": "colorful sticker packs arranged in neat equal groups on a table",
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 2667,
+  "judgement": {
+    "reasoning": "The student confuses multiplication with addition (4 x 3 = 7). The detour uses equal groups representations to show that multiplication means counting multiple items per group rather than adding the factors. However, the generator drifted significantly from instructions by including numbers up to 6 x 8 = 48 (violating range 2-5, products up to 20) and switching representations away from groups to array, number line, and area model across challenges.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 1,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 1,
+    "leaksCurrentAnswer": false,
+    "verdict": "This detour helps illustrate equal groups versus addition, but contains overly difficult facts like 6 x 8 that distract from addressing the core conceptual hurdle."
+  },
+  "rep": 0
+}

@@ -1,0 +1,86 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "resolver",
+  "componentId": "comparison-panel",
+  "shortlist": [
+    "comparison-panel",
+    "foundation-explorer",
+    "annotated-example",
+    "media-player"
+  ],
+  "modeKind": "none",
+  "rationale": "The student confuses a small factual detail ('bees are yellow') with the central overarching idea. A side-by-side comparison directly contrasts a main idea (the big umbrella topic) against supporting details (small facts) using clear, parallel examples.",
+  "intent": "Compare 'Main Idea' vs 'Supporting Detail' side by side for Grade 2 readers. Define each simply (e.g., 'the big umbrella' vs 'one small raindrop/fact'), showing 2-3 contrasting pairs (e.g., about dogs helping people or trees giving us shade). Do not use the bees example from the current passage.",
+  "pickMs": 3215,
+  "content": {
+    "type": "comparison-panel",
+    "instanceId": "g2-main-idea-detour-comparison-panel",
+    "data": {
+      "title": "Main Idea vs. Supporting Detail",
+      "intro": "When we read stories or books, we need to know what is most important. Let us learn about the big main idea and the small details that help it grow!",
+      "item1": {
+        "name": "The Main Idea",
+        "description": "The main idea is the big boss or the main point of the whole story. It tells us what the story is mostly about, like a big umbrella that covers everything.",
+        "visualPrompt": "A large, bright red umbrella with words about dogs helping people written across the top.",
+        "points": [
+          "It tells the most important point of the story.",
+          "It is like a big umbrella that covers all the facts.",
+          "Example: Dogs help people do many important jobs every single day."
+        ]
+      },
+      "item2": {
+        "name": "The Supporting Detail",
+        "description": "A supporting detail is one small fact or piece of information. It gives us extra help to show why the main idea is true, like one small raindrop falling.",
+        "visualPrompt": "A small blue raindrop next to the umbrella, with a picture of a dog leading a blind person.",
+        "points": [
+          "It is a small fact that gives extra information.",
+          "It helps prove or explain the big main idea.",
+          "Example: Some dogs help blind people walk safely across the street."
+        ]
+      },
+      "synthesis": {
+        "mainInsight": "The main idea and the supporting detail work together like a parent and a child. The big main idea gives the overall message, while the small details tell us more about it.",
+        "keyDifferences": [
+          "The main idea tells what the whole story is mostly about, while a supporting detail is just one small fact.",
+          "The main idea is like a big umbrella, and supporting details are like the small raindrops under it."
+        ],
+        "keySimilarities": [
+          "Both are found inside the same reading story or book.",
+          "Both work together to help us learn and understand new things."
+        ],
+        "commonMisconception": "Students often think that every fun or interesting sentence in a story is the main idea, when it is actually just a supporting detail.",
+        "whenToUse": {
+          "item1Context": "Use the main idea when someone asks you what the book or story is mostly about in one sentence.",
+          "item2Context": "Use supporting details when you want to give a cool fact or proof to explain the main idea."
+        }
+      },
+      "gates": [
+        {
+          "question": "True or False: The main idea is just one small fact, while a supporting detail is the big point of the whole story.",
+          "correctAnswer": false,
+          "rationale": "That is false! The main idea is the big point of the whole story, like a big umbrella. A supporting detail is just one small fact that helps explain it.",
+          "unlocks": "synthesis"
+        },
+        {
+          "question": "True or False: Both the main idea and the supporting details are found inside the same reading story and work together to help us understand.",
+          "correctAnswer": true,
+          "rationale": "That is true! They are both parts of the story. The big main idea gives the main message, and the supporting details give the extra facts to back it up.",
+          "unlocks": "complete"
+        }
+      ],
+      "gradeLevel": "2"
+    }
+  },
+  "generateMs": 2987,
+  "judgement": {
+    "reasoning": "The activity directly targets the student's exact misconception (confusing an interesting small detail with the overarching main idea). It contrasts the two concepts explicitly using kid-friendly metaphors (umbrella vs. raindrop) and provides a concrete example (dogs helping people vs. seeing-eye dogs). It steps back from multi-paragraph analysis to foundational concept clarity, uses a clear side-by-side conceptual representation instead of a text stimulus, and does not leak the bees passage.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would definitely use this detour right now because it clearly contrasts a broad main idea from a specific detail using intuitive 2nd-grade metaphors."
+  },
+  "rep": 0
+}

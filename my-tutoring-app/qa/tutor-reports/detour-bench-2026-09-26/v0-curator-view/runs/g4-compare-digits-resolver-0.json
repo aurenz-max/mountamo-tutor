@@ -1,0 +1,80 @@
+{
+  "scenario": "g4-compare-digits",
+  "arm": "resolver",
+  "componentId": "comparison-panel",
+  "modeKind": "none",
+  "rationale": "The student focuses on individual digit size (nines) rather than place value weight; a side-by-side comparison-panel clearly contrasts the value of the greatest place (thousands) against smaller places, visually proving why the highest place value determines magnitude.",
+  "intent": "Present a side-by-side place value breakdown comparing pairs of 4-digit numbers where the smaller overall number has higher digits in the lower places (e.g., compare 2,988 and 3,102). Guide the student to focus on the thousands place first, confirming that more thousands always outweighs more hundreds, tens, or ones, using pairs distinct from 3,999 vs 4,001.",
+  "pickMs": 4456,
+  "content": {
+    "type": "comparison-panel",
+    "instanceId": "g4-compare-digits-detour-comparison-panel",
+    "data": {
+      "title": "Comparing 4-Digit Numbers: Which One is Bigger?",
+      "intro": "When comparing big numbers, we always start by looking at the digit in the highest place value first! Let us compare the numbers 2,988 and 3,102 to see how the thousands place is more important than all the hundreds, tens, and ones put together.",
+      "item1": {
+        "name": "Number 2,988",
+        "description": "A 4-digit number that has a lot of hundreds, tens, and ones packed inside it.",
+        "visualPrompt": "Place value blocks showing 2 thousands, 9 hundreds, 8 tens, and 8 ones.",
+        "points": [
+          "Has a digit of 2 in the thousands place.",
+          "Has a large digit of 9 in the hundreds place.",
+          "Even though it has 9 hundreds, it is still smaller than 3,102 because we look at the thousands first!"
+        ]
+      },
+      "item2": {
+        "name": "Number 3,102",
+        "description": "A 4-digit number that starts with three thousands, even though it has a smaller digit in the hundreds place.",
+        "visualPrompt": "Place value blocks showing 3 thousands, 1 hundred, 0 tens, and 2 ones.",
+        "points": [
+          "Has a digit of 3 in the thousands place.",
+          "Has a small digit of 1 in the hundreds place.",
+          "Wins the comparison because 3 thousands is always greater than 2 thousands, no matter what digits come after it."
+        ]
+      },
+      "synthesis": {
+        "mainInsight": "Always compare numbers by starting at the highest place value from left to right. The thousands place always beats any combination of hundreds, tens, and ones!",
+        "keyDifferences": [
+          "Number 2,988 starts with 2 in the thousands place, while 3,102 starts with 3 in the thousands place.",
+          "Number 2,988 has a larger digit in the hundreds place (9) compared to 3,102 which has a 1 in the hundreds place."
+        ],
+        "keySimilarities": [
+          "Both are 4-digit numbers.",
+          "Both numbers use the same digits: 0, 1, 2, 3, 8, and 9."
+        ],
+        "commonMisconception": "Students often get tricked by seeing a big digit like 9 in the hundreds place of 2,988 and mistakenly think it is bigger than 3,102. Always check the thousands place first!",
+        "whenToUse": {
+          "item1Context": "Use 2,988 when you are counting up to two thousand nine hundred eighty-eight items.",
+          "item2Context": "Use 3,102 when you need a number that is greater than two thousand nine hundred eighty-eight because three thousands is more than two thousands."
+        }
+      },
+      "gates": [
+        {
+          "question": "Number 2,988 has a larger digit in the hundreds place than 3,102 does.",
+          "correctAnswer": true,
+          "rationale": "That is correct! Number 2,988 has a 9 in the hundreds place, while 3,102 only has a 1 in the hundreds place. However, this does not make it the larger overall number.",
+          "unlocks": "synthesis"
+        },
+        {
+          "question": "A smaller digit in the thousands place can be beaten by having more hundreds, tens, and ones.",
+          "correctAnswer": false,
+          "rationale": "Great job! That is a common trick. The highest place value always wins, so 3,102 is always greater than 2,988 no matter how many hundreds are in the smaller number.",
+          "unlocks": "complete"
+        }
+      ],
+      "gradeLevel": "4"
+    }
+  },
+  "generateMs": 2998,
+  "judgement": {
+    "reasoning": "The detour directly tackles the student's exact misconception ('9s make it bigger') by contrasting 2,988 and 3,102 side-by-side using place-value logic. The gate questions explicitly verify understanding that larger digits in lower places cannot outweigh a smaller leading place value digit.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 1,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would immediately use this comparison panel because it directly exposes and corrects the misconception that larger lower-place digits outweigh the leading place value."
+  },
+  "rep": 0
+}

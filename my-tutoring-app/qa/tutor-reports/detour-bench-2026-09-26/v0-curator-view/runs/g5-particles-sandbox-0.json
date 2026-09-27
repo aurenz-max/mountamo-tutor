@@ -1,0 +1,109 @@
+{
+  "scenario": "g5-particles",
+  "arm": "sandbox",
+  "componentId": "states-of-matter",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "observe",
+  "intent": "Help student observe that particles in a solid vibrate in place rather than staying completely motionless.",
+  "pickMs": 1349,
+  "content": {
+    "type": "states-of-matter",
+    "instanceId": "sandbox-g5-particles",
+    "data": {
+      "title": "What Heat Does to Water",
+      "description": "Discover how invisible particles speed up and change the way they move as temperature rises.",
+      "substance": {
+        "name": "Water",
+        "formula": "H₂O",
+        "meltingPoint": 0,
+        "boilingPoint": 100,
+        "currentTemp": 25,
+        "color": {
+          "solid": "#93c5fd",
+          "liquid": "#3b82f6",
+          "gas": "#e2e8f0"
+        }
+      },
+      "particleConfig": {
+        "count": 40,
+        "size": "medium",
+        "showTrails": true,
+        "showBonds": true
+      },
+      "showOptions": {
+        "showParticleView": true,
+        "showTemperatureSlider": true,
+        "showStateLabels": true,
+        "showEnergyGraph": true,
+        "showPhaseMarkers": true,
+        "showParticleSpeed": true
+      },
+      "substances": [
+        "water",
+        "chocolate",
+        "butter",
+        "nitrogen"
+      ],
+      "gradeBand": "3-5",
+      "imagePrompt": "Steam rising from a pot of boiling soup on the kitchen stove with water droplets on the lid",
+      "challenges": [
+        {
+          "id": "som-1-observe",
+          "challengeType": "observe",
+          "kind": "name_state",
+          "substanceKey": "mercury",
+          "startTemp": -60
+        },
+        {
+          "id": "som-2-observe",
+          "challengeType": "observe",
+          "kind": "name_state",
+          "substanceKey": "oxygen",
+          "startTemp": -200
+        },
+        {
+          "id": "som-3-observe",
+          "challengeType": "observe",
+          "kind": "name_state",
+          "substanceKey": "butter",
+          "startTemp": 12
+        },
+        {
+          "id": "som-4-observe",
+          "challengeType": "observe",
+          "kind": "name_state",
+          "substanceKey": "iron",
+          "startTemp": 2890
+        },
+        {
+          "id": "som-5-observe",
+          "challengeType": "observe",
+          "kind": "name_state",
+          "substanceKey": "coconutOil",
+          "startTemp": 45
+        },
+        {
+          "id": "som-6-observe",
+          "challengeType": "observe",
+          "kind": "name_state",
+          "substanceKey": "aluminum",
+          "startTemp": 2500
+        }
+      ],
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 1308,
+  "judgement": {
+    "reasoning": "The student specifically believes particles in a solid do not move at all. However, the generated detour contains standard 'name_state' identification challenges across various substances (mercury at -60, oxygen at -200, iron at 2890, etc.), without targeting the vibration/jiggling motion of particles in solids. It does not provide a different representation or isolate the obstacle.",
+    "targetsObstacle": 0,
+    "easierOrPrerequisite": 1,
+    "differentRepresentation": 0,
+    "inScope": 2,
+    "contentUsable": 1,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would not use this detour because the generic state-naming challenges fail to address the misconception that particles in solids are completely motionless."
+  },
+  "rep": 0
+}

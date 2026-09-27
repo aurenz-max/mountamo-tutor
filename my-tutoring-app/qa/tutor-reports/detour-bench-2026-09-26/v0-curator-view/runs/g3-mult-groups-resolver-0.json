@@ -1,0 +1,129 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "resolver",
+  "componentId": "multiplication-explorer",
+  "modeKind": "single",
+  "rationale": "The student conflates multiplication with addition by directly adding the factors (4 + 3 = 7). Using multiplication-explorer isolates the concept of equal groups by having the student explicitly build and see discrete groups of items before returning to the array grid.",
+  "targetEvalMode": "build",
+  "intent": "Guide the student through building equal groups (e.g., 3 groups of 2, 4 groups of 2, 2 groups of 5) to emphasize that 'A x B' means A groups containing B items each. Exclude 4 x 3 from the problems to avoid giving away the current challenge.",
+  "pickMs": 3367,
+  "content": {
+    "type": "multiplication-explorer",
+    "instanceId": "g3-mult-groups-detour-multiplication-explorer",
+    "data": {
+      "title": "Wheels on Bikes and Cars",
+      "description": "Build equal groups of items to see how multiplication works as repeated sets.",
+      "fact": {
+        "factor1": 2,
+        "factor2": 2,
+        "product": 4
+      },
+      "representations": {
+        "equalGroups": true,
+        "array": true,
+        "repeatedAddition": true,
+        "numberLine": true,
+        "areaModel": true
+      },
+      "activeRepresentation": "groups",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "build",
+          "instruction": "Build 2 groups with 2 items in each group, then count how many in total?",
+          "targetFact": "2 × 2 = 4",
+          "hint": "Count by twos: 2, 4",
+          "narration": "Let's build 2 groups of 2! Count them up to find the total.",
+          "hiddenValue": "product",
+          "timeLimit": null,
+          "fact": {
+            "factor1": 2,
+            "factor2": 2
+          },
+          "representation": "groups"
+        },
+        {
+          "id": "c2",
+          "type": "build",
+          "instruction": "Build 3 groups with 2 items in each group, then count how many in total?",
+          "targetFact": "3 × 2 = 6",
+          "hint": "Count by twos: 2, 4, 6",
+          "narration": "Great job! Now let's try 3 groups of 2. How many items do we have altogether?",
+          "hiddenValue": "product",
+          "timeLimit": null,
+          "fact": {
+            "factor1": 3,
+            "factor2": 2
+          },
+          "representation": "array"
+        },
+        {
+          "id": "c3",
+          "type": "build",
+          "instruction": "Build 8 groups with 6 items in each group, then count how many in total?",
+          "targetFact": "8 × 6 = 48",
+          "hint": "Count by sixes: 6, 12, 18, 24, 30, 36, 42, 48",
+          "narration": "Now let's build 8 groups of 6 items each. Count by sixes to find the total!",
+          "hiddenValue": "product",
+          "timeLimit": null,
+          "fact": {
+            "factor1": 8,
+            "factor2": 6
+          },
+          "representation": "repeated_addition"
+        },
+        {
+          "id": "c4",
+          "type": "build",
+          "instruction": "Build 3 groups with 7 items in each group, then count how many in total?",
+          "targetFact": "3 × 7 = 21",
+          "hint": "Count by sevens: 7, 14, 21",
+          "narration": "You are doing wonderful! Let's build 3 groups of 7 items.",
+          "hiddenValue": "product",
+          "timeLimit": null,
+          "fact": {
+            "factor1": 3,
+            "factor2": 7
+          },
+          "representation": "number_line"
+        },
+        {
+          "id": "c5",
+          "type": "build",
+          "instruction": "Build 5 groups with 10 items in each group, then count how many in total?",
+          "targetFact": "5 × 10 = 50",
+          "hint": "Count by tens: 10, 20, 30, 40, 50",
+          "narration": "Here is our final challenge! Let's build 5 groups of 10 items each.",
+          "hiddenValue": "product",
+          "timeLimit": null,
+          "fact": {
+            "factor1": 5,
+            "factor2": 10
+          },
+          "representation": "area_model"
+        }
+      ],
+      "showOptions": {
+        "showProduct": false,
+        "showFactFamily": false,
+        "showCommutativeFlip": false,
+        "showDistributiveBreakdown": false
+      },
+      "gradeBand": "2-3",
+      "imagePrompt": "cute groups of toy cars or stickers arranged neatly",
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 2540,
+  "judgement": {
+    "reasoning": "The detour targets the misconception of adding factors (4+3=7) by having the student explicitly build groups of items (e.g., 2 groups of 2, 3 groups of 2). However, challenges jump drastically in difficulty from 3x2 to 8x6 and 3x7, which is too high for a student struggling with basic concept grounding. It shifts from pure arrays to equal groups/number line, does not leak 4x3, but has an uneven difficulty progression.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 1,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 1,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher might hesitate because the numbers abruptly escalate to 8x6 and 3x7, but the early prompts effectively reinforce equal groups over simple addition."
+  },
+  "rep": 0
+}

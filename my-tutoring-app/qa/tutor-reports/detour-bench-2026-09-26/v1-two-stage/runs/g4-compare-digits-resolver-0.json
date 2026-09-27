@@ -1,0 +1,227 @@
+{
+  "scenario": "g4-compare-digits",
+  "arm": "resolver",
+  "componentId": "annotated-example",
+  "shortlist": [
+    "base-ten-blocks",
+    "comparison-panel",
+    "annotated-example",
+    "number-line"
+  ],
+  "modeKind": "none",
+  "rationale": "The student focuses on individual digit size (nines vs smaller digits) rather than place value magnitude. An annotated worked example directly highlights the rule of comparing the greatest place value first (e.g., thousands vs thousands) before looking at any other digits.",
+  "intent": "Demonstrate a step-by-step worked comparison of two 4-digit numbers (such as 2,989 and 3,012) where one number has high digits (8s and 9s) but a smaller thousands digit. Use explicit callouts emphasizing looking at the thousands place first, showing why digit values in smaller places do not override the largest place. Do not use 3,999 or 4,001 directly.",
+  "pickMs": 2738,
+  "content": {
+    "type": "annotated-example",
+    "instanceId": "g4-compare-digits-detour-annotated-example",
+    "data": {
+      "title": "Comparing Four-Digit Numbers by Place Value",
+      "subject": "Arithmetic",
+      "problem": {
+        "statement": "Let us compare two 4-digit numbers: 2,989 and 3,012. First, let us look at the thousands place of each number directly. The number 2,989 has a thousands digit of 2, while the number 3,012 has a thousands digit of 3. Even though 2,989 has high digits like 8 and 9 in the other places, and even if we add 1 to 999 to understand place value transitions, the thousands place comes first. Since 3 is greater than 2, the number 3,012 is greater than 2,989. Value in smaller places does not override the largest place. Therefore, 2,989 < 3,012."
+      },
+      "solutionStrategy": "Compare the two numbers by their greatest place value first.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Compare the thousands digits",
+          "content": {
+            "type": "table",
+            "caption": "Comparing the thousands place of two numbers",
+            "headers": [
+              "Number",
+              "Thousands"
+            ],
+            "rows": [
+              [
+                "$2,989$",
+                "$2$"
+              ],
+              [
+                "$3,012$",
+                "$3$"
+              ]
+            ],
+            "highlightCell": [
+              1,
+              1
+            ]
+          },
+          "annotations": {
+            "steps": "I find the thousands digit in each number by looking at the furthest left place value.",
+            "strategy": "I notice that checking the biggest place value first is the fastest way to compare numbers.",
+            "misconceptions": "Students often wrongly think a number with more large digits like 8 and 9 is bigger overall, ignoring the thousands place.",
+            "connections": "This builds on place value understanding, showing that thousands are always worth more than hundreds.",
+            "narrative": "To compare the two $4$-digit numbers $2,989$ and $3,012$, look directly at the thousands place. The number $2,989$ has a thousands digit of $2$, while $3,012$ has a thousands digit of $3$."
+          }
+        },
+        {
+          "id": 2,
+          "title": "Analyze lower place values",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "999 + 1"
+                },
+                "to": {
+                  "latex": "1,000"
+                },
+                "operation": "add 1 to 999"
+              }
+            ],
+            "result": "1,000"
+          },
+          "annotations": {
+            "steps": "Add 1 to 999 to find the next whole thousand.",
+            "strategy": "I notice that even with high digits like 9, adding one more takes us to the next thousand.",
+            "misconceptions": "It is tempting to think many nines can beat a higher thousands digit, but they cannot.",
+            "connections": "This shows how place value groups bundle together as we count upwards.",
+            "narrative": "Even though $2,989$ has high digits like $8$ and $9$ in smaller places, adding $1$ to $999$ shows that value in smaller places does not override the largest place."
+          }
+        },
+        {
+          "id": 3,
+          "title": "Conclude the inequality",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "3 > 2"
+                },
+                "to": {
+                  "latex": "3{,}012 > 2{,}989"
+                },
+                "operation": "Compare leading digits to order numbers"
+              }
+            ],
+            "result": "2{,}989 < 3{,}012"
+          },
+          "annotations": {
+            "steps": "Compare the thousands digits to determine which number is greater and write the final inequality.",
+            "strategy": "I notice that comparing the thousands place first immediately tells me which number is larger, no matter what smaller digits follow.",
+            "misconceptions": "It is tempting to think a number with larger digits like 8 and 9 in smaller places is bigger, but the thousands place always wins.",
+            "connections": "This builds on place value understanding, where larger place values always override smaller place values when comparing numbers.",
+            "narrative": "Since $3$ is greater than $2$, the number $3,012$ is greater than $2,989$. Therefore, $2,989 < 3,012$."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Let us compare two 4-digit numbers: 2,989 and 3,012. First, let us look at the thousands place of each number directly. The number 2,989 has a thousands digit of 2, while the number 3,012 has a thousands digit of 3. Even though 2,989 has high digits like 8 and 9 in the other places, and even if we add 1 to 999 to understand place value transitions, the thousands place comes first. Since 3 is greater than 2, the number 3,012 is greater than 2,989. Value in smaller places does not override the largest place. Therefore, 2,989 < 3,012.",
+        "body": "To compare the two $4$-digit numbers $2,989$ and $3,012$, look directly at the thousands place. The number $2,989$ has a thousands digit of $2$, while $3,012$ has a thousands digit of $3$.\n---\nEven though $2,989$ has high digits like $8$ and $9$ in smaller places, adding $1$ to $999$ shows that value in smaller places does not override the largest place.\n---\nSince $3$ is greater than $2$, the number $3,012$ is greater than $2,989$. Therefore, $2,989 < 3,012$.",
+        "separatorCount": 2,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "To compare the two $4$-digit numbers $2,989$ and $3,012$, look directly at the thousands place. The number $2,989$ has a thousands digit of $2$, while $3,012$ has a thousands digit of $3$."
+          },
+          {
+            "index": 1,
+            "prose": "Even though $2,989$ has high digits like $8$ and $9$ in smaller places, adding $1$ to $999$ shows that value in smaller places does not override the largest place."
+          },
+          {
+            "index": 2,
+            "prose": "Since $3$ is greater than $2$, the number $3,012$ is greater than $2,989$. Therefore, $2,989 < 3,012$."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "table",
+              "title": "Compare the thousands digits",
+              "pedagogicalGoal": "Teach students to begin multi-digit comparisons by examining the highest place value first.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Construct a place value table comparing $2{,}989$ and $3{,}012$, highlighting the thousands digits $2$ and $3$."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Analyze lower place values",
+              "pedagogicalGoal": "Help students realize that smaller place values cannot accumulate enough to override a difference in the leading place.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Show that even $999 + 1 = 1{,}000$, proving that digits like $8$ and $9$ in smaller places cannot bridge the $1{,}000$-unit gap to $3{,}000$."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Conclude the inequality",
+              "pedagogicalGoal": "Reinforce that the inequality between the leading digits directly determines the ordering of the whole numbers.",
+              "groundingBlockIndices": [
+                2
+              ],
+              "seedNotes": "Write the deduction from $3 > 2$ to $3{,}012 > 2{,}989$, concluding with $2{,}989 < 3{,}012$."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [],
+          "dropped": [
+            {
+              "assignment": {
+                "kind": "step",
+                "stepIndex": 0,
+                "prompt": "To compare $2,989$ and $3,012$, start with the greatest place value. What is the digit in the thousands place of $3,012$?",
+                "acceptableAnswers": [
+                  "3",
+                  "3 thousands"
+                ],
+                "distractors": [
+                  "2",
+                  "0",
+                  "1"
+                ],
+                "rationale": "In $3,012$, the leftmost digit $3$ is in the thousands place, while $0$ is in the hundreds, $1$ is in the tens, and $2$ is in the ones place.",
+                "answerFormat": "katex"
+              },
+              "reason": "The answer is already explicitly stated in the visible problem text ('the number 3,012 has a thousands digit of 3')."
+            },
+            {
+              "assignment": {
+                "kind": "transition",
+                "stepIndex": 2,
+                "prompt": "Since the thousands digits compare as $3 > 2$, which inequality correctly compares the two numbers?",
+                "acceptableAnswers": [
+                  "3{,}012 > 2{,}989"
+                ],
+                "distractors": [
+                  "2{,}989 > 3{,}012",
+                  "3{,}012 < 2{,}989"
+                ],
+                "rationale": "Because $3$ thousands is greater than $2$ thousands, $3,012 > 2,989$ regardless of the larger digits like $8$ and $9$ in the smaller place values.",
+                "transitionIndex": 0,
+                "hide": "to"
+              },
+              "reason": "The answer is already explicitly revealed in the visible problem statement ('the number 3,012 is greater than 2,989')."
+            }
+          ],
+          "failed": false
+        }
+      }
+    }
+  },
+  "generateMs": 128105,
+  "judgement": {
+    "reasoning": "The worked example directly addresses the student's exact misconception (believing lots of 9s makes a number larger than one with a higher thousands digit). However, the problem statement text accidentally includes the full explanation and answer upfront due to generator issues, though the structured annotated steps are still clear, helpful, and provide a strong worked demonstration before returning to practice.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 1,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would use this worked example because it specifically addresses the misconception that high digits override the thousands place, despite the problem statement being worded awkwardly."
+  },
+  "rep": 0
+}

@@ -1,0 +1,28 @@
+{
+  "sandbox": {
+    "n": 10,
+    "medianReadyMs": 3416,
+    "maxReadyMs": 4771,
+    "errors": 0,
+    "targetsObstacle": 0.7,
+    "easierOrPrerequisite": 1.2,
+    "differentRepresentation": 1.1,
+    "inScope": 1.5,
+    "contentUsable": 1.4,
+    "leaks": 0,
+    "nonSingleMode": 0
+  },
+  "resolver": {
+    "n": 10,
+    "medianReadyMs": 6123,
+    "maxReadyMs": 130843,
+    "errors": 0,
+    "targetsObstacle": 1.7,
+    "easierOrPrerequisite": 1.5,
+    "differentRepresentation": 1.6,
+    "inScope": 1.8,
+    "contentUsable": 1.5,
+    "leaks": 1,
+    "nonSingleMode": 0
+  }
+}

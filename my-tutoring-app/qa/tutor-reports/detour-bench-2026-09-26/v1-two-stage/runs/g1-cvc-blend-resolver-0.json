@@ -1,0 +1,108 @@
+{
+  "scenario": "g1-cvc-blend",
+  "arm": "resolver",
+  "componentId": "phoneme-explorer",
+  "shortlist": [
+    "phonics-blender",
+    "di-word-reading",
+    "phoneme-explorer",
+    "cvc-speller"
+  ],
+  "modeKind": "single",
+  "rationale": "The student can segment individual phonemes but struggles to blend them into a whole word. The phoneme-explorer 'blend' mode directly targets auditory blending by having the tutor present separated sounds for the child to blend and pronounce as a complete word.",
+  "targetEvalMode": "blend",
+  "intent": "Practice auditory blending of 3-phoneme short-vowel CVC words. Keep to familiar short-vowel CVC patterns within Grade 1 scope, and exclude the current word 'mat' to ensure genuine practice without giving away the reading task answer directly (e.g., use words like 'sun', 'mop', 'bat'). Provide 3-4 items where the student hears phonemes segmented and says the blended word aloud into the microphone.",
+  "pickMs": 2798,
+  "content": {
+    "type": "phoneme-explorer",
+    "instanceId": "g1-cvc-blend-detour-phoneme-explorer",
+    "data": {
+      "title": "Sound Safari: Reading short-vowel CVC words",
+      "supportTier": "easy",
+      "challenges": [
+        {
+          "phonemeSequence": [
+            "s",
+            "u",
+            "n"
+          ],
+          "word": "sun",
+          "emoji": "☀️",
+          "mode": "blend",
+          "id": "c1",
+          "showChoiceEmoji": true,
+          "readOptionsAloud": true,
+          "showBlendCue": true
+        },
+        {
+          "phonemeSequence": [
+            "m",
+            "o",
+            "p"
+          ],
+          "word": "mop",
+          "emoji": "🧹",
+          "mode": "blend",
+          "id": "c2",
+          "showChoiceEmoji": true,
+          "readOptionsAloud": true,
+          "showBlendCue": true
+        },
+        {
+          "phonemeSequence": [
+            "b",
+            "a",
+            "t"
+          ],
+          "word": "bat",
+          "emoji": "🦇",
+          "mode": "blend",
+          "id": "c3",
+          "showChoiceEmoji": true,
+          "readOptionsAloud": true,
+          "showBlendCue": true
+        },
+        {
+          "phonemeSequence": [
+            "p",
+            "i",
+            "g"
+          ],
+          "word": "pig",
+          "emoji": "🐷",
+          "mode": "blend",
+          "id": "c4",
+          "showChoiceEmoji": true,
+          "readOptionsAloud": true,
+          "showBlendCue": true
+        },
+        {
+          "phonemeSequence": [
+            "d",
+            "u",
+            "g"
+          ],
+          "word": "dug",
+          "emoji": "⛏️",
+          "mode": "blend",
+          "id": "c5",
+          "showChoiceEmoji": true,
+          "readOptionsAloud": true,
+          "showBlendCue": true
+        }
+      ]
+    }
+  },
+  "generateMs": 1299,
+  "judgement": {
+    "reasoning": "The student can isolate phonemes but cannot blend them into a whole word. The detour targets auditory blending (Sound Blend mode in phoneme-explorer) with 3-phoneme CVC words, removing visual text load to practice the essential prerequisite skill. It deliberately omits 'mat' to avoid leaking the current word.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would immediately use this auditory blending detour to help the student combine individual sounds into whole words before returning to print."
+  },
+  "rep": 0
+}

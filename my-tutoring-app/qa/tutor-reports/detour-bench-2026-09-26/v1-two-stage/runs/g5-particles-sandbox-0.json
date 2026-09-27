@@ -1,0 +1,109 @@
+{
+  "scenario": "g5-particles",
+  "arm": "sandbox",
+  "componentId": "states-of-matter",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "observe",
+  "intent": "Help student see that particles in a solid vibrate in place rather than staying completely motionless",
+  "pickMs": 1300,
+  "content": {
+    "type": "states-of-matter",
+    "instanceId": "sandbox-g5-particles",
+    "data": {
+      "title": "Jiggling Tiny Building Blocks",
+      "description": "Explore how particles in a solid vibrate in place and gain energy as temperature rises.",
+      "substance": {
+        "name": "Water",
+        "formula": "H₂O",
+        "meltingPoint": 0,
+        "boilingPoint": 100,
+        "currentTemp": 20,
+        "color": {
+          "solid": "#93c5fd",
+          "liquid": "#3b82f6",
+          "gas": "#e2e8f0"
+        }
+      },
+      "particleConfig": {
+        "count": 40,
+        "size": "medium",
+        "showTrails": true,
+        "showBonds": true
+      },
+      "showOptions": {
+        "showParticleView": true,
+        "showTemperatureSlider": true,
+        "showStateLabels": true,
+        "showEnergyGraph": true,
+        "showPhaseMarkers": true,
+        "showParticleSpeed": true
+      },
+      "substances": [
+        "water",
+        "chocolate",
+        "butter",
+        "iron"
+      ],
+      "gradeBand": "3-5",
+      "imagePrompt": "Ice cubes floating in a cold glass of lemonade on a sunny picnic table",
+      "challenges": [
+        {
+          "id": "som-1-observe",
+          "challengeType": "observe",
+          "kind": "name_state",
+          "substanceKey": "iron",
+          "startTemp": 2200
+        },
+        {
+          "id": "som-2-observe",
+          "challengeType": "observe",
+          "kind": "name_state",
+          "substanceKey": "chocolate",
+          "startTemp": 14
+        },
+        {
+          "id": "som-3-observe",
+          "challengeType": "observe",
+          "kind": "name_state",
+          "substanceKey": "coconutOil",
+          "startTemp": 45
+        },
+        {
+          "id": "som-4-observe",
+          "challengeType": "observe",
+          "kind": "name_state",
+          "substanceKey": "nitrogen",
+          "startTemp": -165
+        },
+        {
+          "id": "som-5-observe",
+          "challengeType": "observe",
+          "kind": "name_state",
+          "substanceKey": "oxygen",
+          "startTemp": -240
+        },
+        {
+          "id": "som-6-observe",
+          "challengeType": "observe",
+          "kind": "name_state",
+          "substanceKey": "water",
+          "startTemp": 50
+        }
+      ],
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 1355,
+  "judgement": {
+    "reasoning": "The detour uses the same activity template and simply asks the student to identify the state of matter at various temperatures ('name_state' challenges), rather than directly addressing or highlighting whether solid particles vibrate or move.",
+    "targetsObstacle": 0,
+    "easierOrPrerequisite": 1,
+    "differentRepresentation": 0,
+    "inScope": 2,
+    "contentUsable": 1,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would not use this detour because the generated questions merely ask to name the state of matter instead of confronting the misconception that particles in solids are completely still."
+  },
+  "rep": 0
+}

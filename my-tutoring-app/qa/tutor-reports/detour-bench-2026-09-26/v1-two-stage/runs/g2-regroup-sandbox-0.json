@@ -1,0 +1,75 @@
+{
+  "scenario": "g2-regroup",
+  "arm": "sandbox",
+  "componentId": "base-ten-blocks",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "regroup",
+  "intent": "Help the student see that 13 ones can be regrouped into 1 ten and 3 ones using base-ten blocks.",
+  "pickMs": 1424,
+  "content": {
+    "type": "base-ten-blocks",
+    "instanceId": "sandbox-g2-regroup",
+    "data": {
+      "title": "Trading Blocks with Place Value",
+      "description": "Learn how blocks can be traded between columns to show the same value in different ways.",
+      "numberValue": 550,
+      "challenges": [
+        {
+          "type": "regroup",
+          "instruction": "Look at the blocks on your mat and predict what will happen when you trade.",
+          "targetNumber": 550,
+          "secondNumber": null,
+          "hint": "Think about what happens when you take one hundred and break it into tens.",
+          "showColumnCounts": true,
+          "showBlocksTotal": true
+        },
+        {
+          "type": "regroup",
+          "instruction": "Examine the current blocks and make your prediction before trading.",
+          "targetNumber": 622,
+          "secondNumber": null,
+          "hint": "Remember that one ten can be traded for ten ones.",
+          "showColumnCounts": true,
+          "showBlocksTotal": true
+        },
+        {
+          "type": "regroup",
+          "instruction": "Study the blocks displayed and predict the outcome of the next trade.",
+          "targetNumber": 215,
+          "secondNumber": null,
+          "hint": "Check the tens place and see how many ones you will get.",
+          "showColumnCounts": true,
+          "showBlocksTotal": true
+        },
+        {
+          "type": "regroup",
+          "instruction": "Look closely at the mat and predict the new block counts.",
+          "targetNumber": 435,
+          "secondNumber": null,
+          "hint": "Count your hundreds carefully before making a trade.",
+          "showColumnCounts": true,
+          "showBlocksTotal": true
+        }
+      ],
+      "gradeBand": "2-3",
+      "interactionMode": "regroup",
+      "decimalMode": false,
+      "maxPlace": "hundreds",
+      "supplyTray": true,
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 1579,
+  "judgement": {
+    "reasoning": "The student wrote 513 for 37 + 26 because they do not regroup 13 ones into 1 ten and 3 ones. The generator was instructed to address trading 13 ones into 1 ten and 3 ones, but instead generated high-number regrouping challenges involving 3-digit numbers (550, 622, 215, 435) focusing on decomposing/unbundling (breaking hundreds into tens or tens into ones, as hints indicate) rather than bundling 10 ones into a ten.",
+    "targetsObstacle": 0,
+    "easierOrPrerequisite": 0,
+    "differentRepresentation": 1,
+    "inScope": 1,
+    "contentUsable": 1,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would not use this detour because it deals with decomposing 3-digit numbers rather than composing 10 ones into 1 ten to fix the 13 ones obstacle."
+  },
+  "rep": 0
+}

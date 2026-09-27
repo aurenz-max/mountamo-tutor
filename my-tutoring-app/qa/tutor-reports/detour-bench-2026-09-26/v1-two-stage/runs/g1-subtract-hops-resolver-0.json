@@ -1,0 +1,87 @@
+{
+  "scenario": "g1-subtract-hops",
+  "arm": "resolver",
+  "componentId": "comparison-panel",
+  "shortlist": [
+    "annotated-example",
+    "comparison-panel",
+    "skip-counting-runner",
+    "counting-board"
+  ],
+  "modeKind": "none",
+  "rationale": "The student confuses the starting point with the first hop, leading to an off-by-one error. A side-by-side comparison clearly contrasts counting starting positions versus counting the actual movement arcs, highlighting why the first count only happens after the first hop.",
+  "intent": "Generate a side-by-side comparison illustrating subtraction on a number line within 20 (e.g., using 14 - 3 or 11 - 2, avoiding 12 - 3). Contrast the incorrect approach (counting '1' at the starting number before moving) with the correct approach (starting at the number and saying '1' only after the first backward jump arc lands). Emphasize that hops represent movement.",
+  "pickMs": 5811,
+  "content": {
+    "type": "comparison-panel",
+    "instanceId": "g1-subtract-hops-detour-comparison-panel",
+    "data": {
+      "title": "How to Jump Back on the Number Line",
+      "intro": "Let us learn how to subtract by making frog jumps on a number line! We will look at two ways to count back for the problem 14 minus 3.",
+      "item1": {
+        "name": "The Oops Way: Counting the Start",
+        "description": "Saying 'one' right when you land on the starting number 14 before you even make a hop.",
+        "visualPrompt": "A number line showing a frog sitting on 14 with a speech bubble saying '1', but no hops have been made yet.",
+        "points": [
+          "Stays parked on the number 14 and says '1'",
+          "Gets the wrong answer because the start is counted",
+          "Makes fewer hops than needed"
+        ]
+      },
+      "item2": {
+        "name": "The Super Frog Way: Counting the Hops",
+        "description": "Starting at 14, and saying 'one' only after making your very first hop backward to 13.",
+        "visualPrompt": "A number line showing a frog jumping from 14 to 13, with a speech bubble saying '1' right when it lands.",
+        "points": [
+          "Lands on 14 without counting it yet",
+          "Says '1' only when the first hop lands on 13",
+          "Finishes at the correct answer of 11"
+        ]
+      },
+      "synthesis": {
+        "mainInsight": "Counting back on a number line is all about counting the movement hops, not the starting parking spot.",
+        "keyDifferences": [
+          "The Oops Way counts the starting number 14 as the first count.",
+          "The Super Frog Way saves the count of '1' for the end of the first jump.",
+          "The Oops Way gives an incorrect answer of 12, while the Super Frog Way gives the correct answer of 11."
+        ],
+        "keySimilarities": [
+          "Both ways start by finding the number 14 on the number line.",
+          "Both ways use subtraction to count backward."
+        ],
+        "commonMisconception": "Students often think that the number they start on is already count number one.",
+        "whenToUse": {
+          "item1Context": "Never use the Oops Way if you want to get the right subtraction answer!",
+          "item2Context": "Always use the Super Frog Way to count every single jump arc as you move backward."
+        }
+      },
+      "gates": [
+        {
+          "question": "In the Super Frog Way, do you say 'one' while sitting on the starting number 14 before making any hops?",
+          "correctAnswer": false,
+          "rationale": "Great job! In the Super Frog Way, you do not count the starting number. You wait until your very first hop lands on 13 to say 'one'.",
+          "unlocks": "synthesis"
+        },
+        {
+          "question": "True or false: Both the Oops Way and the Super Frog Way start by finding the number 14 on the number line.",
+          "correctAnswer": true,
+          "rationale": "That is correct! Both methods begin by placing your finger or your frog on the starting number 14 before you start to hop backward.",
+          "unlocks": "complete"
+        }
+      ],
+      "gradeLevel": "1"
+    }
+  },
+  "generateMs": 3008,
+  "judgement": {
+    "reasoning": "The comparison panel directly addresses the specific obstacle (counting the starting number before hopping) by comparing 'The Oops Way' vs 'The Super Frog Way' on 14 - 3. It makes the mistake explicit through an un-hopped frog sitting on 14 saying '1'. It avoids spoiling 12 - 3 and stays well within Grade 1 scope.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 1,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, a teacher would use this detour because it explicitly contrasts the student's exact counting error against the correct movement-based counting."
+  },
+  "rep": 0
+}

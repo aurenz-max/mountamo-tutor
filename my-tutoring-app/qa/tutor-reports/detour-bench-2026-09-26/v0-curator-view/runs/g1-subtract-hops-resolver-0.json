@@ -1,0 +1,172 @@
+{
+  "scenario": "g1-subtract-hops",
+  "arm": "resolver",
+  "componentId": "annotated-example",
+  "modeKind": "none",
+  "rationale": "The student miscounts hops by including the starting position rather than counting movements/spaces. A step-by-step worked example with clear procedural steps, strategic thinking callouts, and explicit error analysis will directly contrast counting positions versus counting hops.",
+  "intent": "Demonstrate a step-by-step subtraction example counting back within 15-20 (e.g., 14 - 3 = 11). Use problems strictly different from 12 - 3 to avoid giving away the current answer. Explicitly highlight the common error of saying '14, 13, 12' and show the correct method: put finger on 14, jump to 13 (one), jump to 12 (two), jump to 11 (three), landing on 11.",
+  "pickMs": 2835,
+  "content": {
+    "type": "annotated-example",
+    "instanceId": "g1-subtract-hops-detour-annotated-example",
+    "data": {
+      "title": "Subtraction on a Number Line by Counting Back",
+      "subject": "Arithmetic",
+      "problem": {
+        "statement": "Demonstrate a step-by-step subtraction example counting back within 15-20 (e.g., 14 - 3 = 11). Use problems strictly different from 12 - 3 to avoid giving away the current answer. Explicitly highlight the common error of saying '14, 13, 12' and show the correct method: put finger on 14, jump to 13 (one), jump to 12 (two), jump to 11 (three), landing on 11."
+      },
+      "solutionStrategy": "Start at the first number on the number line and count backward by ones for each jump to find the difference.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Examine the counting-back error",
+          "content": {
+            "type": "table",
+            "caption": "Comparing the Wrong Count to the Correct Jumps",
+            "headers": [
+              "Method",
+              "Action / Sequence"
+            ],
+            "rows": [
+              [
+                "Wrong Count",
+                "Saying 14, 13, 12 (starts on 14)"
+              ],
+              [
+                "Correct Jumps",
+                "Jump 1 (to 13), Jump 2 (to 12), Jump 3 (to 11)"
+              ]
+            ],
+            "highlightCell": [
+              1,
+              1
+            ]
+          },
+          "annotations": {
+            "steps": "Compare the spoken sequence '14, 13, 12' against the actual physical jumps backward on the number line.",
+            "strategy": "I notice that starting to count right away without moving makes me count the starting number as one of my steps.",
+            "misconceptions": "Saying '14, 13, 12' while only making two jumps because you accidentally counted your starting spot as the first jump.",
+            "connections": "This connects to understanding that subtraction on a number line counts the size of the gaps (jumps) rather than the tick marks themselves.",
+            "narrative": "A common error when subtracting $14 - 3$ on a number line within $15$ to $20$ is saying '14, 13, 12', which incorrectly counts the starting number instead of the jumps backward."
+          }
+        },
+        {
+          "id": 2,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Count back on the number line",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 10,
+              "max": 15,
+              "divisions": 5,
+              "start": 14,
+              "jumps": [
+                -1,
+                -1,
+                -1
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 10 to 15 with three backward jumps of 1 starting at 14 and landing on 11.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "Start at 14 on the number line and make three backward jumps of one unit to land on 11.",
+            "strategy": "I start at the first number and count backward by ones for each jump to find the difference.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "Counting backward on a number line is directly connected to subtraction and moving down the number sequence.",
+            "narrative": "The correct method is to put finger on $14$, jump to $13$ (one), jump to $12$ (two), and jump to $11$ (three), landing on $11$ to find that $14 - 3 = 11$."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Demonstrate a step-by-step subtraction example counting back within 15-20 (e.g., 14 - 3 = 11). Use problems strictly different from 12 - 3 to avoid giving away the current answer. Explicitly highlight the common error of saying '14, 13, 12' and show the correct method: put finger on 14, jump to 13 (one), jump to 12 (two), jump to 11 (three), landing on 11.",
+        "body": "A common error when subtracting $14 - 3$ on a number line within $15$ to $20$ is saying '14, 13, 12', which incorrectly counts the starting number instead of the jumps backward.\n---\nThe correct method is to put finger on $14$, jump to $13$ (one), jump to $12$ (two), and jump to $11$ (three), landing on $11$ to find that $14 - 3 = 11$.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "A common error when subtracting $14 - 3$ on a number line within $15$ to $20$ is saying '14, 13, 12', which incorrectly counts the starting number instead of the jumps backward."
+          },
+          {
+            "index": 1,
+            "prose": "The correct method is to put finger on $14$, jump to $13$ (one), jump to $12$ (two), and jump to $11$ (three), landing on $11$ to find that $14 - 3 = 11$."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "table",
+              "title": "Examine the counting-back error",
+              "pedagogicalGoal": "Understand why including the starting number results in an off-by-one error when counting backward.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Structure a comparison showing the spoken sequence '14, 13, 12' against the actual jump count to demonstrate that 14 is erroneously counted before any movement occurs."
+            },
+            {
+              "stepType": "diagram",
+              "title": "Count back on the number line",
+              "pedagogicalGoal": "Visualize subtraction as backward unit jumps along a number line starting at 14 and landing on 11.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Draw a number line from 10 to 15 showing 3 backward jumps of 1 unit starting at 14 and landing sequentially on 13, 12, and 11 to solve 14 - 3 = 11."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [],
+          "dropped": [
+            {
+              "assignment": {
+                "kind": "step",
+                "stepIndex": 0,
+                "prompt": "When subtracting $14 - 3$, a student counts backward by saying '14, 13, 12'. How many backward jumps did they actually make on the number line?",
+                "acceptableAnswers": [
+                  "2",
+                  "2 jumps",
+                  "two",
+                  "two jumps"
+                ],
+                "distractors": [
+                  "3",
+                  "1"
+                ],
+                "rationale": "Saying '14' just names the starting spot without moving, so moving to 13 and then to 12 is only 2 jumps instead of the 3 needed.",
+                "answerFormat": "katex"
+              },
+              "reason": "The visible problem text explicitly gives away the answer by stating 'put finger on 14, jump to 13 (one), jump to 12 (two)', directly showing that reaching 12 corresponds to 2 jumps."
+            }
+          ],
+          "failed": false
+        }
+      }
+    }
+  },
+  "generateMs": 129862,
+  "judgement": {
+    "reasoning": "The detour directly addresses the student's exact misconception ('including the starting number as hop 1'). It uses a worked example with 14 - 3, comparing the wrong count (14, 13, 12) with the correct physical jumps (to 13, 12, 11). However, the problem statement literally echoed the raw prompt/instructions ('Demonstrate a step-by-step subtraction example...'), which is a flaw in formatting, though the content and annotations themselves are highly targeted and usable.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 1,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 1,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would find the side-by-side comparison of the misconception versus actual jumps highly effective, though they would need to look past the prompt text leaking into the problem statement."
+  },
+  "rep": 0
+}

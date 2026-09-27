@@ -1,0 +1,80 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "resolver",
+  "componentId": "comparison-panel",
+  "modeKind": "none",
+  "rationale": "The student confuses a vivid, interesting fact ('bees are yellow') with the overarching main idea of a text. A side-by-side comparison-panel visually contrasts 'Big Idea / Umbrella' vs 'Small Detail / Supporting Fact', giving the student a clear conceptual model to distinguish the two before returning to the passage.",
+  "intent": "Teach Grade 2 students how to tell a main idea apart from a small detail. Present a side-by-side comparison (Main Idea vs. Key Detail) using a familiar umbrella or table-and-legs metaphor with simple animal examples (e.g., dogs helping people or ants working together). Ensure the examples do NOT mention bees or plant pollination so the original passage task is not solved for them.",
+  "pickMs": 3091,
+  "content": {
+    "type": "comparison-panel",
+    "instanceId": "g2-main-idea-detour-comparison-panel",
+    "data": {
+      "title": "Main Idea vs. Key Detail",
+      "intro": "When you read a story, it is like looking at a big table. Let us learn how the big top of the table (the main idea) is held up by strong legs (the key details)!",
+      "item1": {
+        "name": "The Main Idea",
+        "description": "The big top of the table. It tells you what the whole story is mostly about.",
+        "visualPrompt": "A large, flat tabletop of a wooden table holding a toy dog.",
+        "points": [
+          "Tells the big secret of the whole story.",
+          "Summarizes everything in one main sentence.",
+          "Is supported by all the other parts."
+        ]
+      },
+      "item2": {
+        "name": "A Key Detail",
+        "description": "One of the legs of the table. It gives a small, special fact that helps hold up the big idea.",
+        "visualPrompt": "One sturdy wooden table leg standing under the big tabletop.",
+        "points": [
+          "Tells one special fact, color, or number.",
+          "Helps prove the big main idea is true.",
+          "Is only a small piece of the whole story."
+        ]
+      },
+      "synthesis": {
+        "mainInsight": "The main idea is the big picture, and key details are the small puzzle pieces that prove it.",
+        "keyDifferences": [
+          "The main idea is about the whole story, while a key detail is just one small fact.",
+          "The main idea acts like the top of a table, whereas a key detail acts like a single table leg."
+        ],
+        "keySimilarities": [
+          "Both are needed to fully understand a story.",
+          "Both work together to help you answer questions about what you read."
+        ],
+        "commonMisconception": "Thinking that every single sentence in a story is the main idea, when really most sentences are just small details.",
+        "whenToUse": {
+          "item1Context": "Use the main idea when someone asks you what a book or paragraph is mostly about in just one sentence.",
+          "item2Context": "Use key details when you want to find extra facts, names, or events that support the big idea."
+        }
+      },
+      "gates": [
+        {
+          "question": "The main idea is like a single table leg, and a key detail is like the big tabletop.",
+          "correctAnswer": false,
+          "rationale": "Not quite! The main idea is actually the big tabletop that covers everything, while a key detail is just one supporting leg.",
+          "unlocks": "synthesis"
+        },
+        {
+          "question": "Both the main idea and key details work together to help you understand a story.",
+          "correctAnswer": true,
+          "rationale": "That is correct! You need both the big main idea and the small key details to fully understand and enjoy what you read.",
+          "unlocks": "complete"
+        }
+      ],
+      "gradeLevel": "2"
+    }
+  },
+  "generateMs": 2793,
+  "judgement": {
+    "reasoning": "The comparison panel directly addresses the misconception of mistaking a small detail for the main idea by contrasting the two concepts using an age-appropriate table-and-legs metaphor. It is simpler than parsing a full passage, uses a fresh visual/conceptual representation, stays completely within Grade 2 expectations, and avoids leaking the bee passage answer.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, this detour uses an effective concrete metaphor to help a Grade 2 student distinguish between the big overarching idea and a supporting detail."
+  },
+  "rep": 0
+}

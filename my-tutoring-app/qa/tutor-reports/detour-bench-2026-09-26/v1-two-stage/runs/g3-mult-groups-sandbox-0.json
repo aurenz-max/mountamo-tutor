@@ -1,0 +1,97 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "sandbox",
+  "componentId": "counting-board",
+  "modeValid": true,
+  "rationale": "",
+  "targetEvalMode": "group",
+  "intent": "Help student interpret 4 x 3 as 4 groups of 3 objects rather than adding 4 + 3.",
+  "pickMs": 1277,
+  "content": {
+    "type": "counting-board",
+    "instanceId": "sandbox-g3-mult-groups",
+    "data": {
+      "title": "Equal Groups Adventure",
+      "description": "Learn how to interpret multiplication as equal groups by counting sets of items together.",
+      "objects": {
+        "type": "bears"
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "group_count",
+          "instruction": "Can you count all 4 groups of 3 bears?",
+          "targetAnswer": 9,
+          "count": 9,
+          "arrangement": "groups",
+          "hint": "Count the bears in each group one by one, then put them together!",
+          "narration": "Let us look at our first set of bears. We have 4 groups with 3 bears in each group. How many bears are there in total?",
+          "groupSize": 3
+        },
+        {
+          "id": "c2",
+          "type": "group_count",
+          "instruction": "Let us check another set! Count all 4 groups of 3 bears.",
+          "targetAnswer": 9,
+          "count": 9,
+          "arrangement": "groups",
+          "hint": "Remember, each group has 3 bears inside the circle.",
+          "narration": "Here is another fun challenge! Let us count 4 groups of 3 bears to find the total product.",
+          "groupSize": 3
+        },
+        {
+          "id": "c3",
+          "type": "group_count",
+          "instruction": "Can you count these 4 groups of 3 bears?",
+          "targetAnswer": 6,
+          "count": 6,
+          "arrangement": "groups",
+          "hint": "Count by threes for each group you see!",
+          "narration": "You are doing wonderful! Let us count the 4 groups, with 3 bears in each group.",
+          "groupSize": 3
+        },
+        {
+          "id": "c4",
+          "type": "group_count",
+          "instruction": "How many bears are in these 4 groups of 3?",
+          "targetAnswer": 9,
+          "count": 9,
+          "arrangement": "groups",
+          "hint": "Tap each bear as you count the groups.",
+          "narration": "Keep going! We have 4 groups of 3 bears waiting to be counted.",
+          "groupSize": 3
+        },
+        {
+          "id": "c5",
+          "type": "group_count",
+          "instruction": "Last one! Count the 4 groups of 3 bears.",
+          "targetAnswer": 9,
+          "count": 9,
+          "arrangement": "groups",
+          "hint": "Count the groups carefully to find your final answer.",
+          "narration": "This is our final challenge for equal groups. Count the 4 groups of 3 bears to finish strong!",
+          "groupSize": 3
+        }
+      ],
+      "showOptions": {
+        "showRunningCount": true,
+        "showGroupCircles": true,
+        "highlightOnTap": true,
+        "showLastNumber": true
+      },
+      "gradeBand": "1"
+    }
+  },
+  "generateMs": 2967,
+  "judgement": {
+    "reasoning": "The generated content has critical mathematical errors throughout: every challenge claims there are '4 groups of 3 bears', but the target answer and total counts are set to 9 or 6 instead of 12. This makes the content broken and confusing. Furthermore, counting-board is designed for Pre-K to Grade 1 foundational counting rather than Grade 3 multiplication detour.",
+    "targetsObstacle": 1,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 0,
+    "contentUsable": 0,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would not use this detour because the generated content is mathematically incorrect, stating that 4 groups of 3 totals 9 or 6."
+  },
+  "rep": 0
+}

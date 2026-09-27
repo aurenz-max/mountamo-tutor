@@ -1,0 +1,127 @@
+{
+  "scenario": "g3-clock-minutes",
+  "arm": "resolver",
+  "componentId": "skip-counting-runner",
+  "shortlist": [
+    "skip-counting-runner",
+    "number-line",
+    "annotated-example",
+    "fast-fact"
+  ],
+  "modeKind": "single",
+  "rationale": "The student confuses the face number with the elapsed minute value, missing the underlying structure of skip-counting by 5s. Practicing jumps of 5 along a number line clearly models how each successive clock number represents an additional 5 minutes.",
+  "targetEvalMode": "predict",
+  "intent": "Practice skip-counting forward by 5s starting from 0 up to 60. Use multiples such as 5, 10, 15, 25, 30, and 35, avoiding the target problem of 4 jumps (20 minutes) so as not to give away the immediate answer to 3:04 vs 3:20.",
+  "pickMs": 2609,
+  "content": {
+    "type": "skip-counting-runner",
+    "instanceId": "g3-clock-minutes-detour-skip-counting-runner",
+    "data": {
+      "title": "Clock Face Hops by 5s!",
+      "description": "Learn to tell time to the nearest 5 minutes by hopping around the clock face with a kangaroo!",
+      "skipValue": 5,
+      "startFrom": 0,
+      "endAt": 60,
+      "direction": "forward",
+      "character": {
+        "type": "kangaroo",
+        "imagePrompt": "A friendly cartoon kangaroo wearing a clock tie, ready to hop across clock numbers."
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "predict",
+          "instruction": "The kangaroo is at 5 minutes. Where is the next landing?",
+          "hint": "Count up by 5 more! 5 plus 5 equals...",
+          "narration": "5... 10!",
+          "hiddenPositions": [
+            10
+          ],
+          "startPosition": 5
+        },
+        {
+          "id": "c2",
+          "type": "predict",
+          "instruction": "The kangaroo is at 10 minutes. Where is the next landing?",
+          "hint": "Add 5 more minutes to 10.",
+          "narration": "10... 15!",
+          "hiddenPositions": [
+            15
+          ],
+          "startPosition": 10
+        },
+        {
+          "id": "c3",
+          "type": "predict",
+          "instruction": "The kangaroo is at 15 minutes. Where is the next landing?",
+          "hint": "What comes after 15 when counting by 5s?",
+          "narration": "15... 20!",
+          "hiddenPositions": [
+            20
+          ],
+          "startPosition": 15
+        },
+        {
+          "id": "c4",
+          "type": "predict",
+          "instruction": "The kangaroo is at 25 minutes. Where is the next landing?",
+          "hint": "Jump 5 minutes past 25.",
+          "narration": "25... 30!",
+          "hiddenPositions": [
+            30
+          ],
+          "startPosition": 25
+        },
+        {
+          "id": "c5",
+          "type": "predict",
+          "instruction": "The kangaroo is at 30 minutes. Where is the next landing?",
+          "hint": "Add 5 more to 30.",
+          "narration": "30... 35!",
+          "hiddenPositions": [
+            35
+          ],
+          "startPosition": 30
+        },
+        {
+          "id": "c6",
+          "type": "predict",
+          "instruction": "The kangaroo is at 35 minutes. Where is the next landing?",
+          "hint": "Keep counting by 5s past 35.",
+          "narration": "35... 40!",
+          "hiddenPositions": [
+            40
+          ],
+          "startPosition": 35
+        }
+      ],
+      "showOptions": {
+        "showArray": false,
+        "showJumpArcs": true,
+        "showEquation": false,
+        "showDigitPattern": true,
+        "autoPlay": false,
+        "showTrackLabels": true,
+        "showSequenceChips": true,
+        "showSkipValueBadge": true
+      },
+      "gradeBand": "2-3",
+      "gameMode": {
+        "enabled": false
+      },
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 2489,
+  "judgement": {
+    "reasoning": "The student confuses the face number with minutes (reading the minute hand pointing to 4 as 4 minutes instead of 20). Skip-counting by 5 on an open number line without linking jump numbers (1, 2, 3, 4...) or clock face numbers directly to the minutes counted does not bridge the core misconception (that clock numeral 4 represents 20 minutes). It is merely rote skip-counting by 5s. Furthermore, c3 specifically prompts the jump from 15 to 20, leaking the exact answer needed for the student's problem.",
+    "targetsObstacle": 1,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": true,
+    "verdict": "This detour only practices rote skip counting without connecting clock numerals to 5-minute increments, and it directly computes the 20-minute mark from the original error."
+  },
+  "rep": 0
+}
