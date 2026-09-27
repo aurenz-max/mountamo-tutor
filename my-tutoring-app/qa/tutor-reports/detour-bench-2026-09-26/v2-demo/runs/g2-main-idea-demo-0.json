@@ -1,0 +1,8 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The lesson is on reading comprehension (identifying the main idea versus a supporting detail), which cannot be modeled by math manipulatives like number lines, place value charts, or clocks.",
+  "pickMs": 1110,
+  "rep": 0
+}

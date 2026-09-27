@@ -1,5 +1,6 @@
 // Type-only, so the move layer can build on these shapes without a runtime import cycle.
 import type { MoveDelta } from './moveContract';
+import type { Demonstration } from '../demo/demoContract';
 
 /** Mounted capabilities, not catalog declarations, authorize live actions. */
 export type LocalAction =
@@ -174,7 +175,21 @@ export interface GeneratedImageSupport {
   provenance: 'generated';
 }
 
-export type SupportArtifact = CounterSupport | ContrastPairSupport | StepSequenceSupport | GeneratedImageSupport;
+/**
+ * A composed demonstration (LA-15): one teaching move drawn on one representation piece,
+ * every frame and caption built by `buildDemonstration`. See `../demo/demoContract.ts`.
+ */
+export interface DemonstrationSupport {
+  id: string;
+  kind: 'demonstration';
+  title: string;
+  demonstration: Demonstration;
+  altText: string;
+  answerExposure: AnswerExposure;
+  provenance: 'prepared';
+}
+
+export type SupportArtifact = CounterSupport | ContrastPairSupport | StepSequenceSupport | GeneratedImageSupport | DemonstrationSupport;
 
 /** What each shape is FOR, in the tutor's words. Sent as the choice's `purpose` so the model picks by purpose. */
 export const SUPPORT_PURPOSE: Record<SupportArtifact['kind'], string> = {
@@ -182,6 +197,7 @@ export const SUPPORT_PURPOSE: Record<SupportArtifact['kind'], string> = {
   'contrast-pair': 'Contrast',
   'step-sequence': 'Step-by-step explanation',
   'generated-image': 'Generated picture',
+  demonstration: 'Worked demonstration',
 };
 
 /**
@@ -375,6 +391,8 @@ export interface RuntimeSnapshot {
   canStartNext: boolean;
   /** True while the tutor may ask for a generated picture on this item. */
   canGenerateSupport: boolean;
+  /** Present only where the host enables demonstrations (LA-15): whether `request_demonstration` can open a detour now. */
+  canRequestDemonstration?: boolean;
   /** Null when this activity has not declared what it draws, so no move can be composed. */
   moveOptions: MoveOptions | null;
   /**
@@ -480,9 +498,15 @@ export function validateGeneratedImageSupport(a: GeneratedImageSupport): void {
     || !['none', 'partial', 'full'].includes(a.answerExposure)) throw new Error('Invalid generated picture');
 }
 
+export function validateDemonstrationSupport(a: DemonstrationSupport): void {
+  if (!a.id || !a.title || !a.altText || !a.demonstration?.frames?.length
+      || a.demonstration.frames.some(f => !f.caption || !f.view)) throw new Error('Invalid demonstration');
+}
+
 export function validateSupportArtifact(a: SupportArtifact): void {
   const kind = (a as { kind?: unknown } | null)?.kind;
   if (kind === 'generated-image') return validateGeneratedImageSupport(a as GeneratedImageSupport);
+  if (kind === 'demonstration') return validateDemonstrationSupport(a as DemonstrationSupport);
   if (kind === 'contrast-pair') validateContrastPairSupport(a as ContrastPairSupport);
   else if (kind === 'step-sequence') validateStepSequenceSupport(a as StepSequenceSupport);
   else validateCounterSupport(a as CounterSupport);

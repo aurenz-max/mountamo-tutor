@@ -1,0 +1,8 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "demo",
+  "none": true,
+  "rationale": "None of the available pieces can represent multiplication as equal groups or array models; the number line only shows single hops ('add' with values [start, change]) rather than repeated jumps of equal size.",
+  "pickMs": 992,
+  "rep": 2
+}

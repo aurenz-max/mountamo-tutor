@@ -1,0 +1,105 @@
+{
+  "scenario": "g4-compare-digits",
+  "arm": "demo",
+  "componentId": "demo:place-value/compare",
+  "rationale": "The student focuses on individual large digits (like 9) rather than their place value. Demonstrating a comparison using the place-value piece visually emphasizes checking the largest place (thousands) first.",
+  "script": {
+    "piece": "place-value",
+    "operation": "compare",
+    "values": [
+      2999,
+      3002
+    ],
+    "denominator": 1,
+    "focus": "thousands place",
+    "studentValues": [
+      3999,
+      4001
+    ]
+  },
+  "intent": "Demonstrate compare on the place-value with values [2999,3002]. Tutor points at: thousands place",
+  "pickMs": 1281,
+  "content": {
+    "title": "Compare from the biggest place",
+    "frames": [
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "thousands",
+            "hundreds",
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "2,999",
+              "digits": [
+                2,
+                9,
+                9,
+                9
+              ]
+            },
+            {
+              "label": "3,002",
+              "digits": [
+                3,
+                0,
+                0,
+                2
+              ]
+            }
+          ],
+          "focusPlace": null
+        },
+        "caption": "Line up 2,999 and 3,002 by place. Start with the biggest place."
+      },
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "thousands",
+            "hundreds",
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "2,999",
+              "digits": [
+                2,
+                9,
+                9,
+                9
+              ]
+            },
+            {
+              "label": "3,002",
+              "digits": [
+                3,
+                0,
+                0,
+                2
+              ]
+            }
+          ],
+          "focusPlace": 0
+        },
+        "caption": "3 thousands is more than 2 thousands, so 3,002 is greater than 2,999. The smaller places cannot catch up, even if they are 9s."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The demonstration directly addresses the exact misconception ('even if they are 9s, the smaller places cannot catch up') using an isomorphic pair of numbers (2,999 vs 3,002). It models comparing the highest place value first via a place value chart worked example, which is simpler and passive compared to active dictation/identification.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would immediately use this worked demo because it specifically confronts the student's belief that nines make a number larger regardless of place value."
+  },
+  "rep": 0
+}

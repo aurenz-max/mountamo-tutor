@@ -1,0 +1,16 @@
+{
+  "demo": {
+    "n": 15,
+    "medianReadyMs": 1348,
+    "maxReadyMs": 2872,
+    "errors": 0,
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1.13,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaks": 0,
+    "nonSingleMode": 0,
+    "none": 15
+  }
+}

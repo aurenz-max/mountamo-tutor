@@ -1,0 +1,8 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The student confuses multiplication with addition (adding 4 + 3 = 7 instead of 4 groups of 3). None of the available manipulatives (hops on a number line for basic addition/subtraction, place-value comparison, place-value make-a-ten, or clock reading) represent equal groups or arrays to illustrate multiplication.",
+  "pickMs": 1389,
+  "rep": 0
+}

@@ -1,0 +1,8 @@
+{
+  "scenario": "g1-cvc-blend",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The lesson focus is decoding short-vowel CVC words and phonemic blending. None of the available mathematical manipulatives (number line, place value, or clock) represent phonological blending or letters/sounds.",
+  "pickMs": 1299,
+  "rep": 0
+}

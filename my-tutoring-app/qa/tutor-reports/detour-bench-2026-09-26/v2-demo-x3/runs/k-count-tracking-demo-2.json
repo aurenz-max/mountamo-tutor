@@ -1,0 +1,8 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The student struggles with one-to-one correspondence when counting discrete objects, recounting items or skipping them. None of the available programmatic visual tools (number-line hops, place-value columns/bundles, or clock face) model tagging and organizing physical countable objects (such as bears or counters) to demonstrate one-to-one tracking.",
+  "pickMs": 1213,
+  "rep": 2
+}

@@ -1,0 +1,109 @@
+{
+  "scenario": "g3-clock-minutes",
+  "arm": "resolver",
+  "componentId": "skip-counting-runner",
+  "shortlist": [
+    "skip-counting-runner",
+    "number-line",
+    "annotated-example",
+    "fast-fact"
+  ],
+  "modeKind": "single",
+  "rationale": "The student confuses the face number with minutes because they have not internalized counting by 5s for each clock number. Using rhythmic skip-counting by 5s connects each step to multiples of 5 so they see that 4 jumps of 5 equals 20 minutes, not 4.",
+  "targetEvalMode": "count_along",
+  "intent": "Generate skip-counting by 5s from 0 up to 60 with visual jumps. Frame the jumps as counting minutes around a clock face, focusing on steps like 1 jump (5), 2 jumps (10), and 3 jumps (15), ensuring the student practices the sequence without directly repeating the exact target problem of 4 jumps = 20.",
+  "pickMs": 3867,
+  "content": {
+    "type": "skip-counting-runner",
+    "instanceId": "g3-clock-minutes-detour-skip-counting-runner",
+    "data": {
+      "title": "Clock Time Leaps by 5s",
+      "description": "Count along by 5s up to 60 to see how minutes increase at each step around a clock face.",
+      "skipValue": 5,
+      "startFrom": 0,
+      "endAt": 60,
+      "direction": "forward",
+      "character": {
+        "type": "kangaroo",
+        "imagePrompt": "A friendly orange kangaroo wearing a tiny pocket watch."
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "count_along",
+          "instruction": "Watch our kangaroo hop by 5s from the very start at 0!",
+          "hint": "Count every time the kangaroo lands: 5, 10, 15...",
+          "narration": "0... 5... 10... 15...",
+          "startPosition": 0
+        },
+        {
+          "id": "c2",
+          "type": "count_along",
+          "instruction": "Continue watching the hops as we count the first few minutes on the clock.",
+          "hint": "Keep following the rhythmic jumps up to 20.",
+          "narration": "5... 10... 15... 20...",
+          "startPosition": 0
+        },
+        {
+          "id": "c3",
+          "type": "count_along",
+          "instruction": "Watch the hops grow as we reach halfway around the clock face to 30.",
+          "hint": "Every hop adds 5 more minutes to our time.",
+          "narration": "15... 20... 25... 30...",
+          "startPosition": 0
+        },
+        {
+          "id": "c4",
+          "type": "count_along",
+          "instruction": "Keep counting past thirty minutes. Notice how the ones digit alternates between 5 and 0.",
+          "hint": "30, 35, 40, 45...",
+          "narration": "30... 35... 40... 45...",
+          "startPosition": 0
+        },
+        {
+          "id": "c5",
+          "type": "count_along",
+          "instruction": "Almost all the way around the clock! Watch the hops up to 55.",
+          "hint": "Counting by 5s makes telling time super fast.",
+          "narration": "40... 45... 50... 55...",
+          "startPosition": 0
+        },
+        {
+          "id": "c6",
+          "type": "count_along",
+          "instruction": "Complete the full circle around the clock face all the way to 60 minutes!",
+          "hint": "60 minutes makes one full hour!",
+          "narration": "45... 50... 55... 60...",
+          "startPosition": 0
+        }
+      ],
+      "showOptions": {
+        "showArray": true,
+        "showJumpArcs": true,
+        "showEquation": true,
+        "showDigitPattern": true,
+        "autoPlay": true,
+        "showTrackLabels": true,
+        "showSequenceChips": true,
+        "showSkipValueBadge": true
+      },
+      "gradeBand": "1-2",
+      "gameMode": {
+        "enabled": false
+      },
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 2633,
+  "judgement": {
+    "reasoning": "The student confuses the face number with minutes (thinking 4 means 4 minutes rather than 4 groups of 5 minutes). While skip-counting by 5 on a number line is a helpful prerequisite, this activity is purely a linear skip-counting watch/count-along runner that does not explicitly map clock numbers (1, 2, 3, 4...) to the minutes (5, 10, 15, 20...). Furthermore, the tasks are passive 'count_along' animations. However, it does provide a different visual representation (number line) of multiples of 5 up to 60 with clock context in text.",
+    "targetsObstacle": 1,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "This detour reviews counting by fives on a number line, but without explicitly mapping the clock hand's numbers (1 to 12) to those minutes, it misses the crucial bridge needed to fix the student's misconception."
+  },
+  "rep": 0
+}

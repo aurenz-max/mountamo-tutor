@@ -1,0 +1,86 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "resolver",
+  "componentId": "comparison-panel",
+  "shortlist": [
+    "comparison-panel",
+    "annotated-example",
+    "foundation-explorer",
+    "decodable-reader"
+  ],
+  "modeKind": "none",
+  "rationale": "The student confuses a small, interesting descriptive detail ('bees are yellow') with the central idea ('bees help plants'). A direct side-by-side comparison makes the conceptual difference between the overarching 'big idea' and a supporting 'small detail' visually and structurally distinct.",
+  "intent": "Present a side-by-side comparison of 'Main Idea' (the big umbrella topic covering the whole text) versus 'Detail' (one small fact or sentence that supports the big idea). Use a simple Grade 2 friendly example (such as dogs having jobs vs. dogs having fur) completely separate from bees or pollination so the original passage answer is not spoiled.",
+  "pickMs": 2962,
+  "content": {
+    "type": "comparison-panel",
+    "instanceId": "g2-main-idea-detour-comparison-panel",
+    "data": {
+      "title": "Main Idea vs. Supporting Detail",
+      "intro": "When we read a story or a book, it is like looking at a big umbrella house. Let us learn how to find the big main idea and the small details that help hold it up!",
+      "item1": {
+        "name": "The Main Idea",
+        "description": "The big umbrella thought that tells us what the whole story is mostly about.",
+        "visualPrompt": "A giant green umbrella covering all the other smaller pictures below it.",
+        "points": [
+          "It tells what the whole story is about.",
+          "It is the most important point.",
+          "It covers everything in the text like a big umbrella."
+        ]
+      },
+      "item2": {
+        "name": "A Supporting Detail",
+        "description": "One small fact or piece of information that helps prove or explain the big idea.",
+        "visualPrompt": "A single raindrops or small puzzle piece pointing up to the big umbrella.",
+        "points": [
+          "It is just one small piece of the story.",
+          "It gives an extra fact or color.",
+          "It helps prove why the main idea is true."
+        ]
+      },
+      "synthesis": {
+        "mainInsight": "The main idea is the big roof of the house, and details are the little bricks that help build it.",
+        "keyDifferences": [
+          "The main idea is about the whole text, but a detail is only about one small part.",
+          "The main idea is the most important point, while details just give extra facts."
+        ],
+        "keySimilarities": [
+          "Both are found inside the same story or book.",
+          "Both work together to help us understand what we are reading."
+        ],
+        "commonMisconception": "Thinking that every cool or fun fact in a story is the main idea.",
+        "whenToUse": {
+          "item1Context": "Use the main idea when someone asks you, 'What was this story mostly about?'",
+          "item2Context": "Use details when someone asks you to prove your answer with a fact from the text."
+        }
+      },
+      "gates": [
+        {
+          "question": "The main idea tells us what the whole story is mostly about, while a supporting detail is just one small fact.",
+          "correctAnswer": true,
+          "rationale": "Great job! The main idea is the big umbrella for the whole text, and a detail is just one small piece that supports it.",
+          "unlocks": "synthesis"
+        },
+        {
+          "question": "A supporting detail covers the whole story just like the main idea does.",
+          "correctAnswer": false,
+          "rationale": "Not quite! A supporting detail is only one small part of the story, whereas the main idea covers the whole thing.",
+          "unlocks": "complete"
+        }
+      ],
+      "gradeLevel": "2"
+    }
+  },
+  "generateMs": 2566,
+  "judgement": {
+    "reasoning": "The detour directly addresses the student's exact misconception (confusing an interesting fact/detail with the main idea) by framing Main Idea vs. Supporting Detail side by side using accessible metaphors (umbrella/house bricks). It strips away complex text to focus on the prerequisite concept definition, does not leak the bees passage, and uses simple check questions appropriate for Grade 2.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would readily use this side-by-side comparison to clarify the difference between an umbrella topic and a small supporting detail before sending the student back to the passage."
+  },
+  "rep": 0
+}

@@ -1,0 +1,8 @@
+{
+  "scenario": "g5-particles",
+  "arm": "demo",
+  "none": true,
+  "rationale": "None of the available visual pieces (number-line, place-value, clock) can represent particle motion or states of matter (solids, liquids, gases vibrating in place).",
+  "pickMs": 1330,
+  "rep": 0
+}

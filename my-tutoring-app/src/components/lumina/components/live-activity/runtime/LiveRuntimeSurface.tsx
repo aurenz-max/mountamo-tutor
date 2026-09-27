@@ -6,7 +6,8 @@ import { accentBorder, accentChipBg, accentSolidBg, accentStrongText, accentText
 import type { LiveLessonRuntime } from './LiveLessonRuntime';
 import { useRuntimeSnapshot } from './LiveRuntimeContext';
 import { usePipScene } from '../../../pip/PipSurfaceContext';
-import type { AssistanceEvent, ContrastPairSupport, CounterSupport, GeneratedImageSupport, StepSequenceSupport, StepTone } from './contract';
+import type { AssistanceEvent, ContrastPairSupport, CounterSupport, GeneratedImageSupport, StepSequenceSupport, StepTone, SupportArtifact } from './contract';
+import { DemonstrationView } from '../demo/DemonstrationView';
 
 // Counters take their colour from the kit tokens, so both shapes move with the theme.
 const COUNTER = `border-2 ${accentBorder.cyan} ${accentSolidBg.cyan}`;
@@ -172,6 +173,31 @@ export interface LearnerProgressControl {
   disabled?: boolean;
 }
 
+/**
+ * The returnable shell's card. Exported so a host that previews an artifact without a
+ * runtime (the runtime lab) draws exactly what a detour draws.
+ */
+export function SupportArtifactCard({ artifact, imageSrc = null, label = 'Worked example' }: {
+  artifact: SupportArtifact; imageSrc?: string | null;
+  /** A preview host names its copy differently, so probes for the live detour find exactly one. */
+  label?: string;
+}) {
+  // The aside's role and name, and the data-* attributes, are what the harness probes resolve.
+  return <aside aria-label={label} data-artifact-kind={artifact.kind}>
+    <LuminaCard surface="elevated" topAccent="indigo">
+      <LuminaCardHeader><LuminaCardTitle>{artifact.title}</LuminaCardTitle></LuminaCardHeader>
+      <LuminaCardContent>
+        {artifact.kind === 'contrast-pair' ? <ContrastPair artifact={artifact} />
+          : artifact.kind === 'step-sequence' ? <StepSequence artifact={artifact} />
+            : artifact.kind === 'generated-image' ? <GeneratedImage artifact={artifact} src={imageSrc} />
+              : artifact.kind === 'demonstration' ? <DemonstrationView demonstration={artifact.demonstration} />
+                : <CounterExample artifact={artifact} />}
+        <p className="mt-6 text-center text-sm text-slate-400">This is a worked example. Your task is saved.</p>
+      </LuminaCardContent>
+    </LuminaCard>
+  </aside>;
+}
+
 /** Keeps the SAME child mounted. Suspension is an adapter guarantee, not a CSS hiding trick. */
 export function LiveRuntimeSurface({ runtime, children, active = true, learnerProgress }: {
   runtime: LiveLessonRuntime; children: React.ReactNode; active?: boolean;
@@ -198,19 +224,7 @@ export function LiveRuntimeSurface({ runtime, children, active = true, learnerPr
     <div hidden={!!artifact || active && state.status === 'stopped'}>
       <fieldset disabled={!active || !!artifact || state.status !== 'active'} className="m-0 min-w-0 border-0 p-0">{children}</fieldset>
     </div>
-    {/* The aside's role and name, and the data-* attributes, are what the harness probes resolve. */}
-    {artifact && <aside aria-label="Worked example" data-artifact-kind={artifact.kind}>
-      <LuminaCard surface="elevated" topAccent="indigo">
-        <LuminaCardHeader><LuminaCardTitle>{artifact.title}</LuminaCardTitle></LuminaCardHeader>
-        <LuminaCardContent>
-          {artifact.kind === 'contrast-pair' ? <ContrastPair artifact={artifact} />
-            : artifact.kind === 'step-sequence' ? <StepSequence artifact={artifact} />
-              : artifact.kind === 'generated-image' ? <GeneratedImage artifact={artifact} src={runtime.getSupportImage(artifact.id)} />
-                : <CounterExample artifact={artifact} />}
-          <p className="mt-6 text-center text-sm text-slate-400">This is a worked example. Your task is saved.</p>
-        </LuminaCardContent>
-      </LuminaCard>
-    </aside>}
+    {artifact && <SupportArtifactCard artifact={artifact} imageSrc={artifact.kind === 'generated-image' ? runtime.getSupportImage(artifact.id) : null} />}
     {active && learnerProgress && progress && !artifact && state.status === 'active' && <div className="mt-4 flex justify-center">
       <LuminaButton tone="primary" data-learner-progress={progress} disabled={learnerProgress.disabled}
         onClick={() => learnerProgress.act(progress)}>{progress === 'advance' ? 'Next challenge' : 'Try again'}</LuminaButton>

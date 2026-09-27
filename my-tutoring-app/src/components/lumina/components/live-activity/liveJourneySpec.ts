@@ -222,7 +222,7 @@ const says = (text: string, n: number) =>
 
 /** A counter example IS its three quantities; a turn that omits one has announced an example, not taught it. */
 const omittedQuantities = (artifact: SupportArtifact, text: string): string | null => {
-  if (artifact.kind === 'contrast-pair' || artifact.kind === 'generated-image') return `Expected a counter example or a step sequence, got ${artifact.kind}`;
+  if (artifact.kind === 'contrast-pair' || artifact.kind === 'generated-image' || artifact.kind === 'demonstration') return `Expected a counter example or a step sequence, got ${artifact.kind}`;
   // A step sequence's relationship is its LAST step: each part and the whole they make.
   const last = artifact.kind === 'step-sequence' ? artifact.frames[artifact.frames.length - 1].segments.map(s => s.count) : [];
   const quantities = artifact.kind === 'step-sequence' ? [...last, last.reduce((a, b) => a + b, 0)]

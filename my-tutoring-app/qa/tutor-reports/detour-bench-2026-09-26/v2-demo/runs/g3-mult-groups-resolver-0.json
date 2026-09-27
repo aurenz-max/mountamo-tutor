@@ -1,0 +1,135 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "resolver",
+  "componentId": "multiplication-explorer",
+  "shortlist": [
+    "multiplication-explorer",
+    "skip-counting-runner",
+    "comparison-panel",
+    "annotated-example"
+  ],
+  "modeKind": "single",
+  "rationale": "The student is adding factors (4 + 3 = 7) instead of interpreting multiplication as equal groups. The 'build' task mode in multiplication-explorer directly targets this by having the student construct concrete equal groups for a multiplication expression.",
+  "targetEvalMode": "build",
+  "intent": "Guide the student to construct equal groups for basic single-digit multiplication facts (e.g., 3 groups of 2 or 5 groups of 2). Keep factors small (2 to 5) and do not use 4 × 3 to avoid giving away the current problem's answer.",
+  "pickMs": 2670,
+  "content": {
+    "type": "multiplication-explorer",
+    "instanceId": "g3-mult-groups-detour-multiplication-explorer",
+    "data": {
+      "title": "Sticker Packs",
+      "description": "Build equal groups of stickers to see how multiplication works by counting total items across groups.",
+      "fact": {
+        "factor1": 8,
+        "factor2": 4,
+        "product": 32
+      },
+      "representations": {
+        "equalGroups": true,
+        "array": true,
+        "repeatedAddition": true,
+        "numberLine": true,
+        "areaModel": true
+      },
+      "activeRepresentation": "groups",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "build",
+          "instruction": "Build 8 groups with 4 stickers in each group. How many stickers are there in total?",
+          "targetFact": "8 × 4 = 32",
+          "hint": "Count by fours eight times: 4, 8, 12, 16, 20, 24, 28, 32.",
+          "narration": "Let's make 8 groups with 4 stickers each. Count the total amount!",
+          "hiddenValue": "product",
+          "timeLimit": null,
+          "fact": {
+            "factor1": 8,
+            "factor2": 4
+          },
+          "representation": "groups"
+        },
+        {
+          "id": "c2",
+          "type": "build",
+          "instruction": "Build 3 groups with 4 stickers in each group. How many stickers are there in total?",
+          "targetFact": "3 × 4 = 12",
+          "hint": "Count by fours three times: 4, 8, 12.",
+          "narration": "Now let's build 3 groups with 4 stickers in each group. How many in all?",
+          "hiddenValue": "product",
+          "timeLimit": null,
+          "fact": {
+            "factor1": 3,
+            "factor2": 4
+          },
+          "representation": "array"
+        },
+        {
+          "id": "c3",
+          "type": "build",
+          "instruction": "Build 8 groups with 2 stickers in each group. How many stickers are there in total?",
+          "targetFact": "8 × 2 = 16",
+          "hint": "Count by twos eight times: 2, 4, 6, 8, 10, 12, 14, 16.",
+          "narration": "Great job! Next, set up 8 groups with 2 stickers in each group.",
+          "hiddenValue": "product",
+          "timeLimit": null,
+          "fact": {
+            "factor1": 8,
+            "factor2": 2
+          },
+          "representation": "repeated_addition"
+        },
+        {
+          "id": "c4",
+          "type": "build",
+          "instruction": "Build 10 groups with 4 stickers in each group. How many stickers are there in total?",
+          "targetFact": "10 × 4 = 40",
+          "hint": "Count by fours ten times: 4, 8, 12, 16, 20, 24, 28, 32, 36, 40.",
+          "narration": "Let's try 10 groups with 4 stickers each. Count carefully to find the total!",
+          "hiddenValue": "product",
+          "timeLimit": null,
+          "fact": {
+            "factor1": 10,
+            "factor2": 4
+          },
+          "representation": "number_line"
+        },
+        {
+          "id": "c5",
+          "type": "build",
+          "instruction": "Build 3 groups with 8 stickers in each group. How many stickers are there in total?",
+          "targetFact": "3 × 8 = 24",
+          "hint": "Count by eights three times: 8, 16, 24.",
+          "narration": "For our final challenge, let's build 3 groups with 8 stickers in each group.",
+          "hiddenValue": "product",
+          "timeLimit": null,
+          "fact": {
+            "factor1": 3,
+            "factor2": 8
+          },
+          "representation": "area_model"
+        }
+      ],
+      "showOptions": {
+        "showProduct": false,
+        "showFactFamily": false,
+        "showCommutativeFlip": false,
+        "showDistributiveBreakdown": false
+      },
+      "gradeBand": "2-3",
+      "imagePrompt": "colorful sticker packs arranged in neat equal groups on a table",
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 2684,
+  "judgement": {
+    "reasoning": "The student confuses multiplication with addition (4 x 3 = 7). The detour switches from arrays to an explicit equal-groups builder, which targets the conceptual misunderstanding of equal groups vs adding numbers. However, the generator violated the explicit instruction to keep factors small (between 2 and 5), using large factors like 8 x 4, 10 x 4, and 3 x 8, which makes the detour much harder than necessary for a struggling student, though c2 (3 x 4) effectively gives away the commutative counterpart of 4 x 3.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 0,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 1,
+    "leaksCurrentAnswer": false,
+    "verdict": "While the representation of equal groups directly addresses the misconception, the numbers chosen (like 8x4 and 10x4) are too large and complex for a struggling student needing a simpler reset."
+  },
+  "rep": 0
+}

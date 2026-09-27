@@ -1,0 +1,178 @@
+{
+  "scenario": "g4-compare-digits",
+  "arm": "resolver",
+  "componentId": "annotated-example",
+  "shortlist": [
+    "base-ten-blocks",
+    "comparison-panel",
+    "annotated-example",
+    "number-line"
+  ],
+  "modeKind": "none",
+  "rationale": "The student focuses on individual digit magnitude rather than positional value, incorrectly assuming nines outweigh a higher place value. An annotated worked example clearly models comparing the highest place value first to establish which number is greater regardless of smaller digits.",
+  "intent": "Generate a step-by-step worked example comparing two 4-digit numbers (such as 2,989 and 3,012). Explicitly annotate the strategic rule to examine the thousands place first, demonstrating that 3 thousands is greater than 2 thousands no matter what digits are in the hundreds, tens, or ones places. Do not use 3,999 or 4,001 so the student can apply the concept back to their original problem independently upon return.",
+  "pickMs": 3059,
+  "content": {
+    "type": "annotated-example",
+    "instanceId": "g4-compare-digits-detour-annotated-example",
+    "data": {
+      "title": "Comparing Multi-Digit Numbers by Place Value",
+      "subject": "Arithmetic",
+      "problem": {
+        "statement": "Let us walk through a step-by-step worked example comparing two 4-digit numbers: 2,989 and 3,012. To compare them, examine the thousands place first. Notice that 3 thousand is greater than 2 thousand, so 3,012 is greater than 2,989 no matter what digits are in the hundreds, tens, or ones places. Now, apply this exact concept to compare 999 and 1,241 on your own."
+      },
+      "solutionStrategy": "Compare multi-digit numbers by examining the digits in the highest place-value position first.",
+      "steps": [
+        {
+          "id": 1,
+          "title": "Compare the thousands place digits",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "2,989 \\text{ and } 3,012"
+                },
+                "to": {
+                  "latex": "3 \\text{ thousand } > 2 \\text{ thousand}"
+                },
+                "operation": "compare the thousands place first"
+              },
+              {
+                "from": {
+                  "latex": "3 \\text{ thousand } > 2 \\text{ thousand}"
+                },
+                "to": {
+                  "latex": "3,012 > 2,989"
+                },
+                "operation": "conclude which number is greater"
+              }
+            ],
+            "result": "3,012 > 2,989"
+          },
+          "annotations": {
+            "steps": "Examine the thousands place in both 4-digit numbers to see which is larger.",
+            "strategy": "I notice that comparing the highest place value first immediately tells me which number is bigger.",
+            "misconceptions": "Students often wrongly look at the hundreds digits first, thinking 9 is bigger than 0 so 2,989 is larger.",
+            "connections": "This builds on place value understanding, showing that thousands are always worth more than hundreds.",
+            "narrative": "To compare the two 4-digit numbers $2,989$ and $3,012$, examine the thousands place first. Notice that 3 thousand is greater than 2 thousand, meaning 3 thousands is greater than 2 thousands, so $3,012$ is greater than $2,989$ no matter what digits are in the hundreds, tens, or ones places ($3,012 > 2,989$)."
+          }
+        },
+        {
+          "id": 2,
+          "title": "Compare numbers of different lengths",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "999 \\text{ and } 1,241"
+                },
+                "to": {
+                  "latex": "0 \\text{ thousands } < 1 \\text{ thousand}"
+                },
+                "operation": "compare thousands place",
+                "challenge": {
+                  "hide": "to",
+                  "prompt": "When aligning 999 and 1,241 by place value, how do the digits in the thousands place compare?",
+                  "acceptableAnswers": [
+                    "0 \\text{ thousands } < 1 \\text{ thousand}"
+                  ],
+                  "rationale": "Because 999 is a 3-digit number, it has 0 thousands, which is less than the 1 thousand in 1,241; comparing the first visible digits without aligning place values wrongly treats 9 as thousands.",
+                  "distractors": [
+                    "9 \\text{ thousands } > 1 \\text{ thousand}",
+                    "9 \\text{ hundreds } > 1 \\text{ thousand}",
+                    "0 \\text{ thousands } > 1 \\text{ thousand}"
+                  ]
+                }
+              }
+            ],
+            "result": "999 < 1,241"
+          },
+          "annotations": {
+            "steps": "Compare the thousands place of 999 and 1,241 by recognizing that 999 has an implicit zero in the thousands place.",
+            "strategy": "I notice that a 3-digit number has fewer place values than a 4-digit number, so I treat the missing thousands digit as zero.",
+            "misconceptions": "A student might compare the first visible digits from left to right without aligning the place values, mistakenly comparing 9 and 1.",
+            "connections": "This connects to place-value alignment where empty higher places are understood to hold a value of zero.",
+            "narrative": "Now apply this exact concept to compare $999$ and $1,241$ by examining the thousands place first. Since the 4-digit number $1,241$ has 1 thousand and the 3-digit number $999$ has 0 thousands, 1 thousand is greater than 0 thousands, so $1,241$ is greater than $999$ no matter what digits are in the hundreds, tens, or ones places ($1,241 > 999$, so $999 < 1,241$)."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Let us walk through a step-by-step worked example comparing two 4-digit numbers: 2,989 and 3,012. To compare them, examine the thousands place first. Notice that 3 thousand is greater than 2 thousand, so 3,012 is greater than 2,989 no matter what digits are in the hundreds, tens, or ones places. Now, apply this exact concept to compare 999 and 1,241 on your own.",
+        "body": "To compare the two 4-digit numbers $2,989$ and $3,012$, examine the thousands place first. Notice that 3 thousand is greater than 2 thousand, meaning 3 thousands is greater than 2 thousands, so $3,012$ is greater than $2,989$ no matter what digits are in the hundreds, tens, or ones places ($3,012 > 2,989$).\n---\nNow apply this exact concept to compare $999$ and $1,241$ by examining the thousands place first. Since the 4-digit number $1,241$ has 1 thousand and the 3-digit number $999$ has 0 thousands, 1 thousand is greater than 0 thousands, so $1,241$ is greater than $999$ no matter what digits are in the hundreds, tens, or ones places ($1,241 > 999$, so $999 < 1,241$).",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "To compare the two 4-digit numbers $2,989$ and $3,012$, examine the thousands place first. Notice that 3 thousand is greater than 2 thousand, meaning 3 thousands is greater than 2 thousands, so $3,012$ is greater than $2,989$ no matter what digits are in the hundreds, tens, or ones places ($3,012 > 2,989$)."
+          },
+          {
+            "index": 1,
+            "prose": "Now apply this exact concept to compare $999$ and $1,241$ by examining the thousands place first. Since the 4-digit number $1,241$ has 1 thousand and the 3-digit number $999$ has 0 thousands, 1 thousand is greater than 0 thousands, so $1,241$ is greater than $999$ no matter what digits are in the hundreds, tens, or ones places ($1,241 > 999$, so $999 < 1,241$)."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "algebra",
+              "title": "Compare the thousands place digits",
+              "pedagogicalGoal": "Show that comparing the highest place value determines which multi-digit number is larger regardless of subsequent digits.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Extract the thousands digits 2 and 3 from 2,989 and 3,012 to show 3 > 2, concluding that 3,012 > 2,989."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Compare numbers of different lengths",
+              "pedagogicalGoal": "Teach that a number with fewer digits has an implicit zero in higher place values when compared to a number with more digits.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Compare the thousands place of 1,241 (1 thousand) with 999 (0 thousands) to show 1 > 0 and conclude 1,241 > 999 (or 999 < 1,241)."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "transition",
+              "stepIndex": 1,
+              "prompt": "When aligning 999 and 1,241 by place value, how do the digits in the thousands place compare?",
+              "acceptableAnswers": [
+                "0 \\text{ thousands } < 1 \\text{ thousand}"
+              ],
+              "distractors": [
+                "9 \\text{ thousands } > 1 \\text{ thousand}",
+                "9 \\text{ hundreds } > 1 \\text{ thousand}",
+                "0 \\text{ thousands } > 1 \\text{ thousand}"
+              ],
+              "rationale": "Because 999 is a 3-digit number, it has 0 thousands, which is less than the 1 thousand in 1,241; comparing the first visible digits without aligning place values wrongly treats 9 as thousands.",
+              "transitionIndex": 0,
+              "hide": "to"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  },
+  "generateMs": 179976,
+  "judgement": {
+    "reasoning": "The worked example directly addresses the misconception that having 'bigger digits' (like nines) makes a number larger, by explicitly showing that the thousands place is compared first and overrides any digits in lower places. The problem statement accidentally explains the whole first step in the prompt, but it provides a clean worked demonstration followed by an active challenge item, offering a structured conceptual breakdown.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 1,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A solid detour that explicitly walks through comparing the largest place value first to counter the belief that having 9s makes a number bigger."
+  },
+  "rep": 0
+}

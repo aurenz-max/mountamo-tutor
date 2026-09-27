@@ -1,0 +1,117 @@
+{
+  "scenario": "g4-fraction-add",
+  "arm": "demo",
+  "componentId": "demo:number-line/add",
+  "rationale": "The student mistakenly adds the denominators together (getting tenths instead of fifths). A number line divided into fifths visually demonstrates that adding fifths means taking steps of size 1/5 along the fifths line, keeping the denominator constant while only counting up the numerators.",
+  "script": {
+    "piece": "number-line",
+    "operation": "add",
+    "values": [
+      1,
+      3
+    ],
+    "denominator": 5,
+    "focus": "The size of each tick mark stays 1/5, so adding hops counts fifths rather than changing the denominator.",
+    "studentValues": [
+      2,
+      1
+    ]
+  },
+  "intent": "Demonstrate add on the number-line with values [1,3] (unit 1/5). Tutor points at: The size of each tick mark stays 1/5, so adding hops counts fifths rather than changing the denominator.",
+  "pickMs": 2872,
+  "content": {
+    "title": "Hopping in fifths",
+    "frames": [
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 5,
+          "min": 0,
+          "max": 5,
+          "marks": [
+            {
+              "at": 1,
+              "tone": "focus"
+            }
+          ],
+          "hops": []
+        },
+        "caption": "Start at 1/5. We are standing here; we have not hopped yet."
+      },
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 5,
+          "min": 0,
+          "max": 5,
+          "marks": [
+            {
+              "at": 1,
+              "tone": "faded"
+            },
+            {
+              "at": 2,
+              "tone": "focus"
+            }
+          ],
+          "hops": [
+            {
+              "from": 1,
+              "to": 2,
+              "label": "1"
+            }
+          ]
+        },
+        "caption": "Hop 1 moves 1/5 forward and lands on 2/5. One hop is one fifth."
+      },
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 5,
+          "min": 0,
+          "max": 5,
+          "marks": [
+            {
+              "at": 1,
+              "tone": "faded"
+            },
+            {
+              "at": 4,
+              "tone": "done"
+            }
+          ],
+          "hops": [
+            {
+              "from": 1,
+              "to": 2,
+              "label": "1"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "2"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "3"
+            }
+          ]
+        },
+        "caption": "Hop 3 lands on 4/5. 3 hops, so 1/5 + 3/5 = 4/5. Every hop was one fifth; the size of the pieces never changed, only how many."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The student erroneously added denominators (getting 3/10 for 2/5 + 1/5). The demo switches from a fraction bar to a number line, explicitly demonstrating that hops along fifths simply count how many fifths there are without changing the denominator size (1/5 + 3/5 = 4/5). It is passive/worked (easier), uses a distinct visual representation, and directly targets why the denominator remains 5.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would definitely use this demo to clearly show on a number line that hopping fifths counts parts while keeping the denominator unchanged."
+  },
+  "rep": 2
+}

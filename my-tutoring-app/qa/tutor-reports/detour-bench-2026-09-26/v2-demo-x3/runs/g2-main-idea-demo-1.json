@@ -1,0 +1,8 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The lesson is on reading comprehension (identifying the main idea vs. supporting details in Grade 2), which is an English Language Arts topic. None of the available mathematical manipulatives (number line, place value, clock) are suitable for demonstrating this concept.",
+  "pickMs": 1199,
+  "rep": 1
+}

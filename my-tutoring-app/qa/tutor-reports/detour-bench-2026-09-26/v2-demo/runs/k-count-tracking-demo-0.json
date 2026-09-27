@@ -1,0 +1,8 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The student struggles with one-to-one correspondence, double-counting and skipping objects. None of the available pieces (number line hops for addition/subtraction, place-value comparison, base-ten bundling, or clock skip-counting) model tracking discrete physical objects on a counting board to practice 1-to-1 tagging.",
+  "pickMs": 1183,
+  "rep": 0
+}

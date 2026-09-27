@@ -1,0 +1,74 @@
+{
+  "scenario": "g3-clock-minutes",
+  "arm": "demo",
+  "componentId": "demo:clock/minutes-from-numeral",
+  "rationale": "The student confuses the numeral on the clock face with the number of minutes, reading 4 as 4 minutes instead of multiplying or skip-counting by 5. The clock/minutes-from-numeral visual directly addresses this by demonstrating counting by fives from the 12 around the dial to the target numeral.",
+  "script": {
+    "piece": "clock",
+    "operation": "minutes-from-numeral",
+    "values": [
+      2,
+      3
+    ],
+    "denominator": 1,
+    "focus": "the jumps counting by fives to each number around the clock",
+    "studentValues": [
+      3,
+      4
+    ]
+  },
+  "intent": "Demonstrate minutes-from-numeral on the clock with values [2,3]. Tutor points at: the jumps counting by fives to each number around the clock",
+  "pickMs": 1494,
+  "content": {
+    "title": "Each number is 5 minutes",
+    "frames": [
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": []
+        },
+        "caption": "The long hand points to the 3. That 3 does not mean 3 minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Count by fives from the 12: 5, 10, 15. Each number on the clock is 5 more minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Keep counting to the 3: 15 minutes. The time is 2:15."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The demonstration directly tackles the misconception where the student reads the numeral pointed to as minutes (e.g., 3 means 3 minutes). It explicitly addresses 'that 3 does not mean 3 minutes' and models skip-counting by fives to 15. Being a narrated, step-by-step worked demo makes it an easier instructional detour.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, this directly addresses the exact misconception with a clear worked demonstration without spoiling their original problem."
+  },
+  "rep": 1
+}

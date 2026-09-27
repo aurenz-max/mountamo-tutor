@@ -1,0 +1,8 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "demo",
+  "none": true,
+  "rationale": "None of the available pieces can represent multiplication as equal groups or arrays. The number line only models single addition or subtraction hops, place value only handles place-value comparison or making a ten, and the clock piece only counts by fives to read minutes. None can illustrate repeated groups of a given size or array structures.",
+  "pickMs": 1171,
+  "rep": 0
+}

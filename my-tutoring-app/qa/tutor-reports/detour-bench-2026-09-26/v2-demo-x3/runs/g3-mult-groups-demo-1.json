@@ -1,0 +1,8 @@
+{
+  "scenario": "g3-mult-groups",
+  "arm": "demo",
+  "none": true,
+  "rationale": "None of the available pieces can represent equal groups, repeated addition jumps, or arrays for multiplication. Number line only supports a single hop (start + change), not repeated equal jumps.",
+  "pickMs": 1024,
+  "rep": 1
+}

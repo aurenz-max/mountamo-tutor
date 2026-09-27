@@ -1,0 +1,28 @@
+{
+  "scenario": "g1-subtract-hops",
+  "arm": "resolver",
+  "componentId": "annotated-example",
+  "shortlist": [
+    "counting-board",
+    "annotated-example",
+    "comparison-panel",
+    "di-spoken-practice"
+  ],
+  "modeKind": "none",
+  "rationale": "The student mistakenly counts the starting position rather than the movement/hop itself. An annotated example explicitly contrasts starting on the number versus counting the actual hop to make the one-to-one correspondence of hops visible.",
+  "intent": "Demonstrate subtraction on a number line within 20 (e.g., 14 - 3 or 11 - 2, strictly different from 12 - 3). Highlight that the starting number is where you put your pencil, and count '1' only after landing the first backward hop onto the next number.",
+  "pickMs": 3014,
+  "generationError": "[AnnotatedExample] solver violated accepted authoring contract: missing-number",
+  "generateMs": 79492,
+  "judgement": {
+    "reasoning": "The generated content is null/empty, meaning no usable detour activity was provided to the student.",
+    "targetsObstacle": 0,
+    "easierOrPrerequisite": 0,
+    "differentRepresentation": 0,
+    "inScope": 0,
+    "contentUsable": 0,
+    "leaksCurrentAnswer": false,
+    "verdict": "No teacher could use this detour because no content was generated."
+  },
+  "rep": 0
+}

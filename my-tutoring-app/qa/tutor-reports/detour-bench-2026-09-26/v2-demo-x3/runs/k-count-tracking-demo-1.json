@@ -1,0 +1,8 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The student struggles with one-to-one correspondence, double-counting and skipping objects. None of the available visual components (hops on a number-line, place-value column comparisons, base-ten bundling, or reading minutes on a clock) can model touching discrete objects/manipulatives one-to-one on a counting board.",
+  "pickMs": 1282,
+  "rep": 1
+}

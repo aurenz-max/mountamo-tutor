@@ -1,0 +1,44 @@
+{
+  "resolver": {
+    "n": 10,
+    "medianReadyMs": 5790,
+    "maxReadyMs": 183035,
+    "errors": 1,
+    "targetsObstacle": 1.5,
+    "easierOrPrerequisite": 1.2,
+    "differentRepresentation": 1.6,
+    "inScope": 1.6,
+    "contentUsable": 1.4,
+    "leaks": 0,
+    "nonSingleMode": 0,
+    "none": 0
+  },
+  "demo": {
+    "n": 5,
+    "medianReadyMs": 1281,
+    "maxReadyMs": 1495,
+    "errors": 0,
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaks": 0,
+    "nonSingleMode": 0,
+    "none": 5
+  },
+  "demo+fallback": {
+    "n": 10,
+    "medianReadyMs": 5203,
+    "maxReadyMs": 69572,
+    "errors": 0,
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 1.7,
+    "differentRepresentation": 1.5,
+    "inScope": 2,
+    "contentUsable": 1.8,
+    "leaks": 0,
+    "nonSingleMode": 0,
+    "none": 0
+  }
+}

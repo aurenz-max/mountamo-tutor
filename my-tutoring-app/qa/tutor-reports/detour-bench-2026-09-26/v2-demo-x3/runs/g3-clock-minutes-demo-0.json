@@ -1,0 +1,74 @@
+{
+  "scenario": "g3-clock-minutes",
+  "arm": "demo",
+  "componentId": "demo:clock/minutes-from-numeral",
+  "rationale": "The student confuses the numeral pointed to by the minute hand with the minute count (reading 4 as :04 instead of :20). Using clock / minutes-from-numeral shows counting by fives around the rim to convert the numeral to elapsed minutes.",
+  "script": {
+    "piece": "clock",
+    "operation": "minutes-from-numeral",
+    "values": [
+      2,
+      3
+    ],
+    "denominator": 1,
+    "focus": "the jumps of 5 minutes counting up to each number",
+    "studentValues": [
+      3,
+      4
+    ]
+  },
+  "intent": "Demonstrate minutes-from-numeral on the clock with values [2,3]. Tutor points at: the jumps of 5 minutes counting up to each number",
+  "pickMs": 1248,
+  "content": {
+    "title": "Each number is 5 minutes",
+    "frames": [
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": []
+        },
+        "caption": "The long hand points to the 3. That 3 does not mean 3 minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Count by fives from the 12: 5, 10, 15. Each number on the clock is 5 more minutes."
+      },
+      {
+        "view": {
+          "piece": "clock",
+          "hour": 2,
+          "minuteNumeral": 3,
+          "labelled": [
+            1,
+            2,
+            3
+          ]
+        },
+        "caption": "Keep counting to the 3: 15 minutes. The time is 2:15."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The student confuses the numeral pointed to by the minute hand with the minute value (e.g. reading 4 as :04). The generated demonstration directly addresses this misconception by showing that when the minute hand points to 3, it does not mean 3 minutes, explicitly counting by fives to arrive at 15 minutes. It is simpler (passive demonstration rather than interactive generation), stays in grade/scope, does not leak the 3:04 problem, and uses a clear frame-by-frame breakdown.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would definitely use this concise demonstration because it explicitly targets the exact misconception with clear skip-counting visual steps."
+  },
+  "rep": 0
+}

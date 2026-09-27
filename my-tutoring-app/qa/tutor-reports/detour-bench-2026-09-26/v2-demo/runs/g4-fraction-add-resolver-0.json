@@ -1,0 +1,131 @@
+{
+  "scenario": "g4-fraction-add",
+  "arm": "resolver",
+  "componentId": "number-line",
+  "shortlist": [
+    "fraction-circles",
+    "number-line",
+    "comparison-panel",
+    "annotated-example"
+  ],
+  "modeKind": "single",
+  "rationale": "Using a number line with jump mode visually reinforces that each step is a fixed unit partition (e.g., fourths or sixths), demonstrating that adding counts the number of parts while the part size remains unchanged.",
+  "targetEvalMode": "jump",
+  "intent": "Generate jump addition problems on a fraction number line partitioned into fourths or sixths (e.g., start at 1/4 and jump 2/4 to reach 3/4). Do not use fifths or the exact expression 2/5 + 1/5 so the current problem's answer is not given away. Emphasize that the size of each step stays the same unit fraction.",
+  "pickMs": 3157,
+  "content": {
+    "type": "number-line",
+    "instanceId": "g4-fraction-add-detour-number-line",
+    "data": {
+      "title": "Fraction Frog's Number Line Adventures",
+      "description": "Learn how to add fractions with like denominators by making jumps on the number line.",
+      "range": {
+        "min": 0,
+        "max": 5
+      },
+      "gradeBand": "3-5",
+      "numberType": "integer",
+      "interactionMode": "jump",
+      "challenges": [
+        {
+          "id": "show_jump-0",
+          "type": "show_jump",
+          "instruction": "Let's help our frog friend! Start at 3 on the number line and make a jump of 2 spaces to the right.",
+          "targetValues": [
+            5
+          ],
+          "hint": "Count 2 hops to the right from your starting position.",
+          "startValue": 3,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 3,
+              "changeValue": 2,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        },
+        {
+          "id": "show_jump-1",
+          "type": "show_jump",
+          "instruction": "Place your finger on 0, and hop 3 spaces to the right to see where you land!",
+          "targetValues": [
+            3
+          ],
+          "hint": "Count 3 hops to the right from zero.",
+          "startValue": 0,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 0,
+              "changeValue": 3,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        },
+        {
+          "id": "show_jump-2",
+          "type": "show_jump",
+          "instruction": "Put your frog at the number 1 on the number line, and make a big hop of 3 units to the right!",
+          "targetValues": [
+            4
+          ],
+          "hint": "Start at 1 and count 3 hops to the right to find your new spot.",
+          "startValue": 1,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 1,
+              "changeValue": 3,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        },
+        {
+          "id": "show_jump-3",
+          "type": "show_jump",
+          "instruction": "Start at 0 on your number line and hop 5 steps to the right.",
+          "targetValues": [
+            5
+          ],
+          "hint": "Count 5 hops to the right from zero.",
+          "startValue": 0,
+          "operations": [
+            {
+              "type": "add",
+              "startValue": 0,
+              "changeValue": 5,
+              "showJumpArc": true
+            }
+          ],
+          "highlights": []
+        }
+      ],
+      "highlights": [],
+      "operations": [
+        {
+          "type": "add",
+          "startValue": 3,
+          "changeValue": 2,
+          "showJumpArc": true
+        }
+      ],
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 1720,
+  "judgement": {
+    "reasoning": "The generator completely failed to produce fraction addition on a number line. Instead, it set numberType to integer and generated whole-number jumping tasks (3 + 2, 0 + 3, etc.), which do nothing to address the student's misconception about adding denominators.",
+    "targetsObstacle": 0,
+    "easierOrPrerequisite": 0,
+    "differentRepresentation": 0,
+    "inScope": 0,
+    "contentUsable": 0,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would reject this detour because it generates basic whole-number jump addition rather than fraction operations, completely missing the student's need to understand common denominators."
+  },
+  "rep": 0
+}

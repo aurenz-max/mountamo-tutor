@@ -1,0 +1,8 @@
+{
+  "scenario": "g5-particles",
+  "arm": "demo",
+  "none": true,
+  "rationale": "None of the available interactive tools (number line, place value, clock) can model particle motion or states of matter. Therefore, no mathematical piece fits this conceptual science demonstration.",
+  "pickMs": 1327,
+  "rep": 2
+}

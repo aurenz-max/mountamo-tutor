@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { LiveLessonRuntime } from './LiveLessonRuntime';
 import { LiveRuntimeContext, usePrimitiveRuntime, useRuntimeSnapshot } from './LiveRuntimeContext';
-import { LiveRuntimeSurface } from './LiveRuntimeSurface';
+import { LiveRuntimeSurface, SupportArtifactCard } from './LiveRuntimeSurface';
+import { DEMO_FIXTURES, demonstrationArtifact } from '../demo/demoFixtures';
 import { createRuntimeFixture } from './runtimeFixture';
 
 export function ReferenceTask({ fixture, onChecked }: { fixture: ReturnType<typeof createRuntimeFixture>; onChecked?: () => void }) {
@@ -20,6 +21,21 @@ export function ReferenceTask({ fixture, onChecked }: { fixture: ReturnType<type
     <p>Checked result: {state.task?.evidence.correctness ?? 'unknown'}</p>
     <p>Instruction replays: {fixture.replays}</p>
   </div>;
+}
+
+/** Composed demonstrations (LA-15) drawn in the detour card, from the bench's own scripts. */
+function DemonstrationPreview() {
+  const [id, setId] = useState(DEMO_FIXTURES[0].id);
+  const fixture = DEMO_FIXTURES.find(f => f.id === id)!;
+  return <section aria-label="Composed demonstrations" className="space-y-4">
+    <h2 className="text-xl font-bold">Composed demonstrations</h2>
+    <div className="flex flex-wrap gap-3">
+      {DEMO_FIXTURES.map(f => <button key={f.id} data-demo-fixture={f.id} aria-pressed={f.id === id}
+        className={`rounded border px-3 py-2 ${f.id === id ? 'border-cyan-400 text-cyan-200' : ''}`} onClick={() => setId(f.id)}>{f.id}</button>)}
+    </div>
+    <p className="text-slate-400">Student: {fixture.obstacle}</p>
+    <SupportArtifactCard key={id} label="Demonstration preview" artifact={demonstrationArtifact(fixture.script, `demo-${id}`)} />
+  </section>;
 }
 
 /** No model, microphone, generation or learning-record writes. A repeatable infrastructure proof. */
@@ -55,6 +71,7 @@ export default function LiveRuntimeLab() {
       </div>
       <p role="status">{state.status} · owner: {state.owner} · revision: {state.revision} · visible: {state.visibleRevision ?? 'awaiting paint'} · last receipt: {lastReceipt} · completion events: {completions}</p>
       {state.blockedReason && <p>{state.blockedReason}</p>}
+      <DemonstrationPreview />
       <details><summary>Semantic state and assistance history</summary><pre className="overflow-auto">{JSON.stringify(state, null, 2)}</pre></details>
     </main>
   </LiveRuntimeContext.Provider>;

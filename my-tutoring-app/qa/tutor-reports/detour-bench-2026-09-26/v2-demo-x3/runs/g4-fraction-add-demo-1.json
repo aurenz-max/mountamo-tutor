@@ -1,0 +1,117 @@
+{
+  "scenario": "g4-fraction-add",
+  "arm": "demo",
+  "componentId": "demo:number-line/add",
+  "rationale": "The student mistakenly adds the denominators together (getting tenths instead of fifths). A number line divided into fifths visually reinforces that the denominator defines the tick size (fifths), and adding means hopping along those existing parts without changing their size.",
+  "script": {
+    "piece": "number-line",
+    "operation": "add",
+    "values": [
+      1,
+      3
+    ],
+    "denominator": 5,
+    "focus": "The tick marks stay fifths when hopping forward, so only the number of fifths changes.",
+    "studentValues": [
+      2,
+      1
+    ]
+  },
+  "intent": "Demonstrate add on the number-line with values [1,3] (unit 1/5). Tutor points at: The tick marks stay fifths when hopping forward, so only the number of fifths changes.",
+  "pickMs": 2546,
+  "content": {
+    "title": "Hopping in fifths",
+    "frames": [
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 5,
+          "min": 0,
+          "max": 5,
+          "marks": [
+            {
+              "at": 1,
+              "tone": "focus"
+            }
+          ],
+          "hops": []
+        },
+        "caption": "Start at 1/5. We are standing here; we have not hopped yet."
+      },
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 5,
+          "min": 0,
+          "max": 5,
+          "marks": [
+            {
+              "at": 1,
+              "tone": "faded"
+            },
+            {
+              "at": 2,
+              "tone": "focus"
+            }
+          ],
+          "hops": [
+            {
+              "from": 1,
+              "to": 2,
+              "label": "1"
+            }
+          ]
+        },
+        "caption": "Hop 1 moves 1/5 forward and lands on 2/5. One hop is one fifth."
+      },
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 5,
+          "min": 0,
+          "max": 5,
+          "marks": [
+            {
+              "at": 1,
+              "tone": "faded"
+            },
+            {
+              "at": 4,
+              "tone": "done"
+            }
+          ],
+          "hops": [
+            {
+              "from": 1,
+              "to": 2,
+              "label": "1"
+            },
+            {
+              "from": 2,
+              "to": 3,
+              "label": "2"
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "label": "3"
+            }
+          ]
+        },
+        "caption": "Hop 3 lands on 4/5. 3 hops, so 1/5 + 3/5 = 4/5. Every hop was one fifth; the size of the pieces never changed, only how many."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The demonstration directly addresses the misconception that adding fifths changes them to tenths by showing that unit intervals on the number line remain fifths throughout the addition process. It shifts from fraction bars to a number-line representation, models the concept cleanly, and avoids leaking the exact problem (uses 1/5 + 3/5 instead of 2/5 + 1/5).",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would definitely use this clear number-line walkthrough to show that adding parts does not change their size."
+  },
+  "rep": 1
+}

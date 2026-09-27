@@ -1,0 +1,8 @@
+{
+  "scenario": "g2-main-idea",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The lesson is an English Language Arts reading comprehension lesson focused on identifying the main idea versus supporting details. None of the available mathematical manipulatives (number-line, place-value, or clock) can illustrate or demonstrate identifying the main idea of a text.",
+  "pickMs": 1187,
+  "rep": 0
+}

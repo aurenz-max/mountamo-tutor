@@ -1,0 +1,105 @@
+{
+  "scenario": "g4-compare-digits",
+  "arm": "demo",
+  "componentId": "demo:place-value/compare",
+  "rationale": "The student focuses on individual digit magnitude (9s vs 0s/1s) rather than comparing digits by place value starting from the highest place (thousands). A place-value comparison demonstration will explicitly show comparing the thousands column first.",
+  "script": {
+    "piece": "place-value",
+    "operation": "compare",
+    "values": [
+      2988,
+      3012
+    ],
+    "denominator": 1,
+    "focus": "thousands place",
+    "studentValues": [
+      3999,
+      4001
+    ]
+  },
+  "intent": "Demonstrate compare on the place-value with values [2988,3012]. Tutor points at: thousands place",
+  "pickMs": 2163,
+  "content": {
+    "title": "Compare from the biggest place",
+    "frames": [
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "thousands",
+            "hundreds",
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "2,988",
+              "digits": [
+                2,
+                9,
+                8,
+                8
+              ]
+            },
+            {
+              "label": "3,012",
+              "digits": [
+                3,
+                0,
+                1,
+                2
+              ]
+            }
+          ],
+          "focusPlace": null
+        },
+        "caption": "Line up 2,988 and 3,012 by place. Start with the biggest place."
+      },
+      {
+        "view": {
+          "piece": "place-value",
+          "places": [
+            "thousands",
+            "hundreds",
+            "tens",
+            "ones"
+          ],
+          "rows": [
+            {
+              "label": "2,988",
+              "digits": [
+                2,
+                9,
+                8,
+                8
+              ]
+            },
+            {
+              "label": "3,012",
+              "digits": [
+                3,
+                0,
+                1,
+                2
+              ]
+            }
+          ],
+          "focusPlace": 0
+        },
+        "caption": "3 thousands is more than 2 thousands, so 3,012 is greater than 2,988. The smaller places cannot catch up, even if they are 9s."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The demonstration directly addresses the exact obstacle ('The smaller places cannot catch up, even if they are 9s') using a worked example (2,988 vs 3,012) highlighting the highest place value. It provides a visual worked example rather than interactive chart dictation, which reduces load while confronting the misconception.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 1,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "A teacher would immediately use this targeted worked demo because it explicitly tackles the misconception that nines in lower places outweigh a larger leading digit."
+  },
+  "rep": 2
+}

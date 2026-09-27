@@ -1,0 +1,99 @@
+{
+  "scenario": "g2-regroup",
+  "arm": "resolver",
+  "componentId": "number-bond",
+  "shortlist": [
+    "base-ten-blocks",
+    "ten-frame",
+    "place-value-chart",
+    "number-bond"
+  ],
+  "modeKind": "single",
+  "rationale": "The student treated 13 ones as digits to append directly into the answer (writing 513 instead of trading 10 ones for 1 ten). Practicing the explicit decomposition of teen numbers into a group of 10 and remaining ones directly addresses the conceptual gap behind regrouping.",
+  "targetEvalMode": "ten_and_ones",
+  "intent": "Generate teen number decomposition challenges (11-19, avoiding 13 to avoid giving away the current problem) where the student partitions counters into a group of 10 and the extra ones and speaks the parts, reinforcing that any teen count consists of 1 ten and leftover ones.",
+  "pickMs": 3330,
+  "content": {
+    "type": "number-bond",
+    "instanceId": "g2-regroup-detour-number-bond",
+    "data": {
+      "title": "Teen Number Bonds",
+      "description": "Learn to decompose teen numbers into one group of ten and the remaining ones using number bonds.",
+      "maxNumber": 19,
+      "showCounters": true,
+      "showEquation": false,
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "ten-and-ones",
+          "instruction": "Can you show me how 11 is made of 1 ten and some ones?",
+          "whole": 11,
+          "part1": null,
+          "part2": null,
+          "allPairs": null,
+          "factFamily": null,
+          "targetEquation": null
+        },
+        {
+          "id": "c2",
+          "type": "ten-and-ones",
+          "instruction": "Let us break apart 12 into 1 ten and your leftover ones!",
+          "whole": 12,
+          "part1": null,
+          "part2": null,
+          "allPairs": null,
+          "factFamily": null,
+          "targetEquation": null
+        },
+        {
+          "id": "c3",
+          "type": "ten-and-ones",
+          "instruction": "The whole is 13. Break it into a ten and some more!",
+          "whole": 13,
+          "part1": null,
+          "part2": null,
+          "allPairs": null,
+          "factFamily": null,
+          "targetEquation": null
+        },
+        {
+          "id": "c4",
+          "type": "ten-and-ones",
+          "instruction": "The whole is 14. Break it into a ten and some more!",
+          "whole": 14,
+          "part1": null,
+          "part2": null,
+          "allPairs": null,
+          "factFamily": null,
+          "targetEquation": null
+        },
+        {
+          "id": "c5",
+          "type": "ten-and-ones",
+          "instruction": "The whole is 15. Break it into a ten and some more!",
+          "whole": 15,
+          "part1": null,
+          "part2": null,
+          "allPairs": null,
+          "factFamily": null,
+          "targetEquation": null
+        }
+      ],
+      "showFactFamilyHelper": true,
+      "supportTier": "easy"
+    }
+  },
+  "generateMs": 2356,
+  "judgement": {
+    "reasoning": "The detour directly targets decomposing teen numbers into a group of 10 and extra ones, which directly addresses why 13 cannot simply sit in the ones place. However, the generator explicitly included 13 ('c3') despite generator instructions to avoid it to prevent leaking, although in this context leaking the decomposition of 7+6=13 into 10 and 3 is directly instructionally relevant rather than solving 37+26 outright.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "This detour effectively targets the prerequisite place value understanding of teen numbers using an intuitive number bond representation."
+  },
+  "rep": 0
+}

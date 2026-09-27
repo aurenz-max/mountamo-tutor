@@ -1,0 +1,122 @@
+{
+  "scenario": "g1-subtract-hops",
+  "arm": "demo",
+  "componentId": "demo:number-line/subtract",
+  "rationale": "Demonstrate subtraction by counting back along a number line where each hop moves from the start number to the next lower number, showing that the first count happens after the first hop.",
+  "script": {
+    "piece": "number-line",
+    "operation": "subtract",
+    "values": [
+      14,
+      4
+    ],
+    "denominator": 1,
+    "focus": "the first hop landing on 13, showing that counting starts after moving",
+    "studentValues": [
+      12,
+      3
+    ]
+  },
+  "intent": "Demonstrate subtract on the number-line with values [14,4]. Tutor points at: the first hop landing on 13, showing that counting starts after moving",
+  "pickMs": 1563,
+  "content": {
+    "title": "Counting back, one hop at a time",
+    "frames": [
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 1,
+          "min": 8,
+          "max": 16,
+          "marks": [
+            {
+              "at": 14,
+              "tone": "focus"
+            }
+          ],
+          "hops": []
+        },
+        "caption": "Start at 14. We are standing here; we have not hopped yet."
+      },
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 1,
+          "min": 8,
+          "max": 16,
+          "marks": [
+            {
+              "at": 14,
+              "tone": "faded"
+            },
+            {
+              "at": 13,
+              "tone": "focus"
+            }
+          ],
+          "hops": [
+            {
+              "from": 14,
+              "to": 13,
+              "label": "1"
+            }
+          ]
+        },
+        "caption": "Hop 1 moves one back and lands on 13. The first number we count is where we land, not where we started."
+      },
+      {
+        "view": {
+          "piece": "number-line",
+          "denominator": 1,
+          "min": 8,
+          "max": 16,
+          "marks": [
+            {
+              "at": 14,
+              "tone": "faded"
+            },
+            {
+              "at": 10,
+              "tone": "done"
+            }
+          ],
+          "hops": [
+            {
+              "from": 14,
+              "to": 13,
+              "label": "1"
+            },
+            {
+              "from": 13,
+              "to": 12,
+              "label": "2"
+            },
+            {
+              "from": 12,
+              "to": 11,
+              "label": "3"
+            },
+            {
+              "from": 11,
+              "to": 10,
+              "label": "4"
+            }
+          ]
+        },
+        "caption": "Hop 4 lands on 10. 4 hops, so 14 − 4 = 10."
+      }
+    ]
+  },
+  "generateMs": 0,
+  "judgement": {
+    "reasoning": "The demonstration explicitly addresses the student's exact misconception ('We are standing here; we have not hopped yet' and 'The first number we count is where we land, not where we started'). It steps through 14 - 4, which is a different problem from the student's 12 - 3, so it does not leak the answer. While it uses the same number line representation, switching from interactive practice to an explicit step-by-step worked demo makes the cognitive load much lower and directly targets the error.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 0,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "Yes, this worked demo directly models and explains the concept of hopping before counting, directly addressing the student's counting error."
+  },
+  "rep": 0
+}

@@ -1,0 +1,8 @@
+{
+  "scenario": "g1-cvc-blend",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The lesson focus is reading and phonemic blending of CVC words (language arts/phonics), while the available interactive visual tools are exclusively for elementary mathematics (number-line arithmetic, place-value manipulation, and clock reading). None of the available pieces can visually model blending phonemes into a word.",
+  "pickMs": 1193,
+  "rep": 2
+}

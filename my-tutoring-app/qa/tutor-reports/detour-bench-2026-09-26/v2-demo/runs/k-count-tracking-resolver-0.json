@@ -1,0 +1,107 @@
+{
+  "scenario": "k-count-tracking",
+  "arm": "resolver",
+  "componentId": "ten-frame",
+  "shortlist": [
+    "ten-frame",
+    "bar-model",
+    "di-dice-roll",
+    "hundreds-chart"
+  ],
+  "modeKind": "single",
+  "rationale": "The student struggles with one-to-one correspondence, double-counting items without tracking. Placing counters one by one into distinct cells of a ten-frame physically structures the counting space so each object gets exactly one touch and one spot.",
+  "targetEvalMode": "build",
+  "intent": "Practice 1-to-1 placement up to 7 counters on a single 10-frame (specifically avoiding 8 to keep it distinct from the current problem), reinforcing one object per space.",
+  "pickMs": 3399,
+  "content": {
+    "type": "ten-frame",
+    "instanceId": "k-count-tracking-detour-ten-frame",
+    "data": {
+      "title": "Counting Objects to 10",
+      "description": "Place counters into separate ten-frame cells one by one to practice keeping track of each counted item.",
+      "mode": "single",
+      "counters": {
+        "count": 0,
+        "color": "red",
+        "positions": []
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "build",
+          "targetCount": 2,
+          "hint": "Place two counters on the frame, one in each space.",
+          "narration": "Let's start by placing 2 counters on the frame, one by one.",
+          "instruction": "Put 2 counters on the ten frame!"
+        },
+        {
+          "id": "c2",
+          "type": "build",
+          "targetCount": 3,
+          "hint": "Try placing three counters carefully into the first row.",
+          "narration": "Now, can you place 3 counters on the frame?",
+          "instruction": "Put 3 counters on the ten frame!"
+        },
+        {
+          "id": "c3",
+          "type": "build",
+          "targetCount": 4,
+          "hint": "Fill four spaces with your counters.",
+          "narration": "Great job! Let's put 4 counters on the frame next.",
+          "instruction": "Put 4 counters on the ten frame!"
+        },
+        {
+          "id": "c4",
+          "type": "build",
+          "targetCount": 5,
+          "hint": "Fill the entire top row of five spaces.",
+          "narration": "Wonderful! Can you place 5 counters to fill the whole top row?",
+          "instruction": "Put 5 counters on the ten frame!"
+        },
+        {
+          "id": "c5",
+          "type": "build",
+          "targetCount": 6,
+          "hint": "Fill the top row of five, and add one more in the bottom row.",
+          "narration": "Now let's count up to 6 by placing 6 counters.",
+          "instruction": "Put 6 counters on the ten frame!"
+        },
+        {
+          "id": "c6",
+          "type": "build",
+          "targetCount": 7,
+          "hint": "Fill the top row and add two counters to the bottom row.",
+          "narration": "You are doing fantastic! Can you place 7 counters on the frame?",
+          "instruction": "Put 7 counters on the ten frame!"
+        },
+        {
+          "id": "c7",
+          "type": "build",
+          "targetCount": 9,
+          "hint": "Leave only one empty space on the entire ten-frame.",
+          "narration": "For our final challenge, let's place 9 counters on the frame!",
+          "instruction": "Put 9 counters on the ten frame!"
+        }
+      ],
+      "showOptions": {
+        "showCount": true,
+        "showEquation": false,
+        "showEmptyCount": false,
+        "allowFlip": false
+      },
+      "gradeBand": "K"
+    }
+  },
+  "generateMs": 2391,
+  "judgement": {
+    "reasoning": "The student struggles with one-to-one correspondence and keeping track of counted items in varied/scattered arrangements. Moving to a ten-frame structure enforces one object per cell, physically and visually preventing double-counting or skipping objects. The sequence begins with small numbers (2, 3, 4) and builds up, providing a simpler structured scaffold.",
+    "targetsObstacle": 2,
+    "easierOrPrerequisite": 2,
+    "differentRepresentation": 2,
+    "inScope": 2,
+    "contentUsable": 2,
+    "leaksCurrentAnswer": false,
+    "verdict": "This is an excellent detour because the ten-frame visually enforces one-to-one placement to fix the student's double-counting habit."
+  },
+  "rep": 0
+}

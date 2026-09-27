@@ -1,0 +1,8 @@
+{
+  "scenario": "g1-cvc-blend",
+  "arm": "demo",
+  "none": true,
+  "rationale": "The lesson focus is reading and blending phonemes in CVC words (an early literacy skill). None of the available mathematical manipulatives (number-line, place-value, or clock) can visually model phoneme blending.",
+  "pickMs": 964,
+  "rep": 0
+}
