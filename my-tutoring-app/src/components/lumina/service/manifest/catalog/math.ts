@@ -34,7 +34,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + '(say what the graph shows, compare two graphs) are answered aloud: the learner tells one true comparison (more, '
         + 'fewer, the same, most, fewest) in their own words, judged against the comparisons in the expected answer. A '
         + 'reversed claim, a bare number or a row name alone is not a comparison, and comparing two graphs must compare the '
-        + 'two surveys. Do not say a comparison before the learner tries. A Kindergarten learner cannot read: read the '
+        + 'two surveys. A Kindergarten learner cannot read: read the '
         + 'question and the row names aloud. You cannot tap, place stickers, set bars or choose a step for the learner.',
     },
     // Only picture_graph emits selection evidence; other modes supply none, so capture skips them.

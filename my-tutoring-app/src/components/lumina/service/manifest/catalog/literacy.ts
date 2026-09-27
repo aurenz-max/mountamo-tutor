@@ -2602,7 +2602,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'the activity checks the tap and tells you what it was. '
         + 'Where two pictures are on the stage the answer IS one of their names, so naming either picture before the '
         + 'learner answers hands the item over: talk about the sound, or about the picture that does NOT start with '
-        + 'it. Where no picture is drawn, its keyword is withheld from you on purpose and appears only once the '
+        + 'it. Where no picture is drawn, its keyword is withheld from you and appears only once the '
         + 'answer is recorded. '
         + 'Where demonstrate is offered, its targets are the ids in workspace.objects and [] clears them. '
         + 'Marking the picture that starts with this letter\'s sound hands the '
