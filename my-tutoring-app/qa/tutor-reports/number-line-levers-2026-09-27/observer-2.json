@@ -1,0 +1,114 @@
+[
+  {
+    "passed": false,
+    "primitiveId": "number-line",
+    "events": [
+      {
+        "type": "host",
+        "t": 6.14,
+        "text": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+      },
+      {
+        "type": "failure",
+        "t": 61.14,
+        "reason": "TimeoutError()",
+        "state": {
+          "sessionEpoch": "ee22817c-94a7-47a2-9115-e8d4ceeeea8d",
+          "revision": 1,
+          "visibleRevision": 1,
+          "instanceId": "line",
+          "planItemId": "line",
+          "primitiveId": "number-line",
+          "objectiveId": "number-line-practice",
+          "evalMode": "jump",
+          "owner": "tutor",
+          "status": "active",
+          "task": {
+            "itemId": "show_jump-0",
+            "phase": "working",
+            "task": "Put your finger on 10. Get ready to hop backward 2 spaces to the left!",
+            "completed": false,
+            "evidence": {
+              "attemptNumber": 0,
+              "correctness": "unknown",
+              "recentResponses": []
+            },
+            "demand": {
+              "kind": "show_jump",
+              "line": "0 to 10",
+              "numbers": "integer",
+              "startsAt": 10,
+              "learnerWork": "Landed the jumps at none yet",
+              "constraints": "The learner places points on the line and presses Check; the line checks the work itself. You cannot place, move or clear points.",
+              "response": "gesture",
+              "presentation": "ready"
+            },
+            "support": {
+              "level": 0,
+              "answerExposure": "none"
+            },
+            "workspace": {
+              "progression": "observer",
+              "objects": [],
+              "demonstration": [],
+              "levers": [
+                {
+                  "id": "numbered_hops",
+                  "kind": "help",
+                  "carrier": "both",
+                  "pulled": false,
+                  "when": "The learner lands one hop off, counts the start as a hop, or loses count.",
+                  "does": "Numbers every hop of the learner's own jump on the line (1, 2, 3...) and draws hop 1 from the start as a model."
+                },
+                {
+                  "id": "simpler_jump",
+                  "kind": "simplify",
+                  "carrier": "shown",
+                  "pulled": false,
+                  "when": "The learner cannot manage a jump this long yet.",
+                  "does": "Opens an easier practice jump first, a shorter jump from a different start. It is not graded; the full item comes back after it."
+                }
+              ],
+              "lastResponse": null,
+              "attempts": []
+            }
+          },
+          "supportArtifact": null,
+          "blockedReason": null,
+          "canStartNext": false,
+          "canGenerateSupport": false,
+          "moveOptions": null,
+          "markedTargetIds": [],
+          "assistance": [],
+          "choices": [
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "pull_lever"
+              },
+              "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id. Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "ee22817c-94a7-47a2-9115-e8d4ceeeea8d/1/0"
+            },
+            {
+              "action": {
+                "type": "workspace",
+                "operation": "begin_help"
+              },
+              "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+              "assistance": {
+                "level": 2,
+                "answerExposure": "none"
+              },
+              "actionId": "ee22817c-94a7-47a2-9115-e8d4ceeeea8d/1/1"
+            }
+          ]
+        }
+      }
+    ],
+    "providerResumes": 0
+  }
+]

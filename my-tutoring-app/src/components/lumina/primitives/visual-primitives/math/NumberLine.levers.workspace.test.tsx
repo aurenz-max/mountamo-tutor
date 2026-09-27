@@ -12,6 +12,7 @@ import { LiveLessonRuntime } from '../../../components/live-activity/runtime/Liv
 import { LiveRuntimeContext } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
+import { RuntimeTransport } from '../../../components/live-activity/runtime/runtimeTransport';
 
 const seam = vi.hoisted(() => ({ send: vi.fn(), view: {} as Record<string, unknown> }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
@@ -104,11 +105,16 @@ it('numbers the learner\'s own wrong jump in the same commit, and records the le
   expect(levers(h).every(l => !l.pulled)).toBe(true);
 });
 
-it('never draws a model hop for a jump of 1, and refuses a pull that would change nothing', () => {
+it('a jump of 1 offers no lever until the learner places a jump away from the start, and never draws a model hop', () => {
   const h = mount([jump('j0', 8, 1)]);
-  const receipt = h.dispatch('pull_lever', { lever: 'numbered_hops' });
-  expect(receipt.status).not.toBe('committed');
-  expect(receipt.reason).toMatch(/jump of 1/);
+  expect(h.offered('pull_lever')).toBeUndefined();
+  h.tap(8); h.check();
+  // Placed on the start itself: there is still nothing safe to number.
+  expect(h.offered('pull_lever')).toBeUndefined();
+  h.dispatch('retry');
+  h.tap(6); h.check();
+  expect(h.dispatch('pull_lever', { lever: 'numbered_hops' }).status).toBe('committed');
+  expect(h.hopLabels('learner-hops')).toEqual(['1', '2']);
   expect(h.hopLabels('model-hop')).toEqual([]);
 });
 
@@ -147,4 +153,29 @@ it('a simplify pull opens an ungraded easier jump, then returns to the full item
   expect(attempts.map(a => [a.itemId, a.correct, 'practice' in a])).toEqual([
     ['j0~simpler', false, true], ['j0~simpler', true, true], ['j0', true, false]]);
   expect(attempts.at(-1)).toMatchObject({ levers: ['simpler_jump'], assisted: true });
+});
+
+it('the observer pulls the next lever when a learner who answered wrong says they are stuck, and tells the tutor what changed', async () => {
+  const h = mount();
+  const sent: any[] = [];
+  const stuck = vi.fn(async () => ({ asksForHelp: .95, wantsToStop: .01, attemptsAnswer: .02, accepted: true, reason: 'observed', ms: 1 }));
+  const transport = new RuntimeTransport(h.runtime, m => sent.push(m), vi.fn(async () => ({ verdict: 'none' as const, transition: 'none' as const,
+    confidence: 0, grounded: 0, accepted: false, reason: 'test', ms: 1 })), stuck);
+  // Stuck before any wrong answer: no pull.
+  await act(async () => { transport.learnerText("I'm stuck", true); await new Promise(r => setTimeout(r, 50)); });
+  expect(levers(h).some(l => l.pulled)).toBe(false);
+  h.tap(6); h.check();
+  // The surface certifies a paint with two animation frames, which this environment does not run: paint by hand.
+  const paint = async () => { for (let i = 0; i < 5; i++) await act(async () => {
+    await new Promise(r => setTimeout(r, 20)); h.runtime.acknowledgeVisible(h.state().revision); }); };
+  act(() => { transport.learnerText("I don't get it", true); });
+  await paint();
+  expect(levers(h).find(l => l.id === 'numbered_hops')!.pulled).toBe(true);
+  expect(h.hopLabels('learner-hops')).toEqual(['1', '2']);
+  expect(sent.find(m => m.type === 'text' && /numbered_hops/.test(m.content))?.content).toMatch(/on screen now/);
+  // Stuck again: the simplify lever is next.
+  act(() => { transport.learnerText('I still do not get it', true); });
+  await paint();
+  expect(h.state().task!.itemId).toBe('j0~simpler');
+  transport.close();
 });

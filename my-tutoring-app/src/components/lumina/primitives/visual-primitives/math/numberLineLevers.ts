@@ -78,15 +78,22 @@ export function simplerJump(ch: NumberLineChallenge, range: { min: number; max: 
   return null;
 }
 
-/** The levers this jump item declares, with their state. Empty for any other item. */
-export function jumpLevers(ch: NumberLineChallenge | null, pulled: readonly string[], range: { min: number; max: number }): WorkspaceLever[] {
+/**
+ * The levers this jump item declares, with their state. Empty for any other item. A lever is declared
+ * only when pulling it would change the screen: numbered hops need a model hop (a jump of 2 or more) or
+ * a jump the learner placed away from the start (`endpoints`).
+ */
+export function jumpLevers(ch: NumberLineChallenge | null, pulled: readonly string[], range: { min: number; max: number },
+  endpoints: readonly number[] = []): WorkspaceLever[] {
   const ops = ch?.operations ?? [];
   if (!ch || ch.type !== 'show_jump' || !ops.length || !integral(...ops.flatMap(o => [o.startValue, o.changeValue]))) return [];
-  const levers: WorkspaceLever[] = [{
+  const drawable = pulled.includes(HOPS_LEVER) || !!modelHop(ops[0])
+    || endpoints.some((e, i) => learnerHops(i === 0 ? ops[0].startValue : endpoints[i - 1], e).length > 0);
+  const levers: WorkspaceLever[] = drawable ? [{
     id: HOPS_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(HOPS_LEVER),
     when: 'The learner lands one hop off, counts the start as a hop, or loses count.',
-    does: 'Numbers every hop of the learner\'s own jump on the line (1, 2, 3...) and draws hop 1 from the start as a model.',
-  }];
+    does: "Numbers every hop of the learner's own jump on the line (1, 2, 3...) and draws hop 1 from the start as a model.",
+  }] : [];
   if (simplerJump(ch, range)) levers.push({
     id: SIMPLER_LEVER, kind: 'simplify', carrier: 'shown', pulled: pulled.includes(SIMPLER_LEVER),
     when: ops.length > 1 ? 'The learner cannot keep track across two jumps.' : 'The learner cannot manage a jump this long yet.',

@@ -894,7 +894,7 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
   useLayoutEffect(() => {
     if (!tutorOwned || !currentChallenge) return;
     const range = { min: rangeMin, max: rangeMax };
-    const levers = practice ? [] : jumpLevers(sessionChallenge, pulledLevers, range);
+    const levers = practice ? [] : jumpLevers(sessionChallenge, pulledLevers, range, jumpEndPoints);
     workspace.current = { ...workspaceScene(currentChallenge, { rangeMin, rangeMax, numberType: activeNumberType,
       operations: activeOperations, points: placedPoints, endpoints: jumpEndPoints, ordered: orderedPlacements,
       hops: hopsOn, practice: !!practice }),

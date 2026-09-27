@@ -4,6 +4,23 @@ Date: 2026-09-27 · Primitive: `number-line`, mode `jump` · Raw runs: `qa/tutor
 
 **Result: built and unit/workspace-verified; the live gate is NOT passed.** When the tutor pulls a lever, every other gate check holds. The tutor does not pull one in every run: in the last two rounds it pulled in 1 of 3 and 2 of 3 runs.
 
+## Update: observer pull (user ruling 2026-09-27)
+
+The user chose option 1: when a learner who answered the item wrong says they are stuck, the observer pulls the next lever, help before simplify (`runtime/observerLever.ts`, `RuntimeTransport.pullForStuckLearner`). Once the change is visible, the tutor is told what changed, as facts. The tutor can still pull a lever itself. Check 1 is now "a lever is pulled unprompted", and the report names who pulled it.
+
+Also changed with it:
+- A lever is declared only when pulling it would change the screen. On a jump of 1 answered on the start there is nothing safe to number, so no lever is offered.
+- The `--lever` journey answers through such an item and runs on the next one.
+- The harness records every pull from the state, with its source.
+
+| Run | Result |
+|---|---|
+| observer-1 | ws 1012: uvicorn reloaded on the harness save |
+| observer-2, observer-3 | the model never spoke its lesson opening (known session-start issue) |
+| observer-4 | **PASS.** The observer pulled `numbered_hops` 0.5 s after "I'm stuck"; the full item was credited with the lever recorded; the lesson continued. |
+
+**Still open:** the tutor had the observer's note 8 s before it replied, but it coached in words ("try just one hop first") and never mentioned the numbered hops. Tool use and narration still need refinement.
+
 ## Failure inventory (jump)
 
 | Failure | Evidence class | Lever |

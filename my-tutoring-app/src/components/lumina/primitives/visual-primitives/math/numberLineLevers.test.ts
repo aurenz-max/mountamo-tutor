@@ -62,7 +62,10 @@ describe('simpler jump builder', () => {
     expect(built).toBeGreaterThan(400);
   });
   it('declares the simplify lever only when a simpler jump exists', () => {
-    expect(jumpLevers(item([op('add', 4, 1)]), [], range).map(l => l.id)).toEqual(['numbered_hops']);
+    // A jump of 1: no model hop, so numbered hops only once the learner has placed a jump away from the start.
+    expect(jumpLevers(item([op('add', 4, 1)]), [], range)).toEqual([]);
+    expect(jumpLevers(item([op('add', 4, 1)]), [], range, [4])).toEqual([]);
+    expect(jumpLevers(item([op('add', 4, 1)]), [], range, [6]).map(l => l.id)).toEqual(['numbered_hops']);
     expect(jumpLevers(item([op('add', 4, 3)]), ['numbered_hops'], range).map(l => [l.id, l.pulled]))
       .toEqual([['numbered_hops', true], ['simpler_jump', false]]);
     expect(jumpLevers({ ...item([op('add', 4, 3)]), type: 'plot_point' }, [], range)).toEqual([]);

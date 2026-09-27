@@ -72,6 +72,23 @@ class Session:
     async def step(self, message):
         reply = await asyncio.to_thread(self.exchange, message)
         self.state = reply['state']
+        task = self.state.get('task') or {}
+        # Every lever pulled on a session item, whoever pulled it (the tutor's command, or the observer on a learner
+        # turn). Counted once per session item; a simpler item stands in for its parent and publishes no levers.
+        workspace = task.get('workspace') or {}
+        parent = (workspace.get('practice') or {}).get('returnsTo') or task.get('itemId')
+        now = {l['id'] for l in workspace.get('levers', []) if l['pulled']} | ({'(simpler item)'} if workspace.get('practice') else set())
+        seen = self.__dict__.setdefault('seen_pulls', {}).setdefault(parent, set())
+        new = now - seen
+        if '(simpler item)' in seen:  # back from the simpler item: its simplify lever was already counted
+            new -= {l['id'] for l in workspace.get('levers', []) if l['kind'] == 'simplify'}
+        seen |= now
+        tutor = message.get('type') == 'command' and message['command']['action'].get('operation') == 'pull_lever'
+        for lever in sorted(new):
+            source = 'tutor' if tutor else 'observer'
+            self.record('lever_pull', lever=lever, source=source, dom=reply.get('dom', {}), itemId=task.get('itemId'),
+                        demand=task.get('demand'), levers=(task.get('workspace') or {}).get('levers'))
+            print(f"Run {self.index}: {source} pulled {lever} -> item {task.get('itemId')}, dom {reply.get('dom')}", flush=True)
         self.observing = reply.get('observing', False)
         for output in reply['messages']:
             await self.ws.send(json.dumps(output))
@@ -422,11 +439,10 @@ async def workspace_turn(s, label, prompt=None, until=lambda state: True):
                     # A refused pull (no lever named, already pulled) changes nothing and is recorded apart.
                     task = s.state.get('task') or {}
                     lever = (action.get('input') or {}).get('lever')
-                    committed = (task.get('workspace') or {}).get('practice') or any(
-                        l['id'] == lever and l['pulled'] for l in (task.get('workspace') or {}).get('levers', []))
-                    s.record('lever_pull' if committed else 'lever_refused', phase=label, lever=(action.get('input') or {}).get('lever'), dom=reply['dom'],
-                             itemId=task.get('itemId'), demand=task.get('demand'), levers=(task.get('workspace') or {}).get('levers'))
-                    print(f"Run {s.index} {label}: pull_lever {action.get('input')} -> item {task.get('itemId')}, dom {reply['dom']}", flush=True)
+                    committed = any(l['id'] == lever and l['pulled'] for l in (task.get('workspace') or {}).get('levers', []))
+                    s.record('tutor_pull_lever', phase=label, lever=lever, committed=committed)
+                    if not committed:
+                        print(f"Run {s.index} {label}: tutor pull_lever {action.get('input')} refused", flush=True)
             elif kind == 'runtime_request_demonstration':
                 # LA-15: the tutor's own diagnosis, authored and shown through the real route and runtime.
                 s.record('demonstration_request', phase=label, need=event['need'])
@@ -532,18 +548,31 @@ async def lever_journey(s):
             pass
     await s.step({'type': 'poll'})
     await turn('lesson-entry', '[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.')
-    first = s.state['task']['itemId']
-    assert (s.state['task'].get('workspace') or {}).get('levers'), 'The item declares no levers'
+    open_levers = lambda: [l for l in (s.state['task'].get('workspace') or {}).get('levers', []) if not l['pulled']]
+    # An item can offer no lever after this wrong answer (number-line: a jump of 1 answered on its own start has
+    # nothing safe to draw). Answer it and use the next item; levers are read from the state, never assumed.
+    for _ in range(3):
+        first = s.state['task']['itemId']
+        await s.learner('wrong')
+        await turn('wrong')
+        if open_levers():
+            break
+        s.record('no_lever_item', itemId=first, state=s.state)
+        if s.state['task']['phase'] != 'working':
+            await s.step({'type': 'learner_progress', 'action': 'retry'})
+        await s.learner('correct')
+        await turn('skip-correct', until=lambda st: st['task']['itemId'] != first or st['task']['evidence']['correctness'] == 'correct')
+        if s.state['task']['itemId'] == first:
+            await s.step({'type': 'learner_progress', 'action': 'advance'})
+    assert open_levers(), 'No item offered a lever after a wrong answer'
     challenge = next(c for c in s.data['challenges'] if c['id'] == first)
     landings = {str(v) for v in challenge['targetValues']}
-    await s.learner('wrong')
-    await turn('wrong')
     pulls = lambda: [e for e in s.events if e['type'] == 'lever_pull']
     for label, prompt in (('stuck', "I'm stuck. I don't know how to do this one."),
                           ('stuck-again', "I still don't get it.")):
         if not pulls():
             await turn(label, prompt)
-    assert pulls(), 'The tutor never pulled a lever'
+    assert pulls(), 'No lever was pulled, by the tutor or the observer'
     for pull in pulls():
         facts = ' '.join(str((pull['demand'] or {}).get(k, '')) for k in ('onScreen', 'practice'))
         assert not landings & set(re.findall(r'\d+', facts)), 'A lever fact states the landing: ' + facts
@@ -579,7 +608,7 @@ async def lever_journey(s):
         if s.state['task']['itemId'] == first:
             await press('advance')
     assert s.state['task']['itemId'] != first, 'The lesson did not continue to the next item'
-    s.record('lever_complete', state=s.state, pulled=[p['lever'] for p in pulls()], credited=solving)
+    s.record('lever_complete', state=s.state, pulled=[(p['lever'], p['source']) for p in pulls()], credited=solving)
 
 
 async def teaching_workspace(s):

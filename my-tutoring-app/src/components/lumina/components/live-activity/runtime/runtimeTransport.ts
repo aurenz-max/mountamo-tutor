@@ -1,5 +1,6 @@
 import { DialogueObserver, classifyDialogue, type DialogueClassifier } from './DialogueObserver';
 import { LearnerObserver, classifyLearnerIntent, type LearnerIntentClassifier } from './LearnerObserver';
+import { observerLever } from './observerLever';
 import { LEARNER_FACTS_NOTE, type LearnerSignals } from './learnerSignals';
 import type { LearnerObservation } from './learnerIntentContract';
 import { itemScopeKey } from './observationContract';
@@ -48,6 +49,7 @@ export class RuntimeTransport {
       // Only a newly raised request is worth a packet of its own. Everything else rides the next publish.
       if (report.status === 'observed' && runtime.learner.intent(itemScopeKey(report.request.scope), report.observation!, report.flags!))
         this.publish();
+      if (report.status === 'observed') void this.pullForStuckLearner(report.flags!.helpRequested);
     });
     this.dialogue = new DialogueObserver(runtime.getSnapshot, classify, command => this.dispatch(command, true), message => {
       if (message.type === 'dialogue_observation') runtime.trace.record({ stage: 'dialogue', status: String(message.status),
@@ -112,6 +114,23 @@ export class RuntimeTransport {
     if (next.status === 'active' && next.task?.phase === 'working') this.send({ type: 'text', scripted: false,
       content: type === 'advance' ? 'The learner opened the next task. Introduce the visible task naturally.'
         : 'The learner chose to try this task again. Invite their new attempt.' });
+  }
+  /**
+   * A learner who answered this item wrong and now says they are stuck gets the next lever from the
+   * observer (`observerLever`). The tutor is told what changed once it is on screen, as facts.
+   */
+  private async pullForStuckLearner(helpRequested: boolean) {
+    const s = this.runtime.getSnapshot(), lever = observerLever(s, helpRequested);
+    if (this.closed || !lever || !s.instanceId || !s.task) return;
+    const declared = s.task.workspace!.levers!.find(l => l.id === lever)!;
+    const status = await this.dispatch({ sessionEpoch: s.sessionEpoch, instanceId: s.instanceId, itemId: s.task.itemId,
+      expectedRevision: s.revision, commandId: `observer:${crypto.randomUUID()}`,
+      action: { type: 'workspace', operation: 'pull_lever', input: { lever } } }, true);
+    this.runtime.trace.record({ stage: 'observer_lever', status: status ?? 'dropped', reason: `Learner stuck after a wrong answer; pulled ${lever}`,
+      input: { itemId: s.task.itemId, lever } });
+    if (status !== 'visible' || this.closed) return;
+    this.send({ type: 'text', scripted: false, content: `The learner said they were stuck, so the host pulled the ${lever} lever `
+      + `(${declared.kind}). It is on screen now: ${declared.does} Talk about what changed and let the learner try.` });
   }
   private async dispatch(input: unknown, observed = false): Promise<string | undefined> {
     const command = parseTutorCommand(input);
