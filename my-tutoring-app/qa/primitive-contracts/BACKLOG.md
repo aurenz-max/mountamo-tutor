@@ -27,6 +27,12 @@ non-K consumers.
 
 ## Done
 
+- **fraction-circles — derived 2026-09-27** → `docs/contracts/fraction-circles.md`. 11
+  requirements (all OBSERVED), 0 conflicts. Census: routed on 8/8 fraction objectives G1-G4.
+  Calibration channel not read (endpoint needs auth). Written before handoff 18 B2 levers;
+  R5 (identify never shows its shaded count) and R7 (no key to the tutor) bound them.
+  Catalog constraints projection proposed, not applied.
+
 - **ten-frame — `--check` run 2026-09-08** → `ten-frame-check-2026-09-08.md`. Verdict
   **CONFLICT**, forked at rung 1: R2 pins K to a single frame and CCSS K.NBT.1 needs a ten
   with room beside it, so the K Math atlas's own next action ("allow the double frame at K
