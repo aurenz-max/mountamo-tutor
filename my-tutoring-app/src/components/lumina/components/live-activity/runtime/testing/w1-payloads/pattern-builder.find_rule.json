@@ -1,0 +1,249 @@
+{
+ "source": "qa/tutor-reports/pattern-builder-runtime-find_rule-payload-2026-09-26.json",
+ "primitiveId": "pattern-builder",
+ "evalMode": "find_rule",
+ "data": {
+  "title": "Growing Number Detectives",
+  "description": "Discover the secret rule behind growing number patterns and find the next numbers in the sequence.",
+  "patternType": "growing",
+  "sequence": {
+   "given": [
+    "2",
+    "4",
+    "6",
+    "8"
+   ],
+   "hidden": [
+    "10",
+    "12"
+   ],
+   "core": [
+    "2",
+    "4",
+    "6",
+    "8",
+    "10",
+    "12"
+   ],
+   "rule": "add 2 each time"
+  },
+  "tokens": {
+   "available": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
+    "12",
+    "13",
+    "14"
+   ],
+   "type": "numbers"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "find_rule",
+    "instruction": "Figure out the rule for this growing pattern and fill in the next two numbers!",
+    "answer": [
+     "10",
+     "12"
+    ],
+    "hint": "Count how much is added from one number to the next. What number do you say if you count by twos?",
+    "narration": "Let's look at this number train: 2, 4, 6, 8. Can you figure out the rule and find the next two numbers?",
+    "availableTokens": [
+     "8",
+     "9",
+     "10",
+     "11",
+     "12",
+     "13"
+    ],
+    "sequence": {
+     "given": [
+      "2",
+      "4",
+      "6",
+      "8"
+     ],
+     "hidden": [
+      "10",
+      "12"
+     ],
+     "core": [
+      "2",
+      "4",
+      "6",
+      "8",
+      "10",
+      "12"
+     ]
+    }
+   },
+   {
+    "id": "c2",
+    "type": "find_rule",
+    "instruction": "Look closely at how these numbers grow. What is the rule, and what comes next?",
+    "answer": [
+     "20",
+     "25"
+    ],
+    "hint": "Look at the jumps between the numbers. Think about skip counting by fives!",
+    "narration": "Here is our next pattern: 5, 10, 15. Can you find the rule to continue it?",
+    "availableTokens": [
+     "16",
+     "17",
+     "18",
+     "20",
+     "22",
+     "25"
+    ],
+    "sequence": {
+     "given": [
+      "5",
+      "10",
+      "15"
+     ],
+     "hidden": [
+      "20",
+      "25"
+     ],
+     "core": [
+      "5",
+      "10",
+      "15",
+      "20",
+      "25"
+     ]
+    }
+   },
+   {
+    "id": "c3",
+    "type": "find_rule",
+    "instruction": "This pattern grows a bit faster! Discover the rule and find the next numbers.",
+    "answer": [
+     "12",
+     "16"
+    ],
+    "hint": "Check the difference between 4 and 8. The rule is to add 4 each time.",
+    "narration": "Things are heating up! We have 4, 8. What comes next if we follow the same rule?",
+    "availableTokens": [
+     "9",
+     "10",
+     "11",
+     "12",
+     "14",
+     "16",
+     "18"
+    ],
+    "sequence": {
+     "given": [
+      "4",
+      "8"
+     ],
+     "hidden": [
+      "12",
+      "16"
+     ],
+     "core": [
+      "4",
+      "8",
+      "12",
+      "16"
+     ]
+    }
+   },
+   {
+    "id": "c4",
+    "type": "find_rule",
+    "instruction": "Can you unlock the secret of this multiplication pattern?",
+    "answer": [
+     "16",
+     "32"
+    ],
+    "hint": "Each number is doubled! Try adding the number to itself to find the next one.",
+    "narration": "Whoa, this pattern doubles every single time! 2, 4, 8... what is next?",
+    "availableTokens": [
+     "10",
+     "12",
+     "16",
+     "20",
+     "24",
+     "32",
+     "36"
+    ],
+    "sequence": {
+     "given": [
+      "2",
+      "4",
+      "8"
+     ],
+     "hidden": [
+      "16",
+      "32"
+     ],
+     "core": [
+      "2",
+      "4",
+      "8",
+      "16",
+      "32"
+     ]
+    }
+   },
+   {
+    "id": "c5",
+    "type": "find_rule",
+    "instruction": "This is our trickiest two-step puzzle! Multiply by 2, then add 1. What comes next?",
+    "answer": [
+     "15",
+     "31"
+    ],
+    "hint": "Try doubling the last number and then adding 1 to get the next one in line.",
+    "narration": "This is the final challenge! The rule is multiply by two and add one. Put on your detective hats!",
+    "availableTokens": [
+     "13",
+     "14",
+     "15",
+     "20",
+     "25",
+     "30",
+     "31",
+     "35"
+    ],
+    "sequence": {
+     "given": [
+      "3",
+      "7"
+     ],
+     "hidden": [
+      "15",
+      "31"
+     ],
+     "core": [
+      "3",
+      "7",
+      "15",
+      "31"
+     ]
+    }
+   }
+  ],
+  "showOptions": {
+   "showCore": false,
+   "showStepNumbers": true,
+   "showRule": true,
+   "audioMode": false
+  },
+  "gradeBand": "2-3",
+  "translationTarget": {
+   "enabled": false
+  }
+ }
+}

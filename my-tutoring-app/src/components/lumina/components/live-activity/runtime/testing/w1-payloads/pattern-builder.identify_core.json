@@ -1,0 +1,263 @@
+{
+ "source": "qa/tutor-reports/pattern-builder-runtime-identify_core-payload-2026-09-26.json",
+ "primitiveId": "pattern-builder",
+ "evalMode": "identify_core",
+ "data": {
+  "title": "Finding the Repeating Part",
+  "description": "Learn how to find and identify the core repeating unit in different patterns.",
+  "patternType": "repeating",
+  "sequence": {
+   "given": [
+    "red",
+    "blue",
+    "red",
+    "blue",
+    "red",
+    "blue"
+   ],
+   "hidden": [
+    "red",
+    "blue"
+   ],
+   "core": [
+    "red",
+    "blue"
+   ]
+  },
+  "tokens": {
+   "available": [
+    "red",
+    "blue",
+    "green",
+    "yellow",
+    "purple"
+   ],
+   "type": "colors"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "identify_core",
+    "instruction": "Tap the smallest part that repeats in this pattern.",
+    "answer": [
+     "red",
+     "blue"
+    ],
+    "hint": "Look for the chunk that starts over from the beginning.",
+    "narration": "Let's look at this pattern. Can you find the exact part that keeps repeating over and over?",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow"
+    ],
+    "sequence": {
+     "given": [
+      "red",
+      "blue",
+      "red",
+      "blue",
+      "red",
+      "blue",
+      "red",
+      "blue"
+     ],
+     "hidden": [
+      "red",
+      "blue"
+     ],
+     "core": [
+      "red",
+      "blue"
+     ]
+    }
+   },
+   {
+    "id": "c2",
+    "type": "identify_core",
+    "instruction": "Tap the smallest part that repeats in this pattern.",
+    "answer": [
+     "red",
+     "red",
+     "blue"
+    ],
+    "hint": "Pay attention to where things double up before changing.",
+    "narration": "Great job! Now try this one. Watch closely to see what chunk repeats.",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow",
+     "purple"
+    ],
+    "sequence": {
+     "given": [
+      "red",
+      "red",
+      "blue",
+      "red",
+      "red",
+      "blue",
+      "red",
+      "red",
+      "blue"
+     ],
+     "hidden": [
+      "red",
+      "red",
+      "blue"
+     ],
+     "core": [
+      "red",
+      "red",
+      "blue"
+     ]
+    }
+   },
+   {
+    "id": "c3",
+    "type": "identify_core",
+    "instruction": "Tap the smallest part that repeats in this pattern.",
+    "answer": [
+     "red",
+     "blue",
+     "green"
+    ],
+    "hint": "Count how many items are in the loop before it starts again.",
+    "narration": "You are doing wonderful! Let's find the repeating chunk in this longer pattern.",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow",
+     "orange"
+    ],
+    "sequence": {
+     "given": [
+      "red",
+      "blue",
+      "green",
+      "red",
+      "blue",
+      "green",
+      "red",
+      "blue",
+      "green"
+     ],
+     "hidden": [
+      "red",
+      "blue",
+      "green"
+     ],
+     "core": [
+      "red",
+      "blue",
+      "green"
+     ]
+    }
+   },
+   {
+    "id": "c4",
+    "type": "identify_core",
+    "instruction": "Tap the smallest part that repeats in this pattern.",
+    "answer": [
+     "red",
+     "red",
+     "blue",
+     "blue"
+    ],
+    "hint": "Look for pairs of colors before the pattern switches.",
+    "narration": "Keep up the fantastic work! Can you spot the core unit here?",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow",
+     "pink"
+    ],
+    "sequence": {
+     "given": [
+      "red",
+      "red",
+      "blue",
+      "blue",
+      "red",
+      "red",
+      "blue",
+      "blue"
+     ],
+     "hidden": [
+      "red",
+      "red",
+      "blue",
+      "blue"
+     ],
+     "core": [
+      "red",
+      "red",
+      "blue",
+      "blue"
+     ]
+    }
+   },
+   {
+    "id": "c5",
+    "type": "identify_core",
+    "instruction": "Tap the smallest part that repeats in this pattern.",
+    "answer": [
+     "red",
+     "blue",
+     "yellow",
+     "green"
+    ],
+    "hint": "Check the very first few items to see what makes up the full group.",
+    "narration": "This is our final challenge! Find the complete core that repeats through the whole sequence.",
+    "availableTokens": [
+     "red",
+     "blue",
+     "yellow",
+     "green",
+     "purple"
+    ],
+    "sequence": {
+     "given": [
+      "red",
+      "blue",
+      "yellow",
+      "green",
+      "red",
+      "blue",
+      "yellow",
+      "green",
+      "red",
+      "blue",
+      "yellow",
+      "green"
+     ],
+     "hidden": [
+      "red",
+      "blue",
+      "yellow",
+      "green"
+     ],
+     "core": [
+      "red",
+      "blue",
+      "yellow",
+      "green"
+     ]
+    }
+   }
+  ],
+  "showOptions": {
+   "showCore": true,
+   "showStepNumbers": false,
+   "showRule": false,
+   "audioMode": false
+  },
+  "gradeBand": "K-1",
+  "translationTarget": {
+   "enabled": false
+  }
+ }
+}

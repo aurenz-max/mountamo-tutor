@@ -1,0 +1,305 @@
+{
+ "source": "qa/tutor-reports/pattern-builder-runtime-translate-payload-2026-09-26.json",
+ "primitiveId": "pattern-builder",
+ "evalMode": "translate",
+ "data": {
+  "title": "Translate Color Patterns to Shape Patterns",
+  "description": "Learn how to transform a color pattern into a shape pattern using a special translation rule!",
+  "patternType": "repeating",
+  "sequence": {
+   "given": [
+    "red",
+    "blue",
+    "red",
+    "blue"
+   ],
+   "hidden": [
+    "circle",
+    "square",
+    "circle",
+    "square"
+   ],
+   "core": [
+    "red",
+    "blue"
+   ],
+   "rule": "Translate red to circle and blue to square"
+  },
+  "tokens": {
+   "available": [
+    "circle",
+    "square",
+    "triangle",
+    "star",
+    "diamond"
+   ],
+   "type": "shapes"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "translate",
+    "instruction": "Translate this simple AB color pattern into shapes! Red becomes circle and blue becomes square.",
+    "answer": [
+     "circle",
+     "square",
+     "circle",
+     "square"
+    ],
+    "hint": "Look at the first color. If it is red, what shape does red change into?",
+    "narration": "Let's start with a friendly red and blue pattern. Can you translate it into circles and squares?",
+    "availableTokens": [
+     "circle",
+     "square",
+     "triangle",
+     "star",
+     "diamond"
+    ],
+    "sequence": {
+     "given": [
+      "red",
+      "blue",
+      "red",
+      "blue"
+     ],
+     "hidden": [
+      "circle",
+      "square",
+      "circle",
+      "square"
+     ],
+     "core": [
+      "red",
+      "blue"
+     ]
+    },
+    "translationMapping": {
+     "red": "circle",
+     "blue": "square"
+    }
+   },
+   {
+    "id": "c2",
+    "type": "translate",
+    "instruction": "Now try an AAB pattern! Green becomes triangle, yellow becomes star.",
+    "answer": [
+     "triangle",
+     "triangle",
+     "star",
+     "triangle",
+     "triangle",
+     "star"
+    ],
+    "hint": "Remember, two greens mean two triangles, and one yellow means one star!",
+    "narration": "You are doing great! Now we have an AAB pattern with green and yellow. Let's translate it.",
+    "availableTokens": [
+     "triangle",
+     "star",
+     "circle",
+     "square",
+     "heart"
+    ],
+    "sequence": {
+     "given": [
+      "green",
+      "green",
+      "yellow",
+      "green",
+      "green",
+      "yellow"
+     ],
+     "hidden": [
+      "triangle",
+      "triangle",
+      "star",
+      "triangle",
+      "triangle",
+      "star"
+     ],
+     "core": [
+      "green",
+      "green",
+      "yellow"
+     ]
+    },
+    "translationMapping": {
+     "green": "triangle",
+     "yellow": "star"
+    }
+   },
+   {
+    "id": "c3",
+    "type": "translate",
+    "instruction": "Time for an ABC pattern! Red is circle, blue is triangle, and yellow is square.",
+    "answer": [
+     "circle",
+     "triangle",
+     "square",
+     "circle",
+     "triangle",
+     "square"
+    ],
+    "hint": "Go one color at a time: red, then blue, then yellow. Match each to its new shape!",
+    "narration": "Three different colors make a longer repeating core. Match each color carefully!",
+    "availableTokens": [
+     "circle",
+     "triangle",
+     "square",
+     "star",
+     "diamond"
+    ],
+    "sequence": {
+     "given": [
+      "red",
+      "blue",
+      "yellow",
+      "red",
+      "blue",
+      "yellow"
+     ],
+     "hidden": [
+      "circle",
+      "triangle",
+      "square",
+      "circle",
+      "triangle",
+      "square"
+     ],
+     "core": [
+      "red",
+      "blue",
+      "yellow"
+     ]
+    },
+    "translationMapping": {
+     "red": "circle",
+     "blue": "triangle",
+     "yellow": "square"
+    }
+   },
+   {
+    "id": "c4",
+    "type": "translate",
+    "instruction": "Let's do an AABB pattern! Purple becomes star and orange becomes diamond.",
+    "answer": [
+     "star",
+     "star",
+     "diamond",
+     "diamond",
+     "star",
+     "star",
+     "diamond",
+     "diamond"
+    ],
+    "hint": "Check the pairs: two purples mean two stars, two oranges mean two diamonds.",
+    "narration": "Double up! Two purples and two oranges become pairs of stars and diamonds.",
+    "availableTokens": [
+     "star",
+     "diamond",
+     "circle",
+     "square",
+     "triangle"
+    ],
+    "sequence": {
+     "given": [
+      "purple",
+      "purple",
+      "orange",
+      "orange",
+      "purple",
+      "purple",
+      "orange",
+      "orange"
+     ],
+     "hidden": [
+      "star",
+      "star",
+      "diamond",
+      "diamond",
+      "star",
+      "star",
+      "diamond",
+      "diamond"
+     ],
+     "core": [
+      "purple",
+      "purple",
+      "orange",
+      "orange"
+     ]
+    },
+    "translationMapping": {
+     "purple": "star",
+     "orange": "diamond"
+    }
+   },
+   {
+    "id": "c5",
+    "type": "translate",
+    "instruction": "Here is the final challenge with mixed items! Pink is heart, green is star, and blue is circle.",
+    "answer": [
+     "heart",
+     "star",
+     "circle",
+     "heart",
+     "star",
+     "circle"
+    ],
+    "hint": "Take your time and look closely at the rule for each color.",
+    "narration": "You are a pattern master! Let's complete this final translation challenge.",
+    "availableTokens": [
+     "heart",
+     "star",
+     "circle",
+     "square",
+     "triangle",
+     "diamond"
+    ],
+    "sequence": {
+     "given": [
+      "pink",
+      "green",
+      "blue",
+      "pink",
+      "green",
+      "blue"
+     ],
+     "hidden": [
+      "heart",
+      "star",
+      "circle",
+      "heart",
+      "star",
+      "circle"
+     ],
+     "core": [
+      "pink",
+      "green",
+      "blue"
+     ]
+    },
+    "translationMapping": {
+     "pink": "heart",
+     "green": "star",
+     "blue": "circle"
+    }
+   }
+  ],
+  "showOptions": {
+   "showCore": true,
+   "showStepNumbers": false,
+   "showRule": true,
+   "audioMode": false
+  },
+  "gradeBand": "2-3",
+  "translationTarget": {
+   "enabled": true,
+   "mapping": {
+    "red": "circle",
+    "blue": "square"
+   },
+   "sourceType": "colors",
+   "targetType": "shapes"
+  }
+ }
+}

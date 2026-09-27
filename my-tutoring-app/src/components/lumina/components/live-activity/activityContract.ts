@@ -75,6 +75,7 @@ import { spatialSceneLiveDomain } from './adapters/spatialSceneLive';
 import { hundredsChartLiveDomain } from './adapters/hundredsChartLive';
 import { mathFactFluencyLiveDomain } from './adapters/mathFactFluencyLive';
 import { equationBuilderLiveDomain } from './adapters/equationBuilderLive';
+import { patternBuilderLiveDomain } from './adapters/patternBuilderLive';
 import { workspaceAdapter, type LiveActivityAdapter } from './adapters/adapterContract';
 
 export type { LiveActivityAdapter } from './adapters/adapterContract';
@@ -155,6 +156,7 @@ export const LIVE_ADAPTERS = {
   'hundreds-chart': workspaceAdapter('hundreds-chart', hundredsChartLiveDomain),
   'math-fact-fluency': workspaceAdapter('math-fact-fluency', mathFactFluencyLiveDomain),
   'equation-builder': workspaceAdapter('equation-builder', equationBuilderLiveDomain),
+  'pattern-builder': workspaceAdapter('pattern-builder', patternBuilderLiveDomain),
 } satisfies Record<string, LiveActivityAdapter<any>>;
 
 export type LivePrimitiveId = keyof typeof LIVE_ADAPTERS;

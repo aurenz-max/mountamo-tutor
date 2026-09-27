@@ -155,7 +155,10 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       `"identify_core": Student selects the smallest repeating unit. Answer = the core tokens. `
       + `Show a long sequence (8-12 tokens) with 3+ repetitions. `
       + `K-1: simple AB, AAB cores. 2-3: ABC, AABB cores. `
-      + `Pictorial representation with prompts.`,
+      + `Pictorial representation with prompts. `
+      + `The core IS the answer: the instruction and hint must NOT name the pattern's structure (no "AB", "AAB", "ABC", `
+      + `"AABB", "ABCD" labels), list the core's tokens, or say how many tokens or parts the core has. `
+      + `Ask only for the part that repeats (e.g. "Tap the smallest part that repeats.").`,
     schemaDescription: "'identify_core' (find repeating unit)",
   },
   translate: {
@@ -170,6 +173,9 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"create": Student builds their own pattern from available tokens. `
       + `No specific answer required — open-ended. Provide 4-6 token options. `
+      + `The builder accepts ANY row of 4+ tokens in which one starting part repeats, so the instruction must invite the `
+      + `child's OWN repeating pattern and must NOT require a structure ("make an AAB pattern") or a token combination `
+      + `("yellow circles": every token is one color OR one shape). It may suggest which tokens to use. `
       + `Primarily grades 2-3. Transitional symbolic/pictorial.`,
     schemaDescription: "'create' (build original pattern)",
   },

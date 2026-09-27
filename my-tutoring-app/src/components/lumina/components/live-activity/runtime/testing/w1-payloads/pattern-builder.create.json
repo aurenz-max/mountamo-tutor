@@ -1,0 +1,247 @@
+{
+ "source": "qa/tutor-reports/pattern-builder-runtime-create-payload-2026-09-26.json",
+ "primitiveId": "pattern-builder",
+ "evalMode": "create",
+ "data": {
+  "title": "Creative Shape and Color Patterns",
+  "description": "Learn how to build your own repeating patterns using wonderful shapes and colors.",
+  "patternType": "repeating",
+  "sequence": {
+   "given": [
+    "red",
+    "blue",
+    "red",
+    "blue"
+   ],
+   "hidden": [
+    "red",
+    "blue"
+   ],
+   "core": [
+    "red",
+    "blue"
+   ],
+   "rule": "AB repeating"
+  },
+  "tokens": {
+   "available": [
+    "red",
+    "blue",
+    "green",
+    "yellow",
+    "circle",
+    "square"
+   ],
+   "type": "mixed"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "create",
+    "instruction": "Can you design your own repeating pattern using red and blue tokens?",
+    "answer": [
+     "red",
+     "blue",
+     "red",
+     "blue"
+    ],
+    "hint": "Try using two different colors and repeat them in the same order!",
+    "narration": "Let us start by creating a simple repeating pattern using two colors.",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow",
+     "circle"
+    ],
+    "sequence": {
+     "given": [
+      "red",
+      "blue"
+     ],
+     "hidden": [
+      "red",
+      "blue"
+     ],
+     "core": [
+      "red",
+      "blue"
+     ]
+    }
+   },
+   {
+    "id": "c2",
+    "type": "create",
+    "instruction": "Build a new pattern using circle and square shapes that repeats nicely.",
+    "answer": [
+     "circle",
+     "square",
+     "square",
+     "circle",
+     "square",
+     "square"
+    ],
+    "hint": "Think about repeating a group like one shape and two of another!",
+    "narration": "Now let us try making a pattern with shapes where one unit repeats.",
+    "availableTokens": [
+     "circle",
+     "square",
+     "triangle",
+     "star",
+     "diamond"
+    ],
+    "sequence": {
+     "given": [
+      "circle",
+      "square",
+      "square"
+     ],
+     "hidden": [
+      "circle",
+      "square",
+      "square"
+     ],
+     "core": [
+      "circle",
+      "square",
+      "square"
+     ]
+    }
+   },
+   {
+    "id": "c3",
+    "type": "create",
+    "instruction": "Create a pattern with three different colors: green, yellow, and red.",
+    "answer": [
+     "green",
+     "yellow",
+     "red",
+     "green",
+     "yellow",
+     "red"
+    ],
+    "hint": "Make sure your three chosen colors keep repeating in the exact same order.",
+    "narration": "Time for a fun challenge! Let us use three different colors in our pattern.",
+    "availableTokens": [
+     "green",
+     "yellow",
+     "red",
+     "blue",
+     "purple",
+     "orange"
+    ],
+    "sequence": {
+     "given": [
+      "green",
+      "yellow",
+      "red"
+     ],
+     "hidden": [
+      "green",
+      "yellow",
+      "red"
+     ],
+     "core": [
+      "green",
+      "yellow",
+      "red"
+     ]
+    }
+   },
+   {
+    "id": "c4",
+    "type": "create",
+    "instruction": "Build a repeating pattern using a star and a triangle shape.",
+    "answer": [
+     "star",
+     "star",
+     "triangle",
+     "triangle",
+     "star",
+     "star",
+     "triangle",
+     "triangle"
+    ],
+    "hint": "Try repeating pairs of shapes to make your pattern grow!",
+    "narration": "You are doing great! Let us make a pattern using pairs of shapes.",
+    "availableTokens": [
+     "star",
+     "triangle",
+     "circle",
+     "square",
+     "heart",
+     "diamond"
+    ],
+    "sequence": {
+     "given": [
+      "star",
+      "star",
+      "triangle",
+      "triangle"
+     ],
+     "hidden": [
+      "star",
+      "star",
+      "triangle",
+      "triangle"
+     ],
+     "core": [
+      "star",
+      "star",
+      "triangle",
+      "triangle"
+     ]
+    }
+   },
+   {
+    "id": "c5",
+    "type": "create",
+    "instruction": "Design a longer, creative pattern mixing both colors and shapes!",
+    "answer": [
+     "pink",
+     "circle",
+     "pink",
+     "circle",
+     "pink",
+     "circle"
+    ],
+    "hint": "Pick a color and a shape and alternate them all the way to the end.",
+    "narration": "This is our final challenge! Show off your pattern building skills.",
+    "availableTokens": [
+     "pink",
+     "circle",
+     "blue",
+     "square",
+     "yellow",
+     "star"
+    ],
+    "sequence": {
+     "given": [
+      "pink",
+      "circle",
+      "pink",
+      "circle"
+     ],
+     "hidden": [
+      "pink",
+      "circle"
+     ],
+     "core": [
+      "pink",
+      "circle"
+     ]
+    }
+   }
+  ],
+  "showOptions": {
+   "showCore": true,
+   "showStepNumbers": false,
+   "showRule": true,
+   "audioMode": false
+  },
+  "gradeBand": "K-1",
+  "translationTarget": {
+   "enabled": false
+  }
+ }
+}

@@ -1,0 +1,266 @@
+{
+ "source": "qa/tutor-reports/pattern-builder-runtime-extend-payload-2026-09-26.json",
+ "primitiveId": "pattern-builder",
+ "evalMode": "extend",
+ "data": {
+  "title": "Colorful Patterns",
+  "description": "Learn to recognize and extend AB and AAB color patterns with fun and colorful blocks!",
+  "patternType": "repeating",
+  "sequence": {
+   "given": [
+    "red",
+    "blue",
+    "red",
+    "blue",
+    "red",
+    "blue"
+   ],
+   "hidden": [
+    "red",
+    "blue"
+   ],
+   "core": [
+    "red",
+    "blue"
+   ],
+   "rule": "AB repeating"
+  },
+  "tokens": {
+   "available": [
+    "red",
+    "blue",
+    "green",
+    "yellow"
+   ],
+   "type": "colors"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "extend",
+    "instruction": "Look at the red and blue pattern. What comes next?",
+    "answer": [
+     "red",
+     "blue"
+    ],
+    "hint": "Say the colors out loud: red, blue, red, blue. What color comes after blue?",
+    "narration": "Let's look at this red and blue pattern. Can you help me finish it?",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow"
+    ],
+    "sequence": {
+     "given": [
+      "red",
+      "blue",
+      "red",
+      "blue",
+      "red",
+      "blue"
+     ],
+     "hidden": [
+      "red",
+      "blue"
+     ],
+     "core": [
+      "red",
+      "blue"
+     ]
+    }
+   },
+   {
+    "id": "c2",
+    "type": "extend",
+    "instruction": "Can you extend this green and yellow pattern?",
+    "answer": [
+     "green",
+     "yellow"
+    ],
+    "hint": "Listen to the beat: green, yellow, green, yellow. What is next?",
+    "narration": "Great job! Now let's try a green and yellow pattern.",
+    "availableTokens": [
+     "green",
+     "yellow",
+     "red",
+     "blue"
+    ],
+    "sequence": {
+     "given": [
+      "green",
+      "yellow",
+      "green",
+      "yellow",
+      "green",
+      "yellow"
+     ],
+     "hidden": [
+      "green",
+      "yellow"
+     ],
+     "core": [
+      "green",
+      "yellow"
+     ]
+    }
+   },
+   {
+    "id": "c3",
+    "type": "extend",
+    "instruction": "This pattern goes red, red, blue! Can you extend it?",
+    "answer": [
+     "red",
+     "blue"
+    ],
+    "hint": "Remember the rule: two reds, then one blue. What comes after blue?",
+    "narration": "Ooh, this one is an AAB pattern! Two reds and a blue. Let's finish it together.",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow"
+    ],
+    "sequence": {
+     "given": [
+      "red",
+      "red",
+      "blue",
+      "red",
+      "red",
+      "blue"
+     ],
+     "hidden": [
+      "red",
+      "blue"
+     ],
+     "core": [
+      "red",
+      "red",
+      "blue"
+     ]
+    }
+   },
+   {
+    "id": "c4",
+    "type": "extend",
+    "instruction": "Here is an AAB pattern with green and yellow. What comes next?",
+    "answer": [
+     "green",
+     "yellow"
+    ],
+    "hint": "Check the core: green, green, yellow. What starts the next part?",
+    "narration": "You are doing wonderful! Let's do another two-green, one-yellow pattern.",
+    "availableTokens": [
+     "green",
+     "yellow",
+     "red",
+     "orange"
+    ],
+    "sequence": {
+     "given": [
+      "green",
+      "green",
+      "yellow",
+      "green",
+      "green",
+      "yellow"
+     ],
+     "hidden": [
+      "green",
+      "yellow"
+     ],
+     "core": [
+      "green",
+      "green",
+      "yellow"
+     ]
+    }
+   },
+   {
+    "id": "c5",
+    "type": "extend",
+    "instruction": "This pattern has three colors: red, yellow, and blue. Can you extend it?",
+    "answer": [
+     "red",
+     "yellow",
+     "blue"
+    ],
+    "hint": "Follow the ABC order: red, then yellow, then blue. Keep going!",
+    "narration": "Now we have a three-color ABC pattern! Red, yellow, blue. What comes next?",
+    "availableTokens": [
+     "red",
+     "yellow",
+     "blue",
+     "green"
+    ],
+    "sequence": {
+     "given": [
+      "red",
+      "yellow",
+      "blue",
+      "red",
+      "yellow",
+      "blue"
+     ],
+     "hidden": [
+      "red",
+      "yellow",
+      "blue"
+     ],
+     "core": [
+      "red",
+      "yellow",
+      "blue"
+     ]
+    }
+   },
+   {
+    "id": "c6",
+    "type": "extend",
+    "instruction": "This is a tricky AAB pattern with blue and orange. Finish the pattern!",
+    "answer": [
+     "blue",
+     "orange"
+    ],
+    "hint": "Count the blues: one, two. Then one orange. What follows orange?",
+    "narration": "This is our final challenge! You've got this, superstar!",
+    "availableTokens": [
+     "blue",
+     "orange",
+     "red",
+     "green"
+    ],
+    "sequence": {
+     "given": [
+      "blue",
+      "blue",
+      "orange",
+      "blue",
+      "blue",
+      "orange"
+     ],
+     "hidden": [
+      "blue",
+      "orange"
+     ],
+     "core": [
+      "blue",
+      "blue",
+      "orange"
+     ]
+    }
+   }
+  ],
+  "showOptions": {
+   "showCore": true,
+   "showStepNumbers": false,
+   "showRule": true,
+   "audioMode": false
+  },
+  "gradeBand": "K-1",
+  "translationTarget": {
+   "enabled": false
+  }
+ }
+}

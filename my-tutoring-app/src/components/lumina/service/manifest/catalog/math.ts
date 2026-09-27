@@ -2738,6 +2738,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
+      guidance: 'The builder checks the learner’s answer itself when they press Check, and you are not told the answer: '
+        + 'the learner taps tokens into the "?" blanks to continue a pattern, taps the tokens of the part that repeats, '
+        + 'rebuilds a pattern with new tokens by following the drawn key, or builds a pattern of their own. The learner may '
+        + 'not read well: say the instruction and the pattern row in your own words first (colors and shapes by name). '
+        + 'Before the learner has checked, never say a missing token or number, the new row, or the repeating part, how '
+        + 'many tokens it has or which ones to select, and never point to the token to tap; this holds after a wrong '
+        + 'Check too. Coach only as far as the support tier allows. Asking what repeats and reading '
+        + 'the row aloud together is fine. You cannot tap, select or build for the learner.',
+    },
     evalModes: [
       {
         evalMode: 'extend',
