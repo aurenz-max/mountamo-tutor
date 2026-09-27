@@ -151,7 +151,8 @@ Adding scaffolding is a **frontend-only** task. No backend changes needed.
    LLM judge passed the turn, because the tutor had correctly declined to name a POSITION. Say so
    explicitly in an `aiDirective` — name the paraphrases ("think about the X", "picture the Y",
    "the one with the Z") and require the items be spoken about only as a group. Then check for it
-   in Tier 3: it is invisible to Tiers 1 and 2 by construction.
+   in Tier 3: it is invisible to Tiers 1 and 2 by construction. One Tier 3 run per new or rewritten
+   scaffold; `backend/tests/tutor_live/LIVE_TESTING.md` sets any more.
 
 9. **Write `commonStruggles`**
    - Describe *observable* student behavior (not vague labels like "struggling")

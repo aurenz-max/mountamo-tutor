@@ -416,7 +416,7 @@ Add a focused `<primitive>Modes.test.ts` (or the shared migration suite while sw
 4. **The headless judged drive — `/tutor-test --di`.** Export your cue surface (`<primitive>PackBase`, spread by the component so there is one source) and register a `DiPortAdapter` in `service/qa/di/diDrivePlan.ts` naming it plus your answer material: for every item, the correct answer, an unambiguously wrong one, and — the one that earns its keep — the **signature wrong** your `discriminationFor` clause CLAIMS the judge refuses. Then:
    ```bash
    cd backend/tests/tutor_live
-   python run_tutor_live.py --component <id> --di --eval-mode <mode> --runs 3
+   python run_tutor_live.py --component <id> --di --eval-mode <mode> --runs 3   # once per port; later fixes: `backend/tests/tutor_live/LIVE_TESTING.md`
    python run_tutor_live.py --component <id> --di --di-cap    # past the corrections cap
    ```
    It answers every spoken item WRONG on purpose, then right, as TEXT — so it tests the judge's semantics without TTS. **It does not test acoustics, the mic, or VAD, so it does not close your mic row**; it closes the half of that row a machine can hold, which is why #82–#98 accumulated. Read the judgment matrix in `qa/tutor-reports/<id>-live-di-*.md`, then the transcript — the oracles are tripwires, the transcript is the evidence. Full oracle table in `/tutor-test`.

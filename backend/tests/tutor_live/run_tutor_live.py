@@ -21,6 +21,7 @@ Usage:
   python run_tutor_live.py --component states-of-matter
 """
 import argparse
+from spend import SPEND_GUIDANCE, spend_reminder
 import hashlib
 import asyncio
 import json
@@ -3819,7 +3820,8 @@ def write_report(path: str, component_id: str, journey: Dict[str, Any],
 # ---------------------------------------------------------------------------
 
 async def amain() -> int:
-    ap = argparse.ArgumentParser(description="Tier-3 live tutor harness")
+    ap = argparse.ArgumentParser(description="Tier-3 live tutor harness", epilog=SPEND_GUIDANCE,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--component", default="states-of-matter")
     ap.add_argument("--di-input", help="Saved place-value pilot JSON; server rebuilds production DI plan")
     ap.add_argument("--di-independent-item", help="Place-value pilot value item to answer correctly before any correction")
@@ -3872,6 +3874,7 @@ async def amain() -> int:
                          "a Live session limit bites on the full sweep; the six records "
                          "then aggregate by hand.")
     args = ap.parse_args()
+    spend_reminder(getattr(args, 'runs', 1) or 1, bool(getattr(args, 'audio', False)))
     # A bench IS a DI run — it replays the same judged cues through the same
     # transport. The only difference is what the items are built from and how
     # the turns are scored, so --di-bench never has to be paired with --di.

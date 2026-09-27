@@ -4,6 +4,7 @@ Run from backend: venv/Scripts/python tests/tutor_live/run_live_activity.py --ru
 No student attempts/mastery are written. Uses the existing test-account auth helper.
 """
 import argparse
+from spend import SPEND_GUIDANCE, spend_reminder
 import asyncio
 import json
 import time
@@ -87,11 +88,12 @@ async def drive(backend, frontend, token):
 
 
 async def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(epilog=SPEND_GUIDANCE, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("--backend", default="ws://localhost:8000")
     parser.add_argument("--frontend", default="http://localhost:3000")
     args = parser.parse_args()
+    spend_reminder(getattr(args, 'runs', 1) or 1, bool(getattr(args, 'audio', False)))
     token = get_id_token()
     reports = []
     path = Path(__file__).resolve().parents[3] / "my-tutoring-app/qa/tutor-reports/live-activity-sandbox-2026-09-16.json"

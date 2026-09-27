@@ -51,7 +51,8 @@ before/after measurement is the gate.
   contract history. The CLAUDE.md fork ladder still governs task requirements: content,
   scope, answer keys, response class, stimulus timing and evidence.
 - **The measurement decides.** Run every affected domain's verdict and learner-intent
-  probes before and after, and one connected `--audio` journey per changed family. Keep
+  probes before and after, and the live runs `backend/tests/tutor_live/LIVE_TESTING.md` sets for the change type
+  (wording: text runs on the family that showed it plus one other; timing: `--audio`). Keep
   the change if no domain regresses; otherwise revert it and report the numbers. Guidance
   tells the tutor what to do in its own words. A phrase the observer must hear verbatim
   is a sentinel, whatever it is called.
@@ -416,8 +417,9 @@ and one smoke drive. The steps below are for W2 and for new DI or framework work
    needs its reason stated in the report, and the question wording must not be tuned to a
    case. False help or stop requests must be 0. Any other failed case, including a missed request, is a finding
    to report, not a blocker.
-   Then run real JEV semantic cases and three full connected journeys (`--runs 3`, with
-   `--audio` for speech evidence). Use a saved generated payload for replay. A
+   Then run real JEV semantic cases and the connected journeys `backend/tests/tutor_live/LIVE_TESTING.md` sets:
+   a new adoption runs the gate once (3 text + 1 `--audio` for speech evidence); a later fix
+   runs only its change type's row. Use a saved generated payload for replay. A
    progression-only run does not certify demonstrations. Mocked observer decisions
    prove lifecycle mechanics, not semantic classification or real model behavior.
 5. Inspect every transcript and receipt. The journey sends its help and example prompts

@@ -25,6 +25,7 @@ and playback are simulated. No mastery writes.
 """
 import os
 import argparse
+from spend import SPEND_GUIDANCE, spend_reminder
 import asyncio
 import base64
 import collections
@@ -870,7 +871,7 @@ async def drive(args, token, live, index):
 
 
 async def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(epilog=SPEND_GUIDANCE, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--primitive', required=True, help='A primitive with a row in liveJourneySpec.ts')
     parser.add_argument('--runs', type=int, default=3)
     parser.add_argument('--backend', default='ws://localhost:8000')
@@ -889,6 +890,7 @@ async def main():
     parser.add_argument('--objective', help='Objective text the demonstration author reads; defaults to the topic')
     parser.add_argument('--progression-only', action='store_true', help='Reproduce wrong answer, correction, next challenge and finish without a help detour')
     args = parser.parse_args()
+    spend_reminder(args.runs, args.audio)
     if args.lesson_entry and args.startup: parser.error('--lesson-entry uses prepared content; do not combine with --startup')
     if args.demonstration and not args.lesson_entry: parser.error('--demonstration is a lesson feature; add --lesson-entry')
     if args.lever and (not args.lesson_entry or args.demonstration): parser.error('--lever is its own lesson journey; add --lesson-entry, not --demonstration')

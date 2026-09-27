@@ -22,10 +22,12 @@ cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit        # full typ
 cd "<abs>/my-tutoring-app" && npm run typecheck:lumina                 # Lumina-scoped gate; must be 0 — "tsc DID NOT RUN" means tsc didn't run
 cd "<abs>/my-tutoring-app" && npm test                                 # vitest run (single file: npm test -- <path>)
 cd "<abs>/my-tutoring-app" && npm run dev                              # port 3000 ONLY — see below
-cd "<abs>/backend" && venv/Scripts/python -m uvicorn app.main:app --reload --port 8000   # frontend expects :8000
+cd "<abs>/backend" && venv/Scripts/python -m uvicorn app.main:app --reload --reload-exclude "$(pwd -W)/tests" --port 8000   # frontend expects :8000
 ```
 
 - **Never start a second `next dev`.** Probe first: `curl -s -m 120 -o /dev/null -w "%{http_code}" http://localhost:3000/api/lumina/topic-trace` (a cold server takes >5s, so `-m 5` lies). If anything listens on :3000, use it — it hot-reloads the working tree. A second instance corrupts the `.next` pack cache (every page 500s with `reading 'call'`) and can strip `node_modules/.bin`; repair with `npm install --no-audit --no-fund`, never `npm ci`.
+- **`--reload` watches all of `backend/`, whatever `--reload-dir` says** (uvicorn 0.34 always adds the cwd). Only an ABSOLUTE `--reload-exclude` path fences off `tests/`; a relative one matches nothing. Without it, saving a harness `.py` restarts the server 10–30 s later and kills the next Live drive with ws 1012.
+- **Gemini Live testing costs real money** (~$35/day at the 09-27 peak). Every `backend/tests/tutor_live/run_*.py` journey is a paid Live session. It is the only evidence of what the model does with what we send it (wording, tool choice, turn timing), so it is required when a change can affect that, and not otherwise: rendering, generated content, leak rules and harness fixes are verified by vitest, `/eval-test`, `/oracle-test` or the saved report JSON. Counts per change type (a gate runs once per primitive; later fixes do not re-run it): `backend/tests/tutor_live/LIVE_TESTING.md`.
 - **`uvicorn --reload` can serve stale code** for one request after an edit. If a code-dependent call seems not to take effect, call it again.
 - **Multi-line commit messages:** the Bash tool is bash, not PowerShell. Write the message to a file and `git commit -F <file>`; a PowerShell here-string leaks `@` into the subject.
 - **`.env` files are pure ASCII.** python-dotenv reads strict UTF-8; PowerShell `Add-Content` writes ANSI, and one em-dash in a comment crashes backend boot with `UnicodeDecodeError`.

@@ -167,7 +167,7 @@ Contract**:
 Judge sufficiency per eval mode. Then, for scaffolds that pass on paper but
 "felt off" live, or for any new/materially-changed scaffold, confirm behavior
 with the Tier-3 live harness (`backend/tests/tutor_live/run_tutor_live.py
---component <id> --runs 3`, findings CONFIRMED at ≥2/3 runs) — ORIENT and
+--component <id> --runs 3`, findings CONFIRMED at ≥2/3 runs; stop at 2 when both agree, `backend/tests/tutor_live/LIVE_TESTING.md`) — ORIENT and
 DISAMBIGUATE failures are behavioral and only fully visible there.
 
 **Confirm STIMULUS/ORIENT in LESSON mode, not just standalone (`--lesson`).**

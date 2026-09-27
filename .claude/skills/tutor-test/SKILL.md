@@ -29,7 +29,7 @@ Confirm that a primitive's tutoring scaffold actually reaches the AI tutor intac
 | **3-DI — Judged-loop harness (`--di`)** | **the same session, driven as a DI loop: real cues from the primitive's own script module, answered WRONG on purpose then right, in TEXT** | 1 generation + 1 Live session (~6 min) | code + you (read the judgment matrix) |
 | 3b — Manual bench | edge behaviors the scripted journey doesn't cover; actual audio quality | Gemini Live session | human, in the Lumina Tutor Tester dev panel |
 
-Tiers 1–2 are this skill's fast path. Tier 3 runs on demand for scaffolds that are new, materially changed, or Tier 1/2-green but "tutor feels off".
+Tiers 1–2 are this skill's fast path. Tier 3 runs on demand for scaffolds that are new, materially changed, or Tier 1/2-green but "tutor feels off". Every Tier 3 run is a paid Gemini Live session: `backend/tests/tutor_live/LIVE_TESTING.md` sets how many a change needs (a finding confirmed 2 of 2 needs no third run).
 
 ### Tier 3-DI: the judged loop, headless
 
