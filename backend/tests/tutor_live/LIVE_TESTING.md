@@ -24,7 +24,9 @@ No vitest, eval-test or oracle run can show these. When a change can affect them
 - Rendering, component state, the workspace commit, a lever's leak rule, a simplify builder: vitest
   with the real runtime (`runtime/testing/workspaceHarness.tsx`).
 - Generated content: `/eval-test`, `/oracle-test`, a generator probe.
-- A harness fix (an assertion, an id, a wait): re-read the saved report JSON the failing run wrote.
+- A harness fix (an assertion, an id, a wait): re-read the saved report JSON the failing run wrote. For `--lever`
+  runs the run only drives and records; every code verdict comes from `lever_checks.py`, and
+  `python analyze_run.py <report.json>` re-scores saved runs for free after a check changes.
 - A refactor with unit coverage, catalog text the tutor never receives.
 
 ## How many runs, by change

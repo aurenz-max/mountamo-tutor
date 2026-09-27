@@ -41,6 +41,7 @@ import websockets
 from run_tutor_live import get_id_token, fetch_live_context
 from activity_capabilities import fetch_activity_spec, fetch_journey
 from lever_review import review as review_lever_run
+from lever_checks import analyze as analyze_lever_run
 
 ROOT = Path(__file__).resolve().parents[3]
 REPORTS = ROOT / 'my-tutoring-app/qa/tutor-reports'
@@ -546,11 +547,16 @@ def credited(s, item_id):
     return attempts, any(a['correct'] for a in attempts)
 
 
+class JourneyStop(Exception):
+    """The journey cannot go on from here. A stop, not a verdict: `lever_checks.analyze` decides from the events."""
+
+
 async def lever_journey(s):
-    """Handoff 18: a wrong answer, then "I'm stuck" with no tool named. The tutor must pull a lever from what
-    it sees; the line changes before it is described; no lever fact states the landing; the next attempt records
-    the lever; an easier practice jump is ungraded; the learner answers the full item and only that is credited;
-    the lesson then continues."""
+    """Handoff 18: a wrong answer, then "I'm stuck" with no tool named, an easier item if one opens, the full item
+    answered correctly, and the lesson continuing. This program only DRIVES and RECORDS: every verdict (a lever was
+    pulled, the screen changed, nothing leaked, credit was assisted, practice was ungraded) is computed afterwards
+    from the events by `lever_checks.analyze`, so a wrong check is fixed and re-applied to saved runs for free
+    (`analyze_run.py`). It stops early only when the next step is impossible."""
     turn = lambda label, prompt=None, until=lambda state: True: workspace_turn(s, label, prompt, until)
     async with asyncio.timeout(30):
         while json.loads(await s.ws.recv()).get('type') != 'session_ready':
@@ -573,34 +579,30 @@ async def lever_journey(s):
         await turn('skip-correct', until=lambda st: st['task']['itemId'] != first or st['task']['evidence']['correctness'] == 'correct')
         if s.state['task']['itemId'] == first:
             await s.step({'type': 'learner_progress', 'action': 'advance'})
-    assert open_levers(), 'No item offered a lever after a wrong answer'
-    challenge = next((c for c in s.data.get('challenges', []) if c['id'] == first), {})
-    # The item's own answer numbers, whichever field the primitive keeps them in; the lever facts must not state them.
-    landings = {str(v) for k in ('targetValues', 'targetCount', 'answer') for v in
-                (challenge.get(k) if isinstance(challenge.get(k), list) else [challenge.get(k)]) if isinstance(v, (int, float))}
+    if not open_levers():
+        raise JourneyStop('No item offered a lever after a wrong answer')
+    s.record('lever_item', itemId=first)
     pulls = lambda: [e for e in s.events if e['type'] == 'lever_pull']
     for label, prompt in (('stuck', "I'm stuck. I don't know how to do this one."),
                           ('stuck-again', "I still don't get it.")):
         if not pulls():
             await turn(label, prompt)
-    assert pulls(), 'No lever was pulled, by the tutor or the observer'
-    if pulls()[-1]['source'] == 'observer':
+    if pulls() and pulls()[-1]['source'] == 'observer':
         # The observer tells the tutor once its reply to "I'm stuck" has settled (LB-8), so that message opens a
         # turn of its own. A learner waits for it; answering over it would skip the narration being checked.
         pulled_at = s.events.index(pulls()[-1])
         told = lambda: next((i for i, e in enumerate(s.events) if i > pulled_at and e['type'] == 'runner_cue'
                              and 'host pulled' in e.get('text', '')), None)
-        async with asyncio.timeout(20):
-            while told() is None:
-                await s.step({'type': 'poll'})
-                await asyncio.sleep(.15)
+        try:
+            async with asyncio.timeout(20):
+                while told() is None:
+                    await s.step({'type': 'poll'})
+                    await asyncio.sleep(.15)
+        except TimeoutError:
+            s.record('observer_message_missing')  # the journey goes on; the reviewer reads what the tutor said
         # A reply that began before the message answers the audio, not the message, even when logged after it.
-        if not any(e['type'] == 'tutor' and (e.get('began') or 0) > told() for e in s.events[told():]):
+        if told() is not None and not any(e['type'] == 'tutor' and (e.get('began') or 0) > told() for e in s.events[told():]):
             await turn('lever-told')
-    for pull in pulls():
-        facts = ' '.join(str((pull['demand'] or {}).get(k, '')) for k in ('onScreen', 'practice'))
-        assert not landings & set(re.findall(r'\d+', facts)), 'A lever fact states the landing: ' + facts
-        assert pull['dom'].get('leverMarks', 0) > 0 or pull['lever'] == '(simpler item)', 'The pull changed nothing on screen'
 
     async def press(action):
         await s.step({'type': 'learner_progress', 'action': action})
@@ -613,8 +615,10 @@ async def lever_journey(s):
         await turn('practice', until=lambda st: not (st['task'].get('workspace') or {}).get('practice'))
         if practice():
             await press('advance')
-        assert not practice(), 'The easier jump never returned to the full item'
-    assert s.state['task']['itemId'] == first, 'The lever left the item'
+        if practice():
+            raise JourneyStop('The easier item never returned to the full item')
+    if s.state['task']['itemId'] != first:
+        raise JourneyStop('The lever left the item')
     if s.state['task']['phase'] != 'working':
         # One tutor reply, then the child's own Try again if the item is still closed. Waiting for the phase
         # to change hung when the tutor invited a try but the observer did not reopen the item (run-5, 09-27).
@@ -623,19 +627,13 @@ async def lever_journey(s):
             await press('retry')
     await s.learner('correct')
     await turn('correct', until=lambda st: st['task']['itemId'] != first or st['task']['evidence']['correctness'] == 'correct')
-    attempts, ok = credited(s, first)
-    assert ok, 'The correct answer on the full item was never credited'
-    solving = next(a for a in attempts if a['correct'])
-    assert solving.get('levers') and solving.get('assisted'), 'The credited attempt does not record the lever'
-    every = (s.state['task'].get('workspace') or {}).get('attempts', [])
-    easier = {p['itemId'] for p in pulls() if p['lever'] == '(simpler item)'}  # each primitive names its easier item
-    assert all(a.get('practice') for a in every if a['itemId'] in easier), 'Easier-item work was recorded as a session item'
+    attempts, _ = credited(s, first)
     if s.state['task']['itemId'] == first:
         await turn('advance', 'I am ready for the next one.', lambda st: st['task']['itemId'] != first)
         if s.state['task']['itemId'] == first:
             await press('advance')
-    assert s.state['task']['itemId'] != first, 'The lesson did not continue to the next item'
-    s.record('lever_complete', state=s.state, pulled=[(p['lever'], p['source']) for p in pulls()], credited=solving)
+    s.record('lever_complete', state=s.state, pulled=[(p['lever'], p['source']) for p in pulls()],
+             credited=next((a for a in attempts if a['correct']), None))
 
 
 async def teaching_workspace(s):
@@ -821,8 +819,14 @@ async def drive(args, token, live, index):
                                    'objectives': [], 'ordered_components': []}}))
             workspace = journey.get('execution') == 'workspace' or bool((s.state.get('task') or {}).get('workspace'))
             try:
-                if args.demonstration or args.lever:
-                    await (demonstration_detour(s) if args.demonstration else lever_journey(s))
+                if args.lever:
+                    # Drive and record only; main() scores the run with lever_checks.analyze (also offline: analyze_run.py).
+                    await lever_journey(s)
+                    return {'passed': None, 'journey': 'lever', 'leakTokens': journey['leakTokens'], 'primitiveId': args.primitive,
+                            'events': s.events, 'items': s.data.get('challenges', []),
+                            'providerResumes': sum(e['type'] == 'provider_resume' and e.get('event') == 'session_resuming' for e in s.events)}
+                if args.demonstration:
+                    await demonstration_detour(s)
                     receipts = [e['result'] for e in s.events if e['type'] == 'runtime_result']
                     assert all(r['status'] == 'visible' for r in receipts), 'An action did not reach visible'
                     return {'passed': True, 'primitiveId': args.primitive, 'events': s.events, 'items': s.data.get('challenges', []),
@@ -861,7 +865,8 @@ async def drive(args, token, live, index):
                 'providerResumes': sum(e['type'] == 'provider_resume' and e.get('event') == 'session_resuming' for e in s.events)}
     except Exception as error:
         s.record('failure', reason=repr(error), state=s.state)
-        return {'passed': False, 'primitiveId': args.primitive, 'events': s.events, 'items': s.data.get('challenges', []),
+        return {'passed': False, **({'journey': 'lever', 'leakTokens': journey['leakTokens']} if args.lever else {}),
+                'primitiveId': args.primitive, 'events': s.events, 'items': s.data.get('challenges', []),
                 'providerResumes': sum(e['type'] == 'provider_resume' and e.get('event') == 'session_resuming' for e in s.events)}
     finally:
         try: s.process.stdin.close()
@@ -920,6 +925,11 @@ async def main():
     runs = []
     for index in range(1, args.runs + 1):
         result = await drive(args, token, live, index); runs.append(result)
+        if args.lever:
+            result['analysis'] = analyze_lever_run(result)
+            result['passed'] = result['analysis']['passed']
+            print(f"Run {index} checks: missed {result['analysis']['missed'] or 'none'}"
+                  f"{'; stopped: ' + result['analysis']['stopped'] if result['analysis']['stopped'] else ''}", flush=True)
         if args.lever and not args.no_review:
             # The after-run reviewer: every miss, its owning layer and a proposed fix, into qa/lever-bench/QUEUE.md.
             result['review'] = await asyncio.to_thread(review_lever_run, result, args.primitive, result.get('items', []),
