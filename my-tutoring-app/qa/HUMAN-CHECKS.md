@@ -9,9 +9,20 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 
 ## Open — ONE list, newest first (as of 2026-09-09, K Language Arts atlas refresh)
 
-> **121 rows open.** **Newest:** #170 lesson demonstration detour (LA-15 D2); #169 composed demonstrations (LA-15) in the runtime lab; #168 counting-board THE THIRD BRANCH — say "can you help me" mid-item and hear an answer, not the correction line; #167 live runtime lab (help/return; mic after adoption); #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
+> **122 rows open.** **Newest:** #171 jump levers on the number line (handoff 18); #170 lesson demonstration detour (LA-15 D2); #169 composed demonstrations (LA-15) in the runtime lab; #168 counting-board THE THIRD BRANCH — say "can you help me" mid-item and hear an answer, not the correction line; #167 live runtime lab (help/return; mic after adoption); #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
 > tablet + MIC · #144 You & Me role-switch MIC · #143 Letter Workshop manuscript/touch/audio ·
-> #142 ten-frame teen numbers. Next free ID is **#171**.
+> #142 ten-frame teen numbers. Next free ID is **#172**.
+
+### #171 — **number-line jump levers: does the line help a stuck child, without giving the answer?** (handoff 18)
+
+**Drive it:** a Grade 1 lesson whose section binds number-line `jump`. Connect the tutor, place the first jump one hop short, press Check, then say "I'm stuck."
+Check:
+1. The tutor numbers your hops on the line, or opens an easier jump, before it explains, and says what changed.
+2. The numbered hops, or the first hop drawn from the start, never reach the landing.
+3. An easier jump is followed by the same full jump; answering that one is what moves the lesson on.
+4. At easy difficulty there is no arc ending on the answer, only the first hop from the start.
+
+Machine evidence: `qa/eval-reports/number-line-levers-2026-09-27.md`. Every committed pull held checks 2-6; the tutor pulled in 2 of 3 runs in the last round, so the gate is not passed.
 
 ### #170 — **a lesson tutor opens a demonstration when the child is stuck, and comes back** (LA-15 D2)
 

@@ -51,13 +51,15 @@ next attempt carries { lever, kind }   assisted, never credited as independent; 
 generator (Phase 6)                    config.difficulty → which levers start pulled; simplify builders live here too
 ```
 
-> **Status (2026-09-27): the shared lever mechanism does not exist yet.** In `components/live-activity/runtime/useTeachingWorkspace.ts` (`getAffordances`, lines 129-179) the tutor's operations are `begin_help`, `demonstrate` (only when the scene publishes `objects` and `canDemonstrate`) and `present` (only for a timed stimulus). `apply_tutor_verdict`, `retry` and `advance` are observer-only. Other tutor tools exist outside it (`show` on `useTeachingSurface.ts`, the lesson's global `request_demonstration`), but none changes what a primitive shows on its item. Four pieces are missing, and the first adopter, the number-line jump pilot, builds them once as a shared change under `/add-live-tutor-tools` rules:
-> 1. `workspace.current.levers` + `pullLever(id)` on the scene, and a `pull_lever` operation in `useTeachingWorkspace`;
-> 2. the lever on the attempt record (`TeachingAttempt` in `TeachingSession.ts` has only `assisted` and `answerExposure`; `assist()` takes only an exposure);
-> 3. a way for a simplify lever to put a simpler item in front of the learner and return to the original (`TeachingSession` fixes its item ids at construction, `TeachingSession.ts:50`);
-> 4. the scene fact naming which levers are pulled.
+> **Status (2026-09-27): the shared lever mechanism exists; the number-line jump pilot built it** (handoff 18, report `qa/eval-reports/number-line-levers-2026-09-27.md`). Copy these, and read the source before relying on a line number:
+> - **Scene contract** (`runtime/useTeachingWorkspace.ts`): `TeachingWorkspace.levers?: WorkspaceLever[]`, `pullLever?: (id) => LeverPull` and `endPractice?()` (lines 36-44). `LeverPull` is `true` (help), a refusal string, or `{ practice: TeachingAssignment }` (simplify). `WorkspaceLever` (`id, kind, when, does, carrier, pulled`) and `WorkspaceInput.lever` live in `runtime/contract.ts:28-38`.
+> - **Tutor operation**: `pull_lever { lever }` in `getAffordances` (`useTeachingWorkspace.ts:180`), assistance level 2, exposure none. It validates the id, runs `pullLever` inside the synchronous `commit`, opens a practice item for a simplify result, then `session.assist('none', id)`. Not offered during a practice item or after a checked success. The backend relays `lever` as a generic field of `perform_runtime_action` (`backend/app/services/live_runtime_tools.py:149, 234-251`) and names no primitive.
+> - **Attempt record** (`runtime/TeachingSession.ts`): `assist(exposure, lever)` records the lever on the item (line 68); each attempt carries `levers` and, on a simpler item, `practice: true` (lines 16-18). `openPractice(id)` / `closePractice()` (lines 79-91) put an ungraded simpler item in place of the session item and bring the same item back; `advance()` refuses while a practice item is open. `scoreSession` and `teachingEvaluation` drop practice attempts; a first try made with a lever pulled is not a first-response success.
+> - **Runner** (`runtime/useWorkspaceRunner.ts`): `checkPractice` binds the primitive's own check to the practice item; a practice success never affirms the session item.
+> - **Reference primitive**: `NumberLine.tsx` (`leverState`/`practice` state at 328-329, `pullLever`/`endPractice` at 904-926) with the pure module `numberLineLevers.ts` (declarations, `modelHop`, `learnerHops`, `hopsLeak`, `simplerJump`) and tests `numberLineLevers.test.ts`, `NumberLine.levers.workspace.test.tsx`.
+> - **Live bench**: `run_live_runtime.py --lesson-entry --lever` (wrong answer, "I'm stuck", unprompted pull, practice item if any, full item credited with the lever recorded, lesson continues). A journey row whose simpler item is not a generated challenge rebuilds it in `inputsFor` with the same builder (see the number-line row).
 >
-> **Until the pilot lands, a session running this skill on any other primitive does Phases 1-3 only**: it writes the failure inventory and lever table into `qa/eval-reports/<id>-levers-<date>.md`, updates the contract, and stops. Treat every name above as the target contract, and check the source before copying it.
+> **Other primitives go one at a time** (handoff 18, Phase B), each through every phase here and its own `--lever` bench, and only after the user has seen the pilot report.
 
 ## When to use / not
 
@@ -119,6 +121,7 @@ Write the new requirements into `docs/contracts/<id>.md` (`/primitive-contract`,
 2. **Pulling is a synchronous commit.** `pullLever(id)` changes state and returns `true`, or returns a refusal string (wrong mode, already pulled, would leak). It never schedules state and reports success.
 3. **Publish it.** Add the lever to `workspace.current.levers` with `pulled` state, and add a scene fact that says what is now on screen, in terms the tutor and JEV can read. The fact must not state the answer. The tutor reads scene facts as `task.demand`.
 4. **Leak rule in code.** Each lever's leak rule is a pure function beside the domain module, unit-tested per mode.
+5. **Refuse a pull that changes nothing.** If the lever has nothing safe to draw yet (number-line: a jump of 1 has no model hop until the learner places it), return a refusal that says what to do instead. A pull the screen does not show breaks S5.
 
 ## Phase 5: Build simplify levers
 
@@ -128,7 +131,8 @@ A simplify lever replaces the current item with a simpler item of the same mode,
 2. **Mode floor and band.** The simpler item keeps the mode's defining property and its magnitude band.
 3. **Never the learner's own item.** The simpler item must not repeat the item the learner is stuck on or reveal its answer, and code checks it. The parked LA-15 branch (`park/la15-prerequisite-detour`, `composeDetourActivity.ts` `dropParentRepeats`) has a generic check, and its measured result: a prompt instruction alone still repeated the learner's item in 3 of 5 generations; the code check brought it to 0 of 5.
 4. **A new item, and the full item stays open.** The simpler item gets its own item id. Work on it is ungraded: no mastery write (user ruling 1, handoff 17: detour work is ungraded; a fresh parent item checks transfer). The learner then returns to the full item, or to a fresh item of the same mode, and only that answer, given without the lever, is credited.
-5. **Where the builders live.** A generation-time builder that already exists (`gemini-regrouping-workbench.ts` operand re-selection, `gemini-bar-model.ts` gap/step clamps) is the starting point. Move the pure part into a module the component can call at runtime. Do not call the LLM at runtime for a simplify lever.
+5. **Retry on the simpler item keeps it.** The workspace's retry reopens the practice item; only `endPractice` (called when the observer's advance returns to the full item) removes it. Do not clear the simpler item in the primitive's `onItemOpened` on a retry.
+6. **Where the builders live.** A generation-time builder that already exists (`gemini-regrouping-workbench.ts` operand re-selection, `gemini-bar-model.ts` gap/step clamps) is the starting point. Move the pure part into a module the component can call at runtime. Do not call the LLM at runtime for a simplify lever.
 
 ## Phase 6: Starting positions from `config.difficulty`
 
@@ -144,7 +148,7 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
 ```
 
 - New tier code applies per challenge at the end of the generator, from each challenge's own mode, gated only on a tier being present. No tier means the output is unchanged. Some existing harnesses do not do this (ten-frame writes session-level `showOptions` and is gated on a pinned mode, `gemini-ten-frame.ts:510-513`); leave them as they are unless your lever work has to change the same code.
-- easy = the help levers that make self-checking possible start pulled; hard = all released. A tier never changes the numbers, the eval mode, or makes the item harder than the manifest chose.
+- easy = the help levers that make self-checking possible start pulled; hard = all released. A starting position is not a pull: record only runtime pulls on the attempt, or every easy item reads as assisted. A tier never changes the numbers, the eval mode, or makes the item harder than the manifest chose.
 - Existing tier implementations (ten-frame, counting-board, angle-workshop, bar-model, skip-counting-runner, regrouping-workbench) remain valid as starting positions. They are not runtime levers until Phases 4-5 are done.
 
 ## Phase 7: Verify
@@ -170,4 +174,4 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
 - Design brief and the three audits: `my-tutoring-app/src/components/lumina/docs/SUPPORT_LEVERS_BRIEF.md`.
 - Workspace binding rules: `/add-live-tutor-tools`, `docs/TEACHING_WORKSPACE.md`.
 - Generation-time starting positions: the tier harness above; `gemini-bar-model.ts` (`resolveSupportStructure`, `resolveProblemShape`), `gemini-regrouping-workbench.ts` (code-enforced operand builders), `gemini-skip-counting-runner.ts` (answer-bearing `hiddenPositions`).
-- Runtime lever reference: none yet. The number-line jump pilot becomes it.
+- Runtime lever reference: the number-line jump pilot (`numberLineLevers.ts`, `NumberLine.tsx`, the Status note above).

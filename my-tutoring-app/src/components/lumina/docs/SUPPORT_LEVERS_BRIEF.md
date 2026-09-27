@@ -2,6 +2,10 @@
 
 Date: 2026-09-26, revised 2026-09-27 · Ruling: support levers designed in advance (user, 2026-09-26) · Feeds: rewrite of `/add-support-tiers`, which absorbs `/add-structural-difficulty` (user, 2026-09-27)
 
+## Status (2026-09-27)
+
+The number-line jump pilot is built: the shared lever mechanism (`pull_lever`, levers on the attempt record, an ungraded simpler item that returns to the full item) and two levers, `numbered_hops` and `simpler_jump`. The easy-tier arc leak is fixed. Report: `qa/eval-reports/number-line-levers-2026-09-27.md`. Rollout (Phase B of handoff 18) waits for the user to see that report.
+
 ## The ruling this serves
 
 When a learner fails an item, the answer is a lever inside the primitive that the tutor or the JEV observer can pull on the current item. We work out in advance why learners fail each primitive and build the levers for it. We do not write scripted tutor responses. A missing prerequisite is a lesson-level finding, acted on in the next lesson. The in-moment prerequisite detour (LA-15 Next #1) is parked on the local branch `park/la15-prerequisite-detour` (`e4855c3b`).
@@ -79,9 +83,9 @@ The generation tier only sets where the levers start: easy starts with some pull
 | Defect | Evidence | Executor |
 |---|---|---|
 | fraction-circles identify, easy: caption states the answer | `gemini-fraction-circles.ts:206-244`, `FractionCircles.tsx:558-563` | `/eval-fix` |
-| number-line jump, easy: the arc's arrowhead marks the landing | `NumberLine.tsx:946-948, 1196-1206` | `/eval-fix` |
-| number-line generator: jump starts outside the rendered range (58−4 on 0–30); the K-2 clamp runs after the challenges exist | `gemini-number-line.ts:872-897, 1666-1672` | `/eval-fix` |
-| Live journey reports PASS when the "correct" answer was never credited | number-line run 09-26 | `/add-live-tutor-tools` (harness) |
+| ~~number-line jump, easy: the arc's arrowhead marks the landing~~ FIXED 09-27: the arc is replaced by the numbered-hops lever | `NumberLine.tsx`, `numberLineLevers.ts` | done (pilot) |
+| ~~number-line generator: jump starts outside the rendered range~~ FIXED 09-27 (`c952e0e0`) | `qa/eval-reports/number-line-display-range-2026-09-27.md` | done |
+| ~~Live journey reports PASS when the "correct" answer was never credited~~ FIXED 09-27: `credited()` asserted in the workspace and `--lever` journeys | `run_live_runtime.py` | done |
 | rhyme-studio: K tiers do nothing; `remediationMove` stamped, never read; DISTAR lead-in ladder reached only by QA code | rhyme audit §3–4 | `/add-support-tiers` (rewritten) |
 | rhyme-studio catalog `aiDirectives` still order "[RS_ITEM] say exactly" turns for a retired runner; not confirmed whether workspace sessions receive them | `literacy.ts:1650-1667`, `lumina_tutor.py:634` | `/add-live-tutor-tools` |
 | number-line: tool-lab `runtimeHint` is set and never rendered | `NumberLine.tsx:846` | `/eval-fix` |

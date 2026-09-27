@@ -135,7 +135,7 @@ is pending; the machine gate exercises the actual runtime and React shell.
 | [04: live bridge and demo](04-live-integration.md) | Existing sandbox/transport integration | Requires 01–03; both orders, then actual microphone sitting |
 | [06: support shapes](06-support-shapes.md) | Second prepared shape in the returnable shell; comparison-builder driven 3/3 | Theme the shell with the Lumina kit first (user review), then gate the `[ANSWER_INCORRECT]` answer leak, then a second adopter of the shape |
 | [17: tutor demonstrations (LA-15)](17-la15-tutor-demonstrations.md) | `request_demonstration` in lessons; host diagnoses from primitive evidence; code-built demo, ungraded, returns | Built + real-model verified on number-line; human #169/#170; prerequisite fallback PARKED 09-26 (user ruling) |
-| [18: support levers pilot](18-support-levers-pilot.md) | In-item help and simplify levers the tutor pulls; shared `pull_lever`; number-line jump pilot, live bench gate, then phased rollout | Ready; nothing built yet |
+| [18: support levers pilot](18-support-levers-pilot.md) | In-item help and simplify levers the tutor pulls; shared `pull_lever`; number-line jump pilot, live bench gate, then phased rollout | Phase A built 09-27; live gate NOT passed (tutor pulls 2/3), user decision owed; report `qa/eval-reports/number-line-levers-2026-09-27.md` |
 
 01 and 02 may be separate sessions, but avoid simultaneous edits to shared runtime
 files. Any contract changes need their regression tests first. After 04, decide
