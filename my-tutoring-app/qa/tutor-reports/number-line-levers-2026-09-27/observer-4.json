@@ -1379,6 +1379,36 @@
         }
       }
     ],
-    "providerResumes": 0
+    "providerResumes": 0,
+    "review": {
+      "code_verdicts": {
+        "1": true,
+        "4": true,
+        "5": true,
+        "6": true
+      },
+      "checks": {
+        "1": "met",
+        "2": "partial",
+        "3": "met",
+        "4": "met",
+        "5": "met",
+        "6": "met"
+      },
+      "findings": [
+        {
+          "existing_id": null,
+          "check": "2",
+          "title": "Tutor did not describe the visual lever changes on screen",
+          "what_went_wrong": "At 30.1s, after the observer pulled the numbered_hops lever, the tutor asked a verbal question rather than explaining the visual model hop drawn on screen.",
+          "evidence": "30.1s TUTOR: Let's try just one hop first. If you start at 4 and hop back one space, where do you land?",
+          "layer": "tutor_instruction",
+          "proposed_fix": "Instruct the tutor to explicitly reference and explain visual lever modifications on the screen before prompting the learner."
+        }
+      ],
+      "queued": [
+        "LB-3"
+      ]
+    }
   }
 ]

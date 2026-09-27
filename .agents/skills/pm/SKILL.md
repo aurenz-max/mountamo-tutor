@@ -31,6 +31,7 @@ Use queue text as the source of truth for what remains, reports as evidence, the
 | `my-tutoring-app/qa/topic-traces/` and `my-tutoring-app/qa/topic-fidelity/` | Generator scope and intent fidelity | `$topic-trace`, `$topic-fidelity`, `$eval-fix` | Let census reports seed the owning queues. |
 | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` and `my-tutoring-app/src/components/lumina/docs/contracts/` | Primitive requirements contracts | `$primitive-contract` | Move derivations to Done, append the contract changelog after checks, and treat `derived_at` older than the newest census as stale. |
 | `my-tutoring-app/qa/HUMAN-CHECKS.md` | Human-only browser and pixel checks | User | Strike the row here and in the owning report only after user verification. |
+| `my-tutoring-app/qa/lever-bench/QUEUE.md` | Live lever bench misses (after-run reviewer) | Executor named per row (`$add-live-tutor-tools`, `$add-support-tiers`, `$eval-fix`) | Re-run the `--lever` journey after a fix; close the row with its commit. |
 | Lifecycle follow-up queues and birth certificates | Per-primitive capability raises | `$add-eval-modes`, `$add-support-tiers`, `$add-tutoring-scaffold`, `$add-sound`, `$add-voice-control`, `$migrate-primitive` | Follow the ladder in `my-tutoring-app/src/components/lumina/docs/PRIMITIVE_LIFECYCLE.md`. |
 | `WORKSTREAMS.md` | Portfolio state | `$pm` | Update the relevant stream’s last-touched value at closure. |
 

@@ -156,7 +156,7 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
 1. **Unit:** each leak rule per lever × mode; each simplify builder over many random items (exact shape, in band, solvable, never the source item).
 2. **Workspace test** (`<X>.workspace.test.tsx`, mounted through `runtime/testing/workspaceHarness.tsx`): `pull_lever` changes the screen and the scene fact in the same commit; the next attempt records the lever; a refused pull changes nothing; a simplify pull opens a new item and the full item is reachable after it.
 3. **Typecheck:** `npm run typecheck:lumina` = 0; full `tsc` not above baseline.
-4. **Runtime:** one connected journey where the tutor pulls a lever after a wrong answer (`liveJourneySpec.ts` row + `backend/tests/tutor_live/run_live_runtime.py`). Read the transcript: the tutor must not describe a change before its visible receipt.
+4. **Runtime:** one connected journey, `run_live_runtime.py --primitive <id> --lesson-entry --lever` (a `liveJourneySpec.ts` row). After a wrong answer and "I'm stuck", a lever must be pulled, by the tutor or by the observer (user ruling 09-27). The after-run reviewer (`lever_review.py`) files every miss, with its owning layer and executor, in `qa/lever-bench/QUEUE.md`. Read the transcript too: the tutor must not describe a change before its visible receipt.
 5. **Content:** `/eval-test` tier sweep for the starting positions; `/oracle-test` if the primitive has an oracle (add the leak rules to it).
 6. **Report** in `qa/eval-reports/<id>-levers-<date>.md`: the failure inventory with evidence classes, the lever table, what was built, what was measured, and which failures still have no lever.
 

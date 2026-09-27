@@ -1,0 +1,11 @@
+# Lever bench queue
+
+Findings from the after-run reviewer (`backend/tests/tutor_live/lever_review.py`) on `run_live_runtime.py --lever` journeys.
+One row per distinct miss; a recurrence adds to `Seen`. Work the top open row with its executor skill, re-run the journey,
+and mark it `closed` with the commit. Environment failures (session start, reloads) are counted in each run's review, not queued.
+
+| ID | Primitive | Check | Layer | What went wrong | Proposed fix | Executor | Seen | Last run | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| LB-1 | number-line | 1 | tutor_instruction | After the learner answered incorrectly and stated they were stuck at 24.6s, the tutor called begin_help and coached verbally instead of pulling a screen lever. ("25.8s TUTOR TOOL: begin_help ... 42.5s JOURNEY FAILED: AssertionError('The tutor never pulled a lever')") | Instruct tutors to activate an in-item visual support lever on the workspace when the learner indicates being stuck instead of relying on verbal hints. | /add-live-tutor-tools | 5 | gate-text-3d.json#2 | open |
+| LB-2 | number-line | 2 | harness | At 30.7s, the harness failed with an assertion error stating the pull changed nothing on screen, even though the tutor successfully pulled simpler_jump at 24.6s and the workspace recorded that an easier practice item replaced the item. ("24.7s LEVER PULLED by tutor: simpler_jump ... 30.7s JOURNEY FAILED: AssertionError('The pull changed nothing on screen')") | Update harness screen-change validation to recognize practice item replacement from simpler_jump as a valid visual workspace change. | /add-live-tutor-tools | 1 | gate-text-3d.json#1 | closed: fixed in c641109e (only committed pulls are counted; a simplify pull is detected from the state) |
+| LB-3 | number-line | 2 | tutor_instruction | At 30.1s, after the observer pulled the numbered_hops lever, the tutor asked a verbal question rather than explaining the visual model hop drawn on screen. ("30.1s TUTOR: Let's try just one hop first. If you start at 4 and hop back one space, where do you land?") | Instruct the tutor to explicitly reference and explain visual lever modifications on the screen before prompting the learner. | /add-live-tutor-tools | 1 | observer-4.json#1 | open |

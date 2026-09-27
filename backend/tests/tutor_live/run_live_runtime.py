@@ -39,6 +39,7 @@ from pathlib import Path
 import websockets
 from run_tutor_live import get_id_token, fetch_live_context
 from activity_capabilities import fetch_activity_spec, fetch_journey
+from lever_review import review as review_lever_run
 
 ROOT = Path(__file__).resolve().parents[3]
 REPORTS = ROOT / 'my-tutoring-app/qa/tutor-reports'
@@ -794,7 +795,7 @@ async def drive(args, token, live, index):
                 await (demonstration_detour(s) if args.demonstration else lever_journey(s))
                 receipts = [e['result'] for e in s.events if e['type'] == 'runtime_result']
                 assert all(r['status'] == 'visible' for r in receipts), 'An action did not reach visible'
-                return {'passed': True, 'primitiveId': args.primitive, 'events': s.events,
+                return {'passed': True, 'primitiveId': args.primitive, 'events': s.events, 'items': s.data.get('challenges', []),
                         'providerResumes': sum(e['type'] == 'provider_resume' and e.get('event') == 'session_resuming' for e in s.events)}
             await (teaching_surface(s) if teaching else teaching_workspace(s) if workspace else PROGRAMS[activity['teachingOwner']](s))
         receipts = [e['result'] for e in s.events if e['type'] == 'runtime_result']
@@ -824,7 +825,7 @@ async def drive(args, token, live, index):
                 'providerResumes': sum(e['type'] == 'provider_resume' and e.get('event') == 'session_resuming' for e in s.events)}
     except Exception as error:
         s.record('failure', reason=repr(error), state=s.state)
-        return {'passed': False, 'primitiveId': args.primitive, 'events': s.events,
+        return {'passed': False, 'primitiveId': args.primitive, 'events': s.events, 'items': s.data.get('challenges', []),
                 'providerResumes': sum(e['type'] == 'provider_resume' and e.get('event') == 'session_resuming' for e in s.events)}
     finally:
         try: s.process.stdin.close()
@@ -849,6 +850,7 @@ async def main():
     parser.add_argument('--answer-prefix', default='', help='Natural conversational preface for actual spoken answers; requires --audio')
     parser.add_argument('--demonstration', action='store_true', help='LA-15: wrong answer, a request to be shown, a composed demonstration detour and return (requires --lesson-entry)')
     parser.add_argument('--lever', action='store_true', help='Handoff 18: wrong answer, "I am stuck", an unprompted lever pull, then the full item credited (requires --lesson-entry)')
+    parser.add_argument('--no-review', action='store_true', help='Skip the after-run lever reviewer')
     parser.add_argument('--objective', help='Objective text the demonstration author reads; defaults to the topic')
     parser.add_argument('--progression-only', action='store_true', help='Reproduce wrong answer, correction, next challenge and finish without a help detour')
     args = parser.parse_args()
@@ -881,6 +883,12 @@ async def main():
     runs = []
     for index in range(1, args.runs + 1):
         result = await drive(args, token, live, index); runs.append(result)
+        if args.lever and not args.no_review:
+            # The after-run reviewer: every miss, its owning layer and a proposed fix, into qa/lever-bench/QUEUE.md.
+            result['review'] = await asyncio.to_thread(review_lever_run, result, args.primitive, result.get('items', []),
+                                                       f'{report.name}#{index}')
+            r = result['review']
+            print(f"Run {index} review: {r.get('environment') or r.get('unreviewed') or r.get('checks')} -> queued {r['queued']}", flush=True)
         report.write_text(json.dumps(runs, indent=2), encoding='utf-8')
         resumed = f' ({result["providerResumes"]} Live resume)' if result['providerResumes'] else ''
         print(f'Run {index}: {"PASS" if result["passed"] else "FAIL"}{resumed}', flush=True)

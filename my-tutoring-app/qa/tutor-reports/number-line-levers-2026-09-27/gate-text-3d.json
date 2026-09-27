@@ -1077,7 +1077,37 @@
         }
       }
     ],
-    "providerResumes": 0
+    "providerResumes": 0,
+    "review": {
+      "code_verdicts": {
+        "1": true,
+        "4": false,
+        "5": false,
+        "6": false
+      },
+      "checks": {
+        "1": "met",
+        "2": "met",
+        "3": "met",
+        "4": "n/a",
+        "5": "n/a",
+        "6": "n/a"
+      },
+      "findings": [
+        {
+          "existing_id": null,
+          "check": "2",
+          "title": "Harness asserts pull changed nothing despite simpler jump item replacement",
+          "what_went_wrong": "At 30.7s, the harness failed with an assertion error stating the pull changed nothing on screen, even though the tutor successfully pulled simpler_jump at 24.6s and the workspace recorded that an easier practice item replaced the item.",
+          "evidence": "24.7s LEVER PULLED by tutor: simpler_jump ... 30.7s JOURNEY FAILED: AssertionError('The pull changed nothing on screen')",
+          "layer": "harness",
+          "proposed_fix": "Update harness screen-change validation to recognize practice item replacement from simpler_jump as a valid visual workspace change."
+        }
+      ],
+      "queued": [
+        "LB-2"
+      ]
+    }
   },
   {
     "passed": false,
@@ -2175,7 +2205,37 @@
         }
       }
     ],
-    "providerResumes": 0
+    "providerResumes": 0,
+    "review": {
+      "code_verdicts": {
+        "1": false,
+        "4": null,
+        "5": null,
+        "6": null
+      },
+      "checks": {
+        "1": "missed",
+        "2": "n/a",
+        "3": "met",
+        "4": "n/a",
+        "5": "n/a",
+        "6": "n/a"
+      },
+      "findings": [
+        {
+          "existing_id": "LB-1",
+          "check": "1",
+          "title": "Tutor provided verbal help instead of pulling support lever",
+          "what_went_wrong": "After the learner failed the item and stated they were stuck at 22.2s, the tutor called begin_help and gave verbal counting prompts instead of pulling a visual screen lever.",
+          "evidence": "23.5s TUTOR TOOL: begin_help ... 36.2s JOURNEY FAILED: AssertionError('The tutor never pulled a lever')",
+          "layer": "tutor_instruction",
+          "proposed_fix": "Instruct tutors to activate an in-item visual support lever on the workspace when the learner indicates being stuck instead of relying on verbal hints."
+        }
+      ],
+      "queued": [
+        "LB-1"
+      ]
+    }
   },
   {
     "passed": true,
@@ -3745,6 +3805,24 @@
         }
       }
     ],
-    "providerResumes": 0
+    "providerResumes": 0,
+    "review": {
+      "code_verdicts": {
+        "1": true,
+        "4": true,
+        "5": true,
+        "6": true
+      },
+      "checks": {
+        "1": "met",
+        "2": "met",
+        "3": "met",
+        "4": "met",
+        "5": "met",
+        "6": "met"
+      },
+      "findings": [],
+      "queued": []
+    }
   }
 ]

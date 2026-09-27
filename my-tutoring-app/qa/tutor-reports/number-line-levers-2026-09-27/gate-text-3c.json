@@ -1567,7 +1567,25 @@
         }
       }
     ],
-    "providerResumes": 0
+    "providerResumes": 0,
+    "review": {
+      "code_verdicts": {
+        "1": true,
+        "4": true,
+        "5": true,
+        "6": true
+      },
+      "checks": {
+        "1": "met",
+        "2": "met",
+        "3": "met",
+        "4": "met",
+        "5": "met",
+        "6": "met"
+      },
+      "findings": [],
+      "queued": []
+    }
   },
   {
     "passed": false,
@@ -2665,7 +2683,37 @@
         }
       }
     ],
-    "providerResumes": 0
+    "providerResumes": 0,
+    "review": {
+      "code_verdicts": {
+        "1": false,
+        "4": null,
+        "5": null,
+        "6": null
+      },
+      "checks": {
+        "1": "missed",
+        "2": "n/a",
+        "3": "met",
+        "4": "n/a",
+        "5": "n/a",
+        "6": "n/a"
+      },
+      "findings": [
+        {
+          "existing_id": "LB-1",
+          "check": 1,
+          "title": "Tutor used begin_help and verbal coaching instead of screen lever",
+          "what_went_wrong": "After the learner answered incorrectly and stated they were stuck at 21.4s, the tutor called begin_help and gave verbal step-by-step instructions without pulling a workspace lever.",
+          "evidence": "23.1s TUTOR TOOL: begin_help ... 36.5s JOURNEY FAILED: AssertionError('The tutor never pulled a lever')",
+          "layer": "tutor_instruction",
+          "proposed_fix": "Instruct tutors to activate an in-item visual support lever on the workspace when the learner indicates being stuck instead of relying on verbal hints."
+        }
+      ],
+      "queued": [
+        "LB-1"
+      ]
+    }
   },
   {
     "passed": false,
@@ -3763,6 +3811,36 @@
         }
       }
     ],
-    "providerResumes": 0
+    "providerResumes": 0,
+    "review": {
+      "code_verdicts": {
+        "1": false,
+        "4": null,
+        "5": null,
+        "6": null
+      },
+      "checks": {
+        "1": "missed",
+        "2": "n/a",
+        "3": "met",
+        "4": "n/a",
+        "5": "n/a",
+        "6": "n/a"
+      },
+      "findings": [
+        {
+          "existing_id": "LB-1",
+          "check": "1",
+          "title": "Tutor gave verbal help instead of pulling an in-item lever",
+          "what_went_wrong": "After the learner answered incorrectly and stated they were stuck at 22.3s, the tutor called begin_help and coached verbally instead of pulling a workspace lever.",
+          "evidence": "23.9s TUTOR TOOL: begin_help ... 40.7s JOURNEY FAILED: AssertionError('The tutor never pulled a lever')",
+          "layer": "tutor_instruction",
+          "proposed_fix": "Instruct tutors to activate an in-item visual support lever on the workspace when the learner indicates being stuck instead of relying on verbal hints."
+        }
+      ],
+      "queued": [
+        "LB-1"
+      ]
+    }
   }
 ]
