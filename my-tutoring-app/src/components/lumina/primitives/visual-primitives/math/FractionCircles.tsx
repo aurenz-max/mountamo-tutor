@@ -554,13 +554,10 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
             <div className="flex justify-center">
               {renderFractionCircle(currentChallenge.numerator, currentChallenge.denominator, CIRCLE_SIZE)}
             </div>
-            {/* Count caption — withdrawn by support tier (undefined = legacy = show both) */}
-            {(currentChallenge.showTotalPieces !== false || currentChallenge.showWorkingCount !== false) && (
-              <p className="text-slate-300 text-sm">
-                {currentChallenge.showTotalPieces !== false && `${currentChallenge.denominator} equal pieces`}
-                {currentChallenge.showTotalPieces !== false && currentChallenge.showWorkingCount !== false && ', '}
-                {currentChallenge.showWorkingCount !== false && `${currentChallenge.numerator} shaded`}
-              </p>
+            {/* Total-pieces caption, withdrawn by support tier. Never the shaded count, whatever the data says:
+                counting the shaded slices is the task, and "N equal pieces, M shaded" is the answer written out. */}
+            {currentChallenge.showTotalPieces !== false && (
+              <p className="text-slate-300 text-sm">{`${currentChallenge.denominator} equal pieces`}</p>
             )}
             {/* Input */}
             <div className="flex items-center gap-3">

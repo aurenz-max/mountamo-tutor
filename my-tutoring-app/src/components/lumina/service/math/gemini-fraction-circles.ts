@@ -187,7 +187,7 @@ type FractionChallengeType = FractionCirclesChallenge['type'];
 interface SupportScaffold {
   /** identify: state the total-slice count ("N equal pieces"); build: show the denominator slice label */
   showTotalPieces: boolean;
-  /** running shaded/built tally readout (identify "M shaded", build & equivalent live count) */
+  /** running shaded/built tally readout (build & equivalent live count). Identify never shows its shaded count. */
   showWorkingCount: boolean;
   /** compare ONLY: numeric fraction labels under each circle and inside the choice buttons */
   showFractionLabels: boolean;
@@ -209,8 +209,10 @@ function resolveSupportStructure(type: FractionChallengeType, tier: SupportTier)
       return { showTotalPieces: false, showWorkingCount: false, showFractionLabels: false, promptLines: ['touch_fraction: no fraction labels or hints that identify the matching picture. Use proper fractions in halves, thirds, fourths only.'] };
     case 'identify':
       if (tier === 'easy')
-        return { showTotalPieces: true, showWorkingCount: true, showFractionLabels: true,
-          promptLines: ['identify: a caption states BOTH the total and shaded counts — keep the instruction warm and direct.'] };
+        // Never the shaded count: "N equal pieces, M shaded" is the answer written out. Easy and medium match
+        // until /add-support-tiers gives identify its levers (handoff 18 B2).
+        return { showTotalPieces: true, showWorkingCount: false, showFractionLabels: true,
+          promptLines: ['identify: only the TOTAL slice count is shown; the student counts the shaded slices. Hint may name the total but NOT the shaded count.'] };
       if (tier === 'medium')
         return { showTotalPieces: true, showWorkingCount: false, showFractionLabels: true,
           promptLines: ['identify: only the TOTAL slice count is shown; the student counts the shaded slices alone. Hint may name the total but NOT the shaded count.'] };

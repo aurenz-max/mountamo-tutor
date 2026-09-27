@@ -118,6 +118,20 @@ it('touch_fraction: the tutor is told the fraction to say, never which picture m
   expect(screen.queryByText('Say that again')).toBeNull();
 });
 
+it.each([
+  ['saved data with no tier flags', {}],
+  ['a working count switched on', { showTotalPieces: true, showWorkingCount: true }],
+])('identify never prints its shaded count (%s): counting the shaded slices is the task', (_, flags) => {
+  mount('identify', [{ ...challengeFor('identify'), ...flags }]);
+  expect(screen.getByText('4 equal pieces')).toBeTruthy();
+  expect(document.body.textContent).not.toMatch(/3 shaded/);
+});
+
+it('identify with the total withdrawn prints no count caption at all', () => {
+  mount('identify', [{ ...challengeFor('identify'), showTotalPieces: false, showWorkingCount: true }]);
+  expect(document.body.textContent).not.toMatch(/equal pieces|shaded,|\d shaded/);
+});
+
 it('compare: with labels withdrawn the fraction values stay off the packet too', () => {
   const h = mount('compare', [{ ...challengeFor('compare'), showFractionLabels: false }]);
   expect(JSON.stringify(h.state().task!.demand)).not.toMatch(/3\/4|1\/2/);

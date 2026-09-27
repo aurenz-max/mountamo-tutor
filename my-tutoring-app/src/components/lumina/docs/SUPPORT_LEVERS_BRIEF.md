@@ -82,7 +82,7 @@ The generation tier only sets where the levers start: easy starts with some pull
 
 | Defect | Evidence | Executor |
 |---|---|---|
-| fraction-circles identify, easy: caption states the answer | `gemini-fraction-circles.ts:206-244`, `FractionCircles.tsx:558-563` | `/eval-fix` |
+| ~~fraction-circles identify, easy: caption states the answer~~ FIXED 09-27: identify never prints its shaded count (component, whatever the data says; generator easy flag off). 22/22 generated identify items clean; identify easy and medium now match until levers land | `FractionCircles.tsx`, `gemini-fraction-circles.ts` | done |
 | ~~number-line jump, easy: the arc's arrowhead marks the landing~~ FIXED 09-27: the arc is replaced by the numbered-hops lever | `NumberLine.tsx`, `numberLineLevers.ts` | done (pilot) |
 | ~~number-line generator: jump starts outside the rendered range~~ FIXED 09-27 (`c952e0e0`) | `qa/eval-reports/number-line-display-range-2026-09-27.md` | done |
 | ~~Live journey reports PASS when the "correct" answer was never credited~~ FIXED 09-27: `credited()` asserted in the workspace and `--lever` journeys | `run_live_runtime.py` | done |
