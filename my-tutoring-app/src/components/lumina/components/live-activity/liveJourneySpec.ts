@@ -125,6 +125,7 @@ import { hundredsChartHarnessInputs } from '../../primitives/visual-primitives/m
 import { mathFactHarnessInputs } from '../../primitives/visual-primitives/math/mathFactFluencyWorkspace';
 import { equationBuilderHarnessInputs } from '../../primitives/visual-primitives/math/equationBuilderWorkspace';
 import { patternBuilderHarnessInputs } from '../../primitives/visual-primitives/math/patternBuilderWorkspace';
+import { strategyPickerHarnessInputs } from '../../primitives/visual-primitives/math/strategyPickerWorkspace';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -1715,6 +1716,26 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return patternBuilderHarnessInputs(ctx.data as never, c, intent === 'wrong');
     },
     probes: { mounted: { selector: '[data-pip-object="pattern"], [data-pip-object="build"]' } },
+  },
+  'strategy-picker': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/StrategyPicker.tsx',
+    instanceId: 'strategies',
+    defaults: { grade: 'Grade 1', mode: 'guided', di: false, topic: 'Addition strategies within 10: counting on, doubles and making ten' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'MATCH_CORRECT', 'MATCH_INCORRECT', 'COMPARE_COMPLETE',
+      'STRATEGY_CHOSEN', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: a menu strategy, the stepper's "One more", or an option tapped,
+    // then Check. Compare has no wrong answer, so its wrong phase throws. Derived from the mounted challenge.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current strategy-picker challenge');
+      // Try again keeps a choose item's menu pick; the scene publishes it.
+      const picked = typeof ctx.demand?.chosen === 'string' && ctx.demand.chosen !== 'none yet';
+      return strategyPickerHarnessInputs(c, intent === 'wrong', picked);
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
 };
 

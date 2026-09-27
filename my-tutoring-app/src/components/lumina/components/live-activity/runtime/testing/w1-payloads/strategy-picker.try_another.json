@@ -1,0 +1,96 @@
+{
+ "source": "qa/tutor-reports/strategy-picker-runtime-try_another-payload-2026-09-26.json",
+ "primitiveId": "strategy-picker",
+ "evalMode": "try_another",
+ "data": {
+  "title": "Strategy Toolbox",
+  "description": "Discover fun ways to solve addition problems within 10 using counting on, doubles, and making ten.",
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "try-another",
+    "instruction": "Let's try looking at this like two equal groups, like matching socks in a drawer!",
+    "problem": {
+     "equation": "4 + 4",
+     "operation": "addition",
+     "operand1": 4,
+     "operand2": 4,
+     "result": 8
+    },
+    "assignedStrategy": "doubles",
+    "strategySteps": [
+     "Picture two equal groups of four items, like 4 crayons in one hand and 4 crayons in the other.",
+     "Say the doubles fact out loud: 'Four plus four equals...'",
+     "Check your total by putting the two equal groups together."
+    ]
+   },
+   {
+    "id": "ch2",
+    "type": "try-another",
+    "instruction": "Let's see what make-ten feels like!",
+    "problem": {
+     "equation": "4 + 4",
+     "operation": "addition",
+     "operand1": 4,
+     "operand2": 4,
+     "result": 8
+    },
+    "assignedStrategy": "make-ten",
+    "strategySteps": [
+     "Look at your first number, 4, and figure out how many more you need to reach the magic number 10.",
+     "Take that needed amount away from the second 4, leaving a smaller leftover number behind.",
+     "Add your new friendly ten to the leftover number to find your final total."
+    ]
+   },
+   {
+    "id": "ch3",
+    "type": "try-another",
+    "instruction": "Let's use doubles to solve this! Think about seeing two identical groups of items.",
+    "problem": {
+     "equation": "4 + 4",
+     "operation": "addition",
+     "operand1": 4,
+     "operand2": 4,
+     "result": 8
+    },
+    "assignedStrategy": "doubles",
+    "strategySteps": [
+     "Visualize two groups with the exact same number of items, like two hands with four fingers each.",
+     "Say the doubles fact out loud to yourself, like 'four plus four is...'.",
+     "Think of a twin story where both sides match perfectly to find your total."
+    ]
+   },
+   {
+    "id": "ch4",
+    "type": "try-another",
+    "instruction": "Let's try counting-on to solve this! Instead of doubles, let's start with the bigger number and count up.",
+    "problem": {
+     "equation": "2 + 2",
+     "operation": "addition",
+     "operand1": 2,
+     "operand2": 2,
+     "result": 4
+    },
+    "assignedStrategy": "counting-on",
+    "strategySteps": [
+     "Look at the problem 2 + 2 and find the first number.",
+     "Say that number out loud and hold it in your head.",
+     "Count forward on your fingers by the second number to find your total."
+    ]
+   }
+  ],
+  "maxNumber": 10,
+  "operations": [
+   "addition",
+   "subtraction"
+  ],
+  "strategiesIntroduced": [
+   "counting-on",
+   "counting-back",
+   "make-ten",
+   "doubles",
+   "tally-marks"
+  ],
+  "gradeBand": "1"
+ }
+}

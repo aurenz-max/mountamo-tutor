@@ -1,0 +1,100 @@
+{
+ "source": "qa/tutor-reports/strategy-picker-runtime-match-payload-2026-09-26.json",
+ "primitiveId": "strategy-picker",
+ "evalMode": "match",
+ "data": {
+  "title": "Super Strategy Math Lab!",
+  "description": "Discover fun tricks like counting on, doubles, and making ten to solve addition problems within 10 like a math superhero.",
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "match-strategy",
+    "instruction": "Someone already solved this addition problem. Which strategy did they use?",
+    "problem": {
+     "equation": "1 + 9",
+     "operation": "addition",
+     "operand1": 1,
+     "operand2": 9,
+     "result": 10
+    },
+    "workedSolution": "I drew one straight line for the first number, and then I drew nine straight lines right next to it. Finally, I counted all of the lines together to get the total of ten.",
+    "strategyOptions": [
+     "tally-marks",
+     "make-ten",
+     "counting-on"
+    ],
+    "correctStrategy": "tally-marks"
+   },
+   {
+    "id": "ch2",
+    "type": "match-strategy",
+    "instruction": "Someone already solved this addition problem. Which strategy did they use?",
+    "problem": {
+     "equation": "4 + 5",
+     "operation": "addition",
+     "operand1": 4,
+     "operand2": 5,
+     "result": 9
+    },
+    "workedSolution": "I took 1 away from the 5 and gave it to the 4 to make a 10. Then, I just added the remaining 4 to get 9.",
+    "strategyOptions": [
+     "counting-on",
+     "make-ten",
+     "tally-marks"
+    ],
+    "correctStrategy": "make-ten"
+   },
+   {
+    "id": "ch3",
+    "type": "match-strategy",
+    "instruction": "Someone already solved this addition problem. Look at their steps. Which strategy did they use?",
+    "problem": {
+     "equation": "5 + 5",
+     "operation": "addition",
+     "operand1": 5,
+     "operand2": 5,
+     "result": 10
+    },
+    "workedSolution": "I know that 5 plus 5 makes 10 because both numbers are the exact same size. Since I already memorized that fact, I wrote down 10 right away.",
+    "strategyOptions": [
+     "doubles",
+     "make-ten",
+     "tally-marks"
+    ],
+    "correctStrategy": "doubles"
+   },
+   {
+    "id": "ch4",
+    "type": "match-strategy",
+    "instruction": "Someone already solved this subtraction problem. Which strategy did they use?",
+    "problem": {
+     "equation": "10 - 8",
+     "operation": "subtraction",
+     "operand1": 10,
+     "operand2": 8,
+     "result": 2
+    },
+    "workedSolution": "I started at 10 and hopped backward 8 times on the number line. As I went down, I landed on 9, 8, 7, 6, 5, 4, 3, and finally 2.",
+    "strategyOptions": [
+     "make-ten",
+     "doubles",
+     "counting-back"
+    ],
+    "correctStrategy": "counting-back"
+   }
+  ],
+  "maxNumber": 10,
+  "operations": [
+   "addition",
+   "subtraction"
+  ],
+  "strategiesIntroduced": [
+   "counting-on",
+   "counting-back",
+   "make-ten",
+   "doubles",
+   "tally-marks"
+  ],
+  "gradeBand": "1"
+ }
+}

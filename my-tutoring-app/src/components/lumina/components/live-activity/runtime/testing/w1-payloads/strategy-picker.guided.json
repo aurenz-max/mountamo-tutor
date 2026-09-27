@@ -1,0 +1,97 @@
+{
+ "source": "qa/tutor-reports/strategy-picker-runtime-guided-payload-2026-09-26.json",
+ "primitiveId": "strategy-picker",
+ "evalMode": "guided",
+ "data": {
+  "title": "Super Strategy Math Toolbox!",
+  "description": "Discover fun ways to solve addition problems within 10 using counting on, doubles, and making ten.",
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "guided-strategy",
+    "instruction": "Let's solve this using tally-marks! Draw tally marks for each group to see how many we have in total.",
+    "problem": {
+     "equation": "5 + 5",
+     "operation": "addition",
+     "operand1": 5,
+     "operand2": 5,
+     "result": 10
+    },
+    "assignedStrategy": "tally-marks",
+    "strategySteps": [
+     "Draw 5 tally marks for the first number.",
+     "Draw 5 more tally marks right next to them for the second number.",
+     "Count all the tally marks together to find your total."
+    ]
+   },
+   {
+    "id": "ch2",
+    "type": "guided-strategy",
+    "instruction": "Let's use the make-ten strategy! Look at the bigger number and figure out how much more it needs to make 10.",
+    "problem": {
+     "equation": "2 + 6",
+     "operation": "addition",
+     "operand1": 2,
+     "operand2": 6,
+     "result": 8
+    },
+    "assignedStrategy": "make-ten",
+    "strategySteps": [
+     "Start with the bigger number, 6.",
+     "Ask yourself: how many more do we need to add to 6 to make a friendly 10?",
+     "Take that amount away from the number 2, and add it to 6 to make 10.",
+     "Add whatever is left over from 2 to your new 10 to find the final total!"
+    ]
+   },
+   {
+    "id": "ch3",
+    "type": "guided-strategy",
+    "instruction": "Let's solve this like magic using doubles! Notice how both numbers are the same.",
+    "problem": {
+     "equation": "5 + 5",
+     "operation": "addition",
+     "operand1": 5,
+     "operand2": 5,
+     "result": 10
+    },
+    "assignedStrategy": "doubles",
+    "strategySteps": [
+     "Look at the numbers in the problem. Are they both the same number?",
+     "Think of your special doubles facts that you already know by heart.",
+     "Put the two equal parts together to find your final total."
+    ]
+   },
+   {
+    "id": "ch4",
+    "type": "guided-strategy",
+    "instruction": "Let's solve this by counting on! Find the bigger number and start there.",
+    "problem": {
+     "equation": "2 + 5",
+     "operation": "addition",
+     "operand1": 2,
+     "operand2": 5,
+     "result": 7
+    },
+    "assignedStrategy": "counting-on",
+    "strategySteps": [
+     "Look at the numbers 2 and 5. Which number is bigger?",
+     "Start at that bigger number in your head.",
+     "Count up by the smaller number step by step. What number do you land on last?"
+    ]
+   }
+  ],
+  "maxNumber": 10,
+  "operations": [
+   "addition",
+   "subtraction"
+  ],
+  "strategiesIntroduced": [
+   "counting-on",
+   "counting-back",
+   "make-ten",
+   "doubles",
+   "tally-marks"
+  ],
+  "gradeBand": "1"
+ }
+}

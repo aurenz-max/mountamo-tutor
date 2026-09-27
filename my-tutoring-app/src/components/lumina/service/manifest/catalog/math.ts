@@ -4548,6 +4548,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'The picker checks the learner’s answer itself when they press Check, and you are not told the answer: the '
+        + 'learner sets a number with the − and + buttons after following a strategy picture, taps a strategy from the menu '
+        + 'first when asked to choose, taps the strategy a worked solution used, or answers a compare question by tapping. '
+        + 'The learner may not read well: say the instruction, the problem and any steps in your own words first. Before the '
+        + 'learner has checked, never say the answer or where a picture ends; on a match item never name the strategy the '
+        + 'solution used. Coach only as far as the support tier allows. A compare item has no wrong answer: ask why they '
+        + 'chose. You cannot press a button for the learner.',
+    },
     evalModes: [
       {
         evalMode: 'guided',

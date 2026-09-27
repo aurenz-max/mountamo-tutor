@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { Button } from '@/components/ui/button';
 import {
   LuminaCard,
@@ -16,8 +17,13 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { StrategyPickerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  BOTH_SAME, CHECK_LABEL, STEP_DOWN, STEP_UP, describeStrategyPickerCheck, menuLabel, optionLabel, strategyLabel,
+  strategyPickerAssignment, strategyPickerMatches, strategyPickerScene, type StrategyPickerView,
+} from './strategyPickerWorkspace';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -469,36 +475,6 @@ function StrategyDescriptionList({
   );
 }
 
-/**
- * Tier-aware tutor reveal clause. Calibrates how much the AI tutor may say.
- *
- * RECOGNITION RULE: for match-strategy the strategy IS the assessed answer, so
- * the tutor NEVER names the correct strategy at ANY tier — at easy it describes
- * what features to look for; at hard it only asks what the student notices.
- * For solve modes (guided/try-another/choose) the assigned strategy is given,
- * so the tutor may walk the setup at easy and only nudge execution at hard;
- * it never states the numeric answer at any tier.
- */
-function tutorRevealClause(
-  challengeType: ChallengeType,
-  tier?: 'easy' | 'medium' | 'hard',
-): string {
-  if (!tier) return '';
-  const isRecognition = challengeType === 'match-strategy';
-  if (isRecognition) {
-    // NEVER name the correct strategy — the recognition IS the task.
-    if (tier === 'easy')
-      return ' [TIER easy] Do NOT name the strategy. Describe the FEATURES to look for in the worked solution (number line hops? a ten frame? equal groups? tally marks?) and let the student match.';
-    if (tier === 'medium')
-      return ' [TIER medium] Do NOT name the strategy. Point the student back to one telling detail in the worked solution and ask what it suggests.';
-    return ' [TIER hard] Do NOT name or hint the strategy. Only ask what the student notices in the worked solution; let them discriminate cold.';
-  }
-  if (tier === 'easy')
-    return ' [TIER easy] You may name the assigned strategy and walk the setup step by step, but never state the final number.';
-  if (tier === 'medium')
-    return ' [TIER medium] Nudge execution of the assigned strategy only; do not re-explain it from scratch and never state the answer.';
-  return ' [TIER hard] Offer minimal prose: ask what the student sees in the visualization; do not re-teach the strategy and never state the answer.';
-}
 
 // ============================================================================
 // Component
@@ -507,9 +483,14 @@ function tutorRevealClause(
 interface StrategyPickerProps {
   data: StrategyPickerData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
-const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
+const useStrategyPickerProgress = useWorkspaceProgressFor('strategy-picker');
+
+function StrategyPickerSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: StrategyPickerProps) {
   const {
     title,
     description,
@@ -525,9 +506,23 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const stableInstanceIdRef = useRef(instanceId || `strategy-picker-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  /** Bound after the state it clears is declared; the progress hook calls it only after render. */
+  const reopen = useRef<() => void>(() => {});
+
   // -------------------------------------------------------------------------
-  // Shared Hooks
+  // Challenge progress: the teaching workspace owns it
   // -------------------------------------------------------------------------
+  const progress = useStrategyPickerProgress({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || 'mixed', workspace, assignment: strategyPickerAssignment,
+    onItemOpened: () => reopen.current(),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
@@ -535,8 +530,8 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
     isComplete: allChallengesComplete,
     recordResult,
     incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+  } = progress;
+  const canAttempt = progress.canAttempt !== false;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -550,7 +545,9 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
   // State
   // -------------------------------------------------------------------------
   const [answerInput, setAnswerInput] = useState('');
-  const [chosenStrategy, setChosenStrategy] = useState<StrategyId | null>(null);
+  // The menu choice belongs to its challenge, so a fresh challenge reads none during render (the
+  // scene publishes it) and Try again keeps it: only the number is rejected.
+  const [chosen, setChosen] = useState<{ challengeId: string; strategy: StrategyId } | null>(null);
   const [matchSelection, setMatchSelection] = useState<string | null>(null);
   const [compareAnswer, setCompareAnswer] = useState<string | null>(null);
   const [hopsRevealed, setHopsRevealed] = useState(0);
@@ -558,10 +555,17 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
   const [strategiesUsed, setStrategiesUsed] = useState<Set<string>>(new Set());
 
-  const stableInstanceIdRef = useRef(instanceId || `strategy-picker-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
   const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  const chosenStrategy = chosen && chosen.challengeId === currentChallenge?.id ? chosen.strategy : null;
+
+  // A fresh challenge, or the same one after Try again, starts with no number or pick.
+  reopen.current = () => {
+    setAnswerInput('');
+    setMatchSelection(null);
+    setCompareAnswer(null);
+    setFeedback('');
+    setFeedbackType('');
+  };
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -580,51 +584,6 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
     exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
-
-  // -------------------------------------------------------------------------
-  // AI Tutoring
-  // -------------------------------------------------------------------------
-  const activeTier = currentChallenge?.supportTier ?? supportTier;
-
-  const aiPrimitiveData = useMemo(() => ({
-    gradeBand,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    challengeType: currentChallenge?.type ?? 'guided-strategy',
-    equation: currentChallenge?.problem?.equation ?? '',
-    assignedStrategy: currentChallenge?.assignedStrategy ?? chosenStrategy ?? '',
-    strategySteps: currentChallenge?.strategySteps ?? [],
-    attemptNumber: currentAttempts + 1,
-    chosenStrategy: chosenStrategy ?? '',
-    strategiesCompleted: Array.from(strategiesUsed),
-    studentAnswer: answerInput || matchSelection || compareAnswer || '',
-    supportTier: currentChallenge?.supportTier ?? supportTier ?? '',
-  }), [
-    gradeBand, challenges.length, currentChallengeIndex, currentChallenge,
-    currentAttempts, chosenStrategy, strategiesUsed, answerInput, matchSelection, compareAnswer,
-    supportTier,
-  ]);
-
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'strategy-picker',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
-  });
-
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Strategy Picker for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
-      + `${challenges.length} challenges. Strategies: ${strategiesIntroduced.join(', ')}. `
-      + `First challenge: "${currentChallenge?.instruction}". `
-      + `Introduce warmly: "Today we'll solve problems in different ways! Let's see how many strategies you can use."`,
-      { silent: true }
-    );
-  }, [isConnected, challenges.length, gradeBand, strategiesIntroduced, currentChallenge, sendText]);
 
   // Animate number line hops for counting strategies
   useEffect(() => {
@@ -645,183 +604,113 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
     return () => clearInterval(timer);
   }, [currentChallengeIndex, currentChallenge, chosenStrategy]);
 
-  // -------------------------------------------------------------------------
-  // Check Answer
-  // -------------------------------------------------------------------------
-  const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge) return;
-    incrementAttempts();
-    const { type, problem } = currentChallenge;
-
-    if (type === 'guided-strategy' || type === 'try-another' || type === 'choose-your-strategy') {
-      const answer = parseInt(answerInput, 10);
-      const correct = answer === problem.result;
-
-      if (correct) {
-        SoundManager.playCorrect();
-        const strat = currentChallenge.assignedStrategy ?? chosenStrategy ?? 'unknown';
-        setFeedback(`Correct! ${problem.equation.replace('?', String(problem.result))}`);
-        setFeedbackType('success');
-        setStrategiesUsed(prev => new Set(prev).add(strat));
-        sendText(
-          `[ANSWER_CORRECT] Student solved ${problem.equation} = ${problem.result} using ${strat}. `
-          + `Attempt ${currentAttempts + 1}. Celebrate: "You got it using ${STRATEGY_INFO[strat as StrategyId]?.label ?? strat}!"`,
-          { silent: true }
-        );
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: true,
-          attempts: currentAttempts + 1,
-          strategyUsed: strat,
-        });
-      } else {
-        SoundManager.playIncorrect();
-        setFeedback(`Not quite. Try again!`);
-        setFeedbackType('error');
-        sendText(
-          `[ANSWER_INCORRECT] Student answered ${answer} for ${problem.equation}, correct is ${problem.result}. `
-          + `Strategy: ${currentChallenge.assignedStrategy ?? chosenStrategy}. Attempt ${currentAttempts + 1}. Give a hint.`
-          + tutorRevealClause(currentChallenge.type, currentChallenge.supportTier ?? supportTier),
-          { silent: true }
-        );
-      }
-    } else if (type === 'compare') {
-      // Compare always counts as correct (metacognitive reflection)
-      if (!compareAnswer) return;
-      SoundManager.playCorrect();
-      setFeedback('Great thinking! Both strategies give the same answer.');
-      setFeedbackType('success');
-      sendText(
-        `[COMPARE_COMPLETE] Student chose "${compareAnswer}" for comparison question. `
-        + `Ask "Which felt easier?" — there's no wrong answer.`,
-        { silent: true }
-      );
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-        compareChoice: compareAnswer,
-      });
-    } else if (type === 'match-strategy') {
-      const correct = matchSelection === currentChallenge.correctStrategy;
-      if (correct) {
-        SoundManager.playCorrect();
-        setFeedback(`Yes! That's ${STRATEGY_INFO[matchSelection as StrategyId]?.label ?? matchSelection}!`);
-        setFeedbackType('success');
-        sendText(
-          `[MATCH_CORRECT] Student correctly identified the strategy as "${matchSelection}". Celebrate briefly.`,
-          { silent: true }
-        );
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: true,
-          attempts: currentAttempts + 1,
-        });
-      } else {
-        SoundManager.playIncorrect();
-        setFeedback(`Not quite — look at the steps again.`);
-        setFeedbackType('error');
-        sendText(
-          `[MATCH_INCORRECT] Student picked "${matchSelection}" (correct strategy withheld — this is a recognition task; do NOT reveal it). `
-          + `Help the student look harder at the worked solution to tell the options apart.`
-          + tutorRevealClause('match-strategy', currentChallenge.supportTier ?? supportTier),
-          { silent: true }
-        );
-      }
-    }
-  }, [currentChallenge, answerInput, compareAnswer, matchSelection, chosenStrategy,
-      currentAttempts, incrementAttempts, recordResult, sendText, supportTier]);
-
-  // -------------------------------------------------------------------------
-  // Advance
-  // -------------------------------------------------------------------------
-  const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All complete
-      const phaseScoreStr = phaseResults
-        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const overallPct = Math.round(
-        (challengeResults.filter(r => r.correct).length / challenges.length) * 100
-      );
-
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Strategies used: ${Array.from(strategiesUsed).join(', ')}. `
-        + `Celebrate flexibility: "You solved problems ${strategiesUsed.size} different ways!"`,
-        { silent: true }
-      );
-
-      if (!hasSubmittedEvaluation) {
-        const correct = challengeResults.filter(r => r.correct).length;
-        const score = Math.round((correct / challenges.length) * 100);
-        const metrics: StrategyPickerMetrics = {
-          type: 'strategy-picker',
-          accuracy: score,
-          strategiesUsed: Array.from(strategiesUsed),
-          strategyFlexibility: strategiesUsed.size >= 2,
-          comparisonCompleted: challengeResults.some(r =>
-            challenges.find(c => c.id === r.challengeId)?.type === 'compare' && r.correct
-          ),
-          attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
-        };
-        submitEvaluation(correct === challenges.length, score, metrics, { challengeResults });
-      }
-      return;
-    }
-
-    // Reset state
-    setAnswerInput('');
-    setChosenStrategy(null);
-    setMatchSelection(null);
-    setCompareAnswer(null);
-    setFeedback('');
-    setFeedbackType('');
-
-    const next = challenges[currentChallengeIndex + 1];
-    sendText(
-      `[NEXT_ITEM] Challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `"${next.instruction}" (${next.type}). Introduce it briefly.`,
-      { silent: true }
-    );
-  }, [advanceProgress, phaseResults, challenges, challengeResults, sendText,
-      hasSubmittedEvaluation, strategiesUsed, submitEvaluation, currentChallengeIndex]);
-
-  // Auto-submit on completion
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      advanceToNextChallenge();
-    }
-  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
-
-  // -------------------------------------------------------------------------
-  // Computed
-  // -------------------------------------------------------------------------
   const isCurrentChallengeComplete = challengeResults.some(
     r => r.challengeId === currentChallenge?.id && r.correct
   );
 
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challenges.length === 0) return 0;
-    return Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100);
-  }, [allChallengesComplete, challenges, challengeResults]);
-
-  const activeStrategy = currentChallenge?.assignedStrategy ?? chosenStrategy;
+  /** Learner input is closed while a checked answer waits for Try again, and once the challenge is solved. */
+  const learnerBlocked = () => !canAttempt || isCurrentChallengeComplete || hasSubmittedEvaluation || allChallengesComplete;
 
   // -------------------------------------------------------------------------
   // Check button disabled logic
   // -------------------------------------------------------------------------
   const isCheckDisabled = useMemo(() => {
-    if (!currentChallenge || hasSubmittedEvaluation) return true;
+    if (!currentChallenge || hasSubmittedEvaluation || !canAttempt) return true;
     const { type } = currentChallenge;
     if (type === 'guided-strategy' || type === 'try-another') return !answerInput;
     if (type === 'choose-your-strategy') return !chosenStrategy || !answerInput;
     if (type === 'compare') return !compareAnswer;
     if (type === 'match-strategy') return !matchSelection;
     return false;
-  }, [currentChallenge, hasSubmittedEvaluation, answerInput, chosenStrategy, compareAnswer, matchSelection]);
+  }, [currentChallenge, hasSubmittedEvaluation, canAttempt, answerInput, chosenStrategy, compareAnswer, matchSelection]);
+
+  // -------------------------------------------------------------------------
+  // Every Check: the picker's own verdict, committed to the workspace
+  // -------------------------------------------------------------------------
+  const view: StrategyPickerView = { answer: answerInput, chosen: chosenStrategy, match: matchSelection, compare: compareAnswer };
+
+  const handleCheckAnswer = () => {
+    if (!currentChallenge || isCheckDisabled || learnerBlocked()) return;
+    incrementAttempts();
+    const { type, problem } = currentChallenge;
+    const correct = strategyPickerMatches(currentChallenge, view);
+
+    if (correct) {
+      SoundManager.playCorrect();
+      setFeedbackType('success');
+      if (type === 'match-strategy') {
+        setFeedback(`Yes! That's ${strategyLabel(matchSelection ?? '')}!`);
+      } else if (type === 'compare') {
+        // Compare is a reflection: every choice counts.
+        setFeedback('Great thinking! Both strategies give the same answer.');
+      } else {
+        const strat = currentChallenge.assignedStrategy ?? chosenStrategy ?? 'unknown';
+        // The generator prints the equation without "= ?" ("2 + 5"); both forms read as a whole fact.
+        setFeedback(`Correct! ${problem.equation.includes('?')
+          ? problem.equation.replace('?', String(problem.result)) : `${problem.equation} = ${problem.result}`}`);
+        setStrategiesUsed(prev => new Set(prev).add(strat));
+      }
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        attempts: currentAttempts + 1,
+        ...(type === 'compare' ? { compareChoice: compareAnswer } : {}),
+        ...(type !== 'compare' && type !== 'match-strategy'
+          ? { strategyUsed: currentChallenge.assignedStrategy ?? chosenStrategy ?? 'unknown' } : {}),
+      });
+    } else {
+      SoundManager.playIncorrect();
+      setFeedbackType('error');
+      setFeedback(type === 'match-strategy' ? 'Not quite — look at the steps again.' : 'Not quite. Try again!');
+    }
+    progress.commitCheck?.(describeStrategyPickerCheck(currentChallenge, view), correct);
+  };
+
+  // -------------------------------------------------------------------------
+  // Completion: the runtime advances; once every challenge is solved, submit once
+  // -------------------------------------------------------------------------
+  const hasAutoSubmittedRef = useRef(false);
+  useEffect(() => {
+    if (!allChallengesComplete || hasSubmittedEvaluation || hasAutoSubmittedRef.current) return;
+    // The live host has no evaluation provider; a workspace family submits only under one.
+    if (progress.recordsEvaluation === false) return;
+    hasAutoSubmittedRef.current = true;
+    const correct = challengeResults.filter(r => r.correct).length;
+    const score = Math.round((correct / challenges.length) * 100);
+    const metrics: StrategyPickerMetrics = {
+      type: 'strategy-picker',
+      accuracy: score,
+      strategiesUsed: Array.from(strategiesUsed),
+      strategyFlexibility: strategiesUsed.size >= 2,
+      comparisonCompleted: challengeResults.some(r =>
+        challenges.find(c => c.id === r.challengeId)?.type === 'compare' && r.correct
+      ),
+      attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
+    };
+    submitEvaluation(correct === challenges.length, score, metrics, { challengeResults });
+  }, [allChallengesComplete, hasSubmittedEvaluation, progress.recordsEvaluation, challengeResults, challenges,
+      strategiesUsed, submitEvaluation]);
+
+  // What the tutor and the observer are shown, republished every render. Derived from the challenge and
+  // the menu choice alone, so opening an item adds no revision after the advance.
+  useLayoutEffect(() => {
+    if (!currentChallenge) return;
+    workspace.current = { ...strategyPickerScene(currentChallenge, { chosen: chosenStrategy, supportTier }, strategiesIntroduced),
+      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {},
+      clearPresentation: () => {} };
+    progress.publishWorkspace?.();
+  });
+
+  // -------------------------------------------------------------------------
+  // Computed
+  // -------------------------------------------------------------------------
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || challenges.length === 0) return 0;
+    return Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100);
+  }, [allChallengesComplete, challenges, challengeResults]);
+
+  const activeStrategy = currentChallenge?.assignedStrategy ?? chosenStrategy;
+  const blocked = learnerBlocked();
 
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this challenge's check state, the tutor's speech on it, and
@@ -832,7 +721,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
     scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
     label: 'The strategy workspace',
     solved: isCurrentChallengeComplete,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+    tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
   });
 
   // -------------------------------------------------------------------------
@@ -991,16 +880,13 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                     <Button
                       key={strat}
                       variant="ghost"
+                      aria-label={menuLabel(strat)}
+                      disabled={blocked}
                       className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 h-auto py-3 flex flex-col gap-1"
                       onClick={() => {
+                        if (learnerBlocked()) return;
                         SoundManager.select();
-                        setChosenStrategy(strat);
-                        sendText(
-                          `[STRATEGY_CHOSEN] Student chose "${info.label}" for ${currentChallenge.problem.equation}. `
-                          + `Encourage: "Great choice! Let's use ${info.label} to solve this."`
-                          + tutorRevealClause('choose-your-strategy', currentChallenge.supportTier ?? supportTier),
-                          { silent: true }
-                        );
+                        setChosen({ challengeId: currentChallenge.id, strategy: strat });
                       }}
                     >
                       <span className="text-xl">{info.icon}</span>
@@ -1039,12 +925,14 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                     <Button
                       key={opt}
                       variant="ghost"
+                      aria-label={optionLabel(opt)}
+                      disabled={blocked}
                       className={`border text-sm ${
                         matchSelection === opt
                           ? 'bg-cyan-500/20 border-cyan-400/50 text-cyan-300'
                           : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                       }`}
-                      onClick={() => { SoundManager.select(); setMatchSelection(opt); }}
+                      onClick={() => { if (learnerBlocked()) return; SoundManager.select(); setMatchSelection(opt); }}
                     >
                       {STRATEGY_INFO[opt as StrategyId]?.icon ?? '?'}{' '}
                       {STRATEGY_INFO[opt as StrategyId]?.label ?? opt}
@@ -1061,31 +949,22 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                   {currentChallenge.comparisonQuestion}
                 </p>
                 <div className="flex gap-2 justify-center">
-                  {(currentChallenge.strategies ?? []).map((strat) => (
+                  {[...(currentChallenge.strategies ?? []), BOTH_SAME].map((strat) => (
                     <Button
                       key={strat}
                       variant="ghost"
+                      aria-label={optionLabel(strat)}
+                      disabled={blocked}
                       className={`border text-sm ${
                         compareAnswer === strat
                           ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
                           : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                       }`}
-                      onClick={() => { SoundManager.select(); setCompareAnswer(strat); }}
+                      onClick={() => { if (learnerBlocked()) return; SoundManager.select(); setCompareAnswer(strat); }}
                     >
-                      {STRATEGY_INFO[strat as StrategyId]?.label ?? strat}
+                      {optionLabel(strat)}
                     </Button>
                   ))}
-                  <Button
-                    variant="ghost"
-                    className={`border text-sm ${
-                      compareAnswer === 'both-same'
-                        ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
-                        : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
-                    }`}
-                    onClick={() => { SoundManager.select(); setCompareAnswer('both-same'); }}
-                  >
-                    Both the same
-                  </Button>
                 </div>
               </div>
             )}
@@ -1100,9 +979,14 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                 <div className="flex items-center gap-1">
                   <Button
                     variant="ghost"
+                    aria-label={STEP_DOWN}
                     className="w-11 h-11 rounded-full bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-xl font-medium p-0"
-                    onClick={() => { SoundManager.tick(); setAnswerInput(String(Math.max(0, (parseInt(answerInput, 10) || 0) - 1))); }}
-                    disabled={!answerInput || parseInt(answerInput, 10) <= 0}
+                    onClick={() => {
+                      if (learnerBlocked()) return;
+                      SoundManager.tick();
+                      setAnswerInput(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1)));
+                    }}
+                    disabled={blocked || !answerInput || parseInt(answerInput, 10) <= 0}
                   >
                     −
                   </Button>
@@ -1113,8 +997,14 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                   </div>
                   <Button
                     variant="ghost"
+                    aria-label={STEP_UP}
                     className="w-11 h-11 rounded-full bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-xl font-medium p-0"
-                    onClick={() => { SoundManager.tick(); setAnswerInput(String(Math.min(20, (parseInt(answerInput, 10) || 0) + 1))); }}
+                    onClick={() => {
+                      if (learnerBlocked()) return;
+                      SoundManager.tick();
+                      setAnswerInput(prev => String(Math.min(20, (parseInt(prev, 10) || 0) + 1)));
+                    }}
+                    disabled={blocked}
                   >
                     +
                   </Button>
@@ -1134,7 +1024,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Action Buttons */}
+        {/* Check; the runtime advances (no Next button) */}
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && !allChallengesComplete && (
@@ -1142,14 +1032,8 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                 action="check"
                 onClick={handleCheckAnswer}
                 disabled={isCheckDisabled}
-              />
-            )}
-            {isCurrentChallengeComplete && !allChallengesComplete && (
-              <LuminaActionButton
-                action="next"
-                onClick={advanceToNextChallenge}
               >
-                Next Challenge
+                {CHECK_LABEL}
               </LuminaActionButton>
             )}
             {allChallengesComplete && (
@@ -1164,8 +1048,8 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Hint */}
-        {currentChallenge?.strategySteps && feedbackType === 'error' && currentAttempts >= 2 && (
+        {/* Hint: stays up through Try again after two misses */}
+        {currentChallenge?.strategySteps && !isCurrentChallengeComplete && !allChallengesComplete && currentAttempts >= 2 && (
           <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">
               Follow the steps above carefully — each step brings you closer to the answer.
@@ -1187,6 +1071,9 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
       </LuminaCardContent>
     </LuminaCard>
   );
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const StrategyPicker = withWorkspaceOnly<StrategyPickerProps>('strategy-picker', StrategyPickerSurface, props => props.data.title);
 
 export default StrategyPicker;

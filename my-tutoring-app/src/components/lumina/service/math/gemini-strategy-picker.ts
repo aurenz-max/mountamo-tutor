@@ -492,7 +492,7 @@ const guidedSchema: Schema = {
   properties: {
     instruction: {
       type: Type.STRING,
-      description: "Warm instruction like 'Let\\'s solve this by counting on! Start from the bigger number.'",
+      description: "Warm instruction like: Let's solve this by counting on! Start from the bigger number.",
     },
     strategySteps: {
       type: Type.ARRAY,
@@ -524,7 +524,7 @@ const compareSchema: Schema = {
   properties: {
     instruction: {
       type: Type.STRING,
-      description: "Instruction like 'You solved it two ways! Let\\'s compare.'",
+      description: "Instruction like: You solved it two ways! Let's compare.",
     },
     comparisonQuestion: {
       type: Type.STRING,
@@ -758,9 +758,10 @@ function fallbackMatchContent(p: Problem, strat: StrategyId) {
     'counting-on': `I started at ${p.operand1} and counted up ${p.operand2} more on my fingers. I landed on ${result}.`,
     'counting-back': `I started at ${p.operand1} and counted back ${p.operand2}. I landed on ${result}.`,
     'make-ten': `I split ${p.operand2} to fill up to 10 first, then added the rest to get ${result}.`,
-    'doubles': `I noticed both numbers are the same! I used my doubles fact to get ${result}.`,
-    'near-doubles': `I used a doubles fact I know, then added 1 more to get ${result}.`,
-    'tally-marks': `I drew ${p.operand1} tally marks, then ${p.operand2} more. I counted them all and got ${result}.`,
+    // Never the strategy's own name: the option labels are "Doubles", "Near Doubles", "Tally Marks".
+    'doubles': `I noticed both numbers are the same, and I already knew that fact: ${result}.`,
+    'near-doubles': `I thought of the fact with two ${Math.min(p.operand1, p.operand2)}s, which I already knew, then added 1 more to get ${result}.`,
+    'tally-marks': `I drew ${p.operand1} little lines, then ${p.operand2} more lines. I counted all the lines and got ${result}.`,
     'draw-objects': `I drew ${p.operand1} circles, then ${p.operand2} more. I counted them all and got ${result}.`,
   };
   return {
@@ -846,6 +847,13 @@ function buildMatchOptions(
     for (const s of globalOrdered) {
       if (options.length >= targetCount) break;
       if (!options.includes(s) && strategyMatchesProblem(s, problem)) options.push(s);
+    }
+    // A subtraction problem fits only counting-back, which left a one-button "choice" that is the
+    // answer. The task is to read the worked solution, so a foil that does not fit the problem
+    // (counting on beside counting back) is still a real choice.
+    for (const s of globalOrdered) {
+      if (options.length >= targetCount) break;
+      if (!options.includes(s)) options.push(s);
     }
   }
   return shuffleInPlace(options);

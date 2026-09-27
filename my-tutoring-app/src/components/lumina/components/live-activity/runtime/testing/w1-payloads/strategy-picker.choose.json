@@ -1,0 +1,85 @@
+{
+ "source": "qa/tutor-reports/strategy-picker-runtime-choose-payload-2026-09-26.json",
+ "primitiveId": "strategy-picker",
+ "evalMode": "choose",
+ "data": {
+  "title": "Super Strategy Math Toolkit!",
+  "description": "Master adding within 10 by practicing counting on, doubles, and making ten.",
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "choose-your-strategy",
+    "instruction": "Pick any strategy you like to solve this!",
+    "problem": {
+     "equation": "8 - 5",
+     "operation": "subtraction",
+     "operand1": 8,
+     "operand2": 5,
+     "result": 3
+    },
+    "availableStrategies": [
+     "counting-back"
+    ]
+   },
+   {
+    "id": "ch2",
+    "type": "choose-your-strategy",
+    "instruction": "Pick any strategy you like to solve this!",
+    "problem": {
+     "equation": "7 - 6",
+     "operation": "subtraction",
+     "operand1": 7,
+     "operand2": 6,
+     "result": 1
+    },
+    "availableStrategies": [
+     "counting-back"
+    ]
+   },
+   {
+    "id": "ch3",
+    "type": "choose-your-strategy",
+    "instruction": "Pick any strategy you like to solve this!",
+    "problem": {
+     "equation": "10 - 8",
+     "operation": "subtraction",
+     "operand1": 10,
+     "operand2": 8,
+     "result": 2
+    },
+    "availableStrategies": [
+     "counting-back"
+    ]
+   },
+   {
+    "id": "ch4",
+    "type": "choose-your-strategy",
+    "instruction": "Pick any strategy you like to solve this!",
+    "problem": {
+     "equation": "1 + 5",
+     "operation": "addition",
+     "operand1": 1,
+     "operand2": 5,
+     "result": 6
+    },
+    "availableStrategies": [
+     "counting-on",
+     "tally-marks"
+    ]
+   }
+  ],
+  "maxNumber": 10,
+  "operations": [
+   "addition",
+   "subtraction"
+  ],
+  "strategiesIntroduced": [
+   "counting-on",
+   "counting-back",
+   "make-ten",
+   "doubles",
+   "tally-marks"
+  ],
+  "gradeBand": "1"
+ }
+}

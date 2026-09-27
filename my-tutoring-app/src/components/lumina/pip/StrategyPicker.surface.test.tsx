@@ -5,12 +5,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PipSurfaceContext } from './PipSurfaceContext';
 import { PipSurfaceStore } from './PipSurfaceStore';
 import StrategyPicker, { type StrategyPickerData } from '../primitives/visual-primitives/math/StrategyPicker';
+import { LiveLessonRuntime } from '../components/live-activity/runtime/LiveLessonRuntime';
+import { LiveRuntimeContext } from '../components/live-activity/runtime/LiveRuntimeContext';
+import { LiveRuntimeSurface } from '../components/live-activity/runtime/LiveRuntimeSurface';
 
 const tutor = vi.hoisted(() => ({ isAudioPlaying: false, activePrimitiveId: 'strategy' as string | null }));
 vi.mock('@/lib/firebase', () => ({ auth: { currentUser: null, onAuthStateChanged: () => () => {} }, db: {}, app: {} }));
-vi.mock('../hooks/useLuminaAI', () => ({
-  useLuminaAI: () => ({ sendText: vi.fn(), isConnected: false, isAudioPlaying: tutor.isAudioPlaying, activePrimitiveId: tutor.activePrimitiveId }),
-}));
+// The strategy picker runs only on the teaching workspace: Pip is exercised there, and hears the shared context.
+vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
+  isConnected: true, isListening: true, sessionMode: 'lesson', sendText: vi.fn(), conversation: [],
+  sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} }, ...tutor,
+}) }));
 vi.mock('../evaluation', () => ({
   usePrimitiveEvaluation: () => ({ submitResult: vi.fn(), hasSubmitted: false, submittedResult: null, elapsedMs: 0 }),
   useEvaluationContext: () => null,
@@ -31,7 +36,10 @@ const data: StrategyPickerData = {
 
 function mount() {
   const store = new PipSurfaceStore();
-  const ui = () => <PipSurfaceContext.Provider value={store}><StrategyPicker data={data} /></PipSurfaceContext.Provider>;
+  const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
+  const ui = () => <PipSurfaceContext.Provider value={store}><LiveRuntimeContext.Provider value={runtime}>
+    <LiveRuntimeSurface runtime={runtime}><StrategyPicker data={data} runtimePlanItemId="plan-strategy" runtimeEvalMode="guided" /></LiveRuntimeSurface>
+  </LiveRuntimeContext.Provider></PipSurfaceContext.Provider>;
   const view = render(ui());
   const refresh = () => act(() => { view.rerender(ui()); });
   return { ...view, store, refresh };
