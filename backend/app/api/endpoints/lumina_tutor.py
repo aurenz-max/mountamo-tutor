@@ -1499,9 +1499,10 @@ async def lumina_tutor_session(websocket: WebSocket):
                         await audio_queue.put({"activity": message_type})
                         logger.info(f"Queued client activity signal: {message_type}")
 
-            except WebSocketDisconnect:
-                logger.info("Client disconnected")
-                ledger.write("client-disconnected")
+            except WebSocketDisconnect as disconnect:
+                # The close code and reason say who hung up and why (the live harness sends its failure as the reason).
+                logger.info(f"Client disconnected (code={disconnect.code}, reason={disconnect.reason!r})")
+                ledger.write("client-disconnected", code=disconnect.code, reason=disconnect.reason)
                 stop_event.set()
             except Exception as e:
                 logger.error(f"Error in client message handler: {e}")
