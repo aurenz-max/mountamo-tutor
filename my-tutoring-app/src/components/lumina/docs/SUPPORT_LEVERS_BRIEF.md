@@ -4,7 +4,7 @@ Date: 2026-09-26, revised 2026-09-27 · Ruling: support levers designed in advan
 
 ## Status (2026-09-27)
 
-The number-line jump pilot is built: the shared lever mechanism (`pull_lever`, levers on the attempt record, an ungraded simpler item that returns to the full item) and two levers, `numbered_hops` and `simpler_jump`. The easy-tier arc leak is fixed. Report: `qa/eval-reports/number-line-levers-2026-09-27.md`. Rollout (Phase B of handoff 18) is under way: B1 ten-frame passed its bench on 09-27; B2 fraction-circles is next. An observer pull is narrated on the tutor's next turn, after its reply to the learner (LB-8).
+The number-line jump pilot is built: the shared lever mechanism (`pull_lever`, levers on the attempt record, an ungraded simpler item that returns to the full item) and two levers, `numbered_hops` and `simpler_jump`. The easy-tier arc leak is fixed. Report: `qa/eval-reports/number-line-levers-2026-09-27.md`. Rollout (Phase B of handoff 18) is under way: B1 ten-frame passed its bench on 09-27; B2 fraction-circles passed its bench and a user browser check on 09-27 (`qa/eval-reports/fraction-circles-levers-2026-09-27.md`). B3 rhyme-studio is next, after its catalog `aiDirectives` defect below. An observer pull is narrated on the tutor's next turn, after its reply to the learner (LB-8).
 
 ## The ruling this serves
 

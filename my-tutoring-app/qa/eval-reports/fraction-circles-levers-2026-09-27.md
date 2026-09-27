@@ -47,3 +47,5 @@ Starting positions: easy identify starts with `mark_pieces`; build/equivalent st
 4. LB-11: in 1 of 7 build runs the tutor opened a 1/2 item with "shade just one of the slices". Fixed in the shared doctrine (`WORKSPACE_DOCTRINE`: before a try or after a mistake, never say the answer or what to add, remove or change); bar-model's own copy of that rule was removed and one letter-sound-link phrase trimmed to stay under the 2000-character guidance cap. A 2-run check was started by mistake after the policy said not to: run 1 finished clean (opening: "Let's start by shading the circle to show one half."), run 2 was stopped mid-session. One clean run does not confirm a 1-in-7 miss; the next planned lever gate on any family checks it.
 
 Live sessions spent on this primitive: 10 (gate 3 text + 1 audio; wording re-measure 2 text + 1 audio + 1 identify; LB-11 check 1 full + 1 stopped). The last two should not have been run.
+
+User browser check (UAT) 2026-09-27: build lever flow looked good. B2 closed.
