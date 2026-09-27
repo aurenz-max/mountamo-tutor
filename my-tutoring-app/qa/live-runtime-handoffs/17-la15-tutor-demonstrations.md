@@ -72,7 +72,7 @@ cd "<abs>" && backend/venv/Scripts/python.exe backend/tests/tutor_live/run_live_
 
 ## Next, in order
 
-1. **Prerequisite-based fallback.** When the author says `none`, pick an easier activity from the failed eval mode and the curriculum's prerequisite edges, instead of the resolver's LLM shortlist. Then mount it ungraded in the returnable shell. The shell today renders support artifacts only; it needs a slot that renders a generated primitive via `getPrimitive(componentId)` with no evaluation write. Put a generation deadline on it. Read `.claude/skills/student-data-loop/SKILL.md` for where prerequisites live before choosing the source.
+1. **PARKED 2026-09-26 (user ruling), do not pull.** Built on local branch `park/la15-prerequisite-detour` (`e4855c3b`). The in-moment answer is a lever inside the primitive, and a missing prerequisite is acted on in the next lesson. See `src/components/lumina/docs/SUPPORT_LEVERS_BRIEF.md`. Original item: **Prerequisite-based fallback.** When the author says `none`, pick an easier activity from the failed eval mode and the curriculum's prerequisite edges, instead of the resolver's LLM shortlist. Then mount it ungraded in the returnable shell. The shell today renders support artifacts only; it needs a slot that renders a generated primitive via `getPrimitive(componentId)` with no evaluation write. Put a generation deadline on it. Read `.claude/skills/student-data-loop/SKILL.md` for where prerequisites live before choosing the source.
 2. **More pieces, in the order the uncovered bench scenarios ask for them:**
    - equal-group counters and a one-to-one tagging row (multiplication, K counting). LA-12's counter shapes already draw most of this.
    - sound tiles with a blend (CVC words).
