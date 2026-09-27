@@ -1,0 +1,53 @@
+{
+ "source": "qa/tutor-reports/equation-builder-runtime-balance-both-sides-payload-2026-09-26.json",
+ "primitiveId": "equation-builder",
+ "evalMode": "balance-both-sides",
+ "data": {
+  "title": "Balance the Scale!",
+  "description": "Learn what the equal sign means by making sure both sides of the scale hold the exact same amount.",
+  "maxNumber": 10,
+  "gradeBand": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "balance",
+    "instruction": "Find the missing number to make both sides equal!",
+    "leftSide": "2 + 2",
+    "rightSide": "1 + ?",
+    "correctAnswer": 3
+   },
+   {
+    "id": "c2",
+    "type": "balance",
+    "instruction": "Keep the scale balanced by finding the missing number.",
+    "leftSide": "3 + 3",
+    "rightSide": "? + 2",
+    "correctAnswer": 4
+   },
+   {
+    "id": "c3",
+    "type": "balance",
+    "instruction": "What number do we need here to make both sides equal?",
+    "leftSide": "4 + 4",
+    "rightSide": "3 + ?",
+    "correctAnswer": 5
+   },
+   {
+    "id": "c4",
+    "type": "balance",
+    "instruction": "Make both sides match to keep the scale balanced!",
+    "leftSide": "5 + 3",
+    "rightSide": "6 + ?",
+    "correctAnswer": 2
+   },
+   {
+    "id": "c5",
+    "type": "balance",
+    "instruction": "Find the final missing number for a balanced scale.",
+    "leftSide": "7 + 2",
+    "rightSide": "5 + ?",
+    "correctAnswer": 4
+   }
+  ]
+ }
+}

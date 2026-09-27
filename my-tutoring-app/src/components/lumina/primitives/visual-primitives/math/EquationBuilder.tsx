@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -23,8 +24,13 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { EquationBuilderMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  ENTRY_LABEL, describeEquationBuilderCheck, equationBuilderAssignment, equationBuilderMatches, equationBuilderScene,
+  evaluateEquation, parseEquationTokens, tileLabel, type EquationBuilderView,
+} from './equationBuilderWorkspace';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -128,6 +134,7 @@ function Tile({
   className = '',
   buttonRef,
   pipObject,
+  ariaLabel,
 }: {
   value: string;
   onClick?: () => void;
@@ -137,6 +144,7 @@ function Tile({
   className?: string;
   buttonRef?: (element: Element | null) => void;
   pipObject?: string;
+  ariaLabel?: string;
 }) {
   const tileType = getTileType(value);
   const isBlank = tileType === 'blank';
@@ -163,6 +171,7 @@ function Tile({
     <button
       ref={buttonRef}
       data-pip-object={pipObject}
+      aria-label={ariaLabel}
       onClick={onClick}
       disabled={disabled}
       className={`
@@ -269,95 +278,11 @@ function TilePool({
           onClick={() => onPickTile(i)}
           disabled={disabled}
           size="md"
+          ariaLabel={tileLabel(tile)}
         />
       ))}
     </div>
   );
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/** Parse a display equation like "3 + 2 = 5" into tokens */
-function parseEquationTokens(eq: string): string[] {
-  return eq.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
-}
-
-/** Evaluate a simple equation string to check if it's mathematically true */
-function evaluateEquation(eq: string): boolean {
-  const normalized = eq.replace(/\s+/g, '');
-
-  // Handle both "a op b = c" and "c = a op b"
-  const eqParts = normalized.split('=');
-  if (eqParts.length !== 2) return false;
-
-  const evalSide = (side: string): number | null => {
-    // Try simple single number
-    const num = parseInt(side, 10);
-    if (!isNaN(num) && String(num) === side) return num;
-
-    // Try "a + b" or "a - b"
-    const addMatch = side.match(/^(\d+)\+(\d+)$/);
-    if (addMatch) return parseInt(addMatch[1], 10) + parseInt(addMatch[2], 10);
-
-    const subMatch = side.match(/^(\d+)-(\d+)$/);
-    if (subMatch) return parseInt(subMatch[1], 10) - parseInt(subMatch[2], 10);
-
-    return null;
-  };
-
-  const left = evalSide(eqParts[0]);
-  const right = evalSide(eqParts[1]);
-  if (left === null || right === null) return false;
-  return left === right;
-}
-
-/** Check if a built equation matches the target (normalized comparison) */
-function equationsMatch(built: string[], target: string): boolean {
-  const builtStr = built.join(' ').replace(/\s+/g, '');
-  const targetStr = target.replace(/\s+/g, '');
-  return builtStr === targetStr;
-}
-
-/** Check if a built equation is in the accepted forms list (for rewrite) */
-function matchesAcceptedForm(built: string[], acceptedForms: string[]): boolean {
-  const builtStr = built.join(' ').replace(/\s+/g, '');
-  return acceptedForms.some(form => form.replace(/\s+/g, '') === builtStr);
-}
-
-/**
- * Mode-aware tutor reveal policy keyed off the support tier + current challenge
- * type. Mirrors the on-screen scaffold so the tutor never hands over what a hard
- * tier's instruction deliberately withheld. easy = name the strategy/setup;
- * medium = nudge execution only; hard = ask what the student sees, name nothing.
- * Returns an empty string when no tier is set (no-tier path byte-identical).
- */
-function tutorRevealPolicy(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  challengeType: EquationBuilderChallenge['type'],
-): string {
-  if (!tier) return '';
-  if (tier === 'easy') {
-    switch (challengeType) {
-      case 'build':
-        return 'TIER easy: you MAY name the building strategy (e.g. "try adding two tiles, then place the = and the total") but NEVER state the target equation.';
-      case 'balance':
-        return 'TIER easy: you MAY walk the strategy — "work out the left side first, then find what makes the right side match" — without stating the answer.';
-      case 'rewrite':
-        return 'TIER easy: you MAY remind that the = can flip (same amounts either side) without giving an accepted form.';
-      case 'missing-value':
-        return 'TIER easy: you MAY name the relationship ("both sides must be the same amount") without stating the missing number.';
-      case 'true-false':
-        return 'TIER easy: you MAY name the strategy ("compute each side, then compare") without saying whether it is true or false.';
-      default:
-        return 'TIER easy: you may name the strategy without revealing the answer.';
-    }
-  }
-  if (tier === 'medium') {
-    return 'TIER medium: the strategy is on screen — nudge the next step only, do not name the full strategy or the answer.';
-  }
-  return 'TIER hard: the instruction withheld the strategy — do NOT name it or set up the equation. Ask what the student sees, never reveal the answer.';
 }
 
 // ============================================================================
@@ -367,19 +292,22 @@ function tutorRevealPolicy(
 interface EquationBuilderProps {
   data: EquationBuilderData;
   className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
+
+const useEquationBuilderProgress = useWorkspaceProgressFor('equation-builder');
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) => {
+function EquationBuilderSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: EquationBuilderProps) {
   const {
     title,
     description,
     challenges = [],
-    maxNumber = 10,
-    gradeBand = 'K',
     supportTier,
     instanceId,
     skillId,
@@ -388,10 +316,25 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     exhibitId,
     onEvaluationSubmit,
   } = data;
+  const maxNumber = data.maxNumber ?? 10;
+
+  const ctx = useLuminaAIContext();
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const stableInstanceIdRef = useRef(instanceId || `equation-builder-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  /** Bound after the state it clears is declared; the progress hook calls it only after render. */
+  const reopen = useRef<(index: number) => void>(() => {});
 
   // -------------------------------------------------------------------------
-  // Shared challenge progress
+  // Challenge progress: the teaching workspace owns it
   // -------------------------------------------------------------------------
+  const progress = useEquationBuilderProgress({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    evalMode: runtimeEvalMode || 'mixed', workspace, assignment: equationBuilderAssignment,
+    onItemOpened: (index) => reopen.current(index),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
@@ -399,11 +342,8 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     isComplete: allChallengesComplete,
     recordResult,
     incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  const canAttempt = progress.canAttempt !== false;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -435,10 +375,6 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
   // Balance state
   const [balanceAnswer, setBalanceAnswer] = useState('');
 
-  // Refs
-  const stableInstanceIdRef = useRef(instanceId || `equation-builder-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
   // -------------------------------------------------------------------------
   // Evaluation Hook
   // -------------------------------------------------------------------------
@@ -457,27 +393,8 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // -------------------------------------------------------------------------
-  // AI Tutoring Integration
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType: currentChallenge?.type ?? 'build',
-    instruction: currentChallenge?.instruction ?? '',
-    equation: currentChallenge?.equation ?? currentChallenge?.displayEquation ?? currentChallenge?.targetEquation ?? '',
-    attemptNumber: currentAttempts + 1,
-    gradeBand,
-    maxNumber,
-    supportTier,
-    currentChallengeIndex,
-    totalChallenges: challenges.length,
-  }), [currentChallenge, currentAttempts, gradeBand, maxNumber, supportTier, currentChallengeIndex, challenges.length]);
-
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'equation-builder',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : gradeBand === '1' ? 'Grade 1' : 'Grade 2',
-  });
+  /** Learner input is closed while a checked answer waits for Try again, and once the challenge is solved. */
+  const learnerBlocked = () => !canAttempt || challengeSolved || hasSubmittedEvaluation || allChallengesComplete;
 
   // -------------------------------------------------------------------------
   // Pip shared surface
@@ -486,7 +403,8 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
   // the child's last touch; Pip never places a tile, picks, checks, or advances.
   // Tutor audio counts only while the tutor is on this block and began on this challenge.
   const pip = usePipTargets(currentChallenge?.id ?? null, !challengeSolved && !hasSubmittedEvaluation);
-  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const tutorSpeaking = ctx.isAudioPlaying && !!currentChallenge
+    && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId);
   const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
   const pipStore = usePipSurface(() => {
     if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
@@ -508,318 +426,131 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
       className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
   );
 
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    const startPolicy = tutorRevealPolicy(supportTier, currentChallenge?.type ?? 'build');
-    sendText(
-      `[ACTIVITY_START] Equation Builder for ${gradeBand === 'K' ? 'Kindergarten' : `Grade ${gradeBand}`}. `
-      + `${challenges.length} challenges. Max number: ${maxNumber}. `
-      + `First challenge: "${currentChallenge?.instruction}" (type: ${currentChallenge?.type}). `
-      + `Introduce warmly: "Let's explore equations! An equation uses the = sign to show two sides are the same."`
-      + (startPolicy ? ` ${startPolicy}` : ''),
-      { silent: true }
-    );
-  }, [isConnected, challenges.length, maxNumber, gradeBand, supportTier, currentChallenge, sendText]);
-
   // -------------------------------------------------------------------------
-  // Reset domain state when challenge changes
+  // A fresh challenge, or the same one after Try again, starts clean
   // -------------------------------------------------------------------------
-  const resetDomainState = useCallback(() => {
+  const openChallenge = useCallback((challenge: EquationBuilderChallenge | undefined) => {
     setFeedback('');
     setFeedbackType('');
     setChallengeSolved(false);
     setWorkspaceSlots([]);
-    setPoolTiles([]);
     setSelectedOption(null);
     setSelectedTruthValue(null);
     setBalanceAnswer('');
+    // Shuffle the tiles for the pool (build / rewrite)
+    const tiles = challenge && (challenge.type === 'build' || challenge.type === 'rewrite') ? challenge.availableTiles ?? [] : [];
+    setPoolTiles([...tiles].sort(() => Math.random() - 0.5));
   }, []);
+  reopen.current = (index) => openChallenge(challenges[index]);
 
-  // Initialize tiles when challenge changes (build / rewrite types)
   useEffect(() => {
-    if (!currentChallenge) return;
-    resetDomainState();
-    if (currentChallenge.type === 'build' || currentChallenge.type === 'rewrite') {
-      const tiles = currentChallenge.availableTiles ?? [];
-      // Shuffle tiles for the pool
-      const shuffled = [...tiles].sort(() => Math.random() - 0.5);
-      setPoolTiles(shuffled);
-      setWorkspaceSlots([]);
-    }
+    openChallenge(currentChallenge ?? undefined);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallengeIndex]);
 
   // -------------------------------------------------------------------------
   // Build / Rewrite: tile management
   // -------------------------------------------------------------------------
-  const handlePickTile = useCallback((poolIndex: number) => {
-    if (hasSubmittedEvaluation || challengeSolved) return;
+  const handlePickTile = (poolIndex: number) => {
+    if (learnerBlocked()) return;
     const tile = poolTiles[poolIndex];
     if (!tile) return;
     SoundManager.snap();        // ← tile lands in the workspace
     setPoolTiles(prev => prev.filter((_, i) => i !== poolIndex));
     setWorkspaceSlots(prev => [...prev, tile]);
-  }, [hasSubmittedEvaluation, challengeSolved, poolTiles]);
+  };
 
-  const handleRemoveSlot = useCallback((slotIndex: number) => {
-    if (hasSubmittedEvaluation || challengeSolved) return;
+  const handleRemoveSlot = (slotIndex: number) => {
+    if (learnerBlocked()) return;
     const tile = workspaceSlots[slotIndex];
     if (!tile) return;
     setWorkspaceSlots(prev => prev.filter((_, i) => i !== slotIndex));
     setPoolTiles(prev => [...prev, tile]);
-  }, [hasSubmittedEvaluation, challengeSolved, workspaceSlots]);
+  };
 
-  const handleClearWorkspace = useCallback(() => {
-    if (hasSubmittedEvaluation || challengeSolved) return;
+  const handleClearWorkspace = () => {
+    if (learnerBlocked()) return;
     setPoolTiles(prev => [...prev, ...workspaceSlots]);
     setWorkspaceSlots([]);
-  }, [hasSubmittedEvaluation, challengeSolved, workspaceSlots]);
+  };
 
   // -------------------------------------------------------------------------
-  // Build: check equation
+  // Every Check: the builder's own verdict, committed to the workspace
   // -------------------------------------------------------------------------
-  const handleCheckBuild = useCallback(() => {
-    if (!currentChallenge || currentChallenge.type !== 'build') return;
+  const view: EquationBuilderView = { slots: workspaceSlots, option: selectedOption, truth: selectedTruthValue, entry: balanceAnswer };
+
+  /** Records the verdict and commits it; the runtime offers Try again or advances. */
+  const settle = (challenge: EquationBuilderChallenge, correct: boolean, success: string, miss: string) => {
     incrementAttempts();
-
-    const target = currentChallenge.targetEquation ?? '';
-    const correct = equationsMatch(workspaceSlots, target);
-
     if (correct) {
       SoundManager.playCorrect();
-      setFeedback('You built it! Great job!');
+      setFeedback(success);
       setFeedbackType('success');
       setChallengeSolved(true);
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-      sendText(
-        `[ANSWER_CORRECT] Student correctly built equation "${target}". Congratulate briefly.`,
-        { silent: true }
-      );
+      recordResult({ challengeId: challenge.id, correct: true, attempts: currentAttempts + 1 });
     } else {
       SoundManager.playIncorrect();
-      const builtStr = workspaceSlots.join(' ');
-      // Check if mathematically valid but wrong target
-      const isValidMath = evaluateEquation(builtStr);
-      setFeedback(
-        isValidMath
-          ? `That's a true equation, but not the one we need. Try to build: ${target}`
-          : 'That doesn\'t make a true equation yet. Keep trying!'
-      );
+      setFeedback(miss);
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student built "${builtStr}" but target is "${target}". `
-        + `${isValidMath ? 'Valid math but wrong target.' : 'Not valid math.'} `
-        + `Attempt ${currentAttempts + 1}. Give a hint without revealing the answer. `
-        + tutorRevealPolicy(supportTier, 'build'),
-        { silent: true }
-      );
     }
-  }, [currentChallenge, workspaceSlots, currentAttempts, incrementAttempts, recordResult, supportTier, sendText]);
+    progress.commitCheck?.(describeEquationBuilderCheck(challenge, view), correct);
+  };
 
-  // -------------------------------------------------------------------------
-  // Missing-value: check selection
-  // -------------------------------------------------------------------------
-  const handleCheckMissingValue = useCallback(() => {
-    if (!currentChallenge || currentChallenge.type !== 'missing-value' || selectedOption === null) return;
-    incrementAttempts();
+  const handleCheckBuild = () => {
+    if (!currentChallenge || currentChallenge.type !== 'build' || learnerBlocked()) return;
+    settle(currentChallenge, equationBuilderMatches(currentChallenge, view), 'You built it! Great job!',
+      evaluateEquation(workspaceSlots.join(' '))
+        ? 'That\'s a true equation, but not the one we need. Look at the instruction again.'
+        : 'That doesn\'t make a true equation yet. Keep trying!');
+  };
 
-    const correct = selectedOption === currentChallenge.correctValue;
+  const handleCheckMissingValue = () => {
+    if (!currentChallenge || currentChallenge.type !== 'missing-value' || selectedOption === null || learnerBlocked()) return;
+    const filledEq = (currentChallenge.equation ?? '').replace('?', String(selectedOption));
+    settle(currentChallenge, equationBuilderMatches(currentChallenge, view), `Yes! ${filledEq} is true!`,
+      'Not quite. Remember, both sides of = must be the same amount!');
+  };
 
-    if (correct) {
-      SoundManager.playCorrect();
-      const filledEq = (currentChallenge.equation ?? '').replace('?', String(selectedOption));
-      setFeedback(`Yes! ${filledEq} is true!`);
-      setFeedbackType('success');
-      setChallengeSolved(true);
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-      sendText(
-        `[ANSWER_CORRECT] Student found missing value: ${selectedOption}. Equation: "${currentChallenge.equation}". Congratulate briefly.`,
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback('Not quite. Remember, both sides of = must be the same amount!');
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student chose ${selectedOption} but correct is ${currentChallenge.correctValue}. `
-        + `Equation: "${currentChallenge.equation}". Attempt ${currentAttempts + 1}. `
-        + `Hint about what = means — both sides must balance. `
-        + tutorRevealPolicy(supportTier, 'missing-value'),
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, selectedOption, currentAttempts, incrementAttempts, recordResult, supportTier, sendText]);
+  const handleCheckTrueFalse = () => {
+    if (!currentChallenge || currentChallenge.type !== 'true-false' || selectedTruthValue === null || learnerBlocked()) return;
+    const eq = currentChallenge.displayEquation ?? '';
+    settle(currentChallenge, equationBuilderMatches(currentChallenge, view),
+      currentChallenge.isTrue
+        ? `Correct! ${eq} is true — both sides are equal!`
+        : `Correct! ${eq} is false — the two sides are not equal.`,
+      'Think again. Check each side of the = sign. Are they the same amount?');
+  };
 
-  // -------------------------------------------------------------------------
-  // True-false: check answer
-  // -------------------------------------------------------------------------
-  const handleCheckTrueFalse = useCallback(() => {
-    if (!currentChallenge || currentChallenge.type !== 'true-false' || selectedTruthValue === null) return;
-    incrementAttempts();
-
-    const correct = selectedTruthValue === currentChallenge.isTrue;
-
-    if (correct) {
-      SoundManager.playCorrect();
-      const eq = currentChallenge.displayEquation ?? '';
-      setFeedback(
-        currentChallenge.isTrue
-          ? `Correct! ${eq} is true — both sides are equal!`
-          : `Correct! ${eq} is false — the two sides are not equal.`
-      );
-      setFeedbackType('success');
-      setChallengeSolved(true);
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-      sendText(
-        `[ANSWER_CORRECT] Student correctly identified "${eq}" as ${currentChallenge.isTrue ? 'true' : 'false'}. Congratulate briefly.`,
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback('Think again. Check each side of the = sign. Are they the same amount?');
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student said ${selectedTruthValue ? 'true' : 'false'} but "${currentChallenge.displayEquation}" is ${currentChallenge.isTrue ? 'true' : 'false'}. `
-        + `Attempt ${currentAttempts + 1}. Guide them to compute each side separately. `
-        + tutorRevealPolicy(supportTier, 'true-false'),
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, selectedTruthValue, currentAttempts, incrementAttempts, recordResult, supportTier, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Balance: check answer
-  // -------------------------------------------------------------------------
-  const handleCheckBalance = useCallback(() => {
-    if (!currentChallenge || currentChallenge.type !== 'balance') return;
-    incrementAttempts();
-
+  const handleCheckBalance = () => {
+    if (!currentChallenge || currentChallenge.type !== 'balance' || learnerBlocked()) return;
     const answer = parseInt(balanceAnswer, 10);
-    const correct = answer === currentChallenge.correctAnswer;
+    settle(currentChallenge, equationBuilderMatches(currentChallenge, view),
+      `Yes! ${currentChallenge.leftSide} = ${(currentChallenge.rightSide ?? '').replace('?', String(answer))} — both sides balance!`,
+      'The two sides aren\'t equal yet. What number makes both sides the same?');
+  };
 
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback(`Yes! ${currentChallenge.leftSide} = ${(currentChallenge.rightSide ?? '').replace('?', String(answer))} — both sides balance!`);
-      setFeedbackType('success');
-      setChallengeSolved(true);
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-      sendText(
-        `[ANSWER_CORRECT] Student found balance answer: ${answer}. `
-        + `${currentChallenge.leftSide} = ${(currentChallenge.rightSide ?? '').replace('?', String(answer))}. `
-        + `Congratulate and reinforce that = means "same amount on both sides."`,
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback('The two sides aren\'t equal yet. What number makes both sides the same?');
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student answered ${answer} but correct is ${currentChallenge.correctAnswer}. `
-        + `Left: "${currentChallenge.leftSide}", Right: "${currentChallenge.rightSide}". `
-        + `Attempt ${currentAttempts + 1}. Guide: compute the left side first, then figure out what makes the right side match. `
-        + tutorRevealPolicy(supportTier, 'balance'),
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, balanceAnswer, currentAttempts, incrementAttempts, recordResult, supportTier, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Rewrite: check equation
-  // -------------------------------------------------------------------------
-  const handleCheckRewrite = useCallback(() => {
-    if (!currentChallenge || currentChallenge.type !== 'rewrite') return;
-    incrementAttempts();
-
-    const acceptedForms = currentChallenge.acceptedForms ?? [];
+  const handleCheckRewrite = () => {
+    if (!currentChallenge || currentChallenge.type !== 'rewrite' || learnerBlocked()) return;
     const builtStr = workspaceSlots.join(' ');
-    const correct = matchesAcceptedForm(workspaceSlots, acceptedForms);
-
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback(`Great! ${builtStr} says the same thing a different way!`);
-      setFeedbackType('success');
-      setChallengeSolved(true);
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-      sendText(
-        `[ANSWER_CORRECT] Student rewrote "${currentChallenge.originalEquation}" as "${builtStr}". `
-        + `Congratulate and reinforce that = can go either way.`,
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      const isValidMath = evaluateEquation(builtStr);
-      // Check if it matches the original (not rewritten)
-      const originalNorm = (currentChallenge.originalEquation ?? '').replace(/\s+/g, '');
-      const builtNorm = builtStr.replace(/\s+/g, '');
-      const isSameAsOriginal = originalNorm === builtNorm;
-
-      setFeedback(
-        isSameAsOriginal
-          ? 'That\'s the same equation! Try writing it a different way.'
-          : isValidMath
-          ? 'That\'s true, but try a different form of the original equation.'
-          : 'That doesn\'t make a true equation. Remember both sides of = must be equal!'
-      );
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student wrote "${builtStr}" to rewrite "${currentChallenge.originalEquation}". `
-        + `Accepted forms: ${acceptedForms.join(', ')}. `
-        + `Attempt ${currentAttempts + 1}. Hint: the = sign can go in different places. `
-        + tutorRevealPolicy(supportTier, 'rewrite'),
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, workspaceSlots, currentAttempts, incrementAttempts, recordResult, supportTier, sendText]);
+    const isSameAsOriginal = (currentChallenge.originalEquation ?? '').replace(/\s+/g, '') === builtStr.replace(/\s+/g, '');
+    settle(currentChallenge, equationBuilderMatches(currentChallenge, view),
+      `Great! ${builtStr} says the same thing a different way!`,
+      isSameAsOriginal
+        ? 'That\'s the same equation! Try writing it a different way.'
+        : evaluateEquation(builtStr)
+        ? 'That\'s true, but try a different form of the original equation.'
+        : 'That doesn\'t make a true equation. Remember both sides of = must be equal!');
+  };
 
   // -------------------------------------------------------------------------
-  // Advance to next challenge
+  // Completion: the runtime advances; once every challenge is solved, submit once
   // -------------------------------------------------------------------------
-  const handleNext = useCallback(() => {
-    if (!advanceProgress()) {
-      // All challenges complete — handled by evaluation submission below
-      return;
-    }
-    // resetDomainState is handled by the useEffect on currentChallengeIndex
-    if (currentChallenge) {
-      const next = challenges[currentChallengeIndex + 1];
-      if (next) {
-        sendText(
-          `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. `
-          + `Type: ${next.type}. "${next.instruction}". Introduce briefly.`,
-          { silent: true }
-        );
-      }
-    }
-  }, [advanceProgress, currentChallenge, challenges, currentChallengeIndex, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Submit evaluation when all challenges complete
-  // -------------------------------------------------------------------------
+  const hasAutoSubmittedRef = useRef(false);
   useEffect(() => {
-    if (!allChallengesComplete || hasSubmittedEvaluation) return;
+    if (!allChallengesComplete || hasSubmittedEvaluation || hasAutoSubmittedRef.current) return;
+    // The live host has no evaluation provider; a workspace family submits only under one.
+    if (progress.recordsEvaluation === false) return;
+    hasAutoSubmittedRef.current = true;
 
     const totalCorrect = challengeResults.filter(r => r.correct).length;
     const totalAttempts = challengeResults.reduce((sum, r) => sum + r.attempts, 0);
@@ -841,15 +572,16 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
         })),
       },
     );
+  }, [allChallengesComplete, hasSubmittedEvaluation, progress.recordsEvaluation, challengeResults, challenges, submitEvaluation]);
 
-    // AI celebration
-    const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
-    sendText(
-      `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-      + `Give encouraging phase-specific feedback. Reinforce the meaning of =.`,
-      { silent: true }
-    );
-  }, [allChallengesComplete, hasSubmittedEvaluation, challengeResults, challenges, submitEvaluation, phaseResults, sendText]);
+  // What the tutor and the observer are shown, republished every render. Derived from the challenge
+  // alone, so opening an item (and its tile shuffle) adds no revision after the advance.
+  useLayoutEffect(() => {
+    if (!currentChallenge) return;
+    workspace.current = { ...equationBuilderScene(currentChallenge, { supportTier }), demonstration: [],
+      canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
+    progress.publishWorkspace?.();
+  });
 
   // -------------------------------------------------------------------------
   // Compute overall score for display
@@ -865,7 +597,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
   // -------------------------------------------------------------------------
   const renderChallenge = () => {
     if (!currentChallenge) return null;
-    const isDisabled = hasSubmittedEvaluation || challengeSolved;
+    const isDisabled = learnerBlocked();
 
     switch (currentChallenge.type) {
       case 'build':
@@ -1067,6 +799,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
             inputMode="numeric"
             min={0}
             max={maxNumber * 2}
+            aria-label={ENTRY_LABEL}
             value={balanceAnswer}
             onFocus={() => { if (!disabled) pip.look('entry'); }}
             onChange={(e) => { if (!disabled) { pip.look('entry'); setBalanceAnswer(e.target.value); } }}
@@ -1212,19 +945,14 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
               </LuminaFeedbackCard>
             )}
 
-            {/* Next button — shown when current challenge is solved */}
-            {challengeSolved && !allChallengesComplete && (
-              <div className="flex justify-center">
-                <LuminaActionButton action="next" onClick={handleNext}>
-                  Next Challenge
-                </LuminaActionButton>
-              </div>
-            )}
           </>
         )}
       </LuminaCardContent>
     </LuminaCard>
   );
-};
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const EquationBuilder = withWorkspaceOnly<EquationBuilderProps>('equation-builder', EquationBuilderSurface, props => props.data.title);
 
 export default EquationBuilder;

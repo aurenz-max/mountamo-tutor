@@ -975,52 +975,19 @@ function validateRewrite(raw: RawChallenge, maxNumber: number, shape?: ProblemSh
     return null;
   }
 
-  // Extract the numbers involved
-  // Parse both sides for operands
-  const total = leftVal;
-  const allNums = new Set<number>();
-  for (const side of eqParts) {
-    const nums = side.match(/\d+/g);
-    if (nums) nums.forEach(n => allNums.add(parseInt(n, 10)));
-  }
-
-  // Generate all valid rewrites for a + b = c pattern
+  // The accepted rewrites are the original's fact family: its two parts and whole, written with +
+  // or -, either order, either side of =. (The old pair search treated the value of a subtraction
+  // as its whole, so "7 - 3 = 4" accepted "1 = 4 - 3" and not "4 = 7 - 3", and every family also
+  // accepted unrelated facts such as "3 - 3 = 0".)
   const acceptedForms: string[] = [];
-  const numsArr = Array.from(allNums);
-
-  // Find additive pairs that sum to total
-  for (let i = 0; i < numsArr.length; i++) {
-    for (let j = 0; j < numsArr.length; j++) {
-      if (numsArr[i] + numsArr[j] === total && !(i === j && numsArr.length < 2)) {
-        const form1 = `${numsArr[i]} + ${numsArr[j]} = ${total}`;
-        const form2 = `${total} = ${numsArr[i]} + ${numsArr[j]}`;
-        if (!acceptedForms.includes(form1) && form1.replace(/\s+/g, '') !== norm) acceptedForms.push(form1);
-        if (!acceptedForms.includes(form2)) acceptedForms.push(form2);
-      }
-      if (numsArr[i] - numsArr[j] >= 0 && numsArr[i] <= total) {
-        const diff = numsArr[i] - numsArr[j];
-        if (diff >= 0 && diff <= maxNumber) {
-          const subForm = `${numsArr[i]} - ${numsArr[j]} = ${diff}`;
-          // Only include if it's a valid rewrite involving the same numbers
-          if (evaluateEquation(subForm) && !acceptedForms.includes(subForm) && subForm.replace(/\s+/g, '') !== norm) {
-            acceptedForms.push(subForm);
-          }
-        }
-      }
-    }
-  }
-
-  // Also generate subtraction forms: total - a = b
-  for (const n of numsArr) {
-    if (n !== total && total - n >= 0) {
-      const subForm1 = `${total} - ${n} = ${total - n}`;
-      const subForm2 = `${total - n} = ${total} - ${n}`;
-      if (evaluateEquation(subForm1) && !acceptedForms.includes(subForm1) && subForm1.replace(/\s+/g, '') !== norm) {
-        acceptedForms.push(subForm1);
-      }
-      if (evaluateEquation(subForm2) && !acceptedForms.includes(subForm2)) {
-        acceptedForms.push(subForm2);
-      }
+  const opSide = eqParts.findIndex(side => /^\d+[+\-]\d+$/.test(side));
+  const other = opSide >= 0 ? parseInt(eqParts[1 - opSide], 10) : NaN;
+  if (opSide >= 0 && String(other) === eqParts[1 - opSide]) {
+    const [, x, op, y] = eqParts[opSide].match(/^(\d+)([+\-])(\d+)$/)!;
+    const [a, b, c] = op === '+' ? [+x, +y, other] : [+y, other, +x];
+    for (const form of [`${a} + ${b} = ${c}`, `${b} + ${a} = ${c}`, `${c} = ${a} + ${b}`, `${c} = ${b} + ${a}`,
+      `${c} - ${a} = ${b}`, `${c} - ${b} = ${a}`, `${b} = ${c} - ${a}`, `${a} = ${c} - ${b}`]) {
+      if (evaluateEquation(form) && !acceptedForms.includes(form) && form.replace(/\s+/g, '') !== norm) acceptedForms.push(form);
     }
   }
 
@@ -1033,19 +1000,16 @@ function validateRewrite(raw: RawChallenge, maxNumber: number, shape?: ProblemSh
   // must always contain every one of these, at every tier — easy=0 keeps exactly
   // this set). Built FROM the accepted forms + original, not from Gemini's tiles,
   // so withdrawing distractors can never drop a needed tile.
-  const neededTokens = new Set<string>();
-  for (const form of acceptedForms) {
-    for (const token of tokenize(form)) {
-      neededTokens.add(token);
-    }
-  }
-  // Also add original equation tokens
-  for (const token of tokenize(originalEquation)) {
-    neededTokens.add(token);
+  // Each token as many times as one form needs it ("2 + 2 = 4" needs two 2s).
+  const neededCounts = new Map<string, number>();
+  for (const form of [...acceptedForms, originalEquation]) {
+    const counts = new Map<string, number>();
+    for (const token of tokenize(form)) counts.set(token, (counts.get(token) ?? 0) + 1);
+    counts.forEach((n, token) => neededCounts.set(token, Math.max(n, neededCounts.get(token) ?? 0)));
   }
 
   // Start the palette with exactly the needed tiles (the invariant set).
-  const neededTokenArr = Array.from(neededTokens);
+  const neededTokenArr = Array.from(neededCounts).flatMap(([token, n]) => Array<string>(n).fill(token));
   const tiles: string[] = [...neededTokenArr];
   const tileSet = new Set(tiles);
 
@@ -1062,7 +1026,7 @@ function validateRewrite(raw: RawChallenge, maxNumber: number, shape?: ProblemSh
         tileSet.add(val);
       }
     }
-    const distractorCount = tiles.length - neededTokens.size;
+    const distractorCount = tiles.length - neededTokenArr.length;
     if (distractorCount < 2) {
       let added = 0;
       for (let n = 0; n <= maxNumber && added < 2 - distractorCount; n++) {

@@ -123,6 +123,7 @@ import { diWordProblemHarnessAnswers, wordProblemHarnessPlacements, wordProblemI
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
 import { hundredsChartHarnessInputs } from '../../primitives/visual-primitives/math/hundredsChartWorkspace';
 import { mathFactHarnessInputs } from '../../primitives/visual-primitives/math/mathFactFluencyWorkspace';
+import { equationBuilderHarnessInputs } from '../../primitives/visual-primitives/math/equationBuilderWorkspace';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -1679,6 +1680,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return mathFactHarnessInputs(c, intent === 'wrong', ctx.data.maxNumber ?? 5);
     },
     probes: { mounted: { selector: '[data-pip-object="problem"], [data-pip-object="visual"]' } },
+  'equation-builder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/EquationBuilder.tsx',
+    instanceId: 'equations',
+    defaults: { grade: 'Grade 1', mode: 'true-false', di: false, topic: 'The equal sign: true and false equations within 10' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: tiles pressed into the row, a number or True/False tapped,
+    // or the number typed, then Check. Derived from the mounted challenge, never from Python.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current equation-builder challenge');
+      return equationBuilderHarnessInputs(c, intent === 'wrong');
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"], [data-pip-object="equation"]' } },
+  },
   },
 };
 

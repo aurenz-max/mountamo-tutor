@@ -1,15 +1,21 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PipSurfaceContext } from './PipSurfaceContext';
 import { PipSurfaceStore } from './PipSurfaceStore';
 import EquationBuilder, { type EquationBuilderChallenge, type EquationBuilderData } from '../primitives/visual-primitives/math/EquationBuilder';
+import { LiveLessonRuntime } from '../components/live-activity/runtime/LiveLessonRuntime';
+import { LiveRuntimeContext } from '../components/live-activity/runtime/LiveRuntimeContext';
+import { LiveRuntimeSurface } from '../components/live-activity/runtime/LiveRuntimeSurface';
 
 const tutor = vi.hoisted(() => ({ isAudioPlaying: false, activePrimitiveId: 'eq' }));
-vi.mock('../hooks/useLuminaAI', () => ({
-  useLuminaAI: () => ({ sendText: vi.fn(), isConnected: false, ...tutor }),
-}));
+vi.mock('@/lib/firebase', () => ({ auth: { currentUser: null, onAuthStateChanged: () => () => {} }, db: {}, app: {} }));
+// The equation builder runs only on the teaching workspace: Pip is exercised there, and hears the shared context.
+vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
+  isConnected: true, isListening: true, sessionMode: 'lesson', sendText: vi.fn(), conversation: [],
+  sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} }, ...tutor,
+}) }));
 vi.mock('../evaluation', () => ({
   usePrimitiveEvaluation: () => ({ submitResult: vi.fn(), hasSubmitted: false, submittedResult: null, elapsedMs: 0 }),
   useEvaluationContext: () => null,
@@ -28,10 +34,23 @@ const data = (challenges: EquationBuilderChallenge[]): EquationBuilderData => ({
 function mount(input: EquationBuilderData) {
   const store = new PipSurfaceStore();
   store.setActive('eq');
-  const ui = () => <PipSurfaceContext.Provider value={store}><EquationBuilder data={input} /></PipSurfaceContext.Provider>;
+  const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
+  const ui = () => <PipSurfaceContext.Provider value={store}><LiveRuntimeContext.Provider value={runtime}>
+    <LiveRuntimeSurface runtime={runtime}><EquationBuilder data={input} runtimePlanItemId="plan-eq" runtimeEvalMode="mixed" /></LiveRuntimeSurface>
+  </LiveRuntimeContext.Provider></PipSurfaceContext.Provider>;
   const view = render(ui());
-  const speak = (on: boolean) => { tutor.isAudioPlaying = on; view.rerender(ui()); };
-  return { store, speak, ...view };
+  const speak = (on: boolean) => { tutor.isAudioPlaying = on; act(() => { view.rerender(ui()); }); };
+  /** The runtime's Try again or advance after a checked answer, as the shell offers it. */
+  const offer = (type: 'retry' | 'advance') => {
+    const s = runtime.getSnapshot();
+    const a = s.affordances.find(x => x.action.type === type);
+    expect(a, `no ${type} offered`).toBeTruthy();
+    const commandId = crypto.randomUUID();
+    act(() => { runtime.dispatch({ sessionEpoch: 'test', commandId, instanceId: 'eq', itemId: s.task!.itemId,
+      expectedRevision: s.revision, action: a!.action }); });
+    act(() => { runtime.confirmVisibleResponse(commandId); });
+  };
+  return { store, speak, offer, ...view };
 }
 const pose = (store: PipSurfaceStore) => store.getActive()?.pose;
 const target = (store: PipSurfaceStore, id: string) => store.getActive()?.targets.find((t) => t.id === id)?.element;
@@ -39,29 +58,29 @@ const before = (a: Element | null, b: Element | null) => !!a && !!b && !!(a.comp
 
 describe('Equation Builder drives Pip from its check state', () => {
   it('build: points at the slot row, never a tile; follows a tile to its slot; celebrates only a correct equation', () => {
-    const { store, speak, container } = mount(data([build, missing]));
+    const { store, speak, offer, container } = mount(data([build, missing]));
     const pool = container.querySelector('[data-pip-object="pool"]') as HTMLElement;
     expect(before(container.querySelector('[data-pip-object="workspace"]'), container.querySelector('[data-pip-dock="eq"]'))).toBe(true);
     expect(before(container.querySelector('[data-pip-dock="eq"]'), pool)).toBe(true);
     speak(true);
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'workspace' });
     speak(false);
-    fireEvent.click(within(pool).getByRole('button', { name: '2' }));
+    fireEvent.click(within(pool).getByRole('button', { name: 'Tile 2' }));
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'slot-0' });
     expect(target(store, 'slot-0')?.textContent).toBe('2');
     fireEvent.click(target(store, 'slot-0')!);
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'pool' });
-    for (const tile of ['2', '+', '1', '=', '3']) fireEvent.click(within(pool).getByRole('button', { name: tile }));
+    for (const tile of ['2', '+', '1', '=', '3']) fireEvent.click(within(pool).getByRole('button', { name: `Tile ${tile}` }));
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'slot-4' });
     fireEvent.click(screen.getByRole('button', { name: /check/i }));
     expect(pose(store)).toEqual({ phase: 'celebrating', gesture: 'none' });
-    fireEvent.click(screen.getByRole('button', { name: /next challenge/i }));
+    offer('advance');
     expect(store.getActive()?.scopeId).toBe('m1');
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'none' });
   });
 
   it('missing value: points at the printed "?", with the dock between it and the options; a wrong pick is watched, not celebrated', () => {
-    const { store, speak, container } = mount(data([missing, truth]));
+    const { store, speak, offer, container } = mount(data([missing, truth]));
     speak(true);
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'gap' });
     expect(target(store, 'gap')?.textContent).toBe('?');
@@ -72,6 +91,8 @@ describe('Equation Builder drives Pip from its check state', () => {
     fireEvent.click(screen.getByRole('button', { name: '2' }));
     fireEvent.click(screen.getByRole('button', { name: /check/i }));
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'option-2' });
+    // The miss waits for Try again.
+    offer('retry');
     fireEvent.click(screen.getByRole('button', { name: '3' }));
     fireEvent.click(screen.getByRole('button', { name: /check/i }));
     expect(pose(store)).toEqual({ phase: 'celebrating', gesture: 'none' });
@@ -96,9 +117,9 @@ describe('Equation Builder drives Pip from its check state', () => {
     expect(pose(bal.store)).toEqual({ phase: 'working', gesture: 'look', targetId: 'entry' });
   });
 
-  it('ignores speech for another block and praise still playing after Next', () => {
+  it('ignores speech for another block and praise still playing after the advance', () => {
     tutor.activePrimitiveId = 'other';
-    const { store, speak } = mount(data([truth, missing]));
+    const { store, speak, offer } = mount(data([truth, missing]));
     speak(true);
     expect(pose(store)).toEqual({ phase: 'working', gesture: 'none' });
     tutor.activePrimitiveId = 'eq';
@@ -110,7 +131,7 @@ describe('Equation Builder drives Pip from its check state', () => {
     fireEvent.click(screen.getByRole('button', { name: /check/i }));
     speak(true);
     expect(pose(store)).toEqual({ phase: 'celebrating', gesture: 'none' });
-    fireEvent.click(screen.getByRole('button', { name: /next challenge/i }));
+    offer('advance');
     expect(pose(store)).toEqual({ phase: 'idle', gesture: 'none' });
   });
 });

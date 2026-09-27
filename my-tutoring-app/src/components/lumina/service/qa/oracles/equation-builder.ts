@@ -6,8 +6,8 @@ import { asRecordArray, checkAnswerVariety, checkUniqueOptions, parseScopeCeilin
  * component's own judging contract, across all five challenge types.
  *
  * The component (EquationBuilder.tsx) judges each type with its own handler:
- *  - build         (handleCheckBuild)       : equationsMatch(slots, targetEquation)
- *      — the built tiles must exactly (whitespace-normalized) equal targetEquation.
+ *  - build         (handleCheckBuild)       : buildMatches(slots, targetEquation)
+ *      — targetEquation, or a true reordering of its own tiles with the same value.
  *  - missing-value (handleCheckMissingValue): selectedOption === correctValue.
  *  - true-false    (handleCheckTrueFalse)   : selectedTruthValue === isTrue.
  *  - balance       (handleCheckBalance)     : parseInt(input) === correctAnswer.
@@ -64,9 +64,9 @@ import { asRecordArray, checkAnswerVariety, checkUniqueOptions, parseScopeCeilin
  * Deliberately NOT checked:
  *  - instruction/hint TONE and the support-tier distractor count / option spread:
  *    display-only scaffolding levers (the checker never reads them) — /eval-test.
- *  - build's exact-token-match leniency: the component grades a byte match, so a
- *    mathematically-equivalent-but-different build is intentionally "wrong" — the
- *    oracle only requires the target itself to be true and buildable.
+ *  - build's leniency: the component also accepts a true reordering of the target's
+ *    tiles ("2 + 3 = 5" for "3 + 2 = 5"); an equation from other tiles is "wrong" —
+ *    the oracle only requires the target itself to be true and buildable.
  *  - distractor plausibility (near vs far MC spread) — /eval-test territory.
  */
 

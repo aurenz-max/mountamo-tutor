@@ -1,0 +1,88 @@
+{
+ "source": "qa/tutor-reports/equation-builder-runtime-build-simple-payload-2026-09-26.json",
+ "primitiveId": "equation-builder",
+ "evalMode": "build-simple",
+ "data": {
+  "title": "Equation Workshop!",
+  "description": "Learn how to build addition equations within 10 using draggable tiles and discover what the equal sign really means.",
+  "maxNumber": 10,
+  "gradeBand": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "build",
+    "instruction": "Can you use the tiles to make a true equation that equals 4?",
+    "targetEquation": "2 + 2 = 4",
+    "availableTiles": [
+     "1",
+     "4",
+     "2",
+     "3",
+     "+",
+     "2",
+     "="
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "build",
+    "instruction": "Put the tiles together to build an addition equation with a sum of 5.",
+    "targetEquation": "3 + 2 = 5",
+    "availableTiles": [
+     "5",
+     "3",
+     "4",
+     "1",
+     "=",
+     "+",
+     "2"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "build",
+    "instruction": "Can you arrange the tiles to make a sentence where 4 plus 2 equals 6?",
+    "targetEquation": "4 + 2 = 6",
+    "availableTiles": [
+     "6",
+     "+",
+     "2",
+     "5",
+     "=",
+     "4",
+     "3"
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "build",
+    "instruction": "Build a true addition equation that results in a total of 8.",
+    "targetEquation": "5 + 3 = 8",
+    "availableTiles": [
+     "+",
+     "4",
+     "5",
+     "3",
+     "2",
+     "8",
+     "="
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "build",
+    "instruction": "Use your tile-building skills to make an equation that totals 10.",
+    "targetEquation": "4 + 6 = 10",
+    "availableTiles": [
+     "10",
+     "4",
+     "+",
+     "5",
+     "6",
+     "=",
+     "2"
+    ]
+   }
+  ]
+ }
+}

@@ -5340,6 +5340,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
+      guidance: 'The builder checks the learner’s answer itself when they press Check, and you are not told the answer: '
+        + 'the learner taps tiles into a row to build or rewrite an equation, taps a number to fill the "?", taps True or '
+        + 'False, or types the number that balances both sides. The learner may not read well: say the instruction and the '
+        + 'printed equation in your own words first. Before the learner has checked, never say the missing number, whether '
+        + 'the equation is true, the value of either side, an equation to build, or which number goes first; coach only as far as the support tier '
+        + 'allows. Talk about = as "the same amount on both sides", never "the answer is". You cannot place a tile, pick '
+        + 'or type for the learner.',
+    },
     evalModes: [
       {
         evalMode: 'build-simple',

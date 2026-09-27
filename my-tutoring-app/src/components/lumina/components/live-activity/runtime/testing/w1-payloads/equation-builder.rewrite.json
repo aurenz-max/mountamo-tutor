@@ -1,0 +1,138 @@
+{
+ "source": "qa/tutor-reports/equation-builder-runtime-rewrite-payload-2026-09-26.json",
+ "primitiveId": "equation-builder",
+ "evalMode": "rewrite",
+ "data": {
+  "title": "Equation Workshop!",
+  "description": "Learn how to flip and rewrite addition and subtraction equations within 10 to show that both sides have the same value.",
+  "maxNumber": 10,
+  "gradeBand": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "rewrite",
+    "instruction": "Can you show this addition equation the other way around? Remember, both sides mean the same thing!",
+    "originalEquation": "2 + 3 = 5",
+    "acceptedForms": [
+     "3 + 2 = 5",
+     "5 = 2 + 3",
+     "5 = 3 + 2",
+     "5 - 2 = 3",
+     "5 - 3 = 2",
+     "3 = 5 - 2",
+     "2 = 5 - 3"
+    ],
+    "availableTiles": [
+     "+",
+     "1",
+     "2",
+     "5",
+     "-",
+     "3",
+     "4",
+     "="
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "rewrite",
+    "instruction": "Let us flip another addition equation. Try putting the total on the left side this time!",
+    "originalEquation": "4 + 1 = 5",
+    "acceptedForms": [
+     "1 + 4 = 5",
+     "5 = 4 + 1",
+     "5 = 1 + 4",
+     "5 - 4 = 1",
+     "5 - 1 = 4",
+     "1 = 5 - 4",
+     "4 = 5 - 1"
+    ],
+    "availableTiles": [
+     "5",
+     "+",
+     "3",
+     "4",
+     "1",
+     "2",
+     "=",
+     "-"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "rewrite",
+    "instruction": "Great job! Now let us try rewriting a subtraction equation. Flip the parts around the equal sign.",
+    "originalEquation": "6 - 2 = 4",
+    "acceptedForms": [
+     "2 + 4 = 6",
+     "4 + 2 = 6",
+     "6 = 2 + 4",
+     "6 = 4 + 2",
+     "6 - 4 = 2",
+     "4 = 6 - 2",
+     "2 = 6 - 4"
+    ],
+    "availableTiles": [
+     "=",
+     "3",
+     "-",
+     "6",
+     "5",
+     "+",
+     "4",
+     "2"
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "rewrite",
+    "instruction": "You are doing wonderful! Express this addition equation with the numbers swapped on the left side.",
+    "originalEquation": "3 + 4 = 7",
+    "acceptedForms": [
+     "4 + 3 = 7",
+     "7 = 3 + 4",
+     "7 = 4 + 3",
+     "7 - 3 = 4",
+     "7 - 4 = 3",
+     "4 = 7 - 3",
+     "3 = 7 - 4"
+    ],
+    "availableTiles": [
+     "2",
+     "-",
+     "7",
+     "+",
+     "3",
+     "4",
+     "1",
+     "="
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "rewrite",
+    "instruction": "Here is our final challenge! Rewrite this subtraction equation starting with the total on the left.",
+    "originalEquation": "8 - 3 = 5",
+    "acceptedForms": [
+     "3 + 5 = 8",
+     "5 + 3 = 8",
+     "8 = 3 + 5",
+     "8 = 5 + 3",
+     "8 - 5 = 3",
+     "5 = 8 - 3",
+     "3 = 8 - 5"
+    ],
+    "availableTiles": [
+     "1",
+     "8",
+     "3",
+     "+",
+     "2",
+     "-",
+     "=",
+     "5"
+    ]
+   }
+  ]
+ }
+}

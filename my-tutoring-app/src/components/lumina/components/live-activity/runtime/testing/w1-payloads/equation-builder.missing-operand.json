@@ -1,0 +1,83 @@
+{
+ "source": "qa/tutor-reports/equation-builder-runtime-missing-operand-payload-2026-09-26.json",
+ "primitiveId": "equation-builder",
+ "evalMode": "missing-operand",
+ "data": {
+  "title": "Balance the Equation!",
+  "description": "Learn about the equal sign by finding the missing numbers to make both sides equal within 10.",
+  "maxNumber": 10,
+  "gradeBand": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "missing-value",
+    "instruction": "Find the missing number to make this equation true!",
+    "equation": "3 + ? = 5",
+    "missingPosition": 2,
+    "correctValue": 2,
+    "options": [
+     3,
+     4,
+     1,
+     2
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "missing-value",
+    "instruction": "What number goes in the box to make the sides balanced?",
+    "equation": "? + 3 = 7",
+    "missingPosition": 0,
+    "correctValue": 4,
+    "options": [
+     3,
+     5,
+     4,
+     2
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "missing-value",
+    "instruction": "Keep the balance equal! What is the missing number?",
+    "equation": "4 + ? = 9",
+    "missingPosition": 2,
+    "correctValue": 5,
+    "options": [
+     3,
+     4,
+     5,
+     6
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "missing-value",
+    "instruction": "Find the hidden number to make both sides have the same amount.",
+    "equation": "? + 2 = 8",
+    "missingPosition": 0,
+    "correctValue": 6,
+    "options": [
+     6,
+     4,
+     7,
+     5
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "missing-value",
+    "instruction": "You are doing great! Solve for the missing part to finish the equation.",
+    "equation": "6 + ? = 9",
+    "missingPosition": 2,
+    "correctValue": 3,
+    "options": [
+     4,
+     2,
+     5,
+     3
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,48 @@
+{
+ "source": "qa/tutor-reports/equation-builder-runtime-true-false-payload-2026-09-26.json",
+ "primitiveId": "equation-builder",
+ "evalMode": "true-false",
+ "data": {
+  "title": "True or False Equation Detectives",
+  "description": "Learn what the equal sign really means by looking at equations and deciding if they show the exact same amount on both sides.",
+  "maxNumber": 10,
+  "gradeBand": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "true-false",
+    "instruction": "Does this equation show the same amount on both sides? Let's check if it is true or false!",
+    "displayEquation": "3 + 2 = 5",
+    "isTrue": true
+   },
+   {
+    "id": "c2",
+    "type": "true-false",
+    "instruction": "Look closely at this equation. Do both sides match, or is something wrong?",
+    "displayEquation": "4 + 1 = 6",
+    "isTrue": false
+   },
+   {
+    "id": "c3",
+    "type": "true-false",
+    "instruction": "Count carefully! Is this balanced math sentence true or false?",
+    "displayEquation": "6 = 3 + 3",
+    "isTrue": true
+   },
+   {
+    "id": "c4",
+    "type": "true-false",
+    "instruction": "Let's test this equation. Does the left side equal the right side?",
+    "displayEquation": "7 = 5 + 3",
+    "isTrue": false
+   },
+   {
+    "id": "c5",
+    "type": "true-false",
+    "instruction": "Here is our final challenge! Is this equation telling the truth?",
+    "displayEquation": "4 + 4 = 8",
+    "isTrue": true
+   }
+  ]
+ }
+}
