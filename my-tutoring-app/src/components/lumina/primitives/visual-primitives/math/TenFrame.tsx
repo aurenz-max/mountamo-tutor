@@ -123,6 +123,7 @@ import {
   type TenFrameItem,
 } from './tenFrameScript';
 import { tenFrameEvidenceSummary, tenFrameObservation } from './tenFrameEvidence';
+import { COUNT_LEVER, FIVE_LEVER, SMALLER_LEVER, smallerBuild, tenFrameLevers } from './tenFrameLevers';
 import { numberWordFor } from './countingBoardScript';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
@@ -348,6 +349,12 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
    *  it landed in one React batch, so the reveal painted on the last item and
    *  nowhere else (18b). `runner.revealHeld` is the gate now. */
   const [reward, setReward] = useState<string | null>(null);
+  // In-item levers (`tenFrameLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // build a simplify lever put on screen in its place. The ref is what event handlers read.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<TenFrameItem | null>(null);
+  const practiceRef = useRef<TenFrameItem | null>(null);
+  const displayItemRef = useRef<TenFrameItem | null>(null);
 
   const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** What the frame held when it last stopped changing. On `split` this is the
@@ -544,7 +551,8 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1-2',
     exhibitId,
     onFinished: handleFinished,
-    onItemOpened: resetFrameFor,
+    // A fresh item never carries an easier build over from the last one.
+    onItemOpened: (item) => { practiceRef.current = null; setPractice(null); resetFrameFor(item); },
     // THE TUTOR OWNS THE STIMULUS CLOCK. The runner fires this once she has
     // spoken for THIS item and stopped — on the first ask, on every subsequent
     // challenge, and on a correction's re-flash. There is no window here to
@@ -559,7 +567,9 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
       if (item.kind === 'subitize') setCountersVisible(true);
       setReward(rewardFor(item, pendingPlacementRef.current));
     },
-    onCorrectionRetry: (item) => {
+    onCorrectionRetry: (sessionItem) => {
+      // Try again on the easier build keeps it: reset ITS frame, not the full item's.
+      const item = practiceRef.current ?? sessionItem;
       // The tutor's correction re-modeled and re-asked in-band; restore the
       // working surface for another go. The settle window and the flash gate
       // are both re-armed by the runner on this path.
@@ -594,7 +604,15 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
     },
   });
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the easier build while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  displayItemRef.current = currentItem;
+  // `showCount` (easy, or no tier) is the starting position of the running-count lever; a pull adds to it.
+  const startPulled = showCount ? [COUNT_LEVER] : [];
+  const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : startPulled;
+  const countPulledLive = pulledLevers.includes(COUNT_LEVER) && !startPulled.includes(COUNT_LEVER);
+  const fiveOn = pulledLevers.includes(FIVE_LEVER) && currentItem?.kind === 'build';
   const startRunnerRef = useRef(runner.start); startRunnerRef.current = runner.start;
   useEffect(() => {
     if (!autoStart || autoStartedRef.current || !live.isConnected || !live.isListening
@@ -614,7 +632,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
   // cue is actually SENT — an attempt opened at commit time would block the
   // very cue meant to provoke its verdict (cvc-speller's finding).
   const commitPlacement = useCallback(() => {
-    const item = runner.currentItem;
+    const item = displayItemRef.current;
     if (!item || item.answerKind !== 'gesture') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const onFrame = pendingPlacementRef.current;
@@ -660,7 +678,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
   // ── Frame taps ────────────────────────────────────────────────────────────
   const handleCellClick = useCallback((cellIndex: number) => {
     if (runtime && runner.runtimeControls?.getState().suspended) return;
-    const item = runner.currentItem;
+    const item = displayItemRef.current;
     // NEVER gate interaction on the stage word — the runner sets `affirmed` and
     // opens the next item in the same dispatch, so a stage-gated frame ships
     // dead from item 2 on. `canAttempt` is the runner's own answer to the live
@@ -744,6 +762,23 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
         hidden: isSubitize && !countersVisible }),
       demonstration: [], canDemonstrate: false, canPresent: isSubitize,
       readyForResponse: !isSubitize || flashAnswerReady,
+      levers: practice ? [] : tenFrameLevers(sessionItem, pulledLevers, gradeBand),
+      // A synchronous commit (the workspace runs it inside flushSync): the frame changes before this returns.
+      pullLever: (id) => {
+        const lever = tenFrameLevers(sessionItem, pulledLevers, gradeBand).find(l => l.id === id);
+        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === SMALLER_LEVER) {
+          const easier = smallerBuild(sessionItem, gradeBand);
+          if (!easier) return 'There is no easier build for this item.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          practiceRef.current = easier; setPractice(easier); resetFrameFor(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => { practiceRef.current = null; setPractice(null); },
       mark: () => {},
       clearPresentation: () => {
         if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
@@ -874,9 +909,17 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
           className="transition-colors duration-300"
         />
         {cells}
+        {/* Five-frame lever: the top row outlined and marked 5. Never offered when five is the number to build. */}
+        {fiveOn && frameIndex === 0 && (
+          <g data-lever="five-frame" pointerEvents="none">
+            <rect x={offsetX + FRAME_PADDING - 5} y={FRAME_PADDING - 5} width={FRAME_COLS * (CELL_SIZE + CELL_GAP) - CELL_GAP + 10}
+              height={CELL_SIZE + 10} rx={CELL_RADIUS + 4} fill="none" stroke="rgba(56,189,248,0.8)" strokeWidth={3} strokeDasharray="8 5" />
+            <text x={offsetX + frameWidth + 4} y={FRAME_PADDING + CELL_SIZE / 2 + 6} fill="rgba(125,211,252,1)" fontSize={20} fontWeight={700}>5</text>
+          </g>
+        )}
       </g>
     );
-  }, [filledCells, countersVisible, colorForCell, handleCellClick, pip]);
+  }, [filledCells, countersVisible, colorForCell, handleCellClick, pip, fiveOn]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   /** `build` runs never speak an answer and `subitize` runs never place one —
@@ -934,9 +977,11 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
   // ask already states aloud — the child's own trace toward a public target.
   // `decompose_teen` is deliberately absent for `split`'s reason — the honest
   // readout there would be the yellow count, which IS what is being asked for.
-  const showTrace = showCount && countersVisible
+  // On `build` the count is the running-count lever; pulled at runtime it shows even on an empty frame,
+  // so the pull changes the screen. The other kinds keep the tier's `showCount`.
+  const showTrace = (kind === 'build' ? pulledLevers.includes(COUNT_LEVER) : showCount) && countersVisible
     && (kind === 'build' || kind === 'make_ten' || kind === 'build_teen')
-    && filledCells.size > 0;
+    && (filledCells.size > 0 || (kind === 'build' && countPulledLive));
 
   const stageWord = runner.stage === 'judging'
     ? 'let’s see…'
@@ -1001,9 +1046,9 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
               <svg
                 ref={pip.ref('frame')}
                 data-pip-object="frame"
-                width={svgWidth}
+                width={svgWidth + (fiveOn ? 30 : 0)}
                 height={svgHeight}
-                viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                viewBox={`0 0 ${svgWidth + (fiveOn ? 30 : 0)} ${svgHeight}`}
                 className="max-w-full h-auto"
               >
                 {Array.from({ length: frameCount }, (_, i) => renderFrame(i))}
@@ -1016,7 +1061,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
             {/* The child's own placement trace. Never an empty-space readout —
                 on a make-ten item that number IS the answer (R5). */}
             {showTrace && (
-              <div className="flex items-center justify-center text-sm">
+              <div className="flex items-center justify-center text-sm" data-lever="running-count">
                 <span className="text-slate-300">
                   Counters: <span className="text-orange-300 font-bold text-lg">{filledCells.size}</span>
                 </span>

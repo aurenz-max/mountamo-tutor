@@ -23,6 +23,7 @@ import type { SupportArtifact } from './runtime/contract';
 import type { LivePrimitiveId } from './activityContract';
 import { itemsFromChallenges as shapeItems, shapeSorterHarnessAnswers } from '../../primitives/visual-primitives/math/shapeSorterScript';
 import { simplerJump } from '../../primitives/visual-primitives/math/numberLineLevers';
+import { smallerBuild } from '../../primitives/visual-primitives/math/tenFrameLevers';
 import { buildSequencerItems as sequencerItems, sequencerHarnessAnswers }
   from '../../primitives/visual-primitives/math/numberSequencerDomain';
 import { buildLetterSoundItems, letterSoundHarnessAnswers }
@@ -283,7 +284,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'place', value: intent === 'wrong' ? landing + 1 : landing }, { type: 'check' }];
     },
     probes: { mounted: { selector: 'svg[viewBox="0 0 760 240"]' },
-      leverMarks: { selector: '[data-lever] text', kind: 'count' }, modelHop: { selector: '[data-lever="model-hop"]', kind: 'count' } },
+      modelHop: { selector: '[data-lever="model-hop"]', kind: 'count' } },
   },
 
   'ten-frame': {
@@ -298,8 +299,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
       const d = ctx.data;
-      const item = frameItems(d.challenges ?? [], { capacity: d.mode === 'double' ? 20 : 10, band: d.gradeBand ?? 'K' })
-        .find(i => i.id === ctx.itemId);
+      const all = frameItems(d.challenges ?? [], { capacity: d.mode === 'double' ? 20 : 10, band: d.gradeBand ?? 'K' });
+      // The easier build (simplify lever) is not a generated challenge: rebuild it with the component's builder.
+      const parent = ctx.itemId?.endsWith('~smaller') ? all.find(i => `${i.id}~smaller` === ctx.itemId) : undefined;
+      const item = parent ? smallerBuild(parent, d.gradeBand ?? 'K') ?? undefined : all.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current ten-frame assignment');
       const answers = tenFrameHarnessAnswers(item);
       // A quick look not yet shown is the learner's to start: they press Show me, then answer.
@@ -1750,6 +1753,8 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
 export const SHARED_PROBES: Record<string, JourneyProbe> = {
   reminder: { selector: '[data-runtime-hint]' },
   support: { selector: '[aria-label="Worked example"]' },
+  // Whatever a pulled in-item lever drew (`/add-support-tiers`): every primitive marks it `data-lever`.
+  leverMarks: { selector: '[data-lever]', kind: 'count' },
 };
 
 /** The JSON-serializable half — everything but the two resolver functions. */

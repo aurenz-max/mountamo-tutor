@@ -2303,6 +2303,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       guidance: 'The frame checks placed or flipped counters itself once the learner stops; '
         + 'talk about a part-built frame is teaching, not a verdict. On a quick-look item, call present when the learner '
         + 'is ready: the counters show briefly, then hide. Never count them out. You cannot place, remove or flip counters.',
+      levers: true,
     },
     evalModes: [
       {

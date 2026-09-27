@@ -94,7 +94,8 @@ it.each([
   const h = mount(mode, [...challenges], band);
   expect(h.state().owner).toBe('tutor');
   expect(h.state().task!.task).not.toMatch(/Say exactly|\[TF_/);
-  expect(tutorTools(h)).toEqual(mode === 'subitize' ? ['begin_help', 'present'] : ['begin_help']);
+  // A build item declares in-item levers (tenFrameLevers.ts); the other kinds have none yet.
+  expect(tutorTools(h)).toEqual(mode === 'subitize' ? ['begin_help', 'present'] : mode === 'build' ? ['begin_help', 'pull_lever'] : ['begin_help']);
   expect(seam.send.mock.calls.flat().join(' ')).not.toMatch(/\[TF_|Say exactly/);
 });
 
@@ -196,8 +197,8 @@ it.each(['mixed', 'build|subitize|decompose'])('a %s pin binds, and each item ke
   const h = mount(pin, [challenge('b1', 'build', 2), challenge('s1', 'subitize', 3, { flashDuration: 1000 }),
     challenge('d1', 'split', 4)]);
   expect(h.state().owner).toBe('tutor');
-  // build: a placement, no quick look on offer
-  expect(tutorTools(h)).toEqual(['begin_help']);
+  // build: a placement, no quick look on offer; its levers are
+  expect(tutorTools(h)).toEqual(['begin_help', 'pull_lever']);
   h.tap(0, 1); h.settle();
   h.dispatch('advance');
   // subitize: the frame from build is gone, the counters are hidden, and only now is present offered

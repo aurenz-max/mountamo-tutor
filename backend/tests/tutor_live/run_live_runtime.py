@@ -79,7 +79,10 @@ class Session:
         workspace = task.get('workspace') or {}
         parent = (workspace.get('practice') or {}).get('returnsTo') or task.get('itemId')
         now = {l['id'] for l in workspace.get('levers', []) if l['pulled']} | ({'(simpler item)'} if workspace.get('practice') else set())
-        seen = self.__dict__.setdefault('seen_pulls', {}).setdefault(parent, set())
+        pulls = self.__dict__.setdefault('seen_pulls', {})
+        if parent not in pulls:  # first sight of this item: what it opens with is its starting position
+            pulls[parent] = set(now)
+        seen = pulls[parent]
         new = now - seen
         if '(simpler item)' in seen:  # back from the simpler item: its simplify lever was already counted
             new -= {l['id'] for l in workspace.get('levers', []) if l['kind'] == 'simplify'}
@@ -566,8 +569,10 @@ async def lever_journey(s):
         if s.state['task']['itemId'] == first:
             await s.step({'type': 'learner_progress', 'action': 'advance'})
     assert open_levers(), 'No item offered a lever after a wrong answer'
-    challenge = next(c for c in s.data['challenges'] if c['id'] == first)
-    landings = {str(v) for v in challenge['targetValues']}
+    challenge = next((c for c in s.data.get('challenges', []) if c['id'] == first), {})
+    # The item's own answer numbers, whichever field the primitive keeps them in; the lever facts must not state them.
+    landings = {str(v) for k in ('targetValues', 'targetCount', 'answer') for v in
+                (challenge.get(k) if isinstance(challenge.get(k), list) else [challenge.get(k)]) if isinstance(v, (int, float))}
     pulls = lambda: [e for e in s.events if e['type'] == 'lever_pull']
     for label, prompt in (('stuck', "I'm stuck. I don't know how to do this one."),
                           ('stuck-again', "I still don't get it.")):
@@ -774,6 +779,9 @@ async def drive(args, token, live, index):
         mounted = await asyncio.to_thread(s.exchange,
             {'type': 'poll' if args.startup else 'mount', 'data': s.data, 'evalMode': args.mode, 'diItems': s.di_items})
         s.state = mounted['state']
+        # Levers pulled at mount are the item's starting position (easy tier / no tier), never a pull.
+        task0 = s.state.get('task') or {}
+        s.seen_pulls = {task0.get('itemId'): {l['id'] for l in (task0.get('workspace') or {}).get('levers', []) if l['pulled']}}
         async with websockets.connect(args.backend + '/api/lumina-tutor', max_size=2**24) as ws:
             s.ws = ws
             empty = {'primitive_type': 'live-activity-sandbox', 'instance_id': 'empty-workspace',
@@ -791,13 +799,20 @@ async def drive(args, token, live, index):
                 'lesson_context': {'topic': args.topic, 'grade_level': args.grade,
                                    'objectives': [], 'ordered_components': []}}))
             workspace = journey.get('execution') == 'workspace' or bool((s.state.get('task') or {}).get('workspace'))
-            if args.demonstration or args.lever:
-                await (demonstration_detour(s) if args.demonstration else lever_journey(s))
-                receipts = [e['result'] for e in s.events if e['type'] == 'runtime_result']
-                assert all(r['status'] == 'visible' for r in receipts), 'An action did not reach visible'
-                return {'passed': True, 'primitiveId': args.primitive, 'events': s.events, 'items': s.data.get('challenges', []),
-                        'providerResumes': sum(e['type'] == 'provider_resume' and e.get('event') == 'session_resuming' for e in s.events)}
-            await (teaching_surface(s) if teaching else teaching_workspace(s) if workspace else PROGRAMS[activity['teachingOwner']](s))
+            try:
+                if args.demonstration or args.lever:
+                    await (demonstration_detour(s) if args.demonstration else lever_journey(s))
+                    receipts = [e['result'] for e in s.events if e['type'] == 'runtime_result']
+                    assert all(r['status'] == 'visible' for r in receipts), 'An action did not reach visible'
+                    return {'passed': True, 'primitiveId': args.primitive, 'events': s.events, 'items': s.data.get('challenges', []),
+                            'providerResumes': sum(e['type'] == 'provider_resume' and e.get('event') == 'session_resuming' for e in s.events)}
+                await (teaching_surface(s) if teaching else teaching_workspace(s) if workspace else PROGRAMS[activity['teachingOwner']](s))
+            except Exception as error:
+                # Hang up with the reason, so the backend's "Client disconnected" line names why the harness left.
+                print(f"Run {index}: harness closing socket at t={time.monotonic() - s.started:.2f}s: {error!r}", flush=True)
+                if not isinstance(error, websockets.ConnectionClosed):
+                    await ws.close(4000, ('harness: ' + repr(error)).encode()[:120].decode(errors='ignore'))
+                raise
         receipts = [e['result'] for e in s.events if e['type'] == 'runtime_result']
         # Real audio can finish an answer while the model is choosing an action
         # from the prior working state. A scoped refusal is correct in that race.
