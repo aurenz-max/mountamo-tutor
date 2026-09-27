@@ -598,7 +598,9 @@ async def lever_journey(s):
         assert not practice(), 'The easier jump never returned to the full item'
     assert s.state['task']['itemId'] == first, 'The lever left the item'
     if s.state['task']['phase'] != 'working':
-        await turn('retry', 'Can I try again?', lambda st: st['task']['phase'] == 'working')
+        # One tutor reply, then the child's own Try again if the item is still closed. Waiting for the phase
+        # to change hung when the tutor invited a try but the observer did not reopen the item (run-5, 09-27).
+        await turn('retry', 'Can I try again?')
         if s.state['task']['phase'] != 'working':
             await press('retry')
     await s.learner('correct')
