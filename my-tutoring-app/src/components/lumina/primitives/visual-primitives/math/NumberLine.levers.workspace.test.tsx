@@ -12,7 +12,7 @@ import { LiveLessonRuntime } from '../../../components/live-activity/runtime/Liv
 import { LiveRuntimeContext } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
-import { RuntimeTransport } from '../../../components/live-activity/runtime/runtimeTransport';
+import { AFTER_TURN_FALLBACK_MS, RuntimeTransport } from '../../../components/live-activity/runtime/runtimeTransport';
 
 const seam = vi.hoisted(() => ({ send: vi.fn(), view: {} as Record<string, unknown> }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
@@ -180,10 +180,55 @@ it('the observer pulls the next lever when a learner who answered wrong says the
   await paint();
   expect(levers(h).find(l => l.id === 'numbered_hops')!.pulled).toBe(true);
   expect(h.hopLabels('learner-hops')).toEqual(['1', '2']);
+  // The tutor's reply to "I don't get it" comes first; the message opens the turn after it.
+  act(() => { transport.beginTurn('Let us look again.'); transport.endTurn(false); });
   expect(sent.find(m => m.type === 'text' && /numbered_hops/.test(m.content))?.content).toMatch(/on screen now/);
   // Stuck again: the simplify lever is next.
   act(() => { transport.learnerText('I still do not get it', true); });
   await paint();
   expect(h.state().task!.itemId).toBe('j0~simpler');
+  transport.close();
+});
+
+it('a pull whose reply never begins still tells the tutor, after the fallback', async () => {
+  const h = mount();
+  const sent: any[] = [];
+  const stuck = vi.fn(async () => ({ asksForHelp: .95, wantsToStop: .01, attemptsAnswer: .02, accepted: true, reason: 'observed', ms: 1 }));
+  const transport = new RuntimeTransport(h.runtime, m => sent.push(m), vi.fn(async () => ({ verdict: 'none' as const, transition: 'none' as const,
+    confidence: 0, grounded: 0, accepted: false, reason: 'test', ms: 1 })), stuck);
+  const paint = async () => { for (let i = 0; i < 5; i++) await act(async () => {
+    await new Promise(r => setTimeout(r, 20)); h.runtime.acknowledgeVisible(h.state().revision); }); };
+  const told = () => sent.filter(m => m.type === 'text' && /numbered_hops/.test(m.content));
+  h.tap(6); h.check();
+  act(() => { transport.learnerText("I'm stuck", true); });
+  await paint();
+  expect(levers(h).find(l => l.id === 'numbered_hops')!.pulled).toBe(true);
+  expect(told()).toHaveLength(0);
+  await act(async () => { await new Promise(r => setTimeout(r, AFTER_TURN_FALLBACK_MS + 50)); });
+  expect(told()).toHaveLength(1);
+  transport.close();
+});
+
+it('a pull that lands while the tutor is replying waits for that reply to settle before telling the tutor (LB-8)', async () => {
+  const h = mount();
+  const sent: any[] = [];
+  const stuck = vi.fn(async () => ({ asksForHelp: .95, wantsToStop: .01, attemptsAnswer: .02, accepted: true, reason: 'observed', ms: 1 }));
+  const transport = new RuntimeTransport(h.runtime, m => sent.push(m), vi.fn(async () => ({ verdict: 'none' as const, transition: 'none' as const,
+    confidence: 0, grounded: 0, accepted: false, reason: 'test', ms: 1 })), stuck);
+  const paint = async () => { for (let i = 0; i < 5; i++) await act(async () => {
+    await new Promise(r => setTimeout(r, 20)); h.runtime.acknowledgeVisible(h.state().revision); }); };
+  const told = () => sent.filter(m => m.type === 'text' && /numbered_hops/.test(m.content));
+  h.tap(6); h.check();
+  act(() => { transport.learnerText("I'm stuck", true); transport.beginTurn('I can help with that!'); });
+  await paint();
+  // The screen helps at once; the tutor is not told while its reply is still playing.
+  expect(levers(h).find(l => l.id === 'numbered_hops')!.pulled).toBe(true);
+  expect(told()).toHaveLength(0);
+  act(() => { transport.endTurn(true); });
+  expect(told()).toHaveLength(0);
+  act(() => { transport.audioChanged(false); });
+  expect(told()).toHaveLength(1);
+  act(() => { transport.audioChanged(false); });
+  expect(told()).toHaveLength(1);
   transport.close();
 });

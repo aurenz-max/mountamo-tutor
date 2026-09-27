@@ -30,11 +30,17 @@ export function runtimePacket(state: RuntimeSnapshot,
     actionId: `${state.sessionEpoch}/${state.revision}/${index}` })), ...(learner ? { learner } : {}) };
 }
 
+/** How long a held host message waits for a tutor reply to begin before it is sent anyway. */
+export const AFTER_TURN_FALLBACK_MS = 3000;
+
 /** Used by the actual browser host AND the headless live drive (only paint is simulated there). */
 export class RuntimeTransport {
   private pending = new Map<string, AbortController>();
   private releaseTurn: ((settled?: boolean) => void) | null = null;
   private turnEnded = false;
+  /** A host message held until the tutor's current reply settles, so it opens the next turn (LB-8). */
+  private afterTurn: { itemId: string; content: string } | null = null;
+  private afterTurnFallback: ReturnType<typeof setTimeout> | null = null;
   private closed = false;
   private unsubscribe: () => void;
 
@@ -83,6 +89,8 @@ export class RuntimeTransport {
     this.runtime.speech.output();
     this.turnEnded = false;
     this.releaseTurn ??= this.runtime.holdTeachingTurn({ allowTutorActions: true });
+    // The reply the held message was waiting for has begun; it goes out when that reply settles.
+    if (this.afterTurnFallback) { clearTimeout(this.afterTurnFallback); this.afterTurnFallback = null; }
   }
   endTurn(audioPending: boolean) {
     this.runtime.speech.end(audioPending);
@@ -100,6 +108,14 @@ export class RuntimeTransport {
     if (release) this.runtime.learner.tutorSettled();
     release?.();
     this.dialogue.audio(audioPending);
+    if (release) this.sendAfterTurn();
+  }
+  private sendAfterTurn() {
+    if (this.afterTurnFallback) { clearTimeout(this.afterTurnFallback); this.afterTurnFallback = null; }
+    const held = this.afterTurn;
+    this.afterTurn = null;
+    if (held && !this.closed && this.runtime.getSnapshot().task?.itemId === held.itemId)
+      this.send({ type: 'text', scripted: false, content: held.content });
   }
   async command(input: unknown): Promise<void> { await this.dispatch(input); }
   /** Explicit learner recovery uses the same scoped capability and visible receipt. */
@@ -118,6 +134,13 @@ export class RuntimeTransport {
   /**
    * A learner who answered this item wrong and now says they are stuck gets the next lever from the
    * observer (`observerLever`). The tutor is told what changed once it is on screen, as facts.
+   *
+   * The pull is immediate; the message is not. With audio the tutor is usually already answering
+   * "I'm stuck" when the pull lands (lever bench LB-8: cue 29.1s, reply 29.8s), and a message sent
+   * into that reply goes unanswered. Or the reply has not begun yet, and the message cuts it off
+   * (ten-frame: pull 30.05s, reply cut to "Let's add one counter"). Learner words always get a reply,
+   * so the message waits for it to settle and opens the next turn. If no reply begins within
+   * AFTER_TURN_FALLBACK_MS, the message goes out anyway: a silent tutor must not strand it.
    */
   private async pullForStuckLearner(helpRequested: boolean) {
     const s = this.runtime.getSnapshot(), lever = observerLever(s, helpRequested);
@@ -129,9 +152,11 @@ export class RuntimeTransport {
     this.runtime.trace.record({ stage: 'observer_lever', status: status ?? 'dropped', reason: `Learner stuck after a wrong answer; pulled ${lever}`,
       input: { itemId: s.task.itemId, lever } });
     if (status !== 'visible' || this.closed) return;
-    this.send({ type: 'text', scripted: false, content: `The learner said they were stuck, so the host pulled the ${lever} lever `
+    const itemId = this.runtime.getSnapshot().task?.itemId ?? s.task.itemId;
+    this.afterTurn = { itemId, content: `The learner said they were stuck, so the host pulled the ${lever} lever `
       + `(${declared.kind}). It is on screen now: ${declared.does} First point the learner to it: say what is now drawn and where to look. `
-      + (declared.kind === 'simplify' ? 'Then let them try the easier item on screen.' : 'Then let them try the same question again; do not work it through for them.') });
+      + (declared.kind === 'simplify' ? 'Then let them try the easier item on screen.' : 'Then let them try the same question again; do not work it through for them.') };
+    if (!this.releaseTurn) this.afterTurnFallback = setTimeout(() => this.sendAfterTurn(), AFTER_TURN_FALLBACK_MS);
   }
   private async dispatch(input: unknown, observed = false): Promise<string | undefined> {
     const command = parseTutorCommand(input);
@@ -220,6 +245,7 @@ export class RuntimeTransport {
   cancel(commandId: string) { this.pending.get(commandId)?.abort(); }
   close() {
     this.closed = true;
+    if (this.afterTurnFallback) clearTimeout(this.afterTurnFallback);
     this.dialogue.close();
     this.learnerObserver.close();
     this.pending.forEach(abort => abort.abort());

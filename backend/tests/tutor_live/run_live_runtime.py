@@ -443,7 +443,9 @@ async def workspace_turn(s, label, prompt=None, until=lambda state: True):
                     # A refused pull (no lever named, already pulled) changes nothing and is recorded apart.
                     task = s.state.get('task') or {}
                     lever = (action.get('input') or {}).get('lever')
-                    committed = any(l['id'] == lever and l['pulled'] for l in (task.get('workspace') or {}).get('levers', []))
+                    # A simplify pull opens the easier item, which declares no levers of its own: its practice flag is the receipt.
+                    committed = bool((task.get('workspace') or {}).get('practice')) or any(
+                        l['id'] == lever and l['pulled'] for l in (task.get('workspace') or {}).get('levers', []))
                     s.record('tutor_pull_lever', phase=label, lever=lever, committed=committed)
                     if not committed:
                         print(f"Run {s.index} {label}: tutor pull_lever {action.get('input')} refused", flush=True)
@@ -460,13 +462,15 @@ async def workspace_turn(s, label, prompt=None, until=lambda state: True):
                     s.record('visible_detour', artifact=artifact, state=s.state)
             elif kind == 'ai_transcription':
                 ended = False
+                if not transcript:  # where this turn began: a host message sent at its end came after it began
+                    s.turn_began = len(s.events)
                 transcript += event.get('content', '')
                 await s.step({'type': 'output', 'text': event.get('content', '')})
             elif kind == 'ai_turn_end':
                 await s.step({'type': 'end'})
                 ended = ended or spoken_words(transcript)
                 if spoken_words(transcript):
-                    s.record('tutor', phase=label, text=transcript, state=s.state)
+                    s.record('tutor', phase=label, text=transcript, state=s.state, began=getattr(s, 'turn_began', None))
                     print(f'Run {s.index} {label}: {transcript[:200]}', flush=True)
                     s.waiting_intro = False
                     if not s.observing and until(s.state):
@@ -579,10 +583,23 @@ async def lever_journey(s):
         if not pulls():
             await turn(label, prompt)
     assert pulls(), 'No lever was pulled, by the tutor or the observer'
+    if pulls()[-1]['source'] == 'observer':
+        # The observer tells the tutor once its reply to "I'm stuck" has settled (LB-8), so that message opens a
+        # turn of its own. A learner waits for it; answering over it would skip the narration being checked.
+        pulled_at = s.events.index(pulls()[-1])
+        told = lambda: next((i for i, e in enumerate(s.events) if i > pulled_at and e['type'] == 'runner_cue'
+                             and 'host pulled' in e.get('text', '')), None)
+        async with asyncio.timeout(20):
+            while told() is None:
+                await s.step({'type': 'poll'})
+                await asyncio.sleep(.15)
+        # A reply that began before the message answers the audio, not the message, even when logged after it.
+        if not any(e['type'] == 'tutor' and (e.get('began') or 0) > told() for e in s.events[told():]):
+            await turn('lever-told')
     for pull in pulls():
         facts = ' '.join(str((pull['demand'] or {}).get(k, '')) for k in ('onScreen', 'practice'))
         assert not landings & set(re.findall(r'\d+', facts)), 'A lever fact states the landing: ' + facts
-        assert pull['dom'].get('leverMarks', 0) > 0 or (pull['itemId'] or '').endswith('~simpler'), 'The pull changed nothing on screen'
+        assert pull['dom'].get('leverMarks', 0) > 0 or pull['lever'] == '(simpler item)', 'The pull changed nothing on screen'
 
     async def press(action):
         await s.step({'type': 'learner_progress', 'action': action})
@@ -610,7 +627,8 @@ async def lever_journey(s):
     solving = next(a for a in attempts if a['correct'])
     assert solving.get('levers') and solving.get('assisted'), 'The credited attempt does not record the lever'
     every = (s.state['task'].get('workspace') or {}).get('attempts', [])
-    assert all(a.get('practice') for a in every if a['itemId'].endswith('~simpler')), 'Easier-jump work was recorded as a session item'
+    easier = {p['itemId'] for p in pulls() if p['lever'] == '(simpler item)'}  # each primitive names its easier item
+    assert all(a.get('practice') for a in every if a['itemId'] in easier), 'Easier-item work was recorded as a session item'
     if s.state['task']['itemId'] == first:
         await turn('advance', 'I am ready for the next one.', lambda st: st['task']['itemId'] != first)
         if s.state['task']['itemId'] == first:

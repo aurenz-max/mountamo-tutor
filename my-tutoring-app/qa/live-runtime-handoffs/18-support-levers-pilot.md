@@ -61,7 +61,7 @@ Once the gate passes and the user has seen the report, set this as the session g
 
 | Phase | Primitive | Why this order | Known first steps |
 |---|---|---|---|
-| B1 | `ten-frame` | Manipulative, K–2; a lever table already drafted by the dry run | Start from the ten-frame appendix in the brief; `present` already exists for subitize |
+| B1 | `ten-frame` | Manipulative, K–2; a lever table already drafted by the dry run | Start from the ten-frame appendix in the brief; `present` already exists for subitize  **BENCH PASSED 09-27:** all six checks met in every run that started, text and audio (`tutor-reports/ten-frame-levers-2026-09-27/lb8-final-*`, `lb10-audio.json`) |
 | B2 | `fraction-circles` | The clearest "missing degree of freedom" case | Fix the identify easy-tier caption leak first (`/eval-fix`); run `/primitive-contract` (no contract doc exists) |
 | C1 | `rhyme-studio` | First literacy and first pre-reader case: every lever needs a voice carrier | Run `/primitive-contract` first; levers act on a model pair outside the item (a rime highlight answers recognition); check the stale `aiDirectives` |
 | C2 | one primitive of a different archetype, chosen with the user | Tests that the design holds outside math manipulatives | Pick from the diagnosis log (`logs/demonstrations/`) where real diagnoses recur |
