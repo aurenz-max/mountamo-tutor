@@ -388,7 +388,7 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
         + 'is finding food. Before an attempt never say the answer or which choice is right. You cannot tap or place for them.',
       // The activity's own checks (`habitatMiss`). observe, predict and defend are spoken (handoff 20 Part B).
       misses: missLists<HabitatMiss>({
-        connect: ['same_kind_other_link', 'other_kind_link', 'leads_to_start', 'unconnected'],
+        connect: ['other_kind_link', 'leads_to_start', 'unconnected'],
         restore: ['water_for_land', 'land_for_water', 'other_land_zone'],
       }),
     },

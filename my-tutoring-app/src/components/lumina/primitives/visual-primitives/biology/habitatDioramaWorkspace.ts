@@ -61,15 +61,14 @@ export const describeHabitatMove = (item: HabitatItem, move: { toId?: string; zo
 
 /**
  * What a checked wrong move shows (handoff 20), from the tap and the habitat's own relationships:
- *   - connect: `same_kind_other_link` (the start has this kind of relationship with the tapped living thing
- *     too, so the tap is defensible; see RP-7), `other_kind_link` (the start leads to it by another kind of
- *     relationship), `leads_to_start` (the tapped one's relationship points at the start: the reverse
+ *   - connect: `other_kind_link` (the start leads to it by another kind of relationship; the build gate keeps
+ *     one link of the asked kind per start, RP-7), `leads_to_start` (the tapped one's relationship points at the start: the reverse
  *     direction), `unconnected` (no relationship either way);
  *   - restore: `water_for_land` (put in open water; its zone is on land or the shoreline), `land_for_water`
  *     (its zone is open water; put on land or the shoreline), `other_land_zone` (neither zone is water).
  * observe, predict and defend are spoken (Part B).
  */
-export type HabitatMiss = 'same_kind_other_link' | 'other_kind_link' | 'leads_to_start' | 'unconnected'
+export type HabitatMiss = 'other_kind_link' | 'leads_to_start' | 'unconnected'
   | 'water_for_land' | 'land_for_water' | 'other_land_zone';
 
 export function habitatMiss(item: HabitatItem, move: { toId?: string; zone?: HabitatZone },
@@ -77,9 +76,7 @@ export function habitatMiss(item: HabitatItem, move: { toId?: string; zone?: Hab
   if (habitatMoveMatches(item, move)) return undefined;
   if (item.kind === 'connect') {
     if (!move.toId) return undefined;
-    const out = relationships.filter(r => r.fromId === item.fromId && r.toId === move.toId);
-    if (out.some(r => r.type === item.relationshipType)) return 'same_kind_other_link';
-    if (out.length) return 'other_kind_link';
+    if (relationships.some(r => r.fromId === item.fromId && r.toId === move.toId)) return 'other_kind_link';
     return relationships.some(r => r.fromId === move.toId && r.toId === item.fromId) ? 'leads_to_start' : 'unconnected';
   }
   if (item.kind === 'restore' && move.zone && item.restorationZone) {

@@ -239,6 +239,9 @@ export const itemFromChallenge = (
     if (!relationship || !from || !to || from.id === to.id) return null;
     // The spoken clue asserts a direction, so the data must earn it.
     if (relationship.type === 'predation' && !predationDirectionOk(from, to)) return null;
+    // One answer: the ask names only the start and the kind of link, so a second link of that kind from the same
+    // start is also right, and the check could credit only one of them (RP-7, handoff 20).
+    if (data.relationships.some((r) => r.fromId === from.id && r.toId !== to.id && r.type === relationship.type)) return null;
     return {
       ...base,
       answerText: `${from.commonName} to ${to.commonName}`,

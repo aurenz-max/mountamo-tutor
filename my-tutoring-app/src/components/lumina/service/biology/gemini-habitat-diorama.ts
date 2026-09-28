@@ -28,7 +28,7 @@ export const HABITAT_CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   connect: {
     promptDoc:
-      '"connect": The learner BUILDS one ecological relationship by linking fromId to toId, in the direction energy or benefit flows (for predation, fromId is eaten by toId). The pair must exist in relationships; prompt may name the source but never the destination.',
+      '"connect": The learner BUILDS one ecological relationship by linking fromId to toId, in the direction energy or benefit flows (for predation, fromId is eaten by toId). The pair must exist in relationships, and fromId must have no other relationship of the same type (the ask names only the source and the kind of link, so it must have one answer); prompt may name the source but never the destination.',
     schemaDescription: "'connect' (build an ecological relationship)",
   },
   predict: {
