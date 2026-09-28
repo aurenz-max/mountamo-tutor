@@ -1,6 +1,6 @@
 # Live runtime adoption handoffs
 
-**Next session:** [16: the observer refuses credit for one step of a larger problem](16-la13-step-credit.md)
+**Next session:** the current phase in `WORKSTREAMS.md` (reset 2026-09-27): Phase 1 is handoffs [20](20-misses-and-tutor-replay.md) and [19](19-binding-consolidation.md), Phase 3 (levers, current beside Phase 1) is [21: trigger ladder, then math by class](21-lever-rollout.md) and [22: literacy levers](22-literacy-levers.md) in parallel, following [18](18-support-levers-pilot.md).
 (`/add-live-tutor-tools`; LA-13 part 2, found in rollout C6). Then the rollout continues at C7.
 
 **Previously:** [15: put every answerable primitive on the teaching workspace](15-workspace-rollout.md)

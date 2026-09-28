@@ -1,0 +1,323 @@
+[
+{"id":"bar-model","grade":"K-5","bound":true,"missFn":"barModelMiss (barModelWorkspace.ts)","priority":1,"note":"Generation flags showTargetHighlight/showBarValues/showPlacedCount/showEmptySlots already exist per tier; none is pullable. Two spoken K modes name no misses.","modes":[
+ {"modes":["read_one_to_one","match_to_bar"],"beta":"1.2/1.6","failures":[{"text":"counts the named row one off (skips or double-touches a picture)","evidence":"miss-fn","missIds":["one_short","one_over","short_by_more","over_by_more"]},{"text":"reads a different row than the one named","evidence":"miss-fn","missIds":["another_row"]}],
+  "help":[{"id":"touch_marks","does":"each picture the learner touches in a row (or pile, match_to_bar) keeps a check mark; a second touch is visibly already marked","leak":"marks only, no digits, no running total"},{"id":"name_row","does":"outlines the row the question names (the easy tier's showTargetHighlight, made pullable)","leak":"read_one_to_one only; never on match_to_bar, where the row is the answer"}],
+  "simplify":[{"id":"fewer_rows","does":"same ask on a 2-row graph, counts 1-5","risk":"R3: no row count and no pile size equal to the item's"}],
+  "trigger":"another_row -> name_row; one_short/one_over/short_by_more/over_by_more -> touch_marks, then fewer_rows","exists":"partial (showTargetHighlight generation flag); touch marks new","cost":"M"},
+ {"modes":["most_least","compare_bars"],"beta":"1.4/1.5","failures":[{"text":"picks the fewest when asked for the most (or the reverse)","evidence":"miss-fn","missIds":["reversed"]},{"text":"picks a middle row","evidence":"miss-fn","missIds":["other_row"]}],
+  "help":[{"id":"word_model","does":"a two-pile model outside the item (2 vs 6 apples) with 'most' circled, voiced","leak":"model pair shares no count with the item; nothing on the item's rows is marked"},{"id":"align_rows","does":"redraws rows in a shared cell grid starting at one edge so length compares one-to-one","leak":"no row highlighted, no counts, no end-guide line at any single row"}],
+  "simplify":[{"id":"far_rows","does":"2 rows with counts at least 4 apart, same most/fewest word","risk":"R3: counts differ from every item row"}],
+  "trigger":"reversed -> word_model; other_row -> align_rows; second miss -> far_rows","exists":"new capability needed","cost":"M"},
+ {"modes":["build_one_to_one"],"beta":"1.8","failures":[{"text":"one row gets one sticker too many or too few","evidence":"miss-fn","missIds":["one_short","one_over"]},{"text":"right counts in the wrong rows (records by position, not kind)","evidence":"miss-fn","missIds":["rows_swapped","several_rows_off"]}],
+  "help":[{"id":"cross_off","does":"each pile object the learner has recorded greys out, so the unrecorded ones remain","leak":"tracks the learner's recordings only; never shows a row's total"},{"id":"kind_match","does":"each chart row shows its emoji at full size beside the pile's matching objects' outline colour","leak":"colour by kind only, no counts"}],
+  "simplify":[{"id":"two_kinds","does":"pile with 2 kinds, at most 5 each","risk":"R3: kind counts differ from the item's"}],
+  "trigger":"one_short/one_over -> cross_off; rows_swapped -> kind_match; several_rows_off -> two_kinds","exists":"partial (showPlacedCount flag counts stickers); cross-off new","cost":"M"},
+ {"modes":["say_what_it_shows","compare_two_graphs"],"beta":"2.0/2.2","failures":[{"text":"says a bare number or a row name instead of a comparison","evidence":"catalog","missIds":[]},{"text":"reversed claim, or compares within one graph instead of across the two surveys","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"sentence_frame","does":"voiced + pictured frame '___ has more than ___' with two empty slots","leak":"slots stay empty; no row named or pointed at"},{"id":"pair_category","does":"compare_two_graphs: outlines the same category in both graphs","leak":"highlights a category the learner picks, never the one that differs most"}],
+  "simplify":[{"id":"two_row_graph","does":"a 2-row graph (or 2-category surveys) with a far difference","risk":"R2 holds (still spoken comparison); R3 new counts"}],
+  "trigger":"tutor-judged wrong spoken answer (no miss ids yet) -> sentence_frame; cross-graph failure -> pair_category","exists":"new capability needed (plus a spoken miss classifier)","cost":"M"},
+ {"modes":["read_scale","picture_graph","scaled_bar_graph","graph_word_problem"],"beta":"2.5-4.5","failures":[{"text":"counts icons and forgets the key (reads 4 for 20)","evidence":"miss-fn","missIds":["picked_icon_count"]},{"text":"off by one scale step (reads the tick below/above)","evidence":"miss-fn","missIds":["one_step_off"]},{"text":"reads a neighbouring bar","evidence":"miss-fn","missIds":["another_row"]}],
+  "help":[{"id":"key_groups","does":"picture graphs: the key icon expands to N dots so one icon visibly holds N","leak":"the key only; the target row is never multiplied out"},{"id":"bar_guide","does":"dashed line from the target bar's top to the axis, plus unlabelled minor ticks at each step","leak":"no value text; minor ticks unlabelled"},{"id":"name_bar","does":"highlights the bar the question names","leak":"never on graph_word_problem's 'which' questions"}],
+  "simplify":[{"id":"step_two","does":"same question on a graph re-scaled to step 2 (or icon = 2), new values","risk":"R2: stays scaled; R3 values differ"},{"id":"on_tick_pair","does":"graph_word_problem: 'how many more' with both bars ending on labelled ticks","risk":"R3 new values"}],
+  "trigger":"picked_icon_count -> key_groups; one_step_off -> bar_guide; another_row -> name_bar; repeat -> step_two/on_tick_pair","exists":"partial (showTargetHighlight/showBarValues flags)","cost":"M"},
+ {"modes":["build_graph"],"beta":"5.5","failures":[{"text":"bars right, scale step wrong","evidence":"miss-fn","missIds":["wrong_step"]},{"text":"one or several bars set wrong","evidence":"miss-fn","missIds":["one_short","one_over","several_rows_off","rows_swapped"]}],
+  "help":[{"id":"fit_preview","does":"for the step the learner picked, shows whether the tallest bar fits the axis (overflow arrow)","leak":"only the learner's chosen step is previewed; steps are never ranked"},{"id":"data_tick_off","does":"ticks off each dataset entry once its bar is set","leak":"learner's own settings only"}],
+  "simplify":[{"id":"three_categories","does":"3 categories, values that fit step 2","risk":"R3 new dataset"}],
+  "trigger":"wrong_step -> fit_preview; row misses -> data_tick_off; repeat -> three_categories","exists":"new capability needed","cost":"M"}]},
+
+{"id":"number-line","grade":"K-5","bound":true,"missFn":"jumpMiss (numberLineLevers.ts), jump only","priority":1,"note":"Jump levers are the pilot. identify/plot/order/between name no misses; plot needs a plotMiss before levers can be triggered by code.","modes":[
+ {"modes":["jump"],"beta":"2.5","failures":[{"text":"lands one hop short (counts the start) or past","evidence":"miss-fn","missIds":["one_short","one_past"]},{"text":"loses track across two jumps","evidence":"miss-fn","missIds":["second_jump_off"]},{"text":"moves the wrong way","evidence":"miss-fn","missIds":["wrong_direction"]}],
+  "help":[{"id":"numbered_hops","does":"numbers the learner's own hops and draws hop 1 as a model","leak":"no unplaced hop reaches the landing"}],
+  "simplify":[{"id":"simpler_jump","does":"one jump instead of two, or a shorter jump from a new start","risk":"R3 checked in code"}],
+  "trigger":"built in numberLineLevers.ts","exists":"built","cost":"S"},
+ {"modes":["identify","plot"],"beta":"0.5/1.5","failures":[{"text":"places one tick off","evidence":"inferred","missIds":[]},{"text":"places far off in a large range (reads the wrong label)","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"hops_from_label","does":"from the learner's placed point, numbered unit hops back to the nearest labelled tick","leak":"drawn from the learner's point only; the target tick is never marked or labelled"}],
+  "simplify":[{"id":"denser_labels","does":"same range, a new target, labels every 5 instead of every 10","risk":"R3: the new target's own tick stays unlabelled"}],
+  "trigger":"needs plotMiss (one_tick_off/off_by_more/far) -> hops_from_label, then denser_labels","exists":"new capability needed (miss fn + render reuse from learnerHops)","cost":"M"},
+ {"modes":["order"],"beta":"3.5","failures":[{"text":"orders fractions by denominator size","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"benchmarks","does":"marks 0, 1/2 and 1 on the line","leak":"not offered when a value to order is 0, 1/2 or 1"}],
+  "simplify":[{"id":"three_values","does":"order 3 values instead of 5, different values","risk":"R3: never a subset of the item's values (a subset leaks their relative order)"}],
+  "trigger":"wrong order -> benchmarks, then three_values","exists":"new capability needed","cost":"M"},
+ {"modes":["between"],"beta":"4.5","failures":[{"text":"cannot see a value between two marks (no finer partition)","evidence":"inferred","missIds":[]}],
+  "help":[{"id":"subdivide","does":"splits the interval between the two marks into 10 unlabelled ticks","leak":"ticks unlabelled"}],
+  "simplify":[{"id":"whole_gap","does":"find a value between two marks 2+ apart","risk":"R2 borderline: must still require a value between marks"}],
+  "trigger":"wrong between -> subdivide","exists":"new capability needed","cost":"S"}]},
+
+{"id":"base-ten-blocks","grade":"K-5","bound":true,"missFn":"tradeMiss, plainMiss (baseTenWorkspace.ts)","priority":1,"note":"read_blocks must keep counts/totals hidden at every tier (BT-2); levers there act on block worth, never counts.","modes":[
+ {"modes":["build_number"],"beta":"1.5","failures":[{"text":"digits swapped between columns","evidence":"miss-fn","missIds":["digits_swapped"]},{"text":"one ten off (miscounts sticks)","evidence":"miss-fn","missIds":["one_ten_off","one_short","one_over"]},{"text":"right value but 10+ in a column","evidence":"miss-fn","missIds":["not_traded_up"]}],
+  "help":[{"id":"column_counts","does":"each column shows how many blocks the learner has placed in it (showColumnCounts, made pullable)","leak":"counts the learner's blocks only; target digits never shown"},{"id":"ten_bracket","does":"a column holding ten or more blocks draws a bracket around ten of them","leak":"appears only on the learner's own overfull column"}],
+  "simplify":[{"id":"fewer_places","does":"build a number with one fewer non-zero place","risk":"R3: never the item's digits or their reversal"}],
+  "trigger":"digits_swapped/one_ten_off -> column_counts; not_traded_up -> ten_bracket; short/over_by_more -> fewer_places","exists":"partial (showColumnCounts generation flag)","cost":"S"},
+ {"modes":["read_blocks"],"beta":"2.5","failures":[{"text":"says the count where the value was asked (four for forty)","evidence":"catalog","missIds":[]},{"text":"miscounts the asked block size","evidence":"miss-fn","missIds":["one_short","one_over","one_ten_off"]}],
+  "help":[{"id":"block_worth","does":"one model block of each size, outside the mat, labelled with its worth (10, 100)","leak":"worth of one block only; no count or total of the mat"},{"id":"touch_marks","does":"blocks of the asked size keep a mark once touched","leak":"no digits"}],
+  "simplify":[{"id":"one_size_mat","does":"a mat of one block size only, 2-5 blocks","risk":"R3: count differs from the item's asked count"}],
+  "trigger":"spoken count-for-value (tutor-judged) -> block_worth; count misses -> touch_marks","exists":"new capability needed","cost":"M"},
+ {"modes":["regroup"],"beta":"3.5","failures":[{"text":"predicts ten, forgetting blocks already there","evidence":"catalog","missIds":[]},{"text":"breaks a different size, or breaks twice","evidence":"miss-fn","missIds":["other_block","traded_twice"]},{"text":"checks without trading","evidence":"miss-fn","missIds":["no_trade"]}],
+  "help":[{"id":"already_here","does":"outlines the blocks already in the receiving column before the prediction","leak":"outline only, no count"},{"id":"asked_block_glow","does":"blocks of the size to break glow","leak":"the instruction already names the size"}],
+  "simplify":[{"id":"empty_column_trade","does":"a trade into an empty receiving column","risk":"R3: different number; R2 holds (still a trade)"}],
+  "trigger":"predicts ten -> already_here; other_block/traded_twice -> asked_block_glow; repeat -> empty_column_trade","exists":"new capability needed","cost":"M"},
+ {"modes":["operate"],"beta":"4.5","failures":[{"text":"does not regroup when a column passes nine","evidence":"catalog","missIds":[]},{"text":"result one ten off (lost carry)","evidence":"miss-fn","missIds":["one_ten_off"]}],
+  "help":[{"id":"ones_first","does":"dims every column except ones until the ones are settled","leak":"no digits"},{"id":"ten_bracket","does":"brackets ten blocks in any overfull column","leak":"learner's own mat only"}],
+  "simplify":[{"id":"single_regroup","does":"one regroup instead of chained carries / borrow across zero","risk":"R2: must still regroup once"}],
+  "trigger":"one_ten_off -> ten_bracket; short/over_by_more -> ones_first then single_regroup","exists":"partial (hard-tier chained carry in generator)","cost":"M"}]},
+
+{"id":"fraction-circles","grade":"1-5","bound":true,"missFn":"fractionMiss (fractionCirclesLevers.ts), touchMiss","priority":1,"note":"All five modes have levers built (B2, passed bench + browser check 09-27). Nothing to add.","modes":[
+ {"modes":["identify","build","compare","equivalent","touch_fraction"],"beta":"1.25-4.5","failures":[{"text":"see fractionCirclesLevers LEVER_ANSWERS","evidence":"miss-fn","missIds":[]}],
+  "help":[{"id":"mark_pieces, part_whole, running_count, split_reference, overlay","does":"built","leak":"built and tested"}],
+  "simplify":[{"id":"fewer_pieces, unit_build, double_split, far_pair, two_pictures","does":"built","risk":"checked in code"}],
+  "trigger":"LEVER_ANSWERS map","exists":"built","cost":"S"}]},
+
+{"id":"fraction-bar","grade":"3-6","bound":false,"missFn":"none","priority":2,"note":"Three phases per item (MC numerator, MC denominator, shade). Levers can reuse fraction-circles' part_whole and running_count shapes.","modes":[
+ {"modes":["identify","build","compare","add_subtract"],"beta":"1.5-4.5","failures":[{"text":"picks the denominator when asked for the numerator","evidence":"catalog","missIds":[]},{"text":"shades the wrong number of parts","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"part_whole","does":"picture of the shaded part over a picture of the whole bar","leak":"pictures only, no digits"},{"id":"running_count","does":"how many parts the learner has shaded (showShadedReadout, made pullable)","leak":"learner's shading only; build phase only"},{"id":"number_parts","does":"numbers each part 1..d (showPartitionNumerals)","leak":"never during the denominator question, where the last numeral is the answer"}],
+  "simplify":[{"id":"unit_first","does":"build 1/d of the same bar first","risk":"R3: not offered when the item is already 1/d"},{"id":"smaller_denominator","does":"a fraction with d at most 4","risk":"R3: not equivalent to the item's fraction"}],
+  "trigger":"needs a miss fn (swapped / top_one_off / shaded_the_rest) -> part_whole or running_count; repeat -> unit_first","exists":"partial (showShadedReadout, showPartitionNumerals generation flags)","cost":"M"}]},
+
+{"id":"place-value-chart","grade":"1-5","bound":true,"missFn":"placeValueMiss (placeValueWorkspace.ts), dictation only","priority":1,"note":"Modes are keyed by digit count (2,3,4,5 digits), so a fewer-digit simplify crosses the mode floor. Spoken asks name no misses.","modes":[
+ {"modes":["identify","build","compare","expanded_form"],"beta":"2.0-5.0","failures":[{"text":"dictation: leaves the zero column empty or drops the zero","evidence":"miss-fn","missIds":["zero_left_empty","column_empty"]},{"text":"thirteen/thirty confusion","evidence":"miss-fn","missIds":["teen_ty_swap"]},{"text":"says the digit, or the place, when the worth was asked","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"chunked_dictation","does":"re-says the number one number-word group at a time (four hundred ... six), voiced","leak":"repeats the number's own words; never names a column or says 'zero'"},{"id":"column_worth","does":"x1000 x100 x10 x1 under the column headers (showMultipliers, pullable)","leak":"worth of a column only; never on a find_place item, where the column name is the answer (headers are hidden there)"},{"id":"model_teen","does":"model pair outside the item: 14 and 40 written on a mini chart, voiced","leak":"model numbers never share a digit pair with the item"}],
+  "simplify":[{"id":"no_zero_same_width","does":"a dictated number of the same digit count with no zero","risk":"R2: digit count fixed by mode; R3 different digits"}],
+  "trigger":"zero_left_empty/column_empty -> chunked_dictation; teen_ty_swap -> model_teen; digits_swapped/one_ten_off -> column_worth; repeat -> no_zero_same_width","exists":"partial (showMultipliers flag; hear-again replay exists)","cost":"M"}]},
+
+{"id":"practice-problem","grade":"6-12","bound":false,"missFn":"none (LLM judge verdict)","priority":3,"note":"LLM-judged derivation canvas; already carries lever-like generation flags (showFirstStepHint, showStepSkeleton, showStrategyPreview, revealSibling). Failure is 'off-track step', not a fixed miss set.","modes":[
+ {"modes":["derive_easy","derive_medium","derive_hard"],"beta":"-0.5/0.0/0.7","failures":[{"text":"empty canvas, cannot start","evidence":"catalog","missIds":[]},{"text":"off-track step (operation does not preserve equality)","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"step_skeleton","does":"shows the number of steps as empty boxes","leak":"box count only"},{"id":"strategy_preview","does":"names the strategy (substitution, factor) without applying it","leak":"never a line of the solution"}],
+  "simplify":[{"id":"sibling_problem","does":"a worked sibling problem with different numbers (revealSibling)","risk":"R3: sibling must not share the item's expression"}],
+  "trigger":"empty canvas -> strategy_preview; off-track -> step_skeleton; repeat -> sibling_problem","exists":"partial (generation flags)","cost":"S"}]},
+
+{"id":"area-model","grade":"3-6","bound":false,"missFn":"none","priority":2,"note":"Per-cell inputs exist, so a cell-level miss fn is cheap.","modes":[
+ {"modes":["build_model","find_area","multiply"],"beta":"1.5/2.5/3.5","failures":[{"text":"wrong partial product in one cell","evidence":"catalog","missIds":[]},{"text":"forgets to add the partial products","evidence":"catalog","missIds":[]},{"text":"decomposes 23 as 2 + 3","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"cell_equation","does":"the selected cell shows '20 x 3 = ?' (showCellEquations, pullable)","leak":"product slot stays '?'"},{"id":"unit_squares","does":"a single-digit x single-digit cell is drawn as a unit-square grid","leak":"only cells whose parts are both under 10; no count printed"}],
+  "simplify":[{"id":"one_split","does":"one factor single-digit, so 2 partial products instead of 4","risk":"R3: new factors, not the item's factors reordered"}],
+  "trigger":"wrong cell -> cell_equation, then unit_squares; wrong total with all cells right -> none needed (sum step prompt); repeat -> one_split","exists":"partial (showCellEquations flag)","cost":"M"},
+ {"modes":["perimeter"],"beta":"3.0","failures":[{"text":"adds two sides only, or computes area","evidence":"inferred","missIds":[]}],
+  "help":[{"id":"label_all_sides","does":"labels the two unlabelled sides with their (given) lengths (showPerimeterExpansion)","leak":"sides only, never the sum"}],
+  "simplify":[{"id":"small_rect","does":"a rectangle with sides under 10","risk":"R3 new sides"}],
+  "trigger":"wrong perimeter -> label_all_sides","exists":"partial (flag)","cost":"S"},
+ {"modes":["factor"],"beta":"4.5","failures":[{"text":"dimension labels that do not multiply to the cells","evidence":"inferred","missIds":[]}],
+  "help":[{"id":"row_col_trace","does":"highlights the row and column a selected cell shares","leak":"no factor shown"}],
+  "simplify":[{"id":"two_cells","does":"a 1x2 grid instead of 2x2","risk":"R3 new products"}],
+  "trigger":"wrong labels -> row_col_trace, then two_cells","exists":"new capability needed","cost":"M"}]},
+
+{"id":"array-grid","grade":"2-5","bound":false,"missFn":"none","priority":2,"note":"Transpose shares the total: a simplify must never be the item's array turned.","modes":[
+ {"modes":["build_array"],"beta":"1.5","failures":[{"text":"swaps rows and columns","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"row_model","does":"a 2x3 model outside the item with 'row' arrow across","leak":"model dims never equal the item's"}],
+  "simplify":[{"id":"smaller_array","does":"2 rows, new column count","risk":"R3: not the item or its transpose"}],
+  "trigger":"rows/cols swapped -> row_model","exists":"new capability needed","cost":"S"},
+ {"modes":["count_array","multiply_array"],"beta":"2.5/3.5","failures":[{"text":"counts one by one and loses count","evidence":"catalog","missIds":[]},{"text":"writes rows x rows or misreads a dimension","evidence":"inferred","missIds":[]}],
+  "help":[{"id":"row_bands","does":"outlines each row as one group","leak":"no digits"},{"id":"tap_rows","does":"rows the learner taps turn a colour, one row per tap","leak":"no running total printed"}],
+  "simplify":[{"id":"smaller_array","does":"at most 3x4, new dims","risk":"R3: total and dims differ from item and its transpose"}],
+  "trigger":"wrong total -> row_bands; repeat -> smaller_array","exists":"partial (showLabels generation flag; leaks dims on count/multiply)","cost":"S"}]},
+
+{"id":"double-number-line","grade":"5-7","bound":false,"missFn":"none","priority":2,"note":"All challenges in a session share ONE unit rate; a simplify item from the same scenario leaks unit_rate answers, so it needs a different scenario.","modes":[
+ {"modes":["equivalent_ratios","find_missing"],"beta":"2.5/3.5","failures":[{"text":"adds instead of multiplies","evidence":"catalog","missIds":[]},{"text":"scales the wrong way (answer smaller when it should be bigger)","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"scale_arrow","does":"'x k' arrow on the top line between a given point and the target","leak":"top line only (top values are given); bottom value never shown"},{"id":"vertical_guides","does":"vertical guides linking top and bottom ticks","leak":"no labels added"}],
+  "simplify":[{"id":"whole_multiple","does":"target a whole-number multiple (x2, x3) of a given point","risk":"R3: new values; same scenario allowed here since the unit rate is given"}],
+  "trigger":"additive answer -> scale_arrow; direction wrong -> vertical_guides","exists":"partial (showVerticalGuides flag)","cost":"S"},
+ {"modes":["unit_rate"],"beta":"4.5","failures":[{"text":"cannot find the rate for 1","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"halving_ticks","does":"unlabelled ticks splitting the given pair's interval into equal parts down to 1","leak":"ticks unlabelled"}],
+  "simplify":[{"id":"integer_rate","does":"a pair with a small whole-number rate","risk":"R3: must use a different scenario and rate"}],
+  "trigger":"wrong rate -> halving_ticks","exists":"new capability needed","cost":"M"}]},
+
+{"id":"factor-tree","grade":"4-6","bound":false,"missFn":"none","priority":2,"note":"The six modes are support levels (guided/unguided/assessment) not task identities; a hint pulled in an 'unguided' mode is assistance and must be recorded.","modes":[
+ {"modes":["guided_small","guided_medium","unguided","unguided_large","assessment_intro","assessment"],"beta":"1.5-6.5","failures":[{"text":"splits off 1","evidence":"catalog","missIds":[]},{"text":"stops before every leaf is prime","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"prime_colour","does":"leaves coloured prime/not-prime (highlightPrimes)","leak":"colours the learner's own leaves only"},{"id":"divisibility_hint","does":"'is it even? does it end in 0 or 5?' on a selected node","leak":"tests only, never a factor pair"}],
+  "simplify":[{"id":"smaller_composite","does":"a composite at most 24","risk":"R3: not a factor of the item's root (shares a subtree)"}],
+  "trigger":"stops early -> prime_colour; stuck on a node -> divisibility_hint","exists":"partial (highlightPrimes/showStrategyHint flags)","cost":"S"}]},
+
+{"id":"ratio-table","grade":"5-7","bound":false,"missFn":"none","priority":2,"note":"","modes":[
+ {"modes":["build_ratio","missing_value"],"beta":"2.5/3.5","failures":[{"text":"scales only one value","evidence":"catalog","missIds":[]},{"text":"adds instead of multiplies","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"multiplier_arrow","does":"'x k' arrow on the known column","leak":"the known column only"},{"id":"bars","does":"paired bars for each row (showBarChart)","leak":"bars of given rows only"}],
+  "simplify":[{"id":"double_only","does":"multiplier 2, new base ratio","risk":"R3 new ratio"}],
+  "trigger":"additive answer -> multiplier_arrow","exists":"partial (showBarChart flag)","cost":"S"},
+ {"modes":["find_multiplier","unit_rate"],"beta":"4.5/5.5","failures":[{"text":"confuses multiplier with unit rate","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"repeated_rows","does":"inserts x1, x2, x3 rows of the base ratio","leak":"not offered on find_multiplier when k is 2 or 3"}],
+  "simplify":[{"id":"integer_multiplier","does":"a small whole-number multiplier, new ratio","risk":"R3"}],
+  "trigger":"wrong multiplier -> repeated_rows","exists":"new capability needed","cost":"M"}]},
+
+{"id":"percent-bar","grade":"5-8","bound":false,"missFn":"none","priority":2,"note":"Mode names do not match their descriptions (find_part = discount, find_whole = tax/tip, convert = compare deals).","modes":[
+ {"modes":["identify_percent","find_part"],"beta":"2.5/3.5","failures":[{"text":"places the discount rate, not 100 - rate","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"ten_ticks","does":"unlabelled ticks every 10%","leak":"unlabelled; benchmark lines not offered on identify_percent, whose target is a benchmark"}],
+  "simplify":[{"id":"benchmark_discount","does":"a 50% or 25% discount, new price","risk":"R3 different rate"}],
+  "trigger":"rate placed -> ten_ticks + voiced 'what you still pay'","exists":"partial (benchmarkLines flag)","cost":"S"},
+ {"modes":["find_whole","convert"],"beta":"4.5/5.5","failures":[{"text":"places only the added rate","evidence":"catalog","missIds":[]},{"text":"assumes a bigger % off is cheaper","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"hundred_marker","does":"bold 100% marker with the bar extension area outlined","leak":"marker only"}],
+  "simplify":[{"id":"same_price_deals","does":"convert: two deals on the same original price","risk":"R2 borderline: removes the price trap the mode tests"}],
+  "trigger":"rate-only placement -> hundred_marker","exists":"new capability needed","cost":"M"}]},
+
+{"id":"balance-scale","grade":"K-5","bound":true,"missFn":"none (workspace bound, no miss fn)","priority":2,"note":"Hands steps commit only on balance, so misses live in spoken steps; needs a balanceMiss before code-triggered pulls.","modes":[
+ {"modes":["equality","equality_hard","one_step"],"beta":"1.5/2.5/3.5","failures":[{"text":"cannot find weights that balance (overshoots)","evidence":"inferred","missIds":[]},{"text":"says the wrong total for the right pan","evidence":"inferred","missIds":[]}],
+  "help":[{"id":"tilt_strength","does":"tilt shows direction only, lighter/heavier (showTilt, pullable)","leak":"no magnitude number"},{"id":"ones_tray","does":"tray offers 1-weights only, so the learner can count up","leak":"no total shown"}],
+  "simplify":[{"id":"lighter_target","does":"a left weight at most 5","risk":"R3 different weight"}],
+  "trigger":"spoken total wrong -> tilt_strength; repeat -> ones_tray / lighter_target","exists":"partial (showTilt flag)","cost":"M"},
+ {"modes":["one_step_hard","two_step_intro","two_step"],"beta":"4.5-6.5","failures":[{"text":"shares unevenly between parcels","evidence":"inferred","missIds":[]},{"text":"removes from one side only","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"group_slots","does":"one outlined slot per parcel, filling one unit at a time round-robin","leak":"no per-slot total printed"}],
+  "simplify":[{"id":"two_parcels","does":"share among 2 parcels, new weights","risk":"R2: two_step must keep its set-aside step"}],
+  "trigger":"uneven share -> group_slots","exists":"new capability needed","cost":"M"}]},
+
+{"id":"function-machine","grade":"3-8","bound":false,"missFn":"none","priority":2,"note":"A simpler item with the same rule and easier inputs reveals the rule; simplify must change the rule.","modes":[
+ {"modes":["observe","predict"],"beta":"2.5/3.0","failures":[{"text":"predicts additively for a multiplicative rule","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"sorted_pairs","does":"sorts the I/O table by input","leak":"reorders existing pairs only"}],
+  "simplify":[{"id":"one_step_rule","does":"a one-step rule, new rule","risk":"R3: rule differs from item"}],
+  "trigger":"wrong prediction -> sorted_pairs","exists":"new capability needed","cost":"S"},
+ {"modes":["discover_rule","create_rule"],"beta":"3.5/4.5","failures":[{"text":"fits one pair only","evidence":"catalog","missIds":[]},{"text":"misses a two-step rule","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"test_my_rule","does":"runs the learner's guessed rule on every prior input and marks mismatches","leak":"checks only the learner's rule"}],
+  "simplify":[{"id":"one_step_rule","does":"a one-step rule of the same operation family","risk":"R3 different rule"}],
+  "trigger":"one-pair fit -> test_my_rule","exists":"new capability needed","cost":"M"}]},
+
+{"id":"coordinate-graph","grade":"5-8","bound":false,"missFn":"none","priority":3,"note":"showHoverReadout on plot_point leaks by search (hover until the readout matches).","modes":[
+ {"modes":["plot_point","read_point"],"beta":"-1.0/-0.5","failures":[{"text":"swaps x and y","evidence":"catalog","missIds":[]},{"text":"negatives go the wrong way","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"my_point_readout","does":"after a placement, drop lines and coordinates for the learner's placed point","leak":"learner's point only"},{"id":"drop_lines","does":"read_point: dashed lines to each axis (showDropLines)","leak":"no value labels"}],
+  "simplify":[{"id":"first_quadrant","does":"positive coordinates only","risk":"R3 new point"}],
+  "trigger":"swap -> my_point_readout","exists":"partial (flags)","cost":"S"},
+ {"modes":["find_slope","find_intercept"],"beta":"0.5/1.0","failures":[{"text":"confuses slope with intercept","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"rise_run_guides","does":"dashed rise/run triangle (showRiseRunGuides)","leak":"no rise/run labels"}],
+  "simplify":[{"id":"integer_slope","does":"integer slope","risk":"R3"}],
+  "trigger":"wrong option -> rise_run_guides","exists":"partial (flags)","cost":"S"}]},
+
+{"id":"slope-triangle","grade":"7-9","bound":false,"missFn":"none","priority":3,"note":"showGridCountOverlay leaks rise and run on identify_slope.","modes":[
+ {"modes":["identify_slope","calculate","draw_triangle"],"beta":"3.5/5.0/6.5","failures":[{"text":"rise and run swapped","evidence":"catalog","missIds":[]},{"text":"sign lost on a downhill line","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"direction_arrows","does":"arrows on the legs showing up/down and right","leak":"no lengths"}],
+  "simplify":[{"id":"positive_integer_slope","does":"positive integer slope","risk":"R3"}],
+  "trigger":"wrong slope -> direction_arrows","exists":"new capability needed","cost":"S"}]},
+
+{"id":"systems-equations-visualizer","grade":"8-11","bound":false,"missFn":"none","priority":3,"note":"","modes":[
+ {"modes":["graph","substitution","elimination"],"beta":"3.5/5.0/6.5","failures":[{"text":"forgets to back-substitute","evidence":"catalog","missIds":[]},{"text":"coefficients not opposites","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"step_hint","does":"names the next move (showStepHint)","leak":"never its result"}],
+  "simplify":[{"id":"ready_equation","does":"one equation already solved for a variable","risk":"R2 borderline for elimination"}],
+  "trigger":"wrong answer -> step_hint","exists":"partial (flag)","cost":"S"}]},
+
+{"id":"polygon-area-builder","grade":"6-7","bound":false,"missFn":"none","priority":3,"note":"showRegionAreaLabel leaks composite answers (sum of labels).","modes":[
+ {"modes":["decompose","find_area_triangle_parallelogram","find_area_trapezoid","composite_area","coordinate_polygon"],"beta":"1.5-5.5","failures":[{"text":"forgets the half for a triangle","evidence":"catalog","missIds":[]},{"text":"uses the slant side as height","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"height_marker","does":"right-angle height marker drawn","leak":"no length"},{"id":"enclosing_rect","does":"draws the enclosing rectangle for a triangle","leak":"no area printed"}],
+  "simplify":[{"id":"rectangle_parts","does":"a composite of 2 rectangles","risk":"R3"}],
+  "trigger":"slant used -> height_marker","exists":"partial (showDecompositionGuides/showGridOverlay)","cost":"S"}]},
+
+{"id":"circle-explorer","grade":"7","bound":false,"missFn":"none","priority":3,"note":"","modes":[
+ {"modes":["discover_pi","circumference","area","reverse","composite"],"beta":"2.0-5.5","failures":[{"text":"radius/diameter mix-up","evidence":"catalog","missIds":[]},{"text":"does not square the radius","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"mark_given","does":"draws the given length as radius or diameter on the circle","leak":"no computed values"}],
+  "simplify":[{"id":"integer_radius","does":"small integer radius","risk":"R3"}],
+  "trigger":"answer off by x2 -> mark_given","exists":"partial (showFormulaReveal)","cost":"S"}]},
+
+{"id":"angle-workshop","grade":"7-8","bound":false,"missFn":"none","priority":3,"note":"","modes":[
+ {"modes":["measure","classify_pairs","solve_unknown","solve_algebraic","transversal"],"beta":"1.5-5.5","failures":[{"text":"reads the wrong protractor scale","evidence":"inferred","missIds":[]},{"text":"uses 90 where the line is straight","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"reading_cue","does":"highlights the scale that starts at 0 on the arm (showReadingCue)","leak":"never the reading"}],
+  "simplify":[{"id":"single_relation","does":"one relationship instead of two","risk":"R2 for transversal"}],
+  "trigger":"supplement of the answer -> reading_cue","exists":"partial (flag)","cost":"S"}]},
+
+{"id":"transformation-lab","grade":"8","bound":false,"missFn":"none","priority":3,"note":"","modes":[
+ {"modes":["apply_translation_reflection","apply_rotation","identify_transformation","compose_sequence","dilation_similarity"],"beta":"2.5-5.5","failures":[{"text":"reflects over the wrong axis","evidence":"catalog","missIds":[]},{"text":"rotates the wrong direction","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"one_vertex_model","does":"rotates or reflects a model point outside the figure","leak":"not a vertex of the figure"}],
+  "simplify":[{"id":"one_move","does":"one transformation instead of a sequence","risk":"R2 for compose_sequence"}],
+  "trigger":"wrong image -> one_vertex_model","exists":"partial (showPreImageCoords)","cost":"M"}]},
+
+{"id":"matrix-display","grade":"8-12","bound":false,"missFn":"none","priority":3,"note":"","modes":[
+ {"modes":["transpose","add_subtract","multiply","determinant_inverse"],"beta":"2.5-5.5","failures":[{"text":"multiplies element-wise","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"row_col_highlight","does":"highlights row i of A and column j of B for the cell being entered","leak":"no products"}],
+  "simplify":[{"id":"two_by_two","does":"2x2 matrices","risk":"R3"}],
+  "trigger":"wrong cell -> row_col_highlight","exists":"new capability needed","cost":"S"}]},
+
+{"id":"dot-plot","grade":"2-7","bound":false,"missFn":"none","priority":2,"note":"","modes":[
+ {"modes":["whole_number_plot","measure_and_plot","fractional_units"],"beta":"1.5/2.5/3.5","failures":[{"text":"skips or double-plots a data value","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"cross_off","does":"crosses off each data value in the list once plotted","leak":"learner's own plotting only"}],
+  "simplify":[{"id":"fewer_points","does":"6 data points","risk":"R3 new data"}],
+  "trigger":"count mismatch -> cross_off","exists":"new capability needed","cost":"S"},
+ {"modes":["read_frequency","compute_stats","compare_datasets"],"beta":"3.0/4.5/5.5","failures":[{"text":"ignores frequency (one dot per value)","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"stack_counts","does":"numbers under each stack (showStackCounts)","leak":"not on a 'how many' read_frequency question"}],
+  "simplify":[{"id":"fewer_points","does":"6 points","risk":"R3"}],
+  "trigger":"wrong stat -> stack_counts","exists":"partial (flag)","cost":"S"}]},
+
+{"id":"histogram","grade":"6-8","bound":false,"missFn":"none","priority":3,"note":"","modes":[
+ {"modes":["identify_shape","find_modal_bin","read_frequency","estimate_center"],"beta":"1.5-4.0","failures":[{"text":"reads bin edges off by one","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"bin_brackets","does":"brackets each bin's range","leak":"no frequencies"}],
+  "simplify":[{"id":"fewer_bins","does":"4 bins","risk":"R3"}],
+  "trigger":"wrong bin -> bin_brackets","exists":"new capability needed","cost":"S"}]},
+
+{"id":"two-way-table","grade":"7-8","bound":false,"missFn":"none","priority":3,"note":"Totals are hidden on purpose in marginal/conditional; showing them removes the step the mode tests.","modes":[
+ {"modes":["joint_probability","marginal_distribution","conditional_probability","independence_test"],"beta":"4.0-5.5","failures":[{"text":"divides by the grand total instead of the given column's total","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"shade_given","does":"shades the conditioning row/column","leak":"never shows the total the mode asks for"}],
+  "simplify":[{"id":"two_by_two","does":"a 2x2 table","risk":"R3"}],
+  "trigger":"grand-total denominator -> shade_given","exists":"partial (total flags)","cost":"S"}]},
+
+{"id":"ten-frame","grade":"K-2","bound":true,"missFn":"frameMiss (tenFrameLevers.ts)","priority":1,"note":"build is built (B1). The other modes' levers are drafted in the brief appendix and not built.","modes":[
+ {"modes":["build"],"beta":"1.5","failures":[{"text":"see tenFrameLevers","evidence":"miss-fn","missIds":[]}],
+  "help":[{"id":"running_count, five_frame","does":"built","leak":"built"}],
+  "simplify":[{"id":"smaller_build","does":"built","risk":"checked in code"}],
+  "trigger":"built","exists":"built","cost":"S"},
+ {"modes":["decompose"],"beta":"2.0","failures":[{"text":"turns every counter or none","evidence":"miss-fn","missIds":["all_flipped","none_flipped"]},{"text":"repeats a split","evidence":"miss-fn","missIds":["same_way_again"]}],
+  "help":[{"id":"model_split","does":"a split of a different total on a mini frame outside the item","leak":"model total differs from the item's"},{"id":"ways_shown","does":"pictures of the splits already shown this session","leak":"only the learner's past splits"}],
+  "simplify":[{"id":"smaller_total","does":"total of 2-3","risk":"R3 different total"}],
+  "trigger":"all_flipped/none_flipped -> model_split; same_way_again -> ways_shown","exists":"new capability needed","cost":"M"},
+ {"modes":["build_teen","decompose_teen"],"beta":"2.0/3.0","failures":[{"text":"rebuilds the whole teen or fills the frame","evidence":"miss-fn","missIds":["filled_frame","all_flipped"]},{"text":"one off in the ones","evidence":"miss-fn","missIds":["one_short","one_over"]}],
+  "help":[{"id":"running_count","does":"counts ones the learner placed on the second frame","leak":"placed counters only"},{"id":"model_ten","does":"outlines a ten on a model frame outside the item","leak":"never the item's own ten"}],
+  "simplify":[{"id":"fewer_ones","does":"teen 11-13","risk":"R3 different teen"}],
+  "trigger":"one_short/one_over -> running_count; all_flipped/filled_frame -> model_ten","exists":"partial (showCount flag)","cost":"M"},
+ {"modes":["subitize"],"beta":"2.5","failures":[{"text":"counts one by one and runs out of time","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"longer_flash","does":"longer flash or show again","leak":"never visible while answering"}],
+  "simplify":[{"id":"five_or_less","does":"a count of 5 or less","risk":"R3"}],
+  "trigger":"spoken miss -> longer_flash","exists":"partial (learner show-again button, flashDuration)","cost":"S"},
+ {"modes":["make_ten","operate"],"beta":"3.5/4.5","failures":[{"text":"says the total instead of how many more","evidence":"catalog","missIds":[]},{"text":"make_ten K: places too few","evidence":"miss-fn","missIds":["one_short","short_by_more"]}],
+  "help":[{"id":"equation_with_gap","does":"'6 + ? = 10' beside the frame (showEquation)","leak":"never the result"},{"id":"five_frame","does":"marks the top row as 5","leak":"not when 5 is the answer"}],
+  "simplify":[{"id":"near_ten","does":"start at 8 or 9","risk":"R3 different start"}],
+  "trigger":"one_short -> five_frame; says total -> equation_with_gap","exists":"partial (showEquation flag); showEmptyCount leaks make_ten","cost":"M"}]},
+
+{"id":"counting-board","grade":"PreK-1","bound":true,"missFn":"countMiss (countingBoardDomain.ts), give_me_n + subitize_perceptual only","priority":1,"note":"On count mode a running number of taps ends at the answer; marks must be dots, never numerals.","modes":[
+ {"modes":["count","recount_moved"],"beta":"1.0/1.8","failures":[{"text":"double-counts or skips while tapping","evidence":"catalog","missIds":[]},{"text":"recounts from one after a move","evidence":"inferred","missIds":[]}],
+  "help":[{"id":"touch_marks","does":"tapped objects stay marked (highlightOnTap)","leak":"dots only, no numerals"},{"id":"line_up","does":"arranges scattered objects in a line","leak":"count unchanged"},{"id":"replay_move","does":"replays the rearrangement slowly","leak":"no count"}],
+  "simplify":[{"id":"smaller_set","does":"at most 5 objects","risk":"R3 different count"}],
+  "trigger":"spoken miss -> touch_marks, then line_up; recount_moved -> replay_move","exists":"partial (highlightOnTap flag)","cost":"S"},
+ {"modes":["give_me_n","subitize_perceptual","subitize"],"beta":"1.5/0.5/2.0","failures":[{"text":"hands over one too many or few","evidence":"miss-fn","missIds":["one_short","one_over"]},{"text":"hands over the whole pile","evidence":"miss-fn","missIds":["gave_all"]}],
+  "help":[{"id":"running_count","does":"counts the objects handed over","leak":"handover only; target unsaid"},{"id":"longer_look","does":"longer flash (subitize)","leak":"hidden while answering"}],
+  "simplify":[{"id":"smaller_n","does":"about half the number","risk":"R3 different number"}],
+  "trigger":"one_short/one_over/gave_all -> running_count; short_by_more -> smaller_n","exists":"partial (showRunningCount flag)","cost":"S"},
+ {"modes":["group","add_more","take_away","count_on","compare"],"beta":"2.0-2.5","failures":[{"text":"counts all from one","evidence":"inferred","missIds":[]}],
+  "help":[{"id":"group_circles","does":"circles groups (showGroupCircles)","leak":"no numerals"},{"id":"pair_up","does":"compare: lines the two groups up in rows","leak":"no row marked"}],
+  "simplify":[{"id":"change_of_one","does":"add or take away 1","risk":"R3"}],
+  "trigger":"spoken miss -> group_circles or pair_up","exists":"partial (showGroupCircles)","cost":"M"}]},
+
+{"id":"pattern-builder","grade":"K-3","bound":true,"missFn":"patternBuilderMiss (patternBuilderWorkspace.ts)","priority":1,"note":"","modes":[
+ {"modes":["extend"],"beta":"1.5","failures":[{"text":"fills every blank with the last given token","evidence":"miss-fn","missIds":["repeated_last"]},{"text":"restarts the row from its first token regardless of where the core ended","evidence":"miss-fn","missIds":["started_over"]},{"text":"one or two tokens out of place","evidence":"miss-fn","missIds":["one_wrong","two_swapped"]}],
+  "help":[{"id":"core_brackets","does":"brackets each full repeat of the core in the GIVEN row (showCore, made pullable)","leak":"brackets given tokens only; the blanks are never bracketed or coloured"},{"id":"read_aloud_rhythm","does":"voiced: the given row read in rhythm with a pause at each repeat, the learner's placed tokens read the same way","leak":"voice stops at the first blank; never says a hidden token"}],
+  "simplify":[{"id":"ab_pattern","does":"an AB pattern with 2 blanks, new tokens","risk":"R3: tokens and core differ from the item"}],
+  "trigger":"repeated_last/started_over -> core_brackets; one_wrong/two_swapped -> read_aloud_rhythm; several_wrong -> ab_pattern","exists":"partial (showCore generation flag)","cost":"S"},
+ {"modes":["find_rule"],"beta":"5.5","failures":[{"text":"continues a growing pattern by repeating instead of growing","evidence":"miss-fn","missIds":["repeated_last","started_over"]},{"text":"right idea, one term off","evidence":"miss-fn","missIds":["one_wrong"]}],
+  "help":[{"id":"step_numbers","does":"numbers each term's position under the given row (showStepNumbers)","leak":"positions only, never a hidden term"},{"id":"gap_marks","does":"between given number terms, shows the change as '+?' arcs the learner fills for the given pairs only","leak":"arcs start empty; never drawn into the blanks"}],
+  "simplify":[{"id":"plus_one_rule","does":"a growing pattern that adds 1 or 2, new start","risk":"R3: rule and start differ from the item"}],
+  "trigger":"repeated_last -> gap_marks; one_wrong -> step_numbers; several_wrong -> plus_one_rule","exists":"partial (showStepNumbers flag); gap marks new","cost":"M"},
+ {"modes":["identify_core"],"beta":"2.5","failures":[{"text":"selects the core twice","evidence":"miss-fn","missIds":["two_repeats"]},{"text":"selects too many or too few tokens","evidence":"miss-fn","missIds":["too_long","too_short"]}],
+  "help":[{"id":"first_token_marks","does":"marks every occurrence of the row's first token","leak":"not offered for AB cores, where the mark spacing is the core length and nothing is left to find"}],
+  "simplify":[{"id":"shorter_core","does":"a 2-token core in a longer row, new tokens","risk":"R3: different core; R2 holds (still select the repeat)"}],
+  "trigger":"two_repeats/too_long/too_short -> first_token_marks; repeat -> shorter_core","exists":"new capability needed","cost":"M"},
+ {"modes":["translate"],"beta":"3.5","failures":[{"text":"one token mapped wrong","evidence":"miss-fn","missIds":["one_wrong","two_swapped"]},{"text":"copies source tokens instead of mapping","evidence":"miss-fn","missIds":["several_wrong"]}],
+  "help":[{"id":"key_model","does":"a model row outside the item translated token by token under the drawn key","leak":"model row shares no token sequence with the item"}],
+  "simplify":[{"id":"two_token_key","does":"a 2-token key (AB), new tokens","risk":"R3 different mapping"}],
+  "trigger":"one_wrong/two_swapped -> key_model; several_wrong -> two_token_key","exists":"new capability needed","cost":"M"},
+ {"modes":["create"],"beta":"4.5","failures":[{"text":"row too short to show a repeat","evidence":"miss-fn","missIds":["too_short"]},{"text":"no starting part repeats","evidence":"miss-fn","missIds":["no_repeat"]}],
+  "help":[{"id":"repeat_slots","does":"shows empty slot groups (e.g. 3 groups of 2) the learner fills","leak":"slots empty; no token suggested"}],
+  "simplify":[{"id":"ab_rule","does":"make an AB pattern (2-token core named)","risk":"R2: still creating, not copying"}],
+  "trigger":"too_short/no_repeat -> repeat_slots; repeat -> ab_rule","exists":"new capability needed","cost":"M"}]},
+
+{"id":"skip-counting-runner","grade":"1-3","bound":false,"missFn":"none","priority":2,"note":"","modes":[
+ {"modes":["count_along","predict","fill_missing"],"beta":"1.5/2.5/3.5","failures":[{"text":"loses the rhythm","evidence":"catalog","missIds":[]},{"text":"predicts wrong","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"unit_ticks","does":"labels every whole-number tick on the track (showTrackLabels) so the learner can count on by ones from the last landing","leak":"landing ticks not highlighted until the character lands; predict/fill values never marked"},{"id":"jump_arcs","does":"draws each completed leap as an arc (showJumpArcs)","leak":"arcs for completed leaps only; never an arc into a hidden position"}],
+  "simplify":[{"id":"skip_by_2_or_10","does":"skip by 2 or 10 from a new start","risk":"R3: sequence shares no hidden value with the item"}],
+  "trigger":"needs a miss fn (one_short/one_over = counted the start; other_step); wrong prediction -> unit_ticks, then jump_arcs; repeat -> skip_by_2_or_10","exists":"partial (showTrackLabels/showJumpArcs generation flags)","cost":"M"},
+ {"modes":["find_skip_value","connect_multiplication"],"beta":"4.5/5.5","failures":[{"text":"misreads the interval","evidence":"inferred","missIds":[]}],
+  "help":[{"id":"equation_with_gap","does":"'3 x 5 = ?' (showEquation)","leak":"never the result"}],
+  "simplify":[{"id":"skip_by_10","does":"skip 10","risk":"R3"}],
+  "trigger":"wrong -> equation_with_gap","exists":"partial (flag)","cost":"S"}]},
+
+{"id":"hundreds-chart","grade":"K-3","bound":true,"missFn":"hundredsChartMiss (hundredsChartWorkspace.ts)","priority":1,"note":"","modes":[
+ {"modes":["highlight_sequence","complete_sequence"],"beta":"1.5/2.5","failures":[{"text":"stops before the end of the board","evidence":"miss-fn","missIds":["stopped_early"]},{"text":"skips a pattern cell","evidence":"miss-fn","missIds":["gaps_left"]},{"text":"counts by a different step","evidence":"miss-fn","missIds":["other_step","stray_cells"]}],
+  "help":[{"id":"numbered_steps","does":"from each cell the learner tapped, numbered unit hops 1..k along the row to their next tap; hop 1 from the start drawn as a model (number-line learnerHops/modelHop reuse)","leak":"hops between the learner's own taps only; no hop the learner did not make reaches an untapped pattern cell"},{"id":"end_marker","does":"outlines the board's last row","leak":"row outline only, no cell marked"}],
+  "simplify":[{"id":"offset_easier_skip","does":"count by 10 (or 2) from a start chosen so no cell is in the item's pattern","risk":"R3: code checks zero shared cells with the item's answer set"}],
+  "trigger":"other_step/stray_cells/gaps_left -> numbered_steps; stopped_early -> end_marker; repeat -> offset_easier_skip","exists":"new capability needed (render reusable from numberLineLevers)","cost":"M"},
+ {"modes":["find_skip_value"],"beta":"4.5","failures":[{"text":"picks twice or half the step","evidence":"miss-fn","missIds":["twice_the_step","half_the_step"]},{"text":"picks one off","evidence":"miss-fn","missIds":["one_short","one_over"]}],
+  "help":[{"id":"learner_hops","does":"the learner taps cells from one highlighted number to the next; each tap is numbered","leak":"numbers the learner's own taps only"}],
+  "simplify":[{"id":"far_options","does":"two options far apart, new pattern","risk":"R2: still a choice of skip value; R3 different skip"}],
+  "trigger":"twice_the_step/half_the_step/one_short/one_over -> learner_hops; repeat -> far_options","exists":"partial (easy-tier far distractors, generation prompt only)","cost":"M"},
+ {"modes":["identify_pattern"],"beta":"3.5","failures":[{"text":"picks a description of a different shape (column vs diagonal)","evidence":"catalog","missIds":[]}],
+  "help":[{"id":"grid_lines","does":"bold row and column lines across the whole chart","leak":"every row and column equally; the pattern's line is not marked"}],
+  "simplify":[{"id":"two_choices","does":"two descriptions, one far foil","risk":"R3 new pattern"}],
+  "trigger":"any wrong choice (no miss ids) -> grid_lines","exists":"new capability needed","cost":"S"}]}
+]

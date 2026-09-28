@@ -1,0 +1,643 @@
+[
+  {
+    "id": "knowledge-check",
+    "graded": true,
+    "bound": "yes: primitives/knowledgeCheckWorkspace.ts (W1, batch C8, every mode; objects: [], no levers declared). Tap flow (KnowledgeCheckTapFlow) remains for payloads the workspace cannot run.",
+    "missFn": "knowledgeCheckMiss (tap kinds only): one_less | one_more | other_number | other_choice | sign_token | other_number_token. Spoken kinds have no named miss (Part B).",
+    "priority": 1,
+    "note": "Highest leverage in this set: one lever design serves every subject's closing check. Modes are Bloom tiers (recall 1.5, apply 3.0, analyze 4.5, evaluate 6.0) and all four share the same item kinds, so levers are designed per ITEM KIND, not per mode. The lever mechanism (pull_lever, levers on attempts, practice item, observerLever) is built; KC declares none. Two blockers for closed-set levers: (a) generated options carry no near/far or misconception tag (the miss fn says so), so 'far distractor' is only computable for numeric options; (b) a simplify lever on a single MC item cannot 'return to the full item' without the answer being known, so on-item elimination must be recorded as an assisted attempt (S4) and needs a user ruling on R4 for closed-set items.",
+    "modes": [
+      {
+        "modes": ["recall", "apply", "analyze", "evaluate"],
+        "beta": "1.5 / 3.0 / 4.5 / 6.0",
+        "answer": "closed-set choice: kinds choice (spoken), choice_tap (touched, KaTeX/unsayable menu), match (spoken partner from a 2-4 bank), sort (spoken group from 2-3 groups)",
+        "failures": [
+          {"text": "Picks a distractor, often the near one (numeric: one off the key; text: a same-category foil). Tap: touched; spoken: said the distractor's words or its place in the list.", "evidence": "miss-fn (tap: one_less/one_more/other_number/other_choice); inferred for spoken (no spoken miss names)", "missIds": ["one_less", "one_more", "other_number", "other_choice"]},
+          {"text": "Answers without using the evidence the question was written against (the inset: number line, picture key, table, passage excerpt).", "evidence": "inferred (knowledgeCheckScript.ts inset docblock: a question about a number line not on screen is unanswerable)", "missIds": ["other_choice", "other_number"]},
+          {"text": "Hedges between two choices, or says the stem/focus card back instead of an answer.", "evidence": "catalog commonStruggles (spoken)", "missIds": []}
+        ],
+        "help": [
+          {"id": "spotlight_evidence", "does": "Enlarges and outlines the item's own inset/visual (number line, picture key, table, passage excerpt) and publishes its facts so the tutor can read it aloud. Offered only when the item has an inset or visual.", "carrier": "both (shown; tutor reads the inset facts for pre-readers)", "leak": "Only re-shows what the item already renders; code runs findInsetAnswerLeaks on MC/TF insets too (today it runs only for production kinds) and withholds the lever when the inset marks the answer (e.g. a number-line point labelled with the key). Never outlines or colors an option."},
+          {"id": "picture_choices", "does": "Shows each option's emoji beside its words (the K picture surface) for a grade-1+ learner whose miss suggests a decoding failure.", "carrier": "shown", "leak": "Every option gets its picture or none does; code requires emoji on all options. Pictures are generated per option, so a picture that depicts the key more literally than the foils is a content risk: needs an oracle check."}
+        ],
+        "simplify": [
+          {"id": "drop_far_choice", "does": "Greys out and disables one distractor the learner has not picked: the farthest one (numeric: largest |value - key|; text: needs a generator field). The item stays; the next answer is recorded with the lever.", "risk": "R4/R3: this is on-item elimination, not a separate simpler item, so the full item cannot return unassisted. Needs a ruling: treat it as assisted work (S4, no first-response credit) rather than a practice item. Leak rule in code: after removal, at least two live options must remain counting the learner's own wrong picks as removed; never offered on a 2-option menu or a match bank's final ask. Text options need a new schema field (per-option far/near tag) because the options record no reason for being wrong."}
+        ],
+        "trigger": "one_more/one_less/other_number (numeric menus) -> spotlight_evidence when an inset exists, else drop_far_choice. other_choice -> spotlight_evidence, then drop_far_choice. Hedging and stem-said-back pull nothing (catalog: stay silent). Spoken kinds need Part B spoken miss names (e.g. named_distractor) before the observer can route by miss; until then nextLever falls back to help-before-simplify.",
+        "exists": "partial: mechanism built (contract WorkspaceLever, observerLever); LuminaAnswerChoice has a 'dimmed' state; inset/emoji rendering exists. New: pull state in KnowledgeCheck.tsx, lever facts in knowledgeCheckScene, far-tag schema field, inset leak check for MC/TF.",
+        "cost": "M"
+      },
+      {
+        "modes": ["recall", "apply"],
+        "beta": "1.5 / 3.0",
+        "answer": "true_false (spoken true/false/yes/no)",
+        "failures": [
+          {"text": "Says the opposite verdict; with two options a retry is a coin flip.", "evidence": "inferred", "missIds": []},
+          {"text": "Says the statement back (no verdict).", "evidence": "catalog (key(): the statement said back gives no verdict)", "missIds": []}
+        ],
+        "help": [
+          {"id": "spotlight_evidence", "does": "As above: outlines the item's inset/visual when one exists.", "carrier": "both", "leak": "Same inset leak check; withheld when there is no inset."}
+        ],
+        "simplify": [],
+        "trigger": "Any wrong verdict -> spotlight_evidence if present. No simplify: a two-way judgement is already the floor; making it smaller changes the mode (R2).",
+        "exists": "partial (inset rendered, not pullable)",
+        "cost": "S"
+      },
+      {
+        "modes": ["recall", "apply", "analyze", "evaluate"],
+        "beta": "1.5-6.0",
+        "answer": "blank (spoken missing word, printed word bank)",
+        "failures": [
+          {"text": "Says a word-bank distractor fluently (on topic, wrong fit).", "evidence": "documented (knowledgeCheckScript.ts:910 signature error)", "missIds": []},
+          {"text": "Says the sentence back with the hum still in it.", "evidence": "documented (key())", "missIds": []}
+        ],
+        "help": [],
+        "simplify": [
+          {"id": "shorter_bank", "does": "Removes word-bank words that are farthest from the blank (code: part of speech mismatch or zero shared tokens with the sentence topic, else a generator tag), leaving the key and at least two others.", "risk": "Same R4 ruling as drop_far_choice (on-item). Leak rule: bank keeps >= 3 words including the key and the learner's wrong word counts as live; never shrinks a 3-word bank."}
+        ],
+        "trigger": "A spoken wrong bank word (needs Part B miss 'bank_misfit') -> shorter_bank.",
+        "exists": "new (no spoken miss name; bank is render-only)",
+        "cost": "S"
+      },
+      {
+        "modes": ["recall", "apply"],
+        "beta": "1.5 / 3.0",
+        "answer": "how_many (spoken count of an arrangement inset)",
+        "failures": [
+          {"text": "Says the count before items were taken away (arrangement with removed > 0).", "evidence": "documented (key(): 'including N, the count before any were taken away')", "missIds": []},
+          {"text": "Miscounts by one (double count or skip).", "evidence": "inferred", "missIds": []}
+        ],
+        "help": [
+          {"id": "group_in_fives", "does": "Redraws the arrangement in rows of five (the ten-frame five_frame analogue) so the learner can count on from a full row; removed items stay crossed out.", "carrier": "shown", "leak": "Never when the count is 5 or less (a row of five would be the answer), never writes a number; code check on stimulus.count."}
+        ],
+        "simplify": [
+          {"id": "smaller_count", "does": "Ungraded practice: a new arrangement of about half as many (and with fewer removed), code-built, then the full item returns.", "risk": "R3: code check that the practice count differs from the item's count and from count-before-removal. R2 holds (still counting an arrangement)."}
+        ],
+        "trigger": "Spoken wrong number (Part B misses 'said_start_count', 'one_off') -> said_start_count: group_in_fives with removed items crossed; one_off: group_in_fives; repeated -> smaller_count.",
+        "exists": "new (arrangement inset has no grouped layout; no spoken miss names)",
+        "cost": "M"
+      },
+      {
+        "modes": ["recall", "apply"],
+        "beta": "1.5 / 3.0",
+        "answer": "point_to (touch a sign or number in a printed number sentence)",
+        "failures": [
+          {"text": "Touches a sign when a number was asked for, or the other sign (e.g. = for +).", "evidence": "miss-fn", "missIds": ["sign_token"]},
+          {"text": "Touches another number.", "evidence": "miss-fn", "missIds": ["other_number_token"]}
+        ],
+        "help": [
+          {"id": "token_roles", "does": "Tints numbers one color and signs another, so the learner sees which tokens are signs.", "carrier": "shown", "leak": "Code: withheld when the target's class has only one member in the sentence (tinting would single it out)."}
+        ],
+        "simplify": [],
+        "trigger": "sign_token / other_number_token -> token_roles.",
+        "exists": "new",
+        "cost": "S"
+      },
+      {
+        "modes": ["recall", "apply"],
+        "beta": "1.5 / 3.0",
+        "answer": "say_it (name a glyph card: numeral, letter, shape)",
+        "failures": [
+          {"text": "Names a different numeral/letter/shape.", "evidence": "documented (key())", "missIds": []}
+        ],
+        "help": [],
+        "simplify": [],
+        "trigger": "None. Any picture or text of the name is the answer; turning production into the fallback menu changes the mode (R2). A missing name is a lesson-level prerequisite finding.",
+        "exists": "n/a",
+        "cost": "S"
+      }
+    ]
+  },
+  {
+    "id": "fast-fact",
+    "graded": true,
+    "bound": "no (ROLLOUT C11, open)",
+    "missFn": "none",
+    "priority": 1,
+    "note": "Cross-subject fluency drill; 3-4 choices, maxAttempts 2 (easy/medium) or 1 (hard) set by applySupportStructure. DEFECT: on a first wrong answer with a retry left, feedback prints 'Not quite. The answer is X.' (FastFact.tsx:388) before the retry, so the second attempt is answered from the screen and still recorded correct:true. Fix before any lever (B2) via /eval-fix. Levers here are about retrieval, not reasoning: the natural help is a non-answer cue; the natural simplify is fewer/farther choices, which the generator already does at generation time only.",
+    "modes": [
+      {
+        "modes": ["recognize", "recall", "apply"],
+        "beta": "2.5 / 3.5 / 5.0",
+        "answer": "tap one of 3-4 options (string match against correctAnswer/acceptableAnswers)",
+        "failures": [
+          {"text": "Taps a near same-category distractor (numeric fact one off, look-alike sight word, neighbouring element symbol).", "evidence": "inferred (hard-tier prompt asks for close same-category distractors)", "missIds": ["near_value", "same_category"]},
+          {"text": "Answers without reading the prompt (catalog: 'answers without reading carefully').", "evidence": "catalog", "missIds": []},
+          {"text": "Freezes: no answer (recall/apply without a cue).", "evidence": "catalog", "missIds": []}
+        ],
+        "help": [
+          {"id": "cue_picture", "does": "recall/apply: shows the challenge's non-answer cue (promptSubtext line or a visual) that the easy tier would have shown.", "carrier": "both (tutor reads the cue)", "leak": "The generator's existing visual-leak and stem-leak rejections (gemini-fast-fact.ts RejectionReason) run on the cue; for recognize mode the visual IS the stimulus, so the lever is not offered there."},
+          {"id": "read_prompt_aloud", "does": "Tutor reads the prompt and every option; low-yield text/voice lever, kept only for pre-readers.", "carrier": "voiced", "leak": "Reads all options equally."}
+        ],
+        "simplify": [
+          {"id": "drop_far_choice", "does": "Disables the farthest distractor not yet picked (numeric: largest distance; text: generator far-tag), leaving at least two live choices.", "risk": "On-item elimination: needs the same R4 ruling as knowledge-check; with maxAttempts 1 (hard) there is no retry to use it on, so the lever also needs 'a pulled lever grants one assisted try'."}
+        ],
+        "trigger": "Wrong tap with a numeric near value -> drop_far_choice; wrong tap otherwise -> cue_picture (recall/apply) then drop_far_choice; help request with no attempt -> cue_picture (needs observerLever to allow a pre-attempt pull).",
+        "exists": "partial: option count and cue are generation-time only (applySupportStructure); no runtime pull; no miss fn",
+        "cost": "M"
+      }
+    ]
+  },
+  {
+    "id": "passage-studio",
+    "graded": true,
+    "bound": "no (ROLLOUT DESIGN row: many answerable blocks on one page, any order; needs an item-list scope design)",
+    "missFn": "none",
+    "priority": 2,
+    "note": "Richest lever data in the set: comprehension MCQs carry evidenceAnchor, vocab-in-context carries targetAnchor, inference candidates carry anchors, evidence-highlight candidates carry isEvidence + rationale. MCQ blocks give two tries then reveal and light the anchor. Blocked on the workspace item-scope design shared with deep-dive; lever design can be done now.",
+    "modes": [
+      {
+        "modes": ["explore", "recall", "apply", "analyze"],
+        "beta": "-1.5 / -0.5 / 0.5 / 1.5",
+        "answer": "comprehension-mcq and vocab-in-context: pick 1 of 3-4",
+        "failures": [
+          {"text": "Answers from memory or general knowledge without looking back at the passage.", "evidence": "catalog commonStruggles", "missIds": []},
+          {"text": "Picks a literal option when the question needs an inference (or a common meaning of the word instead of its meaning in this sentence).", "evidence": "catalog commonStruggles", "missIds": ["literal_pick", "common_meaning"]},
+          {"text": "Gives the same wrong answer again.", "evidence": "catalog commonStruggles", "missIds": []}
+        ],
+        "help": [
+          {"id": "light_region", "does": "Highlights the paragraph or stanza that contains the evidenceAnchor (comprehension) or the sentence around targetAnchor plus one sentence either side (vocab), and scrolls it into view.", "carrier": "both (tutor may read the region aloud)", "leak": "Code widens the exact anchor to its whole paragraph/stanza and withholds the lever when the region is shorter than 2 sentences or when the correct option's distinctive words appear verbatim in the region AND no distractor's do (the region would match only the key). Never lights the exact anchor span before the reveal."}
+        ],
+        "simplify": [
+          {"id": "drop_far_choice", "does": "Disables one distractor not yet picked (generator must tag the farthest).", "risk": "Same on-item R4 ruling as knowledge-check; with two tries total, the second try is the only one it can serve."}
+        ],
+        "trigger": "First wrong pick -> light_region; second wrong would reveal, so drop_far_choice is only useful if the attempt count grows when a lever is pulled.",
+        "exists": "partial: anchors exist in data and are lit on reveal; no pre-answer, widened region; no pull state",
+        "cost": "M"
+      },
+      {
+        "modes": ["apply", "analyze"],
+        "beta": "0.5 / 1.5",
+        "answer": "evidence-highlight: toggle candidate spans that support a claim",
+        "failures": [
+          {"text": "Selects a distractor span that is on topic but does not support the claim.", "evidence": "inferred (data: candidateSpans with isEvidence false)", "missIds": ["picked_distractor_span"]},
+          {"text": "Selects too few evidence spans.", "evidence": "inferred (minCorrect)", "missIds": ["too_few_spans"]}
+        ],
+        "help": [
+          {"id": "restate_claim", "does": "Shows the claim split into its parts next to the passage.", "carrier": "both", "leak": "Claim text only, already on screen; no span marked."}
+        ],
+        "simplify": [
+          {"id": "fewer_candidates", "does": "Removes the distractor candidates farthest from the claim (code: lowest token overlap with the claim), keeping at least one distractor and all evidence spans.", "risk": "R4: on-item; leak rule: at least one distractor stays selectable, so the task never becomes 'select everything'."}
+        ],
+        "trigger": "picked_distractor_span -> restate_claim then fewer_candidates; too_few_spans -> restate_claim.",
+        "exists": "new",
+        "cost": "M"
+      },
+      {
+        "modes": ["analyze"],
+        "beta": "1.5",
+        "answer": "inference-builder (pick the best-supported inference) and theme-statement (rubric-judged free text)",
+        "failures": [
+          {"text": "Picks an inference that is stated, not inferred, or unsupported.", "evidence": "catalog commonStruggles", "missIds": []},
+          {"text": "Writes a generic life-lesson theme not rooted in this passage.", "evidence": "catalog commonStruggles", "missIds": ["generic_theme"]}
+        ],
+        "help": [
+          {"id": "light_all_anchors", "does": "inference-builder: lights the evidence anchor of every candidate at once.", "carrier": "shown", "leak": "Only when every candidate has an anchor; unsupported distractors have none, so lighting only some would mark them wrong. Code withholds otherwise."},
+          {"id": "rubric_criteria", "does": "theme-statement: shows the rubric criteria (not the exemplar) beside the box.", "carrier": "shown", "leak": "Never the exemplar; criteria text checked for exemplar overlap."}
+        ],
+        "simplify": [
+          {"id": "theme_frame", "does": "theme-statement: a two-slot sentence frame ('This passage shows that ___, because ___').", "risk": "Arguably help, not simplify; judged by the same rubric, so R2 holds. Must not prefill either slot."}
+        ],
+        "trigger": "Rubric verdict generic_theme -> rubric_criteria then theme_frame; wrong inference pick -> light_all_anchors when allowed.",
+        "exists": "new",
+        "cost": "M"
+      }
+    ]
+  },
+  {
+    "id": "deep-dive",
+    "graded": true,
+    "bound": "no (ROLLOUT DESIGN row, same scope question as passage-studio)",
+    "missFn": "none",
+    "priority": 2,
+    "note": "Graded blocks: multiple-choice (2 tries then reveal, relatedBlockId), fill-in-blank (word bank), timeline order, compare-contrast sort, diagram label, mini-sim prediction, hypothesis-lab, perspectives comprehension. relatedBlockId is the ready-made help carrier. Blocked on the per-block item scope.",
+    "modes": [
+      {
+        "modes": ["explore", "recall", "apply", "analyze"],
+        "beta": "-1.5 / -0.5 / 0.5 / 1.5",
+        "answer": "multiple-choice and fill-in-blank blocks",
+        "failures": [
+          {"text": "Skips the display blocks and answers without reading them.", "evidence": "catalog commonStruggles", "missIds": []},
+          {"text": "Picks a plausible distractor / a word-bank misfit.", "evidence": "inferred", "missIds": []}
+        ],
+        "help": [
+          {"id": "revisit_block", "does": "Scrolls to and outlines the display block named by relatedBlockId; the tutor may read it aloud (pre-reader).", "carrier": "both", "leak": "Outlines the whole block, never a sentence inside it; withheld when relatedBlockId is missing."}
+        ],
+        "simplify": [
+          {"id": "drop_far_choice", "does": "MC: disable one unpicked far distractor; FIB: remove far word-bank words, keeping >= 3.", "risk": "On-item R4 ruling as knowledge-check; needs a far-tag from the generator."}
+        ],
+        "trigger": "First MC miss -> revisit_block (today the first miss sends [QUIZ_RETRY] text only); FIB miss -> drop_far_choice.",
+        "exists": "partial (relatedBlockId in data, unused for display)",
+        "cost": "M"
+      },
+      {
+        "modes": ["apply", "analyze"],
+        "beta": "0.5 / 1.5",
+        "answer": "timeline order, compare-contrast sort",
+        "failures": [
+          {"text": "Places items rapidly by guess-and-check.", "evidence": "catalog commonStruggles", "missIds": []}
+        ],
+        "help": [],
+        "simplify": [
+          {"id": "fewer_items", "does": "Ungraded practice: order 3 of the events / sort 2 statements per side, code-built, then the full block returns.", "risk": "R3: the subset reveals part of the full order; code picks a subset whose relative order the learner already placed correctly, or skips the lever."}
+        ],
+        "trigger": "Wrong order/sort -> fewer_items.",
+        "exists": "new",
+        "cost": "M"
+      }
+    ]
+  },
+  {
+    "id": "foundation-explorer",
+    "graded": true,
+    "bound": "no (ROLLOUT C32, open)",
+    "missFn": "none",
+    "priority": 2,
+    "note": "Per-concept self-check MC with 2-3 options, retry until correct, wrong picks stay marked and disabled (built-in elimination), score tapers 100/70/50. The hint text auto-surfaces on the first miss (a text lever, already pulled by the component). The data has diagramHighlight (where the concept is in the diagram), the natural shown help.",
+    "modes": [
+      {
+        "modes": ["(no eval modes; self-check per concept)"],
+        "beta": "none registered",
+        "answer": "tap 1 of 2-3 self-check options",
+        "failures": [
+          {"text": "Taps 'I understand' without engaging the check / guesses.", "evidence": "catalog commonStruggles", "missIds": []},
+          {"text": "Picks a distractor part/definition.", "evidence": "catalog commonStruggles ('struggles with the self-check')", "missIds": []}
+        ],
+        "help": [
+          {"id": "diagram_highlight", "does": "Pulses the diagram region named by concept.diagramHighlight.", "carrier": "shown", "leak": "For IDENTIFY checks of the form 'which part is X?' where the options are diagram parts, highlighting X's region answers it; code withholds the lever when the correct option names the highlighted part. Offered for EXPLAIN/APPLY checks."}
+        ],
+        "simplify": [],
+        "trigger": "Wrong pick -> diagram_highlight when allowed. No simplify: the component already eliminates each wrong pick, and 2-3 options leave nothing to drop.",
+        "exists": "partial (hint auto-shown; diagramHighlight is data only)",
+        "cost": "S"
+      }
+    ]
+  },
+  {
+    "id": "timeline-explorer",
+    "graded": true,
+    "bound": "no (ROLLOUT C34, open)",
+    "missFn": "none",
+    "priority": 2,
+    "note": "DEFECT: identify/date MC shows the correct option on the first wrong tap and never pushes the wrong answer into challengeAnswers (the push needs correct || attempts >= 2, and the MC is disabled after one tap), so byType() indexes challengeAnswers by challenge index and misattributes later results. Same pattern in how-it-works and vocabulary-explorer. Order and cause-effect get two tries; after the first check every position is marked right/wrong, a strong built-in help that is not recorded as assistance.",
+    "modes": [
+      {
+        "modes": ["order"],
+        "beta": "3.5",
+        "answer": "arrange 5-8 events chronologically (timeline hidden)",
+        "failures": [
+          {"text": "Places an effect before its cause.", "evidence": "catalog commonStruggles", "missIds": ["effect_before_cause"]},
+          {"text": "Confuses two similar events.", "evidence": "catalog commonStruggles", "missIds": ["adjacent_swap"]}
+        ],
+        "help": [
+          {"id": "show_impacts", "does": "Shows each event card's Impact line (what it made possible) in the ordering list.", "carrier": "both", "leak": "Impact lines are code-scrubbed of years and ordinal words ('first', 'later', 'after X'); never shows dates, which would turn ordering into number sorting."}
+        ],
+        "simplify": [
+          {"id": "fewer_events", "does": "Ungraded practice: order 3 of the events, code-built, then the full list returns.", "risk": "R3: the triple's relative order is part of the answer. Code picks a triple from events the learner already placed in correct relative order when possible; otherwise requires a generator-supplied model sequence outside the item."}
+        ],
+        "trigger": "Order miss (code-computable: adjacent_swap vs larger displacement) -> adjacent_swap: show_impacts; larger displacement: fewer_events.",
+        "exists": "partial (per-position marks after a check are built but unrecorded)",
+        "cost": "M"
+      },
+      {
+        "modes": ["explore", "connect"],
+        "beta": "1.5 / 5.5",
+        "answer": "identify/date MC; cause_effect pair matching",
+        "failures": [
+          {"text": "Date MC: picks a year near the right one.", "evidence": "inferred", "missIds": ["near_date"]},
+          {"text": "Cause-effect: pairs a cause with a later unrelated effect.", "evidence": "catalog", "missIds": []}
+        ],
+        "help": [],
+        "simplify": [
+          {"id": "drop_far_date", "does": "date MC: disables the unpicked year farthest from the key (numeric, code-computable).", "risk": "On-item R4 ruling; requires the MC to allow a second try first (today one tap reveals)."},
+          {"id": "fewer_pairs", "does": "cause_effect: ungraded practice with 2 pairs, then the full set.", "risk": "R3: code avoids the pair the learner got wrong."}
+        ],
+        "trigger": "near_date -> drop_far_date; wrong pairing -> fewer_pairs.",
+        "exists": "new (MC has no retry)",
+        "cost": "M"
+      }
+    ]
+  },
+  {
+    "id": "vocabulary-explorer",
+    "graded": true,
+    "bound": "no (ROLLOUT C34, open)",
+    "missFn": "none",
+    "priority": 2,
+    "note": "Same MC reveal-on-first-tap and dropped-wrong-answer defect as timeline-explorer. Showing the target term's own card (relatedTermId) answers match and fill_blank, so the help must show ALL option terms equally.",
+    "modes": [
+      {
+        "modes": ["explore", "recall"],
+        "beta": "1.5 / 3.5",
+        "answer": "match terms to definitions (2 tries, per-pair check)",
+        "failures": [
+          {"text": "Confuses two similar terms.", "evidence": "catalog commonStruggles", "missIds": ["similar_term_swap"]}
+        ],
+        "help": [
+          {"id": "example_sentences", "does": "Shows each term's example sentence under the term (recall mode hides definitions).", "carrier": "both", "leak": "Code checks each example sentence does not contain the matched definition's distinctive words; shown for every term or none."}
+        ],
+        "simplify": [
+          {"id": "fewer_pairs", "does": "Ungraded practice matching 2 terms, then the full set.", "risk": "R3: practice uses pairs the learner already matched correctly, or skips."}
+        ],
+        "trigger": "similar_term_swap (code: the two swapped definitions) -> example_sentences; repeated -> fewer_pairs.",
+        "exists": "new",
+        "cost": "M"
+      },
+      {
+        "modes": ["recall", "apply"],
+        "beta": "3.5 / 5.5",
+        "answer": "fill_blank and context MC (one tap, then reveal)",
+        "failures": [
+          {"text": "Picks a word that is on topic but does not fit the sentence.", "evidence": "catalog commonStruggles", "missIds": []}
+        ],
+        "help": [
+          {"id": "all_definitions", "does": "Shows a one-line definition under every option term.", "carrier": "both", "leak": "Every option gets its definition; the learner still has to fit meaning to sentence. Withheld when a definition quotes the sentence."}
+        ],
+        "simplify": [
+          {"id": "drop_far_choice", "does": "Disables one unpicked far option.", "risk": "On-item R4; MC needs a second try first."}
+        ],
+        "trigger": "Wrong fill -> all_definitions, then drop_far_choice.",
+        "exists": "new (MC has no retry)",
+        "cost": "M"
+      }
+    ]
+  },
+  {
+    "id": "how-it-works",
+    "graded": true,
+    "bound": "no (ROLLOUT C33, open)",
+    "missFn": "none",
+    "priority": 2,
+    "note": "Same MC first-tap reveal and dropped-wrong-answer defect (HowItWorks.tsx:440-453). Challenges carry relatedStep, the help carrier. Sequence mode hides step details.",
+    "modes": [
+      {
+        "modes": ["sequence"],
+        "beta": "3.5",
+        "answer": "drag 4-6 steps into order",
+        "failures": [
+          {"text": "Swaps a step and the one that must come before it.", "evidence": "catalog commonStruggles", "missIds": ["adjacent_swap"]}
+        ],
+        "help": [
+          {"id": "show_step_details", "does": "Shows each step card's description (hidden in sequence mode).", "carrier": "both", "leak": "Code strips 'Step N', ordinals and 'first/next/finally' from descriptions."}
+        ],
+        "simplify": [
+          {"id": "fewer_steps", "does": "Ungraded practice ordering 3 steps, then the full sequence.", "risk": "R3 partial reveal, as timeline-explorer fewer_events."}
+        ],
+        "trigger": "adjacent_swap -> show_step_details; larger displacement -> fewer_steps.",
+        "exists": "new",
+        "cost": "M"
+      },
+      {
+        "modes": ["guided", "predict"],
+        "beta": "1.5 / 5.5",
+        "answer": "identify / predict / explain MC",
+        "failures": [
+          {"text": "Predict: picks a step that does not follow from how the previous step ends.", "evidence": "catalog commonStruggles", "missIds": []}
+        ],
+        "help": [
+          {"id": "show_prior_step", "does": "Re-shows the step before relatedStep (predict) or relatedStep itself (identify/explain).", "carrier": "both", "leak": "Predict: never shows the step being predicted; identify: withheld when the step title is an option."}
+        ],
+        "simplify": [
+          {"id": "drop_far_choice", "does": "Disables one unpicked far option.", "risk": "On-item R4; needs a second try."}
+        ],
+        "trigger": "Wrong predict -> show_prior_step.",
+        "exists": "partial (relatedStep in data, sent to tutor only)",
+        "cost": "M"
+      }
+    ]
+  },
+  {
+    "id": "fact-file",
+    "graded": true,
+    "bound": "no (ROLLOUT C33, open)",
+    "missFn": "none",
+    "priority": 2,
+    "note": "Self-checks are one tap then reveal with explanation, so nothing can be pulled on the same item until a second try exists. Catalog says explore mode shows 'section hints'; the component never renders relatedSection (it only goes to the tutor), so that support is missing and is exactly the lever.",
+    "modes": [
+      {
+        "modes": ["explore", "recall", "apply"],
+        "beta": "1.5 / 3.5 / 5.0",
+        "answer": "self-check MC (one tap)",
+        "failures": [
+          {"text": "Did not read the section the question draws on.", "evidence": "catalog commonStruggles", "missIds": []},
+          {"text": "Does not connect facts across sections (apply).", "evidence": "catalog commonStruggles", "missIds": []}
+        ],
+        "help": [
+          {"id": "open_section", "does": "Opens the tab named by relatedSection and outlines it (explore mode starts with it pulled).", "carrier": "both (tutor reads the section to pre-readers)", "leak": "Outlines the whole section, never the fact carrying the answer; code withholds when the section has fewer than 3 entries."}
+        ],
+        "simplify": [
+          {"id": "drop_far_choice", "does": "Disables one unpicked far option.", "risk": "On-item R4; needs a second try."}
+        ],
+        "trigger": "Wrong tap -> open_section (needs a pre-reveal retry).",
+        "exists": "partial (relatedSection in data)",
+        "cost": "M"
+      }
+    ]
+  },
+  {
+    "id": "digital-skills-sim",
+    "graded": true,
+    "bound": "no (ROLLOUT C32, open)",
+    "missFn": "none (a miss is any arena click, failed drop or wrong key; distance is computable)",
+    "priority": 2,
+    "note": "K-1 motor skills; retry until correct. DEFECT (pedagogy): type mode always rings the target key on the virtual keyboard (DigitalSkillsSim.tsx:549), so 'find and press the key' is solved from the layout; the glow should be the last help lever. For click and drag the target is visible by design (the skill is the motor act), so showing it more is not a leak.",
+    "modes": [
+      {
+        "modes": ["click"],
+        "beta": "-1.5",
+        "answer": "click a randomly placed 64px target",
+        "failures": [
+          {"text": "Clicks near but outside the target.", "evidence": "catalog commonStruggles", "missIds": ["near_miss", "far_miss"]}
+        ],
+        "help": [
+          {"id": "pulse_target", "does": "Pulses a ring around the target.", "carrier": "shown", "leak": "n/a (target location is not the skill)."}
+        ],
+        "simplify": [
+          {"id": "bigger_target", "does": "Ungraded practice with a 1.5x target nearer the center, then the full target.", "risk": "Low; code-built."}
+        ],
+        "trigger": "near_miss -> bigger_target; far_miss -> pulse_target.",
+        "exists": "new",
+        "cost": "S"
+      },
+      {
+        "modes": ["drag"],
+        "beta": "-1.0",
+        "answer": "drag an item into a drop zone",
+        "failures": [
+          {"text": "Releases before reaching the zone.", "evidence": "catalog commonStruggles", "missIds": ["dropped_short"]}
+        ],
+        "help": [
+          {"id": "drag_path", "does": "Draws a dotted path from item to zone and shows a 'holding' state while pressed.", "carrier": "shown", "leak": "n/a."}
+        ],
+        "simplify": [
+          {"id": "nearer_zone", "does": "Ungraded practice with the zone half the distance away, then the full layout.", "risk": "Low."}
+        ],
+        "trigger": "dropped_short -> drag_path, then nearer_zone.",
+        "exists": "new",
+        "cost": "S"
+      },
+      {
+        "modes": ["type"],
+        "beta": "-0.5",
+        "answer": "find and press the named key",
+        "failures": [
+          {"text": "Presses a wrong key, often a neighbour.", "evidence": "catalog commonStruggles", "missIds": ["adjacent_key", "other_key"]}
+        ],
+        "help": [
+          {"id": "row_hint", "does": "Tints the row that holds the key.", "carrier": "both (tutor says 'top row')", "leak": "Row only, never the key; the current always-on key glow becomes a separate last lever (key_glow) that answers the item and so records the attempt as assisted."}
+        ],
+        "simplify": [
+          {"id": "one_row_keyboard", "does": "Ungraded practice on the key's row alone, then the full keyboard.", "risk": "R3: practice uses a different target key on that row."}
+        ],
+        "trigger": "adjacent_key -> row_hint; other_key -> row_hint then one_row_keyboard.",
+        "exists": "partial (key glow exists, always on)",
+        "cost": "S"
+      }
+    ]
+  },
+  {
+    "id": "comparison-panel",
+    "graded": true,
+    "bound": "no (ROLLOUT C34, open)",
+    "missFn": "none",
+    "priority": 3,
+    "note": "True/false comprehension gates, retry until correct: with two options a retry is always right, so every gate is credited. Only a help lever fits.",
+    "modes": [
+      {
+        "modes": ["(no eval modes; T/F gates)"],
+        "beta": "none registered",
+        "answer": "true/false gate",
+        "failures": [
+          {"text": "Wrong verdict because only one card was read.", "evidence": "catalog commonStruggles", "missIds": []}
+        ],
+        "help": [
+          {"id": "reopen_cards", "does": "Flips both item cards open side by side with their features.", "carrier": "both", "leak": "Both cards equally; never marks a feature. A gate-to-feature link would need a new field."}
+        ],
+        "simplify": [],
+        "trigger": "Wrong verdict -> reopen_cards.",
+        "exists": "new",
+        "cost": "S"
+      }
+    ]
+  },
+  {
+    "id": "formula-card",
+    "graded": true,
+    "bound": "no",
+    "missFn": "none",
+    "priority": 3,
+    "note": "Has graded comprehension gates (MC, usePrimitiveEvaluation) although the catalog entry has no supportsEvaluation or eval modes. DEFECT: a wrong submit highlights the correct option green (FormulaCard.tsx:502) and then offers Try Again, so the retry is answered from the screen. A gate hint exists (shown after a miss).",
+    "modes": [
+      {
+        "modes": ["(no eval modes; gates: parameter-unit, relationship, application, example)"],
+        "beta": "none registered",
+        "answer": "MC gate",
+        "failures": [
+          {"text": "Confuses a parameter with its unit, or the direction of a relationship.", "evidence": "inferred (questionType)", "missIds": []}
+        ],
+        "help": [
+          {"id": "label_formula", "does": "Labels each symbol in the formula with its name and unit.", "carrier": "shown", "leak": "Withheld for parameter-unit gates, where the label is the answer."}
+        ],
+        "simplify": [],
+        "trigger": "Wrong relationship/application gate -> label_formula.",
+        "exists": "new",
+        "cost": "S"
+      }
+    ]
+  },
+  {
+    "id": "feature-exhibit",
+    "graded": true,
+    "bound": "no (ROLLOUT C33, open)",
+    "missFn": "none",
+    "priority": 3,
+    "note": "Legacy (catalog prefers deep-dive). Evidence-claim to section matching (uses window.alert on a wrong submit) plus a synthesis MC. Not worth levers before retirement is decided.",
+    "modes": [
+      {
+        "modes": ["(no eval modes)"],
+        "beta": "none registered",
+        "answer": "match claims to sections; synthesis MC",
+        "failures": [
+          {"text": "Matches a claim to the wrong section.", "evidence": "inferred", "missIds": []}
+        ],
+        "help": [],
+        "simplify": [],
+        "trigger": "none",
+        "exists": "n/a",
+        "cost": "S"
+      }
+    ]
+  },
+  {
+    "id": "curator-brief",
+    "graded": false,
+    "bound": "no (ROLLOUT PERCH: display-only)",
+    "missFn": "none",
+    "priority": 3,
+    "note": "Exposition, not graded. Its 'Before We Start' quick-check is a think-then-'Show answer' reveal with no answer capture, so no lever has anything to serve.",
+    "modes": []
+  },
+  {
+    "id": "concept-card-grid",
+    "graded": false,
+    "bound": "no (PERCH)",
+    "missFn": "none",
+    "priority": 3,
+    "note": "Exposition: flip cards, no check. No lever.",
+    "modes": []
+  },
+  {
+    "id": "generative-table",
+    "graded": false,
+    "bound": "no (PERCH)",
+    "missFn": "none",
+    "priority": 3,
+    "note": "Display only. No lever.",
+    "modes": []
+  },
+  {
+    "id": "custom-visual",
+    "graded": false,
+    "bound": "no (PERCH)",
+    "missFn": "none",
+    "priority": 3,
+    "note": "Generated HTML/SVG, no evaluation hook. No lever.",
+    "modes": []
+  },
+  {
+    "id": "annotated-example",
+    "graded": false,
+    "bound": "no (PERCH)",
+    "missFn": "none",
+    "priority": 3,
+    "note": "Worked example display, no check. No lever.",
+    "modes": []
+  },
+  {
+    "id": "take-home-activity",
+    "graded": false,
+    "bound": "no (PERCH)",
+    "missFn": "none",
+    "priority": 3,
+    "note": "Screen-free caregiver activity. No lever.",
+    "modes": []
+  },
+  {
+    "id": "graph-board",
+    "graded": false,
+    "bound": "no (PERCH)",
+    "missFn": "none",
+    "priority": 3,
+    "note": "Free plotting surface; no evaluation hook (GraphBoard.tsx has none). No lever until it has a task.",
+    "modes": []
+  },
+  {
+    "id": "scale-spectrum",
+    "graded": false,
+    "bound": "no (PERCH)",
+    "missFn": "none",
+    "priority": 3,
+    "note": "In assessment.ts but has no evaluation hook (ScaleSpectrum.tsx). No lever.",
+    "modes": []
+  }
+]

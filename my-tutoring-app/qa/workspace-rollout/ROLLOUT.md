@@ -73,7 +73,7 @@ Order: Tier A, then runner-era K–2 (the recipe applies as written), then the r
 | C9 | P | K math: `math-fact-fluency`, `hundreds-chart`, `equation-builder`, `pattern-builder`, `strategy-picker` | done 09-26 (workspace only, every mode) |
 | C10 | P | K measurement and time: `length-lab`, `measure-lab`, `analog-clock`, `time-sequencer`, `timeline-builder` | open |
 | C11 | P | K geometry: `shape-tracer`, `shape-composer`, `shape-builder`, `fast-fact` | open |
-| C12 | P | G1–2 math: `skip-counting-runner`, `regrouping-workbench`, `coin-counter`, `fraction-bar`, `area-model` | open |
+| C12 | P | G1–2 math: `skip-counting-runner`, `regrouping-workbench`, `coin-counter`, `fraction-bar`, `area-model` | open; `coin-counter` done 09-27 (every mode; `coinMiss`; sweep 6 payloads 0 findings, 31/31 misses named; replay 6×4×5 0 misses; submits the scored session, so its misses reach the misconception store) |
 | C13 | P | K–2 literacy: `letter-workshop`, `spelling-pattern-explorer`, `story-map`, `sentence-builder`, `story-planner` (the last two HOLD in Pip for `/curriculum-fit`; check first) | open |
 | C14 | P | K–2 science: `light-shadow-lab`, `day-night-seasons`, `moon-phases-lab`, `life-cycle-sequencer`, `classification-sorter` | open |
 | C15 | P | Math G3–5: `array-grid`, `multiplication-explorer`, `measurement-tools`, `tape-diagram` | open |
