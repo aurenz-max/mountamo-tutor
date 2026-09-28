@@ -1,0 +1,45 @@
+{
+ "source": "qa/tutor-reports/base-ten-blocks-runtime-operate-payload-2026-09-28.json",
+ "primitiveId": "base-ten-blocks",
+ "evalMode": "operate",
+ "data": {
+  "title": "Base-Ten Block Addition and Subtraction Adventure",
+  "description": "Practice adding and subtracting numbers with regrouping and borrowing using visual base-ten blocks.",
+  "numberValue": 45,
+  "challenges": [
+   {
+    "type": "add_with_blocks",
+    "instruction": "Add 37 + 25 using blocks.",
+    "targetNumber": 62,
+    "secondNumber": 25,
+    "hint": "Remember to group 10 ones into 1 ten when you have 10 or more ones!"
+   },
+   {
+    "type": "add_with_blocks",
+    "instruction": "Add 148 + 76 using blocks.",
+    "targetNumber": 224,
+    "secondNumber": 76,
+    "hint": "Start by adding the ones, regroup if needed, then add the tens and hundreds."
+   },
+   {
+    "type": "subtract_with_blocks",
+    "instruction": "Subtract 28 from 73 using blocks.",
+    "targetNumber": 45,
+    "secondNumber": 28,
+    "hint": "If you don't have enough ones to subtract, trade 1 ten for 10 ones."
+   },
+   {
+    "type": "subtract_with_blocks",
+    "instruction": "Subtract 145 from 412 using blocks.",
+    "targetNumber": 267,
+    "secondNumber": 145,
+    "hint": "Check your columns carefully and borrow from the tens or hundreds place when necessary."
+   }
+  ],
+  "gradeBand": "2-3",
+  "interactionMode": "operate",
+  "decimalMode": false,
+  "maxPlace": "hundreds",
+  "supplyTray": true
+ }
+}

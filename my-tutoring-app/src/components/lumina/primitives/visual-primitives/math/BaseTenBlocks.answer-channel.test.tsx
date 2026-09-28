@@ -31,7 +31,7 @@ vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => null,
 // jsdom has no canvas, and the completion panel's confetti runs on rAF past teardown.
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => vi.fn() }) }));
-import BaseTenBlocks, { type BaseTenBlocksChallenge, type BaseTenBlocksData } from './BaseTenBlocks';
+import BaseTenBlocks, { hintLeaks, type BaseTenBlocksChallenge, type BaseTenBlocksData } from './BaseTenBlocks';
 
 afterEach(cleanup);
 
@@ -81,14 +81,15 @@ describe('build_number — judged from the blocks, not a keypad', () => {
     expect(screen.queryByText(/^Yes! 12 is/)).toBeNull();
   });
 
-  it('rejects 12 unit cubes as NOT standard form and names the trade', () => {
+  it('rejects 12 unit cubes as NOT standard form, without naming the trade', () => {
     renderBound(deck(BUILD_12), 'build_number');
     for (let i = 0; i < 12; i++) fireEvent.click(plus('ones'));
     // The value is right — the old keypad flow would have accepted this.
     expect(screen.getAllByText('12').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /check my blocks/i }));
     expect(screen.getByText(/not with the fewest blocks/i)).toBeTruthy();
-    expect(screen.getByText(/trade 10 ones for 1 ten/i)).toBeTruthy();
+    // The fact, never the exact trade (contract R14): which blocks to trade is help.
+    expect(screen.queryByText(/trade 10 ones for 1 ten/i)).toBeNull();
   });
 
   it('accepts 1 ten + 2 ones, including via the trade button', async () => {
@@ -186,5 +187,27 @@ describe('add_with_blocks — the keypad survives where the number is NOT on scr
     fireEvent.click(screen.getByRole('button', { name: '✓' }));
     expect(screen.getByText(/41 isn't it/i)).toBeTruthy();
     expect(screen.queryByText(/the answer is 23/i)).toBeNull();
+  });
+});
+
+describe('what the screen may show before a try (contract R12, R13)', () => {
+  it.each([
+    ['24 has 2 tens and 4 ones.', true], ['There are eight rods.', true], ['12 is one ten and two ones.', true],
+    ['Count the tens, then the ones.', false], ['Count each column: hundreds, tens, ones.', false],
+    ['Start with the ones column. Do you need to regroup?', false], ['Trade a full group of ones for a ten. What is left over?', false],
+  ])('hintLeaks(%j) is %s', (hint, leaks) => {
+    expect(hintLeaks(hint)).toBe(leaks);
+  });
+
+  it('a hint that states a count is never shown, even after two wrong checks', () => {
+    renderBound(deck(BUILD_12), 'build_number');
+    for (let n = 0; n < 2; n++) fireEvent.click(screen.getByRole('button', { name: /check my blocks/i }));
+    expect(screen.queryByText(/one ten and two ones/i)).toBeNull();
+  });
+
+  it('operate shows no Blocks Total even when the challenge asks for it: the total is the typed answer', () => {
+    renderBound(deck({ type: 'add_with_blocks', instruction: 'Add 34 + 25 using blocks.', targetNumber: 59, secondNumber: 25,
+      hint: 'Start with the ones.', showBlocksTotal: true } as BaseTenBlocksChallenge), 'operate');
+    expect(screen.queryByText(/Blocks Total/i)).toBeNull();
   });
 });

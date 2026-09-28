@@ -45,7 +45,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `the work: name the number and nothing else. Do NOT tell them how many of each block to `
       + `place — no "place one ten-rod and the correct number of unit cubes", no "use 2 hundreds `
       + `and 4 tens". "Build the number 12 with blocks." is right; "Build 12 with one ten-rod and `
-      + `some ones." hands over the answer. Put place-value language in the HINT, not the instruction. `
+      + `some ones." hands over the answer. The HINT names a way to work (count each column, start with the ones), never a count, a digit or the number: a hint with a number in it is not shown. `
       + `K-1: numbers 1-20, maxPlace 'tens'. Grades 2-3: numbers 1-999, maxPlace 'hundreds'. `
       + `Grades 4-5: numbers up to 9999, maxPlace 'thousands'. Full scaffolding — concrete manipulative.`,
     schemaDescription: "'build_number' (construct number from blocks)",
@@ -873,9 +873,9 @@ Return the complete base-ten blocks data structure.`;
   if (data.challenges.length === 0) {
     const fallbackType = evalConstraint?.allowedTypes[0] ?? 'build_number';
     const fallbacks: Record<string, BaseTenBlocksChallenge> = {
-      build_number: { type: 'build_number', instruction: 'Build the number 45 with blocks!', targetNumber: 45, hint: '45 has 4 tens and 5 ones.' },
+      build_number: { type: 'build_number', instruction: 'Build the number 45 with blocks!', targetNumber: 45, hint: 'Count the tens, then the ones.' },
       read_blocks: { type: 'read_blocks', instruction: 'What number do these blocks show?', targetNumber: 123, hint: 'Count each column: hundreds, tens, ones.' },
-      regroup: { type: 'regroup', instruction: 'Regroup 15 ones into tens and ones.', targetNumber: 15, hint: '10 ones = 1 ten. How many are left over?' },
+      regroup: { type: 'regroup', instruction: 'Regroup 15 ones into tens and ones.', targetNumber: 15, hint: 'Trade a full group of ones for a ten. What is left over?' },
       add_with_blocks: { type: 'add_with_blocks', instruction: 'Add 234 + 158 using blocks.', targetNumber: 392, secondNumber: 158, hint: 'Start with the ones column. Do you need to regroup?' },
       subtract_with_blocks: { type: 'subtract_with_blocks', instruction: 'Subtract 127 from 350 using blocks.', targetNumber: 223, secondNumber: 127, hint: 'Start with the ones. Can you borrow from the tens?' },
     };

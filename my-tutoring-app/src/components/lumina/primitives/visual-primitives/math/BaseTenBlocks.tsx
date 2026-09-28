@@ -166,6 +166,13 @@ function describeDecomposition(columns: Record<PlaceValue, number>, places: Plac
 }
 
 /** Lowest place holding 10+ blocks — the trade the student still owes. */
+/**
+ * A generated hint that carries a digit or a count word states part of the answer ("24 has 2 tens and 4 ones",
+ * "There are eight rods"): it is never shown (contract R12). Place names ("tens", "hundreds") are not counts.
+ */
+export const hintLeaks = (hint: string) =>
+  /\d|\b(one|two|three|four|five|six|seven|eight|nine|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\b/i.test(hint);
+
 function findTradeablePlace(
   columns: Record<PlaceValue, number>,
   places: PlaceValue[],
@@ -318,7 +325,10 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
   // Defaults (undefined) preserve the original "always shown" behavior for no-tier sessions.
   const isReadBlocks = currentChallenge?.type === 'read_blocks';
   const showColumnCounts = isReadBlocks ? false : (currentChallenge?.showColumnCounts ?? true);
-  const showBlocksTotal = isReadBlocks ? false : (currentChallenge?.showBlocksTotal ?? true);
+  // Operate never shows its total at any tier (contract R13): once the learner models the operation, the
+  // total IS the typed answer, whatever the flag says. build_number keeps the default (R10).
+  const isOperate = currentChallenge?.type === 'add_with_blocks' || currentChallenge?.type === 'subtract_with_blocks';
+  const showBlocksTotal = isReadBlocks || isOperate ? false : (currentChallenge?.showBlocksTotal ?? true);
 
   // BT-4: which channel carries the answer for this challenge (see BLOCK_JUDGED_TYPES).
   const isBlockJudged = !!currentChallenge && BLOCK_JUDGED_TYPES.has(currentChallenge.type);
@@ -487,9 +497,8 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
       const tradeable = findTradeablePlace(columns, activePlaces);
       const nextPlace = tradeable ? activePlaces[activePlaces.indexOf(tradeable) - 1] : null;
       markWrong(
-        tradeable && nextPlace
-          ? `Those blocks make ${target}, but not with the fewest blocks — trade 10 ${PLACE_CONFIG[tradeable].label.toLowerCase()} for 1 ${PLACE_CONFIG[nextPlace].label.toLowerCase().slice(0, -1)}.`
-          : `Those blocks make ${target}, but not with the fewest blocks. Try trading up to a bigger place.`,
+        // The fact, not the trade: naming which blocks to trade is help, and help is a recorded lever (contract R14).
+        `Those blocks make ${target}, but not with the fewest blocks. Try trading up to a bigger place.`,
       );
     } else {
       markWrong(
@@ -828,7 +837,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
         )}
 
         {/* Hint */}
-        {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
+        {currentChallenge?.hint && !hintLeaks(currentChallenge.hint) && feedbackType === 'error' && currentAttempts >= 2 && (
           <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
           </LuminaPanel>

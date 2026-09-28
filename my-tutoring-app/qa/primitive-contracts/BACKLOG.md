@@ -27,6 +27,8 @@ non-K consumers.
 
 ## Done
 
+- **base-ten-blocks — derived 2026-09-28** → `docs/contracts/base-ten-blocks.md`. 20 requirements (19 OBSERVED, 1 INFERRED), 0 conflicts. R12 (hint), R13 (operate total), R14 (named trade), R16 (operate payload) were VIOLATED and fixed the same day as handoff 21 M1 fixes 1-4. Static + authored map (6 NBT001 mappings); probes 94 tests + journey sweep green.
+
 - **number-bond — derived 2026-09-28** → `docs/contracts/number-bond.md`. 21 requirements
   (20 OBSERVED, 1 INFERRED), 0 conflicts. VIOLATED with fixes queued: R4 (one bond repeated
   per session, NB-REP-1), R12 (`_ + _ = _` placeholder), R13 (worked example can be a session
