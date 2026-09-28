@@ -331,9 +331,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'asked (four for forty) is not the value. On a trade the learner first predicts aloud how many smaller blocks '
         + 'there will be, while the mat is untraded, then taps one block to break it into ten; the mat checks the trade '
         + 'itself once the learner stops. On build and operate the learner adds, removes or trades blocks and presses '
-        + 'Check My Blocks or Check My Trade, or types a result on the keypad, and the activity checks it; blocks that '
-        + 'make the number without the fewest blocks are not yet a build. Never say a column count, a total, a '
+        + 'Check My Blocks or Check My Trade, or types a result on the keypad, and the activity checks it; the right '
+        + 'value without the fewest blocks is not yet a build. Never say a column count, a total, a '
         + 'prediction or a result before the learner answers. You cannot add, remove, trade or type anything.',
+      // build_number publishes levers (`baseTenLevers.ts`, handoff 21 M1); operate and the spoken mat do not yet.
+      levers: true,
       // The mats' own checks (`tradeMiss`, `plainMiss`). read_blocks' ids are the click mat's keypad (a mixed
       // payload); its spoken steps and regroup's prediction name none yet (Part B).
       misses: missLists<BaseTenMiss>({

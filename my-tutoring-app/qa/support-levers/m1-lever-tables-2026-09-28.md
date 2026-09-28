@@ -36,7 +36,7 @@ No contract doc. The draft is in `levers-math2.json`, not math1.
   3. No payloads for decompose, related_fact, fact_family or build_equation, and the journey row throws on the model and equation phases.
   4. The old spoken correction states the bond (`numberBondScript.ts:881`).
 
-## base-ten-blocks
+## base-ten-blocks — slice 1 (build_number) DONE 09-28; operate, regroup and read_blocks still to build
 
 No contract doc. It has two surfaces: the click mat (build_number, operate, mixed) and the spoken mat (read_blocks, regroup).
 

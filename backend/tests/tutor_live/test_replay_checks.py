@@ -39,6 +39,9 @@ def test_a_known_miss_is_caught(text, kind, keys, ask, missed):
     # Restating the ask (ten-frame run-5, 09-27): "two" is the assignment.
     ('To start, please put two counters on the ten frame.', 'start', ['2'], 'Put two counters on the frame. Your turn.'),
     ("Whenever you're ready, shade the circle to show 1/2 and tap Check.", 'start', ['1'], 'Shade the circle to show 1/2.'),
+    # Restating the ask's operands in compound words (base-ten operate, 09-28): "thirty-seven" is 37, not 7.
+    ("Let's add thirty-seven and twenty-five using your blocks. Take your time building them!", 'start', ['62'],
+     'Add 37 + 25 using blocks.'),
     # A question is an invitation, not the fix.
     ('How many more counters do you need to add?', 'miss', ['2'], 'Show 2 on the ten frame'),
     # "one" as a pronoun.

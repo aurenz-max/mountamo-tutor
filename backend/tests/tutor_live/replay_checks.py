@@ -56,6 +56,12 @@ def says(text, phrase):
 def numbers_in(text):
     """Digits and number words in a span, as digit strings."""
     found = set(re.findall(r'\d+', text))
+    # A compound number word is one number ("thirty-seven" is 37, not 7; base-ten operate replay, 09-28).
+    tens = {w: 10 * i for i, w in enumerate(['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety']) if w}
+    compound = re.compile(rf"\b({'|'.join(tens)})(?:[- ]({'|'.join(NUMBER_WORDS[1:10])}))?\b", re.I)
+    for ten, one in compound.findall(text):
+        found.add(str(tens[ten.lower()] + (NUMBER_WORDS.index(one.lower()) if one else 0)))
+    text = compound.sub(' ', text)
     found |= {str(NUMBER_WORDS.index(w)) for w in re.findall(r'[a-z]+', text.lower()) if w in NUMBER_WORDS}
     return found
 

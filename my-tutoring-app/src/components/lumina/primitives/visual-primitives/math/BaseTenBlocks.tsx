@@ -30,6 +30,8 @@ import CalculatorInput from '../../input-primitives/CalculatorInput';
 import { SoundManager } from '../../../utils/SoundManager';
 import BaseTenBlocksDi from './BaseTenBlocksDi';
 import { usesBaseTenDi } from './baseTenScript';
+import { BRACKET_LEVER, COUNTS_LEVER, PLAINER_LEVER, TOTAL_LEVER, baseTenLevers, leverFacts, plainerNumber,
+  startLevers } from './baseTenLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -264,6 +266,11 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
   const [typedAnswer, setTypedAnswer] = useState('');
   const [regroupCount, setRegroupCount] = useState(0);
+  // In-item levers (`baseTenLevers.ts`), keyed by the session item they were pulled on, and the plainer build a
+  // simplify lever put on screen in its place. The ref is what the item-open callback reads.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<PlainChallenge | null>(null);
+  const practiceRef = useRef<PlainChallenge | null>(null);
 
   // Refs
   const stableInstanceIdRef = useRef(instanceId || `base-ten-blocks-${Date.now()}`);
@@ -285,9 +292,11 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: plainWorkspaceAssignment,
-    // A fresh challenge and Try again both start from the challenge's own mat.
-    onItemOpened: (index) => {
-      setColumns(startColumnsFor(challengesWithIds[index]));
+    // A fresh challenge and Try again both start from the challenge's own mat. Try again on the plainer build
+    // keeps it; only a fresh challenge or the workspace's endPractice removes it.
+    onItemOpened: (index, retry) => {
+      if (!retry) { practiceRef.current = null; setPractice(null); }
+      setColumns(startColumnsFor(retry && practiceRef.current ? practiceRef.current : challengesWithIds[index]));
       setRegroupCount(0); setFeedback(''); setFeedbackType(''); setTypedAnswer('');
     },
   });
@@ -310,7 +319,12 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
     phaseConfig: PHASE_TYPE_CONFIG,
   });
 
-  const currentChallenge = challengesWithIds[currentChallengeIndex] || null;
+  const sessionChallenge = challengesWithIds[currentChallengeIndex] || null;
+  /** What is on screen: the plainer build while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const startPulled = startLevers(sessionChallenge?.type, { showColumnCounts: sessionChallenge?.showColumnCounts,
+    showBlocksTotal: sessionChallenge?.showBlocksTotal });
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : startPulled;
   const currentTotal = useMemo(() => computeTotal(columns, activePlaces), [columns, activePlaces]);
 
   // Determine if blocks should be interactive (have +/- buttons)
@@ -324,11 +338,15 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
   // perception/self-check aids at higher tiers (counts off at medium, total off at hard).
   // Defaults (undefined) preserve the original "always shown" behavior for no-tier sessions.
   const isReadBlocks = currentChallenge?.type === 'read_blocks';
-  const showColumnCounts = isReadBlocks ? false : (currentChallenge?.showColumnCounts ?? true);
+  // On build_number the counts and the total are levers; the tier only sets where they start.
+  const isBuild = currentChallenge?.type === 'build_number';
+  const showColumnCounts = isReadBlocks ? false : isBuild ? pulledLevers.includes(COUNTS_LEVER) : (currentChallenge?.showColumnCounts ?? true);
   // Operate never shows its total at any tier (contract R13): once the learner models the operation, the
   // total IS the typed answer, whatever the flag says. build_number keeps the default (R10).
+  const bracketOn = pulledLevers.includes(BRACKET_LEVER);
   const isOperate = currentChallenge?.type === 'add_with_blocks' || currentChallenge?.type === 'subtract_with_blocks';
-  const showBlocksTotal = isReadBlocks || isOperate ? false : (currentChallenge?.showBlocksTotal ?? true);
+  const showBlocksTotal = isReadBlocks || isOperate ? false : isBuild ? pulledLevers.includes(TOTAL_LEVER)
+    : (currentChallenge?.showBlocksTotal ?? true);
 
   // BT-4: which channel carries the answer for this challenge (see BLOCK_JUDGED_TYPES).
   const isBlockJudged = !!currentChallenge && BLOCK_JUDGED_TYPES.has(currentChallenge.type);
@@ -454,7 +472,8 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
     SoundManager.playCorrect();
     setFeedback(message);
     setFeedbackType('success');
-    recordResult({
+    // A plainer build is practice: it never becomes the session item's result.
+    if (!practice) recordResult({
       challengeId: currentChallenge.id,
       correct: true,
       attempts: currentAttempts + 1,
@@ -576,8 +595,38 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    workspace.current = { ...plainWorkspaceScene(currentChallenge, { blocks: describeDecomposition(columns, activePlaces),
-      typed: typedAnswer, trades: regroupCount }) };
+    const scene = plainWorkspaceScene(currentChallenge, { blocks: describeDecomposition(columns, activePlaces),
+      typed: typedAnswer, trades: regroupCount });
+    const onScreen = leverFacts(pulledLevers, startPulled);
+    const levers = practice ? [] : baseTenLevers(sessionChallenge, pulledLevers, columns);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the mat changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (id === PLAINER_LEVER) {
+          const plain = plainerNumber(sessionChallenge.targetNumber);
+          if (plain === null) return 'There is no plainer number for this item.';
+          const easier: PlainChallenge = { ...sessionChallenge, id: `${sessionChallenge.id}~plainer`, targetNumber: plain,
+            instruction: `Build the number ${plain} with blocks.` };
+          setLeverState(pulled);
+          practiceRef.current = easier; setPractice(easier);
+          setColumns(startColumnsFor(easier)); setRegroupCount(0); setFeedback(''); setFeedbackType('');
+          return { practice: plainWorkspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => {
+        practiceRef.current = null; setPractice(null);
+        setColumns(startColumnsFor(sessionChallenge)); setRegroupCount(0); setFeedback(''); setFeedbackType('');
+      },
+    };
   });
 
   // -------------------------------------------------------------------------
@@ -691,7 +740,9 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
             const placeIdx = activePlaces.indexOf(place);
 
             return (
-              <div key={place} className="flex flex-col items-center gap-2 bg-slate-800/20 rounded-xl p-3 border border-white/5">
+              <div key={place} data-lever={bracketOn && count >= 10 ? 'ten-bracket' : undefined}
+                className={`flex flex-col items-center gap-2 bg-slate-800/20 rounded-xl p-3 border ${bracketOn && count >= 10
+                  ? 'border-amber-300 ring-2 ring-amber-300/60' : 'border-white/5'}`}>
                 {/* Column Header */}
                 <div className="text-center">
                   <span className={`text-xs font-mono uppercase tracking-wider ${config.color}`}>

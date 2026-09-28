@@ -670,7 +670,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     prompts: WORKSPACE_PROMPTS,
     // Two surfaces, chosen by the payload. The judged mat (read_blocks, regroup): a spoken step says the
     // pack's own answer; a trade taps a block (wrong: another size, or the asked size twice). The click mat:
-    // build_number presses each column's "Add one to ..." (wrong: one ones cube too many), then Check My Blocks;
+    // build_number presses each column's "Add one to ..." (wrong: a ten left as ten ones), then Check My Blocks;
     // operate types the result on the keypad (wrong: one more), then the check key.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
@@ -695,9 +695,12 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       if (!c) throw new Error('No current base-ten-blocks challenge');
       if (ctx.data.decimalMode) throw new Error(`base-ten-blocks ${c.type}: decimal mats are not driven at W1`);
       if (c.type === 'build_number') {
+        // Wrong: the catalog's documented struggle, a ten left as ten ones (24 as 1 ten and 14 ones); one ones cube
+        // too many when there is no ten to leave.
         const digits = String(c.targetNumber).padStart(4, '0').split('').map(Number);
+        if (wrong && digits[2] > 0) { digits[2] -= 1; digits[3] += 10; } else if (wrong) digits[3] += 1;
         const presses = ['Thousands', 'Hundreds', 'Tens', 'Ones'].flatMap((column, i) =>
-          Array.from({ length: digits[i] + (wrong && column === 'Ones' ? 1 : 0) }, (): DriverInput => ({ type: 'choose', label: `Add one to ${column}` })));
+          Array.from({ length: digits[i] }, (): DriverInput => ({ type: 'choose', label: `Add one to ${column}` })));
         return [...presses, { type: 'choose', label: 'Check My Blocks' }];
       }
       if (c.type === 'regroup') throw new Error('base-ten-blocks regroup on the click mat (a mixed payload) is not driven at W1');

@@ -144,6 +144,11 @@ Not a consumer: K teen numbers. The math-k atlas routes teens to ten-frame/numbe
 - **Evidence:** `getActivePlaces`; `baseTenModel.ts`; `selectBlockWorthContrast` call with `data.decimalMode ? null : move`.
 - **Probe:** `baseTenScript.test.ts` "a decimal mat counts in its smallest block" covers the miss arithmetic only. Upgrade to OBSERVED when an eval-test run renders a decimal deck.
 
+### R21 — in-item levers on build_number (slice 1) · IMPLEMENTED 2026-09-28
+- **Property:** `baseTenLevers.ts` declares on build_number, with a synchronous `pullLever`: `column_counts` and `blocks_total` (help; the tier's `showColumnCounts`/`showBlocksTotal` are their starting positions, never recorded pulls), `ten_bracket` (help; a bracket round the learner's own column of ten or more, offered only while one exists) and `plainer_build` (simplify; an ungraded build of a plainer number with the same places, then the full item on an empty mat). Each declares the `plainMiss` ids it answers; every build_number catalog miss is answered (J9). operate and the spoken mat declare no levers yet.
+- **Leak rules (code, `baseTenLevers.test.ts`):** counts and total are the learner's own blocks on a mode whose number is printed; never on operate (R13); the bracket carries no count; the plainer number is never the number or its reversal (all numbers to 999 checked); no lever text or scene fact carries a number.
+- **Evidence:** `baseTenLevers.test.ts`, `BaseTenBlocks.levers.workspace.test.tsx` (3), sweep J1-J9 (the journey's wrong build is now the documented untraded ten), replay 4 payloads x 5 clean (`qa/tutor-reports/replay/base-ten-blocks-2026-09-28.json`).
+
 ## Conflicts
 
 _None open._ Notes for the four M1 fixes and the lever slice:
@@ -169,6 +174,8 @@ Proposed only; not applied.
 - **tutoring (outside the curator prompt):** the `aiDirectives` "CHALLENGE TYPE COACHING" line says "For READ_BLOCKS: … Count each column and combine", which contradicts R6 (the child never composes the number), and "For REGROUP: Trade 10 ones for 1 ten!", which names the trade (R14's concern). `scaffoldingLevels` level2 and level3 recite the column counts and `{{currentTotal}}`, which is the answer on read_blocks. No reference to these fields was found under `components/live-activity/runtime/` (not verified at runtime). Both surfaces are workspace-only, so these lines may be unread; confirm before trimming.
 
 ## Changelog
+
+- 2026-09-28 — R21 added (build_number levers). Compatible: an untiered or easy build renders as before (counts and total start pulled); catalog guidance trimmed by one clause to stay under the 2000-character cap with the lever doctrine; the W1 test's tool list gains `pull_lever` on build_number only.
 
 - 2026-09-28 — R12, R13, R14, R16 fixed (handoff 21 M1, before the levers). R12: `hintLeaks` (a digit or a count word; place names are not counts) keeps a generated hint off screen, and the prompt and fallbacks ask for a way to work instead of a count; the guard hides 10 of the 18 saved payload hints, every one that stated the answer among them. R13: operate never shows the Blocks Total, whatever the tier or flag; build_number keeps its default (R10). R14: a non-standard build gets "not with the fewest blocks. Try trading up to a bigger place", never the exact trade; the miss id is unchanged. R16: `w1-payloads/base-ten-blocks.operate.json` (one generation), driven by the existing journey row. Probes: `BaseTenBlocks.answer-channel.test.tsx` (hint table, hidden hint, operate total, trade line); base-ten suites 440 green; sweep green.
 
