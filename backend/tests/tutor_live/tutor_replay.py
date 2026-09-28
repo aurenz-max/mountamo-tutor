@@ -53,9 +53,11 @@ PHASES = {'lesson-entry': 'start', 'wrong': 'miss', 'stuck': 'stuck', 'stuck-aga
 
 def client():
     """REST, not the SDK: the backend pins google-genai 1.16.1, which cannot carry the thought signatures
-    gemini-3.8 requires on function calls in history."""
+    gemini-3.8 requires on function calls in history. The key goes in a header, not the query string, so
+    httpx's request log and any traceback that prints the URL never carry it."""
     key = os.getenv('GEMINI_API_KEY')
-    return httpx.AsyncClient(base_url='https://generativelanguage.googleapis.com/v1beta', params={'key': key}, timeout=120)
+    return httpx.AsyncClient(base_url='https://generativelanguage.googleapis.com/v1beta',
+                             headers={'x-goog-api-key': key}, timeout=120)
 
 
 def session_config(record):
