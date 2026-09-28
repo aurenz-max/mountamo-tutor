@@ -9,6 +9,11 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 
 ## Status (2026-09-26)
 
+- **Unblocked 2026-09-27:** slices 1-4 of [handoff 19](../live-runtime-handoffs/19-binding-consolidation.md)
+  landed 09-27 (the eval-mode pin, scene publishing and plain-shape attempt/result bookkeeping now live in
+  the shared runtime; the recipe in `/add-live-tutor-tools` is shortened to match). Rollouts resume, math
+  first (user request 09-27).
+
 - Catalog: 212 primitive ids. On the workspace: 68 (8 at W2 from the pilots, 60 at W1), recounted 09-26
   after C9, plus `adaptation-investigator` as an ungraded teaching surface (69 `teachingWorkspace` blocks). Queued:
   Tier A 0, Tier B 0 (B1-B3 done), Tier C 113 (152 before C1). Held back: 31. C8 closed the runner-era (R) rows;

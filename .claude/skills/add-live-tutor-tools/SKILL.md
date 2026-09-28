@@ -116,8 +116,9 @@ below instead of step 2; steps 1, 3, 4, 5 and the checks are the same.
      existing `useJudgedScriptRunner` call plus that `use<X>Runtime` call, moved out of the
      surface) and `useWorkspaceController` (`useWorkspaceRunner` with `primitiveId` and
      `assignment: workspaceAssignment`).
-   - Call `useController({ ...runnerOptions, items, workspace, objectiveId, planItemId, evalMode })`
-     in the surface. Build `pack` only when `!tutorOwned` (`undefined` otherwise), and gate
+   - Call `useController({ ...runnerOptions, items, workspace, objectiveId, planItemId })` in the
+     surface. No `evalMode`: the wrapper provides the lesson's pin and the workspace hooks read it
+     (`runtime/workspacePin.ts`); never rebuild a mode from the first item. Build `pack` only when `!tutorOwned` (`undefined` otherwise), and gate
      `completionCue` on `!tutorOwned`.
    - `onFinished` also receives the workspace's `teachingEvaluation` result: widen its parameter
      to the fields it reads, default the runner-only ones (`hearTaps ?? 0`), and pass
@@ -130,10 +131,10 @@ below instead of step 2; steps 1, 3, 4, 5 and the checks are the same.
      primitive's own commit rule: whatever the runner committed (a partial order, a half-written
      chart) still commits, and what it treated as exploration still does not.
    - A `useLayoutEffect` with no dependency list, guarded by `tutorOwned`, sets
-     `workspace.current = { ...workspaceScene(item, view), demonstration: [], canDemonstrate:
-     false, canPresent: false, readyForResponse, mark: () => {}, clearPresentation: () => {} }`
-     and calls `runner.publishWorkspace?.()`. `readyForResponse` is `true` unless a stimulus is
-     still pending. Put `useLiveAutoStart` after it.
+     `workspace.current = { ...workspaceScene(item, view) }`, adding `readyForResponse: false` only
+     while a stimulus is still pending. The workspace publishes it after every render; the other
+     fields (`demonstration`, `canDemonstrate`, `canPresent`, `mark`, `clearPresentation`) default
+     off. Put `useLiveAutoStart` after it.
    - **One progression owner.** Reveal, reset and evaluation stay in the runner callbacks
      (`onItemOpened`, `onCorrectionRetry`, `onAffirmed`, `onFinished`), which the workspace fires
      from committed outcomes; answer-leak holds keep reading `revealHeld`. Turn off anything else
@@ -162,7 +163,9 @@ below instead of step 2; steps 1, 3, 4, 5 and the checks are the same.
    answer. A phase the row cannot drive throws with its name.
 
 Grep `components/live-activity` tests (including `runtime/`) for the id. Expected-id lists
-(`lessonWorkspacePlan.test.ts`) gain it. Since batch A2 every live adapter is
+(`lessonWorkspacePlan.test.ts`) gain it. A family with a gesture check also names its misses (handoff 20):
+a pure `<x>Miss(item, work)` returning an exported union beside the check, passed to `commitCheck` /
+`commitGesture`, and `teachingWorkspace.misses: missLists<Union>({ mode: [...] })` in the catalog. Since batch A2 every live adapter is
 catalog-declared, so a test that needs "a family the catalog does not declare" uses a non-live
 catalog id such as `concept-card-grid` (display-only, held back).
 
@@ -175,14 +178,17 @@ catalog id such as `concept-card-grid` (display-only, held back).
 - Rename the component `<X>Surface` with props `tutorOwned` and `useController`, add the
   `workspace` ref, and replace `useChallengeProgress({ challenges, getChallengeId })` with
   `const progress = useController({ challenges, getChallengeId, instanceId, objectiveId,
-  planItemId, evalMode, workspace, assignment: workspaceAssignment, onItemOpened })`. Move the
-  instance-id lines above it if needed. `onItemOpened(index, retry)` clears the working surface on
+  planItemId, workspace, assignment: workspaceAssignment, onItemOpened })` (no `evalMode`, as
+  step 2). Move the instance-id lines above it if needed. `onItemOpened(index, retry)` clears the working surface on
   the workspace path (fresh item and Try again); it may call setters declared further down, since
   it only runs after render. Keep the reset in the Next handler too: the scripted path
-  (`useScriptedProgress` = `useChallengeProgress`) never calls `onItemOpened`.
+  (`useScriptedProgress`, `useChallengeProgress` plus `commitCheck`) never calls `onItemOpened`.
 - Wherever a check reaches its verdict (a Check handler, or a tap handler that grades without a
-  Check button), call `progress.commitCheck?.(describe(...), correct)`, with `describe` from the
-  domain module (the learner's work in words, never the key). Keep the primitive's rule for which
+  Check button), call `progress.commitCheck(describe(...), correct, miss)`, with `describe` from the
+  domain module (the learner's work in words, never the key). It counts the attempt and records the
+  correct result on both paths, so delete the primitive's `incrementAttempts()` and any
+  `recordResult` that holds only `challengeId`, `correct` and `attempts`; keep a `recordResult` that
+  adds the primitive's own fields (a score, the strategy used). Keep the primitive's rule for which
   moves are checked at all.
 - On the workspace path (`tutorOwned`):
   - Hide the primitive's Next button and any read-aloud button that sends text to the tutor.
@@ -198,10 +204,8 @@ catalog id such as `concept-card-grid` (display-only, held back).
   evaluation provider, and the smoke drive fails on any submission there. `progress.advance()`
   returns `false` on the workspace path, so an existing "advance returned false → submit"
   completion path still runs once the last challenge is correct.
-- Publish the scene in a `useLayoutEffect` as in step 2, calling `progress.publishWorkspace?.()`.
-  Derive every scene input during render (`useMemo`), never in an effect that sets state after an
-  item opens: that extra revision supersedes the advance's visible receipt and the lesson stalls
-  (comparison-builder's card shuffle).
+- Set the scene in a `useLayoutEffect` as in step 2; no publish call. A scene change after an item
+  opens is safe: the visibility wait follows a later render of the same item and phase (rule J7).
 - Export `withWorkspaceController('<id>', <X>Surface, useScriptedProgress,
   useWorkspaceProgressFor('<id>'))`.
 - Harness: `choose` presses the FIRST button whose text or `aria-label` matches, so labels a row
@@ -221,22 +225,21 @@ under a runtime (a render outside one shows the needs-the-tutor card). Report: B
 **Checks.** (a) The generic W1 contract, `runtime/workspaceContract.test.tsx`, covers what every
 binding owes (lesson binds the content, tutor owns it with no cue, a task, the packet's item and
 `learner`, no observer-only tool, nothing moves or submits on its own, adapter modes equal the
-catalog's). It FAILS until the family has a payload: after the smoke drive, copy its saved
-`generatedData` into `runtime/testing/w1-payloads/<id>.<mode>.json` as `{ source, primitiveId,
-evalMode, data }`, one file per mode driven. Then `<X>.workspace.test.tsx` tests only what is the
+catalog's). It FAILS until the family has a payload: `backend/venv/Scripts/python.exe
+backend/tests/tutor_live/save_payload.py --primitive <id> --mode <m>` (one generation call, frontend on
+:3000, no Live session) writes `runtime/testing/w1-payloads/<id>.<mode>.json`, one file per mode. Then `<X>.workspace.test.tsx` tests only what is the
 primitive's own, mounting through `mountWorkspace` (`runtime/testing/workspaceHarness.tsx`, seams
 from `liveRuntimeSeams`): an `it.each` over every catalog mode on hand-built items (the payloads
 rarely cover every mode), the spoken key published and the gesture key not, a wrong commit that Try
 again reopens and what it clears, a right one that completes once. (b) The primitive's existing tests and
-`components/live-activity`, `typecheck:lumina` 0, full `tsc` not above baseline. (c) One smoke
-drive, frontend and backend running:
-`backend/venv/Scripts/python.exe backend/tests/tutor_live/run_live_runtime.py --primitive <id>
---mode <m> --runs 1 --lesson-entry --progression-only --output my-tutoring-app/qa/tutor-reports/<id>-w1-<m>-<date>.json`,
-on a gesture mode, plus `--audio` on one spoken mode if it has any. Read the tutor lines, not only
-PASS: a tutor that never says what the screen withholds is a finding. Editing any file under
-`backend/` reloads uvicorn and closes a running drive with ws 1012; rerun it. A failed smoke is
-recorded in the queue row, then fixed, or the row moves to W2 or BLOCKED. Do not widen W1 to
-pass one row.
+`components/live-activity`, `typecheck:lumina` 0, full `tsc` not above baseline, the dry journey
+`runtime/journeySweep.test.tsx` (J1-J8 on the new payloads) and `catalog/misses.test.ts`. (c) Tutor
+replay instead of a smoke drive (`backend/tests/tutor_live/LIVE_TESTING.md`, "Tutor replay, how"):
+record the family's moments and run `tutor_replay.py --primitive <id> --samples 5`, with `--observe`
+on a spoken mode. Read the replies, not only the table: a tutor that never says what the screen
+withholds is a finding. A failed replay is recorded in the queue row, then fixed, or the row moves to
+W2 or BLOCKED. No Live run, except 1 `--audio` for a mode judged from real speech sounds. Do not
+widen W1 to pass one row.
 
 **Shared files.** Every adoption edits `activityContract.ts`, the catalog and
 `liveJourneySpec.ts`. With two sessions running, commit one primitive before the next one
@@ -417,9 +420,10 @@ and one smoke drive. The steps below are for W2 and for new DI or framework work
    needs its reason stated in the report, and the question wording must not be tuned to a
    case. False help or stop requests must be 0. Any other failed case, including a missed request, is a finding
    to report, not a blocker.
-   Then run real JEV semantic cases and the connected journeys `backend/tests/tutor_live/LIVE_TESTING.md` sets:
-   a new adoption runs the gate once (3 text + 1 `--audio` for speech evidence); a later fix
-   runs only its change type's row. Use a saved generated payload for replay. A
+   Then run real JEV semantic cases and the tier `backend/tests/tutor_live/LIVE_TESTING.md` sets:
+   a new adoption's gate is the sweep, its miss table and a tutor replay (`tutor_replay.py`, 5 samples,
+   `--observe` on spoken modes), with Live only for timing, real audio or tool-call narration; a later
+   fix runs only its change type's row. Use a saved generated payload. A
    progression-only run does not certify demonstrations. Mocked observer decisions
    prove lifecycle mechanics, not semantic classification or real model behavior.
 5. Inspect every transcript and receipt. The journey sends its help and example prompts

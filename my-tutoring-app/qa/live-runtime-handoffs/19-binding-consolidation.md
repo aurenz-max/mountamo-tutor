@@ -1,0 +1,36 @@
+# Binding consolidation: shared wiring moves into the runtime, then rollouts resume
+
+Date: 2026-09-27 · Executor: `/add-live-tutor-tools` (shared runtime) · Gate: `runtime/journeySweep.test.tsx`
+
+## Why this exists
+
+A review of the 160+ paid Live sessions since 09-12 found that about 45% of the defects they surfaced needed no model at all, and most of those lived in wiring each primitive writes by hand: eval mode taken from the item, scene updates that stall the advance, a forgotten publish or result record, submitting on the live host, learner input not blocked. A side-by-side read of 12 bindings found about 38% of each binding's workspace code is that same wiring. Each new W1 binding or lever rollout copies it again.
+
+The workspace contract does not change (observer owns progression, tutor teaches, primitive checks gestures). No primitive is re-migrated. Each slice moves one repeated mechanic into a shared piece the primitives already call.
+
+## User rulings (2026-09-27), do not reopen
+
+1. **W1 bindings and lever rollouts are paused until slices 1-4 below land.** Blocked: `qa/workspace-rollout/ROLLOUT.md` (Tier C, 113 rows) and handoff 18 Phase B/C.
+2. **Scripted paths are deleted.** The 11 runner-era bindings that keep a scripted controller beside the workspace (`withWorkspaceController`) become workspace-only (`withWorkspaceOnly`), as B2 did for the speech-loop shape.
+
+## Gate for every slice
+
+- `npm test -- src/components/lumina/components/live-activity/runtime/journeySweep.test.tsx`: the dry journey (wrong, retry, right, advance on every item) over all 152 saved payloads in `runtime/testing/w1-payloads/`, about 18 s, no model. It must stay green.
+- `runtime/workspaceContract.test.tsx`, `typecheck:lumina` 0, full `tsc` not above baseline.
+- No Live run unless the slice changes what the tutor is told (`backend/tests/tutor_live/LIVE_TESTING.md`).
+
+## Queue
+
+| # | Slice | Blocks rollouts | Status |
+|---|---|---|---|
+| 0 | Moved to [handoff 20](20-misses-and-tutor-replay.md) (top priority; slices 1-4 follow its Part A1). What a wrong answer shows is code: the check names a miss (`TeachingAttempt.miss`), levers declare the misses they answer (`WorkspaceLever.answers`), `nextLever` picks by the last miss. Pilot: number-line (`jumpMiss`). Every lever primitive gets its miss function before lever rollouts resume; ten-frame and fraction-circles next | yes (levers) | number-line done 09-27 (unit + mounted tests; no live run needed) |
+| 1 | Eval mode from the lesson's pin, not the item: the wrapper provides the pin; `useWorkspaceRunner` and `useWorkspaceProgressFor` read it; delete the ~30 per-primitive fallbacks. Add a contract assertion that the mount's mode equals the pin | yes | done 09-27: `runtime/workspacePin.ts`; the three wrappers and `DiTeachingStage` provide the pin, `useTeachingWorkspace`/`useTeachingSurface`/`useWorkspaceRunner`/`useTeachingEvaluation` read it (no `evalMode` option); 68 per-primitive fallbacks deleted (56 hook call sites, 9 DI packs, 3 teaching components; the 6 runner-era scripted runtime registrations keep theirs as `scriptedEvalMode` until slice 5); contract asserts `snapshot.evalMode === pin` on all 152 payloads |
+| 2 | Scene-only republishes no longer supersede the advance receipt (`waitForVisible.ts`, `LiveLessonRuntime.ts` revision bump): a later revision on the same item and phase counts as visible. Add sweep rule J7, which awaits the real visibility wait (the sweep calls `confirmVisibleResponse` directly today and cannot see this) | yes | done 09-27: `waitForVisible` follows a later revision with the same instance, status, item and phase; J7 drives every verdict, retry and advance through the real wait (`workspaceHarness.visible`), 152/152 green; with a deliberate post-commit republish J7 failed 152/152 on the old wait and passes on the new one |
+| 3 | Publish boilerplate: `demonstration`, `canDemonstrate`, `canPresent`, `mark`, `clearPresentation`, `readyForResponse` optional with defaults; the wrapper publishes. After slice 2 (it changes when publish runs) | yes | done 09-27: the six fields are optional on `TeachingWorkspace` (defaults none/false/true/no-op); `useTeachingWorkspace` publishes after every render in a passive effect, after the primitive's layout effect sets the scene. Deleted from 65 setters: 65 publish calls and 359 default-valued fields |
+| 4 | Plain-shape bookkeeping: `commitCheck` records the attempt and base result itself (merging, so a primitive's richer record wins) | yes | done 09-27: `commitCheck` is required on `Progress` and keeps the books on both paths (`useScriptedProgress` too): counts the attempt, on a correct check merges `{ challengeId, correct, attempts }` into the challenge's record (none on a simplify-lever practice item), and still passes `miss` to `TeachingAttempt.miss`. Deleted from the 14 plain bindings: 25 `incrementAttempts()` calls and 9 base-only `recordResult` calls; records with a primitive's own fields stay |
+| 5 | Delete the scripted paths of the 11 `withWorkspaceController` bindings (ruling 2) | no | open |
+| 6 | Submission on the live host refused inside `usePrimitiveEvaluation`; merge `teachingAttempts`/`assistanceProvenance` there. Needs its own unit test (the sweep mocks the hook) | no | open |
+| 7 | Learner input blocked by the wrapper while a checked answer waits. Needs a browser check (jsdom likely ignores `inert`) | no | open |
+| 8 | Tier 1 of the sweep: send the packets the dry journey records to the real `/api/lumina/observe-dialogue` with standard tutor replies; score credit and false credit for every family at text-call cost | no | open |
+
+Evidence behind the ranking (line counts, duplicate counts, file:line): the 2026-09-27 binding study, summarised in the session that wrote this handoff; the defect catalogue is in `qa/tutor-reports/` and the commit bodies from 09-12 to 09-27.

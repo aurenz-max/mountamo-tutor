@@ -57,6 +57,8 @@ Report: `qa/eval-reports/number-line-levers-<date>.md`, with the bench transcrip
 
 ## Phase B onwards: rollout (only after the bench passes)
 
+> **BLOCKED (user ruling 2026-09-27):** no new primitive starts Phase B/C until slices 1-4 of [handoff 19](19-binding-consolidation.md) land. B1 (ten-frame) is done; B2 (fraction-circles) was closed after a browser check. The next row waits.
+
 Once the gate passes and the user has seen the report, set this as the session goal. Run one primitive at a time: never a workflow sweep. Each primitive goes through `/add-support-tiers` end to end, and each one's live bench (the same six checks) must pass before the next starts.
 
 | Phase | Primitive | Why this order | Known first steps |
