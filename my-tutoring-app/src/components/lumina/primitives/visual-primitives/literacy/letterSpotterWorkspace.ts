@@ -32,6 +32,25 @@ export function letterSpotterScene(item: LetterSpotterItem): WorkspaceScene {
   } };
 }
 
+/**
+ * What a checked wrong tap shows (handoff 20), by the tapped letter's shape against the target's:
+ * `mirror_form` (match it: the little letter flipped or turned, b/d/p/q, n/u, m/w), `same_shape_family`
+ * (the letterform family the generator draws near distractors from: b d p q g, m n h r u, i l t j f,
+ * c e o a s, v w y x z k), `other_letter`. name_it is spoken (Part B).
+ */
+export type LetterSpotterMiss = 'mirror_form' | 'same_shape_family' | 'other_letter';
+
+// Mirrors `CONFUSABLE_CLUSTERS` in service/literacy/gemini-letter-spotter.ts (not imported: a generator module).
+const SHAPE_FAMILIES = ['bdpqg', 'mnhru', 'iltjf', 'ceoas', 'vwyxzk'];
+const MIRRORS = new Set(['bd', 'pq', 'bp', 'dq', 'nu', 'mw']);
+
+export function letterSpotterMiss(item: LetterSpotterItem, tapped: string): LetterSpotterMiss | undefined {
+  const want = item.targetLetter.toLowerCase(), got = tapped.toLowerCase();
+  if (item.mode === 'name-it' || !got || got === want) return undefined;
+  if (item.mode === 'match-it' && (MIRRORS.has(want + got) || MIRRORS.has(got + want))) return 'mirror_form';
+  return SHAPE_FAMILIES.some(f => f.includes(want) && f.includes(got)) ? 'same_shape_family' : 'other_letter';
+}
+
 /** How a tap reads to the tutor and the observer: which letter, never the key. */
 export const describeLetterTap = (letter: string) => `Tapped the letter ${letter}.`;
 

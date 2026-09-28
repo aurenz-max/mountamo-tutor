@@ -73,6 +73,31 @@ function key(item: KnowledgeCheckItem): string | undefined {
   }
 }
 
+/**
+ * What a checked wrong tap shows (handoff 20). The generated options record no reason for being wrong, so a
+ * pattern is named only where the tapped text itself shows one:
+ *   - a tapped choice where the key and the choice are both numbers: `one_less`, `one_more`, `other_number`;
+ *     any other tapped choice is `other_choice`;
+ *   - point_to on a printed number sentence: `sign_token` (a +, − or = sign), `other_number_token`.
+ * Every other item kind is spoken (Part B).
+ */
+export type KnowledgeCheckMiss = 'one_less' | 'one_more' | 'other_number' | 'other_choice' | 'sign_token' | 'other_number_token';
+
+const asNumber = (text?: string) => (text && /^\s*-?\d+(\.\d+)?\s*$/.test(text) ? Number(text) : NaN);
+
+export function knowledgeCheckMiss(item: KnowledgeCheckItem, tappedId: string): KnowledgeCheckMiss | undefined {
+  if (item.kind === 'point_to') {
+    if (tappedId === item.targetTokenId || item.stimulus?.insetType !== 'number-sentence') return undefined;
+    const token = item.stimulus.tokens.find(t => t.id === tappedId);
+    return token?.kind === 'operator' ? 'sign_token' : token?.kind === 'number' ? 'other_number_token' : undefined;
+  }
+  if (item.kind !== 'choice_tap' || tappedId === item.correctOptionId) return undefined;
+  const text = (id?: string) => item.options?.find(o => o.id === id)?.text;
+  const want = asNumber(text(item.correctOptionId)), got = asNumber(text(tappedId));
+  if (Number.isNaN(want) || Number.isNaN(got)) return 'other_choice';
+  return got === want - 1 ? 'one_less' : got === want + 1 ? 'one_more' : 'other_number';
+}
+
 export function knowledgeCheckAssignment(item: KnowledgeCheckItem): TeachingAssignment {
   const expectedAnswer = key(item);
   return expectedAnswer

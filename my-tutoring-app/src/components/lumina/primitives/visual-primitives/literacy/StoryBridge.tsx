@@ -30,7 +30,7 @@ import { phaseResultsFromSummary, type PhaseConfig } from '../../../hooks/usePha
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { evidenceFor, itemsFromChallenges, type StoryBridgeItem } from './storyBridgeScript';
 import {
-  describeStoryBridgeTap, hearStoriesRequest, storyBridgeAssignment, storyBridgeScene,
+  describeStoryBridgeTap, hearStoriesRequest, storyBridgeAssignment, storyBridgeMiss, storyBridgeScene,
 } from './storyBridgeWorkspace';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { storyBridgePipPose } from '../../../pip/storyBridgePipPose';
@@ -260,7 +260,7 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
     setTappedChoice(choiceId);
     (tapLogRef.current[item.id] ??= []).push(choiceId);
     commitGesture(runner, { response: describeStoryBridgeTap(item, choiceId), correct: choiceId === item.correctChoiceId,
-      cue: () => describeStoryBridgeTap(item, choiceId) });
+      cue: () => describeStoryBridgeTap(item, choiceId), miss: storyBridgeMiss(item, choiceId) });
   }, [runner, showSummary, pip]);
 
   const phaseResults = useMemo<PhaseResult[]>(() => {

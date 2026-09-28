@@ -64,6 +64,33 @@ export function storyBridgeScene(item: StoryBridgeItem): WorkspaceScene {
   return { objects: [], facts };
 }
 
+/**
+ * What a checked wrong tap shows (handoff 20):
+ *   - match_character: `same_look` (the tapped friend has the first friend's picture), `other_character`;
+ *   - match_setting: `same_for_different`, `different_for_same`;
+ *   - venn_place: `both_for_one` (a one-story detail put in the middle), `one_for_both` (a shared detail put on
+ *     one side), `other_side` (the other story's side);
+ *   - sequence_two: `earlier_event`, `later_event` (story two's event before or after the matching one).
+ * say_alike, say_different and main_idea_compare are spoken (Part B).
+ */
+export type StoryBridgeMiss = 'same_look' | 'other_character' | 'same_for_different' | 'different_for_same'
+  | 'both_for_one' | 'one_for_both' | 'other_side' | 'earlier_event' | 'later_event';
+
+export function storyBridgeMiss(item: StoryBridgeItem, choiceId: string): StoryBridgeMiss | undefined {
+  if (item.answerKind !== 'gesture' || !choiceId || choiceId === item.correctChoiceId) return undefined;
+  switch (item.mode) {
+    case 'match_character':
+      return item.targetStory.characters.find(c => c.id === choiceId)?.emoji === item.anchor.emoji ? 'same_look' : 'other_character';
+    case 'match_setting': return choiceId === 'same' ? 'same_for_different' : 'different_for_same';
+    case 'venn_place': return choiceId === 'both' ? 'both_for_one' : item.correctChoiceId === 'both' ? 'one_for_both' : 'other_side';
+    case 'sequence_two': {
+      const at = item.choiceIds.indexOf(choiceId);
+      return at < 0 ? undefined : at < item.choiceIds.indexOf(item.correctChoiceId) ? 'earlier_event' : 'later_event';
+    }
+    default: return undefined;
+  }
+}
+
 /** How a tap reads to the tutor and the observer: the choice tapped, never the key. */
 export const describeStoryBridgeTap = (item: StoryBridgeItem, choiceId: string) => `Tapped ${choiceLabel(item, choiceId)}.`;
 

@@ -73,7 +73,7 @@ import {
   correctOptionText,
   type KnowledgeCheckItem,
 } from './knowledgeCheckScript';
-import { knowledgeCheckAssignment, knowledgeCheckItems, knowledgeCheckScene } from './knowledgeCheckWorkspace';
+import { knowledgeCheckAssignment, knowledgeCheckItems, knowledgeCheckMiss, knowledgeCheckScene } from './knowledgeCheckWorkspace';
 
 interface KnowledgeCheckProps {
   data: KnowledgeCheckData | {
@@ -327,7 +327,8 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
     setTappedId(optionId);
     // The match is CODE-COMPUTED.
     const text = item.options?.find((o) => o.id === optionId)?.text ?? optionId;
-    commitGesture(runner, { response: `Touched "${text}".`, correct: optionId === item.correctOptionId, cue: () => '' });
+    commitGesture(runner, { response: `Touched "${text}".`, correct: optionId === item.correctOptionId, cue: () => '',
+      miss: knowledgeCheckMiss(item, optionId) });
   };
 
   /** point_to: the child touched a token of the printed number sentence. */
@@ -339,7 +340,8 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
     if (!token) return;
     pip.look('question');
     setTappedId(tokenId);
-    commitGesture(runner, { response: `Touched "${token.text}".`, correct: tokenId === item.targetTokenId, cue: () => '' });
+    commitGesture(runner, { response: `Touched "${token.text}".`, correct: tokenId === item.targetTokenId, cue: () => '',
+      miss: knowledgeCheckMiss(item, tokenId) });
   };
 
   // ── Phase summary — `solved` is not `solved alone` ────────────────────────

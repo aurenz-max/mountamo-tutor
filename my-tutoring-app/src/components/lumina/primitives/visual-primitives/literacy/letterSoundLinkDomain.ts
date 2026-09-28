@@ -579,6 +579,24 @@ export function buildLetterSoundLinkItems(
   return itemsFromChallenges(challenges, tier, true);
 }
 
+/**
+ * What a checked wrong tap on hear-see shows (handoff 20). The choice is binary, so the miss names the KIND of
+ * letter tapped against the one asked: `other_short_vowel` (both are vowels), `voicing_partner` (the pair
+ * differs only by the voice being on or off: t/d, p/b, s/z, f/v, k or c/g), `other_letter`.
+ * see-hear and keyword-match are spoken (Part B).
+ */
+export type LetterSoundMiss = 'other_short_vowel' | 'voicing_partner' | 'other_letter';
+
+const SHORT_VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
+const VOICING_PAIRS = new Set(['t|d', 'p|b', 's|z', 'f|v', 'k|g', 'c|g']);
+
+export function letterSoundMiss(item: LetterSoundItem, tapped: string): LetterSoundMiss | undefined {
+  const want = item.answer.trim().toLowerCase(), got = tapped.trim().toLowerCase();
+  if (item.mode !== 'hear-see' || !got || got === want) return undefined;
+  if (SHORT_VOWELS.has(want) && SHORT_VOWELS.has(got)) return 'other_short_vowel';
+  return VOICING_PAIRS.has(`${want}|${got}`) || VOICING_PAIRS.has(`${got}|${want}`) ? 'voicing_partner' : 'other_letter';
+}
+
 // ── Harness answer material — what a right and a wrong child do ──────────────
 
 /**

@@ -41,6 +41,21 @@ const ask = (item: InteractiveBookItem) => askFor(item).replace(/\s*Your turn\.\
 export const tapMatches = (item: InteractiveBookItem, tappedText: string) =>
   tappedText.replace(/["“”]/g, '').trim().toLowerCase() === item.targetText.trim().toLowerCase();
 
+/**
+ * What a checked wrong tap on find-feature shows (handoff 20): which other printed part was tapped, by its kind
+ * (`tapped_title`, `tapped_author` on the cover; `tapped_heading`, `tapped_caption`, `tapped_page_number` on a
+ * page). read-focus-word is spoken (Part B).
+ */
+export type InteractiveBookMiss = 'tapped_title' | 'tapped_author' | 'tapped_heading' | 'tapped_caption' | 'tapped_page_number';
+
+const TAPPED: Record<BookHotspot['feature'], InteractiveBookMiss | undefined> = {
+  title: 'tapped_title', author: 'tapped_author', heading: 'tapped_heading', caption: 'tapped_caption', 'page-number': 'tapped_page_number',
+  'focus-word': undefined,
+};
+
+export const interactiveBookMiss = (item: InteractiveBookItem, hotspot: BookHotspot): InteractiveBookMiss | undefined =>
+  item.mode !== 'find-feature' || tapMatches(item, hotspot.text) ? undefined : TAPPED[hotspot.feature];
+
 export function interactiveBookAssignment(item: InteractiveBookItem): TeachingAssignment {
   if (item.mode === 'find-feature') return { id: item.id, task: ask(item), response: 'gesture' };
   return { id: item.id, task: ask(item), response: 'speech',

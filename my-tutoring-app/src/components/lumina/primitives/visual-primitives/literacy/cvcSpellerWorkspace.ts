@@ -33,6 +33,22 @@ export function cvcAssignment(c: CvcSpellerChallenge): TeachingAssignment {
 export const spellingMatches = (c: CvcSpellerChallenge, placed: ReadonlyArray<string | null>) =>
   cvcItem(c).letters.every((letter, i) => (placed[i] ?? '').toLowerCase() === letter);
 
+/**
+ * What a checked wrong spelling shows (handoff 20), box by box: `first_letter`, `middle_letter`, `last_letter`
+ * (only that box is wrong), `letters_out_of_order` (the word's three letters in another order),
+ * `two_or_more_letters`. fill_vowel and word_sort are spoken (Part B).
+ */
+export type CvcMiss = 'first_letter' | 'middle_letter' | 'last_letter' | 'letters_out_of_order' | 'two_or_more_letters';
+
+export function cvcMiss(c: CvcSpellerChallenge, placed: ReadonlyArray<string | null>): CvcMiss | undefined {
+  const want = cvcItem(c).letters, got = want.map((_, i) => (placed[i] ?? '').toLowerCase());
+  const wrong = want.map((l, i) => got[i] !== l);
+  if (!wrong.some(Boolean)) return undefined;
+  if ([...got].sort().join() === [...want].sort().join()) return 'letters_out_of_order';
+  if (wrong.filter(Boolean).length > 1) return 'two_or_more_letters';
+  return (['first_letter', 'middle_letter', 'last_letter'] as const)[wrong.indexOf(true)];
+}
+
 export const describeSpelling = (placed: ReadonlyArray<string | null>) =>
   `Put letters in the boxes: ${placed.map(l => l ?? '_').join(' ')}`;
 

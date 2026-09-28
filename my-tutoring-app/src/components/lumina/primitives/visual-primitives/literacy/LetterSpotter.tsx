@@ -85,7 +85,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { describeLetterTap, hearQuestionRequest, letterSpotterAssignment, letterSpotterScene } from './letterSpotterWorkspace';
+import { describeLetterTap, hearQuestionRequest, letterSpotterAssignment, letterSpotterMiss, letterSpotterScene } from './letterSpotterWorkspace';
 import {
   itemsFromChallenges,
   SPOTTER_EMOJI,
@@ -373,7 +373,8 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
     setTapped(letter);
     const correct = letter.toLowerCase() === item.targetLetter.toLowerCase();
     if (!correct) confusedPairsRef.current.push([item.targetLetter.toLowerCase(), letter.toLowerCase()]);
-    commitGesture(runner, { response: describeLetterTap(letter), correct, cue: () => describeLetterTap(letter) });
+    commitGesture(runner, { response: describeLetterTap(letter), correct, cue: () => describeLetterTap(letter),
+      miss: letterSpotterMiss(item, letter) });
     return true;
   }, [runner, showSummary]);
 

@@ -90,6 +90,19 @@ export function chainMatches(item: BuildChainItem, placed: readonly (string | nu
   return placed.length === item.correctOrder.length && placed.every((id, i) => id === item.correctOrder[i]);
 }
 
+/**
+ * What a checked wrong chain shows (handoff 20), the same shapes as number-sequencer's `orderMiss`: `reversed`
+ * (the event nearest the ending placed first, the order run backwards), `two_swapped` (only two cards out of
+ * place), `other_order`. identify_cause and root_vs_proximate are spoken (Part B).
+ */
+export type ChainMiss = 'reversed' | 'two_swapped' | 'other_order';
+
+export function chainMiss(item: BuildChainItem, placed: readonly (string | null)[]): ChainMiss | undefined {
+  if (chainMatches(item, placed) || placed.length !== item.correctOrder.length) return undefined;
+  if (placed.every((id, i) => id === item.correctOrder[item.correctOrder.length - 1 - i])) return 'reversed';
+  return placed.filter((id, i) => id !== item.correctOrder[i]).length === 2 ? 'two_swapped' : 'other_order';
+}
+
 /** The learner's board in words, slot by slot. Never the key. */
 export function describeChain(item: BuildChainItem, placed: readonly (string | null)[]): string {
   const text = (id: string | null) => (id ? item.cards.find(c => c.id === id)?.text ?? id : 'empty');

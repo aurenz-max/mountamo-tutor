@@ -79,6 +79,7 @@ import {
   interactiveBookAssignment,
   interactiveBookScene,
   hotspotsFor,
+  interactiveBookMiss,
   tapMatches,
   type BookHotspot,
 } from './interactiveBookWorkspace';
@@ -401,7 +402,7 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
     setTapped(hotspot.text);
     tappedRef.current = hotspot.text;
     commitGesture(runner, { response: describeBookTap(hotspot.text), correct: tapMatches(item, hotspot.text),
-      cue: () => describeBookTap(hotspot.text) });
+      cue: () => describeBookTap(hotspot.text), miss: interactiveBookMiss(item, hotspot) });
   }, [runner, showSummary, pip]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────

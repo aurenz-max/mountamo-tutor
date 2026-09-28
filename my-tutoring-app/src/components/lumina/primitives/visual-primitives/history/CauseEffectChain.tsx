@@ -92,6 +92,7 @@ import {
   causeEffectItems,
   causeEffectScene,
   chainMatches,
+  chainMiss,
   describeChain,
   hearBackgroundRequest,
 } from './causeEffectChainWorkspace';
@@ -401,7 +402,8 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const order = placedRef.current;
     if (order.length === 0 || order.some((id) => id === null)) return;
-    commitGesture(runner, { response: describeChain(item, order), correct: chainMatches(item, order), cue: () => '' });
+    commitGesture(runner, { response: describeChain(item, order), correct: chainMatches(item, order), cue: () => '',
+      miss: chainMiss(item, order) });
   }, [runner]);
 
   /** Tap a bank card → it drops into the earliest empty slot. Filling the last

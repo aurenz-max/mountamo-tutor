@@ -6,6 +6,8 @@
  */
 
 import { ComponentDefinition } from '../../../types';
+import type { ChainMiss } from '../../../primitives/visual-primitives/history/causeEffectChainWorkspace';
+import { missLists } from './missLists';
 
 export const HISTORY_CATALOG: ComponentDefinition[] = [
   {
@@ -156,6 +158,8 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
         + 'Before an attempt never say which event is a cause, which comes first, next or last, or which one is the answer, '
         + 'and do not single out one card as a hint. When the ask carries the events (grades 1-2), read them in the order '
         + 'given. You cannot move or highlight cards.',
+      // The board's own check (`chainMiss`). identify_cause and root_vs_proximate are spoken (handoff 20 Part B).
+      misses: missLists<ChainMiss>({ build_chain: ['reversed', 'two_swapped', 'other_order'] }),
     },
   },
   {

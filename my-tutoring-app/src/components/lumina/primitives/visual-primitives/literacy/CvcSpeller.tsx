@@ -52,7 +52,7 @@ import { withWorkspaceOnly } from '../../../components/live-activity/runtime/wit
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { vowelKeyword, type CvcTask } from './cvcSpellerScript';
-import { cvcAssignment, cvcItem, cvcScene, describeSpelling, hearWordRequest, spellingMatches } from './cvcSpellerWorkspace';
+import { cvcAssignment, cvcItem, cvcMiss, cvcScene, describeSpelling, hearWordRequest, spellingMatches } from './cvcSpellerWorkspace';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { cvcSpellerPipPose } from '../../../pip/cvcSpellerPipPose';
 
@@ -310,7 +310,8 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
       else { stats.consonantTried += 1; if (ok) stats.consonantOk += 1; }
     });
     if (!correct) errorPatternsRef.current.push(placed.map(l => l ?? '_').join(''));
-    runner.commitGesture({ response: describeSpelling(placed), correct, cue: () => '' });
+    runner.commitGesture({ response: describeSpelling(placed), correct, cue: () => '',
+      miss: correct ? undefined : cvcMiss(currentChallenge, placed) });
   }, [currentChallenge, item, runner]);
 
   const handleSelectLetter = useCallback((letter: string) => {

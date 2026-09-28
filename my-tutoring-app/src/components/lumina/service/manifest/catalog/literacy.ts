@@ -16,6 +16,13 @@
 import { ComponentDefinition } from '../../../types';
 import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
 import { SYLLABLE_CLAPPER_EVAL_MODES } from '../../../primitives/visual-primitives/literacy/syllableClapperModes';
+import type { CvcMiss } from '../../../primitives/visual-primitives/literacy/cvcSpellerWorkspace';
+import type { LetterSoundMiss } from '../../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
+import type { LetterSpotterMiss } from '../../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
+import type { WordWorkoutMiss } from '../../../primitives/visual-primitives/literacy/wordWorkoutWorkspace';
+import type { InteractiveBookMiss } from '../../../primitives/visual-primitives/literacy/interactiveBookWorkspace';
+import type { StoryBridgeMiss } from '../../../primitives/visual-primitives/literacy/storyBridgeWorkspace';
+import { missLists } from './missLists';
 
 export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
@@ -127,6 +134,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'true comparison across BOTH stories counts, not only the reference wording, but a detail about one story '
         + 'alone is not a comparison. Before an attempt never say the comparison or which choice is right. The '
         + 'replay button asks you to read both stories and the question again. You cannot tap or mark anything.',
+      // The tap's own check (`storyBridgeMiss`). say_alike, say_different and main_idea_compare are spoken (handoff 20 Part B).
+      misses: missLists<StoryBridgeMiss>({
+        match_character: ['same_look', 'other_character'],
+        match_setting: ['same_for_different', 'different_for_same'],
+        venn_place: ['both_for_one', 'one_for_both', 'other_side'],
+        sequence_two: ['earlier_event', 'later_event'],
+      }),
     },
     evalModes: [
       {
@@ -1456,6 +1470,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'number) and the learner taps it on the page; the activity checks the tap. Before they tap, never read out '
         + 'or point to which printed words are that part; after a tap you may say what each part is for. The '
         + 'speaker button asks you to repeat the question only. You cannot tap, mark or turn a page.',
+      // The tap's own check (`interactiveBookMiss`). read-focus-word is spoken (handoff 20 Part B).
+      misses: missLists<InteractiveBookMiss>({
+        'find-feature': ['tapped_title', 'tapped_author', 'tapped_heading', 'tapped_caption', 'tapped_page_number'],
+      }),
     },
   },
 
@@ -2388,6 +2406,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'spell or describe the shape of the answer letter before the learner has tried, and on match it never name '
         + 'the big letter: matching its shape is the task. The hear-again control asks you to repeat the question '
         + 'only. You cannot tap a letter.',
+      // The tap's own check (`letterSpotterMiss`). name_it is spoken (handoff 20 Part B).
+      misses: missLists<LetterSpotterMiss>({
+        find_it: ['same_shape_family', 'other_letter'],
+        match_it: ['mirror_form', 'same_shape_family', 'other_letter'],
+      }),
     },
     // ── DI MODALITY (2026-08-13) — ELEVENTH literacy port. The tutor owns the
     // clock in all three directions: it asks once, waits, is handed a
@@ -2608,6 +2631,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'Marking the picture that starts with this letter\'s sound hands the '
         + 'answer over — mark the other picture to contrast, or the printed letter. There is no other scene action: '
         + 'you cannot change the letter, replace a picture, write, or answer for the child.',
+      // The tap's own check (`letterSoundMiss`). see_hear and keyword_match are spoken (handoff 20 Part B).
+      misses: missLists<LetterSoundMiss>({ hear_see: ['other_short_vowel', 'voicing_partner', 'other_letter'] }),
     },
     misconceptionScope: 'primitive',
     description:
@@ -3308,6 +3333,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'name is not yet the answer. On spell it the learner taps a letter into each of three boxes and the activity '
         + 'checks the third letter itself: never name, sound out or spell a letter of the word for them. Hear It asks '
         + 'you to say the whole word only. You cannot place letters or fill the blank.',
+      // The boxes' own check (`cvcMiss`). fill_vowel and word_sort are spoken (handoff 20 Part B).
+      misses: missLists<CvcMiss>({ spell_word: ['first_letter', 'middle_letter', 'last_letter', 'letters_out_of_order', 'two_or_more_letters'] }),
     },
   },
   {
@@ -3358,6 +3385,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'fits the blank. On picture match the learner reads the word silently and taps its picture; the activity '
         + 'checks the tap and tells you what was tapped. After an attempt you may model the word or its parts. The '
         + 'hear-again button asks you to repeat the instruction or question only. You cannot tap a picture.',
+      // The tap's own check (`wordWorkoutMiss`). Every other mode is read aloud (handoff 20 Part B).
+      misses: missLists<WordWorkoutMiss>({ picture_match: ['same_start', 'same_end', 'same_vowel', 'other_word'] }),
     },
     // ── DI MODALITY (2026-08-14) — SIXTEENTH literacy port, the last of Phase 1.
     // The tutor owns the clock: it asks once, waits, judges the spoken answer

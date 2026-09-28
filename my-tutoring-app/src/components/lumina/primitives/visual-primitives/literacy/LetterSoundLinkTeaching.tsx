@@ -45,7 +45,7 @@ import { useTeachingWorkspace, type TeachingItem, type TeachingWorkspace }
 import { useTeachingEvaluation } from '../../../components/live-activity/runtime/useTeachingEvaluation';
 import type { LetterSoundLinkMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
-import { buildLetterSoundLinkItems, printedStimulus, workspaceAssignment, workspaceScene,
+import { buildLetterSoundLinkItems, letterSoundMiss, printedStimulus, workspaceAssignment, workspaceScene,
   type LetterSoundItem, type LetterSoundMode, type LetterSoundTier } from './letterSoundLinkDomain';
 import type { LetterSoundLinkData } from './LetterSoundLink';
 
@@ -142,7 +142,7 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
     if (!gesture || !lesson.canAttempt || lesson.isBlocked()) return;
     SoundManager.tap();
     setTapped(letter);
-    lesson.submitGestureResponse(letter);
+    lesson.submitGestureResponse(letter, letterSoundMiss(item, letter));
   };
 
   const summary = lesson.summary;

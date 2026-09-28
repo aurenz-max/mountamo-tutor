@@ -5,6 +5,8 @@
  */
 
 import { ComponentDefinition } from '../../../types';
+import type { KnowledgeCheckMiss } from '../../../primitives/knowledgeCheckWorkspace';
+import { sameMisses } from './missLists';
 
 export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
   {
@@ -171,6 +173,9 @@ export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
         + 'the sign in the number sentence; the activity checks both. Before an attempt never say the answer, which choice '
         + 'it is, or rule a choice out. Saying the statement, the item being sorted or matched, or a word-bank word back is '
         + 'not an answer. For kindergarten, read every choice aloud each time. You cannot point at or highlight anything.',
+      // The tap's own check (`knowledgeCheckMiss`): a tapped choice and point_to, in any mode. Spoken kinds are Part B.
+      misses: sameMisses<KnowledgeCheckMiss>(['recall', 'apply', 'analyze', 'evaluate'],
+        ['one_less', 'one_more', 'other_number', 'other_choice', 'sign_token', 'other_number_token']),
     },
     evalModes: [
       {

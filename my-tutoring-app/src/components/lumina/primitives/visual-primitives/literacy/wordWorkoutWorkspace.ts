@@ -65,6 +65,21 @@ export function wordWorkoutScene(item: WordWorkoutItem): WorkspaceScene {
   return { objects: [], facts };
 }
 
+/**
+ * What a checked wrong picture tap shows (handoff 20), from the tapped picture's word against the printed one:
+ * `same_start` (the same first letter: pig for pin), `same_end` (a rhyme, the same last two letters: bat for
+ * cat), `same_vowel` (only the middle letter shared), `other_word`. Every other mode is read aloud (Part B).
+ */
+export type WordWorkoutMiss = 'same_start' | 'same_end' | 'same_vowel' | 'other_word';
+
+export function wordWorkoutMiss(item: WordWorkoutItem, tapped: string): WordWorkoutMiss | undefined {
+  const want = (item.targetWord ?? '').toLowerCase(), got = tapped.toLowerCase();
+  if (item.kind !== 'picture_tap' || !want || !got || got === want) return undefined;
+  if (got[0] === want[0]) return 'same_start';
+  if (want.length > 2 && got.slice(-2) === want.slice(-2)) return 'same_end';
+  return want.length === 3 && got.length === 3 && got[1] === want[1] ? 'same_vowel' : 'other_word';
+}
+
 /** How a picture tap reads to the tutor and the observer: which picture, never the key. */
 export const describePictureTap = (word: string) => `Tapped the picture of ${word}.`;
 

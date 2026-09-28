@@ -85,7 +85,7 @@ import {
   type WordWorkoutMode,
   type WordWorkoutPictureOption,
 } from './wordWorkoutScript';
-import { describePictureTap, hearQuestionRequest, wordWorkoutAssignment, wordWorkoutScene } from './wordWorkoutWorkspace';
+import { describePictureTap, hearQuestionRequest, wordWorkoutAssignment, wordWorkoutMiss, wordWorkoutScene } from './wordWorkoutWorkspace';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { wordWorkoutPipPose } from '../../../pip/wordWorkoutPipPose';
 
@@ -401,7 +401,7 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
     pip.look(`picture-${option.word}`);
     setTapped(option.word);
     commitGesture(runner, { response: describePictureTap(option.word), correct: option.word === item.targetWord,
-      cue: () => describePictureTap(option.word) });
+      cue: () => describePictureTap(option.word), miss: wordWorkoutMiss(item, option.word) });
   }, [runner, showSummary, pip]);
 
   /** Hear-again asks the tutor for the instruction or question only: a silent host request, never the print. */
