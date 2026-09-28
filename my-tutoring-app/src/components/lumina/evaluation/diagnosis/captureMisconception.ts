@@ -137,6 +137,7 @@ export async function captureMisconception(
             itemId: p.itemId.slice(0, 200), phase: p.phase.slice(0, 200),
             challenge: p.challenge.slice(0, 2000), expected: p.expected.slice(0, 2000),
             observed: p.observed.slice(0, 2000), support: p.support.slice(0, 600),
+            ...(p.miss ? { miss: p.miss.slice(0, 120) } : {}),
           })),
         teachingImplication: diagnosis.teachingImplication || 'No teaching adjustment was distilled.',
         checkNext: diagnosis.checkNext || 'Collect fresh independent evidence before updating this hypothesis.',

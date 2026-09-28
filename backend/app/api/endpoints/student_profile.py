@@ -711,7 +711,7 @@ async def record_misconception(
             evidence_tier=request.evidence_tier,
             firebase_uid=user_context.get("firebase_uid"),
             **({"scope_context": scope_context} if scope_context else {}),
-            **({"learning_observation": request.learning_observation.model_dump()} if request.learning_observation else {}),
+            **({"learning_observation": request.learning_observation.model_dump(exclude_none=True)} if request.learning_observation else {}),
         )
         return {
             "stored": True,

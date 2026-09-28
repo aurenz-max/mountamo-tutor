@@ -46,6 +46,35 @@ def test_authenticated_problem_phase_round_trip(monkeypatch):
     assert client.post('/misconceptions', json=body).status_code == 422
 
 
+def test_named_miss_is_stored_with_its_phase_and_kept_out_of_delivery_and_profile(monkeypatch):
+    from app.services.learning_observations import delivery_packet, project_misconception_observation
+    saved = {}
+    async def save(**kwargs):
+        saved.update(kwargs)
+        return {'misconception_key': 'k', 'status': 'active'}
+    monkeypatch.setattr(endpoint, 'get_firestore_service', lambda: SimpleNamespace(add_or_update_misconception=save))
+    app = FastAPI(); app.include_router(endpoint.router)
+    app.dependency_overrides[get_user_context] = lambda: {'student_id': 42}
+    client = TestClient(app)
+    phase = dict(itemId='coin-1', phase='count-mixed', challenge='How much money?', expected='35', observed='5', support='s')
+    body = dict(primitive_type='demo-primitive', scope='skill', skill_id='skill', subskill_id='subskill',
+                misconception_text='Counts coins, not value.', source_attempt_id='ref',
+                learning_observation=dict(subject='MATHEMATICS', grade='2', evalMode='count-mixed', problem='p',
+                    phases=[{**phase, 'miss': 'counted_coins'}, phase], teachingImplication='t', checkNext='c'))
+    assert client.post('/misconceptions', json=body).json()['stored']
+    stored = saved['learning_observation']['phases']
+    assert stored[0]['miss'] == 'counted_coins' and stored[0]['phase'] == 'count-mixed' and 'miss' not in stored[1]
+    record = dict(learning_observation=saved['learning_observation'], misconception_text='x', status='active', scope='skill',
+                  primitive_type='demo-primitive', scope_context=dict(skill_id='skill'), hypothesis_id='h')
+    assert 'counted_coins' not in str(project_misconception_observation('id', record))
+    resolver = SimpleNamespace(_resolver=SimpleNamespace(resolve=AsyncMock(side_effect=lambda v: v)))
+    monkeypatch.setattr('app.services.learning_observations.is_server_delivered', lambda r: True)
+    packet = asyncio.run(delivery_packet(resolver, {'k': record}, [], 42))
+    assert packet['hypotheses'] and 'counted_coins' not in str(packet)
+    body['learning_observation']['phases'][0]['miss'] = 'x' * 121
+    assert client.post('/misconceptions', json=body).status_code == 422
+
+
 def test_firestore_writer_preserves_inspectable_packet():
     from app.db.firestore_service import FirestoreService
     store = object.__new__(FirestoreService)

@@ -26,8 +26,12 @@
  *  - Tier C (absent):     neither → the engine abstains. No diagnosis, no write.
  */
 export interface DiagnosisEvidence {
-  /** Exact correction observations supplied by the shared runner, not LLM reconstruction. */
-  phases?: Array<{ itemId: string; phase: string; challenge: string; expected: string; observed: string; support: string }>;
+  /**
+   * Exact correction observations supplied by the shared runner, not LLM reconstruction. `phase` is the
+   * eval mode; `miss` is the primitive's own named miss for that wrong answer (`TeachingAttempt.miss`),
+   * when its check names one. Recorded with the hypothesis; the delivery packet does not carry it.
+   */
+  phases?: Array<{ itemId: string; phase: string; challenge: string; expected: string; observed: string; support: string; miss?: string }>;
   /** What the challenge asked, in one or two sentences. */
   challengeSummary: string;
   /** The pedagogically correct outcome, described. Never shown to the student. */

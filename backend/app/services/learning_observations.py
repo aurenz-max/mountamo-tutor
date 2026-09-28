@@ -68,6 +68,9 @@ class ObservationPhaseIn(BaseModel):
     expected: str = Field(..., max_length=2000)
     observed: str = Field(..., max_length=2000)
     support: str = Field(..., max_length=600)
+    # The primitive's own named miss for this wrong answer (TeachingAttempt.miss), beside its
+    # eval mode (`phase`). Stored with the hypothesis; EVIDENCE_KEYS keeps it out of delivery.
+    miss: str | None = Field(default=None, max_length=120)
 
 
 class LearningObservationIn(BaseModel):

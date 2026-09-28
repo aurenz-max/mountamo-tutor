@@ -47,3 +47,13 @@ it('persists phase evidence and teaching guidance while preserving the selected 
     grade: '3', learning_observation: expect.objectContaining({ phases, teachingImplication: 'Contrast place and value.' }),
   }));
 });
+it('records a named miss beside its phase and eval mode, and adds no miss key to phases without one', async () => {
+  const phases = [{ itemId: 'item-1', phase: 'compare', challenge: 'Say the value', expected: '40', observed: 'four', support: 's', miss: 'digit_not_value' },
+    { itemId: 'item-2', phase: 'compare', challenge: 'Say the value', expected: '300', observed: 'thirty', support: 's' }];
+  await captureMisconception({ ...result, diagnosisEvidence: { ...result.diagnosisEvidence!, phases } },
+    { sessionId: 'miss-test', subskillId: result.subskillId, gradeLevel: '3' });
+  const body = vi.mocked(authApi.post).mock.calls[0][1] as { learning_observation: { evalMode: string; phases: object[] } };
+  expect(body.learning_observation.evalMode).toBe('compare');
+  expect(body.learning_observation.phases).toEqual(phases);
+  expect(body.learning_observation.phases[1]).not.toHaveProperty('miss');
+});

@@ -41,7 +41,11 @@ export function teachingEvaluation(items: readonly TeachingItem[], state: Teachi
     ...(wrongAttempts.length ? { priorAttempts: wrongAttempts.slice(0, 12).map(a => ({
       challenge: byId.get(a.itemId)?.task ?? a.itemId, observed: a.response })) } : {}),
     firstResponseScore: Math.round(firstTryCount / items.length * 100),
-    phases: wrong.slice(0, 12).map(({ itemId, phase, challenge, expected, observed, support }) => ({ itemId, phase, challenge, expected, observed, support })),
+    // `learningResponses` is index-aligned with `scored.attempts`, so each wrong phase keeps its own attempt's miss.
+    phases: learningResponses.flatMap(({ itemId, phase, challenge, expected, observed, support }, i) => {
+      const { correct, miss } = scored.attempts[i];
+      return correct ? [] : [{ itemId, phase, challenge, expected, observed, support, ...(miss ? { miss } : {}) }];
+    }).slice(0, 12),
   };
   const outcomes = scored.summary.outcomes;
   return { outcomes: outcomes.map(o => ({ ...o, seconds: null })), solvedCount: scored.summary.solvedCount,

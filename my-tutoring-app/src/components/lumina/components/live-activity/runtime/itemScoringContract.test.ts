@@ -57,6 +57,16 @@ describe('the scoring pass (user direction 09-24: the tutor judges the flow, JEV
     expect(result.learningResponses[2].observed).toBe('red');
   });
 
+  it('records each wrong attempt with its own named miss and eval mode, and none on attempts that had none', () => {
+    const s = state([{ ...attempt('b', 'blue', false, 'gesture'), miss: 'wrong_color' }, attempt('a', 'mmm', false),
+      attempt('a', 'sss', true), attempt('b', 'red', true, 'gesture')]);
+    const phases = teachingEvaluation(items, s, scoreSession(['a', 'b'], s, [undefined, 'not_correct', 'correct', undefined]), 'letter_sound')
+      .diagnosisEvidence.phases!;
+    expect(phases.map(p => [p.itemId, p.phase, p.observed, p.miss])).toEqual([
+      ['b', 'letter_sound', 'blue', 'wrong_color'], ['a', 'letter_sound', 'Heard (speech transcript, may be noisy): "mmm"', undefined]]);
+    expect(phases[1]).not.toHaveProperty('miss');
+  });
+
   it('refuses a request with no learner words or no expected answer', () => {
     const base = { scope: { sessionEpoch: 'e', instanceId: 'i', itemId: 'a' }, attemptIndex: 0, task: 't', expectedAnswer: '5',
       learner: 'five', tutor: 'Yes' };
