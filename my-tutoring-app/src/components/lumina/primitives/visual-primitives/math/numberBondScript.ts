@@ -811,9 +811,9 @@ export const familyVerdictCue = (item: NumberBondItem, inputs: readonly string[]
   }
   const specific =
     fault === 'bad-math'
-      ? `My turn: check the arithmetic — ${p1w} plus ${p2w} equals ${ww}. Your turn — fix the equation that does not add up.`
+      ? `My turn: one of your equations does not add up. Count each group, then the whole. Your turn — fix the equation that does not add up.`
       : fault === 'wrong-numbers'
-        ? `My turn: a fact family uses the SAME three numbers — ${p1w}, ${p2w} and ${ww}, and no others. Your turn — write all ${needed} distinct equations with just those.`
+        ? `My turn: a fact family uses the SAME three numbers the bond shows — the two groups and the whole, and no others. Your turn — write all ${needed} distinct equations with just those.`
       : fault === 'duplicate'
           ? needed === 2
             ? `My turn: this equal-parts family has one distinct plus equation and one distinct take-away equation. Your turn — build each once.`
@@ -878,9 +878,9 @@ export const bondEquationVerdictCue = (
     : 'That equation belongs to this bond. Show the taking-apart action you just did.';
   const specific =
     fault === 'arithmetic'
-      ? `My turn: those numbers do not make that total. Look at the bond: ${p1w} and ${p2w} make ${ww}. Your turn — build the number sentence again.`
+      ? `My turn: those numbers do not make that total. Count each group, then count the whole. Your turn — build the number sentence again.`
       : fault === 'numbers'
-        ? `My turn: use the three numbers from the bond — ${p1w}, ${p2w} and ${ww}. Your turn — build the number sentence with just those.`
+        ? `My turn: use only the numbers the bond shows — the two groups and the whole. Your turn — build the number sentence with just those.`
         : fault === 'action'
           ? `My turn: ${actionPrompt} Your turn — build the number sentence for that action.`
         : `My turn: a number sentence needs two numbers, a sign, an equals, and the total. Your turn — build the whole number sentence.`;
@@ -943,20 +943,22 @@ export const stimulusFor = (item: NumberBondItem): string => {
  * The fact-family worked example is MODELED ON CONTENT THE SESSION NEVER ASKS
  * ABOUT, picked in code (the pickModelNoun pattern): the shipped helper
  * hardcoded 2+3=5, which IS the answer sheet whenever the item is that very
- * bond. First triple that differs from the item's bond wins.
+ * bond. The first triple that is no bond of the session (this item or any other, contract R13) wins; the
+ * three the helper has always shown come first, then every other unequal pair within ten.
  */
 const HELPER_TRIPLES: ReadonlyArray<readonly [number, number, number]> = [
   [2, 3, 5], [3, 4, 7], [2, 4, 6],
+  ...Array.from({ length: 10 }, (_, a) => a + 1).flatMap(a => Array.from({ length: 10 - a }, (_, i) => a + 1 + i)
+    .filter(b => a + b <= 10).map(b => [a, b, a + b] as const)),
 ];
 
-export const familyHelperExample = (
-  item: Pick<NumberBondItem, 'whole' | 'knownPart' | 'otherPart'>,
-): readonly [number, number, number] => {
-  const lo = Math.min(item.knownPart, item.otherPart);
-  const hi = Math.max(item.knownPart, item.otherPart);
-  return HELPER_TRIPLES.find(([a, b, w]) => !(a === lo && b === hi && w === item.whole))
-    ?? HELPER_TRIPLES[0];
-};
+type Bond = Pick<NumberBondItem, 'whole' | 'knownPart' | 'otherPart'>;
+const sameBond = ([a, b, w]: readonly [number, number, number], bond: Bond) =>
+  w === bond.whole && a === Math.min(bond.knownPart, bond.otherPart) && b === Math.max(bond.knownPart, bond.otherPart);
+
+export const familyHelperExample = (item: Bond, session: readonly Bond[] = []): readonly [number, number, number] =>
+  HELPER_TRIPLES.find(t => !sameBond(t, item) && !session.some(bond => sameBond(t, bond)))
+    ?? HELPER_TRIPLES.find(t => !sameBond(t, item)) ?? HELPER_TRIPLES[0];
 
 // ── The cue surface — one source for the component and the DI harness ───────
 

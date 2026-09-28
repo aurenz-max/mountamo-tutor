@@ -27,6 +27,14 @@ non-K consumers.
 
 ## Done
 
+- **number-bond — derived 2026-09-28** → `docs/contracts/number-bond.md`. 21 requirements
+  (20 OBSERVED, 1 INFERRED), 0 conflicts. VIOLATED with fixes queued: R4 (one bond repeated
+  per session, NB-REP-1), R12 (`_ + _ = _` placeholder), R13 (worked example can be a session
+  bond), R14 (the equation correction states the bond). R18 (payloads for every mode) was met
+  by `763e5e98`. Authored map: 10 of 111 MATHEMATICS mappings (live). Calibration channel not
+  read (403). Written as step 1 of handoff 21 M1 before the levers. Fix 4 must stay out of the
+  spoken DI corrections (R15), or it becomes a conflict. Catalog faithful; not edited.
+
 - **fraction-circles — derived 2026-09-27** → `docs/contracts/fraction-circles.md`. 11
   requirements (all OBSERVED), 0 conflicts. Census: routed on 8/8 fraction objectives G1-G4.
   Calibration channel not read (endpoint needs auth). Written before handoff 18 B2 levers;

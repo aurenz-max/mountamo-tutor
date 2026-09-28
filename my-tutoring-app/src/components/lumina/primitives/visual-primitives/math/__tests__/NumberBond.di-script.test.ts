@@ -252,6 +252,13 @@ describe('number-bond pack · answer-leak', () => {
     expect(familyHelperExample({ whole: 5, knownPart: 3, otherPart: 2 })).not.toEqual([2, 3, 5]);
     expect(familyHelperExample({ whole: 7, knownPart: 3, otherPart: 4 })).toEqual([2, 3, 5]);
   });
+
+  it('never picks a bond any item of the session asks about, even when the session holds all three usual examples (R13)', () => {
+    const session = [{ whole: 5, knownPart: 2, otherPart: 3 }, { whole: 7, knownPart: 4, otherPart: 3 }, { whole: 6, knownPart: 2, otherPart: 4 }];
+    const [a, b, w] = familyHelperExample(session[0], session);
+    expect(a + b).toBe(w);
+    for (const bond of session) expect([a, b, w]).not.toEqual([Math.min(bond.knownPart, bond.otherPart), Math.max(bond.knownPart, bond.otherPart), bond.whole]);
+  });
 });
 
 // ── 4. The spoken contract: signature error, accept clause, correction ──────
@@ -365,7 +372,16 @@ describe('number-bond pack · hand items', () => {
     expect(spokenLine(bondEquationVerdictCue(BUILD_EQ, ['3', '+', '4', '=', '7'])))
       .toContain('Three plus four equals seven');
     expect(spokenLine(bondEquationVerdictCue(BUILD_EQ, ['2', '+', '5', '=', '7'])))
-      .toContain('use the three numbers from the bond');
+      .toContain('use only the numbers the bond shows');
+  });
+
+  it('a wrong equation or family names its fault and never states the bond fact (R14)', () => {
+    const lines = [['3', '+', '4', '=', '8'], ['2', '+', '5', '=', '7'], ['3', '+'], ['9', '-', '4', '=', '5']]
+      .map(tiles => spokenLine(bondEquationVerdictCue(BUILD_EQ, tiles)));
+    for (const line of lines) {
+      expect(line).toMatch(/^My turn:/);
+      expect(line).not.toMatch(/three and four make seven|three plus four equals seven|three, four and seven/i);
+    }
   });
 
   it('keeps every gesture verdict line free of a sentinel collision', () => {

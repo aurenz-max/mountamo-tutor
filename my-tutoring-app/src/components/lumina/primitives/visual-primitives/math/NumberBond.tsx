@@ -1429,7 +1429,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
             )}
 
             {kind === 'fact-family' && currentItem.interactionPhase === 'family-model' && showFactFamilyHelper && (
-              <FactFamilyHelper triple={familyHelperExample(currentItem)} defaultOpen={supportTier === 'easy'} />
+              <FactFamilyHelper triple={familyHelperExample(currentItem, items)} defaultOpen={supportTier === 'easy'} />
             )}
 
             {/* === Shared build-equation / fact-family workspace === */}
@@ -1441,7 +1441,8 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
                   type="text"
                   inputMode="text"
                   aria-label="Equation keyboard entry"
-                  placeholder="_ + _ = _"
+                  // No operator or number before a try: choosing + or − is part of the answer (contract R12).
+                  placeholder="Type the number sentence"
                   value={equationSlots.join(' ')}
                   onChange={(event) => editEquation(event.target.value)}
                   className="mx-auto max-w-sm text-center font-mono text-lg"
