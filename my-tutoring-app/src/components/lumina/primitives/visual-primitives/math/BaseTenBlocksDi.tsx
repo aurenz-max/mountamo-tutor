@@ -37,7 +37,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { describeTrade, diWorkspaceAssignment, diWorkspaceScene } from './baseTenWorkspace';
+import { describeTrade, diWorkspaceAssignment, diWorkspaceScene, tradeMiss } from './baseTenWorkspace';
 import { SoundManager } from '../../../utils/SoundManager';
 import type { BaseTenBlocksData } from './BaseTenBlocks';
 import { placeWord } from './spokenNumberWords';
@@ -68,7 +68,7 @@ interface BaseTenBlocksDiProps {
   runtimeEvalMode?: string;
 }
 
-function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: BaseTenBlocksDiProps) {
+function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenBlocksDiProps) {
   const workspace = useRef<TeachingWorkspace | null>(null);
   /** The items whose success was committed, for the action panel's story. */
   const [affirmedIds, setAffirmedIds] = useState<ReadonlySet<string>>(new Set());
@@ -153,7 +153,6 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId, runtimeEva
     objectiveId: data.objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || mode,
     instanceId: instance.current,
     onFinished: finish,
     onItemOpened: (item, index) => {
@@ -203,7 +202,7 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId, runtimeEva
     // right one, or the close is a Check button wearing a costume.
     runner.armStillness(() => {
       if (runner.isAwaitingGesture()) return;
-      runner.commitGesture({ response: describeTrade(next), correct: solved, cue: () => '' });
+      runner.commitGesture({ response: describeTrade(next), correct: solved, miss: tradeMiss(item, next), cue: () => '' });
     }, solved ? 900 : 1500);
   };
 
@@ -221,9 +220,7 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId, runtimeEva
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!item) return;
-    workspace.current = { ...diWorkspaceScene(item, { mat }), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...diWorkspaceScene(item, { mat }) };
   });
 
   if (!item) {

@@ -18,7 +18,7 @@ import { enterWorkshopStage, groupCounts, initialWorkshopBoard, isHands, moveWor
   workshopBalance, workshopFeedback, workshopItems, workshopProblem, type WorkshopBoard, type WorkshopItem, type WorkshopWeight }
   from './balanceWorkshopModel';
 
-function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: BalanceSurfaceProps) {
+function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId }: BalanceSurfaceProps) {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [affirmedIds, setAffirmedIds] = useState<ReadonlySet<string>>(new Set());
   const built = useMemo(() => {
@@ -69,7 +69,7 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId, runti
   // only under an evaluation provider.
   const runner = useWorkspaceRunner<WorkshopItem>({ primitiveId: 'balance-scale', assignment: workshopAssignment, items, workspace,
     instanceId: instance.current, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || built.problems[0]?.mode || 'one_step', onFinished: finish,
+    onFinished: finish,
     onAffirmed: (done) => setAffirmedIds((prev) => new Set(prev).add(done.id)),
     onItemOpened: (item, index) => {
       if (index === 0) { boards.current = {}; moves.current = {}; modeled.current.clear(); }
@@ -109,9 +109,7 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId, runti
   // demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!item) return;
-    workspace.current = { ...workshopScene(item, board), demonstration: [], canDemonstrate: false, canPresent: false,
-      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...workshopScene(item, board) };
   });
   // The live host has no evaluation provider, so the workspace's own summary ends the activity there.
   const finished = evaluation.hasSubmitted || !!runner.practiceSummary;

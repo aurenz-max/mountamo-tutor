@@ -33,6 +33,8 @@ export interface UseChallengeProgressReturn {
   isComplete: boolean;
   /** Record a result for the current challenge (or update an existing one). */
   recordResult: (result: ChallengeResult) => void;
+  /** Like `recordResult`, but keeps the fields of an existing record for the challenge that `result` does not set. */
+  mergeResult: (result: ChallengeResult) => void;
   /** Increment the attempt counter for the current challenge. */
   incrementAttempts: () => void;
   /**
@@ -100,6 +102,12 @@ export function useChallengeProgress<TChallenge>(
     [],
   );
 
+  const mergeResult = useCallback((result: ChallengeResult) => setResults(prev => {
+    const at = prev.findIndex(r => r.challengeId === result.challengeId);
+    if (at < 0) return [...prev, result];
+    const next = [...prev]; next[at] = { ...prev[at], ...result }; return next;
+  }), []);
+
   const incrementAttempts = useCallback(() => {
     setCurrentAttempts((a) => a + 1);
   }, []);
@@ -127,6 +135,7 @@ export function useChallengeProgress<TChallenge>(
     results,
     isComplete,
     recordResult,
+    mergeResult,
     incrementAttempts,
     advance,
     reset,

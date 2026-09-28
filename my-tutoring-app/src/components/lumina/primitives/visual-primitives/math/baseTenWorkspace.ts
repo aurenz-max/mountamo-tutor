@@ -53,6 +53,44 @@ export const describeMat = (columns: BtColumns) => {
 export const tradeMatches = (item: BaseTenItem, columns: BtColumns) => tradeSolved(item.problem, columns);
 export const describeTrade = (columns: BtColumns) => `Mat after the taps: ${describeMat(columns)}`;
 
+/**
+ * What a wrong answer on either mat shows (`TeachingAttempt.miss`, handoff 20). Only the observable pattern:
+ * - a value built or typed: `digits_swapped` (the target's digits in reverse, 21 for 12), `one_short` /
+ *   `one_over` (one of the smallest block), `one_ten_off` (ten of the smallest block, either way),
+ *   `short_by_more` / `over_by_more`;
+ * - build_number: `not_traded_up` (the right value, but a place holds ten or more);
+ * - a trade: `no_trade` (checked before any trade), `value_changed` (blocks added or removed as well),
+ *   `other_block` (a different size broken down), `traded_twice` (more than one of the asked block broken).
+ */
+export type BaseTenMiss = 'digits_swapped' | 'one_short' | 'one_over' | 'one_ten_off' | 'short_by_more' | 'over_by_more'
+  | 'not_traded_up' | 'no_trade' | 'value_changed' | 'other_block' | 'traded_twice';
+
+/** The judged mat's trade: the only wrong commit is a tap on the wrong block, or too many taps. */
+export function tradeMiss(item: BaseTenItem | null, mat: BtColumns): BaseTenMiss | undefined {
+  if (!item || item.step !== 'trade' || tradeSolved(item.problem, mat)) return undefined;
+  const { place, start } = item.problem;
+  return (mat[place] ?? 0) <= (start[place] ?? 0) - 2 ? 'traded_twice' : 'other_block';
+}
+
+/**
+ * The click mat's check. `got` is the blocks' total (blocks) or the typed number (keypad); `unit` is the
+ * smallest place's value; `standard` whether the columns are the target's standard form (build_number).
+ */
+export function plainMiss(type: string, work: { got: number; target: number; unit: number; trades: number; standard?: boolean }):
+  BaseTenMiss | undefined {
+  const { got, target, unit } = work;
+  const near = (a: number, b: number) => Math.abs(a - b) < unit / 2;
+  if (type === 'regroup') return work.trades === 0 ? 'no_trade' : near(got, target) ? undefined : 'value_changed';
+  if (near(got, target)) return type === 'build_number' && work.standard === false ? 'not_traded_up' : undefined;
+  if (Number.isInteger(target) && target >= 10 && String(got) === String(target).split('').reverse().join('')) return 'digits_swapped';
+  // In smallest blocks, rounded so decimal mats compare exactly.
+  const off = Math.round((got - target) / unit);
+  if (off === -1) return 'one_short';
+  if (off === 1) return 'one_over';
+  if (Math.abs(off) === 10) return 'one_ten_off';
+  return off < 0 ? 'short_by_more' : 'over_by_more';
+}
+
 export function diWorkspaceScene(item: BaseTenItem, view: { mat: BtColumns }): WorkspaceScene {
   const { problem } = item;
   if (problem.mode === 'read_blocks') {

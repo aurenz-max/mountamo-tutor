@@ -143,9 +143,8 @@ const recapLabel = (item: DiShapesChallenge, solved: boolean) => solved ? reward
 /** PLATFORM PROP CONTRACT: registry primitives mount as `<Component data={…} index={…} />`. */
 export const DiShapes: React.FC<DiShapesProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const items = useMemo(() => data.challenges ?? [], [data.challenges]);
-  const evalMode = runtimeEvalMode || data.challengeType || 'name_shape';
   return <DiTeachingStage<DiShapesChallenge, DiShapesMetrics> primitiveId="di-shapes" data={data}
-    items={items} evalMode={evalMode} className={className} runtimePlanItemId={runtimePlanItemId}
+    items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
     assignment={shapesAssignment} scene={shapesScene} copy={COPY} stimulus={stimulus} trail={creditedShapes}
     recapLabel={recapLabel}
     metrics={result => ({ type: 'di-shapes', ...diStageMetrics(result, items, data.challengeType), meanResponseMs: null })} />;

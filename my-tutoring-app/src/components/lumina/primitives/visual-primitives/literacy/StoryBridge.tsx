@@ -141,7 +141,7 @@ function StoryBridgeSurface(props: StoryBridgeProps) {
   );
 }
 
-function StoryBridgeSession({ data, className, runtimePlanItemId, runtimeEvalMode }: StoryBridgeProps) {
+function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeProps) {
   const {
     title, stories = [], challenges = [], instanceId, skillId, subskillId,
     objectiveId, exhibitId, onEvaluationSubmit,
@@ -202,7 +202,6 @@ function StoryBridgeSession({ data, className, runtimePlanItemId, runtimeEvalMod
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || (items[0]?.mode ?? 'match_character'),
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: (item) => {
@@ -224,9 +223,7 @@ function StoryBridgeSession({ data, className, runtimePlanItemId, runtimeEvalMod
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...storyBridgeScene(currentItem), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...storyBridgeScene(currentItem) };
   });
 
   /** Asks the tutor to read both stories again: a silent host request, never the answer. */

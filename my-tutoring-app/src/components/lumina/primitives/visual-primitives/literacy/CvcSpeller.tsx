@@ -166,7 +166,7 @@ const SpeakerIcon: React.FC<{ className?: string; size?: string }> = ({ classNam
 
 const EMPTY: (string | null)[] = [null, null, null];
 
-function CvcSpellerSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: CvcSpellerProps) {
+function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerProps) {
   const {
     title,
     vowelFocus,
@@ -251,7 +251,6 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId, runtimeEvalMode
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || challenges[0]?.taskType.replace('-', '_') || 'mixed',
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: (_item, index) => {
@@ -350,9 +349,7 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId, runtimeEvalMode
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    workspace.current = { ...cvcScene(currentChallenge, { boxes: slotsRef.current }), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...cvcScene(currentChallenge, { boxes: slotsRef.current }) };
   });
 
   // ── Pip shared surface ───────────────────────────────────────────

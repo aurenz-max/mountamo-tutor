@@ -161,7 +161,7 @@ const promptLineFor = (item: SyllableClapperItem): string => {
 // Component
 // ============================================================================
 
-function SyllableClapperSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: SyllableClapperProps) {
+function SyllableClapperSurface({ data, className, runtimePlanItemId }: SyllableClapperProps) {
   const {
     title,
     challenges = [],
@@ -256,7 +256,6 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId, runtimeEva
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || items[0]?.task || 'count_parts',
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onAffirmed: setRevealed,
@@ -271,9 +270,7 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId, runtimeEva
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...syllableScene(currentItem), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...syllableScene(currentItem) };
   });
 
   // ── Pip shared surface ────────────────────────────────────────────────────

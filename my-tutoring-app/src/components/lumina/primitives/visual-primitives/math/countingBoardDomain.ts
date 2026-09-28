@@ -371,6 +371,26 @@ export function boardGroups(count: number, groupSize?: number | null, compareGro
 export const drawnCount = (item: CountingItem): number =>
   item.kind === 'add_more' ? item.count + (item.changeBy ?? 0) : item.count;
 
+/**
+ * What a wrong handover or hand pick shows (`TeachingAttempt.miss`, handoff 20), from the number committed:
+ * objects handed over (give_me_n) or fingers on the picked hand (subitize_perceptual).
+ * - `one_short` / `one_over`: one fewer or one more than asked for (or than the board shows);
+ * - `short_by_more` / `over_by_more`: two or more off;
+ * - `gave_all`: the whole pile handed over (give_me_n), when that is more than one over.
+ * The spoken kinds name none: their answer is judged by the tutor, not checked here.
+ */
+export type CountMiss = 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more' | 'gave_all';
+
+export function countMiss(item: CountingItem | null, committed: number): CountMiss | undefined {
+  if (!item || (item.kind !== 'give_me_n' && item.kind !== 'subitize_perceptual')) return undefined;
+  const off = committed - item.target;
+  if (off === 0) return undefined;
+  if (off === -1) return 'one_short';
+  if (off === 1) return 'one_over';
+  if (item.kind === 'give_me_n' && committed === item.count) return 'gave_all';
+  return off < 0 ? 'short_by_more' : 'over_by_more';
+}
+
 /** The item as the tutor and the outcome observer are told it. */
 export const workspaceAssignment = (item: CountingItem): TeachingAssignment => ({ id: item.id, task: askFor(item),
   response: item.answerKind === 'voice' ? 'speech' : 'gesture', expectedAnswer: String(item.target) });

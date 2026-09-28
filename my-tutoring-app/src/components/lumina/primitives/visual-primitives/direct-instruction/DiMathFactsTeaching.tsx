@@ -103,12 +103,11 @@ const recapLabel = (item: MathFactItem, solved: boolean) => solved ? item.solved
 
 export default function DiMathFactsTeaching({ data, className, runtimePlanItemId, runtimeEvalMode }: DiMathFactsTeachingProps) {
   const items = useMemo(() => buildMathFactItems(data.challenges), [data.challenges]);
-  const evalMode = runtimeEvalMode || data.challengeType || 'answer_fact';
   // `meanResponseMs` is the standalone drill's tutor-audio-fall timing. The workspace
   // does not measure it, and reporting a number this path never took would make a
   // silent signal quietly wrong.
   return <DiTeachingStage<MathFactItem, DiMathFactsMetrics> primitiveId="di-math-facts" data={data}
-    items={items} evalMode={evalMode} className={className} runtimePlanItemId={runtimePlanItemId}
+    items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
     assignment={workspaceAssignment} scene={workspaceScene} copy={COPY} stimulus={stimulus} trail={solvedFacts}
     recapLabel={recapLabel}
     metrics={result => ({ type: 'di-math-facts', ...diStageMetrics(result, items, data.challengeType), meanResponseMs: null })} />;

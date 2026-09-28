@@ -264,3 +264,4 @@ problem needs a picture.
   a device without `getUserMedia` no longer falls back to the tap flow. The "Say that again"
   button and mic panel are gone. Smoke: merged three-problem K set `--audio` PASS. Report:
   `qa/tutor-reports/workspace-rollout-C8-2026-09-26.md`.
+- 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.

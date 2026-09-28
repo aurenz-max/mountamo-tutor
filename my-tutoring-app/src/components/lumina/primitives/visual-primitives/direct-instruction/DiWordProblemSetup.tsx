@@ -44,8 +44,8 @@ import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import { SoundManager } from '../../../utils/SoundManager';
 import { SHAPE_WORD, type Quantity } from './diWordProblemPlan';
 import type { DiWordProblemSetupData, WordProblemItem, WordProblemStepKind } from './diWordProblemScript';
-import { boardComplete, bigSlotMatches, describePlacement, wordProblemAssignment, wordProblemItems, wordProblemScene,
-  type FamilyPlacements } from './diWordProblemWorkspace';
+import { boardComplete, bigSlotMatches, describePlacement, wordProblemAssignment, wordProblemItems, wordProblemMiss,
+  wordProblemScene, type FamilyPlacements } from './diWordProblemWorkspace';
 
 export type {
   DiWordProblemSetupData,
@@ -71,7 +71,7 @@ export interface DiWordProblemSetupProps {
   runtimeEvalMode?: string;
 }
 
-const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
+const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, className, runtimePlanItemId }) => {
   const items = useMemo(() => wordProblemItems(data), [data]);
   const stableInstanceId = useRef(data.instanceId || `di-word-problem-setup-${Math.round(performance.now())}`);
   const resolvedInstanceId = data.instanceId || stableInstanceId.current;
@@ -116,7 +116,6 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
     primitiveId: 'di-word-problem-setup', assignment: wordProblemAssignment, items, workspace,
     objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || data.challengeType || 'find_big_number',
     instanceId: resolvedInstanceId, onFinished: finish,
     onItemOpened: () => resetBoard(), onCorrectionRetry: () => resetBoard(),
     onAffirmed: item => setCommitted(previous => new Set(previous).add(item.id)),
@@ -131,9 +130,7 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
   // no presentation; every step is answerable once it opens.
   useLayoutEffect(() => {
     if (!current) return;
-    workspace.current = { ...wordProblemScene(current, { familyShown }), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...wordProblemScene(current, { familyShown }) };
   });
 
   const pip = useStimulusPipSurface({
@@ -148,7 +145,8 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
     if (item?.kind !== 'big_number' || !runner.canAttempt || runner.isAwaitingGesture()) return;
     const placed = boardRef.current;
     if (!boardComplete(item, placed)) return;
-    commitGesture(runner, { response: describePlacement(item, placed), correct: bigSlotMatches(item, placed), cue: () => '' });
+    commitGesture(runner, { response: describePlacement(item, placed), correct: bigSlotMatches(item, placed),
+      miss: wordProblemMiss(item, placed), cue: () => '' });
   };
   const place = (id: string, slot: FamilySlot) => {
     const item = runner.currentItem;

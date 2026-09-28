@@ -125,7 +125,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { chartComplete, chartMatches, describeChart, workspaceAssignment, workspaceScene } from './placeValueWorkspace';
+import { chartComplete, chartMatches, describeChart, placeValueMiss, workspaceAssignment, workspaceScene } from './placeValueWorkspace';
 export interface PlaceValueChartData {
   title: string;
   description: string;
@@ -194,6 +194,8 @@ const multiplierLabel = (place: number): string => `×${Math.pow(10, place).toLo
  * `digitsByPlace` feeds the runner-era runtime registration only.
  */
 type PlaceValueControllerOptions = Omit<WorkspaceRunOptions<PlaceValueItem>, 'primitiveId' | 'assignment' | 'onFinished'>
+  & { /** The scripted path's runtime registration only (it goes with that path); the workspace reads the lesson's pin. */
+    scriptedEvalMode: string }
   & Omit<JudgedScriptRunnerOptions<PlaceValueItem>, 'pack' | 'instanceId' | 'onItemOpened' | 'onFinished'>
   & { pack?: JudgedScriptPack<PlaceValueItem>; digitsByPlace: Record<number, string>;
     onFinished: (summary: PlaceValueFinish) => void };
@@ -207,7 +209,7 @@ function useScriptedController(options: PlaceValueControllerOptions): LiveRun<Pl
   const runner = useJudgedScriptRunner<PlaceValueItem>({ ...options, pack: options.pack! });
   // The SESSION's mode, never `runner.currentItem`: a mount's identity must not change while the runner owns it.
   usePlaceValueRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
-    planItemId: options.planItemId, evalMode: options.evalMode, digitsByPlace: options.digitsByPlace });
+    planItemId: options.planItemId, evalMode: options.scriptedEvalMode, digitsByPlace: options.digitsByPlace });
   return runner;
 }
 
@@ -350,7 +352,7 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
     items, workspace, objectiveId, planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount, never `runner.currentItem`: a mount's
     // identity must not change while the runner owns it.
-    evalMode: runtimeEvalMode || items[0]?.kind || 'default',
+    scriptedEvalMode: runtimeEvalMode || items[0]?.kind || 'default',
     digitsByPlace,
     // Load-bearing for the live host: without it the runner's `resume()` early-returns,
     // its speech holds never settle, and the completion handoff has nothing to read.
@@ -427,7 +429,7 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
     const written = writtenOf(item, writtenRef.current);
     // The chart checks its own number, with the same code match the cue reports.
     commitGesture(runner, { response: describeChart(item, written), correct: chartMatches(item, written),
-      cue: () => buildVerdictCue(item, written) });
+      miss: placeValueMiss(item, written), cue: () => buildVerdictCue(item, written) });
   }, [runner]);
 
   /** A hands turn closes on stillness; a full chart shortens the window but
@@ -604,10 +606,7 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentItem) return;
-    workspace.current = { ...workspaceScene(currentItem, { written: writtenOf(currentItem, digitsByPlace) }),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true,
-      mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace?.();
+    workspace.current = { ...workspaceScene(currentItem, { written: writtenOf(currentItem, digitsByPlace) }) };
   });
   // AFTER the runtime mount is registered, never before: `start()` waits for
   // `grantOwnership('runner')`, which cannot be granted until this primitive's

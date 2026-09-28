@@ -127,7 +127,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { describeLine, lineMatches, workspaceAssignment, workspaceScene } from './ordinalLineWorkspace';
+import { describeLine, lineMatches, lineMiss, workspaceAssignment, workspaceScene } from './ordinalLineWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -263,6 +263,8 @@ interface OrdinalLineProps {
  * `placedOrder` feeds the runner-era runtime registration only.
  */
 type OrdinalLineControllerOptions = Omit<WorkspaceRunOptions<OrdinalLineItem>, 'primitiveId' | 'assignment' | 'onFinished'>
+  & { /** The scripted path's runtime registration only (it goes with that path); the workspace reads the lesson's pin. */
+    scriptedEvalMode: string }
   & Omit<JudgedScriptRunnerOptions<OrdinalLineItem>, 'pack' | 'instanceId' | 'onItemOpened' | 'onFinished'>
   & { pack?: JudgedScriptPack<OrdinalLineItem>; placedOrder: string[]; onFinished: (summary: OrdinalLineFinish) => void };
 
@@ -274,7 +276,7 @@ function useScriptedController(options: OrdinalLineControllerOptions): LiveRun<O
   const runner = useJudgedScriptRunner<OrdinalLineItem>({ ...options, pack: options.pack! });
   // The SESSION's mode, never `runner.currentItem`: a mount's identity must not change while the runner owns it.
   useOrdinalLineRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
-    planItemId: options.planItemId, evalMode: options.evalMode, placedOrder: options.placedOrder });
+    planItemId: options.planItemId, evalMode: options.scriptedEvalMode, placedOrder: options.placedOrder });
   return runner;
 }
 
@@ -477,7 +479,7 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     items, workspace, objectiveId, planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount, never `runner.currentItem`: a mount's
     // identity must not change while the runner owns it.
-    evalMode: runtimeEvalMode || items[0]?.kind || 'default',
+    scriptedEvalMode: runtimeEvalMode || items[0]?.kind || 'default',
     placedOrder,
     // Load-bearing for the live host: without it the runner's `resume()` early-returns,
     // its speech holds never settle, and the completion handoff has nothing to read.
@@ -546,7 +548,7 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     // The line checks its own arrangement, with the same code match the cue reports.
     // A part-filled line commits too, exactly as on the runner.
     commitGesture(runner, { response: describeLine(item, placed), correct: lineMatches(item, placed),
-      cue: () => placementVerdictCue(item, placed) });
+      miss: lineMiss(item, placed), cue: () => placementVerdictCue(item, placed) });
   }, [runner]);
 
   /** A hands turn closes on stillness; a full line shortens the window but never
@@ -797,10 +799,7 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     if (!tutorOwned || !currentItem) return;
     const markedPlace = currentItem.kind === 'relative_position' && currentChallenge?.highlightTarget !== false
       ? currentItem.askPosition : undefined;
-    workspace.current = { ...workspaceScene(currentItem, { placedOrder, markedPlace }),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true,
-      mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace?.();
+    workspace.current = { ...workspaceScene(currentItem, { placedOrder, markedPlace }) };
   });
   // AFTER the runtime mount is registered, never before: `start()` waits for
   // `grantOwnership('runner')`, which cannot be granted until this primitive's

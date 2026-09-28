@@ -97,9 +97,8 @@ export interface DiWorkedProcedureProps {
 /** PLATFORM PROP CONTRACT: registry primitives mount as `<Component data={…} index={…} />`. */
 export const DiWorkedProcedure: React.FC<DiWorkedProcedureProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const items = useMemo(() => workedProcedureItems(data), [data]);
-  const evalMode = runtimeEvalMode || data.challengeType || 'subtract_no_regroup';
   return <DiTeachingStage<WorkedProcedureItem, DiWorkedProcedureMetrics> primitiveId="di-worked-procedure" data={data}
-    items={items} evalMode={evalMode} className={className} runtimePlanItemId={runtimePlanItemId}
+    items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
     assignment={workedProcedureAssignment} scene={workedProcedureScene} copy={COPY} recapLabel={recapLabel} counter={problemCounter}
     stimulus={(item, marks, view) => <ProblemColumns item={item} view={view} marked={marks.includes('problem')}
       steps={items.filter(candidate => candidate.problemId === item.problemId)} />}

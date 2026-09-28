@@ -5,8 +5,8 @@
  * From the failure inventory (qa/eval-reports/fraction-circles-levers-2026-09-27.md):
  * - `mark_pieces` (help, identify): bold edges and one dot in every piece, shaded or not. Answers
  *   "miscounts the pieces". Leak rule: no digits, and every piece gets the same mark.
- * - `part_whole` (help, identify/build): a fraction frame under the circle, a picture of one shaded
- *   piece over a picture of the whole circle. Answers "swaps the numbers", "counts the unshaded".
+ * - `part_whole` (help, identify/build): a fraction frame under the circle, a picture of a shaded
+ *   part over a picture of the whole circle. Answers "swaps the numbers", "counts the unshaded".
  *   Leak rule: pictures only, no digits.
  * - `running_count` (help, build/equivalent): how many slices the learner has shaded. Answers "loses
  *   count". Leak rule: the learner's own shading only. Easy (and no tier) starts with it pulled.
@@ -108,15 +108,43 @@ export function startLevers(ch: FractionCirclesChallenge | null): string[] {
   return ch.startLevers?.filter(id => id === PIECES_LEVER) ?? [];
 }
 
+/**
+ * The misses (`fractionMiss`) each lever answers, per mode. The observer pulls the first open lever that lists
+ * the learner's miss (`nextLever`): a count one off gets the running count; a count further off gets the
+ * reference split (equivalent) or the easier item; a mix-up of part and whole gets the part-whole frame.
+ */
+const LEVER_ANSWERS: Record<string, Record<string, readonly string[]>> = {
+  identify: {
+    [PIECES_LEVER]: ['bottom_not_pieces', 'top_one_off', 'top_off_by_more'],
+    [FRAME_LEVER]: ['swapped', 'top_is_unshaded', 'not_a_fraction'],
+    [FEWER_LEVER]: ['bottom_not_pieces', 'top_off_by_more'],
+  },
+  build: {
+    [COUNT_LEVER]: ['one_short', 'one_over', 'short_by_more', 'over_by_more'],
+    [FRAME_LEVER]: ['shaded_all', 'shaded_the_rest'],
+    [UNIT_LEVER]: ['short_by_more', 'over_by_more', 'shaded_all', 'shaded_the_rest'],
+  },
+  equivalent: {
+    [COUNT_LEVER]: ['one_short', 'one_over'],
+    [SPLIT_LEVER]: ['copied_the_count', 'short_by_more', 'over_by_more'],
+    [DOUBLE_LEVER]: ['copied_the_count', 'short_by_more', 'over_by_more'],
+  },
+  compare: {
+    [OVERLAY_LEVER]: ['picked_more_slices', 'picked_smaller', 'said_equal', 'missed_equal'],
+    [FAR_LEVER]: ['picked_more_slices', 'picked_smaller'],
+  },
+};
+const leverAnswers = (type: string, id: string): readonly string[] | undefined => LEVER_ANSWERS[type]?.[id];
+
 export function fractionLevers(ch: FractionCirclesChallenge | null, pulled: readonly string[], band?: string): WorkspaceLever[] {
   if (!ch) return [];
   const lever = (id: string, kind: 'help' | 'simplify', carrier: WorkspaceLever['carrier'], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier, when, does, pulled: pulled.includes(id) });
+    ({ id, kind, carrier, when, does, pulled: pulled.includes(id), answers: leverAnswers(ch.type, id) });
   const levers: WorkspaceLever[] = [];
   const simpler = simplerItem(ch, band);
   const frame = lever(FRAME_LEVER, 'help', 'both',
     'The learner swaps the top and bottom numbers, or counts the unshaded pieces.',
-    'Draws a fraction frame under the circle: a picture of one shaded piece over a picture of the whole circle. No numbers.');
+    'Draws a fraction frame under the circle: a picture of a shaded part over a picture of the whole circle. No numbers, and no count of pieces.');
   const count = lever(COUNT_LEVER, 'help', 'both', 'The learner loses count while shading: one too many or one too few.',
     'Shows under the circle how many slices the learner has shaded so far. Never the number to shade.');
   switch (ch.type) {
@@ -156,11 +184,77 @@ export function leverFacts(ch: FractionCirclesChallenge, pulled: readonly string
   const facts: string[] = [];
   if (ch.type === 'identify' && on(PIECES_LEVER)) facts.push('Every slice edge is bold and every piece, shaded or not, has one dot.');
   if ((ch.type === 'identify' || ch.type === 'build') && on(FRAME_LEVER))
-    facts.push('A fraction frame is under the circle: a picture of one shaded piece on top, a picture of the whole circle below.');
+    // Never "one shaded piece": on a unit fraction that is the count to shade (replay RP-1, contract R5).
+    facts.push('A fraction frame is under the circle: a picture of the shaded part on top, a picture of the whole circle below.');
   if (ch.type === 'equivalent' && on(SPLIT_LEVER) && splitFactor(ch))
     facts.push('Each slice of the reference circle is cut by lines into thinner slices the same size as the slices to shade.');
   if (ch.type === 'compare' && on(OVERLAY_LEVER)) facts.push("The left circle's shaded part is outlined on the right circle.");
   return facts;
+}
+
+/**
+ * What a wrong Check shows (`TeachingAttempt.miss`), from the learner's own work on the circle. Only the
+ * observable pattern; why the learner did it is the tutor's and the distiller's to judge.
+ * - identify (typed n/d): `not_a_fraction`; `swapped` (the piece count on top, the shaded count below);
+ *   `bottom_not_pieces` (the bottom is not the circle's piece count); `top_is_unshaded` (the top is the
+ *   unshaded count); `top_one_off` / `top_off_by_more`.
+ * - build (slices shaded): `shaded_all`; `shaded_the_rest` (the unshaded count shaded instead);
+ *   `one_short` / `one_over` / `short_by_more` / `over_by_more`.
+ * - equivalent (slices shaded on the finer circle): `copied_the_count` (the reference's shaded count shaded
+ *   again); then the four count misses.
+ * - compare: `picked_more_slices` (the smaller amount, on the circle with more slices); `picked_smaller`;
+ *   `said_equal` (they are not); `missed_equal` (a side picked when they are equal).
+ * Undefined for a right answer or a touch item (`touchMiss`).
+ */
+export type FractionMiss = 'not_a_fraction' | 'swapped' | 'bottom_not_pieces' | 'top_is_unshaded' | 'top_one_off'
+  | 'top_off_by_more' | 'shaded_all' | 'shaded_the_rest' | 'copied_the_count' | 'one_short' | 'one_over'
+  | 'short_by_more' | 'over_by_more' | 'picked_more_slices' | 'picked_smaller' | 'said_equal' | 'missed_equal';
+
+const countMiss = (shaded: number, target: number): FractionMiss | undefined => {
+  const off = shaded - target;
+  if (off === 0) return undefined;
+  return off === -1 ? 'one_short' : off === 1 ? 'one_over' : off < 0 ? 'short_by_more' : 'over_by_more';
+};
+
+export function fractionMiss(ch: FractionCirclesChallenge | null,
+  work: { typed: string; shaded: number; choice: string }): FractionMiss | undefined {
+  if (!ch) return undefined;
+  const { numerator: n, denominator: d } = ch;
+  switch (ch.type) {
+    case 'identify': {
+      const match = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(work.typed);
+      if (!match) return 'not_a_fraction';
+      const top = Number(match[1]), bottom = Number(match[2]);
+      if (bottom > 0 && same(top, bottom, n, d)) return undefined;
+      if (top === d && bottom === n) return 'swapped';
+      if (bottom !== d) return 'bottom_not_pieces';
+      if (top === d - n) return 'top_is_unshaded';
+      return Math.abs(top - n) === 1 ? 'top_one_off' : 'top_off_by_more';
+    }
+    case 'build':
+      if (work.shaded === n) return undefined;
+      if (work.shaded === d) return 'shaded_all';
+      if (work.shaded === d - n) return 'shaded_the_rest';
+      return countMiss(work.shaded, n);
+    case 'equivalent': {
+      const e = ch.equivalentDenominator;
+      if (!e || same(work.shaded, e, n, d)) return undefined;
+      if (work.shaded === n) return 'copied_the_count';
+      return countMiss(work.shaded, n * e / d);
+    }
+    case 'compare': {
+      const cmp = ch.compareFraction;
+      if (!cmp) return undefined;
+      const diff = n / d - cmp.numerator / cmp.denominator;
+      const key = Math.abs(diff) < 0.001 ? 'equal' : diff > 0 ? 'left' : 'right';
+      if (work.choice === key) return undefined;
+      if (key === 'equal') return 'missed_equal';
+      if (work.choice === 'equal') return 'said_equal';
+      const pickedSlices = work.choice === 'left' ? d : cmp.denominator, otherSlices = work.choice === 'left' ? cmp.denominator : d;
+      return pickedSlices > otherSlices ? 'picked_more_slices' : 'picked_smaller';
+    }
+    default: return undefined;
+  }
 }
 
 /** Leak rule shared by every drawn help lever: a lever label never carries a digit. */

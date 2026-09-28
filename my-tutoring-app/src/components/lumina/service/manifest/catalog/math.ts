@@ -1,3 +1,25 @@
+import { missLists, sameMisses } from './missLists';
+import type { AddSubMiss } from '../../../primitives/visual-primitives/math/additionSubtractionSceneWorkspace';
+import type { BarModelMiss } from '../../../primitives/visual-primitives/math/barModelWorkspace';
+import type { BaseTenMiss } from '../../../primitives/visual-primitives/math/baseTenWorkspace';
+import type { CompareOrderMiss } from '../../../primitives/visual-primitives/math/compareObjectsWorkspace';
+import type { ComparisonMiss } from '../../../primitives/visual-primitives/math/comparisonBuilderWorkspace';
+import type { CountMiss } from '../../../primitives/visual-primitives/math/countingBoardDomain';
+import type { EquationBuilderMiss } from '../../../primitives/visual-primitives/math/equationBuilderWorkspace';
+import type { FractionMiss } from '../../../primitives/visual-primitives/math/fractionCirclesLevers';
+import type { TouchMiss } from '../../../primitives/visual-primitives/math/fractionCirclesWorkspace';
+import type { HundredsChartMiss } from '../../../primitives/visual-primitives/math/hundredsChartWorkspace';
+import type { MathFactMiss } from '../../../primitives/visual-primitives/math/mathFactFluencyWorkspace';
+import type { BondMiss } from '../../../primitives/visual-primitives/math/numberBondModes';
+import type { JumpMiss } from '../../../primitives/visual-primitives/math/numberLineLevers';
+import type { OrderMiss } from '../../../primitives/visual-primitives/math/numberSequencerDomain';
+import type { NumberTracerMiss } from '../../../primitives/visual-primitives/math/numberTracerWorkspace';
+import type { LineMiss } from '../../../primitives/visual-primitives/math/ordinalLineWorkspace';
+import type { PatternBuilderMiss } from '../../../primitives/visual-primitives/math/patternBuilderWorkspace';
+import type { PlaceValueMiss } from '../../../primitives/visual-primitives/math/placeValueWorkspace';
+import type { SpatialMiss } from '../../../primitives/visual-primitives/math/spatialSceneWorkspace';
+import type { StrategyPickerMiss } from '../../../primitives/visual-primitives/math/strategyPickerWorkspace';
+import type { FrameMiss } from '../../../primitives/visual-primitives/math/tenFrameLevers';
 import { FRACTION_TOUCH_EVAL_MODES } from '../../../primitives/visual-primitives/math/fractionTouchModes';
 import { BASE_TEN_DI_EVAL_MODES } from '../../../primitives/visual-primitives/math/baseTenModes';
 import { NUMBER_SEQUENCER_EVAL_MODES } from '../../../primitives/visual-primitives/math/numberSequencerModes';
@@ -36,6 +58,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'reversed claim, a bare number or a row name alone is not a comparison, and comparing two graphs must compare the '
         + 'two surveys. A Kindergarten learner cannot read: read the '
         + 'question and the row names aloud. You cannot tap, place stickers, set bars or choose a step for the learner.',
+      // The graph's own check (`barModelMiss`); the two spoken modes name none yet (Part B).
+      misses: (() => {
+        const off: BarModelMiss[] = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
+        const read: BarModelMiss[] = ['picked_icon_count', 'another_row', 'one_step_off', ...off];
+        const rows: BarModelMiss[] = ['rows_swapped', 'several_rows_off', ...off];
+        return missLists<BarModelMiss>({
+          read_one_to_one: ['another_row', ...off], read_scale: read, picture_graph: read, scaled_bar_graph: read,
+          graph_word_problem: read, compare_bars: ['reversed', 'other_row'], most_least: ['reversed', 'other_row'],
+          match_to_bar: off, build_one_to_one: rows, build_graph: [...rows, 'wrong_step'],
+        });
+      })(),
     },
     // Only picture_graph emits selection evidence; other modes supply none, so capture skips them.
     misconceptionScope: 'skill',
@@ -200,6 +233,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'talk about a half-placed line is teaching, not a verdict. The target values are not yours to say. You cannot '
         + 'place, move, clear or highlight points.',
       levers: true,
+      misses: missLists<JumpMiss>({ jump: ['one_short', 'one_past', 'off_by_more', 'wrong_direction', 'second_jump_off', 'no_landing'] }),
     },
     misconceptionScope: 'skill',
     observationDelivery: 'server',
@@ -299,6 +333,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'Check My Blocks or Check My Trade, or types a result on the keypad, and the activity checks it; blocks that '
         + 'make the number without the fewest blocks are not yet a build. Never say a column count, a total, a '
         + 'prediction or a result before the learner answers. You cannot add, remove, trade or type anything.',
+      // The mats' own checks (`tradeMiss`, `plainMiss`). read_blocks' ids are the click mat's keypad (a mixed
+      // payload); its spoken steps and regroup's prediction name none yet (Part B).
+      misses: missLists<BaseTenMiss>({
+        build_number: ['one_short', 'one_over', 'one_ten_off', 'digits_swapped', 'not_traded_up', 'short_by_more', 'over_by_more'],
+        regroup: ['other_block', 'traded_twice', 'no_trade', 'value_changed'],
+        read_blocks: ['one_short', 'one_over', 'one_ten_off', 'digits_swapped', 'short_by_more', 'over_by_more'],
+        operate: ['one_short', 'one_over', 'one_ten_off', 'digits_swapped', 'short_by_more', 'over_by_more'],
+      }),
     },
     // Only read_blocks emits correction evidence; the other modes supply none,
     // so capture skips them without a model call.
@@ -380,6 +422,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'shaded, never the values. In touch-the-fraction the fraction is only written in words, so say it aloud; three '
         + 'unlabelled pictures are shown and you do not know which one matches: never point at, number or describe a picture '
         + 'as the answer. You cannot type, shade, choose or touch for the learner.',
+      // The circle's own check (`fractionMiss`, `touchMiss`).
+      misses: missLists<FractionMiss | TouchMiss>({
+        identify: ['not_a_fraction', 'swapped', 'bottom_not_pieces', 'top_is_unshaded', 'top_one_off', 'top_off_by_more'],
+        build: ['shaded_all', 'shaded_the_rest', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        equivalent: ['copied_the_count', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        compare: ['picked_more_slices', 'picked_smaller', 'said_equal', 'missed_equal'],
+        touch_fraction: ['same_parts_other_shading', 'same_shading_other_parts', 'other_fraction'],
+      }),
     },
     misconceptionScope: 'skill',
     observationDelivery: 'server',
@@ -628,6 +678,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       guidance: 'A printed number shows no column labels, because on a which-place item the label is the answer. '
         + 'On a write-the-number item the number is never printed, so say it aloud before the learner writes; the chart checks the written digits itself once every column '
         + 'is filled and the learner stops. You cannot write, clear or highlight digits.',
+      // The chart's own check of a dictated number (`placeValueMiss`), which every mode alternates with printed
+      // numbers; the spoken place and value asks name none yet (Part B).
+      misses: sameMisses<PlaceValueMiss>(['identify', 'build', 'compare', 'expanded_form'],
+        ['zero_left_empty', 'column_empty', 'digits_swapped', 'teen_ty_swap', 'one_short', 'one_over', 'one_ten_off',
+          'short_by_more', 'over_by_more']),
     },
     evalModes: [
       {
@@ -2305,6 +2360,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'talk about a part-built frame is teaching, not a verdict. On a quick-look item, call present when the learner '
         + 'is ready: the counters show briefly, then hide. Never count them out. You cannot place, remove or flip counters.',
       levers: true,
+      // The frame's own check (`frameMiss`); the spoken modes (subitize, operate, make_ten at grades 1-2) name none yet.
+      misses: missLists<FrameMiss>({
+        build: ['one_short', 'one_over', 'filled_frame', 'short_by_more', 'over_by_more'],
+        make_ten: ['one_short', 'short_by_more'],
+        decompose: ['all_flipped', 'none_flipped', 'same_way_again'],
+        build_teen: ['one_short', 'one_over', 'filled_frame', 'short_by_more', 'over_by_more'],
+        decompose_teen: ['one_short', 'one_over', 'all_flipped', 'short_by_more', 'over_by_more'],
+      }),
     },
     evalModes: [
       {
@@ -2447,6 +2510,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       guidance: 'Use demonstrate to show a selection on the actual board without changing learner work. '
         + 'Handovers and hand choices are checked directly by the board. '
         + 'Respect the current task constraints, including hidden quick-look objects and pre-numeric hand matching.',
+      // The board's own check (`countMiss`); the spoken modes name none yet (Part B).
+      misses: missLists<CountMiss>({
+        give_me_n: ['one_short', 'one_over', 'gave_all', 'short_by_more', 'over_by_more'],
+        subitize_perceptual: ['one_short', 'one_over', 'short_by_more', 'over_by_more'],
+      }),
     },
     misconceptionScope: 'skill',
     observationDelivery: 'server',
@@ -2618,6 +2686,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'mode: never say one before the check. Counting each group with the learner is teaching; naming the winner is not. '
         + 'A Kindergarten learner cannot read: read the instruction aloud and name the choice being made, because the '
         + 'pictures, arrows and bars on screen carry no words. You cannot tap, choose or order anything for the learner.',
+      // The activity's own check (`comparisonMiss`), every mode.
+      misses: missLists<ComparisonMiss>({
+        compare_groups: ['reversed', 'said_equal', 'missed_equal'],
+        compare_numbers: ['reversed', 'said_equal', 'missed_equal'],
+        order: ['reversed', 'two_swapped', 'other_order'],
+        one_more_less: ['no_step', 'wrong_way', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+      }),
     },
       misconceptionScope: 'primitive',
     description: 'Multi-phase comparison activity with four challenge types: compare groups of objects visually, compare written numerals with inequality symbols, order numbers least-to-greatest or greatest-to-least, and identify one more / one less. Features animated correspondence lines and alligator mouth mnemonic for < and >. Perfect for teaching quantity comparison and number ordering. ESSENTIAL for K-1 math.',
@@ -2751,6 +2826,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'many tokens it has or which ones to select, and never point to the token to tap; this holds after a wrong '
         + 'Check too. Coach only as far as the support tier allows. Asking what repeats and reading '
         + 'the row aloud together is fine. You cannot tap, select or build for the learner.',
+      // The builder's own check (`patternBuilderMiss`), every mode.
+      misses: missLists<PatternBuilderMiss>({
+        extend: ['blanks_left', 'extra_tokens', 'repeated_last', 'started_over', 'two_swapped', 'one_wrong', 'several_wrong'],
+        find_rule: ['blanks_left', 'extra_tokens', 'repeated_last', 'started_over', 'two_swapped', 'one_wrong', 'several_wrong'],
+        translate: ['blanks_left', 'extra_tokens', 'two_swapped', 'one_wrong', 'several_wrong'],
+        identify_core: ['two_repeats', 'too_long', 'too_short', 'other_part'],
+        create: ['too_short', 'no_repeat'],
+      }),
     },
     evalModes: [
       {
@@ -2968,6 +3051,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'belong, the shape the highlighted cells make and the skip value are the answers: before the learner has checked, '
         + 'never say them, never count the pattern on past the highlighted numbers, and never give the difference between '
         + 'two highlighted numbers. You cannot tap or pick for the learner.',
+      // The chart's own check (`hundredsChartMiss`); identify_pattern's description choices name none.
+      misses: missLists<HundredsChartMiss>({
+        highlight_sequence: ['stopped_early', 'gaps_left', 'extra_cells', 'other_step', 'stray_cells'],
+        complete_sequence: ['stopped_early', 'gaps_left', 'extra_cells', 'other_step', 'stray_cells'],
+        find_skip_value: ['twice_the_step', 'half_the_step', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+      }),
     },
   },
   {
@@ -3363,6 +3452,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'Use demonstrate with visible car or card IDs to draw purple dashed tutor marks on the cars or cards you are '
         + 'discussing, and [] to clear them. You cannot fill an empty car, move a card into a place, reorder the train '
         + 'or count for the learner. Counting along out loud is teaching; the number the learner says is the answer.',
+      // The train's own check of an arrangement (`orderMiss`); the five spoken modes name none yet (Part B).
+      misses: missLists<OrderMiss>({ order_cards: ['reversed', 'two_swapped', 'other_order'] }),
     },
     description: 'Live tutor-judged number train practice. Children say missing numbers, continue a count one number at a time, and name the printed number that breaks a sequence. Card ordering remains hands-on arrangement. The tutor asks, judges, corrects, and advances. Six existing task identities for K-1 mathematics.',
     constraints: 'Requires a microphone for spoken modes; order-cards remains hands-on arrangement. K: 1-20 range by default, widened to 1-100 when the objective explicitly names 100. Grade 1: broad practice defaults to 1-100 and may extend through 120 only when the objective/topic/intent requires it. Spot-error positions are chosen in code and never visually pre-marked. Pinned single or blended eval modes must emit only their catalog challenge types; unpinned mixed sessions may combine all six.',
@@ -3394,6 +3485,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'finished split, move or equation itself once the learner stops; talk about a half-built one is teaching, not a '
         + 'verdict. A spoken question asks about the split or move now on the board. You cannot move counters, place '
         + 'tiles, or say a part before the learner does.',
+      // The bond's own check (`bondMiss`): split, move and equation phases. missing_part and the spoken turns
+      // of the other modes name none yet (Part B).
+      misses: missLists<BondMiss>({
+        decompose: ['same_way_again', 'not_all_placed'],
+        ten_and_ones: ['ten_one_off', 'no_full_ten', 'not_all_placed'],
+        related_fact: ['other_move'],
+        build_equation: ['other_move', 'unfinished_equation', 'false_equation', 'other_numbers', 'other_fact'],
+        fact_family: ['other_move', 'unfinished_equation', 'false_equation', 'other_numbers', 'other_fact'],
+      }),
     },
     description: 'DI-native Number Bond. Students transform one persistent counter model, then express its relationship: Split and Say and Ten and Ones pair hand construction with one spoken count; Missing Part keeps the unknown covered and offers counters as optional support; Related Facts joins, speaks, separates, and speaks again; Build Equation matches a student-chosen action with symbols; Fact Family transforms the same groups through every distinct related form. Students SAY the missing part OUT LOUD where speech is assessed and construct equations where symbolic form is assessed.',
     constraints: 'Wholes are capped at 5 for Kindergarten and 10 for Grade 1, except Ten and Ones uses teen wholes 11-19. Requires a microphone for spoken turns; there is no Check button and no typed numeric substitute for speech. Counter and equation work closes on stillness. Missing Part records independent, counter-supported, and revealed paths. Related Facts requires unequal positive parts and preserves its two linked spoken outcomes. Build Equation requires arithmetic validity, the bond numbers, and a match to the committed action. Fact Family requires four distinct forms for unequal parts and two for equal parts; reversing the sides of = is equivalent notation, not an extra form. Kindergarten supports decompose, missing-part, related-fact and ten-and-ones; symbolic modes remain Grade 1.',
@@ -3712,6 +3812,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'stops. When only the first group is in the picture, tell that part of the story, then use present to bring '
         + 'in the ones that join. Before an attempt never say the answer or count the objects for the child. Hear the '
         + 'story again asks you to repeat the story and question only. You cannot add, remove or place anything.',
+      // The activity's own check of a picture or number sentence (`addSubMiss`); the spoken items name none yet (Part B).
+      misses: missLists<AddSubMiss>({
+        act_out: ['no_change', 'wrong_way', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        create_story: ['no_change', 'wrong_way', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        build_equation: ['unfinished_equation', 'false_equation', 'other_operation', 'other_numbers'],
+      }),
     },
   },
   {
@@ -3724,6 +3830,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'number said alone (three for third) is not the answer; where it is a name, a pointing word such as "that one" is not. '
         + 'The line checks a build itself once the learner stops touching, whether or not every place is filled; talk about a '
         + 'part-built line is teaching, not a verdict. You cannot move, place, mark or count the pictures.',
+      // The line's own check of a build (`lineMiss`); the four spoken modes name none yet (Part B).
+      misses: missLists<LineMiss>({ build_sequence: ['place_left_empty', 'reversed', 'two_swapped', 'other_order'] }),
     },
     misconceptionScope: 'primitive',
     description: 'Live tutor-judged ordinal positions (DI modality) on a line of characters in a race, parade, lunch line, train or bookshelf. The Live tutor names which end is the FRONT, asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill and the grade: at Kindergarten they SAY THE NAME of the one in the place the tutor asks for, and at Grade 1 the tutor names a character and they SAY ITS PLACE (identify — one eval mode, band-split, because naming the place is the harder rung and is the vocabulary the standard is about); they READ ONE PLACE SYMBOL ALOUD, one card at a time (match); they SAY THE NAME of the one right before or right after a marked place (relative-position); they LISTEN to a spoken story and SAY the place one character has in it (sequence-story); and they answer WITH THEIR HANDS by putting pictures into places from spoken clues (build-sequence) — there the arrangement IS the answer. Builds the ordinal vocabulary first through tenth by SAYING it. ESSENTIAL for Kindergarten and Grade 1 number sense.',
@@ -4529,6 +4637,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'never hurry the learner, and let them think. Before the learner has checked, never say the answer, how many a '
         + 'picture shows, or which choice matches; coach only as far as the support tier allows (count the picture, count '
         + 'on from the bigger number, think backwards from the total). You cannot tap or enter a number for the learner.',
+      // The activity's own check (`mathFactMiss`), every mode.
+      misses: sameMisses<MathFactMiss>(['visual_fact', 'match', 'equation_solve', 'missing_number', 'speed_round'],
+        ['other_operation', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
     },
   },
   {
@@ -4560,6 +4671,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'learner has checked, never say the answer or where a picture ends; on a match item never name the strategy the '
         + 'solution used. Coach only as far as the support tier allows. A compare item has no wrong answer: ask why they '
         + 'chose. You cannot press a button for the learner.',
+      // The picker's own check (`strategyPickerMiss`); compare credits every choice, so it names none.
+      misses: missLists<StrategyPickerMiss>({
+        guided: ['other_operation', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        try_another: ['other_operation', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        choose: ['other_operation', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        match: ['similar_strategy', 'different_strategy'],
+      }),
     },
     evalModes: [
       {
@@ -4611,6 +4729,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       guidance: 'The learner writes the numeral on the canvas with a finger and presses Check; the canvas checks the writing '
         + 'itself, and talk about a half-written numeral is teaching, not a verdict. On a missing-number item the missing number '
         + 'is the answer: never say, trace or describe it. You cannot draw, trace or clear.',
+      // The canvas's own check (`numberTracerMiss`), every mode.
+      misses: sameMisses<NumberTracerMiss>(['trace', 'copy', 'write', 'sequence'],
+        ['other_numeral', 'digits_swapped', 'not_readable', 'poorly_formed', 'part_left_out', 'shape_off']),
     },
     misconceptionScope: 'skill',
     observationDelivery: 'server',
@@ -5097,6 +5218,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'the learner says where the object is from the YOU arrow, naming the relation and the other object; left '
         + 'and right are as the learner sees them, and in front of means nearer the arrow. Never give the relation '
         + 'before an attempt. You cannot pick, tap or place for the learner.',
+      // The scene's own check (`spatialMiss`). `place` names none: its challenge stores only the target cell.
+      misses: missLists<SpatialMiss>({
+        identify: ['opposite_word', 'same_axis_word', 'other_axis_word'],
+        describe: ['opposite_word', 'same_axis_word', 'other_axis_word'],
+        place_in: ['other_object', 'next_to_container', 'away_from_container'],
+        place_between: ['next_to_one', 'touches_neither'],
+        follow_directions: ['later_step_cell', 'other_cell'],
+      }),
     },
     evalModes: [
       {
@@ -5373,6 +5502,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'the equation is true, the value of either side, an equation to build, or which number goes first; coach only as far as the support tier '
         + 'allows. Talk about = as "the same amount on both sides", never "the answer is". You cannot place a tile, pick '
         + 'or type for the learner.',
+      // The builder's own check (`equationBuilderMiss`), every mode.
+      misses: missLists<EquationBuilderMiss>({
+        'build-simple': ['unfinished_equation', 'false_equation', 'other_operation', 'other_numbers'],
+        'missing-result': ['printed_number', 'sum_of_printed', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        'missing-operand': ['printed_number', 'sum_of_printed', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        'true-false': ['said_true', 'said_false'],
+        'balance-both-sides': ['other_side_total', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        rewrite: ['unfinished_equation', 'false_equation', 'same_as_printed', 'other_form', 'other_numbers'],
+      }),
     },
     evalModes: [
       {
@@ -5440,6 +5578,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'how heavy, how much it holds) are as right as the grown-up word. Under compare_two the answer is one object\'s name; '
         + 'a pointing word such as "that one" is not an answer. Under non_standard, counting aloud is working; the number the '
         + 'learner lands on is the answer. You cannot touch, reorder or measure the objects.',
+      // The board's own check of an ordering (`compareOrderMiss`); the three spoken modes name none yet (Part B).
+      misses: missLists<CompareOrderMiss>({ order_three: ['not_all_placed', 'reversed', 'two_swapped', 'other_order'] }),
     },
     misconceptionScope: 'primitive',
     description: 'Live tutor-taught measurement comparison on drawings of real-world objects. The Live tutor teaches each item in its own words; the child\'s answer is checked (an ordering by the board itself, a spoken answer from the tutor\'s feedback) and a checked answer advances the lesson. What the child produces depends on the skill: they SAY OUT LOUD what the picture lets us measure — how long, how tall, how heavy, or how much it holds (identify-attribute, both grades); they SAY THE NAME of the object that is longer, taller, heavier or holds more (compare-two, both grades); they SAY THE COUNT of non-standard units laid along an object (non-standard, Grade 1); and they answer WITH THEIR HANDS by touching three objects in order (order-three, Grade 1) — there the arrangement IS the answer. Builds the measurement vocabulary K.MD.1 asks children to SPEAK. ESSENTIAL for Kindergarten and Grade 1 measurement and data (K.MD.1-2).',

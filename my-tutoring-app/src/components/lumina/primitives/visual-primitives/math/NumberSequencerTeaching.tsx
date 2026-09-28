@@ -27,7 +27,7 @@ import { useTeachingWorkspace, type TeachingItem, type TeachingWorkspace }
 import { useTeachingEvaluation } from '../../../components/live-activity/runtime/useTeachingEvaluation';
 import type { NumberSequencerMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
-import { buildSequencerItems, sameOrder, targetSlot, workspaceAssignment, workspaceScene,
+import { buildSequencerItems, orderMiss, sameOrder, targetSlot, workspaceAssignment, workspaceScene,
   type SequencerItem } from './numberSequencerDomain';
 import type { NumberSequencerChallenge, NumberSequencerData } from './NumberSequencer';
 
@@ -43,7 +43,7 @@ const MODE_LABEL: Record<NumberSequencerChallenge['type'], string> = {
   'count-from': 'Count From', 'spot-error': 'Spot the Error', 'decade-fill': 'Decade Fill',
 };
 
-export default function NumberSequencerTeaching({ data, className, runtimePlanItemId, runtimeEvalMode }: NumberSequencerTeachingProps) {
+export default function NumberSequencerTeaching({ data, className, runtimePlanItemId }: NumberSequencerTeachingProps) {
   const { items } = useMemo(() => buildSequencerItems(data.challenges ?? []), [data.challenges]);
   if (!items.length) {
     return <LuminaCard className={className}><LuminaCardContent>
@@ -51,16 +51,15 @@ export default function NumberSequencerTeaching({ data, className, runtimePlanIt
     </LuminaCardContent></LuminaCard>;
   }
   return <TrainWorkspace key={data.instanceId} data={data} items={items} className={className}
-    runtimePlanItemId={runtimePlanItemId} runtimeEvalMode={runtimeEvalMode} />;
+    runtimePlanItemId={runtimePlanItemId} />;
 }
 
-function TrainWorkspace({ data, items, className, runtimePlanItemId, runtimeEvalMode }:
+function TrainWorkspace({ data, items, className, runtimePlanItemId }:
   NumberSequencerTeachingProps & { items: SequencerItem[] }) {
   const instance = useRef(data.instanceId || `number-sequencer-${Date.now()}`);
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [marks, mark] = useState<string[]>([]);
   const [placed, setPlaced] = useState<number[]>([]);
-  const evalMode = runtimeEvalMode || 'count_from';
 
   const assignments = useMemo<TeachingItem[]>(() => items.map(item => ({
     ...workspaceAssignment(item),
@@ -70,11 +69,11 @@ function TrainWorkspace({ data, items, className, runtimePlanItemId, runtimeEval
   })), [items]);
 
   const lesson = useTeachingWorkspace({ instanceId: instance.current, primitiveId: 'number-sequencer',
-    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, evalMode, items: assignments, workspace,
+    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, items: assignments, workspace,
     onItemOpened: () => setPlaced([]) });
 
   const evaluation = useTeachingEvaluation<NumberSequencerMetrics>({ primitiveType: 'number-sequencer',
-    instanceId: instance.current, data, assignments, lesson, evalMode,
+    instanceId: instance.current, data, assignments, lesson,
     metrics: result => {
       const scores = new Map(result.outcomes.map(o => [o.id, o.score]));
       const accuracy = (type: NumberSequencerChallenge['type']) => {
@@ -103,17 +102,15 @@ function TrainWorkspace({ data, items, className, runtimePlanItemId, runtimeEval
     workspace.current = {
       ...workspaceScene(item, { shown, placed }),
       demonstration: marks,
-      readyForResponse: true, canDemonstrate: true, canPresent: false,
-      mark, clearPresentation: () => mark([]),
+      canDemonstrate: true, mark, clearPresentation: () => mark([]),
     };
-    lesson.publishWorkspace();
   });
 
   const changeOrder = (next: number[], sound: 'place' | 'remove') => {
     if (!gesture || !lesson.canAttempt) return;
     if (sound === 'place') SoundManager.snap(); else SoundManager.tap();
     setPlaced(next);
-    if (next.length === item.answerOrder.length) lesson.submitGestureResponse(next.join(','));
+    if (next.length === item.answerOrder.length) lesson.submitGestureResponse(next.join(','), orderMiss(item, next));
   };
 
   const summary = lesson.summary;

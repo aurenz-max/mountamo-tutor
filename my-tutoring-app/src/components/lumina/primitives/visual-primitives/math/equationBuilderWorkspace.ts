@@ -81,6 +81,62 @@ export function equationBuilderMatches(c: EquationBuilderChallenge, v: EquationB
   }
 }
 
+/**
+ * What a wrong Check shows (`TeachingAttempt.miss`, handoff 20), from the same work the check reads:
+ * - tiles (build, rewrite): `unfinished_equation` (not two sides around one =), `false_equation` (the sides
+ *   differ), `other_operation` (true, the target's numbers with the other sign), `other_numbers` (true, other
+ *   numbers); rewrite also `same_as_printed` (the printed equation again) and `other_form` (true, the printed
+ *   numbers, not a form this item accepts);
+ * - a number (missing-value, balance): `printed_number` (one already in the equation), `sum_of_printed`
+ *   (missing-value: the printed numbers added), `other_side_total` (balance: the value of the side with no ?),
+ *   then `one_short` / `one_over` / `short_by_more` / `over_by_more`;
+ * - true-false: `said_true` (True for a false equation), `said_false`.
+ */
+export type EquationBuilderMiss = 'unfinished_equation' | 'false_equation' | 'other_operation' | 'other_numbers'
+  | 'same_as_printed' | 'other_form' | 'printed_number' | 'sum_of_printed' | 'other_side_total'
+  | 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more' | 'said_true' | 'said_false';
+
+const numbersIn = (text: string) => (text.match(/\d+/g) ?? []).map(Number);
+const sameNumbers = (a: string, b: string) => numbersIn(a).sort((x, y) => x - y).join() === numbersIn(b).sort((x, y) => x - y).join();
+/** Two sides around one =, each a number or number op number, whether or not it is true. */
+const isEquationShape = (text: string) => /^\d+([+\-−]\d+)?=\d+([+\-−]\d+)?$/.test(text.replace(/\s+/g, ''));
+
+const numberMiss = (got: number, want: number, printed: number[], extra?: { id: EquationBuilderMiss; value: number | null }) => {
+  if (got === want) return undefined;
+  if (extra && extra.value === got) return extra.id;
+  if (printed.includes(got)) return 'printed_number';
+  return got === want - 1 ? 'one_short' : got === want + 1 ? 'one_over' : got < want ? 'short_by_more' : 'over_by_more';
+};
+
+export function equationBuilderMiss(c: EquationBuilderChallenge | null, v: EquationBuilderView): EquationBuilderMiss | undefined {
+  if (!c || equationBuilderMatches(c, v)) return undefined;
+  switch (c.type) {
+    case 'build':
+    case 'rewrite': {
+      const built = v.slots.join(' ');
+      if (!isEquationShape(built)) return 'unfinished_equation';
+      if (!evaluateEquation(built.replace(/−/g, '-'))) return 'false_equation';
+      const source = (c.type === 'build' ? c.targetEquation : c.originalEquation) ?? '';
+      if (c.type === 'rewrite' && built.replace(/\s+/g, '') === source.replace(/\s+/g, '')) return 'same_as_printed';
+      if (!sameNumbers(built, source)) return 'other_numbers';
+      return c.type === 'rewrite' ? 'other_form' : 'other_operation';
+    }
+    case 'missing-value': {
+      if (v.option === null || c.correctValue === undefined) return undefined;
+      const printed = numbersIn(c.equation ?? '');
+      return numberMiss(v.option, c.correctValue, printed, { id: 'sum_of_printed', value: printed.reduce((a, b) => a + b, 0) });
+    }
+    case 'balance': {
+      const got = parseInt(v.entry, 10);
+      if (isNaN(got) || c.correctAnswer === undefined) return undefined;
+      const known = [c.leftSide, c.rightSide].find(s => s && !s.includes('?'));
+      return numberMiss(got, c.correctAnswer, numbersIn(`${c.leftSide} ${c.rightSide}`),
+        { id: 'other_side_total', value: known ? evalSide(known.replace(/\s+/g, '').replace(/−/g, '-')) : null });
+    }
+    case 'true-false': return v.truth === null ? undefined : v.truth ? 'said_true' : 'said_false';
+  }
+}
+
 /** The learner's checked work in their terms, never the key. */
 export function describeEquationBuilderCheck(c: EquationBuilderChallenge, v: EquationBuilderView): string {
   switch (c.type) {

@@ -314,7 +314,7 @@ const EraSourceCard: React.FC<{
 // Component
 // ============================================================================
 
-const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
+const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runtimePlanItemId }) => {
   const {
     title,
     eraName,
@@ -419,7 +419,6 @@ const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runti
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || items[0]?.kind || 'era_sort',
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: () => {
@@ -439,9 +438,7 @@ const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runti
   useLayoutEffect(() => {
     const item = runner.currentItem;
     if (!item) return;
-    workspace.current = { ...eraScene(item, data, sourceVisible, isPreReader), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...eraScene(item, data, sourceVisible, isPreReader) };
   });
 
   const showReveal = runner.revealHeld && reveal !== null;

@@ -4,6 +4,7 @@ import React from 'react';
 import { useLiveRuntime } from './LiveRuntimeContext';
 import { catalogBindsWorkspace } from '../pinnedModes';
 import { NeedsTutor } from './NeedsTutor';
+import { WorkspacePin } from './workspacePin';
 
 /**
  * The one rule for which component a workspace family mounts: inside a live
@@ -14,14 +15,15 @@ import { NeedsTutor } from './NeedsTutor';
  * flattened interaction label — without it this falls back to the drill rather than
  * putting a second teaching clock beside the tutor's.
  *
- * `modes` is the family's own workspace-mode list, the same constant its live
- * adapter publishes, so the route and the mount cannot disagree.
+ * A bound mount runs under `WorkspacePin`: the workspace hooks below read the lesson's pin from it,
+ * so no primitive passes (or rebuilds) an eval mode of its own.
  */
 export function withTeachingWorkspace<T, P extends T & { runtimeEvalMode?: string }>(primitiveId: string,
   Teaching: React.ComponentType<T>, Scripted: React.ComponentType<P>): React.FC<P> {
   const Switched: React.FC<P> = props => {
     const runtime = useLiveRuntime();
-    return runtime && catalogBindsWorkspace(primitiveId, props.runtimeEvalMode) ? <Teaching {...props} /> : <Scripted {...props} />;
+    return runtime && catalogBindsWorkspace(primitiveId, props.runtimeEvalMode)
+      ? <WorkspacePin pin={props.runtimeEvalMode}><Teaching {...props} /></WorkspacePin> : <Scripted {...props} />;
   };
   Switched.displayName = `withTeachingWorkspace(${Scripted.displayName || Scripted.name || 'Primitive'})`;
   return Switched;
@@ -40,8 +42,9 @@ export function withWorkspaceController<P extends { runtimeEvalMode?: string }, 
     const runtime = useLiveRuntime();
     // The catalog's `teachingWorkspace` declaration decides, so the route and this switch agree.
     const tutorOwned = !!runtime && catalogBindsWorkspace(primitiveId, props.runtimeEvalMode);
-    return <Surface key={tutorOwned ? 'tutor' : 'scripted'} {...props} tutorOwned={tutorOwned}
+    const surface = <Surface key={tutorOwned ? 'tutor' : 'scripted'} {...props} tutorOwned={tutorOwned}
       useController={tutorOwned ? useWorkspace : useScripted} />;
+    return tutorOwned ? <WorkspacePin pin={props.runtimeEvalMode}>{surface}</WorkspacePin> : surface;
   };
   Switched.displayName = `withWorkspaceController(${Surface.displayName || Surface.name || 'Primitive'})`;
   return Switched;
@@ -56,7 +59,8 @@ export function withWorkspaceOnly<P extends { runtimeEvalMode?: string; classNam
   Surface: React.ComponentType<P>, title: (props: P) => string | undefined): React.FC<P> {
   const Bound: React.FC<P> = props => {
     const runtime = useLiveRuntime();
-    return runtime && catalogBindsWorkspace(primitiveId, props.runtimeEvalMode) ? <Surface {...props} />
+    return runtime && catalogBindsWorkspace(primitiveId, props.runtimeEvalMode)
+      ? <WorkspacePin pin={props.runtimeEvalMode}><Surface {...props} /></WorkspacePin>
       : <NeedsTutor primitiveId={primitiveId} evalMode={props.runtimeEvalMode} title={title(props) || 'Activity'}
         className={props.className} />;
   };

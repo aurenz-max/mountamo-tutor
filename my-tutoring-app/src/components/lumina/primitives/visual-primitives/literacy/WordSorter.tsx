@@ -186,7 +186,7 @@ const MAT_COLORS = ['text-violet-300', 'text-sky-300', 'text-emerald-300'];
 // Component
 // ============================================================================
 
-function WordSorterSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: WordSorterProps) {
+function WordSorterSurface({ data, className, runtimePlanItemId }: WordSorterProps) {
   const {
     title,
     gradeLevel = 'K',
@@ -265,7 +265,6 @@ function WordSorterSurface({ data, className, runtimePlanItemId, runtimeEvalMode
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || items[0]?.mode || 'binary_sort',
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onAffirmed: (item) => {
@@ -282,9 +281,7 @@ function WordSorterSurface({ data, className, runtimePlanItemId, runtimeEvalMode
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...wordSorterScene(currentItem), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...wordSorterScene(currentItem) };
   });
 
   /** Asks the tutor for the question again: a silent host request, never the answer. */

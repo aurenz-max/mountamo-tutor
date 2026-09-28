@@ -39,7 +39,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { describeComparison, workspaceAssignment, workspaceScene } from './comparisonBuilderWorkspace';
+import { comparisonMiss, describeComparison, workspaceAssignment, workspaceScene } from './comparisonBuilderWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -341,7 +341,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || challenges[0]?.type || 'compare', workspace, assignment: workspaceAssignment,
+    workspace, assignment: workspaceAssignment,
     onItemOpened: (_index, retry) => openItem.current(retry),
   });
   const {
@@ -350,7 +350,6 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
     advance: advanceProgress,
   } = progress;
   /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
@@ -606,9 +605,8 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     const correct = answer === currentChallenge.correctAnswer;
     const leftCount = currentChallenge.leftGroup?.count ?? 0;
     const rightCount = currentChallenge.rightGroup?.count ?? 0;
-    incrementAttempts();
-    commitCheck.current?.(describeComparison(currentChallenge,
-      { selected: answer, ordered: [], oneMore: null, oneLess: null }), correct);
+    const view = { selected: answer, ordered: [], oneMore: null, oneLess: null };
+    commitCheck.current(describeComparison(currentChallenge, view), correct, comparisonMiss(currentChallenge, view));
 
     if (correct) {
       const answerWord = currentChallenge.correctAnswer === 'equal' ? 'the same as' : `${currentChallenge.correctAnswer === 'more' ? 'more' : 'fewer'} than`;
@@ -644,7 +642,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
 
     return correct;
   }, [
-    currentChallenge, selectedAnswer, incrementAttempts, noteWrongAnswer,
+    currentChallenge, selectedAnswer, noteWrongAnswer,
     showCorrespondenceLines, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause, runtimeAdvanceClause,
   ]);
 
@@ -669,11 +667,6 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
       const correct = checkCompareGroups(answer);
       if (correct) {
         SoundManager.playCorrect();
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: true,
-          attempts: currentAttempts + 1,
-        });
       } else {
         SoundManager.playIncorrect();
         // Rule-5: the wrong feedback lands on the tapped side (shake), not a text card.
@@ -696,9 +689,8 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     const selected = answerArg ?? (selectedAnswer as '<' | '>' | '=' | null);
     if (!currentChallenge || !selected) return false;
     const correct = selected === currentChallenge.correctSymbol;
-    incrementAttempts();
-    commitCheck.current?.(describeComparison(currentChallenge,
-      { selected, ordered: [], oneMore: null, oneLess: null }), correct);
+    const view = { selected, ordered: [], oneMore: null, oneLess: null };
+    commitCheck.current(describeComparison(currentChallenge, view), correct, comparisonMiss(currentChallenge, view));
 
     if (correct) {
       setFeedback(
@@ -732,7 +724,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     }
 
     return correct;
-  }, [currentChallenge, selectedAnswer, incrementAttempts, noteWrongAnswer, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause, runtimeAdvanceClause]);
+  }, [currentChallenge, selectedAnswer, noteWrongAnswer, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause, runtimeAdvanceClause]);
 
   // -------------------------------------------------------------------------
   // K tap=choose — compare-numbers. The pre-reader taps the BIGGER numeral
@@ -754,11 +746,6 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
       const correct = checkCompareNumbers(symbol);
       if (correct) {
         SoundManager.playCorrect();
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: true,
-          attempts: currentAttempts + 1,
-        });
       } else {
         SoundManager.playIncorrect();
         flashWrong(`num-${symbol}`);
@@ -781,9 +768,8 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     const correct =
       orderedNumbers.length === expected.length &&
       orderedNumbers.every((n, i) => n === expected[i]);
-    incrementAttempts();
-    commitCheck.current?.(describeComparison(currentChallenge,
-      { selected: null, ordered: orderedNumbers, oneMore: null, oneLess: null }), correct);
+    const view = { selected: null, ordered: orderedNumbers, oneMore: null, oneLess: null };
+    commitCheck.current(describeComparison(currentChallenge, view), correct, comparisonMiss(currentChallenge, view));
 
     // Zone-state flash off the same grading result (visual only). Settles at 900 ms.
     if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current);
@@ -818,7 +804,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     }
 
     return correct;
-  }, [currentChallenge, orderedNumbers, incrementAttempts, noteWrongAnswer, currentAttempts, sendText, tutorRevealClause, runtimeAdvanceClause]);
+  }, [currentChallenge, orderedNumbers, noteWrongAnswer, currentAttempts, sendText, tutorRevealClause, runtimeAdvanceClause]);
 
   // -------------------------------------------------------------------------
   // Check Answer — one-more-one-less
@@ -831,7 +817,6 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     // wait for setState to flush; the Grade-1 Check path passes nothing.
     const moreVal = moreArg !== undefined ? moreArg : oneMoreAnswer;
     const lessVal = lessArg !== undefined ? lessArg : oneLessAnswer;
-    incrementAttempts();
 
     let correct = false;
     if (askFor === 'one-more') {
@@ -841,8 +826,8 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     } else {
       correct = moreVal === target + 1 && lessVal === target - 1;
     }
-    commitCheck.current?.(describeComparison(currentChallenge,
-      { selected: null, ordered: [], oneMore: moreVal, oneLess: lessVal }), correct);
+    const view = { selected: null, ordered: [], oneMore: moreVal, oneLess: lessVal };
+    commitCheck.current(describeComparison(currentChallenge, view), correct, comparisonMiss(currentChallenge, view));
 
     if (correct) {
       const parts: string[] = [];
@@ -881,7 +866,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     }
 
     return correct;
-  }, [currentChallenge, oneMoreAnswer, oneLessAnswer, incrementAttempts, noteWrongAnswer, currentAttempts, sendText, tutorRevealClause, runtimeAdvanceClause]);
+  }, [currentChallenge, oneMoreAnswer, oneLessAnswer, noteWrongAnswer, currentAttempts, sendText, tutorRevealClause, runtimeAdvanceClause]);
 
   // -------------------------------------------------------------------------
   // one-more-one-less DISAMBIGUATE — after the child answers ONE part of a
@@ -959,11 +944,6 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
       const correct = checkOneMoreOneLess(nextMore, nextLess);
       if (correct) {
         SoundManager.playCorrect();
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: true,
-          attempts: currentAttempts + 1,
-        });
       } else {
         SoundManager.playIncorrect();
         flashWrong(`${which}-${n}`);
@@ -1000,11 +980,6 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
 
     if (correct) {
       SoundManager.playCorrect();
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
     } else {
       SoundManager.playIncorrect();
     }
@@ -1192,9 +1167,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
   useLayoutEffect(() => {
     if (!tutorOwned || !currentChallenge) return;
     workspace.current = { ...workspaceScene(currentChallenge, { selected: selectedAnswer, ordered: orderedNumbers,
-      oneMore: oneMoreAnswer, oneLess: oneLessAnswer, shuffled: shuffledNumbers, countsShown: showCountBadges && !isK }),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    progress.publishWorkspace?.();
+      oneMore: oneMoreAnswer, oneLess: oneLessAnswer, shuffled: shuffledNumbers, countsShown: showCountBadges && !isK }) };
   });
 
   // Auto-submit when all complete

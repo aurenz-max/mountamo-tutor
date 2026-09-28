@@ -101,9 +101,8 @@ export interface DiDeductionProps {
 /** PLATFORM PROP CONTRACT: registry primitives mount as `<Component data={…} index={…} />`. */
 export const DiDeduction: React.FC<DiDeductionProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const items = useMemo(() => deductionItems(data), [data]);
-  const evalMode = runtimeEvalMode || data.challengeType || 'conclude';
   return <DiTeachingStage<DeductionItem, DiDeductionMetrics> primitiveId="di-deduction" data={data}
-    items={items} evalMode={evalMode} className={className} runtimePlanItemId={runtimePlanItemId}
+    items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
     assignment={deductionAssignment} scene={deductionScene} copy={COPY} stimulus={stimulus} trail={ledger}
     recapLabel={recapLabel} counter={ruleCounter}
     metrics={result => {

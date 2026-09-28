@@ -262,7 +262,7 @@ interface RevealPayload {
 // Component
 // ============================================================================
 
-const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
+const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, className, runtimePlanItemId }) => {
   const {
     title,
     description,
@@ -368,7 +368,6 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || items[0]?.kind || 'build_chain',
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: (item) => resetBoard(item),
@@ -384,9 +383,7 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
   useLayoutEffect(() => {
     const item = runner.currentItem;
     if (!item) return;
-    workspace.current = { ...causeEffectScene(item, context, placedRef.current), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...causeEffectScene(item, context, placedRef.current) };
   });
 
   const showReveal = runner.revealHeld && reveal !== null;

@@ -180,3 +180,4 @@ sort, 0.683) is fully served today — the other close matches are gaps:
   draws, all three bins in 4/4 challenges each, 6 objects, pictures on every tile; content
   checks green on both saved probe draws; suites 5/5 new + 11/11 existing;
   `typecheck:lumina` 0. Not verified: any browser run.
+- 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). The scripted runtime registration keeps its mode as `scriptedEvalMode` until that path is deleted. Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.

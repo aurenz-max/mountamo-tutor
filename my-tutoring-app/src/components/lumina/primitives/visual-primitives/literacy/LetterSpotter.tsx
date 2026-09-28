@@ -183,7 +183,7 @@ interface LetterSpotterProps {
 // Component
 // ============================================================================
 
-function LetterSpotterSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: LetterSpotterProps) {
+function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpotterProps) {
   const {
     title,
     letterGroup,
@@ -305,7 +305,6 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId, runtimeEvalM
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
     // Catalog modes are underscored (`name_it`); the item's mode is hyphenated (`name-it`).
-    evalMode: runtimeEvalMode || (items[0]?.mode ?? 'name-it').replace('-', '_'),
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: () => {
@@ -355,9 +354,7 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId, runtimeEvalM
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...letterSpotterScene(currentItem), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...letterSpotterScene(currentItem) };
   });
 
   /** Asks the tutor for the question again: a silent host request, never the answer. */

@@ -570,7 +570,7 @@ const MatterLab: React.FC<{
 
 type SurfaceProps = StatesOfMatterProps & { items: StatesOfMatterItem[] };
 
-const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className, runtimePlanItemId, runtimeEvalMode }) => {
+const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className, runtimePlanItemId }) => {
   const {
     title,
     particleConfig,
@@ -653,7 +653,6 @@ const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className,
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || (items[0]?.challengeType ?? 'observe'),
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: () => setReveal(null),
@@ -680,9 +679,7 @@ const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className,
   useLayoutEffect(() => {
     const item = runner.currentItem;
     if (!item) return;
-    workspace.current = { ...statesScene(item), demonstration: [], canDemonstrate: false, canPresent: false,
-      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...statesScene(item) };
   });
 
   /**

@@ -292,7 +292,15 @@ The 2026-06-07 curriculum-fit sweep scored this entry **0.766 "diffuse"** and fl
 
 ## Changelog
 
-- **2026-09-09 (latest)** — **C2 RESOLVED → R16 + `spatial-path` fork.** Added
+- **2026-09-27 (latest)** — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Its checks now call `commitCheck`, which counts the attempt and records the correct result on both paths; its own attempt counter and base-only result records are deleted (slice 4). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
+- **2026-09-27** — the checks name their miss (handoff 20 Part A): `spatialMiss` in
+  `spatialSceneWorkspace.ts` reads the chosen word or cell against the scene's geometry and is passed to
+  `commitCheck`; the catalog lists it for identify/describe/place_in/place_between/follow_directions.
+  No content, check verdict or rendering changed. Edit guard: **COMPATIBLE** (R1–R16 untouched).
+  `place` names none because its challenge stores only `correctCell`, not the reference or the word; that
+  also leaves R3's "any vertical distance" for `above`/`below` unenforced there (only the LLM's one cell
+  is credited), queued for `/eval-fix`.
+- **2026-09-09** — **C2 RESOLVED → R16 + `spatial-path` fork.** Added
   `describe_scene` (β 4.5) through shared `resolveEvalModes`, a fixed YOU viewpoint,
   code-owned left/right/front/behind geometry, and a judged spoken script that requires
   both the relation and reference object. Existing `identify`, `place`, `describe`,

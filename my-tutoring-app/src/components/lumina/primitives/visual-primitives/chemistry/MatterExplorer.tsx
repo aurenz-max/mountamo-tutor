@@ -357,7 +357,7 @@ const MatterExplorerShelf: React.FC<MatterExplorerProps> = ({ data, className })
 
 type SurfaceProps = MatterExplorerProps & { items: MatterExplorerItem[] };
 
-const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className, runtimePlanItemId, runtimeEvalMode }) => {
+const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className, runtimePlanItemId }) => {
   const { skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
   const resolvedInstanceId = data.instanceId ?? 'matter-explorer';
   const safeTitle = safeTitleOf(data.title);
@@ -421,7 +421,6 @@ const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className,
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || (items[0]?.challengeType ?? 'sort'),
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: () => setReveal(null),
@@ -444,9 +443,7 @@ const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className,
   useLayoutEffect(() => {
     const item = runner.currentItem;
     if (!item) return;
-    workspace.current = { ...matterScene(item), demonstration: [], canDemonstrate: false, canPresent: false,
-      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...matterScene(item) };
   });
 
   // ── Phase summary ─────────────────────────────────────────────────────────

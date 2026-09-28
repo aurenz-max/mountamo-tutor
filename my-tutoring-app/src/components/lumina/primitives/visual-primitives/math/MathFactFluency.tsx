@@ -23,7 +23,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import {
-  describeMathFactCheck, formatMathFact, mathFactAssignment, mathFactMatches, mathFactScene,
+  describeMathFactCheck, formatMathFact, mathFactAssignment, mathFactMatches, mathFactMiss, mathFactScene,
   type MathFactResponse,
 } from './mathFactFluencyWorkspace';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
@@ -232,7 +232,7 @@ const useMathFactProgress = useWorkspaceProgressFor('math-fact-fluency');
 // Component
 // ============================================================================
 
-function MathFactFluencySurface({ data, className, runtimePlanItemId, runtimeEvalMode }: MathFactFluencyProps) {
+function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFactFluencyProps) {
   const {
     title,
     description,
@@ -262,7 +262,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId, runtimeEva
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || 'mixed', workspace, assignment: mathFactAssignment,
+    workspace, assignment: mathFactAssignment,
     onItemOpened: (_index, retry) => reopen.current(retry),
   });
   const {
@@ -271,7 +271,6 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId, runtimeEva
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
   } = progress;
   const canAttempt = progress.canAttempt !== false;
 
@@ -352,7 +351,6 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId, runtimeEva
     const responseTime = Date.now() - openedAt.current;
     const responseTimeSec = responseTime / 1000;
 
-    incrementAttempts();
     setTotalAnswered(prev => prev + 1);
     setResponseTimes(prev => [...prev, responseTimeSec]);
 
@@ -380,7 +378,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId, runtimeEva
       setFeedback('Not quite.');
       setFeedbackType('error');
     }
-    progress.commitCheck?.(describeMathFactCheck(currentChallenge, response), correct);
+    progress.commitCheck(describeMathFactCheck(currentChallenge, response), correct, mathFactMiss(currentChallenge, response));
   };
 
   const handleSelectOption = (value: number) => {
@@ -439,9 +437,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId, runtimeEva
   // alone, so opening an item adds no revision after the advance.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    workspace.current = { ...mathFactScene(currentChallenge, { maxNumber }), demonstration: [],
-      canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    progress.publishWorkspace?.();
+    workspace.current = { ...mathFactScene(currentChallenge, { maxNumber }) };
   });
 
   // -------------------------------------------------------------------------

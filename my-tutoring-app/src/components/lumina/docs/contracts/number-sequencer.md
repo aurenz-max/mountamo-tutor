@@ -200,3 +200,6 @@ the workspace: the observer's committed outcome advances, JEV refuses unearned c
 `order-cards` is checked by code when the last card lands. A blended section still records
 the evaluation mode it recorded before (`default`); per-mode recording is queued as a
 student-data slice. Evidence: `qa/tutor-reports/number-sequencer-blend-pin-2026-09-21.json`.
+- 2026-09-27 — a wrong order-cards arrangement names its miss (`orderMiss` in `numberSequencerDomain.ts`,
+  handoff 20 A2). Compatible: no requirement changed, no verdict changed (the miss runs after `sameOrder`).
+- 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.

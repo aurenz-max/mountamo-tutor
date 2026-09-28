@@ -68,6 +68,8 @@ describe.each(PAYLOADS)('$primitiveId $evalMode (saved payload)', ({ primitiveId
     const h = mountWorkspace({ primitiveId, evalMode, data });
     const s = h.state();
     expect(s.owner).toBe('tutor');
+    // The mount carries the lesson's pin (`workspacePin.ts`), never a mode rebuilt from the first item.
+    expect(s.evalMode, 'the mounted mode is not the lesson pin').toBe(evalMode);
     expect(s.task?.task?.trim(), 'the first item has no task').toBeTruthy();
     expect(s.task!.task).not.toMatch(CUE_PROTOCOL);
     const key = s.task!.workspace?.expectedAnswer;

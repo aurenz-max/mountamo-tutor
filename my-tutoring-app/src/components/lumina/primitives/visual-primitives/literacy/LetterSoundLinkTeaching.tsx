@@ -64,7 +64,7 @@ const MODE_BADGE: Record<LetterSoundMode, string> = {
   'see-hear': 'Say the sound', 'hear-see': 'Tap the letter', 'keyword-match': 'Say the word',
 };
 
-export default function LetterSoundLinkTeaching({ data, className, runtimePlanItemId, runtimeEvalMode }: LetterSoundLinkTeachingProps) {
+export default function LetterSoundLinkTeaching({ data, className, runtimePlanItemId }: LetterSoundLinkTeachingProps) {
   const tier: LetterSoundTier = data.supportTier ?? 'medium';
   const items = useMemo(() => buildLetterSoundLinkItems(data.challenges ?? [], tier), [data.challenges, tier]);
   if (!items.length) {
@@ -73,16 +73,15 @@ export default function LetterSoundLinkTeaching({ data, className, runtimePlanIt
     </LuminaCardContent></LuminaCard>;
   }
   return <LinkWorkspace key={data.instanceId} data={data} items={items} className={className}
-    runtimePlanItemId={runtimePlanItemId} runtimeEvalMode={runtimeEvalMode} />;
+    runtimePlanItemId={runtimePlanItemId} />;
 }
 
-function LinkWorkspace({ data, items, className, runtimePlanItemId, runtimeEvalMode }:
+function LinkWorkspace({ data, items, className, runtimePlanItemId }:
   LetterSoundLinkTeachingProps & { items: LetterSoundItem[] }) {
   const instance = useRef(data.instanceId || `letter-sound-link-${Date.now()}`);
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [marks, mark] = useState<string[]>([]);
   const [tapped, setTapped] = useState<string | null>(null);
-  const evalMode = runtimeEvalMode || 'see_hear';
 
   const assignments = useMemo<TeachingItem[]>(() => items.map(item => ({
     ...workspaceAssignment(item),
@@ -92,11 +91,11 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId, runtimeEvalM
   })), [items]);
 
   const lesson = useTeachingWorkspace({ instanceId: instance.current, primitiveId: 'letter-sound-link',
-    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, evalMode, items: assignments, workspace,
+    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, items: assignments, workspace,
     onItemOpened: () => setTapped(null) });
 
   const evaluation = useTeachingEvaluation<LetterSoundLinkMetrics>({ primitiveType: 'letter-sound-link',
-    instanceId: instance.current, data, assignments, lesson, evalMode,
+    instanceId: instance.current, data, assignments, lesson,
     metrics: result => {
       const solved = new Set(result.outcomes.filter(o => o.solved).map(o => o.id));
       const rate = (predicate: (item: LetterSoundItem) => boolean) => {
@@ -135,10 +134,8 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId, runtimeEvalM
     workspace.current = {
       ...workspaceScene(item, tapped),
       demonstration: marks,
-      readyForResponse: true, canDemonstrate: !gesture, canPresent: false,
-      mark, clearPresentation: () => mark([]),
+      canDemonstrate: !gesture, mark, clearPresentation: () => mark([]),
     };
-    lesson.publishWorkspace();
   });
 
   const tapLetter = (letter: string) => {

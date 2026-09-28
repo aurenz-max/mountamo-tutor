@@ -114,7 +114,7 @@ const SLOT_LABEL_COLORS: Record<string, string> = {
 // Component
 // ============================================================================
 
-function WordBuilderSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: WordBuilderProps) {
+function WordBuilderSurface({ data, className, runtimePlanItemId }: WordBuilderProps) {
   const {
     title,
     targets = [],
@@ -192,7 +192,6 @@ function WordBuilderSurface({ data, className, runtimePlanItemId, runtimeEvalMod
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || complexity,
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onAffirmed: setRevealed,
@@ -211,9 +210,7 @@ function WordBuilderSurface({ data, className, runtimePlanItemId, runtimeEvalMod
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...wordBuilderScene(currentItem, availableParts), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...wordBuilderScene(currentItem, availableParts) };
   });
 
   /** Asks the tutor for the clue again: a silent host request, never the word. */

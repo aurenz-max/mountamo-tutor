@@ -123,7 +123,7 @@ const PATTERN_LABELS: Record<string, string> = {
 // Component
 // ============================================================================
 
-function PhonicsBlenderSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: PhonicsBlenderProps) {
+function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBlenderProps) {
   const {
     title,
     gradeLevel,
@@ -202,7 +202,6 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId, runtimeEval
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || patternType,
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: (item) => {
@@ -237,9 +236,7 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId, runtimeEval
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentWord) return;
-    workspace.current = { ...blendScene(currentWord, { segmentation }), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...blendScene(currentWord, { segmentation }) };
   });
 
   // ── Pip shared surface ───────────────────────────────────────────

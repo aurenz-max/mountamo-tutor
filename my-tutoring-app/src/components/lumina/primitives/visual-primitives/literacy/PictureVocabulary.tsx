@@ -157,7 +157,7 @@ const MODE_META: Record<PictureVocabChallengeType, { badge: string; icon: string
 // Component
 // ============================================================================
 
-function PictureVocabularySurface({ data, className, runtimePlanItemId, runtimeEvalMode }: PictureVocabularyProps) {
+function PictureVocabularySurface({ data, className, runtimePlanItemId }: PictureVocabularyProps) {
   const {
     title,
     challenges = [],
@@ -238,7 +238,6 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId, runtimeE
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || data.challengeType,
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: () => setTapped(null),
@@ -279,9 +278,7 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId, runtimeE
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...pictureVocabScene(currentItem), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...pictureVocabScene(currentItem) };
   });
 
   // ── The tap — gesture modes only; the tap IS the commit, checked by the activity ──

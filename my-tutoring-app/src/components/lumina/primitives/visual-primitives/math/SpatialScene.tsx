@@ -20,7 +20,7 @@ import type { SpatialSceneMetrics } from '../../../evaluation/types';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { describeSpatialCheck, hearSceneQuestionRequest, spatialAssignment, spatialScene } from './spatialSceneWorkspace';
+import { describeSpatialCheck, hearSceneQuestionRequest, spatialAssignment, spatialMiss, spatialScene } from './spatialSceneWorkspace';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -374,7 +374,7 @@ const useWorkspaceProgress = useWorkspaceProgressFor('spatial-scene');
 // Component
 // ============================================================================
 
-function SpatialSceneSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: SpatialSceneProps) {
+function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialSceneProps) {
   const {
     title,
     description,
@@ -402,7 +402,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId, runtimeEvalMo
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || 'mixed', workspace, assignment: spatialAssignment,
+    workspace, assignment: spatialAssignment,
     onItemOpened: (index, retry) => reopen.current(index, retry),
     onSolved: index => solvedSpoken.current(index),
   });
@@ -412,7 +412,6 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId, runtimeEvalMo
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
     advance: advanceProgress,
   } = progress;
   const canAttempt = progress.canAttempt !== false;
@@ -490,7 +489,6 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId, runtimeEvalMo
 
   const handleCheckIdentify = useCallback(() => {
     if (!currentChallenge || !selectedOption) return false;
-    incrementAttempts();
     const correct = selectedOption === currentChallenge.correctPosition;
 
     if (correct) {
@@ -504,12 +502,11 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId, runtimeEvalMo
       setFeedbackType('error');
     }
     return correct;
-  }, [currentChallenge, selectedOption, incrementAttempts]);
+  }, [currentChallenge, selectedOption]);
 
   /** Cell-judged modes: `place`, `place_in` (container's cell) and `place_between`. */
   const handleCheckPlace = useCallback(() => {
     if (!currentChallenge || !selectedCell) return false;
-    incrementAttempts();
     const target = currentChallenge.correctCell;
     const correct = target ? selectedCell.row === target.row && selectedCell.col === target.col : false;
 
@@ -536,11 +533,10 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId, runtimeEvalMo
       setSelectedCell(null);
     }
     return correct;
-  }, [currentChallenge, selectedCell, incrementAttempts]);
+  }, [currentChallenge, selectedCell]);
 
   const handleCheckDescribe = useCallback(() => {
     if (!currentChallenge || !selectedOption) return false;
-    incrementAttempts();
     const correct = selectedOption === currentChallenge.correctPosition;
 
     if (correct) {
@@ -554,7 +550,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId, runtimeEvalMo
       setFeedbackType('error');
     }
     return correct;
-  }, [currentChallenge, selectedOption, incrementAttempts]);
+  }, [currentChallenge, selectedOption]);
 
   const handlePlaceStep = useCallback((row: number, col: number) => {
     if (!currentChallenge || !currentChallenge.steps) return;
@@ -579,7 +575,6 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId, runtimeEvalMo
         SoundManager.playCorrect();
         setFeedback('Amazing! You followed all the directions!');
         setFeedbackType('success');
-        incrementAttempts();
         recordResult({
           challengeId: currentChallenge.id,
           correct: true,
@@ -587,16 +582,15 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId, runtimeEvalMo
           stepsCorrect: stepsCorrect + 1,
           stepsTotal: currentChallenge.steps.length,
         });
-        progress.commitCheck?.(response, true);
+        progress.commitCheck(response, true);
       }
     } else {
       SoundManager.playIncorrect();
       setFeedback(`Not quite. Read step ${currentStep + 1} again and look at the scene.`);
       setFeedbackType('error');
-      incrementAttempts();
-      progress.commitCheck?.(response, false);
+      progress.commitCheck(response, false, spatialMiss(currentChallenge, { cell: { row, col }, step: currentStep }));
     }
-  }, [currentChallenge, currentStep, stepsCorrect, currentAttempts, incrementAttempts, recordResult]);
+  }, [currentChallenge, currentStep, stepsCorrect, currentAttempts, recordResult]);
 
   // ── Master Check ───────────────────────────────────────────────────
   const handleCheckAnswer = useCallback(() => {
@@ -612,15 +606,8 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId, runtimeEvalMo
       case 'describe_scene': return; // spoken: the observer judges it
       case 'follow_directions': return; // handled step-by-step
     }
-    progress.commitCheck?.(describeSpatialCheck(currentChallenge, { option: selectedOption, cell: selectedCell }), correct);
-
-    if (correct) {
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-    }
+    const view = { option: selectedOption, cell: selectedCell };
+    progress.commitCheck(describeSpatialCheck(currentChallenge, view), correct, correct ? undefined : spatialMiss(currentChallenge, view));
   }, [currentChallenge, currentAttempts, handleCheckIdentify, handleCheckPlace, handleCheckDescribe, recordResult, progress, selectedOption, selectedCell]);
 
   // ── Advance ────────────────────────────────────────────────────────
@@ -748,9 +735,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId, runtimeEvalMo
   // so opening an item adds no revision after the advance. A spoken description is always answerable.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    workspace.current = { ...spatialScene(currentChallenge, { step: stepOwner.current === currentChallenge.id ? currentStep : 0 }), demonstration: [],
-      canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    progress.publishWorkspace?.();
+    workspace.current = { ...spatialScene(currentChallenge, { step: stepOwner.current === currentChallenge.id ? currentStep : 0 }) };
   });
   const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
   const pipTouch = (node: EventTarget) => {

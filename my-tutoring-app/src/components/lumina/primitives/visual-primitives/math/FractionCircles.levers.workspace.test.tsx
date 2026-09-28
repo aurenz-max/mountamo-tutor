@@ -12,6 +12,7 @@ import { LiveLessonRuntime } from '../../../components/live-activity/runtime/Liv
 import { LiveRuntimeContext } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
+import { observerLever } from '../../../components/live-activity/runtime/observerLever';
 
 const seam = vi.hoisted(() => ({ send: vi.fn() }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
@@ -173,4 +174,11 @@ it('touch_fraction: two_pictures opens another fraction with two pictures, then 
   expect(pictures()).toHaveLength(3);
   act(() => { fireEvent.click(h.view.container.querySelector('[data-pip-object="picture-3-of-4"]')!); });
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ itemId: 't0', correct: true, levers: ['two_pictures'] });
+});
+
+it('a wrong Check records what the answer showed, and the observer answers that miss with its lever', () => {
+  const h = mount([identify()]);
+  h.type('5/8'); h.check();                                         // 3/8 shaded: the top is the unshaded count
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'top_is_unshaded' });
+  expect(observerLever(h.state(), true)).toBe('part_whole');
 });

@@ -773,7 +773,7 @@ interface JudgedFaceProps {
   runtimeEvalMode?: string;
 }
 
-const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resolvedInstanceId, runtimePlanItemId, runtimeEvalMode }) => {
+const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resolvedInstanceId, runtimePlanItemId }) => {
   // ── Stage-payload state (the runtime owns progression; this is the sky) ───
   const [selectedBodyId, setSelectedBodyId] = useState<string | null>(null);
   /** Post-credit only; `runner.revealHeld` is the render gate. */
@@ -827,7 +827,6 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resol
     objectiveId: data.objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || (items[0]?.kind ?? 'identify'),
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: () => {
@@ -849,9 +848,7 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resol
   // demonstration targets and no presentation: the spotlight paints when the item opens.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...solarScene(currentItem, { preReader: isPreReader }), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...solarScene(currentItem, { preReader: isPreReader }) };
   });
 
   // Pip: the sky is the question side. On identify items one body is spotlit and

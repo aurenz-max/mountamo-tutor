@@ -874,7 +874,8 @@ export const addSubHarnessAnswers = (item: AddSubSceneItem): AddSubHarnessAnswer
   return {
     ...base,
     correct: `${item.answer} ${item.objectType} in the picture`,
-    plainWrong: `${Math.max(0, item.answer - 1)} ${item.objectType} in the picture`,
-    placed: { correct: item.answer, wrong: Math.max(0, item.answer - 1) },
+    // `wrongValue`, never max(0, answer - 1): on a result of 0 ("all 3 ducks swim away") that was the answer itself.
+    plainWrong: `${wrongValue} ${item.objectType} in the picture`,
+    placed: { correct: item.answer, wrong: wrongValue },
   };
 };

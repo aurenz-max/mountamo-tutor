@@ -30,7 +30,7 @@ import { useSpeechScope } from '../../../pip/useSpeechScope';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { OPTION_MODES, ROW_TAP_MODES, describeGraphWork, workspaceAssignment, workspaceScene, type BarModelView }
+import { OPTION_MODES, ROW_TAP_MODES, barModelMiss, describeGraphWork, workspaceAssignment, workspaceScene, type BarModelView }
   from './barModelWorkspace';
 
 // ---------------------------------------------------------------------------
@@ -552,7 +552,7 @@ const READ_ROW_MODES = new Set<BarModelEvalMode>([
 /** The teaching workspace is bar-model's only controller: the runtime owns progression. */
 const useBarModelProgress = useWorkspaceProgressFor('bar-model');
 
-const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode }: BarModelProps) => {
+const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -577,7 +577,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode }
     challenges,
     getChallengeId: (c) => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || challenges[0]?.evalMode || 'bar-model', workspace, assignment: workspaceAssignment,
+    workspace, assignment: workspaceAssignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solveSpoken.current(index),
   });
@@ -587,7 +587,6 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode }
     results,
     isComplete,
     recordResult,
-    incrementAttempts,
   } = progress;
   /** A checked answer stays closed until Try again or Next challenge on the shell. */
   const workspaceClosed = useRef(false);
@@ -731,9 +730,9 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode }
       if (!stateMatches) return;
 
       // The graph's own check is the workspace's checked gesture.
-      progress.commitCheck?.(describeGraphWork(currentChallenge, { built: builtValues, selectedOption,
-        selectedRow: selectedBarIndex, chosenStep, ...work }), correct);
-      incrementAttempts();
+      const view = { built: builtValues, selectedOption, selectedRow: selectedBarIndex, chosenStep, ...work };
+      progress.commitCheck(describeGraphWork(currentChallenge, view), correct,
+        correct ? undefined : barModelMiss(currentChallenge, view));
       setFeedback(correct ? 'correct' : 'incorrect');
       if (correct) {
         if (recordedRef.current) return;
@@ -753,7 +752,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode }
     },
     [
       currentChallenge, currentAttempts, builtValues,
-      incrementAttempts, recordResult, progress, selectedOption, selectedBarIndex, chosenStep,
+      recordResult, progress, selectedOption, selectedBarIndex, chosenStep,
     ],
   );
 
@@ -899,9 +898,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode }
   useLayoutEffect(() => {
     if (!currentChallenge) return;
     workspace.current = { ...workspaceScene(currentChallenge, { built: builtValues, selectedOption,
-      selectedRow: selectedBarIndex, chosenStep }),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    progress.publishWorkspace?.();
+      selectedRow: selectedBarIndex, chosenStep }) };
   });
   /** A solved answer, or a checked one waiting for Try again or Next challenge. */
   const answerClosed = feedback === 'correct' || progress.canAttempt === false;

@@ -86,9 +86,8 @@ function readSentences(read: SentenceReadingItem[]) {
 export default function DiSentenceReadingTeaching({ data, className, runtimePlanItemId, runtimeEvalMode }:
     DiSentenceReadingTeachingProps) {
   const items = useMemo(() => buildSentenceReadingItems(data.challenges), [data.challenges]);
-  const evalMode = runtimeEvalMode || data.challengeType || 'read_sentence';
   return <DiTeachingStage<SentenceReadingItem, DiSentenceReadingMetrics> primitiveId="di-sentence-reading" data={data}
-    items={items} evalMode={evalMode} className={className} runtimePlanItemId={runtimePlanItemId}
+    items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
     assignment={workspaceAssignment} scene={workspaceScene} copy={COPY} stimulus={stimulus} trail={readSentences}
     recapLabel={item => item.text}
     metrics={result => ({ type: 'di-sentence-reading', ...diStageMetrics(result, items, data.challengeType),

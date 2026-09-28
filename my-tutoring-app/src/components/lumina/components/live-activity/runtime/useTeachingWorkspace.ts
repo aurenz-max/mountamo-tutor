@@ -10,7 +10,8 @@ import { abstainItemScore, gradeOf, scoreSession, type AttemptGrade, type ItemSc
 import { postObservation } from './observationContract';
 import { SoundManager } from '../../../utils/SoundManager';
 import { latestLearnerUtterance } from './learnerUtterance';
-import { nextLever } from './observerLever';
+import { lastMiss, nextLever } from './observerLever';
+import { useWorkspacePin } from './workspacePin';
 import type { ExecutableAffordance, RuntimeMount, WorkspaceLever } from './contract';
 
 export interface TeachingItem {
@@ -22,15 +23,25 @@ export interface TeachingItem {
   /** Checks gesture submissions only. Speech is judged by the tutor. The key stays private. */
   checkResponse: (response: string) => boolean | null;
 }
+/**
+ * What a primitive sets on `workspace.current` in a layout effect; the hook publishes it after every
+ * render (handoff 19, slice 3). Only `objects` and `facts` are required: a binding with no
+ * demonstration or timed stimulus leaves the rest out, and the defaults below apply.
+ */
 export interface TeachingWorkspace {
   objects: Array<{ id: string; label: string; selected: boolean; group?: string }>;
-  demonstration: string[];
   facts: Record<string, string | number>;
-  readyForResponse: boolean;
-  canDemonstrate: boolean;
-  canPresent: boolean;
-  mark: (ids: string[]) => void;
-  clearPresentation: () => void;
+  /** Ids the tutor has marked. Default none. */
+  demonstration?: string[];
+  /** Default true. False while a stimulus is still pending (a flash not yet shown, a die not yet rolled). */
+  readyForResponse?: boolean;
+  /** The tutor may mark `objects` (`mark`). Default false. */
+  canDemonstrate?: boolean;
+  /** A timed stimulus the tutor may present (`onPresentStimulus`). Default false. */
+  canPresent?: boolean;
+  mark?: (ids: string[]) => void;
+  /** Clears marks and a presented stimulus when the item reopens or the activity is suspended. */
+  clearPresentation?: () => void;
   /** The levers the primitive declares on its current item (`/add-support-tiers`). */
   levers?: WorkspaceLever[];
   /**
@@ -52,7 +63,7 @@ export type TeachingAssignment = Omit<TeachingItem, 'checkResponse'>;
  */
 export type WorkspaceScene = Pick<TeachingWorkspace, 'objects' | 'facts'>;
 export interface TeachingWorkspaceOptions {
-  instanceId: string; primitiveId: string; objectiveId?: string; planItemId?: string; evalMode: string;
+  instanceId: string; primitiveId: string; objectiveId?: string; planItemId?: string;
   items: TeachingItem[];
   workspace: MutableRefObject<TeachingWorkspace | null>;
   onItemOpened?: (index: number) => void;
@@ -67,6 +78,8 @@ export interface TeachingWorkspaceOptions {
   checkPractice?: (itemId: string, response: string) => boolean | null;
 }
 const noSubscription = () => () => {};
+/** No scene yet is not ready; a scene that does not say otherwise is. */
+const isReady = (w: TeachingWorkspace | null | undefined) => !!w && w.readyForResponse !== false;
 const scoreAttempt = postObservation<ItemScoreRequest, ItemScoreDecision>('/api/lumina/observe-item-score', abstainItemScore);
 /** The whole scoring pass waits at most this long; an attempt not graded by then keeps its flow verdict. */
 export const SCORING_BUDGET_MS = 5000;
@@ -74,6 +87,8 @@ export const SCORING_BUDGET_MS = 5000;
 /** Shared live teaching lifecycle. Domain bindings provide tasks, scene facts and a response checker. */
 export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
   const ai = useLuminaAIContext();
+  // The mount's mode is the lesson's pin, from the family wrapper (`workspacePin.ts`).
+  const evalMode = useWorkspacePin();
   const active = useLiveRuntimeActive();
   const activeRef = useRef(active); activeRef.current = active;
   const latest = useRef(options);
@@ -126,7 +141,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
   };
   const reset = () => {
     pendingSpeech.current = null;
-    latest.current.workspace.current?.clearPresentation();
+    latest.current.workspace.current?.clearPresentation?.();
     latest.current.onItemOpened?.(session.getSnapshot().index);
     speechFloor.current = aiRef.current.conversation.length;
     wasReady.current = false;
@@ -141,7 +156,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
   });
   const mount = useMemo<RuntimeMount>(() => ({ instanceId: options.instanceId,
     objectiveId: options.objectiveId || options.primitiveId + '-practice', planItemId: options.planItemId || options.instanceId,
-    primitiveId: options.primitiveId, evalMode: options.evalMode,
+    primitiveId: options.primitiveId, evalMode,
     adapter: {
       getTutorState: () => {
         const s = session.getSnapshot(), i = currentItem(), w = latest.current.workspace.current;
@@ -150,7 +165,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
           evidence: { attemptNumber: s.attempts.filter(a => a.itemId === i.id).length,
             correctness: response ? response.correct ? 'correct' : 'incorrect' : 'unknown',
             recentResponses: response ? [{ response: response.response, source: response.source, recognition: 'clear' }] : [] },
-          demand: { ...w?.facts, response: i.response, presentation: w?.readyForResponse ? 'ready' : 'not ready' },
+          demand: { ...w?.facts, response: i.response, presentation: isReady(w) ? 'ready' : 'not ready' },
           support: { level: s.assisted ? 2 : 0, answerExposure: s.answerExposure },
           workspace: { progression: 'observer', objects: w?.objects ?? [], demonstration: w?.demonstration ?? [],
             ...(w?.levers?.length ? { levers: w.levers } : {}),
@@ -175,12 +190,12 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
             + 'When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.'
           : 'Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.',
           input => !input?.targets?.length && commit(() => session.assist()), true);
-        if (w?.objects.length && w.canDemonstrate) {
+        if (w?.objects.length && w.canDemonstrate && w.mark) {
           operation('demonstrate', 'Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.', input => {
             if (!Array.isArray(input?.targets)) return 'demonstrate needs targets: ids from workspace.objects, or [] to clear the marks.';
             const unknown = input.targets.filter(id => !latest.current.workspace.current?.objects.some(o => o.id === id));
             if (unknown.length) return `Not in workspace.objects: ${unknown.join(', ')}. Use ids listed there.`;
-            return commit(() => { session.assist('full'); latest.current.workspace.current!.mark(input.targets!); return true; });
+            return commit(() => { session.assist('full'); latest.current.workspace.current!.mark!(input.targets!); return true; });
           }, true, 'full');
         }
         const pullable = w?.levers?.filter(l => !l.pulled) ?? [];
@@ -191,7 +206,8 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
           input => {
             // A call without a lever pulls the one the observer would (number-line --audio 09-27: the tutor sent
             // pull_lever {} and the refusal left the stuck learner waiting for the observer).
-            const levers = latest.current.workspace.current?.levers ?? [], id = input?.lever || nextLever(levers);
+            const levers = latest.current.workspace.current?.levers ?? [];
+            const id = input?.lever || nextLever(levers, lastMiss(session.getSnapshot().attempts, currentItem().id));
             if (!id) return 'Every lever on this item is already pulled; their changes are on screen.';
             const lever = levers.find(l => l.id === id);
             if (!lever) return `No lever ${id} here. Levers: ${levers.map(l => l.id).join(', ')}.`;
@@ -256,10 +272,10 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
         if (lever > 0) actions.unshift(...actions.splice(lever, 1));
         return actions;
       },
-      suspension: { suspend: () => { suspended.current = true; latest.current.workspace.current?.clearPresentation(); },
+      suspension: { suspend: () => { suspended.current = true; latest.current.workspace.current?.clearPresentation?.(); },
         resume: () => { suspended.current = false; } },
     },
-  }), [options.instanceId, options.primitiveId, options.objectiveId, options.planItemId, options.evalMode, session]);
+  }), [options.instanceId, options.primitiveId, options.objectiveId, options.planItemId, evalMode, session]);
   useLayoutEffect(() => { mounted.current = true; suspended.current = false; return () => {
     mounted.current = false; suspended.current = true; pendingSpeech.current = null;
   }; }, [mount]);
@@ -321,12 +337,16 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     wasReady.current = false;
   }, [active, ai.isConnected, ai.sessionResumeCount]);
   useEffect(() => { reset(); }, [session]);
+  // The primitive's layout effects set `workspace.current`; this passive effect runs after all of them, in
+  // this component and its children, so every render's scene reaches the tutor without a publish call of its own.
+  // Unchanged scenes publish nothing (`changed` compares).
+  useEffect(() => { if (mounted.current) publishWorkspace(); });
   useEffect(() => ai.sharedVoiceTurns?.subscribe({
     onTurnClose: () => { void Promise.resolve().then(() => { if (mounted.current) publishWorkspace(); }); },
   }), [ai.sharedVoiceTurns, changed]);
   const publishWorkspace = () => {
     if (!activeRef.current) return;
-    const ready = !!latest.current.workspace.current?.readyForResponse;
+    const ready = isReady(latest.current.workspace.current);
     if (ready && !wasReady.current) speechFloor.current = aiRef.current.conversation.length;
     wasReady.current = ready;
     // Spoken input supplies context. Completed tutor feedback owns its judgment;
@@ -344,10 +364,10 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     changed();
   };
 
-  const submitGestureResponse = (response: string) => {
+  const submitGestureResponse = (response: string, miss?: string) => {
     if (!mounted.current || !activeRef.current || suspended.current || currentItem().id !== item.id || currentItem().response !== 'gesture') return;
     const correct = checkResponse(response);
-    if (correct === null || !session.submit(`gesture:${++gestureSequence.current}`, response, 'gesture', correct)) return;
+    if (correct === null || !session.submit(`gesture:${++gestureSequence.current}`, response, 'gesture', correct, false, undefined, miss)) return;
     if (correct && !session.getSnapshot().practice) latest.current.onSolved?.(session.getSnapshot().index, response);
     // Facts trigger the live conversation. No prescribed words; the browser has already checked the response.
     const facts = `The learner submitted their selection. Current workspace response: ${JSON.stringify(session.getSnapshot().lastResponse)}. Respond to the learner using the current task and workspace.`;

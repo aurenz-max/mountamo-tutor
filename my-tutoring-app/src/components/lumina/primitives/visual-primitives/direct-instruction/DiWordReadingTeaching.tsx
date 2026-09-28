@@ -93,9 +93,8 @@ function readWords(read: WordReadingItem[]) {
 
 export default function DiWordReadingTeaching({ data, className, runtimePlanItemId, runtimeEvalMode }: DiWordReadingTeachingProps) {
   const items = useMemo(() => buildWordReadingItems(data.challenges), [data.challenges]);
-  const evalMode = runtimeEvalMode || data.challengeType || 'read_word';
   return <DiTeachingStage<WordReadingItem, DiWordReadingMetrics> primitiveId="di-word-reading" data={data}
-    items={items} evalMode={evalMode} className={className} runtimePlanItemId={runtimePlanItemId}
+    items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
     assignment={workspaceAssignment} scene={workspaceScene} copy={COPY} stimulus={stimulus} trail={readWords}
     recapLabel={item => item.word}
     metrics={result => ({ type: 'di-word-reading', ...diStageMetrics(result, items, data.challengeType) })} />;

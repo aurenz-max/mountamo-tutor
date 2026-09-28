@@ -193,7 +193,7 @@ const MAT_COLORS = ['text-violet-300', 'text-sky-300', 'text-emerald-300', 'text
 const evalModeFor = (structure: StructureType): string =>
   structure === 'chronological' || structure === 'description' ? 'chronological_description' : structure.replace('-', '_');
 
-const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
+const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ data, className, runtimePlanItemId }) => {
   const {
     title,
     gradeLevel = '4',
@@ -272,7 +272,6 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || evalModeFor(structureType),
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onAffirmed: (item) => {
@@ -289,9 +288,7 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...textStructureScene(currentItem, passage), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...textStructureScene(currentItem, passage) };
   });
 
   // Pip: the passage is the question side. On a place-idea item the idea card

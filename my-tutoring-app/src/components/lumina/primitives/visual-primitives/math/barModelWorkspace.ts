@@ -90,6 +90,61 @@ export function describeGraphWork(c: BarModelChallenge, view: BarModelView): str
   return 'Answers aloud';
 }
 
+/**
+ * What a wrong answer on the graph shows (`TeachingAttempt.miss`, handoff 20), from the same work the check reads:
+ * - a number chosen: `picked_icon_count` (a picture graph's icon count, not what the icons stand for),
+ *   `another_row` (the value of a row other than the one asked about), `one_step_off` (one axis step or one
+ *   picture's worth either way, where that is more than one), then `one_short` / `one_over` / `short_by_more` /
+ *   `over_by_more`;
+ * - a row tapped: `reversed` (the other extreme: the fewest for the most, the shorter of two for the taller),
+ *   `other_row`; on match_to_bar the tapped row's count against the pile: `one_short` ... `over_by_more`;
+ * - a sticker chart or built graph: `rows_swapped` (the right counts in the wrong rows), `several_rows_off`,
+ *   one row `one_short` ... `over_by_more`; `wrong_step` (every bar right, the scale step not).
+ * The spoken modes name none: the tutor judges them.
+ */
+export type BarModelMiss = 'picked_icon_count' | 'another_row' | 'one_step_off' | 'one_short' | 'one_over' | 'short_by_more'
+  | 'over_by_more' | 'reversed' | 'other_row' | 'rows_swapped' | 'several_rows_off' | 'wrong_step';
+
+const offBy = (got: number, want: number): BarModelMiss | undefined => got === want ? undefined
+  : got === want - 1 ? 'one_short' : got === want + 1 ? 'one_over' : got < want ? 'short_by_more' : 'over_by_more';
+
+const rowsMiss = (want: readonly number[], got: readonly number[]): BarModelMiss | undefined => {
+  const wrong = want.map((n, i) => [got[i] ?? 0, n] as const).filter(([g, n]) => g !== n);
+  if (wrong.length === 0) return undefined;
+  if (wrong.length === 1) return offBy(...wrong[0]);
+  const sorted = (xs: readonly number[]) => [...xs].sort((a, b) => a - b).join();
+  return sorted(want) === sorted(got) ? 'rows_swapped' : 'several_rows_off';
+};
+
+export function barModelMiss(c: BarModelChallenge | null, view: BarModelView): BarModelMiss | undefined {
+  if (!c || isSpokenGraph(c)) return undefined;
+  const values = c.values.map(v => v.value);
+  if (OPTION_MODES.has(c.evalMode)) {
+    const got = view.selectedOption, want = c.expectedValue;
+    if (got == null || want == null || got === want) return undefined;
+    const icon = c.graphStyle === 'picture' ? c.scale?.iconValue ?? 1 : 1;
+    if (icon > 1 && got * icon === want) return 'picked_icon_count';
+    if (values.some((v, i) => v === got && i !== c.targetBarIndex)) return 'another_row';
+    const step = c.graphStyle === 'picture' ? icon : c.scale?.step ?? 1;
+    if (step > 1 && Math.abs(got - want) === step) return 'one_step_off';
+    return offBy(got, want);
+  }
+  if (ROW_TAP_MODES.has(c.evalMode)) {
+    const row = view.selectedRow, target = c.targetBarIndex;
+    if (row == null || target == null || row === target) return undefined;
+    if (c.evalMode === 'match_to_bar') return offBy(values[row] ?? 0, c.stimulusCount ?? values[target]);
+    const most = values[target] === Math.max(...values);
+    return values[row] === (most ? Math.min(...values) : Math.max(...values)) ? 'reversed' : 'other_row';
+  }
+  if (c.evalMode === 'build_one_to_one') return rowsMiss(c.expectedCounts ?? [], view.built.map(r => r.value));
+  if (c.evalMode === 'build_graph') {
+    const want = c.expectedDataset ?? [];
+    return rowsMiss(want.map(e => e.value), want.map(e => view.built.find(b => b.label === e.label)?.value ?? 0))
+      ?? (view.chosenStep !== c.expectedScaleStep ? 'wrong_step' : undefined);
+  }
+  return undefined;
+}
+
 const CHANNEL: Record<string, string> = {
   options: 'The learner taps one of the numbers under the graph; the graph checks it.',
   rows: 'The learner taps a row of the graph; the graph checks it.',

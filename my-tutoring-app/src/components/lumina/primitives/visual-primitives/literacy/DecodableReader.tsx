@@ -225,7 +225,7 @@ const lineSizeClass = (wordCount: number): string =>
 // Component
 // ============================================================================
 
-function DecodableReaderSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: DecodableReaderProps) {
+function DecodableReaderSurface({ data, className, runtimePlanItemId }: DecodableReaderProps) {
   const {
     title,
     gradeLevel,
@@ -334,7 +334,6 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId, runtimeEva
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || mode,
     instanceId: resolvedInstanceId,
     onFinished: finish,
   });
@@ -349,9 +348,7 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId, runtimeEva
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...decodableReaderScene(currentItem), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...decodableReaderScene(currentItem) };
   });
 
   /** Asks the tutor to repeat the question side: a silent host request, never an answer or the line. */

@@ -141,6 +141,20 @@ export function touchAssignment(item: FractionTouchItem): TeachingAssignment {
 const pictureOf = (item: FractionTouchItem, choiceId: string): FractionPicture | undefined =>
   item.choices.find(c => c.id === choiceId);
 
+/**
+ * What a wrong touch shows, by the kind of picture touched, never which one (`TeachingAttempt.miss`):
+ * `same_parts_other_shading` (as many equal parts as the fraction, a different amount shaded),
+ * `same_shading_other_parts` (as many shaded parts, cut into a different number), `other_fraction`.
+ */
+export type TouchMiss = 'same_parts_other_shading' | 'same_shading_other_parts' | 'other_fraction';
+
+export function touchMiss(item: FractionTouchItem, choiceId: string): TouchMiss | undefined {
+  const picture = pictureOf(item, choiceId);
+  if (!picture || touchMatches(item, choiceId)) return undefined;
+  if (picture.denominator === item.denominator) return 'same_parts_other_shading';
+  return picture.numerator === item.numerator ? 'same_shading_other_parts' : 'other_fraction';
+}
+
 /** Code's verdict on a touch: the touched picture shows the same amount as the spoken fraction. */
 export function touchMatches(item: FractionTouchItem, choiceId: string): boolean {
   const picture = pictureOf(item, choiceId);
@@ -196,6 +210,7 @@ export function twoPictureItem(item: FractionTouchItem): FractionTouchItem | nul
 export function touchLevers(item: FractionTouchItem | null, pulled: readonly string[]): WorkspaceLever[] {
   if (!item || item.choices.length < 3 || !twoPictureItem(item)) return [];
   return [{ id: TWO_PICTURES_LEVER, kind: 'simplify', carrier: 'shown', pulled: pulled.includes(TWO_PICTURES_LEVER),
+    answers: ['same_parts_other_shading', 'same_shading_other_parts', 'other_fraction'],
     when: 'The learner picks a picture with the right number of parts but the wrong amount shaded, or cannot choose among three.',
     does: 'Opens an easier touch first: another fraction, two pictures far apart. It is not graded; the full item comes back after it.' }];
 }

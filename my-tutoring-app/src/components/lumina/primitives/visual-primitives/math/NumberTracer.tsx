@@ -87,7 +87,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { describeWriting, workspaceAssignment, workspaceScene } from './numberTracerWorkspace';
+import { describeWriting, numberTracerMiss, workspaceAssignment, workspaceScene } from './numberTracerWorkspace';
 import { DIGIT_PATHS, getDigitPaths } from './numberTracerPaths';
 export { getDigitPaths };
 export interface NumberTracerData {
@@ -382,7 +382,7 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || challenges[0]?.type || 'trace', workspace, assignment: workspaceAssignment,
+    workspace, assignment: workspaceAssignment,
     // A fresh challenge and Try again both start from an empty canvas.
     onItemOpened: () => {
       setAllStrokes([]); setCurrentStroke([]); setFeedback(''); setFeedbackType('');
@@ -395,7 +395,6 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
     advance: advanceProgress,
   } = progress;
   /** Workspace path: a checked writing stays closed until Try again or Next challenge on the shell. */
@@ -775,7 +774,6 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
       return;
     }
 
-    incrementAttempts();
     setHasChecked(true);
     const guides = paintedGuides(currentChallenge);
     const record = (writtenAs: string | null, score: number, correct: boolean) => responsesRef.current.push({
@@ -799,7 +797,7 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     if (!shouldNormalize && geoScore >= 90) {
       record(null, geoScore, true);
       // The canvas's own check is the workspace's checked gesture.
-      progress.commitCheck?.(describeWriting(geoScore, null), true);
+      progress.commitCheck(describeWriting(geoScore, null), true);
       SoundManager.playCorrect();
       setLastScore(geoScore);
       setFeedback('Excellent writing!');
@@ -839,7 +837,9 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
       setLastScore(finalScore);
       const isCorrect = finalScore >= 50;
       record(trusted ? geminiResult!.writtenAs ?? '?' : null, finalScore, isCorrect);
-      progress.commitCheck?.(describeWriting(finalScore, trusted ? geminiResult!.writtenAs ?? null : null), isCorrect);
+      const writtenAs = trusted ? geminiResult!.writtenAs ?? null : null;
+      progress.commitCheck(describeWriting(finalScore, writtenAs), isCorrect,
+        isCorrect ? undefined : numberTracerMiss(currentChallenge.digit, { writtenAs, accuracy, coverage }));
 
       if (isCorrect) {
         SoundManager.playCorrect();
@@ -882,7 +882,7 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     } finally {
       setIsEvaluating(false);
     }
-  }, [currentChallenge, allStrokes, idealPaths, currentAttempts, isEvaluating, incrementAttempts, recordResult, sendText, tutorRevealClause,
+  }, [currentChallenge, allStrokes, idealPaths, currentAttempts, isEvaluating, recordResult, sendText, tutorRevealClause,
       learnerClosed, progress, tutorOwned]);
 
   const handleClear = useCallback(() => {
@@ -963,9 +963,7 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
   useLayoutEffect(() => {
     if (!tutorOwned || !currentChallenge) return;
     workspace.current = { ...workspaceScene(currentChallenge, { strokes: allStrokes.length }),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: !isEvaluating,
-      mark: () => {}, clearPresentation: () => {} };
-    progress.publishWorkspace?.();
+      readyForResponse: !isEvaluating };
   });
 
   // ── Render ──────────────────────────────────────────────────────────

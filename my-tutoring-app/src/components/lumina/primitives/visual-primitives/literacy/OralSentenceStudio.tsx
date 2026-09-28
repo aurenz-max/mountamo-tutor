@@ -108,7 +108,7 @@ const MODE_PROMPT: Record<OralSentenceStudioChallengeType, string> = {
   use_story_words: 'Listen to the story. Then make a new sentence of your own with both story words.',
 };
 
-const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
+const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, className, runtimePlanItemId }) => {
   const items = useMemo(() => itemsFromChallenges(data.challenges), [data.challenges]);
   const stableInstanceIdRef = useRef(data.instanceId || `oral-sentence-studio-${Date.now()}`);
   const resolvedInstanceId = data.instanceId || stableInstanceIdRef.current;
@@ -158,7 +158,6 @@ const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, cl
     objectiveId: data.objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || (data.challengeType === 'mixed' ? 'mixed' : data.challengeType),
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onAffirmed: (item) => setCreditedItem(item),
@@ -171,9 +170,7 @@ const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, cl
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
     if (!runner.currentItem) return;
-    workspace.current = { ...oralSentenceScene(runner.currentItem), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...oralSentenceScene(runner.currentItem) };
   });
 
   // Pip: the scene is the question side; the sentence is the child's own, so

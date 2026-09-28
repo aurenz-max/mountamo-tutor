@@ -30,6 +30,8 @@
  * version of the same tension: 4 modes, but all "read this sentence aloud", so
  * a misconception genuinely does transfer.
  */
+import { sameMisses } from './missLists';
+import type { WordProblemMiss } from '../../../primitives/visual-primitives/direct-instruction/diWordProblemWorkspace';
 import { ComponentDefinition } from '../../../types';
 import { DI_DEDUCTION_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diDeductionModes';
 import { DI_DICE_ROLL_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diDiceRollModes';
@@ -1202,6 +1204,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'and the activity checks it: you cannot place a card, and never say which part is the big amount or where a '
         + 'part belongs before they try. The family decides the operation, not the story\'s words. Nothing they must '
         + 'say is printed before it is credited.',
+      // The activity's own check of the big slot (`wordProblemMiss`); the spoken steps name none yet (Part B).
+      misses: sameMisses<WordProblemMiss>(['find_big_number', 'build_family', 'classify_and_build'], ['box_in_big', 'printed_small_in_big']),
     },
     misconceptionScope: 'primitive',
     audioInput: { manual_activity: true },

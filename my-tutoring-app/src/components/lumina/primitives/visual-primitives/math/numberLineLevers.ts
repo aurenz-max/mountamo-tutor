@@ -79,6 +79,32 @@ export function simplerJump(ch: NumberLineChallenge, range: { min: number; max: 
 }
 
 /**
+ * What a wrong jump shows, as the observable pattern of the placed landings (`TeachingAttempt.miss`):
+ * - `one_short` / `one_past`: one hop before or beyond the landing (counting the start as hop 1 lands one short;
+ *   the cause is the tutor's and the distiller's to judge, not this check's);
+ * - `off_by_more`: two or more hops off, the right way;
+ * - `wrong_direction`: placed on the other side of the start, or on the start itself;
+ * - `second_jump_off`: every landing before it was right (lost track across chained jumps);
+ * - `no_landing`: a landing was never placed.
+ * Undefined for a right jump or a non-jump item.
+ */
+export type JumpMiss = 'one_short' | 'one_past' | 'off_by_more' | 'wrong_direction' | 'second_jump_off' | 'no_landing';
+
+export function jumpMiss(ch: NumberLineChallenge | null, placed: readonly number[]): JumpMiss | undefined {
+  const ops = ch?.operations ?? [];
+  if (!ch || ch.type !== 'show_jump' || !ops.length) return undefined;
+  const at = ops.findIndex((op, i) => placed[i] === undefined || Math.round(placed[i]) !== landingOf(op));
+  if (at < 0) return undefined;
+  if (placed[at] === undefined) return 'no_landing';
+  if (at > 0) return 'second_jump_off';
+  const op = ops[at], landing = landingOf(op), dir = Math.sign(landing - op.startValue);
+  const moved = Math.round(placed[at]) - op.startValue;
+  if (moved === 0 || Math.sign(moved) !== dir) return 'wrong_direction';
+  const past = (Math.round(placed[at]) - landing) * dir;
+  return past === -1 ? 'one_short' : past === 1 ? 'one_past' : 'off_by_more';
+}
+
+/**
  * The levers this jump item declares, with their state. Empty for any other item. A lever is declared
  * only when pulling it would change the screen: numbered hops need a model hop (a jump of 2 or more) or
  * a jump the learner placed away from the start (`endpoints`).
@@ -91,11 +117,14 @@ export function jumpLevers(ch: NumberLineChallenge | null, pulled: readonly stri
     || endpoints.some((e, i) => learnerHops(i === 0 ? ops[0].startValue : endpoints[i - 1], e).length > 0);
   const levers: WorkspaceLever[] = drawable ? [{
     id: HOPS_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(HOPS_LEVER),
+    answers: ['one_short', 'one_past', 'off_by_more', 'wrong_direction'],
     when: 'The learner lands one hop off, counts the start as a hop, or loses count.',
     does: "Numbers every hop of the learner's own jump on the line (1, 2, 3...) and draws hop 1 from the start as a model.",
   }] : [];
   if (simplerJump(ch, range)) levers.push({
     id: SIMPLER_LEVER, kind: 'simplify', carrier: 'shown', pulled: pulled.includes(SIMPLER_LEVER),
+    // Losing track across two jumps is what one jump instead of two answers; help (hops) comes first otherwise.
+    answers: ops.length > 1 ? ['second_jump_off', 'off_by_more'] : ['off_by_more'],
     when: ops.length > 1 ? 'The learner cannot keep track across two jumps.' : 'The learner cannot manage a jump this long yet.',
     does: `Opens an easier practice jump first, ${ops.length > 1 ? 'one jump instead of two' : 'a shorter jump'} from a different start. `
       + 'It is not graded; the full item comes back after it.',

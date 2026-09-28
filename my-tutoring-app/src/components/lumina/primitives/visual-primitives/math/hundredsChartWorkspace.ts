@@ -31,6 +31,46 @@ export function hundredsChartMatches(c: HundredsChartChallenge, view: { cells: S
   return view.option === String(c.skipValue);
 }
 
+/**
+ * What a wrong Check shows (`TeachingAttempt.miss`, handoff 20), from the same work the check reads:
+ * - cells: `stopped_early` (only pattern numbers, the last ones left untapped), `gaps_left` (only pattern
+ *   numbers, some in the middle left), `extra_cells` (the whole pattern and more), `other_step` (a run that
+ *   counts by another amount), `stray_cells` (numbers outside the pattern in place of some in it);
+ * - a skip value: `twice_the_step`, `half_the_step`, then `one_short` / `one_over` / `short_by_more` / `over_by_more`.
+ * identify_pattern names none: its choices are description sentences, and the item records no kind for them.
+ */
+export type HundredsChartMiss = 'stopped_early' | 'gaps_left' | 'extra_cells' | 'other_step' | 'stray_cells'
+  | 'twice_the_step' | 'half_the_step' | 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more';
+
+export function hundredsChartMiss(c: HundredsChartChallenge | null, view: { cells: Set<number>; option: string | null }):
+  HundredsChartMiss | undefined {
+  if (!c || hundredsChartMatches(c, view)) return undefined;
+  if (c.type === 'identify_pattern') return undefined;
+  if (c.type === 'find_skip_value') {
+    const got = Number(view.option), want = c.skipValue;
+    if (view.option === null || Number.isNaN(got)) return undefined;
+    if (got === want * 2) return 'twice_the_step';
+    if (got * 2 === want) return 'half_the_step';
+    return got === want - 1 ? 'one_short' : got === want + 1 ? 'one_over' : got < want ? 'short_by_more' : 'over_by_more';
+  }
+  const needed = neededCells(c).sort((a, b) => a - b);
+  const tapped = Array.from(view.cells).sort((a, b) => a - b);
+  const inPattern = tapped.filter(n => needed.includes(n));
+  if (inPattern.length === tapped.length) {
+    return tapped.every((n, i) => n === needed[i]) ? 'stopped_early' : 'gaps_left';
+  }
+  if (inPattern.length === needed.length) return 'extra_cells';
+  // A run counting by one amount, alone or continuing the highlighted start cells.
+  const step = (run: number[]) => {
+    const steps = Array.from(new Set(run.slice(1).map((n, i) => n - run[i])));
+    return steps.length === 1 ? steps[0] : null;
+  };
+  const withGiven = Array.from(new Set([...(c.givenCells ?? []), ...tapped])).sort((a, b) => a - b);
+  const counted = [tapped.length >= 3 ? step(tapped) : null, withGiven.length >= 3 ? step(withGiven) : null];
+  if (counted.some(s => s !== null && s !== c.skipValue)) return 'other_step';
+  return 'stray_cells';
+}
+
 /** The learner's checked work in their terms, never the key. */
 export function describeHundredsChartCheck(c: HundredsChartChallenge, view: { cells: Set<number>; option: string | null }): string {
   if (CELL_TYPES.has(c.type)) {

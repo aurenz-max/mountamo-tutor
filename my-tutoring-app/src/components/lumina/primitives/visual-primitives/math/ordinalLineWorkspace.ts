@@ -8,7 +8,7 @@
  * code (`placementMatches`), so the tutor is not handed the answer line as a key.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { askFor, frontOf, placementMatches, type OrdinalLineItem } from './ordinalLineScript';
+import { askFor, frontOf, placementComplete, placementMatches, type OrdinalLineItem } from './ordinalLineScript';
 
 export function workspaceAssignment(item: OrdinalLineItem): TeachingAssignment {
   if (item.answerKind === 'gesture') return { id: item.id, task: askFor(item), response: 'gesture' };
@@ -17,6 +17,21 @@ export function workspaceAssignment(item: OrdinalLineItem): TeachingAssignment {
 
 /** Does the committed line put every picture in its clued place? Empty places are ''. */
 export const lineMatches = placementMatches;
+
+/**
+ * What a wrong line shows (`TeachingAttempt.miss`, handoff 20): `place_left_empty` (not every place filled),
+ * `reversed` (the whole line from the other end), `two_swapped` (only two pictures out of place), `other_order`.
+ * Undefined for a right line and for the spoken kinds.
+ */
+export type LineMiss = 'place_left_empty' | 'reversed' | 'two_swapped' | 'other_order';
+
+export function lineMiss(item: OrdinalLineItem | null, placed: readonly string[]): LineMiss | undefined {
+  if (!item || item.kind !== 'build_sequence' || placementMatches(item, placed)) return undefined;
+  if (!placementComplete(item, placed)) return 'place_left_empty';
+  const want = item.answerOrder;
+  if (want.every((name, i) => placed[i] === want[want.length - 1 - i])) return 'reversed';
+  return want.filter((name, i) => placed[i] !== name).length === 2 ? 'two_swapped' : 'other_order';
+}
 
 /** The committed line in the learner's terms, place 1 first, as the tutor and the observer read it. */
 export const describeLine = (item: OrdinalLineItem, placed: readonly string[]) => {

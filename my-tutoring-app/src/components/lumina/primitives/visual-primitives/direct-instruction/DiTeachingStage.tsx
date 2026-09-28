@@ -16,8 +16,8 @@
  * on the held-success path and never on the advance path.
  *
  * The workspace is the only teaching path these packs have (the scripted drill was deleted in
- * LA-14 S5). A mount with no live runtime around it, which is what a host gives a section that
- * did not bind, renders a plain "needs the tutor" card instead of a blank or stalled stage, and
+ * LA-14 S5). A mount with no live runtime around it, or with a pin the catalog does not bind (the
+ * rule `withWorkspaceOnly` applies), renders a plain "needs the tutor" card instead of a blank or stalled stage, and
  * logs why in development. An unbound section is a defect to fix at its host, not a mode to
  * route around (09-20 ruling).
  */
@@ -32,6 +32,8 @@ import { useTeachingEvaluation, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useTeachingEvaluation';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { NeedsTutor } from '../../../components/live-activity/runtime/NeedsTutor';
+import { WorkspacePin } from '../../../components/live-activity/runtime/workspacePin';
+import { catalogBindsWorkspace } from '../../../components/live-activity/pinnedModes';
 import type { PrimitiveMetrics } from '../../../evaluation';
 import type { ComponentId } from '../../../types';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
@@ -64,8 +66,8 @@ export interface DiTeachingStageProps<Item extends { id: string }, M extends Pri
   primitiveId: ComponentId;
   data: DiStageData;
   items: Item[];
-  /** Resolved by the pack from the session's eval mode, never from a flattened label. */
-  evalMode: string;
+  /** The lesson's pin from the mount. The stage provides it to the workspace hooks (`workspacePin.ts`). */
+  runtimeEvalMode?: string;
   className?: string;
   runtimePlanItemId?: string;
   assignment: (item: Item) => TeachingAssignment;
@@ -102,18 +104,18 @@ export function diStageMetrics<C extends string>(result: TeachingEvaluationResul
 export default function DiTeachingStage<Item extends { id: string }, M extends PrimitiveMetrics>(
     props: DiTeachingStageProps<Item, M>) {
   const runtime = useLiveRuntime();
-  if (!runtime) return <NeedsTutor primitiveId={props.primitiveId} evalMode={props.evalMode}
+  if (!runtime || !catalogBindsWorkspace(props.primitiveId, props.runtimeEvalMode)) return <NeedsTutor primitiveId={props.primitiveId} evalMode={props.runtimeEvalMode}
     title={props.data.title || props.copy.title} className={props.className} />;
   if (!props.items.length) {
     return <LuminaCard className={props.className}><LuminaCardContent>
       <p>{props.copy.empty}</p>
     </LuminaCardContent></LuminaCard>;
   }
-  return <StageWorkspace key={props.data.instanceId} {...props} />;
+  return <WorkspacePin pin={props.runtimeEvalMode}><StageWorkspace key={props.data.instanceId} {...props} /></WorkspacePin>;
 }
 
 function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>({ primitiveId, data, items,
-    evalMode, className, runtimePlanItemId, assignment, scene, metrics, copy, recapLabel, stimulus, trail,
+    className, runtimePlanItemId, assignment, scene, metrics, copy, recapLabel, stimulus, trail,
     awaitsStimulus, counter }:
     DiTeachingStageProps<Item, M>) {
   const instance = useRef(data.instanceId || `${primitiveId}-${Date.now()}`);
@@ -124,10 +126,10 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
     ...assignment(item), checkResponse: () => null })), [items, assignment]);
 
   const lesson = useTeachingWorkspace({ instanceId: instance.current, primitiveId,
-    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, evalMode, items: assignments, workspace });
+    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, items: assignments, workspace });
 
   const evaluation = useTeachingEvaluation<M>({ primitiveType: primitiveId, instanceId: instance.current,
-    data, assignments, lesson, evalMode, metrics });
+    data, assignments, lesson, metrics });
 
   const item = items[lesson.state.index];
   const committed = items.filter(candidate =>
@@ -141,10 +143,8 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
     workspace.current = {
       ...scene(item, { ready }),
       demonstration: marks,
-      readyForResponse: ready, canDemonstrate: true, canPresent: false,
-      mark, clearPresentation: () => mark([]),
+      readyForResponse: ready, canDemonstrate: true, mark, clearPresentation: () => mark([]),
     };
-    lesson.publishWorkspace();
   });
 
   // ── Pip shared surface ────────────────────────────────────────────────────

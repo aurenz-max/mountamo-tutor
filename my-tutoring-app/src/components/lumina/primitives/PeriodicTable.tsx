@@ -85,7 +85,7 @@ const MODE_META: Record<PeriodicKind, { badge: string; icon: string; accent: Lum
   valence: { badge: 'Outer Shell', icon: '⚡', accent: 'amber' },
 };
 
-const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
+const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, runtimePlanItemId }) => {
   const {
     title,
     challenges = [],
@@ -166,7 +166,6 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || items[0]?.challengeType || 'explore',
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: clearTap,
@@ -193,9 +192,7 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
   useLayoutEffect(() => {
     const item = runner.currentItem;
     if (!item) return;
-    workspace.current = { ...periodicScene(item, tappedName), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...periodicScene(item, tappedName) };
   });
 
   const currentItem = runner.currentItem;

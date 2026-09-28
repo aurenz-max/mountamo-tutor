@@ -101,7 +101,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { describeOrder, orderMatches, workspaceAssignment, workspaceScene } from './compareObjectsWorkspace';
+import { compareOrderMiss, describeOrder, orderMatches, workspaceAssignment, workspaceScene } from './compareObjectsWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -381,13 +381,15 @@ interface CompareObjectsProps {
  * `placedOrder` feeds the runner-era runtime registration only.
  */
 type CompareObjectsControllerOptions = Omit<WorkspaceRunOptions<CompareObjectsItem>, 'primitiveId' | 'assignment'>
+  & { /** The scripted path's runtime registration only (it goes with that path); the workspace reads the lesson's pin. */
+    scriptedEvalMode: string }
   & Omit<JudgedScriptRunnerOptions<CompareObjectsItem>, 'pack' | 'instanceId' | 'onItemOpened'>
   & { pack?: JudgedScriptPack<CompareObjectsItem>; placedOrder: string[] };
 
 function useScriptedController(options: CompareObjectsControllerOptions): LiveRun<CompareObjectsItem> {
   const runner = useJudgedScriptRunner<CompareObjectsItem>({ ...options, pack: options.pack! });
   useCompareObjectsRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
-    planItemId: options.planItemId, evalMode: options.evalMode, placedOrder: options.placedOrder });
+    planItemId: options.planItemId, evalMode: options.scriptedEvalMode, placedOrder: options.placedOrder });
   return runner;
 }
 
@@ -527,7 +529,7 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
     items, workspace, objectiveId, planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount, never `runner.currentItem`: a mount's
     // identity must not change while the runner owns it.
-    evalMode: runtimeEvalMode || items[0]?.kind || 'default',
+    scriptedEvalMode: runtimeEvalMode || items[0]?.kind || 'default',
     placedOrder,
     pack,
     // Load-bearing for the live host: without it the runner's `resume()` early-returns,
@@ -580,7 +582,7 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
     const placed = pendingOrderRef.current;
     // The board checks its own arrangement, with the same code match the cue reports.
     commitGesture(runner, { response: describeOrder(item, placed), correct: orderMatches(item, placed),
-      cue: () => orderVerdictCue(item, placed) });
+      miss: compareOrderMiss(item, placed), cue: () => orderVerdictCue(item, placed) });
   }, [runner]);
 
   /** A hands turn closes on stillness; a complete order shortens the window but
@@ -663,10 +665,7 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentItem) return;
-    workspace.current = { ...workspaceScene(currentItem, { placedOrder }),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true,
-      mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace?.();
+    workspace.current = { ...workspaceScene(currentItem, { placedOrder }) };
   });
 
   // The workspace path shows its summary without an evaluation provider (the live host has none).

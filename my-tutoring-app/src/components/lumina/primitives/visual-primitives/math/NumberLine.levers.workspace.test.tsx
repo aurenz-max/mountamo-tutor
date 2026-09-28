@@ -13,7 +13,10 @@ import { LiveRuntimeContext } from '../../../components/live-activity/runtime/Li
 import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
 import { AFTER_TURN_FALLBACK_MS, RuntimeTransport } from '../../../components/live-activity/runtime/runtimeTransport';
+import { observerLever } from '../../../components/live-activity/runtime/observerLever';
 
+// The summary's confetti draws on a canvas jsdom does not have.
+vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 const seam = vi.hoisted(() => ({ send: vi.fn(), view: {} as Record<string, unknown> }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
   isConnected: true, isListening: true, isAudioPlaying: false, sessionMode: 'lesson', activePrimitiveId: 'line',
@@ -231,4 +234,23 @@ it('a pull that lands while the tutor is replying waits for that reply to settle
   act(() => { transport.audioChanged(false); });
   expect(told()).toHaveLength(1);
   transport.close();
+});
+
+it('a wrong Check records what the jump showed, and the observer answers that miss with its lever', () => {
+  const h = mount();
+  h.tap(6); h.check();                                              // 8 back 3 lands on 5: one short
+  const attempt = h.state().task!.workspace!.attempts.at(-1)!;
+  expect(attempt).toMatchObject({ correct: false, miss: 'one_short' });
+  expect(observerLever(h.state(), true)).toBe('numbered_hops');
+});
+
+it('lost track on the second of two jumps: the observer opens the easier single jump first', () => {
+  const chained = { id: 'c0', type: 'show_jump' as const, instruction: 'Start at 2, jump forward 3, then forward 4.', hint: 'Count.',
+    startValue: 2, targetValues: [5, 9], operations: [{ type: 'add' as const, startValue: 2, changeValue: 3, showJumpArc: false },
+      { type: 'add' as const, startValue: 5, changeValue: 4, showJumpArc: false }] };
+  // `mount` is typed from its subtract-only default; the chained item adds.
+  const h = mount([chained as unknown as ReturnType<typeof jump>, jump('j1', 15, 4)]);
+  h.tap(5); h.tap(10); h.check();
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'second_jump_off' });
+  expect(observerLever(h.state(), true)).toBe('simpler_jump');
 });

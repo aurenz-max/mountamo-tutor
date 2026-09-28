@@ -36,7 +36,7 @@ import { withWorkspaceController } from '../../../components/live-activity/runti
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { describeLine, workspaceAssignment, workspaceScene, type NumberLineView } from './numberLineWorkspace';
-import { HOPS_LEVER, SIMPLER_LEVER, hopsLeak, jumpLevers, learnerHops, modelHop, simplerJump, type Hop } from './numberLineLevers';
+import { HOPS_LEVER, SIMPLER_LEVER, hopsLeak, jumpLevers, jumpMiss, learnerHops, modelHop, simplerJump, type Hop } from './numberLineLevers';
 import { flushSync } from 'react-dom';
 
 // ============================================================================
@@ -337,7 +337,7 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || interactionMode, workspace, assignment: workspaceAssignment,
+    workspace, assignment: workspaceAssignment,
     // A fresh challenge and Try again both start from an empty line. Try again on the easier
     // practice jump keeps it; only a fresh challenge or the workspace's endPractice removes it.
     onItemOpened: (_index, retry) => {
@@ -352,7 +352,6 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
     advance: advanceProgress,
   } = progress;
   workspaceClosed.current = tutorOwned && progress.canAttempt === false;
@@ -635,7 +634,6 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
   // -------------------------------------------------------------------------
   const checkAnswer = useCallback(() => {
     if (learnerBlocked() || !currentChallenge || challengeResults.some(r => r.challengeId === currentChallenge.id && r.correct)) return;
-    incrementAttempts();
 
     const targets = currentChallenge.targetValues;
     let correct = false;
@@ -710,8 +708,9 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
     }
 
     // The line's own check is the workspace's checked gesture.
-    progress.commitCheck?.(describeLine(currentChallenge, { rangeMin, rangeMax, numberType: activeNumberType,
-      operations: activeOperations, points: placedPoints, endpoints: jumpEndPoints, ordered: orderedPlacements }), correct);
+    progress.commitCheck(describeLine(currentChallenge, { rangeMin, rangeMax, numberType: activeNumberType,
+      operations: activeOperations, points: placedPoints, endpoints: jumpEndPoints, ordered: orderedPlacements }), correct,
+      correct ? undefined : jumpMiss(currentChallenge, jumpEndPoints));
     if (correct) {
       SoundManager.playCorrect();
       setFeedback(isK2 ? 'Great job!' : 'Correct!');
@@ -746,7 +745,7 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
     }
   }, [currentChallenge, placedPoints, jumpEndPoints, orderedPlacements, activeOperations, practice, pulledLevers, runtimeLevers,
       activeNumberType, zoomLevel, rangeMin, rangeMax, isK2, currentAttempts, sendText,
-      incrementAttempts, recordResult, supportTier, challengeResults, runtimePlanItemId, challenges, liveRuntime, currentChallengeIndex,
+      recordResult, supportTier, challengeResults, runtimePlanItemId, challenges, liveRuntime, currentChallengeIndex,
       progress, tutorOwned]);
 
   const advanceToNextChallenge = useCallback((fromTutor = false) => {
@@ -898,7 +897,6 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
     workspace.current = { ...workspaceScene(currentChallenge, { rangeMin, rangeMax, numberType: activeNumberType,
       operations: activeOperations, points: placedPoints, endpoints: jumpEndPoints, ordered: orderedPlacements,
       hops: hopsOn, practice: !!practice }),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {},
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the line changes before this returns.
       pullLever: id => {
@@ -925,7 +923,6 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
       },
       endPractice: () => { setPractice(null); setJumpEndPoints([]); setFeedback(''); setFeedbackType(''); },
     };
-    progress.publishWorkspace?.();
   });
 
   const canCheck = (() => {

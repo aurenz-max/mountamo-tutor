@@ -99,6 +99,7 @@ import {
 import {
   additionSubtractionAssignment,
   additionSubtractionScene,
+  addSubMiss,
   describeEquation,
   describeScene,
   equationMatches,
@@ -278,7 +279,7 @@ interface AdditionSubtractionSceneProps {
   runtimeEvalMode?: string;
 }
 
-function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: AdditionSubtractionSceneProps) {
+function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }: AdditionSubtractionSceneProps) {
   const {
     title,
     description,
@@ -434,7 +435,6 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId, r
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
     // Catalog modes are underscored (`act_out`); the item's kind is hyphenated (`act-out`).
-    evalMode: runtimeEvalMode || (items[0]?.kind ?? 'solve-story').replace('-', '_'),
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: resetSceneFor,
@@ -549,7 +549,7 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId, r
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const placed = pendingSceneRef.current;
     commitGesture(runner, { response: describeScene(item, placed), correct: sceneMatches(item, placed),
-      cue: () => describeScene(item, placed) });
+      miss: addSubMiss(item, { placed }), cue: () => describeScene(item, placed) });
   }, [runner]);
 
   const commitEquation = useCallback(() => {
@@ -559,7 +559,7 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId, r
     const tiles = [...pendingTilesRef.current];
     if (tiles.length === 0) return;
     commitGesture(runner, { response: describeEquation(tiles), correct: equationMatches(item, tiles),
-      cue: () => describeEquation(tiles) });
+      miss: addSubMiss(item, { tiles }), cue: () => describeEquation(tiles) });
   }, [runner]);
 
   /** A hands turn closes on stillness. Any further touch resets the window, and
@@ -659,10 +659,8 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId, r
     if (!currentItem) return;
     workspace.current = {
       ...additionSubtractionScene(currentItem, { inPicture: builtCount, changeWaiting }),
-      demonstration: [], canDemonstrate: false, canPresent: changeWaiting,
-      readyForResponse: !changeWaiting, mark: () => {}, clearPresentation: () => {},
-    };
-    runner.publishWorkspace();
+      canPresent: changeWaiting,
+      readyForResponse: !changeWaiting };
   });
 
   /** Asks the tutor for the story again: a silent host request, never the answer. */

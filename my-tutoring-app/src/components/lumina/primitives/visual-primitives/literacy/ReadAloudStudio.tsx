@@ -129,7 +129,7 @@ const lineSizeClass = (wordCount: number): string =>
 // Component
 // ============================================================================
 
-const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
+const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, className, runtimePlanItemId }) => {
   const {
     title,
     gradeLevel,
@@ -225,7 +225,6 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || mode,
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: (_item, index) => {
@@ -248,10 +247,7 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...readAloudScene(currentItem, phrasePlansRef.current[currentItem.lineId] ?? []),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true,
-      mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...readAloudScene(currentItem, phrasePlansRef.current[currentItem.lineId] ?? []) };
   });
 
   // Pip: the printed line is the whole question side. A phrase plan is a hands

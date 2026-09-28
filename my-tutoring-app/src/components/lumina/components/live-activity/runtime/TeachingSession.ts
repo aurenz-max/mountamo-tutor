@@ -16,6 +16,12 @@ export interface TeachingAttempt {
   levers?: string[];
   /** Work on a simpler item a simplify lever opened: ungraded, never an outcome of a session item. */
   practice?: true;
+  /**
+   * What a wrong gesture shows, computed by the primitive's own check from the learner's work: an id naming
+   * the observable pattern (`one_short`, `second_jump_off`), never a guessed cause. Levers declare the misses
+   * they answer, so which lever comes next is code, testable without a model. Absent when correct or unnamed.
+   */
+  miss?: string;
 }
 export interface TeachingState {
   index: number;
@@ -89,7 +95,8 @@ export class TeachingSession {
     this.publish({ practice: null, phase: 'working', lastResponse: null });
     return true;
   }
-  submit(responseId: string, response: string, source: TeachingAttempt['source'], correct: boolean, spokenCorrection = false, tutorResponse?: string) {
+  submit(responseId: string, response: string, source: TeachingAttempt['source'], correct: boolean, spokenCorrection = false, tutorResponse?: string,
+    miss?: string) {
     if (this.responses.has(responseId)) return false;
     // A new, recognizable spoken correction is itself another attempt. It must not
     // disappear because the child answered faster than the dialogue observer.
@@ -100,7 +107,8 @@ export class TeachingSession {
     const attempt: TeachingAttempt = { itemId: practice ?? this.itemIds[this.state.index], response, source, correct,
       ...(tutorResponse ? { tutorResponse, judgment: 'tutor' as const } : {}),
       assisted: this.state.assisted, answerExposure: this.state.answerExposure,
-      ...(this.state.levers.length ? { levers: [...this.state.levers] } : {}), ...(practice ? { practice: true as const } : {}) };
+      ...(this.state.levers.length ? { levers: [...this.state.levers] } : {}), ...(practice ? { practice: true as const } : {}),
+      ...(!correct && miss ? { miss } : {}) };
     this.publish({ phase: 'checked', lastResponse: attempt, attempts: [...this.state.attempts, attempt] });
     return true;
   }

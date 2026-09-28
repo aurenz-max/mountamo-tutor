@@ -5,7 +5,7 @@ import DiActionPanel from '../../../components/DiActionPanel';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { FractionCirclesMetrics } from '../../../evaluation/types';
 import type { FractionCirclesData } from './FractionCircles';
-import { buildFractionTouchItems, describeTouch, touchAssignment, touchLevers, touchMatches, touchScene, twoPictureItem,
+import { buildFractionTouchItems, describeTouch, touchAssignment, touchLevers, touchMatches, touchMiss, touchScene, twoPictureItem,
   type FractionPicture, type FractionTouchItem } from './fractionCirclesWorkspace';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { stimulusPipPose } from '../../../pip/stimulusPipPose';
@@ -37,7 +37,7 @@ export interface FractionTouchProps {
 }
 
 /** The teaching workspace is touch_fraction's only controller: the tutor says the fraction, the runtime owns progression. */
-function FractionTouchSurface({ data, className, localOnly = false, runtimePlanItemId, runtimeEvalMode, onWorkspaceFinished }: FractionTouchProps) {
+function FractionTouchSurface({ data, className, localOnly = false, runtimePlanItemId, onWorkspaceFinished }: FractionTouchProps) {
   const instance = useRef(data.instanceId ?? `fraction-touch-${Date.now()}`);
   const workspace = useRef<TeachingWorkspace | null>(null);
   const items = useMemo(() => buildFractionTouchItems(data.challenges), [data.challenges]);
@@ -66,7 +66,6 @@ function FractionTouchSurface({ data, className, localOnly = false, runtimePlanI
   const [practice, setPractice] = useState<FractionTouchItem | null>(null);
   const runner = useWorkspaceRunner({ items, workspace, instanceId: instance.current, primitiveId: 'fraction-circles',
     assignment: touchAssignment, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || 'touch_fraction',
     onFinished: finished, onItemOpened: () => { setPractice(null); resetTap(); }, onCorrectionRetry: resetTap,
   });
   const sessionItem = runner.currentItem ?? items[0];
@@ -103,9 +102,7 @@ function FractionTouchSurface({ data, className, localOnly = false, runtimePlanI
   useLayoutEffect(() => {
     if (!item) return;
     const levers = practice ? [] : touchLevers(sessionItem, pulledLevers);
-    workspace.current = { ...touchScene(item), demonstration: [], canDemonstrate: false, canPresent: false,
-      readyForResponse: true, mark: () => {}, clearPresentation: () => {},
-      levers,
+    workspace.current = { ...touchScene(item), levers,
       // A synchronous commit: the easier touch replaces the pictures before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
@@ -119,7 +116,6 @@ function FractionTouchSurface({ data, className, localOnly = false, runtimePlanI
       },
       endPractice: () => { setPractice(null); resetTap(); },
     };
-    runner.publishWorkspace();
   });
   if (!item) return <p>No fraction pictures are available.</p>;
   // A picture's object id names what it shows (as its aria-label does), never whether it matches.
@@ -130,7 +126,7 @@ function FractionTouchSurface({ data, className, localOnly = false, runtimePlanI
     pip.look(pictureObject(picture));
     setSelected(id);
     (taps.current[item.id] ??= []).push(id);
-    runner.commitGesture({ response: describeTouch(item, id), correct: touchMatches(item, id), cue: () => '' });
+    runner.commitGesture({ response: describeTouch(item, id), correct: touchMatches(item, id), miss: touchMiss(item, id), cue: () => '' });
   };
   return <LuminaCard className={className} surface="elevated">
     <LuminaCardHeader><LuminaCardTitle>Touch the Fraction</LuminaCardTitle></LuminaCardHeader>

@@ -16,6 +16,7 @@ import { LiveLessonRuntime } from '../LiveLessonRuntime';
 import { LiveRuntimeContext } from '../LiveRuntimeContext';
 import { LiveRuntimeSurface } from '../LiveRuntimeSurface';
 import { RuntimeTransport } from '../runtimeTransport';
+import { waitForVisible } from '../waitForVisible';
 import type { WorkspaceInput } from '../contract';
 import { seam } from './liveRuntimeSeams';
 import { PipSurfaceContext } from '../../../../pip/PipSurfaceContext';
@@ -31,6 +32,9 @@ export interface WorkspaceMount {
   pipStore?: PipSurfaceStore;
 }
 
+/** The sandbox controls a primitive hands `onControlsReady`, when it has them (number-line's visible window). */
+type Controls = { getState: () => Record<string, any> } | null;
+
 /** The action names only the observer may run. A tutor tool with one of these names breaks TW ownership. */
 export const OBSERVER_ONLY = ['apply_tutor_verdict', 'retry', 'advance'] as const;
 
@@ -42,8 +46,11 @@ export function mountWorkspace({ primitiveId, evalMode, data, instanceId = 'ws',
   const sent: any[] = [];
   const transport = new RuntimeTransport(runtime, m => sent.push(m));
   const payload = { ...data, instanceId };
+  let controls: Controls = null;
+  const onControlsReady = (value: Controls) => { controls = value; };
   const mounted = () => <LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
-    <Component data={payload} autoStart runtimePlanItemId={`plan-${instanceId}`} runtimeEvalMode={evalMode} />
+    <Component data={payload} autoStart runtimePlanItemId={`plan-${instanceId}`} runtimeEvalMode={evalMode}
+      onControlsReady={onControlsReady} />
   </LiveRuntimeSurface></LiveRuntimeContext.Provider>;
   const tree = () => pipStore ? <PipSurfaceContext.Provider value={pipStore}>{mounted()}</PipSurfaceContext.Provider> : mounted();
   const view = render(tree());
@@ -55,11 +62,30 @@ export function mountWorkspace({ primitiveId, evalMode, data, instanceId = 'ws',
     const s = state(), a = offer(name);
     expect(a, `missing action ${name}`).toBeTruthy();
     lastCommand = crypto.randomUUID();
-    act(() => { runtime.dispatch({ sessionEpoch: 'test', commandId: lastCommand, instanceId,
+    let receipt!: ReturnType<LiveLessonRuntime['dispatch']>;
+    act(() => { receipt = runtime.dispatch({ sessionEpoch: 'test', commandId: lastCommand, instanceId,
       itemId: s.task!.itemId, expectedRevision: s.revision, action: { ...a!.action, ...(input ? { input } : {}) } }); });
+    return receipt;
   };
+  /** Releases the last command's visible-response waiters without waiting for the render. */
   const confirmVisible = () => act(() => { runtime.confirmVisibleResponse(lastCommand); });
   const settle = (ms = 4000) => act(() => { vi.advanceTimersByTime(ms); });
+  /**
+   * What the transport does after a committed command: the real visibility wait on the receipt's revision
+   * while the rendering shell acknowledges, then, once visible, the command's visible-response waiters.
+   * Resolves with the wait's status (`visible`, `superseded`, `timeout`).
+   */
+  const visible = async (receipt: ReturnType<LiveLessonRuntime['dispatch']>) => {
+    if (receipt.status !== 'committed') return receipt.status;
+    const waiting = waitForVisible(runtime, receipt.state.revision);
+    // Short steps, each its own act, so React renders between timers as a browser would: one long act defers
+    // every render to its end, after the wait's own 1 s timeout has fired.
+    for (let ms = 0; ms < 1100; ms += 50) settle(50);
+    settle();
+    const rendered = await waiting;
+    if (rendered.status === 'visible' && receipt.commandId) act(() => { runtime.confirmVisibleResponse(receipt.commandId!); });
+    return rendered.status;
+  };
   /** A finished learner turn in the shared conversation. */
   const say = (text: string) => act(() => {
     seam.conversation = [...seam.conversation, { role: 'user', content: text, timestamp: seam.conversation.length + 1 }];
@@ -88,8 +114,8 @@ export function mountWorkspace({ primitiveId, evalMode, data, instanceId = 'ws',
     expect(el, `no object ${pipObject}`).toBeTruthy();
     fireEvent.click(el!);
   });
-  return { runtime, transport, sent, view, state, offer, dispatch, confirmVisible, settle, say, speak, feedback, tutorTools,
-    packet, press, touch, close: () => transport.close() };
+  return { runtime, transport, sent, view, state, offer, dispatch, confirmVisible, visible, settle, say, speak, feedback, tutorTools,
+    packet, press, touch, controls: () => controls, close: () => transport.close() };
 }
 
 export type WorkspaceHarness = ReturnType<typeof mountWorkspace>;

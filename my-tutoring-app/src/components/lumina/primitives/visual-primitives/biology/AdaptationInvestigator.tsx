@@ -164,7 +164,7 @@ const AdaptationInvestigatorSurface: React.FC<SurfaceProps> = props => {
   return <AdaptationInvestigatorBody {...props} />;
 };
 
-const AdaptationInvestigatorBody: React.FC<SurfaceProps> = ({ data, className = '', runtimePlanItemId, runtimeEvalMode,
+const AdaptationInvestigatorBody: React.FC<SurfaceProps> = ({ data, className = '', runtimePlanItemId,
   tutorOwned, useController }) => {
   const [currentPhase, setCurrentPhase] = useState<Phase>('explore');
   const [exploredPanels, setExploredPanels] = useState<Set<string>>(new Set());
@@ -229,7 +229,7 @@ const AdaptationInvestigatorBody: React.FC<SurfaceProps> = ({ data, className = 
 
   const surface = useController({
     instanceId: instanceId || 'adaptation-investigator', primitiveId: 'adaptation-investigator', objectiveId,
-    planItemId: runtimePlanItemId, evalMode: runtimeEvalMode || 'mixed',
+    planItemId: runtimePlanItemId,
     scene: () => ({ ...teachingScene(data, { open: openRef.current, picture: pictureRef.current,
       misconceptionOpen: misconceptionRef.current }), marked: markedRef.current, finished: finishedRef.current }),
     show: ids => {

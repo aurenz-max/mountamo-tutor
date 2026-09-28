@@ -49,6 +49,49 @@ export function describeComparison(challenge: ComparisonBuilderChallenge, view: 
   }
 }
 
+/**
+ * What a wrong answer shows (`TeachingAttempt.miss`, handoff 20), by the kind of choice, never the option:
+ * - compare-groups / compare-numbers: `said_equal` (same chosen for unequal), `missed_equal` (more or fewer, or
+ *   a < or >, chosen for equal), `reversed` (the opposite relation);
+ * - order: `reversed` (the other direction), `two_swapped`, `other_order`;
+ * - one-more-one-less: `no_step` (the number itself), `wrong_way` (one the other way, or the two answers
+ *   exchanged), `one_short` / `one_over` / `short_by_more` / `over_by_more` (from the right number).
+ */
+export type ComparisonMiss = 'said_equal' | 'missed_equal' | 'reversed' | 'two_swapped' | 'other_order'
+  | 'no_step' | 'wrong_way' | 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more';
+
+const relationMiss = (chosen: string | null, key: string | undefined, equal: string): ComparisonMiss | undefined =>
+  !chosen || chosen === key ? undefined : chosen === equal ? 'said_equal' : key === equal ? 'missed_equal' : 'reversed';
+
+const stepMiss = (got: number | null, target: number, step: 1 | -1): ComparisonMiss | undefined => {
+  if (got === null || got === target + step) return undefined;
+  if (got === target) return 'no_step';
+  if (got === target - step) return 'wrong_way';
+  const off = got - (target + step);
+  return off === -1 ? 'one_short' : off === 1 ? 'one_over' : off < 0 ? 'short_by_more' : 'over_by_more';
+};
+
+export function comparisonMiss(challenge: ComparisonBuilderChallenge | null, view: Pick<ComparisonView,
+  'selected' | 'ordered' | 'oneMore' | 'oneLess'>): ComparisonMiss | undefined {
+  if (!challenge) return undefined;
+  switch (challenge.type) {
+    case 'compare-groups': return relationMiss(view.selected, challenge.correctAnswer, 'equal');
+    case 'compare-numbers': return relationMiss(view.selected, challenge.correctSymbol, '=');
+    case 'order': {
+      const want = [...(challenge.numbers ?? [])].sort((a, b) => challenge.direction === 'descending' ? b - a : a - b);
+      if (want.every((n, i) => view.ordered[i] === n)) return undefined;
+      if (want.every((n, i) => view.ordered[i] === want[want.length - 1 - i])) return 'reversed';
+      return want.filter((n, i) => view.ordered[i] !== n).length === 2 ? 'two_swapped' : 'other_order';
+    }
+    default: {
+      const t = challenge.targetNumber ?? 0, ask = askOf(challenge);
+      if (ask === 'both' && view.oneMore === t - 1 && view.oneLess === t + 1) return 'wrong_way';
+      return (ask !== 'one-less' ? stepMiss(view.oneMore, t, 1) : undefined)
+        ?? (ask !== 'one-more' ? stepMiss(view.oneLess, t, -1) : undefined);
+    }
+  }
+}
+
 /** What is drawn and asked. Counts only where the screen shows them. */
 export function workspaceScene(challenge: ComparisonBuilderChallenge, view: ComparisonView): WorkspaceScene {
   const drawn: Record<string, string | number> = {};

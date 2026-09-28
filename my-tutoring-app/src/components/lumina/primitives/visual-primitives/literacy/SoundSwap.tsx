@@ -159,7 +159,7 @@ function findTargetIndex(
 // Component
 // ============================================================================
 
-function SoundSwapSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: SoundSwapProps) {
+function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps) {
   const {
     title,
     gradeLevel,
@@ -225,7 +225,6 @@ function SoundSwapSurface({ data, className, runtimePlanItemId, runtimeEvalMode 
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || challenges[0]?.operation || 'mixed',
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: () => setActiveSoundIdx(null),
@@ -257,9 +256,7 @@ function SoundSwapSurface({ data, className, runtimePlanItemId, runtimeEvalMode 
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    workspace.current = { ...swapScene(currentChallenge, { highlighted: highlightIdx >= 0 }), demonstration: [],
-      canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...swapScene(currentChallenge, { highlighted: highlightIdx >= 0 }) };
   });
 
   // ── Pip shared surface ───────────────────────────────────────────

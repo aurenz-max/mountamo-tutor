@@ -65,9 +65,8 @@ function stimulus(item: LetterSoundItem, marks: readonly string[]) {
 
 export default function DiLetterSoundsTeaching({ data, className, runtimePlanItemId, runtimeEvalMode }: DiLetterSoundsTeachingProps) {
   const items = useMemo(() => buildLetterSoundItems(data.challenges), [data.challenges]);
-  const evalMode = runtimeEvalMode || data.challengeType || 'letter_sound';
   return <DiTeachingStage<LetterSoundItem, DiLetterSoundsMetrics> primitiveId="di-letter-sounds" data={data}
-    items={items} evalMode={evalMode} className={className} runtimePlanItemId={runtimePlanItemId}
+    items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
     assignment={workspaceAssignment} scene={workspaceScene} copy={COPY} stimulus={stimulus}
     recapLabel={item => item.stimulus === 'word' ? item.keyword : item.letter}
     metrics={result => ({ type: 'di-letter-sounds', ...diStageMetrics(result, items, data.challengeType) })} />;

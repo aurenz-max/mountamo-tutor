@@ -177,7 +177,7 @@ function splitByRhymeFamily(word: string, rhymeFamily: string): [string, string]
 // Component
 // ============================================================================
 
-function RhymeStudioSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: RhymeStudioProps) {
+function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioProps) {
   const {
     title,
     gradeLevel,
@@ -292,7 +292,6 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId, runtimeEvalMod
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || items[0]?.mode || 'recognition',
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onAffirmed: handleAffirmed,
@@ -332,9 +331,7 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId, runtimeEvalMod
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...rhymeScene(currentItem, { collected: collectedFor(currentItem), familyShown: showRhymeFamilyHighlight && !isPreReader }),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...rhymeScene(currentItem, { collected: collectedFor(currentItem), familyShown: showRhymeFamilyHighlight && !isPreReader }) };
   });
 
   /** Tapping a card asks the tutor for the question again: a silent host request, never the answer. */

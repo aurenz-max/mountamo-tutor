@@ -69,6 +69,7 @@ import { hasPair, moveBondCounter, prepareSplit, sortedPair, splitAndSayCue,
   type BondCounters, type BondPlace } from './numberBondSplit';
 import {
   bondActionOf,
+  bondMiss,
   countersForAction,
   equationEvidenceFor,
   expandNumberBondInteractions,
@@ -422,6 +423,8 @@ interface NumberBondProps {
  * that hosts both. `frame` feeds the runner-era runtime registration only.
  */
 type NumberBondControllerOptions = Omit<WorkspaceRunOptions<NumberBondItem>, 'primitiveId'>
+  & { /** The scripted path's runtime registration only (it goes with that path); the workspace reads the lesson's pin. */
+    scriptedEvalMode: string }
   & Omit<JudgedScriptRunnerOptions<NumberBondItem>, 'instanceId' | 'onItemOpened' | 'onPresentStimulus' | 'onFinished'>
   & { onFinished: (summary: JudgedRunSummary | TeachingEvaluationResult) => void;
     frame: Omit<Parameters<typeof useNumberBondRuntime>[0], 'runner' | 'instanceId' | 'objectiveId' | 'planItemId' | 'evalMode'> };
@@ -430,7 +433,7 @@ function useScriptedController(options: NumberBondControllerOptions): LiveRun<Nu
   const runner = useJudgedScriptRunner<NumberBondItem>(options);
   // The SESSION's mode, never the current item: a mount's identity must not change while the runner owns it.
   useNumberBondRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
-    planItemId: options.planItemId, evalMode: options.evalMode, ...options.frame });
+    planItemId: options.planItemId, evalMode: options.scriptedEvalMode, ...options.frame });
   return runner;
 }
 
@@ -762,7 +765,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
   const view = (): NumberBondView => ({ counters: splitCountersRef.current, found: foundPairsRef.current, tiles: equationSlots });
   const runner = useController({
     items, workspace, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || (items[0] ? evalModeForKind(items[0].kind) : 'default'),
+    scriptedEvalMode: runtimeEvalMode || (items[0] ? evalModeForKind(items[0].kind) : 'default'),
     assignment: item => workspaceAssignment(item, view()),
     frame: { leftCount, rightCount, foundPairs, tiles: equationSlots, builtSentences: familyRecord.map(entry => entry.equation) },
     pack,
@@ -918,7 +921,8 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
       const counters = splitCountersRef.current, found = foundPairsRef.current;
       const { left, right, whole } = splitCounts(counters);
       commitGesture(runner, { response: `${left} in one part and ${right} in the other${whole ? `, ${whole} still in the whole` : ''}`,
-        correct: validSplit(item, counters, found), cue: () => splitAndSayVerdict(item, counters, found) });
+        correct: validSplit(item, counters, found), miss: bondMiss(item, { split: { left, right, unplaced: whole }, found }),
+        cue: () => splitAndSayVerdict(item, counters, found) });
       return;
     }
     const { left, right } = pendingSplitRef.current;
@@ -928,6 +932,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
     commitGesture(runner, { response: `${left} and ${right}`,
       correct: item.kind === 'ten-and-ones' ? tenAndOnesFaultOf(item, left, right) === 'match'
         : left + right === item.whole && !foundPairs.some(p => p[0] === pair[0] && p[1] === pair[1]),
+      miss: bondMiss(item, { split: { left, right, unplaced: 0 }, found: foundPairs }),
       cue: () => item.kind === 'ten-and-ones' ? tenAndOnesVerdictCue(item, left, right) : splitVerdictCue(item, left, right, foundPairs) });
   }, [runner, foundPairs]);
 
@@ -953,7 +958,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
       after: [...splitCountersRef.current],
     });
     commitGesture(runner, { response: result.committed ? `made the move "${result.committed}"` : 'no complete whole-group move',
-      correct: result.matched, cue: () => result.cue });
+      correct: result.matched, miss: bondMiss(item, { move: result.committed, matched: result.matched }), cue: () => result.cue });
   }, [runner]);
 
   const commitEquation = useCallback(() => {
@@ -965,6 +970,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
     commitGesture(runner, { response: `built "${tiles.join(' ')}"`,
       correct: item.interactionPhase === 'family-build' ? familyEquationFaultOf(item, tiles.join('')) === 'match'
         : bondEquationFaultOf(item, tiles, action) === 'match',
+      miss: bondMiss(item, { tiles, action }),
       cue: () => item.interactionPhase === 'family-build' ? familyEquationVerdictCue(item, tiles) : bondEquationVerdictCue(item, tiles, action) });
   }, [runner]);
 
@@ -1163,9 +1169,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
   // demonstration targets and no timed stimulus.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentItem) return;
-    workspace.current = { ...workspaceScene(currentItem, view()), demonstration: [], canDemonstrate: false, canPresent: false,
-      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace?.();
+    workspace.current = { ...workspaceScene(currentItem, view()) };
   });
   // AFTER the runtime mount is registered, never before: `start()` waits for
   // `grantOwnership('runner')`, which cannot be granted until this primitive's

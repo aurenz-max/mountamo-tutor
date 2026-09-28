@@ -46,6 +46,7 @@ import {
   wordFor,
   type BtMode,
 } from './baseTenModel';
+import { plainMiss, tradeMiss } from './baseTenWorkspace';
 import { BASE_TEN_DI_MODES } from './baseTenModes';
 import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
 import { MATH_CATALOG } from '../../../service/manifest/catalog/math';
@@ -235,6 +236,31 @@ describe('baseTenModel · the hands verdict is computed in code', () => {
     expect(tradeSolved(item.problem, tradedColumns(item.problem.start, item.problem.place))).toBe(true);
     expect(tradeSolved(item.problem, tradedColumns(item.problem.start, 1))).toBe(false);
     expect(tradeSolved(item.problem, item.problem.start)).toBe(false);
+  });
+
+  it.each([
+    ['the asked trade', (s: number[], p: number) => tradedColumns(s, p), undefined],
+    ['another block size', (s: number[]) => tradedColumns(s, 1), 'other_block'],
+    ['the asked block twice', (s: number[], p: number) => tradedColumns(tradedColumns(s, p), p), 'traded_twice'],
+  ] as const)('a trade of %s -> miss %s', (_, mat, miss) => {
+    expect(tradeMiss(item, mat([...item.problem.start], item.problem.place))).toBe(miss);
+  });
+});
+
+describe('the click mat names what a wrong check shows (handoff 20)', () => {
+  it.each([
+    ['build_number', 13, 12, 0, true, 'one_over'], ['build_number', 11, 12, 0, true, 'one_short'],
+    ['build_number', 21, 12, 0, true, 'digits_swapped'], ['build_number', 22, 12, 0, true, 'one_ten_off'],
+    ['build_number', 12, 12, 0, false, 'not_traded_up'], ['build_number', 12, 12, 0, true, undefined],
+    ['build_number', 40, 12, 0, true, 'over_by_more'], ['add_with_blocks', 51, 61, 0, true, 'one_ten_off'],
+    ['subtract_with_blocks', 20, 25, 0, true, 'short_by_more'],
+    ['regroup', 35, 35, 0, true, 'no_trade'], ['regroup', 36, 35, 1, true, 'value_changed'], ['regroup', 35, 35, 1, true, undefined],
+  ] as const)('%s: got %d for %d -> %s', (type, got, target, trades, standard, miss) => {
+    expect(plainMiss(type, { got, target, unit: 1, trades, standard })).toBe(miss);
+  });
+
+  it('a decimal mat counts in its smallest block', () => {
+    expect(plainMiss('build_number', { got: 1.3, target: 1.2, unit: 0.1, trades: 0, standard: true })).toBe('one_over');
   });
 });
 

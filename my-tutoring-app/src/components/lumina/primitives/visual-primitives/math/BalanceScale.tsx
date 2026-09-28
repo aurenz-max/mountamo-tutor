@@ -192,7 +192,7 @@ type BalanceScaleProps = BalanceSurfaceProps;
 /** The teaching workspace is the plain solver's only controller: the runtime owns progression. */
 const useBalanceProgress = useWorkspaceProgressFor('balance-scale');
 
-const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode }: BalanceScaleProps) => {
+const BalanceScaleSurface = ({ data, className, runtimePlanItemId }: BalanceScaleProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -242,7 +242,7 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     challenges,
     getChallengeId: challengeIdOf,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || firstChallenge?.type || 'one_step', workspace,
+    workspace,
     assignment: (ch) => plainAssignment(ch, challengeIdOf(ch)),
     // A fresh equation resets the scale; Try again clears the typed value.
     onItemOpened: (index, retry) => {
@@ -260,7 +260,6 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
   } = progress;
   // A checked answer waits for Try again or Next challenge on the shell.
   const blockedRef = useRef(false);
@@ -482,9 +481,8 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
       return;
     }
     const correct = Math.abs(answer - activeVariableValue) < 0.01;
-    incrementAttempts();
     // The scale's own check is the verdict, right or wrong.
-    progress.commitCheck?.(describeVerify(answer), correct);
+    progress.commitCheck(describeVerify(answer), correct);
     const attempts = currentAttempts + 1;
 
     if (correct) {
@@ -510,7 +508,7 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
       setFeedback(`${answer} is not correct. Check your work!`);
       setFeedbackType('error');
     }
-  }, [verifyInput, activeVariableValue, currentAttempts, challenges.length, currentChallenge, currentChallengeIndex, userSteps.length, recordResult, incrementAttempts, progress]);
+  }, [verifyInput, activeVariableValue, currentAttempts, challenges.length, currentChallenge, currentChallengeIndex, userSteps.length, recordResult, progress]);
 
   // Session-complete: build flattened metrics and submit exactly once.
   useEffect(() => {
@@ -586,9 +584,7 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
   // What the tutor and the observer are shown, republished every render.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    workspace.current = { ...plainScene(currentChallenge, { left: currentLeft, right: currentRight, phase, steps: userSteps.length }),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    progress.publishWorkspace?.();
+    workspace.current = { ...plainScene(currentChallenge, { left: currentLeft, right: currentRight, phase, steps: userSteps.length }) };
   });
 
   // -------------------------------------------------------------------------

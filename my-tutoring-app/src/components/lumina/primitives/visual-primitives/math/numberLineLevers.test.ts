@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { hopsLeak, jumpLevers, learnerHops, modelHop, simplerJump } from './numberLineLevers';
+import { hopsLeak, jumpLevers, jumpMiss, learnerHops, modelHop, simplerJump } from './numberLineLevers';
+import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { NumberLineChallenge, NumberLineOperation } from './NumberLine';
 
 const op = (type: 'add' | 'subtract', startValue: number, changeValue: number): NumberLineOperation =>
@@ -69,5 +70,35 @@ describe('simpler jump builder', () => {
     expect(jumpLevers(item([op('add', 4, 3)]), ['numbered_hops'], range).map(l => [l.id, l.pulled]))
       .toEqual([['numbered_hops', true], ['simpler_jump', false]]);
     expect(jumpLevers({ ...item([op('add', 4, 3)]), type: 'plot_point' }, [], range)).toEqual([]);
+  });
+});
+
+describe('what a wrong jump shows, and the lever that answers it (code, not a Live run)', () => {
+  const one = item([op('subtract', 8, 3)]);                        // lands on 5
+  const two = item([op('add', 2, 3), op('add', 5, 4)]);            // lands on 5, then 9
+  it.each([
+    [one, [4], 'one_past'], [one, [6], 'one_short'], [one, [2], 'off_by_more'], [one, [9], 'wrong_direction'],
+    [one, [8], 'wrong_direction'], [one, [], 'no_landing'], [one, [5], undefined],
+    [two, [5, 10], 'second_jump_off'], [two, [4, 9], 'one_short'], [two, [5], 'no_landing'], [two, [5, 9], undefined],
+  ] as const)('%#: landings %j -> %s', (ch, placed, miss) => {
+    expect(jumpMiss(ch, placed)).toBe(miss);
+  });
+
+  it('one hop off, either way, or lost count on one jump: numbered hops come next', () => {
+    const levers = jumpLevers(one, [], { min: 0, max: 20 });
+    for (const miss of ['one_short', 'one_past', 'off_by_more', 'wrong_direction']) expect(nextLever(levers, miss)).toBe('numbered_hops');
+  });
+
+  it('lost track across two jumps: the easier single jump comes next, before the hops', () => {
+    const levers = jumpLevers(two, [], { min: 0, max: 20 });
+    expect(levers.map(l => l.id)).toEqual(['numbered_hops', 'simpler_jump']);
+    expect(nextLever(levers, 'second_jump_off')).toBe('simpler_jump');
+    expect(nextLever(levers, 'one_short')).toBe('numbered_hops');
+  });
+
+  it('once the lever for a miss is pulled, the next open lever that answers it; with no named miss, help first', () => {
+    const pulled = jumpLevers(two, ['numbered_hops'], { min: 0, max: 20 });
+    expect(nextLever(pulled, 'off_by_more')).toBe('simpler_jump');
+    expect(nextLever(jumpLevers(two, [], { min: 0, max: 20 }))).toBe('numbered_hops');
   });
 });

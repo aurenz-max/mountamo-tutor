@@ -175,7 +175,7 @@ const ACTION_META: Record<GenreAction, { label: string; icon: string; accent: Ge
 // Component
 // ============================================================================
 
-const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
+const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, runtimePlanItemId }) => {
   const {
     title,
     gradeLevel = '3',
@@ -249,7 +249,6 @@ const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, r
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || data.mode || 'classify_genre',
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onAffirmed: (item) => {
@@ -266,10 +265,7 @@ const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, r
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...genreScene(currentItem, excerpts, currentItem.action === 'name-genre' ? menu : [], readsAloud),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true,
-      mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...genreScene(currentItem, excerpts, currentItem.action === 'name-genre' ? menu : [], readsAloud) };
   });
 
   // Pip: the texts are the question side and the genre menu is the answer, so

@@ -241,7 +241,7 @@ interface CalendarExplorerProps {
 /** The teaching workspace is the grid's only controller: the runtime owns progression. */
 const useCalendarProgress = useWorkspaceProgressFor('calendar-explorer');
 
-const CalendarGridSurface = ({ data, runtimePlanItemId, runtimeEvalMode }: CalendarExplorerProps) => {
+const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps) => {
   const {
     title,
     description,
@@ -286,7 +286,6 @@ const CalendarGridSurface = ({ data, runtimePlanItemId, runtimeEvalMode }: Calen
   const progress = useCalendarProgress<CalendarExplorerChallenge>({
     challenges, getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || (new Set(challenges.map(c => c.type)).size === 1 ? challenges[0].type : 'mixed'),
     workspace, assignment: calendarGridAssignment,
     // A fresh challenge and Try again both start from a clean calendar. The setters are declared
     // below; this runs only after render.
@@ -301,7 +300,6 @@ const CalendarGridSurface = ({ data, runtimePlanItemId, runtimeEvalMode }: Calen
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
   } = progress;
   workspaceClosed.current = progress.canAttempt === false;
 
@@ -379,7 +377,6 @@ const CalendarGridSurface = ({ data, runtimePlanItemId, runtimeEvalMode }: Calen
     if (!currentChallenge || selectedAnswer === null || learnerBlocked()) return;
 
     const isCorrect = selectedAnswer.toLowerCase().trim() === currentChallenge.correctAnswer.toLowerCase().trim();
-    incrementAttempts();
     recordResult({
       challengeId: currentChallenge.id,
       correct: isCorrect,
@@ -395,9 +392,9 @@ const CalendarGridSurface = ({ data, runtimePlanItemId, runtimeEvalMode }: Calen
       setFeedback({ correct: false, message: 'Not quite.' });
     }
     // The activity's own check: the workspace records it and the tutor hears what was picked, never the key.
-    progress.commitCheck?.(describeCalendarPick(currentChallenge, selectedAnswer), isCorrect);
+    progress.commitCheck(describeCalendarPick(currentChallenge, selectedAnswer), isCorrect);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallenge, selectedAnswer, currentAttempts, incrementAttempts, recordResult]);
+  }, [currentChallenge, selectedAnswer, currentAttempts, recordResult]);
 
   // ── Session complete: submit once, and only under a lesson's evaluation provider ──
   const submittedOnce = useRef(false);
@@ -428,9 +425,7 @@ const CalendarGridSurface = ({ data, runtimePlanItemId, runtimeEvalMode }: Calen
   useLayoutEffect(() => {
     if (!currentChallenge) return;
     workspace.current = { ...calendarGridScene(currentChallenge, { showDayHeaders, showMonthLabel, showTargetDayColumn,
-      revealPolicy: tutorRevealPolicy(supportTier) }),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    progress.publishWorkspace?.();
+      revealPolicy: tutorRevealPolicy(supportTier) }) };
   });
 
   // ── Pip shared surface ──────────────────────────────────────────
@@ -758,7 +753,7 @@ const CalendarGridSurface = ({ data, runtimePlanItemId, runtimeEvalMode }: Calen
 
 /** Spoken mode is isolated from the calendar grid so each response channel has
  * one honest lifecycle: the tutor owns progression here; taps own it above. */
-const CalendarSequenceSurface = ({ data, runtimePlanItemId, runtimeEvalMode }: CalendarExplorerProps) => {
+const CalendarSequenceSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps) => {
   const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const items = useMemo(
@@ -802,7 +797,6 @@ const CalendarSequenceSurface = ({ data, runtimePlanItemId, runtimeEvalMode }: C
     objectiveId: data.objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || (monthOnly ? 'month_sequence' : dayOnly ? 'day_sequence' : 'mixed'),
     instanceId: resolvedInstanceId,
     onFinished: finish,
   });
@@ -812,9 +806,7 @@ const CalendarSequenceSurface = ({ data, runtimePlanItemId, runtimeEvalMode }: C
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!runner.currentItem) return;
-    workspace.current = { ...calendarSequenceScene(runner.currentItem), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...calendarSequenceScene(runner.currentItem) };
   });
 
   /** Asks the tutor for the question again: a silent host request, never the answer. */

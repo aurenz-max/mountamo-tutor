@@ -6,6 +6,7 @@ import { NUMBER_SEQUENCER_EVAL_MODES } from './numberSequencerModes';
 import { buildSequencerItems, sequencerItemsForChallenge, sequencerChallengeValid,
   sequencerPackBase, sequencerOrderCue, sequencerHarnessAnswers } from './numberSequencerScript';
 import type { NumberSequencerChallenge } from './NumberSequencer';
+import { orderMiss } from './numberSequencerDomain';
 
 export const sequencerFixtures: NumberSequencerChallenge[] = [
   { id: 'count', type: 'count-from', instruction: '', sequence: [7], startNumber: 7, direction: 'forward', correctAnswers: [8, 9, 10], rangeMin: 7, rangeMax: 10 },
@@ -83,5 +84,15 @@ describe('number train DI contract', () => {
       expect(spokenSpanOf(sequencerOrderCue(item, order))).toMatch(/^My turn:/);
     }
     expect(spokenSpanOf(sequencerOrderCue(item, [1, 2, 3, 4]))).toMatch(/^Yes,/);
+  });
+});
+
+describe('what a wrong arrangement shows (handoff 20)', () => {
+  const [order] = buildSequencerItems([sequencerFixtures[3]]).items;
+  it.each([
+    [[4, 3, 2, 1], 'reversed'], [[2, 1, 3, 4], 'two_swapped'], [[1, 4, 3, 2], 'two_swapped'],
+    [[2, 3, 4, 1], 'other_order'], [[1, 2, 3, 4], undefined],
+  ])('placed %j -> %s', (placed, miss) => {
+    expect(orderMiss(order, placed)).toBe(miss);
   });
 });

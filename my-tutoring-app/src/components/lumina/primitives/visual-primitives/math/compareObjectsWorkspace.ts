@@ -27,6 +27,21 @@ export function workspaceAssignment(item: CompareObjectsItem): TeachingAssignmen
 export const orderMatches = (item: CompareObjectsItem, placed: readonly string[]) =>
   placed.length === item.answerNames.length && placed.every((name, i) => name === item.answerNames[i]);
 
+/**
+ * What a wrong arrangement shows (`TeachingAttempt.miss`, handoff 20): `not_all_placed` (some objects not
+ * touched), `reversed` (the whole order from the other end), `two_swapped` (only two out of place),
+ * `other_order`. Undefined for a right arrangement and for the spoken kinds.
+ */
+export type CompareOrderMiss = 'not_all_placed' | 'reversed' | 'two_swapped' | 'other_order';
+
+export function compareOrderMiss(item: CompareObjectsItem | null, placed: readonly string[]): CompareOrderMiss | undefined {
+  if (!item || item.kind !== 'order_three' || orderMatches(item, placed)) return undefined;
+  const want = item.answerNames;
+  if (placed.length < want.length) return 'not_all_placed';
+  if (want.every((name, i) => placed[i] === want[want.length - 1 - i])) return 'reversed';
+  return want.filter((name, i) => placed[i] !== name).length === 2 ? 'two_swapped' : 'other_order';
+}
+
 /** The committed arrangement in the learner's terms, as the tutor and the observer read it. */
 export const describeOrder = (item: CompareObjectsItem, placed: readonly string[]) =>
   placed.length ? `Touched ${placed.length} of ${item.objectNames.length} in this order: ${placed.join(', ')}` : 'Touched none of the objects';

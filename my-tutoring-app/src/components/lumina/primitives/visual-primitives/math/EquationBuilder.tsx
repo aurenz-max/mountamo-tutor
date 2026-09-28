@@ -28,7 +28,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import {
-  ENTRY_LABEL, describeEquationBuilderCheck, equationBuilderAssignment, equationBuilderMatches, equationBuilderScene,
+  ENTRY_LABEL, describeEquationBuilderCheck, equationBuilderAssignment, equationBuilderMatches, equationBuilderMiss, equationBuilderScene,
   evaluateEquation, parseEquationTokens, tileLabel, type EquationBuilderView,
 } from './equationBuilderWorkspace';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
@@ -303,7 +303,7 @@ const useEquationBuilderProgress = useWorkspaceProgressFor('equation-builder');
 // Component
 // ============================================================================
 
-function EquationBuilderSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: EquationBuilderProps) {
+function EquationBuilderSurface({ data, className, runtimePlanItemId }: EquationBuilderProps) {
   const {
     title,
     description,
@@ -332,7 +332,7 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId, runtimeEva
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || 'mixed', workspace, assignment: equationBuilderAssignment,
+    workspace, assignment: equationBuilderAssignment,
     onItemOpened: (index) => reopen.current(index),
   });
   const {
@@ -341,7 +341,6 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId, runtimeEva
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
   } = progress;
   const canAttempt = progress.canAttempt !== false;
 
@@ -481,19 +480,17 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId, runtimeEva
 
   /** Records the verdict and commits it; the runtime offers Try again or advances. */
   const settle = (challenge: EquationBuilderChallenge, correct: boolean, success: string, miss: string) => {
-    incrementAttempts();
     if (correct) {
       SoundManager.playCorrect();
       setFeedback(success);
       setFeedbackType('success');
       setChallengeSolved(true);
-      recordResult({ challengeId: challenge.id, correct: true, attempts: currentAttempts + 1 });
     } else {
       SoundManager.playIncorrect();
       setFeedback(miss);
       setFeedbackType('error');
     }
-    progress.commitCheck?.(describeEquationBuilderCheck(challenge, view), correct);
+    progress.commitCheck(describeEquationBuilderCheck(challenge, view), correct, equationBuilderMiss(challenge, view));
   };
 
   const handleCheckBuild = () => {
@@ -578,9 +575,7 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId, runtimeEva
   // alone, so opening an item (and its tile shuffle) adds no revision after the advance.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    workspace.current = { ...equationBuilderScene(currentChallenge, { supportTier }), demonstration: [],
-      canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    progress.publishWorkspace?.();
+    workspace.current = { ...equationBuilderScene(currentChallenge, { supportTier }) };
   });
 
   // -------------------------------------------------------------------------

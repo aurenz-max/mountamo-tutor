@@ -83,6 +83,48 @@ export function patternBuilderMatches(data: PatternSource, c: PatternBuilderChal
   }
 }
 
+/**
+ * What a wrong Check shows (`TeachingAttempt.miss`, handoff 20), from the same work the check reads:
+ * - a row filled in (extend, find_rule, translate): `blanks_left` (fewer tokens than places), `extra_tokens`,
+ *   `repeated_last` (extend, find_rule: every blank holds the row's last token), `started_over` (extend, find_rule:
+ *   the blanks hold the row's first tokens), `two_swapped`, `one_wrong` (one place), `several_wrong`;
+ * - identify_core: `two_repeats` (the part twice), `too_long`, `too_short`, `other_part` (as many tokens, not the part);
+ * - create: `too_short` (under four tokens), `no_repeat` (no starting part repeats all the way through).
+ */
+export type PatternBuilderMiss = 'blanks_left' | 'extra_tokens' | 'repeated_last' | 'started_over' | 'two_swapped' | 'one_wrong'
+  | 'several_wrong' | 'two_repeats' | 'too_long' | 'too_short' | 'other_part' | 'no_repeat';
+
+const rowMiss = (got: string[], want: string[]): PatternBuilderMiss => {
+  if (got.length < want.length) return 'blanks_left';
+  if (got.length > want.length) return 'extra_tokens';
+  const off = want.map((t, i) => i).filter(i => got[i].toLowerCase() !== want[i].toLowerCase());
+  if (off.length === 1) return 'one_wrong';
+  if (off.length === 2 && same([got[off[0]], got[off[1]]], [want[off[1]], want[off[0]]])) return 'two_swapped';
+  return 'several_wrong';
+};
+
+export function patternBuilderMiss(data: PatternSource, c: PatternBuilderChallenge | null, v: PatternBuilderView):
+  PatternBuilderMiss | undefined {
+  if (!c || patternBuilderMatches(data, c, v)) return undefined;
+  const seq = activeSequence(data, c);
+  switch (c.type) {
+    case 'extend':
+    case 'find_rule': {
+      const got = v.extension, last = seq.given[seq.given.length - 1];
+      if (got.length === seq.hidden.length && last && got.every(t => t.toLowerCase() === last.toLowerCase())) return 'repeated_last';
+      if (got.length === seq.hidden.length && same(got, seq.given.slice(0, got.length))) return 'started_over';
+      return rowMiss(got, seq.hidden);
+    }
+    case 'translate': return rowMiss(v.translated, translationOf(data, c) ?? []);
+    case 'identify_core': {
+      const got = selectedTokens(data, c, v);
+      if (same(got, [...seq.core, ...seq.core])) return 'two_repeats';
+      return got.length > seq.core.length ? 'too_long' : got.length < seq.core.length ? 'too_short' : 'other_part';
+    }
+    case 'create': return v.created.length < 4 ? 'too_short' : 'no_repeat';
+  }
+}
+
 /** The learner's checked work in their terms, never the key. */
 export function describePatternBuilderCheck(data: PatternSource, c: PatternBuilderChallenge, v: PatternBuilderView): string {
   const row = (tokens: string[]) => tokens.length ? tokens.join(', ') : 'nothing';

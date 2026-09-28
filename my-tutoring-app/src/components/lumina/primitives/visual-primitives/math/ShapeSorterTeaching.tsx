@@ -10,33 +10,34 @@ import { renderShapeSVG } from './shapeSorterDrawing';
 import RealWorldShapeObject from '../shared/RealWorldShapeObject';
 import type { ShapeSorterMetrics } from '../../../evaluation/types';
 import { useTeachingEvaluation } from '../../../components/live-activity/runtime/useTeachingEvaluation';
+import { useWorkspacePin } from '../../../components/live-activity/runtime/workspacePin';
 import type { ShapeSorterProps } from './ShapeSorter';
 
 const MAT_COLORS = ['text-cyan-300', 'text-purple-300', 'text-amber-300'];
 
 /** Naming (plain and real-object), counting and sorting: geometry and scene binding
  *  only. Conversation and progression are shared. */
-export default function ShapeSorterTeaching({ data, className, runtimePlanItemId, runtimeEvalMode }: ShapeSorterProps) {
+export default function ShapeSorterTeaching({ data, className, runtimePlanItemId }: ShapeSorterProps) {
   const items = useMemo(() => itemsFromChallenges(data.challenges, { isPreReader: (data.gradeBand ?? 'K') === 'K' }), [data.challenges, data.gradeBand]);
   if (!items.length) {
     return <LuminaCard><LuminaCardContent>These shape challenges are still being drawn. Try generating them again.</LuminaCardContent></LuminaCard>;
   }
   return <ShapesWorkspace key={data.instanceId} data={data} items={items} className={className}
-    runtimePlanItemId={runtimePlanItemId} runtimeEvalMode={runtimeEvalMode} />;
+    runtimePlanItemId={runtimePlanItemId} />;
 }
 
-function ShapesWorkspace({ data, items, className, runtimePlanItemId, runtimeEvalMode }: ShapeSorterProps & {
+function ShapesWorkspace({ data, items, className, runtimePlanItemId }: ShapeSorterProps & {
   items: ReturnType<typeof itemsFromChallenges>;
 }) {
   const instance = useRef(data.instanceId || `shape-sorter-${Date.now()}`);
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [marks, mark] = useState<string[]>([]);
   const assignments = useMemo(() => items.map(item => ({ ...workspaceAssignment(item), checkResponse: () => null })), [items]);
-  const evalMode = runtimeEvalMode || 'identify';
+  const evalMode = useWorkspacePin();
   const lesson = useTeachingWorkspace({ instanceId: instance.current, primitiveId: 'shape-sorter',
-    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, evalMode, items: assignments, workspace });
+    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, items: assignments, workspace });
   useTeachingEvaluation<ShapeSorterMetrics>({ primitiveType: 'shape-sorter', instanceId: instance.current,
-    data, assignments, lesson, evalMode,
+    data, assignments, lesson,
     metrics: result => {
       const scoreFor = (mode: 'identify' | 'count' | 'sort') => {
         const scores = result.outcomes.filter(o => items.find(i => i.id === o.id)?.mode === mode).map(o => o.score);
@@ -51,9 +52,8 @@ function ShapesWorkspace({ data, items, className, runtimePlanItemId, runtimeEva
     workspace.current = {
       ...workspaceScene(item, shapes),
       demonstration: marks,
-      readyForResponse: true, canDemonstrate: true, canPresent: false, mark, clearPresentation: () => mark([]),
+      canDemonstrate: true, mark, clearPresentation: () => mark([]),
     };
-    lesson.publishWorkspace();
   });
 
   /** Which sort groups this challenge has already had a correct attempt land on —

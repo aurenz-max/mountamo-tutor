@@ -72,7 +72,7 @@ function YouAndMeSurface(props: YouAndMeProps) {
   return <YouAndMeSession key={JSON.stringify([props.data.instanceId, props.data.challenges])} {...props} />;
 }
 
-function YouAndMeSession({ data, className, runtimePlanItemId, runtimeEvalMode }: YouAndMeProps) {
+function YouAndMeSession({ data, className, runtimePlanItemId }: YouAndMeProps) {
   const ctx = useLuminaAIContext();
   const instanceId = useRef(data.instanceId ?? `you-and-me-${crypto.randomUUID()}`).current;
   const workspace = useRef<TeachingWorkspace | null>(null);
@@ -113,7 +113,6 @@ function YouAndMeSession({ data, className, runtimePlanItemId, runtimeEvalMode }
     objectiveId: data.objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || data.challengeType,
     instanceId,
     onFinished: finish,
     onItemOpened: () => setCorrectedId(null),
@@ -127,9 +126,7 @@ function YouAndMeSession({ data, className, runtimePlanItemId, runtimeEvalMode }
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!item) return;
-    workspace.current = { ...youAndMeScene(item), demonstration: [], canDemonstrate: false, canPresent: false,
-      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    run.publishWorkspace();
+    workspace.current = { ...youAndMeScene(item) };
   });
 
   // ── Pip shared surface ────────────────────────────────────────────────────

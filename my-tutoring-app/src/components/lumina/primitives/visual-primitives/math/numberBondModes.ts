@@ -1,6 +1,7 @@
 import type { JudgedRunOutcome, JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
 import { numberWordFor } from './countingBoardScript';
 import {
+  BOND_TEN,
   bondEquationFaultOf,
   factFamilyForms,
   familyFormKeyFor,
@@ -12,7 +13,9 @@ import {
 } from './numberBondScript';
 import {
   expandSplitAndSay,
+  hasPair,
   type BondCounters,
+  type BondPair,
 } from './numberBondSplit';
 
 export type BondGroup = 'left' | 'right';
@@ -312,7 +315,45 @@ export const familyEquationFaultOf = (item: NumberBondItem, equation: string): F
   return 'match';
 };
 
-export const familyEquationVerdictCue = (item: NumberBondItem, tiles: readonly string[]): string => {
+/**
+ * What a wrong split, move or equation shows (`TeachingAttempt.miss`, handoff 20), from the same work the
+ * check reads:
+ * - split: `not_all_placed` (counters left in the whole), `same_way_again` (a decompose pair already made),
+ *   `ten_one_off` (ten_and_ones: a part of nine or eleven), `no_full_ten` (neither part is ten, nor one off);
+ * - move: `other_move` (a complete whole-group move, not the one asked for);
+ * - equation: `unfinished_equation`, `false_equation` (does not add up), `other_numbers` (numbers not from
+ *   this bond), `other_fact` (a true fact of this bond that does not record the move made).
+ * Undefined for right work and for the spoken phases.
+ */
+export type BondMiss = 'not_all_placed' | 'same_way_again' | 'ten_one_off' | 'no_full_ten' | 'other_move'
+  | 'unfinished_equation' | 'false_equation' | 'other_numbers' | 'other_fact';
+
+export type BondWork =
+  | { split: { left: number; right: number; unplaced: number }; found: readonly BondPair[] }
+  | { move: BondModelAction | null; matched: boolean }
+  | { tiles: readonly string[]; action?: BondModelAction };
+
+const EQUATION_MISS = { incomplete: 'unfinished_equation', arithmetic: 'false_equation', numbers: 'other_numbers',
+  action: 'other_fact', form: 'other_fact' } as const;
+
+export function bondMiss(item: NumberBondItem | null, work: BondWork): BondMiss | undefined {
+  if (!item || item.answerKind !== 'gesture') return undefined;
+  if ('move' in work) return work.matched || !work.move ? undefined : 'other_move';
+  if ('tiles' in work) {
+    const fault = item.interactionPhase === 'family-build' ? familyEquationFaultOf(item, work.tiles.join(''))
+      : bondEquationFaultOf(item, work.tiles, work.action);
+    return fault === 'match' ? undefined : EQUATION_MISS[fault];
+  }
+  const { left, right, unplaced } = work.split;
+  if (unplaced > 0 || left + right !== item.whole) return 'not_all_placed';
+  if (item.kind === 'ten-and-ones') {
+    if (left === BOND_TEN || right === BOND_TEN) return undefined;
+    return [left, right].some(n => Math.abs(n - BOND_TEN) === 1) ? 'ten_one_off' : 'no_full_ten';
+  }
+  return hasPair(work.found, [Math.min(left, right), Math.max(left, right)]) ? 'same_way_again' : undefined;
+}
+
+export const familyEquationVerdictCue =(item: NumberBondItem, tiles: readonly string[]): string => {
   const equation = tiles.join('');
   const fault = familyEquationFaultOf(item, equation);
   const expected = item.familyForm

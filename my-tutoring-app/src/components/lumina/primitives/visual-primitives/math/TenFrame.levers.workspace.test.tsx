@@ -15,6 +15,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
+import { observerLever } from '../../../components/live-activity/runtime/observerLever';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); vi.restoreAllMocks(); });
@@ -59,5 +60,21 @@ it('the easier build is ungraded practice, then the full build is credited with 
   expect(attempts.map(a => [a.itemId, a.correct, !!(a as { practice?: boolean }).practice])).toEqual([
     ['b0', false, false], ['b0~smaller', true, true], ['b0', true, false]]);
   expect(attempts.at(-1)).toMatchObject({ levers: ['smaller_build'], assisted: true });
+  h.close();
+});
+
+it('a wrong placement records what the frame showed, and the observer answers that miss with its lever', () => {
+  const h = mountWorkspace({ primitiveId: 'ten-frame', evalMode: 'build', data: data(false), instanceId: 'frame' });
+  place(h, 6);                                                      // 7 to build: one short
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'one_short' });
+  expect(observerLever(h.state(), true)).toBe('running_count');
+  h.close();
+});
+
+it('the running count already showing, a frame filled past the number opens the five-frame', () => {
+  const h = mountWorkspace({ primitiveId: 'ten-frame', evalMode: 'build', data: data(true), instanceId: 'frame' });
+  place(h, 10);
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'filled_frame' });
+  expect(observerLever(h.state(), true)).toBe('five_frame');
   h.close();
 });

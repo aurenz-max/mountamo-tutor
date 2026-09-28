@@ -105,7 +105,7 @@ interface WordFlipProps {
 // Component
 // ============================================================================
 
-function WordFlipSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: WordFlipProps) {
+function WordFlipSurface({ data, className, runtimePlanItemId }: WordFlipProps) {
   const {
     title,
     challenges = [],
@@ -168,7 +168,6 @@ function WordFlipSurface({ data, className, runtimePlanItemId, runtimeEvalMode }
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || data.challengeType,
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: () => setWordTapped(false),
@@ -194,9 +193,7 @@ function WordFlipSurface({ data, className, runtimePlanItemId, runtimeEvalMode }
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    workspace.current = { ...flipScene(currentChallenge), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...flipScene(currentChallenge) };
   });
 
   // ── Pip shared surface ───────────────────────────────────────────

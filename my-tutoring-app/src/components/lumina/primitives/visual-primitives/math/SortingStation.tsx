@@ -220,6 +220,8 @@ interface SortingStationProps {
 
 /** The scripted runner's options beside the workspace controller's (compare-objects' shape). */
 type SortingStationControllerOptions = Omit<WorkspaceRunOptions<SortingStationItem>, 'primitiveId' | 'assignment' | 'onFinished'>
+  & { /** The scripted path's runtime registration only (it goes with that path); the workspace reads the lesson's pin. */
+    scriptedEvalMode: string }
   & Omit<JudgedScriptRunnerOptions<SortingStationItem>, 'pack' | 'instanceId' | 'onItemOpened' | 'onFinished'>
   & { pack?: JudgedScriptPack<SortingStationItem>; onFinished: (summary: SortingFinish) => void };
 
@@ -231,7 +233,7 @@ function useScriptedController(options: SortingStationControllerOptions): LiveRu
   const runner = useJudgedScriptRunner<SortingStationItem>({ ...options, pack: options.pack! });
   // The SESSION's mode, never `runner.currentItem`: a mount's identity must not change while the runner owns it.
   useSortingStationRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
-    planItemId: options.planItemId, evalMode: options.evalMode });
+    planItemId: options.planItemId, evalMode: options.scriptedEvalMode });
   return runner;
 }
 
@@ -387,7 +389,7 @@ const SortingStationSurface = ({ data, className, autoStart = false, runtimePlan
     items, workspace, objectiveId, planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount, never `runner.currentItem`: a mount's
     // identity must not change while the runner owns it.
-    evalMode: runtimeEvalMode || items[0]?.mode || 'default',
+    scriptedEvalMode: runtimeEvalMode || items[0]?.mode || 'default',
     // Load-bearing for the live host: without it the runner's `resume()` early-returns,
     // its speech holds never settle, and the completion handoff has nothing to read.
     runtime: liveRuntime,
@@ -492,9 +494,7 @@ const SortingStationSurface = ({ data, className, autoStart = false, runtimePlan
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentItem) return;
-    workspace.current = { ...workspaceScene(currentItem), demonstration: [], canDemonstrate: false, canPresent: false,
-      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace?.();
+    workspace.current = { ...workspaceScene(currentItem) };
   });
   // AFTER the runtime mount is registered, never before: `start()` waits for
   // `grantOwnership('runner')`, which cannot be granted until this primitive's

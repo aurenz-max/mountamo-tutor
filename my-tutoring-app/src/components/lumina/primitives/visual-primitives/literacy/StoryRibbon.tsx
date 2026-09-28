@@ -140,7 +140,7 @@ function StoryRibbonSurface(props: StoryRibbonProps) {
   );
 }
 
-function StoryRibbonSession({ data, className, runtimePlanItemId, runtimeEvalMode }: StoryRibbonProps) {
+function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonProps) {
   const items = useMemo(() => itemsFromChallenges(data.challenges), [data.challenges]);
   const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
@@ -205,7 +205,6 @@ function StoryRibbonSession({ data, className, runtimePlanItemId, runtimeEvalMod
     objectiveId: data.objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || (items[0]?.mode ?? 'tell_connected_account'),
     instanceId: resolvedInstanceId,
     onItemOpened: (item) => {
       const mixed = initialIdsFor(item);
@@ -238,9 +237,7 @@ function StoryRibbonSession({ data, className, runtimePlanItemId, runtimeEvalMod
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...storyRibbonScene(currentItem), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...storyRibbonScene(currentItem) };
   });
 
   /** Asks the tutor for the directions again: a silent host request, never an event. */

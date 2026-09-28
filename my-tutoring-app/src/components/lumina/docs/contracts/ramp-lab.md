@@ -65,3 +65,7 @@ automated, fresh-generation, browser, and live semantic checks. Human microphone
 pause timing, tutor handoff, and tablet acceptance remain OPEN in HUMAN-CHECKS #148.
 The semantic harness sends synthetic learner answers and does not establish child
 audio recognition reliability.
+
+## Changelog
+
+- 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.

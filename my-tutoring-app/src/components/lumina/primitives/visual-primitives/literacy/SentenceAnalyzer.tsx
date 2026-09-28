@@ -187,7 +187,7 @@ const WALL_HEADING: Record<string, string> = {
 // Component
 // ============================================================================
 
-const SentenceAnalyzerSurface: React.FC<SentenceAnalyzerProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
+const SentenceAnalyzerSurface: React.FC<SentenceAnalyzerProps> = ({ data, className, runtimePlanItemId }) => {
   const {
     title,
     description,
@@ -267,7 +267,6 @@ const SentenceAnalyzerSurface: React.FC<SentenceAnalyzerProps> = ({ data, classN
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || (data.challenges?.[0]?.type ?? 'identify_pos'),
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onAffirmed: (item) => {
@@ -284,9 +283,7 @@ const SentenceAnalyzerSurface: React.FC<SentenceAnalyzerProps> = ({ data, classN
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...sentenceScene(currentItem, readsAloud), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...sentenceScene(currentItem, readsAloud) };
   });
 
   // Pip: the sentence is the question side (its highlight already marks the word);

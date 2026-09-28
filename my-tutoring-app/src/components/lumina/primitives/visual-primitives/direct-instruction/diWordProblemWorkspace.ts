@@ -80,6 +80,18 @@ export function wordProblemAssignment(item: WordProblemItem): TeachingAssignment
 /** The hands step's check, as the scripted verdict cue computed it: the card in the big slot decides, and a
  *  family build must fill all three slots before it commits at all. */
 export const bigSlotMatches = (item: WordProblemItem, board: FamilyPlacements): boolean => board.big === item.plan.big.id;
+/**
+ * What a wrong placement shows (`TeachingAttempt.miss`, handoff 20): a small amount sits in the big slot, either
+ * `box_in_big` (the story's unknown box) or `printed_small_in_big` (a number the story prints). The spoken steps
+ * name none: the tutor judges them.
+ */
+export type WordProblemMiss = 'box_in_big' | 'printed_small_in_big';
+
+export function wordProblemMiss(item: WordProblemItem | null, board: FamilyPlacements): WordProblemMiss | undefined {
+  if (!item || item.kind !== 'big_number' || !board.big || bigSlotMatches(item, board)) return undefined;
+  return board.big === item.plan.unknown.id ? 'box_in_big' : 'printed_small_in_big';
+}
+
 export const boardComplete = (item: WordProblemItem, board: FamilyPlacements): boolean =>
   item.challengeType === 'find_big_number' ? !!board.big : !!board.small1 && !!board.small2 && !!board.big;
 

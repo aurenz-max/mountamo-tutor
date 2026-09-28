@@ -131,7 +131,7 @@ interface ThreeDShapeExplorerProps {
   runtimeEvalMode?: string;
 }
 
-function ThreeDShapeExplorerSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: ThreeDShapeExplorerProps) {
+function ThreeDShapeExplorerSurface({ data, className, runtimePlanItemId }: ThreeDShapeExplorerProps) {
   const { challenges=[], gradeBand='K', show3dRotation=true, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
   const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
@@ -174,7 +174,6 @@ function ThreeDShapeExplorerSurface({ data, className, runtimePlanItemId, runtim
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || CATALOG_MODE[items[0]?.sourceMode ?? 'identify-3d'],
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onAffirmed: (item) => setRevealedItemId(item.id),
@@ -190,9 +189,7 @@ function ThreeDShapeExplorerSurface({ data, className, runtimePlanItemId, runtim
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!runner.currentItem) return;
-    workspace.current = { ...threeDShapeScene(runner.currentItem), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...threeDShapeScene(runner.currentItem) };
   });
 
   /** Asks the tutor for the question again: a silent host request, never the answer. */

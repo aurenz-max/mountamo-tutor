@@ -110,9 +110,8 @@ const recapLabel = (item: SpokenPracticeItem, solved: boolean) =>
 /** PLATFORM PROP CONTRACT: registry primitives mount as `<Component data={…} index={…} />`. */
 export const DiSpokenPractice: React.FC<DiSpokenPracticeProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const items = useMemo(() => data.items ?? [], [data.items]);
-  const evalMode = runtimeEvalMode || data.challengeType || 'say_answer';
   return <DiTeachingStage<SpokenPracticeItem, DiSpokenPracticeMetrics> primitiveId="di-spoken-practice" data={data}
-    items={items} evalMode={evalMode} className={className} runtimePlanItemId={runtimePlanItemId}
+    items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
     assignment={spokenPracticeAssignment} scene={spokenPracticeScene} copy={COPY} stimulus={stimulus}
     trail={creditedAnswers} recapLabel={recapLabel}
     metrics={result => ({ type: 'di-spoken-practice', ...diStageMetrics(result, items, data.challengeType) })} />;

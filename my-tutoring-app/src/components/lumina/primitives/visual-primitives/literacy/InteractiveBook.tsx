@@ -183,7 +183,7 @@ const COVER_GRADIENTS: Record<BookCoverColor, string> = {
 
 const normalizeText = (value: string) => value.trim().toLowerCase();
 
-function InteractiveBookSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: InteractiveBookProps) {
+function InteractiveBookSurface({ data, className, runtimePlanItemId }: InteractiveBookProps) {
   const {
     title,
     challenges,
@@ -303,7 +303,6 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId, runtimeEva
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || (items[0]?.mode ?? 'find-feature'),
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: () => {
@@ -380,9 +379,7 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId, runtimeEva
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...interactiveBookScene(currentItem), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...interactiveBookScene(currentItem) };
   });
 
   /** Asks the tutor for the question again: a silent host request, never the answer. */

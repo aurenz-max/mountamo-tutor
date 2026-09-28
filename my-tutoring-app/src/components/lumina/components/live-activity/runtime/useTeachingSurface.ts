@@ -3,6 +3,7 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import { useWorkspacePin } from './workspacePin';
 import { useLiveRuntimeActive, usePrimitiveRuntime } from './LiveRuntimeContext';
 import type { ExecutableAffordance, RuntimeMount } from './contract';
 
@@ -38,7 +39,6 @@ export interface TeachingSurfaceOptions {
   primitiveId: string;
   objectiveId?: string;
   planItemId?: string;
-  evalMode: string;
   /** Read at publish time from the primitive's committed refs, never from a pending render. */
   scene: () => TeachingSurfaceScene;
   /** Synchronous: open these objects and ring them; [] clears the rings and leaves cards open. */
@@ -59,6 +59,7 @@ export interface TeachingSurface {
 
 export function useTeachingSurface(options: TeachingSurfaceOptions): TeachingSurface {
   const ai = useLuminaAIContext();
+  const evalMode = useWorkspacePin();
   const aiRef = useRef(ai); aiRef.current = ai;
   const active = useLiveRuntimeActive();
   const activeRef = useRef(active); activeRef.current = active;
@@ -73,7 +74,7 @@ export function useTeachingSurface(options: TeachingSurfaceOptions): TeachingSur
   };
   const mount = useMemo<RuntimeMount>(() => ({ instanceId: options.instanceId,
     objectiveId: options.objectiveId || options.primitiveId + '-practice', planItemId: options.planItemId || options.instanceId,
-    primitiveId: options.primitiveId, evalMode: options.evalMode,
+    primitiveId: options.primitiveId, evalMode,
     adapter: {
       getTutorState: () => {
         const s = latest.current.scene();
@@ -100,7 +101,7 @@ export function useTeachingSurface(options: TeachingSurfaceOptions): TeachingSur
         return [show];
       },
     },
-  }), [options.instanceId, options.primitiveId, options.objectiveId, options.planItemId, options.evalMode, itemId]);
+  }), [options.instanceId, options.primitiveId, options.objectiveId, options.planItemId, evalMode, itemId]);
   useLayoutEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, [mount]);
   const { runtime, changed } = usePrimitiveRuntime(mount);
   return {

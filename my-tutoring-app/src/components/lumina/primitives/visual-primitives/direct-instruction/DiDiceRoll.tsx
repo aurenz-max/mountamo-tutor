@@ -245,9 +245,8 @@ export interface DiDiceRollProps {
 /** PLATFORM PROP CONTRACT: registry primitives mount as `<Component data={…} index={…} />`. */
 export const DiDiceRoll: React.FC<DiDiceRollProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const items = useMemo(() => data.challenges ?? [], [data.challenges]);
-  const evalMode = runtimeEvalMode || data.challengeType || 'count_pips';
   return <DiTeachingStage<DiDiceRollChallenge, DiDiceRollMetrics> primitiveId="di-dice-roll" data={data}
-    items={items} evalMode={evalMode} className={className} runtimePlanItemId={runtimePlanItemId}
+    items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
     assignment={diceAssignment} scene={diceScene} copy={COPY} recapLabel={recapLabel} trail={creditedRolls}
     awaitsStimulus
     stimulus={(item, marks, view) => <DiceStage key={item.id} item={item} view={view} marked={marks.includes('dice')}

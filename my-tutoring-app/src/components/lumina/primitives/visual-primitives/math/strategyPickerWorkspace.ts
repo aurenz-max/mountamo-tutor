@@ -48,6 +48,38 @@ export function strategyPickerMatches(c: StrategyPickerChallenge, v: StrategyPic
   return v.compare !== null;
 }
 
+/** Strategies that draw the same kind of picture: a number line, equal groups, or every object counted. */
+const PICTURE_KIND: Record<StrategyId, string> = {
+  'counting-on': 'line', 'counting-back': 'line', doubles: 'groups', 'near-doubles': 'groups',
+  'tally-marks': 'count-all', 'draw-objects': 'count-all', 'make-ten': 'frame',
+};
+
+/**
+ * What a wrong Check shows (`TeachingAttempt.miss`, handoff 20), from the same work the check reads:
+ * - a number (guided, try_another, choose): `other_operation` (the two numbers combined the other way),
+ *   `printed_number` (one of the problem's own numbers), then `one_short` / `one_over` / `short_by_more` /
+ *   `over_by_more`;
+ * - match: `similar_strategy` (one that draws the same kind of picture: the other number-line, doubles or
+ *   count-everything strategy), `different_strategy`.
+ * Compare names none: every choice is credited.
+ */
+export type StrategyPickerMiss = 'other_operation' | 'printed_number' | 'one_short' | 'one_over' | 'short_by_more'
+  | 'over_by_more' | 'similar_strategy' | 'different_strategy';
+
+export function strategyPickerMiss(c: StrategyPickerChallenge | null, v: StrategyPickerView): StrategyPickerMiss | undefined {
+  if (!c || strategyPickerMatches(c, v)) return undefined;
+  if (c.type === 'match-strategy') {
+    if (!v.match || !c.correctStrategy) return undefined;
+    return PICTURE_KIND[v.match as StrategyId] === PICTURE_KIND[c.correctStrategy as StrategyId] ? 'similar_strategy' : 'different_strategy';
+  }
+  if (!solves(c) || v.answer === '') return undefined;
+  const got = parseInt(v.answer, 10), want = c.problem.result;
+  const { operand1: a, operand2: b } = c.problem;
+  if (got === (c.problem.operation === 'addition' ? Math.abs(a - b) : a + b)) return 'other_operation';
+  if (got === a || got === b) return 'printed_number';
+  return got === want - 1 ? 'one_short' : got === want + 1 ? 'one_over' : got < want ? 'short_by_more' : 'over_by_more';
+}
+
 /** The learner's checked work in their terms, never the key. */
 export function describeStrategyPickerCheck(c: StrategyPickerChallenge, v: StrategyPickerView): string {
   if (solves(c)) {

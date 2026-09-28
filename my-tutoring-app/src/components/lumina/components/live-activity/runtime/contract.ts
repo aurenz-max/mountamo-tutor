@@ -34,6 +34,8 @@ export interface WorkspaceLever {
   does: string;
   carrier: 'shown' | 'voiced' | 'both';
   pulled: boolean;
+  /** The misses (`TeachingAttempt.miss`) this lever is for. The next lever after a named miss is the first open one listing it. */
+  answers?: readonly string[];
 }
 export interface WorkspaceInput { targets?: string[]; lever?: string; dialogue?: {
   responseId: string; verdict: 'correct' | 'incorrect'; transition: 'none' | 'retry' | 'advance'; tutor: string;
@@ -81,6 +83,7 @@ export interface TutorPrimitiveState {
     lastResponse: { response: string; correct: boolean; assisted: boolean } | null;
     /** Recent session-local evidence, including assistance, retained across item changes. Not a mastery write. */
     attempts: Array<{ itemId: string; response: string; source: 'speech' | 'gesture'; correct: boolean; assisted: boolean; answerExposure: AnswerExposure;
+      miss?: string;
       levers?: string[]; practice?: true }>;
   };
 }

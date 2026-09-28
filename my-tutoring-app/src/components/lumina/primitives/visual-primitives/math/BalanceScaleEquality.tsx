@@ -29,7 +29,7 @@ export interface BalanceSurfaceProps {
   runtimeEvalMode?: string;
 }
 
-function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId, runtimeEvalMode }: BalanceSurfaceProps) {
+function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId }: BalanceSurfaceProps) {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [affirmedIds, setAffirmedIds] = useState<ReadonlySet<string>>(new Set());
   const built = useMemo(() => {
@@ -82,7 +82,7 @@ function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId, runti
   // only under an evaluation provider.
   const runner = useWorkspaceRunner<EqualityItem>({ primitiveId: 'balance-scale', assignment: equalityAssignment, items, workspace,
     instanceId: instance.current, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || 'equality', onFinished: finish,
+    onFinished: finish,
     onAffirmed: (done) => setAffirmedIds((prev) => new Set(prev).add(done.id)),
     onItemOpened: (item, index) => {
       pip.clear();
@@ -157,9 +157,7 @@ function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId, runti
   // demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!item) return;
-    workspace.current = { ...equalityScene(item, board), demonstration: [], canDemonstrate: false, canPresent: false,
-      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...equalityScene(item, board) };
   });
   // The live host has no evaluation provider, so the workspace's own summary ends the activity there.
   const finished = evaluation.hasSubmitted || !!runner.practiceSummary;

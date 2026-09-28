@@ -35,6 +35,58 @@ export const describeSpatialCheck = (c: SpatialSceneChallenge, view: { option?: 
   return `Chose the cell at row ${view.cell?.row}, column ${view.cell?.col}`;
 };
 
+/**
+ * What a checked wrong choice shows (handoff 20 Part A), from the scene's own geometry:
+ *   - identify / describe name the KIND of word chosen: `opposite_word` (it points the other way on the
+ *     same line: above for below, left of for right of), `same_axis_word` (same up-down or side-to-side
+ *     line but it does not fit the distance: on for a gap, beside for two cells away), `other_axis_word`
+ *     (an up-down word for a side-to-side arrangement, or the reverse);
+ *   - place_in: `other_object` (tapped a different drawn thing), `next_to_container` (an empty cell touching
+ *     the container), `away_from_container`;
+ *   - place_between: `next_to_one` (a cell touching one of the two references, not the gap), `touches_neither`;
+ *   - follow_directions: `later_step_cell` (the cell a later direction asks for), `other_cell`.
+ * `place` names none: the challenge stores only the target cell, not the reference or the word, so a check
+ * can say no more than "another cell". describe_scene is spoken (Part B).
+ */
+export type SpatialMiss = 'opposite_word' | 'same_axis_word' | 'other_axis_word' | 'other_object' | 'next_to_container'
+  | 'away_from_container' | 'next_to_one' | 'touches_neither' | 'later_step_cell' | 'other_cell';
+
+type Cell = { row: number; col: number };
+const WORD_STEP: Record<string, Cell> = { above: { row: -1, col: 0 }, on: { row: -1, col: 0 }, below: { row: 1, col: 0 },
+  under: { row: 1, col: 0 }, left_of: { row: 0, col: -1 }, right_of: { row: 0, col: 1 } };
+const VERTICAL = new Set(['above', 'below', 'on', 'under']);
+const same = (a: Cell, b: Cell) => a.row === b.row && a.col === b.col;
+const touches = (a: Cell, b: Cell) => Math.abs(a.row - b.row) + Math.abs(a.col - b.col) === 1;
+
+export function spatialMiss(c: SpatialSceneChallenge, view: { option?: string | null; cell?: Cell | null; step?: number }): SpatialMiss | undefined {
+  const at = (name?: string) => c.sceneObjects.find(o => o.name === name)?.position;
+  if (c.type === 'identify' || c.type === 'describe') {
+    const chosen = view.option, ref = at(c.referenceObjectName), t = c.targetObject.position;
+    if (!chosen || chosen === c.correctPosition || !ref) return undefined;
+    const dr = Math.sign(t.row - ref.row), dc = Math.sign(t.col - ref.col), step = WORD_STEP[chosen];
+    if (step && step.row === -dr && step.col === -dc) return 'opposite_word';
+    return VERTICAL.has(chosen) === (dc === 0) ? 'same_axis_word' : 'other_axis_word';
+  }
+  const cell = view.cell;
+  if (!cell) return undefined;
+  if (c.type === 'place_in') {
+    const box = at(c.referenceObjectName);
+    if (!box || same(cell, box)) return undefined;
+    if (c.sceneObjects.some(o => same(o.position, cell))) return 'other_object';
+    return touches(cell, box) ? 'next_to_container' : 'away_from_container';
+  }
+  if (c.type === 'place_between') {
+    if (c.correctCell && same(cell, c.correctCell)) return undefined;
+    return [at(c.referenceObjectName), at(c.referenceObjectName2)].some(r => r && touches(cell, r)) ? 'next_to_one' : 'touches_neither';
+  }
+  if (c.type === 'follow_directions') {
+    const steps = c.steps ?? [], now = view.step ?? 0;
+    if (!steps[now] || same(cell, steps[now].correctCell)) return undefined;
+    return steps.slice(now + 1).some(s => same(s.correctCell, cell)) ? 'later_step_cell' : 'other_cell';
+  }
+  return undefined;
+}
+
 const CONSTRAINTS: Record<SpatialSceneChallenge['type'], string> = {
   identify: 'The learner picks a position word and presses Check; the scene checks it. The position word is the answer.',
   describe: 'The learner picks the word that describes where the object is and presses Check; the scene checks it.',

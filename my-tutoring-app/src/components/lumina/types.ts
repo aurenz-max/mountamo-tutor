@@ -1905,7 +1905,13 @@ export interface ComponentDefinition {
    */
   teachingWorkspace?: { guidance: string; grades: readonly string[]; ungraded?: true;
     /** The primitive publishes in-item levers (`/add-support-tiers`): its guidance also carries `LEVER_DOCTRINE`. */
-    levers?: true };
+    levers?: true;
+    /**
+     * Per eval mode, the misses its check names (`TeachingAttempt.miss`): the observable patterns of a wrong
+     * answer, never a guessed cause (handoff 20). A mode listed here must name every checked miss from this
+     * list; the dry journey (`journeySweep.test.tsx`, J8) holds it for every family.
+     */
+    misses?: Readonly<Record<string, readonly string[]>> };
   /** Optional Gemini Live audio-input request (e.g. manual voice-activity for
    *  DI live-judged packs). Sent at WebSocket auth; a lesson session applies it
    *  when ANY of its manifest items declares one. */

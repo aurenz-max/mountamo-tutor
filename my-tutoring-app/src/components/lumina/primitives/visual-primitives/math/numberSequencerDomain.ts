@@ -33,6 +33,18 @@ const isNumber = (n: unknown): n is number => Number.isInteger(n) && Number(n) >
 /** Exported because the order cue and the gesture checker both compare arrangements. */
 export const sameOrder = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => v === b[i]);
 
+/**
+ * What a wrong card arrangement shows (`TeachingAttempt.miss`, handoff 20): `reversed` (largest to smallest),
+ * `two_swapped` (only two cards out of place), `other_order`. Undefined for a right one and for spoken items.
+ */
+export type OrderMiss = 'reversed' | 'two_swapped' | 'other_order';
+
+export function orderMiss(item: SequencerItem | null, placed: number[]): OrderMiss | undefined {
+  if (!item || item.answerKind !== 'gesture' || sameOrder(placed, item.answerOrder)) return undefined;
+  if (sameOrder(placed, [...item.answerOrder].reverse())) return 'reversed';
+  return placed.filter((n, i) => n !== item.answerOrder[i]).length === 2 ? 'two_swapped' : 'other_order';
+}
+
 export interface SequencerItem extends TeachingItem {
   sourceId: string;
   challengeType: NumberSequencerChallenge['type'];

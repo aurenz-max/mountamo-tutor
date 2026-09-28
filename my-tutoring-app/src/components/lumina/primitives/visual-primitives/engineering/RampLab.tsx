@@ -94,7 +94,7 @@ type RampRunOptions = WorkspaceRunOptions<RampChallenge>;
 function useSandboxRun(options: RampRunOptions): RampRun {
   void options;
   return { currentIndex: 0, currentItem: undefined as unknown as RampChallenge, running: false, preparing: false,
-    stage: 'asking', currentSolved: false, canAttempt: true, revealHeld: false, tutorSpeaking: false, cuedItemId: '',
+    stage: 'asking', currentSolved: false, canAttempt: true, revealHeld: false, practice: false, tutorSpeaking: false, cuedItemId: '',
     summary: null, practiceSummary: null, teachingResult: null, start: async () => {}, isAwaitingGesture: () => false,
     armStillness: () => {}, clearStillness: () => {}, commitGesture: () => {}, presentStimulus: () => false,
     publishWorkspace: () => {}, submitGestureAttempt: () => { throw new Error('The sandbox grades nothing'); },
@@ -156,7 +156,7 @@ const RampLoad: React.FC<{
   </g>
 );
 
-function RampLabSurface({ data, className, runtimePlanItemId, runtimeEvalMode, useRun }: RampLabProps & {
+function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabProps & {
   useRun: (options: RampRunOptions) => RampRun;
 }) {
   const {
@@ -194,7 +194,6 @@ function RampLabSurface({ data, className, runtimePlanItemId, runtimeEvalMode, u
     primitiveId: 'ramp-lab', assignment: rampAssignment, items: challenges, workspace,
     objectiveId, planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || 'mixed',
     instanceId: instanceId || `ramp-lab-${challenges.map(c => c.id).join('-')}`,
     onFinished: summary => finishRef.current(summary),
     onItemOpened: () => { evidenceRef.current = null; },
@@ -489,10 +488,7 @@ function RampLabSurface({ data, className, runtimePlanItemId, runtimeEvalMode, u
     // Only item-scoped, render-derived facts: the lab's controls reset in an effect after an item opens, and a fact
     // read from them would publish a revision that supersedes the advance. The checked response names the setting.
     workspace.current = { ...rampScene(currentChallenge, { phase: investigationPhase ?? undefined }),
-      demonstration: [], canDemonstrate: false, canPresent: false,
-      readyForResponse: currentChallenge.mode !== 'explain_from_trials' || investigationPhase === 'explain',
-      mark: () => {}, clearPresentation: () => {} };
-    run.publishWorkspace();
+      readyForResponse: currentChallenge.mode !== 'explain_from_trials' || investigationPhase === 'explain' };
   });
 
   return (

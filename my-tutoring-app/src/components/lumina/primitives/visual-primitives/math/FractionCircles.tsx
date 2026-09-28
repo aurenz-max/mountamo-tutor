@@ -24,14 +24,14 @@ import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRu
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { describeWork, workspaceAssignment, workspaceScene } from './fractionCirclesWorkspace';
+import { describeWork, workspaceAssignment, workspaceScene, type FractionCirclesView } from './fractionCirclesWorkspace';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { buildFractionCompareEvidence, type FractionCompareResponse } from './fractionCompareEvidence';
 import {
-  COUNT_LEVER, FRAME_LEVER, OVERLAY_LEVER, PIECES_LEVER, SPLIT_LEVER,
+  COUNT_LEVER, FRAME_LEVER, OVERLAY_LEVER, PIECES_LEVER, SPLIT_LEVER, fractionMiss,
   fractionLevers, simplerItem, splitFactor, startLevers,
 } from './fractionCirclesLevers';
 
@@ -192,7 +192,7 @@ function renderFractionCircle(
   );
 }
 
-/** part_whole lever: one shaded piece over the whole circle, pictures only. Never a digit. */
+/** part_whole lever: a shaded part over the whole circle, pictures only. Never a digit or a count. */
 function PartWholeFrame() {
   return (
     <svg data-lever="part-whole" width={70} height={96} viewBox="0 0 70 96" aria-label="Shaded pieces over all the pieces">
@@ -244,7 +244,7 @@ interface FractionCirclesProps {
 /** The teaching workspace is fraction-circles' only controller: the runtime owns progression. */
 const useFractionCirclesProgress = useWorkspaceProgressFor('fraction-circles');
 
-const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePlanItemId, runtimeEvalMode, onWorkspaceFinished }:
+const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePlanItemId, onWorkspaceFinished }:
   FractionCirclesProps) => {
   const liveRuntime = useLiveRuntime();
   const workspace = useRef<TeachingWorkspace | null>(null);
@@ -276,7 +276,6 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || (new Set(challenges.map(c => c.type)).size === 1 ? challenges[0].type : 'mixed'),
     workspace, assignment: workspaceAssignment,
     // A fresh challenge and Try again both start from a blank circle. The setters are declared
     // below; this runs only after render.
@@ -293,7 +292,6 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
   } = progress;
   workspaceClosed.current = progress.canAttempt === false;
 
@@ -391,56 +389,54 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
   // -------------------------------------------------------------------------
   const checkIdentify = useCallback(() => {
     if (!currentChallenge) return;
-    incrementAttempts();
 
     const parts = identifyInput.trim().split('/');
     const userNum = parseInt(parts[0], 10);
     const userDen = parseInt(parts[1], 10);
     const correct = !isNaN(userNum) && !isNaN(userDen)
       && fractionsEquivalent(userNum, userDen, currentChallenge.numerator, currentChallenge.denominator);
-    progress.commitCheck?.(describeWork(currentChallenge, { typed: identifyInput, shaded: 0, choice: '' }), correct);
+    const work: FractionCirclesView = { typed: identifyInput, shaded: 0, choice: '' };
+    progress.commitCheck(describeWork(currentChallenge, work), correct, correct ? undefined : fractionMiss(currentChallenge, work));
 
     if (correct) {
       SoundManager.playCorrect();
       setFeedback(`Correct! ${currentChallenge.numerator}/${currentChallenge.denominator} is right!`);
       setFeedbackType('success');
-      if (!practice) recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
     } else {
       SoundManager.playIncorrect();
       setFeedback(`Not quite. Look at how many pieces are shaded out of the total.`);
       setFeedbackType('error');
     }
-  }, [currentChallenge, identifyInput, currentAttempts, incrementAttempts, recordResult, progress, practice]);
+  }, [currentChallenge, identifyInput, currentAttempts, recordResult, progress, practice]);
 
   const checkBuild = useCallback(() => {
     if (!currentChallenge) return;
-    incrementAttempts();
 
     const correct = shadedSlices.size === currentChallenge.numerator;
-    progress.commitCheck?.(describeWork(currentChallenge, { typed: '', shaded: shadedSlices.size, choice: '' }), correct);
+    const work: FractionCirclesView = { typed: '', shaded: shadedSlices.size, choice: '' };
+    progress.commitCheck(describeWork(currentChallenge, work), correct, correct ? undefined : fractionMiss(currentChallenge, work));
 
     if (correct) {
       SoundManager.playCorrect();
       setFeedback(`Great job! You built ${currentChallenge.numerator}/${currentChallenge.denominator}!`);
       setFeedbackType('success');
-      if (!practice) recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
     } else {
       SoundManager.playIncorrect();
       setFeedback(`You shaded ${shadedSlices.size}/${currentChallenge.denominator}. The target is ${currentChallenge.numerator}/${currentChallenge.denominator}.`);
       setFeedbackType('error');
     }
-  }, [currentChallenge, shadedSlices.size, currentAttempts, incrementAttempts, recordResult, progress, practice]);
+  }, [currentChallenge, shadedSlices.size, currentAttempts, recordResult, progress, practice]);
 
   const checkCompare = useCallback(() => {
     if (!currentChallenge || !currentChallenge.compareFraction || !compareChoice) return;
-    incrementAttempts();
 
     const leftVal = currentChallenge.numerator / currentChallenge.denominator;
     const rightVal = currentChallenge.compareFraction.numerator / currentChallenge.compareFraction.denominator;
     const areEqual = Math.abs(leftVal - rightVal) < 0.001;
     const correctChoice: 'left' | 'right' | 'equal' = areEqual ? 'equal' : leftVal > rightVal ? 'left' : 'right';
     const correct = compareChoice === correctChoice;
-    progress.commitCheck?.(describeWork(currentChallenge, { typed: '', shaded: 0, choice: compareChoice }), correct);
+    const work: FractionCirclesView = { typed: '', shaded: 0, choice: compareChoice };
+    progress.commitCheck(describeWork(currentChallenge, work), correct, correct ? undefined : fractionMiss(currentChallenge, work));
     if (!practice) compareResponsesRef.current.push({
       itemId: currentChallenge.id,
       left: { numerator: currentChallenge.numerator, denominator: currentChallenge.denominator },
@@ -459,7 +455,6 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
       SoundManager.playCorrect();
       setFeedback(msg);
       setFeedbackType('success');
-      if (!practice) recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
     } else {
       SoundManager.playIncorrect();
       setFeedback(areEqual
@@ -467,30 +462,29 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
         : `Look again at how much of each circle is shaded.`);
       setFeedbackType('error');
     }
-  }, [currentChallenge, compareChoice, currentAttempts, incrementAttempts, recordResult, progress, practice]);
+  }, [currentChallenge, compareChoice, currentAttempts, recordResult, progress, practice]);
 
   const checkEquivalent = useCallback(() => {
     if (!currentChallenge || !currentChallenge.equivalentDenominator) return;
-    incrementAttempts();
 
     const targetNum = currentChallenge.numerator;
     const targetDen = currentChallenge.denominator;
     const equivDen = currentChallenge.equivalentDenominator;
     const builtNum = shadedSlices.size;
     const correct = fractionsEquivalent(builtNum, equivDen, targetNum, targetDen);
-    progress.commitCheck?.(describeWork(currentChallenge, { typed: '', shaded: builtNum, choice: '' }), correct);
+    const work: FractionCirclesView = { typed: '', shaded: builtNum, choice: '' };
+    progress.commitCheck(describeWork(currentChallenge, work), correct, correct ? undefined : fractionMiss(currentChallenge, work));
 
     if (correct) {
       SoundManager.playCorrect();
       setFeedback(`Excellent! ${builtNum}/${equivDen} is equivalent to ${targetNum}/${targetDen}!`);
       setFeedbackType('success');
-      if (!practice) recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
     } else {
       SoundManager.playIncorrect();
       setFeedback(`${builtNum}/${equivDen} is not equivalent to ${targetNum}/${targetDen}. Try adjusting the shaded slices.`);
       setFeedbackType('error');
     }
-  }, [currentChallenge, shadedSlices.size, currentAttempts, incrementAttempts, recordResult, progress, practice]);
+  }, [currentChallenge, shadedSlices.size, currentAttempts, recordResult, progress, practice]);
 
   // -------------------------------------------------------------------------
   // Unified check answer
@@ -587,7 +581,6 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
     const clear = () => { setShadedSlices(new Set()); setIdentifyInput(''); setCompareChoice(''); setFeedback(''); setFeedbackType(''); };
     workspace.current = { ...workspaceScene(currentChallenge, { typed: identifyInput, shaded: shadedSlices.size, choice: compareChoice,
       levers: pulledLevers, practice: !!practice }),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {},
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the circle changes before this returns.
       pullLever: id => {
@@ -606,7 +599,6 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
       },
       endPractice: () => { setPractice(null); clear(); },
     };
-    progress.publishWorkspace?.();
   });
   const finishedRef = useRef(onWorkspaceFinished); finishedRef.current = onWorkspaceFinished;
   const reportedFinish = useRef(false);

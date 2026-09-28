@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { FractionCirclesChallenge } from './FractionCircles';
 import {
   COUNT_LEVER, OVERLAY_LEVER, PIECES_LEVER, SPLIT_LEVER, FRAME_LEVER,
-  doubleSplit, farPair, fewerPieces, fractionLevers, leverFacts, leverTextLeaks, simplerItem, splitFactor, startLevers, unitBuild,
+  doubleSplit, farPair, fewerPieces, fractionLevers, fractionMiss, leverFacts, leverTextLeaks, simplerItem, splitFactor, startLevers, unitBuild,
 } from './fractionCirclesLevers';
-import { buildFractionTouchItems, touchLevers, touchMatches, twoPictureItem } from './fractionCirclesWorkspace';
+import { buildFractionTouchItems, touchLevers, touchMatches, touchMiss, twoPictureItem } from './fractionCirclesWorkspace';
+import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 
 const BANDS = { 'K-2': [2, 3, 4], '3-5': [2, 3, 4, 5, 6, 8, 10, 12] } as const;
 const base = { instruction: 'x', hint: 'h', narration: '' };
@@ -118,5 +119,58 @@ describe('touch_fraction two_pictures', () => {
       expect(touchLevers(item, []).map(l => l.id)).toEqual(['two_pictures']);
       expect(touchLevers(easier, [])).toEqual([]);
     }
+  });
+});
+
+describe('what a wrong Check shows, and the lever that answers it (code, not a Live run)', () => {
+  const ch = (type: FractionCirclesChallenge['type'], numerator: number, denominator: number, extra: Partial<FractionCirclesChallenge> = {}):
+    FractionCirclesChallenge => ({ ...base, id: `${type}-${numerator}-${denominator}`, type, numerator, denominator, ...extra });
+  const identify = ch('identify', 3, 8), build = ch('build', 2, 6), halfOfSix = ch('build', 3, 6);
+  const equivalent = ch('equivalent', 2, 3, { equivalentDenominator: 6 });
+  const compare = ch('compare', 1, 4, { compareFraction: { numerator: 1, denominator: 2 } });
+  const equal = ch('compare', 2, 4, { compareFraction: { numerator: 1, denominator: 2 } });
+  const work = (w: Partial<{ typed: string; shaded: number; choice: string }>) => ({ typed: '', shaded: 0, choice: '', ...w });
+  it.each([
+    [identify, { typed: '3/8' }, undefined], [identify, { typed: '6/16' }, undefined], [identify, { typed: 'three' }, 'not_a_fraction'],
+    [identify, { typed: '8/3' }, 'swapped'], [identify, { typed: '3/7' }, 'bottom_not_pieces'], [identify, { typed: '5/8' }, 'top_is_unshaded'],
+    [identify, { typed: '4/8' }, 'top_one_off'], [identify, { typed: '1/8' }, 'top_off_by_more'],
+    [build, { shaded: 2 }, undefined], [build, { shaded: 6 }, 'shaded_all'], [build, { shaded: 4 }, 'shaded_the_rest'],
+    [build, { shaded: 1 }, 'one_short'], [build, { shaded: 3 }, 'one_over'], [build, { shaded: 0 }, 'short_by_more'],
+    [build, { shaded: 5 }, 'over_by_more'], [halfOfSix, { shaded: 4 }, 'one_over'],
+    [equivalent, { shaded: 4 }, undefined], [equivalent, { shaded: 2 }, 'copied_the_count'], [equivalent, { shaded: 3 }, 'one_short'],
+    [equivalent, { shaded: 5 }, 'one_over'], [equivalent, { shaded: 6 }, 'over_by_more'], [equivalent, { shaded: 0 }, 'short_by_more'],
+    [compare, { choice: 'right' }, undefined], [compare, { choice: 'left' }, 'picked_more_slices'], [compare, { choice: 'equal' }, 'said_equal'],
+    [ch('compare', 3, 4, { compareFraction: { numerator: 1, denominator: 4 } }), { choice: 'right' }, 'picked_smaller'],
+    [equal, { choice: 'equal' }, undefined], [equal, { choice: 'left' }, 'missed_equal'],
+  ] as const)('%#: %o -> %s', (item, w, miss) => {
+    expect(fractionMiss(item, work(w))).toBe(miss);
+  });
+
+  it('touch_fraction names the kind of picture touched, never which one', () => {
+    const [item] = buildFractionTouchItems([{ ...base, id: 't', type: 'touch_fraction', numerator: 1, denominator: 3 }], () => 0.5);
+    for (const picture of item.choices) {
+      const expected = picture.id === item.correctChoiceId ? undefined : picture.denominator === 3 ? 'same_parts_other_shading'
+        : picture.numerator === 1 ? 'same_shading_other_parts' : 'other_fraction';
+      expect(touchMiss(item, picture.id)).toBe(expected);
+    }
+    expect(nextLever(touchLevers(item, []), 'same_parts_other_shading')).toBe('two_pictures');
+  });
+
+  const levers = (item: FractionCirclesChallenge, pulled: string[] = []) => fractionLevers(item, pulled, '3-5');
+  // Four times the slices, so both the reference split and the easier double split are offered.
+  const eighths = ch('equivalent', 1, 2, { equivalentDenominator: 8 });
+  it.each([
+    [identify, [], 'top_one_off', 'mark_pieces'], [identify, [], 'bottom_not_pieces', 'mark_pieces'],
+    [identify, [], 'swapped', 'part_whole'], [identify, [], 'top_is_unshaded', 'part_whole'], [identify, [], 'not_a_fraction', 'part_whole'],
+    [identify, ['mark_pieces'], 'top_off_by_more', 'fewer_pieces'],
+    [build, [], 'one_short', 'running_count'], [build, [], 'shaded_all', 'part_whole'], [build, [], 'shaded_the_rest', 'part_whole'],
+    [build, ['running_count'], 'short_by_more', 'unit_build'], [build, ['running_count'], 'one_over', 'part_whole'],
+    [eighths, [], 'one_over', 'running_count'], [eighths, [], 'copied_the_count', 'split_reference'],
+    [eighths, [], 'over_by_more', 'split_reference'], [eighths, ['split_reference'], 'copied_the_count', 'double_split'],
+    [compare, [], 'picked_more_slices', 'overlay'], [compare, ['overlay'], 'picked_more_slices', 'far_pair'],
+    // No open lever lists it: help first, then simplify, as before misses were named.
+    [compare, ['overlay'], 'missed_equal', 'far_pair'],
+  ] as const)('%#: pulled %j, miss %s -> %s', (item, pulled, miss, lever) => {
+    expect(nextLever(levers(item, [...pulled]), miss)).toBe(lever);
   });
 });

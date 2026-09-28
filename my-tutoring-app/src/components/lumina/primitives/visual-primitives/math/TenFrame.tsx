@@ -123,7 +123,7 @@ import {
   type TenFrameItem,
 } from './tenFrameScript';
 import { tenFrameEvidenceSummary, tenFrameObservation } from './tenFrameEvidence';
-import { COUNT_LEVER, FIVE_LEVER, SMALLER_LEVER, smallerBuild, tenFrameLevers } from './tenFrameLevers';
+import { COUNT_LEVER, FIVE_LEVER, SMALLER_LEVER, frameMiss, smallerBuild, tenFrameLevers } from './tenFrameLevers';
 import { numberWordFor } from './countingBoardScript';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
@@ -291,6 +291,8 @@ interface TenFrameProps {
  * the scripted branch. `frame` feeds the runner-era runtime registration only.
  */
 type TenFrameControllerOptions = Omit<WorkspaceRunOptions<TenFrameItem>, 'primitiveId' | 'assignment'>
+  & { /** The scripted path's runtime registration only (it goes with that path); the workspace reads the lesson's pin. */
+    scriptedEvalMode: string }
   & Omit<JudgedScriptRunnerOptions<TenFrameItem>, 'pack' | 'instanceId' | 'onItemOpened' | 'onPresentStimulus'>
   & { pack?: JudgedScriptPack<TenFrameItem>;
     frame: { filledCells: Set<number>; flippedCells: Set<number>; cancelPresentation: () => void } };
@@ -298,7 +300,7 @@ type TenFrameControllerOptions = Omit<WorkspaceRunOptions<TenFrameItem>, 'primit
 function useScriptedController(options: TenFrameControllerOptions): LiveRun<TenFrameItem> {
   const runner = useJudgedScriptRunner<TenFrameItem>({ ...options, pack: options.pack! });
   useTenFrameRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
-    planItemId: options.planItemId, evalMode: options.evalMode, ...options.frame });
+    planItemId: options.planItemId, evalMode: options.scriptedEvalMode, ...options.frame });
   return runner;
 }
 
@@ -539,7 +541,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
 
   const runner = useController({
     items, workspace, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode ?? (items[0] ? evalModeForKind(items[0].kind) : 'default'),
+    scriptedEvalMode: runtimeEvalMode ?? (items[0] ? evalModeForKind(items[0].kind) : 'default'),
     frame: { filledCells, flippedCells, cancelPresentation: () => {
       if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
       flashTimeoutRef.current = null;
@@ -651,6 +653,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
         shownSplitsRef.current.set(item.answer, shown);
       }
       commitGesture(runner, { response: describeFrameResponse(item, onFrame), correct: splitVerdictRef.current === 'correct',
+        miss: frameMiss(item, { placed: onFrame, shownWays: alreadyShown }),
         cue: () => frameVerdictCue(item, onFrame, { alreadyShown }) });
       return;
     }
@@ -663,6 +666,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
     // The frame checks its own placement, with the same code judge the cue reports.
     commitGesture(runner, { response: describeFrameResponse(item, enacted),
       correct: isTeenKind(item.kind) ? judgeTeen(item, enacted) === 'correct' : enacted === item.answer,
+      miss: frameMiss(item, { placed: enacted }),
       cue: () => frameVerdictCue(item, enacted) });
   }, [runner]);
 
@@ -760,7 +764,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
     workspace.current = {
       ...workspaceScene(currentItem, { onFrame: filledCells.size, yellow: countsFlips(currentItem) ? flippedCells.size : 0,
         hidden: isSubitize && !countersVisible }),
-      demonstration: [], canDemonstrate: false, canPresent: isSubitize,
+      canPresent: isSubitize,
       readyForResponse: !isSubitize || flashAnswerReady,
       levers: practice ? [] : tenFrameLevers(sessionItem, pulledLevers, gradeBand),
       // A synchronous commit (the workspace runs it inside flushSync): the frame changes before this returns.
@@ -779,13 +783,11 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
         return true;
       },
       endPractice: () => { practiceRef.current = null; setPractice(null); },
-      mark: () => {},
       clearPresentation: () => {
         if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
         flashTimeoutRef.current = null;
       },
     };
-    runner.publishWorkspace?.();
   });
 
   // The workspace path shows its summary without an evaluation provider (the live host has none).

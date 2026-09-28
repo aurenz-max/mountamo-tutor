@@ -22,7 +22,7 @@ import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRu
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { describePlainCheck, plainWorkspaceAssignment, plainWorkspaceScene } from './baseTenWorkspace';
+import { describePlainCheck, plainMiss, plainWorkspaceAssignment, plainWorkspaceScene } from './baseTenWorkspace';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -193,7 +193,7 @@ type PlainChallenge = BaseTenBlocksChallenge & { id: string };
 /** The teaching workspace is base-ten-blocks' only controller: the runtime owns progression. */
 const useBaseTenProgress = useWorkspaceProgressFor('base-ten-blocks');
 
-const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode }: BaseTenBlocksProps) => {
+const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlocksProps) => {
   const liveRuntime = useLiveRuntime();
   const workspace = useRef<TeachingWorkspace | null>(null);
   /** A checked answer stays closed until Try again or Next challenge on the shell. */
@@ -277,7 +277,6 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
     challenges: challengesWithIds,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || challenges[0]?.type || interactionMode,
     workspace, assignment: plainWorkspaceAssignment,
     // A fresh challenge and Try again both start from the challenge's own mat.
     onItemOpened: (index) => {
@@ -291,7 +290,6 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
   } = progress;
   workspaceClosed.current = progress.canAttempt === false;
   // The workspace finishes without an evaluation provider, and a skipped item still ends the run.
@@ -431,8 +429,13 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
   /** The mat's own check is the workspace's checked gesture: the learner's work in words, never the key. */
   const commitCheck = (correct: boolean) => {
     if (!currentChallenge) return;
-    progress.commitCheck?.(describePlainCheck(currentChallenge, { blocks: describeDecomposition(columns, activePlaces),
-      typed: typedAnswer, trades: regroupCount }), correct);
+    const typed = !BLOCK_JUDGED_TYPES.has(currentChallenge.type);
+    const miss = correct ? undefined : plainMiss(currentChallenge.type, {
+      got: typed ? parseFloat(typedAnswer) : currentTotal, target: currentChallenge.targetNumber,
+      unit: PLACE_CONFIG[activePlaces[activePlaces.length - 1]].value, trades: regroupCount,
+      standard: judgeBuild(columns, currentChallenge.targetNumber, activePlaces) === 'match' });
+    progress.commitCheck(describePlainCheck(currentChallenge, { blocks: describeDecomposition(columns, activePlaces),
+      typed: typedAnswer, trades: regroupCount }), correct, miss);
   };
 
   const markCorrect = useCallback((message: string) => {
@@ -462,7 +465,6 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
   const checkBlocks = useCallback(() => {
     if (!currentChallenge || learnerBlocked()) return;
     const target = currentChallenge.targetNumber;
-    incrementAttempts();
 
     // regroup: the value is conserved and already named, so the TRADE is the answer.
     if (currentChallenge.type === 'regroup') {
@@ -496,7 +498,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
           : `Not ${target} yet — count each column again.`,
       );
     }
-  }, [currentChallenge, columns, activePlaces, currentTotal, regroupCount, showBlocksTotal, incrementAttempts, markCorrect, markWrong]);
+  }, [currentChallenge, columns, activePlaces, currentTotal, regroupCount, showBlocksTotal, markCorrect, markWrong]);
 
   // ── Channel B: the student types a number the screen does not state
   //    (read_blocks, add_with_blocks, subtract_with_blocks) ──
@@ -505,7 +507,6 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
     const target = currentChallenge.targetNumber;
     const parsed = parseFloat(typedAnswer);
     if (isNaN(parsed)) return;
-    incrementAttempts();
 
     if (Math.abs(parsed - target) < 0.01) {
       markCorrect(`Correct! ${parsed} is right!`);
@@ -515,7 +516,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
       setTypedAnswer('');
       markWrong(`${parsed} isn't it — check each column and try again.`);
     }
-  }, [currentChallenge, typedAnswer, incrementAttempts, markCorrect, markWrong]);
+  }, [currentChallenge, typedAnswer, markCorrect, markWrong]);
 
   // Auto-submit evaluation when all challenges complete
   useEffect(() => {
@@ -567,9 +568,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId, runtimeEvalM
   useLayoutEffect(() => {
     if (!currentChallenge) return;
     workspace.current = { ...plainWorkspaceScene(currentChallenge, { blocks: describeDecomposition(columns, activePlaces),
-      typed: typedAnswer, trades: regroupCount }), demonstration: [], canDemonstrate: false, canPresent: false,
-      readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    progress.publishWorkspace?.();
+      typed: typedAnswer, trades: regroupCount }) };
   });
 
   // -------------------------------------------------------------------------

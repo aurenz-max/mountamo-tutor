@@ -23,7 +23,8 @@ import type { HundredsChartMetrics } from '../../../evaluation/types';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { describeHundredsChartCheck, hundredsChartAssignment, hundredsChartMatches, hundredsChartScene } from './hundredsChartWorkspace';
+import { describeHundredsChartCheck, hundredsChartAssignment, hundredsChartMatches, hundredsChartMiss, hundredsChartScene }
+  from './hundredsChartWorkspace';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -112,7 +113,7 @@ const useHundredsChartProgress = useWorkspaceProgressFor('hundreds-chart');
 // Component
 // ============================================================================
 
-function HundredsChartSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: HundredsChartProps) {
+function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsChartProps) {
   const {
     title,
     description,
@@ -140,7 +141,7 @@ function HundredsChartSurface({ data, className, runtimePlanItemId, runtimeEvalM
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || 'mixed', workspace, assignment: hundredsChartAssignment,
+    workspace, assignment: hundredsChartAssignment,
     onItemOpened: (_index, retry) => reopen.current(retry),
   });
   const {
@@ -149,7 +150,6 @@ function HundredsChartSurface({ data, className, runtimePlanItemId, runtimeEvalM
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
   } = progress;
   const canAttempt = progress.canAttempt !== false;
 
@@ -309,7 +309,6 @@ function HundredsChartSurface({ data, className, runtimePlanItemId, runtimeEvalM
     const view = { cells: selectedCells, option: selectedOption };
     const isCorrect = hundredsChartMatches(currentChallenge, view);
 
-    incrementAttempts();
 
     if (isCorrect) {
       SoundManager.playCorrect();
@@ -329,7 +328,7 @@ function HundredsChartSurface({ data, className, runtimePlanItemId, runtimeEvalM
       setFeedback(currentChallenge.hint || 'Not quite. Try again!');
       setFeedbackType('error');
     }
-    progress.commitCheck?.(describeHundredsChartCheck(currentChallenge, view), isCorrect);
+    progress.commitCheck(describeHundredsChartCheck(currentChallenge, view), isCorrect, hundredsChartMiss(currentChallenge, view));
   };
 
   // -------------------------------------------------------------------------
@@ -371,9 +370,7 @@ function HundredsChartSurface({ data, className, runtimePlanItemId, runtimeEvalM
   // alone, so opening an item adds no revision after the advance.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    workspace.current = { ...hundredsChartScene(currentChallenge, { gridMax }), demonstration: [],
-      canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    progress.publishWorkspace?.();
+    workspace.current = { ...hundredsChartScene(currentChallenge, { gridMax }) };
   });
 
   // -------------------------------------------------------------------------

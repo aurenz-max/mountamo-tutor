@@ -14,11 +14,22 @@ it('requires the exact host acknowledgement, including when already rendered', a
   expect((await waitForVisible(runtime, revision)).status).toBe('visible');
 });
 
-it('discards a render wait after a learner transition or unmount', async () => {
-  const runtime = new LiveLessonRuntime('test'); const registration = runtime.register(createRuntimeFixture().mount);
-  const waiting = waitForVisible(runtime, runtime.getSnapshot().revision);
+it('follows a later render of the same item and phase, and is superseded by a new phase or an unmount', async () => {
+  const fixture = createRuntimeFixture();
+  let phase = 'answer';
+  const runtime = new LiveLessonRuntime('test');
+  const registration = runtime.register({ ...fixture.mount, adapter: { ...fixture.mount.adapter,
+    getTutorState: () => ({ ...fixture.mount.adapter.getTutorState(), phase }) } });
+  // A scene republished after the commit (handoff 19, slice 2): the command's result is still on screen.
+  const republished = waitForVisible(runtime, runtime.getSnapshot().revision);
   registration.changed();
-  expect((await waiting).status).toBe('superseded');
+  runtime.acknowledgeVisible(runtime.getSnapshot().revision);
+  expect((await republished).status).toBe('visible');
+  registration.changed();
+  const checked = waitForVisible(runtime, runtime.getSnapshot().revision);
+  phase = 'checked';
+  registration.changed();
+  expect((await checked).status).toBe('superseded');
   const unmount = waitForVisible(runtime, runtime.getSnapshot().revision);
   registration.dispose();
   expect((await unmount).status).toBe('superseded');

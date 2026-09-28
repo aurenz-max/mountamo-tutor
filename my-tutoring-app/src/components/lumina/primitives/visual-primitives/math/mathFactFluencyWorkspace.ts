@@ -48,6 +48,29 @@ export function mathFactMatches(c: MathFactFluencyChallenge, r: MathFactResponse
   return c.visualOptions?.[r.index]?.count === c.correctAnswer;
 }
 
+/**
+ * What a wrong answer shows (`TeachingAttempt.miss`, handoff 20), from the number answered (a number, an
+ * equation's total, or a picture's count): `other_operation` (the two printed numbers combined the other
+ * way: added where the fact takes away, or the reverse), `printed_number` (a number already in the printed
+ * fact), then `one_short` / `one_over` / `short_by_more` / `over_by_more`. A picture-to-equation match prints
+ * no fact, so it names only how far off the chosen equation's total is.
+ */
+export type MathFactMiss = 'other_operation' | 'printed_number' | 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more';
+
+export function mathFactMiss(c: MathFactFluencyChallenge | null, r: MathFactResponse): MathFactMiss | undefined {
+  if (!c) return undefined;
+  const got = r.kind === 'number' ? r.value : r.kind === 'equation' ? equationResult(r.value) : c.visualOptions?.[r.index]?.count;
+  const want = c.correctAnswer;
+  if (got === undefined || Number.isNaN(got) || got === want) return undefined;
+  if (mathFactChannel(c) !== 'equation') {
+    const printed = (formatMathFact(c).match(/\d+/g) ?? []).map(Number);
+    const [a, b] = printed;
+    if (printed.length === 2 && [a + b, Math.abs(a - b)].includes(got)) return 'other_operation';
+    if (printed.includes(got)) return 'printed_number';
+  }
+  return got === want - 1 ? 'one_short' : got === want + 1 ? 'one_over' : got < want ? 'short_by_more' : 'over_by_more';
+}
+
 const visualWord = (type?: string) => type === 'ten-frame' ? 'ten frame' : type === 'fingers' ? 'hand of fingers' : 'dot picture';
 
 /** The learner's checked work in their terms, never the key. */

@@ -70,6 +70,33 @@ export const describeScene = (item: AddSubSceneItem, placed: number) => `The pic
 export const equationMatches = (item: AddSubSceneItem, tiles: readonly string[]) => equationFaultOf(item, tiles) === 'match';
 export const describeEquation = (tiles: readonly string[]) => `Built the number sentence "${tiles.join(' ').trim() || 'nothing'}".`;
 
+/**
+ * What a wrong picture or number sentence shows (`TeachingAttempt.miss`, handoff 20):
+ * - a picture (act-out at K, create-story): `no_change` (it ends on the story's start number), `wrong_way`
+ *   (objects sent away on a joining story, or brought in on a leaving one, from where the picture started),
+ *   then `one_short` / `one_over` / `short_by_more` / `over_by_more` from the answer;
+ * - a number sentence: `unfinished_equation`, `false_equation` (it does not add up), `other_operation` (true,
+ *   with the other sign), `other_numbers` (true, with numbers the story does not have).
+ * The spoken items name none: the tutor judges them.
+ */
+export type AddSubMiss = 'no_change' | 'wrong_way' | 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more'
+  | 'unfinished_equation' | 'false_equation' | 'other_operation' | 'other_numbers';
+
+const EQUATION_MISS = { incomplete: 'unfinished_equation', arithmetic: 'false_equation', operator: 'other_operation',
+  numbers: 'other_numbers', match: undefined } as const;
+
+export function addSubMiss(item: AddSubSceneItem | null, work: { placed: number } | { tiles: readonly string[] }): AddSubMiss | undefined {
+  if (!item || item.answerKind !== 'gesture') return undefined;
+  if ('tiles' in work) return EQUATION_MISS[equationFaultOf(item, work.tiles)];
+  const { placed } = work, off = placed - item.answer;
+  if (off === 0) return undefined;
+  if (placed === item.startCount) return 'no_change';
+  // Where the picture started: empty on a create-story join, the start group everywhere else.
+  const seeded = item.kind === 'create-story' && item.operation === 'addition' ? 0 : item.startCount;
+  if (seeded > 0 && (item.operation === 'addition' ? placed < seeded : placed > seeded)) return 'wrong_way';
+  return off === -1 ? 'one_short' : off === 1 ? 'one_over' : off < 0 ? 'short_by_more' : 'over_by_more';
+}
+
 /** What tap-to-hear asks the tutor to say: the story and the question, never the answer. */
 export const hearStoryRequest = (item: AddSubSceneItem) =>
   `The learner asked to hear the story again. Say only this, once: "${ask(item)}" Never say the answer.`;

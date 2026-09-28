@@ -294,7 +294,7 @@ const ExploreFace: React.FC<ExploreFaceProps> = ({ data, resolvedInstanceId, onI
 
 interface JudgedFaceProps { data: HabitatDioramaData; items: HabitatItem[]; resolvedInstanceId: string; skillId?: string; exhibitId?: string; runtimePlanItemId?: string; runtimeEvalMode?: string; onInteraction?: HabitatDioramaProps['onInteraction'] }
 
-const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId, skillId, exhibitId, runtimePlanItemId, runtimeEvalMode, onInteraction }) => {
+const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId, skillId, exhibitId, runtimePlanItemId, onInteraction }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reward, setReward] = useState<{ text: string; ids: string[] } | null>(null);
   const workspace = useRef<TeachingWorkspace | null>(null);
@@ -309,7 +309,6 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId
     primitiveId: 'habitat-diorama', assignment: habitatAssignment, items, workspace, objectiveId: data.objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || (items[0]?.kind ?? 'observe'),
     instanceId: resolvedInstanceId, onFinished: finish,
     onItemOpened: () => { setSelectedId(null); setReward(null); }, onCorrectionRetry: () => setSelectedId(null),
     onAffirmed: (item) => { const ids = item.kind === 'connect' ? [item.fromId, item.toId].filter(Boolean) as string[] : [item.focusOrganismId ?? item.restorationEntityId].filter(Boolean) as string[]; setReward({ text: revealTextFor(item), ids }); },
@@ -320,9 +319,7 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
     if (!current) return;
-    workspace.current = { ...habitatScene(current, { habitatName: data.habitat.name, organismNames: data.organisms.map((organism) => organism.commonName), preReader: isPreReader }),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...habitatScene(current, { habitatName: data.habitat.name, organismNames: data.organisms.map((organism) => organism.commonName), preReader: isPreReader }) };
   });
   const activeIds = current?.kind === 'connect' && current.fromId ? [current.fromId] : current?.optionOrganismIds ?? [];
   const rewardIds = runner.revealHeld && reward ? reward.ids : [];

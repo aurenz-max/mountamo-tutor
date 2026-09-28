@@ -428,7 +428,7 @@ function drawArena(
 // Main Component
 // =============================================================================
 
-function PushPullArenaSurface({ data, className = '', runtimePlanItemId, runtimeEvalMode }: PushPullArenaProps) {
+function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushPullArenaProps) {
   const {
     title,
     description,
@@ -559,7 +559,6 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId, runtime
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || (items[0]?.kind ?? 'observe'),
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: (item) => {
@@ -630,9 +629,7 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId, runtime
     const item = runner.currentItem;
     if (!item) return;
     workspace.current = { ...pushPullArenaScene(item, { goal: currentChallenge?.goalDescription, observed }),
-      demonstration: [], canDemonstrate: false, canPresent: false,
-      readyForResponse: item.kind !== 'observe' || observed, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+      readyForResponse: item.kind !== 'observe' || observed };
   });
   const runPresetForceRef = useRef(runPresetForce);
   runPresetForceRef.current = runPresetForce;

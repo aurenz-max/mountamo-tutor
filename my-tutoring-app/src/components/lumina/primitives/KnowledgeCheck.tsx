@@ -169,7 +169,7 @@ interface JudgedProps {
 }
 
 const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
-  problems, items, instanceId, objectiveId, exhibitId, onEvaluationSubmit, runtimePlanItemId, runtimeEvalMode,
+  problems, items, instanceId, objectiveId, exhibitId, onEvaluationSubmit, runtimePlanItemId,
 }) => {
   const preReader = useMemo(
     () => problems.some((p) => isPreReaderGrade((p as any).gradeLevel)),
@@ -263,7 +263,6 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || 'mixed',
     instanceId,
     onFinished: handleFinished,
     onAffirmed: (item) => {
@@ -297,9 +296,7 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
   useLayoutEffect(() => {
     const item = runner.currentItem;
     if (!item) return;
-    workspace.current = { ...knowledgeCheckScene(item, preReader), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...knowledgeCheckScene(item, preReader) };
   });
 
   const currentItem = runner.currentItem;

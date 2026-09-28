@@ -44,7 +44,7 @@ import {
   objectSingularFor,
   type CountingItem,
 } from './countingBoardScript';
-import { boardGroups, workspaceAssignment, workspaceScene } from './countingBoardDomain';
+import { boardGroups, countMiss, workspaceAssignment, workspaceScene } from './countingBoardDomain';
 import { countingBoardEvidenceSummary, countingObservation } from './countingBoardEvidence';
 import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
@@ -353,8 +353,7 @@ interface CountingBoardProps {
  * the runner's option types die with the legacy branch at S3 (sunset slice S1,
  * qa/live-runtime-handoffs/07-sunset-scripted-tutoring.md).
  */
-type CountingBoardControllerOptions = Omit<WorkspaceRunOptions<CountingItem>, 'primitiveId' | 'assignment' | 'evalMode'>
-  & { evalMode?: string }
+type CountingBoardControllerOptions = Omit<WorkspaceRunOptions<CountingItem>, 'primitiveId' | 'assignment'>
   & Omit<JudgedScriptRunnerOptions<CountingItem>, 'pack' | 'items' | 'instanceId'>
   & { pack?: JudgedScriptPack<CountingItem> };
 
@@ -363,10 +362,9 @@ function useScriptedController(options: CountingBoardControllerOptions): LiveRun
 }
 
 const useWorkspaceController = (options: CountingBoardControllerOptions): LiveRun<CountingItem> =>
-  useWorkspaceRunner<CountingItem>({ ...options, primitiveId: 'counting-board', assignment: workspaceAssignment,
-    evalMode: options.evalMode || evalModeForKind(options.items[0].kind) });
+  useWorkspaceRunner<CountingItem>({ ...options, primitiveId: 'counting-board', assignment: workspaceAssignment });
 
-const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode,
+const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanItemId,
   useController, tutorOwned }: CountingBoardProps & {
     useController: (options: CountingBoardControllerOptions) => LiveRun<CountingItem>; tutorOwned: boolean;
   }) => {
@@ -586,7 +584,7 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
 
   const runner = useController({
     items,
-    workspace, objectiveId, planItemId: runtimePlanItemId, evalMode: runtimeEvalMode,
+    workspace, objectiveId, planItemId: runtimePlanItemId,
     ...(!tutorOwned && runtimePlanItemId ? { completionCue: '[CB_COMPLETE] Say exactly: "You finished this activity. Great counting!" Then wait silently for the lesson host.' } : {}),
     pack,
     instanceId: resolvedInstanceId,
@@ -837,7 +835,7 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     SoundManager.tap();
     givenCountRef.current = countedObjects.size;
     commitGesture(runner, { response: String(countedObjects.size), correct: countedObjects.size === item.target,
-      cue: () => giveVerdictCue(item, countedObjects.size) });
+      miss: countMiss(item, countedObjects.size), cue: () => giveVerdictCue(item, countedObjects.size) });
   }, [runner, evaluation.hasSubmitted, countedObjects]);
 
   // ── The hand pick (subitize_perceptual) — the tap IS the commit ───────────
@@ -852,7 +850,7 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     setHandChoice(fingers);
     handChoiceRef.current = fingers;
     commitGesture(runner, { response: String(fingers), correct: fingers === item.target,
-      cue: () => handVerdictCue(item, fingers) });
+      miss: countMiss(item, fingers), cue: () => handVerdictCue(item, fingers) });
   }, [runner, evaluation.hasSubmitted]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
@@ -878,7 +876,6 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
         flashTimeoutRef.current = null; noteTimerRef.current = null;
       },
     };
-    runner.publishWorkspace?.();
   });
 
   const completionSummary = runner.practiceSummary ?? runner.summary;

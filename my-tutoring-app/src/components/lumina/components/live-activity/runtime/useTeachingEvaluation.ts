@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useEvaluationContext, usePrimitiveEvaluation, type PrimitiveEvaluationResult, type PrimitiveMetrics } from '../../../evaluation';
 import type { ComponentId } from '../../../types';
 import { teachingEvaluation } from './teachingEvaluation';
+import { useWorkspacePin } from './workspacePin';
 import type { TeachingItem, useTeachingWorkspace } from './useTeachingWorkspace';
 
 export type TeachingEvaluationResult = ReturnType<typeof teachingEvaluation>;
@@ -13,7 +14,6 @@ interface TeachingEvaluationOptions<M extends PrimitiveMetrics> {
   data: { skillId?: string; subskillId?: string; objectiveId?: string; exhibitId?: string; onEvaluationSubmit?: unknown };
   assignments: readonly TeachingItem[];
   lesson: Pick<ReturnType<typeof useTeachingWorkspace>, 'state' | 'summary' | 'scored'>;
-  evalMode: string;
   /** The only per-primitive part: this family's metrics from the shared result. */
   metrics: (result: TeachingEvaluationResult) => M;
 }
@@ -21,7 +21,8 @@ interface TeachingEvaluationOptions<M extends PrimitiveMetrics> {
 /** Submits a completed teaching workspace through the ordinary evaluation provider, once.
  *  Every workspace binding sends the same evidence channel; only `metrics` differs. */
 export function useTeachingEvaluation<M extends PrimitiveMetrics>({ primitiveType, instanceId, data, assignments,
-  lesson, evalMode, metrics }: TeachingEvaluationOptions<M>) {
+  lesson, metrics }: TeachingEvaluationOptions<M>) {
+  const evalMode = useWorkspacePin();
   const evaluationContext = useEvaluationContext();
   const evaluation = usePrimitiveEvaluation<M>({ primitiveType, instanceId, skillId: data.skillId,
     subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId,

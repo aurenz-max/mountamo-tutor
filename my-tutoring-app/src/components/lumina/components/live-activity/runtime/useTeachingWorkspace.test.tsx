@@ -6,6 +6,7 @@ import { useTeachingWorkspace, type TeachingWorkspace } from './useTeachingWorks
 import { LiveRuntimeContext } from './LiveRuntimeContext';
 import { LiveLessonRuntime } from './LiveLessonRuntime';
 import { RuntimeTransport } from './runtimeTransport';
+import { WorkspacePin } from './workspacePin';
 
 const seam = vi.hoisted(() => ({ conversation: [] as any[], sendText: vi.fn() }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useLuminaAIContext: () => ({ ...seam, isAudioPlaying: false }) }));
@@ -15,7 +16,7 @@ afterEach(cleanup);
 function ColorWorkspace() {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [marks, mark] = useState<string[]>([]);
-  const lesson = useTeachingWorkspace({ instanceId: 'colors', primitiveId: 'color-test', evalMode: 'identify',
+  const lesson = useTeachingWorkspace({ instanceId: 'colors', primitiveId: 'color-test',
     items: [{ id: 'red-item', task: 'Find red.', response: 'gesture', checkResponse: text => text === 'red' }],
     workspace });
   useLayoutEffect(() => {
@@ -30,7 +31,7 @@ function ColorWorkspace() {
 
 it('runs the same teaching protocol on a different domain with no numeric or counting contract', () => {
   const runtime = new LiveLessonRuntime('colors', { allowAnswerExposure: true, maxSupportLevel: 3, allowSupportArtifacts: false });
-  const view = render(<LiveRuntimeContext.Provider value={runtime}><ColorWorkspace /></LiveRuntimeContext.Provider>);
+  const view = render(<LiveRuntimeContext.Provider value={runtime}><WorkspacePin pin="identify"><ColorWorkspace /></WorkspacePin></LiveRuntimeContext.Provider>);
   const state = runtime.getSnapshot();
   const choice = state.affordances.find(a => a.action.type === 'workspace' && a.action.operation === 'demonstrate')!;
   act(() => {
@@ -45,7 +46,7 @@ it('runs the same teaching protocol on a different domain with no numeric or cou
 
 it('accepts an empty optional target list for help, but refuses object targets on that action', () => {
   const runtime = new LiveLessonRuntime('help');
-  render(<LiveRuntimeContext.Provider value={runtime}><ColorWorkspace /></LiveRuntimeContext.Provider>);
+  render(<LiveRuntimeContext.Provider value={runtime}><WorkspacePin pin="identify"><ColorWorkspace /></WorkspacePin></LiveRuntimeContext.Provider>);
   const dispatch = (targets: string[]) => {
     const s = runtime.getSnapshot();
     return runtime.dispatch({ sessionEpoch: s.sessionEpoch, commandId: crypto.randomUUID(), instanceId: s.instanceId,
@@ -60,7 +61,7 @@ it('accepts an empty optional target list for help, but refuses object targets o
 
 it('tells the tutor why a demonstration was refused, and marks nothing', () => {
   const runtime = new LiveLessonRuntime('why', { allowAnswerExposure: true, maxSupportLevel: 3, allowSupportArtifacts: false });
-  const view = render(<LiveRuntimeContext.Provider value={runtime}><ColorWorkspace /></LiveRuntimeContext.Provider>);
+  const view = render(<LiveRuntimeContext.Provider value={runtime}><WorkspacePin pin="identify"><ColorWorkspace /></WorkspacePin></LiveRuntimeContext.Provider>);
   const demonstrate = (input: { targets?: string[] }) => {
     const s = runtime.getSnapshot();
     return runtime.dispatch({ sessionEpoch: s.sessionEpoch, commandId: crypto.randomUUID(), instanceId: s.instanceId,
@@ -76,7 +77,7 @@ it('tells the tutor why a demonstration was refused, and marks nothing', () => {
 
 it('gives every shared-workspace binding learner facts in its packet with nothing wired by the binding', async () => {
   const runtime = new LiveLessonRuntime('facts', { allowAnswerExposure: true, maxSupportLevel: 3, allowSupportArtifacts: false });
-  const view = render(<LiveRuntimeContext.Provider value={runtime}><ColorWorkspace /></LiveRuntimeContext.Provider>);
+  const view = render(<LiveRuntimeContext.Provider value={runtime}><WorkspacePin pin="identify"><ColorWorkspace /></WorkspacePin></LiveRuntimeContext.Provider>);
   const sent: any[] = [];
   const classifyLearner = vi.fn(async () => ({ asksForHelp: .9, wantsToStop: .01, attemptsAnswer: .02, accepted: true, reason: 'observed', ms: 1 }));
   const transport = new RuntimeTransport(runtime, m => sent.push(m), undefined, classifyLearner);
@@ -96,7 +97,7 @@ it('gives every shared-workspace binding learner facts in its packet with nothin
 
 it('judges a checked gesture with no learner words: the host message is not the learner, and earlier speech does not carry over', async () => {
   const runtime = new LiveLessonRuntime('gesture', { allowAnswerExposure: true, maxSupportLevel: 3, allowSupportArtifacts: false });
-  const view = render(<LiveRuntimeContext.Provider value={runtime}><ColorWorkspace /></LiveRuntimeContext.Provider>);
+  const view = render(<LiveRuntimeContext.Provider value={runtime}><WorkspacePin pin="identify"><ColorWorkspace /></WorkspacePin></LiveRuntimeContext.Provider>);
   const requests: any[] = [];
   const classify = vi.fn(async (request: any) => { requests.push(request); return { verdict: 'none' as const, transition: 'none' as const,
     confidence: 0, grounded: 0, accepted: false, reason: 'test', ms: 1 }; });

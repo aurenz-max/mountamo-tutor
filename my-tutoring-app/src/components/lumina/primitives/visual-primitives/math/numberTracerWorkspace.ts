@@ -17,6 +17,26 @@ export function workspaceAssignment(challenge: NumberTracerChallenge): TeachingA
 export const describeWriting = (score: number, writtenAs: string | null) =>
   `${writtenAs ? `Wrote something read as ${writtenAs}` : 'Wrote on the canvas'}; the canvas scored it ${score}%`;
 
+/**
+ * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), from what the check read:
+ * - the vision judge's reading, when trusted: `other_numeral`, `digits_swapped` (a two-digit number's digits in
+ *   reverse), `not_readable` (read as no numeral), `poorly_formed` (read as the numeral, scored under half);
+ * - geometry, when there is no trusted reading: `part_left_out` (what is drawn follows the numeral, much of the
+ *   numeral is not drawn), `shape_off` (the strokes do not follow the numeral, or its guide on a trace).
+ */
+export type NumberTracerMiss = 'other_numeral' | 'digits_swapped' | 'not_readable' | 'poorly_formed' | 'part_left_out' | 'shape_off';
+
+export function numberTracerMiss(target: number, work: { writtenAs: string | null; accuracy: number; coverage: number }): NumberTracerMiss {
+  const read = work.writtenAs?.trim();
+  if (read) {
+    const want = String(target);
+    if (read === want) return 'poorly_formed';
+    if (want.length > 1 && read === want.split('').reverse().join('')) return 'digits_swapped';
+    return /^\d+$/.test(read) ? 'other_numeral' : 'not_readable';
+  }
+  return work.coverage < 50 && work.accuracy >= 50 ? 'part_left_out' : 'shape_off';
+}
+
 export function workspaceScene(challenge: NumberTracerChallenge, view: { strokes: number }): WorkspaceScene {
   const sequence = challenge.type === 'sequence';
   const shown = sequence && challenge.sequenceNumbers

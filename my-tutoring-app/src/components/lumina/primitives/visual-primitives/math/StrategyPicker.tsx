@@ -22,7 +22,7 @@ import { withWorkspaceOnly } from '../../../components/live-activity/runtime/wit
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import {
   BOTH_SAME, CHECK_LABEL, STEP_DOWN, STEP_UP, describeStrategyPickerCheck, menuLabel, optionLabel, strategyLabel,
-  strategyPickerAssignment, strategyPickerMatches, strategyPickerScene, type StrategyPickerView,
+  strategyPickerAssignment, strategyPickerMatches, strategyPickerMiss, strategyPickerScene, type StrategyPickerView,
 } from './strategyPickerWorkspace';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
@@ -490,7 +490,7 @@ interface StrategyPickerProps {
 
 const useStrategyPickerProgress = useWorkspaceProgressFor('strategy-picker');
 
-function StrategyPickerSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: StrategyPickerProps) {
+function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyPickerProps) {
   const {
     title,
     description,
@@ -520,7 +520,7 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId, runtimeEval
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || 'mixed', workspace, assignment: strategyPickerAssignment,
+    workspace, assignment: strategyPickerAssignment,
     onItemOpened: () => reopen.current(),
   });
   const {
@@ -529,7 +529,6 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId, runtimeEval
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
   } = progress;
   const canAttempt = progress.canAttempt !== false;
 
@@ -631,7 +630,6 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId, runtimeEval
 
   const handleCheckAnswer = () => {
     if (!currentChallenge || isCheckDisabled || learnerBlocked()) return;
-    incrementAttempts();
     const { type, problem } = currentChallenge;
     const correct = strategyPickerMatches(currentChallenge, view);
 
@@ -663,7 +661,7 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId, runtimeEval
       setFeedbackType('error');
       setFeedback(type === 'match-strategy' ? 'Not quite — look at the steps again.' : 'Not quite. Try again!');
     }
-    progress.commitCheck?.(describeStrategyPickerCheck(currentChallenge, view), correct);
+    progress.commitCheck(describeStrategyPickerCheck(currentChallenge, view), correct, strategyPickerMiss(currentChallenge, view));
   };
 
   // -------------------------------------------------------------------------
@@ -695,10 +693,7 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId, runtimeEval
   // the menu choice alone, so opening an item adds no revision after the advance.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    workspace.current = { ...strategyPickerScene(currentChallenge, { chosen: chosenStrategy, supportTier }, strategiesIntroduced),
-      demonstration: [], canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {},
-      clearPresentation: () => {} };
-    progress.publishWorkspace?.();
+    workspace.current = { ...strategyPickerScene(currentChallenge, { chosen: chosenStrategy, supportTier }, strategiesIntroduced) };
   });
 
   // -------------------------------------------------------------------------

@@ -191,6 +191,7 @@ scope per the handoff; only the sorting-station rider was authorized). Queue the
 
 ## Changelog
 
+- 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
 - 2026-09-24 — **Teaching workspace, workspace only (rollout B2). R4 RE-BASED; R2 restated; all
   other requirements hold.** R4's property "only a sentinel-classified tutor verdict advances"
   protected one progression owner and no unearned credit: restated against the workspace, the

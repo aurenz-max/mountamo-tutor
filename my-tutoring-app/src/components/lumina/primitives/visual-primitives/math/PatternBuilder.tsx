@@ -23,7 +23,7 @@ import { withWorkspaceOnly } from '../../../components/live-activity/runtime/wit
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import {
   activeMapping as mappingFor, activeSequence as sequenceFor, describePatternBuilderCheck, paletteFor,
-  patternBuilderAssignment, patternBuilderMatches, patternBuilderScene, phaseFor, type PatternBuilderView, type PatternPhase,
+  patternBuilderAssignment, patternBuilderMatches, patternBuilderMiss, patternBuilderScene, phaseFor, type PatternBuilderView, type PatternPhase,
 } from './patternBuilderWorkspace';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -180,7 +180,7 @@ const usePatternBuilderProgress = useWorkspaceProgressFor('pattern-builder');
 // Component
 // ============================================================================
 
-function PatternBuilderSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: PatternBuilderProps) {
+function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBuilderProps) {
   const {
     title,
     description,
@@ -218,7 +218,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId, runtimeEval
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || 'mixed', workspace, assignment: patternBuilderAssignment,
+    workspace, assignment: patternBuilderAssignment,
     onItemOpened: () => reopen.current(),
   });
   const {
@@ -227,7 +227,6 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId, runtimeEval
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
   } = progress;
   const canAttempt = progress.canAttempt !== false;
 
@@ -404,7 +403,6 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId, runtimeEval
   const handleCheckAnswer = () => {
     if (!currentChallenge || learnerBlocked()) return;
     const correct = patternBuilderMatches(data, currentChallenge, view);
-    incrementAttempts();
     setFeedback(checkFeedback(correct));
     setFeedbackType(correct ? 'success' : 'error');
     if (correct) {
@@ -422,7 +420,8 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId, runtimeEval
     } else {
       SoundManager.playIncorrect();
     }
-    progress.commitCheck?.(describePatternBuilderCheck(data, currentChallenge, view), correct);
+    progress.commitCheck(describePatternBuilderCheck(data, currentChallenge, view), correct,
+      patternBuilderMiss(data, currentChallenge, view));
   };
 
   // -------------------------------------------------------------------------
@@ -458,9 +457,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId, runtimeEval
   // alone, so opening an item adds no revision after the advance.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    workspace.current = { ...patternBuilderScene(data, currentChallenge), demonstration: [],
-      canDemonstrate: false, canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    progress.publishWorkspace?.();
+    workspace.current = { ...patternBuilderScene(data, currentChallenge) };
   });
 
   // -------------------------------------------------------------------------

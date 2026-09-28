@@ -195,7 +195,7 @@ const KIND_META: Record<
 // Component
 // ============================================================================
 
-function WordWorkoutSurface({ data, className, runtimePlanItemId, runtimeEvalMode }: WordWorkoutProps) {
+function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutProps) {
   const {
     title,
     challenges = [],
@@ -339,7 +339,6 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId, runtimeEvalMod
     objectiveId,
     planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    evalMode: runtimeEvalMode || data.mode,
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: (item) => {
@@ -388,9 +387,7 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId, runtimeEvalMod
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...wordWorkoutScene(currentItem), demonstration: [], canDemonstrate: false,
-      canPresent: false, readyForResponse: true, mark: () => {}, clearPresentation: () => {} };
-    runner.publishWorkspace();
+    workspace.current = { ...wordWorkoutScene(currentItem) };
   });
 
   // ── The tap — picture-match only; the tap IS the commit, checked by the activity ──
