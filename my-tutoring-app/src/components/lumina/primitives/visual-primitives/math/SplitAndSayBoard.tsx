@@ -4,10 +4,12 @@ import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import type { BondCounters, BondPlace } from './numberBondSplit';
 import type { BondGroup } from './numberBondModes';
 
-export default function SplitAndSayBoard({ whole, counters, canMove, onMove, answerSide, answerGroup, groups, teen, layoutKey, hint, allowedPlaces }: {
+export default function SplitAndSayBoard({ whole, counters, canMove, onMove, answerSide, answerGroup, groups, teen, layoutKey, hint, allowedPlaces, frame }: {
   whole: number; counters: BondCounters; canMove: boolean; onMove: (index: number, destination: BondPlace) => void;
   answerSide?: 'left' | 'right'; answerGroup?: BondGroup; groups?: readonly BondGroup[];
   teen: boolean; layoutKey: string; hint?: string; allowedPlaces?: readonly BondPlace[];
+  /** The `ten_frame_part` lever: each part's own counters in a two-by-five outline. Empty boxes are drawn, never filled. */
+  frame?: boolean;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const reduced = useReducedMotion();
@@ -26,7 +28,9 @@ export default function SplitAndSayBoard({ whole, counters, canMove, onMove, ans
       className="mb-2 min-h-11 w-full rounded-xl text-center font-semibold text-slate-200 focus-visible:outline focus-visible:outline-cyan-200">
       {place === 'whole' ? `Whole: ${whole}` : answerSide === place ? 'How many here?' : place === 'left' ? 'Red group' : 'Blue group'}
     </button>
-    <div className={`flex min-h-12 flex-wrap justify-center gap-1 ${teen && place !== 'whole' && counters.filter((p) => p === place).length === 10 ? 'rounded-xl border border-purple-300/50 p-1' : ''}`}>
+    <div data-lever={frame && place !== 'whole' ? 'ten-frame-part' : undefined}
+      className={frame && place !== 'whole' ? 'mx-auto grid w-fit grid-cols-5 gap-1 rounded-xl border border-purple-300/50 p-1'
+        : `flex min-h-12 flex-wrap justify-center gap-1 ${teen && place !== 'whole' && counters.filter((p) => p === place).length === 10 ? 'rounded-xl border border-purple-300/50 p-1' : ''}`}>
       {counters.map((location, index) => location === place ? <motion.button key={index} type="button" layout layoutId={`${layoutKey}-counter-${index}`}
         transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 220, damping: 28 }}
         draggable={canMove} disabled={!canMove} aria-label={`Counter ${index + 1}${groups?.[index] ? `, ${groups[index] === 'left' ? 'red' : 'blue'} group` : ''}`} aria-pressed={selected === index}
@@ -37,6 +41,8 @@ export default function SplitAndSayBoard({ whole, counters, canMove, onMove, ans
           ? groups[index] === 'left' ? 'bg-rose-300' : 'bg-cyan-300'
           : place === 'whole' ? 'bg-purple-300' : place === 'left' ? 'bg-rose-300' : 'bg-cyan-300'}`} />
       </motion.button> : null)}
+      {frame && place !== 'whole' && Array.from({ length: Math.max(0, 10 - counters.filter((p) => p === place).length) }, (_, i) =>
+        <span key={`empty-${i}`} aria-hidden="true" data-frame-box="empty" className="h-11 w-11 rounded-full border border-dashed border-white/15" />)}
     </div>
   </section>;
   };

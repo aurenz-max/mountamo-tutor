@@ -18,7 +18,7 @@ doc, and its content defects below are fixed (`/eval-fix`) before its lever slic
 
 Spoken kinds: no levers yet (help-first by `when` text is a later slice). recount_moved: none (holding the number is the task).
 
-## number-bond — next
+## number-bond — slice 1 DONE 09-28 (contract R22; equation levers still to build)
 
 No contract doc. The draft is in `levers-math2.json`, not math1.
 

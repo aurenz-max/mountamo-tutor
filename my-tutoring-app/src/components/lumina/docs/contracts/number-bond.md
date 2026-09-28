@@ -150,6 +150,12 @@ Calibration channel [4] not read (403, needs auth).
 - **Demanded by:** the structural-difficulty doctrine; future lever starting positions.
 - **Evidence:** generator `resolveSupportStructure`. `qa/eval-reports/number-bond-2026-06-14.md` observed magnitude invariance and the unknown-side lever, but it predates the port (it recorded `showCounters: false` at hard, which the code now overrides). There is no current probe, so this stays INFERRED until an eval-test run at easy and hard re-observes it.
 
+### R22 — in-item levers, slice 1 · IMPLEMENTED 2026-09-28
+- **Property:** `numberBondLevers.ts` declares, with a synchronous `pullLever`: decompose build `made_ways` (the learner's own ways as dot pictures, in the order made; offered once a way exists); ten_and_ones build `ten_frame_part` (each part's own counters in a two-by-five outline, empty boxes drawn, never filled) and `smaller_teen` (ungraded split of eleven on its own id, then the full item on a whole board; not at twelve or below); related-fact join/separate `show_move` (the move button highlighted); missing-part `open_counters` (the tray opened for the learner, support recorded as counters, the covered part stays covered). Each lever declares the `bondMiss` ids it answers; `not_all_placed` is catalog `unanswered` on decompose and ten_and_ones (J9). The equation-mode levers are a later slice.
+- **Leak rules (code):** no lever text or scene fact carries a digit or a count word (`numberBondLevers.test.ts`); made_ways is never sorted and never shows an unfound pair; smaller_teen is never the learner's whole.
+- **Credit:** a pull is recorded; the next attempt carries it and is assisted; practice attempts are ungraded.
+- **Evidence:** `numberBondLevers.test.ts` (18), `NumberBond.levers.workspace.test.tsx` (6, including the R12 probe), sweep J1-J9 on all six payloads, replay 6 payloads x 5 (`qa/tutor-reports/replay/number-bond-2026-09-28.json`): 2 of 40 flagged, both read by hand. One is the key 1 on a whole of eleven colliding with ordinary "one" ("a full ten in one part"); no reply states the ones count. The other is outside the levers: on the fact_family opening model step, which accepts any move, the tutor proposed "join the groups" (1/25), steering a free choice.
+
 ## Conflicts
 
 _None open._ Notes for the four M1 fixes and the lever slice:
@@ -168,6 +174,8 @@ _None open._ Notes for the four M1 fixes and the lever slice:
 - **tutoring:** the `aiDirectives` and `taskDescription` describe the scripted DI cue protocol (`[NS_ITEM]`, `[NB_*]`, "your own affirmation advances"). That path is still live for non-workspace hosts (`useScriptedController`), so the block is not stale yet. If the scripted path is retired, it goes stale the same way cvc-speller's and letter-sound-link's did. Not applied.
 
 ## Changelog
+
+- 2026-09-28 — R22 added (levers slice 1). Additive: no lever is pulled at start, so every board renders as before; `SplitAndSayBoard` gains an optional `frame`; the related-fact move button gains a highlight when pulled; `open_counters` runs the same state the learner's own button sets. Compatible: R1-R21 probes green (math suites 149 files).
 
 - 2026-09-28 — R12, R13, R14 fixed (handoff 21 M1, before the levers). R12: the typed entry's placeholder is "Type the number sentence" (aria-label unchanged, so the journey row still types through it); probe `NumberBond.levers.workspace.test.tsx` on the build_equation and fact_family payloads, mutation-checked. R13: `familyHelperExample(item, session)` skips every session bond, from the three usual triples then every unequal pair within ten; the single-item expectations hold; new di-script probe with all three usual triples in the session. R14: the hand-mode equation corrections (`bondEquationVerdictCue` arithmetic and numbers, `familyVerdictCue` bad-math and wrong-numbers) name the fault and point at the groups, never the bond fact; still "My turn:"; R15's spoken corrections untouched. Compatible: no other requirement's probe changed (number-bond suites 116 green).
 

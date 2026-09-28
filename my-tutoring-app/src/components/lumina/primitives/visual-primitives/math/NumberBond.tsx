@@ -62,6 +62,8 @@ import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 import SplitAndSayBoard from './SplitAndSayBoard';
+import { COUNTERS_LEVER, FRAME_LEVER, MOVE_LEVER, SMALLER_LEVER, WAYS_LEVER, leverFacts, madeWaysOrder, numberBondLevers,
+  smallerTeen } from './numberBondLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { numberBondPipPose } from '../../../pip/numberBondPipPose';
 import { hasPair, moveBondCounter, prepareSplit, sortedPair, splitAndSayCue,
@@ -484,6 +486,12 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
   const prevSourceRef = useRef<string | null>(null);
   const [splitCounters, setSplitCounters] = useState<BondCounters>([]);
   const splitCountersRef = useRef<BondCounters>([]);
+  // In-item levers (`numberBondLevers.ts`), keyed by the item they were pulled on, and the easier teen split a
+  // simplify lever put on screen in its place. The refs are what event handlers read.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<NumberBondItem | null>(null);
+  const practiceRef = useRef<NumberBondItem | null>(null);
+  const displayItemRef = useRef<NumberBondItem | null>(null);
   const foundPairsRef = useRef<[number, number][]>([]);
   const previousSplitItem = useRef<NumberBondItem | null>(null);
   const splitEvidence = useRef<Record<string, { counters: BondCounters; modeled: boolean; affirmed: boolean }>>({});
@@ -777,7 +785,8 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
     exhibitId,
     onFinished: handleFinished,
-    onItemOpened: resetStageFor,
+    // A fresh item never carries an easier split over from the last one.
+    onItemOpened: (item, index) => { practiceRef.current = null; setPractice(null); resetStageFor(item, index); },
     onAffirmed: (item) => {
       setRevealedMissing(null);
       if (item.splitPhase) {
@@ -897,10 +906,15 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
     },
   });
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the easier teen split while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  displayItemRef.current = currentItem;
+  const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
   const currentSolved = runner.currentSolved;
+  // The runner cues the session item; its easier stand-in is worked under that cue.
   const canSplitMove = currentItem?.splitPhase === 'build' && runner.canAttempt
-    && !runner.isAwaitingGesture() && runner.cuedItemId === currentItem.id;
+    && !runner.isAwaitingGesture() && runner.cuedItemId === sessionItem?.id;
   const isModeAction = !!currentItem && (currentItem.interactionPhase?.endsWith('model')
     || currentItem.interactionPhase === 'related-join'
     || currentItem.interactionPhase === 'related-separate');
@@ -913,7 +927,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
   // No Check control: nothing on screen may carry the child forward. Each
   // close describes the committed artifact; the MATCH IS COMPUTED IN CODE.
   const commitSplit = useCallback(() => {
-    const item = runner.currentItem;
+    const item = displayItemRef.current;
     if (!item || (item.kind !== 'decompose' && item.kind !== 'ten-and-ones')) return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     if (item.splitPhase) {
@@ -977,8 +991,9 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
   /** A hands turn closes on stillness; further touches reset the window, and
    *  the runner cancels it at item open, at a correction, and at the commit. */
   const armSplitSettle = useCallback((left: number, right: number) => {
-    if (runner.currentItem?.splitPhase) {
-      if (runner.currentItem.splitPhase === 'build' && left + right === runner.currentItem.whole) {
+    const shown = displayItemRef.current;
+    if (shown?.splitPhase) {
+      if (shown.splitPhase === 'build' && left + right === shown.whole) {
         runner.armStillness(commitSplit, SPLIT_FULL_SETTLE_MS);
       } else runner.clearStillness();
       return;
@@ -1007,7 +1022,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
 
   // ── Decompose interactions ────────────────────────────────────────────────
   const moveSplitCounter = (index: number, destination: BondPlace) => {
-    if (currentItem?.splitPhase !== 'build' || !runner.canAttempt || runner.isAwaitingGesture() || runner.cuedItemId !== currentItem.id) return;
+    if (currentItem?.splitPhase !== 'build' || !runner.canAttempt || runner.isAwaitingGesture() || runner.cuedItemId !== sessionItem?.id) return;
     const next = moveBondCounter(splitCountersRef.current, index, destination);
     if (!next) return;
     splitUndo.current.push(splitCountersRef.current);
@@ -1169,7 +1184,42 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
   // demonstration targets and no timed stimulus.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentItem) return;
-    workspace.current = { ...workspaceScene(currentItem, view()) };
+    const scene = workspaceScene(currentItem, view());
+    const onScreen = leverFacts(currentItem, pulledLevers);
+    const leverView = { pairsMade: foundPairsRef.current.length, countersOpen: missingSupportActive };
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers: practice ? [] : numberBondLevers(sessionItem, pulledLevers, leverView),
+      // A synchronous commit (the workspace runs it inside flushSync): the board changes before this returns.
+      pullLever: (id) => {
+        const lever = numberBondLevers(sessionItem, pulledLevers, leverView).find(l => l.id === id);
+        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (id === SMALLER_LEVER) {
+          const easier = smallerTeen(sessionItem);
+          if (!easier) return 'There is no easier teen number for this item.';
+          setLeverState(pulled);
+          practiceRef.current = easier; setPractice(easier);
+          publishSplitCounters(wholeCounters(easier.whole)); splitUndo.current = []; runner.clearStillness();
+          return { practice: workspaceAssignment(easier, view()) };
+        }
+        if (id === COUNTERS_LEVER) {
+          const key = sessionItem.logicalId ?? sessionItem.id;
+          missingEvidence.current[key] = { support: missingEvidence.current[key]?.support === 'revealed' ? 'revealed' : 'counters',
+            counterMoves: missingEvidence.current[key]?.counterMoves ?? 0 };
+          setMissingSupportActive(true);
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      // Back to the full item: its board opens whole again.
+      endPractice: () => {
+        practiceRef.current = null; setPractice(null);
+        if (sessionItem?.splitPhase) { publishSplitCounters(wholeCounters(sessionItem.whole)); splitUndo.current = []; }
+      },
+    };
   });
   // AFTER the runtime mount is registered, never before: `start()` waits for
   // `grantOwnership('runner')`, which cannot be granted until this primitive's
@@ -1246,6 +1296,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
               onPointerDownCapture={() => pip.look('board')} onFocusCapture={() => pip.look('board')}>
               {currentItem.splitPhase && <SplitAndSayBoard key={currentItem.sourceId} layoutKey={resolvedInstanceId + '-' + currentItem.sourceId}
                 whole={whole} counters={splitCounters} teen={kind === 'ten-and-ones'}
+                frame={kind === 'ten-and-ones' && currentItem.splitPhase === 'build' && pulledLevers.includes(FRAME_LEVER)}
                 canMove={canSplitMove}
                 onMove={moveSplitCounter}
                 answerSide={currentItem.splitPhase === 'say' ? splitQuestion(currentItem, splitCounters).answerSide : undefined} />}
@@ -1353,6 +1404,8 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
                 <LuminaButton disabled={!canModeMove} onClick={() => moveWholeGroup('separate-left')}>Take away red</LuminaButton>
                 <LuminaButton disabled={!canModeMove} onClick={() => moveWholeGroup('separate-right')}>Take away blue</LuminaButton>
               </> : <LuminaButton disabled={!canModeMove || !currentItem.bondAction}
+                data-lever={pulledLevers.includes(MOVE_LEVER) ? 'show-move' : undefined}
+                className={pulledLevers.includes(MOVE_LEVER) ? 'ring-4 ring-amber-300/70' : undefined}
                 onClick={() => currentItem.bondAction && moveWholeGroup(currentItem.bondAction)}>
                 {currentItem.bondAction === 'join' ? 'Join the groups'
                   : currentItem.bondAction === 'swap' ? 'Swap the groups'
@@ -1413,6 +1466,21 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
                   })}
                 </div>
               </LuminaPanel>
+            )}
+
+            {/* made_ways lever: the learner's own ways as dot pictures, in the order made; the one on the board now glows. */}
+            {kind === 'decompose' && pulledLevers.includes(WAYS_LEVER) && foundPairs.length > 0 && (
+              <div data-lever="made-ways" className="flex flex-wrap justify-center gap-3">
+                {madeWaysOrder(foundPairs).map(([a, b], i) => {
+                  const shown = [leftCount, rightCount].sort((x, y) => x - y);
+                  const onBoard = shown[0] === Math.min(a, b) && shown[1] === Math.max(a, b);
+                  return <div key={i} data-way={onBoard ? 'on-board' : 'made'}
+                    className={`flex items-center gap-2 rounded-xl border px-2 py-1 ${onBoard ? 'border-amber-300 bg-amber-400/10' : 'border-white/15'}`}>
+                    <span className="flex gap-0.5">{Array.from({ length: a }, (_, k) => <span key={k} className="h-2.5 w-2.5 rounded-full bg-rose-300" />)}</span>
+                    <span className="flex gap-0.5">{Array.from({ length: b }, (_, k) => <span key={k} className="h-2.5 w-2.5 rounded-full bg-cyan-300" />)}</span>
+                  </div>;
+                })}
+              </div>
             )}
 
             {kind === 'fact-family' && familyRecord.length > 0 && (

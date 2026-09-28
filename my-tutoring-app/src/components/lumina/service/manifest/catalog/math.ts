@@ -3484,6 +3484,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'number-bond',
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1'],
+      // Splits, related-fact moves and the missing-part tray publish levers (`numberBondLevers.ts`, handoff 21 M1).
+      levers: true,
       guidance: 'Counters move between the whole and two parts, and tiles build number sentences. The activity checks a '
         + 'finished split, move or equation itself once the learner stops; talk about a half-built one is teaching, not a '
         + 'verdict. A spoken question asks about the split or move now on the board. You cannot move counters, place '
@@ -3497,6 +3499,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         build_equation: ['other_move', 'unfinished_equation', 'false_equation', 'other_numbers', 'other_fact'],
         fact_family: ['other_move', 'unfinished_equation', 'false_equation', 'other_numbers', 'other_fact'],
       }),
+      // A split commits only once the parts make the whole, so `not_all_placed` is never committed there (contract).
+      unanswered: { decompose: ['not_all_placed'], ten_and_ones: ['not_all_placed'] },
     },
     description: 'DI-native Number Bond. Students transform one persistent counter model, then express its relationship: Split and Say and Ten and Ones pair hand construction with one spoken count; Missing Part keeps the unknown covered and offers counters as optional support; Related Facts joins, speaks, separates, and speaks again; Build Equation matches a student-chosen action with symbols; Fact Family transforms the same groups through every distinct related form. Students SAY the missing part OUT LOUD where speech is assessed and construct equations where symbolic form is assessed.',
     constraints: 'Wholes are capped at 5 for Kindergarten and 10 for Grade 1, except Ten and Ones uses teen wholes 11-19. Requires a microphone for spoken turns; there is no Check button and no typed numeric substitute for speech. Counter and equation work closes on stillness. Missing Part records independent, counter-supported, and revealed paths. Related Facts requires unequal positive parts and preserves its two linked spoken outcomes. Build Equation requires arithmetic validity, the bond numbers, and a match to the committed action. Fact Family requires four distinct forms for unequal parts and two for equal parts; reversing the sides of = is equivalent notation, not an extra form. Kindergarten supports decompose, missing-part, related-fact and ten-and-ones; symbolic modes remain Grade 1.',

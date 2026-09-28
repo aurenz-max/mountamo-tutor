@@ -46,6 +46,9 @@ def test_a_known_miss_is_caught(text, kind, keys, ask, missed):
     # counting-board two_hands (09-28 replay): "the one that matches" is a pronoun, on a group of one.
     ('I took away a hand that does not match. Take a look at the hands left and pick the one that matches!', 'lever', ['1'],
      'Look at the fish. Your turn. Tap the hand that matches.'),
+    # number-bond ten_frame_part (09-28): "one whole frame" counts the ten the ask names, not the ones.
+    ('Ten-frame boxes are on the screen now. Can you fill up one whole ten-frame box?', 'lever', ['1'],
+     'Can you break 11 into a group of ten and some ones?'),
     # The partitive (5/5 two_hands replies, 09-28): which hand went, not how many fish.
     ('One of the hands went away to give you fewer choices. Look at the fish, and tap the hand that matches!', 'lever', ['1'],
      'Look at the fish. Your turn. Tap the hand that matches.'),
