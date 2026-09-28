@@ -1,0 +1,102 @@
+{
+ "source": "qa/tutor-reports/coin-counter-runtime-count-mixed-payload-2026-09-27.json",
+ "primitiveId": "coin-counter",
+ "evalMode": "count-mixed",
+ "data": {
+  "title": "Counting Coins Fun!",
+  "description": "Practice counting coins with coins.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "count",
+    "instruction": "Count the coins in the basket.",
+    "hint": "Start with the coin that is worth more, then add the smaller coins.",
+    "displayedCoins": [
+     {
+      "type": "dime",
+      "count": 1
+     },
+     {
+      "type": "penny",
+      "count": 3
+     }
+    ],
+    "correctTotal": 13,
+    "countMode": "mixed"
+   },
+   {
+    "id": "c2",
+    "type": "count",
+    "instruction": "How much money is shown here?",
+    "hint": "Count by fives for the nickels, then count on by ones for the pennies.",
+    "displayedCoins": [
+     {
+      "type": "nickel",
+      "count": 2
+     },
+     {
+      "type": "penny",
+      "count": 4
+     }
+    ],
+    "correctTotal": 14,
+    "countMode": "mixed"
+   },
+   {
+    "id": "c3",
+    "type": "count",
+    "instruction": "Add up these coins for your fresh apples.",
+    "hint": "Count your dimes first (10\u00a2 each), then add your nickels (5\u00a2 each).",
+    "displayedCoins": [
+     {
+      "type": "dime",
+      "count": 2
+     },
+     {
+      "type": "nickel",
+      "count": 1
+     }
+    ],
+    "correctTotal": 25,
+    "countMode": "mixed"
+   },
+   {
+    "id": "c4",
+    "type": "count",
+    "instruction": "Count the coins on the wooden counter.",
+    "hint": "Start with the quarter (25\u00a2), add the dime, and finish with the pennies.",
+    "displayedCoins": [
+     {
+      "type": "quarter",
+      "count": 1
+     },
+     {
+      "type": "dime",
+      "count": 1
+     }
+    ],
+    "correctTotal": 35,
+    "countMode": "mixed"
+   },
+   {
+    "id": "c5",
+    "type": "count",
+    "instruction": "Find the total value of these market coins.",
+    "hint": "Count the quarter first, then the nickels, and finally the pennies.",
+    "displayedCoins": [
+     {
+      "type": "quarter",
+      "count": 1
+     },
+     {
+      "type": "nickel",
+      "count": 2
+     }
+    ],
+    "correctTotal": 35,
+    "countMode": "mixed"
+   }
+  ],
+  "gradeBand": "1"
+ }
+}

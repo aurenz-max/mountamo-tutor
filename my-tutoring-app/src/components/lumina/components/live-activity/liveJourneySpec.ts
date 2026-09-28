@@ -23,6 +23,7 @@ import type { SupportArtifact } from './runtime/contract';
 import type { LivePrimitiveId } from './activityContract';
 import { itemsFromChallenges as shapeItems, shapeSorterHarnessAnswers } from '../../primitives/visual-primitives/math/shapeSorterScript';
 import { simplerJump } from '../../primitives/visual-primitives/math/numberLineLevers';
+import { COIN_CENTS, fewestCoins } from '../../primitives/visual-primitives/math/coinCounterWorkspace';
 import { simplerItem as simplerFraction } from '../../primitives/visual-primitives/math/fractionCirclesLevers';
 import { buildFractionTouchItems, twoPictureItem } from '../../primitives/visual-primitives/math/fractionCirclesWorkspace';
 
@@ -506,6 +507,59 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       if (c.askFor !== 'one-more' && c.askFor !== 'one-less')
         throw new Error('comparison-builder one-more-one-less both: two rows share their labels and the driver has no row-scoped choice');
       return [{ type: 'choose', label: String(c.targetNumber + step) }, check];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'coin-counter': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/CoinCounter.tsx',
+    instanceId: 'coins',
+    defaults: { grade: 'Grade 2', mode: 'count-mixed', di: false, topic: 'Counting mixed coins' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'ACTIVITY_START', '[TIER', '[G1 ENACTED'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every type through its real controls, then Check. A wrong answer is the mode's signature error from
+    // `coinMiss`: another silver coin, the number of coins for a total, one coin too many, the group with more
+    // coins, the price given as the change. Kindergarten like coins have no wrong check: the wrong intent taps
+    // one coin twice, a double count the activity refuses on the coin itself.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current coin-counter challenge');
+      const wrong = intent === 'wrong', band = ctx.data.gradeBand ?? '1';
+      const check: DriverInput = { type: 'check' };
+      const count = (coins: { count: number }[]) => coins.reduce((n, x) => n + x.count, 0);
+      const coinTaps = (n: number): DriverInput[] => Array.from({ length: n }, (_, i) => ({ type: 'choose', label: `Coin ${i + 1}` }));
+      if (c.type === 'identify') {
+        const options: string[] = c.options ?? ['penny', 'nickel', 'dime', 'quarter'];
+        const silver = ['nickel', 'dime', 'quarter', 'half-dollar'];
+        const pick = wrong ? options.find(o => o !== c.targetCoin && silver.includes(o) === silver.includes(c.targetCoin))
+          ?? options.find(o => o !== c.targetCoin)! : c.targetCoin;
+        return [{ type: 'choose', label: `Coin ${options.indexOf(pick) + 1}` }, check];
+      }
+      if (c.type === 'count') {
+        const n = count(c.displayedCoins), total = c.correctTotal;
+        if (band === 'K' && c.countMode === 'like') return wrong ? [...coinTaps(1), ...coinTaps(1)] : coinTaps(n);
+        const typedTotal = !wrong ? total : n !== total ? n : total - 1;
+        const tags = band === '1' && c.countMode === 'like' ? coinTaps(n) : [];
+        return [...tags, { type: 'write', label: 'Total in cents', text: String(typedTotal) }, check];
+      }
+      if (c.type === 'make-amount') {
+        const available = c.availableCoins ?? ['penny', 'nickel', 'dime', 'quarter'];
+        const coins = fewestCoins(c.targetAmount, available);
+        if (!coins) throw new Error(`coin-counter make-amount: ${c.targetAmount}¢ cannot be made from ${available.join(', ')}`);
+        const smallest = [...available].sort((a, b) => COIN_CENTS[a as keyof typeof COIN_CENTS] - COIN_CENTS[b as keyof typeof COIN_CENTS])[0];
+        return [...(wrong ? [...coins, smallest] : coins).map((coin): DriverInput => ({ type: 'choose', label: `Add a ${coin}` })), check];
+      }
+      if (c.type === 'compare') {
+        const label = (g: string) => g === 'equal' ? "They're Equal" : `Group ${g}`;
+        if (!wrong) return [{ type: 'choose', label: label(c.correctGroup) }, check];
+        if (c.correctGroup === 'equal') return [{ type: 'choose', label: 'Group A' }, check];
+        const other = c.correctGroup === 'A' ? 'B' : 'A';
+        return [{ type: 'choose', label: label(other) }, check];
+      }
+      const change = c.correctChange ?? (c.paidAmount - c.itemCost);
+      const typedChange = !wrong ? change : c.itemCost !== change ? c.itemCost : change + 1;
+      return [{ type: 'write', label: 'Change in cents', text: String(typedChange) }, check];
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },

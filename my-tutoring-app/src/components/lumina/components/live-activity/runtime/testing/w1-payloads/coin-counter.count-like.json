@@ -1,0 +1,96 @@
+{
+ "source": "qa/tutor-reports/coin-counter-runtime-count-like-payload-2026-09-27.json",
+ "primitiveId": "coin-counter",
+ "evalMode": "count-like",
+ "data": {
+  "title": "Counting Coins Fun!",
+  "description": "Practice counting coins with coins.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "count",
+    "instruction": "Welcome to the toy shop! Count the coins on the shelf.",
+    "hint": "Count by ones since pennies are worth 1 cent each.",
+    "displayedCoins": [
+     {
+      "type": "penny",
+      "count": 5
+     }
+    ],
+    "correctTotal": 5,
+    "countMode": "like"
+   },
+   {
+    "id": "c2",
+    "type": "count",
+    "instruction": "Help the shopkeeper count these shining coins.",
+    "hint": "Skip count by fives: 5, 10, 15, 20...",
+    "displayedCoins": [
+     {
+      "type": "nickel",
+      "count": 4
+     }
+    ],
+    "correctTotal": 20,
+    "countMode": "like"
+   },
+   {
+    "id": "c3",
+    "type": "count",
+    "instruction": "Time to count the coins for a new puzzle toy.",
+    "hint": "Skip count by tens: 10, 20, 30...",
+    "displayedCoins": [
+     {
+      "type": "dime",
+      "count": 3
+     }
+    ],
+    "correctTotal": 30,
+    "countMode": "like"
+   },
+   {
+    "id": "c4",
+    "type": "count",
+    "instruction": "Count these coins to buy a toy car.",
+    "hint": "Skip count by fives to find the total value.",
+    "displayedCoins": [
+     {
+      "type": "nickel",
+      "count": 6
+     }
+    ],
+    "correctTotal": 30,
+    "countMode": "like"
+   },
+   {
+    "id": "c5",
+    "type": "count",
+    "instruction": "Count the coins for the most expensive board game in the shop.",
+    "hint": "Skip count by tens for each dime you see.",
+    "displayedCoins": [
+     {
+      "type": "dime",
+      "count": 5
+     }
+    ],
+    "correctTotal": 50,
+    "countMode": "like"
+   },
+   {
+    "id": "c6",
+    "type": "count",
+    "instruction": "Almost closing time! Count this final pile of coins.",
+    "hint": "Skip count by twenty-fives for the quarters.",
+    "displayedCoins": [
+     {
+      "type": "quarter",
+      "count": 3
+     }
+    ],
+    "correctTotal": 75,
+    "countMode": "like"
+   }
+  ],
+  "gradeBand": "1"
+ }
+}

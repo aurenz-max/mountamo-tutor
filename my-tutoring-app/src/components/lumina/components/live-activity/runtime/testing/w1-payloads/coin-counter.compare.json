@@ -1,0 +1,174 @@
+{
+ "source": "qa/tutor-reports/coin-counter-runtime-compare-payload-2026-09-27.json",
+ "primitiveId": "coin-counter",
+ "evalMode": "compare",
+ "data": {
+  "title": "Comparing Coin Groups Fun!",
+  "description": "Practice comparing coin groups with coins.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "compare",
+    "instruction": "Look at the two handfuls of coins for a gummy bear. Which group is worth more?",
+    "hint": "Count the pennies (1\u00a2) and nickels (5\u00a2) carefully!",
+    "groupA": [
+     {
+      "type": "penny",
+      "count": 3
+     },
+     {
+      "type": "nickel",
+      "count": 1
+     }
+    ],
+    "groupB": [
+     {
+      "type": "penny",
+      "count": 1
+     },
+     {
+      "type": "nickel",
+      "count": 2
+     }
+    ],
+    "correctGroup": "B"
+   },
+   {
+    "id": "c2",
+    "type": "compare",
+    "instruction": "Time for lollipops! Compare these dimes (10\u00a2) and pennies (1\u00a2) to see which is worth more.",
+    "hint": "Dimes are worth much more than pennies. Check the dimes first!",
+    "groupA": [
+     {
+      "type": "dime",
+      "count": 1
+     },
+     {
+      "type": "penny",
+      "count": 4
+     }
+    ],
+    "groupB": [
+     {
+      "type": "dime",
+      "count": 2
+     },
+     {
+      "type": "penny",
+      "count": 1
+     }
+    ],
+    "correctGroup": "B"
+   },
+   {
+    "id": "c3",
+    "type": "compare",
+    "instruction": "Chocolate bar time! Which pocket of coins has a greater total value?",
+    "hint": "Count your nickels by fives and add your pennies last.",
+    "groupA": [
+     {
+      "type": "nickel",
+      "count": 3
+     },
+     {
+      "type": "penny",
+      "count": 2
+     }
+    ],
+    "groupB": [
+     {
+      "type": "nickel",
+      "count": 1
+     },
+     {
+      "type": "penny",
+      "count": 8
+     }
+    ],
+    "correctGroup": "A"
+   },
+   {
+    "id": "c4",
+    "type": "compare",
+    "instruction": "Sour candy belts! Look at these mixed coins. Which group buys the bigger belt?",
+    "hint": "Find the total value of Group A by counting the dime first, then nickels and pennies.",
+    "groupA": [
+     {
+      "type": "dime",
+      "count": 1
+     },
+     {
+      "type": "nickel",
+      "count": 1
+     }
+    ],
+    "groupB": [
+     {
+      "type": "dime",
+      "count": 2
+     },
+     {
+      "type": "penny",
+      "count": 3
+     }
+    ],
+    "correctGroup": "B"
+   },
+   {
+    "id": "c5",
+    "type": "compare",
+    "instruction": "The giant jawbreaker! Use your quarter (25\u00a2) knowledge to compare these big groups.",
+    "hint": "A quarter is worth 25\u00a2, which is more than any dime, nickel, or penny!",
+    "groupA": [
+     {
+      "type": "quarter",
+      "count": 1
+     },
+     {
+      "type": "nickel",
+      "count": 2
+     }
+    ],
+    "groupB": [
+     {
+      "type": "dime",
+      "count": 3
+     },
+     {
+      "type": "penny",
+      "count": 5
+     }
+    ],
+    "correctGroup": "equal"
+   },
+   {
+    "id": "c6",
+    "type": "compare",
+    "instruction": "The ultimate candy basket! Compare these large handfuls of mixed coins to find the maximum value.",
+    "hint": "Add up all the quarters and dimes first, then add the smaller coins.",
+    "groupA": [
+     {
+      "type": "quarter",
+      "count": 1
+     },
+     {
+      "type": "dime",
+      "count": 1
+     }
+    ],
+    "groupB": [
+     {
+      "type": "quarter",
+      "count": 1
+     },
+     {
+      "type": "nickel",
+      "count": 3
+     }
+    ],
+    "correctGroup": "B"
+   }
+  ],
+  "gradeBand": "1"
+ }
+}

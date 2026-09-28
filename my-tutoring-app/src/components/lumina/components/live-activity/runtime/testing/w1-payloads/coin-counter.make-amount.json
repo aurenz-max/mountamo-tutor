@@ -1,0 +1,86 @@
+{
+ "source": "qa/tutor-reports/coin-counter-runtime-make-amount-payload-2026-09-27.json",
+ "primitiveId": "coin-counter",
+ "evalMode": "make-amount",
+ "data": {
+  "title": "Making Amounts Fun!",
+  "description": "Practice making amounts with coins.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "make-amount",
+    "instruction": "Welcome to the candy counter! Can you make 7\u00a2 for a sweet bubble gum using only pennies and nickels?",
+    "hint": "Try using 1 nickel (5\u00a2) and add some pennies (1\u00a2) until you reach 7\u00a2.",
+    "targetAmount": 7,
+    "availableCoins": [
+     "penny",
+     "nickel",
+     "dime"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "make-amount",
+    "instruction": "Yum! A fruity lollipop costs 15\u00a2. Show me 15\u00a2 using dimes and nickels.",
+    "hint": "Start with 1 dime (10\u00a2) and add a nickel (5\u00a2) to make 15\u00a2.",
+    "targetAmount": 15,
+    "availableCoins": [
+     "penny",
+     "nickel",
+     "dime"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "make-amount",
+    "instruction": "A chocolate chew costs 22\u00a2. Let's make 22\u00a2 using dimes, nickels, and pennies!",
+    "hint": "Try using 2 dimes (20\u00a2) and 2 pennies (2\u00a2) to reach 22\u00a2.",
+    "targetAmount": 22,
+    "availableCoins": [
+     "penny",
+     "nickel",
+     "dime"
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "make-amount",
+    "instruction": "Look at this giant gummy bear! It costs 35\u00a2. Can you make 35\u00a2 using nickels and dimes?",
+    "hint": "Try using 3 dimes (30\u00a2) and 1 nickel (5\u00a2), or count by tens and fives!",
+    "targetAmount": 35,
+    "availableCoins": [
+     "penny",
+     "nickel",
+     "dime"
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "make-amount",
+    "instruction": "Time for the ultimate candy bag! It costs 60\u00a2. Use quarters, dimes, and nickels to make 60\u00a2.",
+    "hint": "Start with 2 quarters (50\u00a2) and add 1 dime (10\u00a2) to get 60\u00a2.",
+    "targetAmount": 60,
+    "availableCoins": [
+     "nickel",
+     "dime",
+     "quarter",
+     "penny"
+    ]
+   },
+   {
+    "id": "c6",
+    "type": "make-amount",
+    "instruction": "You are doing amazing! Buy the mega sweet box for 87\u00a2 using all the coin types.",
+    "hint": "Try 3 quarters (75\u00a2), 1 dime (10\u00a2), and 2 pennies (2\u00a2).",
+    "targetAmount": 87,
+    "availableCoins": [
+     "penny",
+     "nickel",
+     "dime",
+     "quarter"
+    ]
+   }
+  ],
+  "gradeBand": "1"
+ }
+}

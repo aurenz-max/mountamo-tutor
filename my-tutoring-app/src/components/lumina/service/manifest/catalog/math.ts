@@ -2,6 +2,7 @@ import { missLists, sameMisses } from './missLists';
 import type { AddSubMiss } from '../../../primitives/visual-primitives/math/additionSubtractionSceneWorkspace';
 import type { BarModelMiss } from '../../../primitives/visual-primitives/math/barModelWorkspace';
 import type { BaseTenMiss } from '../../../primitives/visual-primitives/math/baseTenWorkspace';
+import type { CoinMiss } from '../../../primitives/visual-primitives/math/coinCounterWorkspace';
 import type { CompareOrderMiss } from '../../../primitives/visual-primitives/math/compareObjectsWorkspace';
 import type { ComparisonMiss } from '../../../primitives/visual-primitives/math/comparisonBuilderWorkspace';
 import type { CountMiss } from '../../../primitives/visual-primitives/math/countingBoardDomain';
@@ -4987,6 +4988,31 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'coin-counter',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
+      guidance: 'The activity checks the answer itself, and you are not told it: the learner taps a coin or a group, taps '
+        + 'coins in or out, or types a number, then presses Check. On identify the coins are drawn by size and color only: '
+        + 'never name, number or point to the coin to tap; describing what a named coin looks like is teaching. Before the '
+        + 'check, and after a wrong one, never say a total, the group with more money, the change, or which coin to add or '
+        + 'take out. When coin values are hidden on screen, do not say what a coin is worth: ask the learner. Counting aloud '
+        + 'together by a coin’s value is teaching; saying where the count ends is not. A Kindergarten or Grade 1 learner may '
+        + 'not read: read the instruction aloud, and on a count of like coins tell them to tap each coin once to count it '
+        + '(at Grade 1, then type the total). You cannot tap, place or type for the learner.',
+      // The activity's own check (`coinMiss`), every mode. Kindergarten like coins check themselves on the last tap.
+      misses: missLists<CoinMiss>({
+        identify: ['dime_nickel', 'dime_penny', 'silver_coins', 'other_coin'],
+        'count-like': ['counted_coins', 'one_coin_short', 'one_coin_over', 'short', 'over'],
+        'count-mixed': ['counted_coins', 'all_one_kind', 'one_coin_short', 'one_coin_over', 'short', 'over'],
+        compare: ['more_coins', 'said_equal', 'missed_equal', 'reversed'],
+        'make-amount': ['counted_coins', 'one_coin_short', 'one_coin_over', 'short', 'over'],
+        'fewest-coins': ['counted_coins', 'one_coin_short', 'one_coin_over', 'short', 'over'],
+        'make-change': ['gave_cost', 'gave_paid', 'added', 'short', 'over'],
+      }),
+    },
+    // Records failed sessions' evidence, named misses included, as skill-scoped observations. Recording only:
+    // the generator declares no `learningObservations`, so nothing it builds reads them.
+    misconceptionScope: 'skill',
+    observationDelivery: 'server',
     description: 'Interactive coin workspace for grades K-3. Students identify coins by appearance, count mixed coin sets, drag coins to make target amounts, compare groups, and make change. Supports pennies, nickels, dimes, and quarters with skip-counting scaffolds. Progressive difficulty from single-coin identification through greedy-algorithm fewest-coins challenges. ESSENTIAL for grades K-3 money skills and financial literacy foundations.',
     constraints: 'Best for grades K-3. K-1: identify coins and count like coins only. Grades 2-3: mixed counting, make-amount, compare, and make-change challenges.',
     affordances: { representation: 'concrete', answers: ['tap', 'manipulate', 'type'], role: 'apply', minutes: 5 },

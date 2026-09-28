@@ -17,6 +17,7 @@ import { ordinalLineLiveDomain } from './adapters/ordinalLineLive';
 import { sortingStationLiveDomain } from './adapters/sortingStationLive';
 import { numberTracerLiveDomain } from './adapters/numberTracerLive';
 import { comparisonBuilderLiveDomain } from './adapters/comparisonBuilderLive';
+import { coinCounterLiveDomain } from './adapters/coinCounterLive';
 import { compareObjectsLiveDomain } from './adapters/compareObjectsLive';
 import { balanceScaleLiveDomain } from './adapters/balanceScaleLive';
 import { fractionCirclesLiveDomain } from './adapters/fractionCirclesLive';
@@ -99,6 +100,7 @@ export const LIVE_ADAPTERS = {
   'sorting-station': workspaceAdapter('sorting-station', sortingStationLiveDomain),
   'number-tracer': workspaceAdapter('number-tracer', numberTracerLiveDomain),
   'comparison-builder': workspaceAdapter('comparison-builder', comparisonBuilderLiveDomain),
+  'coin-counter': workspaceAdapter('coin-counter', coinCounterLiveDomain),
   'compare-objects': workspaceAdapter('compare-objects', compareObjectsLiveDomain),
   'balance-scale': workspaceAdapter('balance-scale', balanceScaleLiveDomain),
   'fraction-circles': workspaceAdapter('fraction-circles', fractionCirclesLiveDomain),

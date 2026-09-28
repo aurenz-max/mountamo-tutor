@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   LuminaCard,
@@ -19,11 +19,16 @@ import {
 } from '../../../evaluation';
 import type { CoinCounterMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { COIN_CENTS, coinMiss, describeCoinWork, workspaceAssignment, workspaceScene, type CoinView } from './coinCounterWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -105,14 +110,7 @@ export interface CoinCounterData {
 // Constants
 // ============================================================================
 
-const COIN_VALUES: Record<CoinType, number> = {
-  penny: 1,
-  nickel: 5,
-  dime: 10,
-  quarter: 25,
-  'half-dollar': 50,
-  dollar: 100,
-};
+const COIN_VALUES = COIN_CENTS;
 
 const COIN_DISPLAY: Record<CoinType, { emoji: string; label: string; color: string; size: string }> = {
   penny: { emoji: '🟤', label: '1¢', color: 'bg-amber-700/60 border-amber-600/80', size: 'w-10 h-10' },
@@ -141,16 +139,20 @@ interface CoinVisualProps {
   selected?: boolean;
   disabled?: boolean;
   showValue?: boolean;
+  /** The printed coin name. Off on identify, where the name is the answer. */
+  showName?: boolean;
+  ariaLabel?: string;
   className?: string;
 }
 
-const CoinVisual: React.FC<CoinVisualProps> = ({ type, onClick, selected, disabled, showValue = true, className = '' }) => {
+const CoinVisual: React.FC<CoinVisualProps> = ({ type, onClick, selected, disabled, showValue = true, showName = true, ariaLabel, className = '' }) => {
   const display = COIN_DISPLAY[type];
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-label={ariaLabel}
       className={`
         ${display.size} rounded-full ${display.color} border-2
         flex flex-col items-center justify-center
@@ -161,7 +163,7 @@ const CoinVisual: React.FC<CoinVisualProps> = ({ type, onClick, selected, disabl
       `}
     >
       <span className="text-xs font-bold text-white leading-none">{showValue ? display.label : ''}</span>
-      <span className="text-[10px] text-white/70 leading-none mt-0.5 capitalize">{type === 'half-dollar' ? '50¢' : type}</span>
+      {showName && <span className="text-[10px] text-white/70 leading-none mt-0.5 capitalize">{type === 'half-dollar' ? 'half' : type}</span>}
     </button>
   );
 };
@@ -241,13 +243,19 @@ function formatCents(cents: number): string {
 interface CoinCounterProps {
   data: CoinCounterData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
+const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  CoinCounterProps & { tutorOwned: boolean; useController: (options: ProgressOptions<CoinCounterChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -264,19 +272,37 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // ── Challenge Progress (shared hooks) ──────────────────────────────
+  // ── Challenge Progress (shared hooks). On the workspace path the runtime moves the index. ──
+  const stableInstanceIdRef = useRef(instanceId || `coin-counter-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  // Bound below, once the setters and the evaluation exist.
+  const openItem = useRef<(retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (_index, retry) => openItem.current(retry),
+    onFinished: result => finish.current(result),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult,
     incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => workspaceClosed.current;
+  // The activity's own check is the workspace's checked gesture. A ref, so the check callbacks keep their deps.
+  const commitCheck = useRef(progress.commitCheck);
+  commitCheck.current = progress.commitCheck;
+  const coinView = useRef<CoinView>({ selectedCoin: null, countInput: '', counted: 0, enacted: null, placed: [],
+    selectedGroup: null, changeInput: '', valuesShown: true, runningTotalShown: true });
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -321,10 +347,6 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
   // make-change mode
   const [changeInput, setChangeInput] = useState('');
 
-  // Refs
-  const stableInstanceIdRef = useRef(instanceId || `coin-counter-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
   // ── Evaluation Hook ────────────────────────────────────────────────
   const {
     submitResult: submitEvaluation,
@@ -360,12 +382,17 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     gradeBand, challenges.length, currentChallengeIndex, currentChallenge, currentAttempts, supportTier,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // Its context carries the answers, so it is off on the workspace path, and its scripted cues send nothing there.
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'coin-counter',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : `Grade ${gradeBand}`,
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Activity introduction
   const hasIntroducedRef = useRef(false);
@@ -399,12 +426,23 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     if (wrongCoinTimer.current) clearTimeout(wrongCoinTimer.current);
     hasJudgedEnactedRef.current = false;
   }, []);
+  // A fresh challenge starts empty. Try again clears the answer (the pick, the typed number, the placed coins)
+  // and the feedback, but keeps a Grade 1 count's tags: every coin was already tagged once, which is right.
+  openItem.current = (retry) => {
+    if (!retry) { resetDomainState(); return; }
+    setSelectedCoin(null);
+    setPlacedCoins([]);
+    setCountInput('');
+    setSelectedGroup(null);
+    setChangeInput('');
+    setFeedback('');
+    setFeedbackType('');
+  };
 
   // ── Check Handlers ─────────────────────────────────────────────────
 
   const handleCheckIdentify = useCallback(() => {
     if (!currentChallenge || !selectedCoin) return;
-    incrementAttempts();
     const correct = selectedCoin === currentChallenge.targetCoin;
 
     if (correct) {
@@ -426,11 +464,10 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
       );
     }
     return correct;
-  }, [currentChallenge, selectedCoin, incrementAttempts, sendText, supportTier]);
+  }, [currentChallenge, selectedCoin, sendText, supportTier]);
 
   const handleCheckCount = useCallback(() => {
     if (!currentChallenge) return;
-    incrementAttempts();
     const answer = parseInt(countInput, 10);
     const target = currentChallenge.correctTotal ?? 0;
     const correct = answer === target;
@@ -455,11 +492,10 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
       );
     }
     return correct;
-  }, [currentChallenge, countInput, incrementAttempts, sendText, supportTier]);
+  }, [currentChallenge, countInput, sendText, supportTier]);
 
   const handleCheckMakeAmount = useCallback(() => {
     if (!currentChallenge) return;
-    incrementAttempts();
     const placed = placedCoins.reduce((sum, c) => sum + COIN_VALUES[c], 0);
     const target = currentChallenge.targetAmount ?? 0;
     const correct = placed === target;
@@ -482,11 +518,10 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
       );
     }
     return correct;
-  }, [currentChallenge, placedCoins, incrementAttempts, sendText, supportTier]);
+  }, [currentChallenge, placedCoins, sendText, supportTier]);
 
   const handleCheckCompare = useCallback(() => {
     if (!currentChallenge || !selectedGroup) return;
-    incrementAttempts();
     const correct = selectedGroup === currentChallenge.correctGroup;
 
     const aTotal = calcTotalCents(currentChallenge.groupA || []);
@@ -510,11 +545,10 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
       );
     }
     return correct;
-  }, [currentChallenge, selectedGroup, incrementAttempts, sendText, supportTier]);
+  }, [currentChallenge, selectedGroup, sendText, supportTier]);
 
   const handleCheckMakeChange = useCallback(() => {
     if (!currentChallenge) return;
-    incrementAttempts();
     const answer = parseInt(changeInput, 10);
     const target = currentChallenge.correctChange ?? 0;
     const correct = answer === target;
@@ -535,7 +569,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
       );
     }
     return correct;
-  }, [currentChallenge, changeInput, incrementAttempts, sendText, supportTier]);
+  }, [currentChallenge, changeInput, sendText, supportTier]);
 
   // ── Master Check Handler ───────────────────────────────────────────
   const handleCheckAnswer = useCallback(() => {
@@ -550,17 +584,13 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
       case 'make-change': correct = handleCheckMakeChange() ?? false; break;
     }
 
-    if (correct) {
-      SoundManager.playCorrect();
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-    } else {
-      SoundManager.playIncorrect();
-    }
-  }, [currentChallenge, currentAttempts, handleCheckIdentify, handleCheckCount, handleCheckMakeAmount, handleCheckCompare, handleCheckMakeChange, recordResult]);
+    if (correct) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
+    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    const work = coinView.current;
+    commitCheck.current(describeCoinWork(currentChallenge, work), correct,
+      correct ? undefined : coinMiss(currentChallenge, work));
+  }, [currentChallenge, handleCheckIdentify, handleCheckCount, handleCheckMakeAmount, handleCheckCompare, handleCheckMakeChange]);
 
   // ── Advance to Next Challenge ──────────────────────────────────────
   const advanceToNextChallenge = useCallback(() => {
@@ -579,7 +609,8 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
         { silent: true },
       );
 
-      if (!hasSubmittedEvaluation) {
+      // The workspace path submits the scored session from `onFinished` (below), not this tally.
+      if (!hasSubmittedEvaluation && !tutorOwned) {
         const correctCount = challengeResults.filter((r) => r.correct).length;
         const score = Math.round((correctCount / challenges.length) * 100);
         const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
@@ -613,8 +644,25 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     );
   }, [
     advanceProgress, phaseResults, challengeResults, challenges, sendText,
-    hasSubmittedEvaluation, submitEvaluation, resetDomainState, currentChallengeIndex, gradeBand,
+    hasSubmittedEvaluation, submitEvaluation, resetDomainState, currentChallengeIndex, gradeBand, tutorOwned,
   ]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation) return;
+    const metrics: CoinCounterMetrics = {
+      type: 'coin-counter',
+      accuracy: result.accuracy,
+      totalAttempts: result.attemptsCount,
+      challengesCompleted: result.solvedCount,
+      challengesTotal: challenges.length,
+    };
+    submitEvaluation(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
   // Auto-submit when all complete
   const hasAutoSubmittedRef = useRef(false);
@@ -677,6 +725,23 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
   const allEnactedCounted =
     enactedCoins.length > 0 && countedOrder.length === enactedCoins.length;
 
+  // The learner's work as the check and the tutor read it. Written every render, read by the check handlers.
+  const currentView: CoinView = {
+    selectedCoin, countInput, counted: countedOrder.length,
+    enacted: isEnactedCount ? 'tap' : isEnactedCountG1 ? 'tag' : null,
+    placed: placedCoins, selectedGroup, changeInput,
+    valuesShown: showCoinValues && currentChallenge?.type !== 'identify',
+    runningTotalShown: showRunningTotal,
+  };
+  coinView.current = currentView;
+
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge) return;
+    workspace.current = { ...workspaceScene(currentChallenge, coinView.current) };
+  });
+
   /** Running total after the first `n` taps — the value stamped on the nth coin. */
   const runningTotalAt = useCallback(
     (n: number) => countedOrder.slice(0, n).reduce((sum, idx) => sum + COIN_VALUES[enactedCoins[idx]], 0),
@@ -684,7 +749,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
   );
 
   const handleEnactedCoinTap = useCallback((idx: number) => {
-    if (isCurrentChallengeCorrect) return;
+    if (isCurrentChallengeCorrect || learnerBlocked()) return;
     // Re-tapping an already-counted coin is the classic K double-count error. Feedback
     // lands ON the touched object (Audit-C rule 5) — shake + SFX, no text card.
     if (countedOrder.includes(idx)) {
@@ -712,23 +777,17 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     hasJudgedEnactedRef.current = true;
 
     const target = currentChallenge.correctTotal ?? 0;
-    incrementAttempts();
     SoundManager.playCorrect();
     setFeedback(`You counted ${formatCents(target)}!`);
     setFeedbackType('success');
-    recordResult({
-      challengeId: currentChallenge.id,
-      correct: true,
-      attempts: currentAttempts + 1,
-    });
+    commitCheck.current(describeCoinWork(currentChallenge, coinView.current), true);
     sendText(
       `[ANSWER_CORRECT] Student counted every coin by tapping and reached ${formatCents(target)}. `
       + `Celebrate the skip-count briefly.`,
       { silent: true },
     );
   }, [
-    isEnactedCount, currentChallenge, countedOrder.length, enactedCoins.length,
-    currentAttempts, incrementAttempts, recordResult, sendText,
+    isEnactedCount, currentChallenge, countedOrder.length, enactedCoins.length, sendText,
   ]);
 
   // ── Render Helpers ─────────────────────────────────────────────────
@@ -753,18 +812,21 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap gap-3 justify-center">
-          {coinOptions.map((coin) => (
+          {coinOptions.map((coin, i) => (
             <CoinVisual
               key={coin}
               type={coin}
               selected={selectedCoin === coin}
               onClick={() => {
-                if (isCurrentChallengeCorrect) return;
+                if (isCurrentChallengeCorrect || learnerBlocked()) return;
                 SoundManager.select();
                 setSelectedCoin(coin);
               }}
               disabled={isCurrentChallengeCorrect}
               showValue={false}
+              // The coin's name is the answer: only its size and color are drawn, and its label is its position.
+              showName={false}
+              ariaLabel={`Coin ${i + 1}`}
             />
           ))}
         </div>
@@ -806,6 +868,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
                   selected={counted}
                   disabled={isCurrentChallengeCorrect}
                   showValue={showCoinValues}
+                  ariaLabel={`Coin ${i + 1}`}
                   className={wrongCoin === i ? motion.shake : ''}
                 />
                 {counted && (
@@ -861,6 +924,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
                   selected={counted}
                   disabled={isCurrentChallengeCorrect}
                   showValue={showCoinValues}
+                  ariaLabel={`Coin ${i + 1}`}
                   className={wrongCoin === i ? motion.shake : ''}
                 />
                 {counted && (
@@ -888,8 +952,9 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
               inputMode="numeric"
               min={0}
               value={countInput}
-              onChange={(e) => setCountInput(e.target.value)}
+              onChange={(e) => { if (!learnerBlocked()) setCountInput(e.target.value); }}
               disabled={isCurrentChallengeCorrect}
+              aria-label="Total in cents"
               placeholder="¢"
               className="w-24 px-3 py-2 text-center text-lg"
             />
@@ -915,8 +980,9 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
             inputMode="numeric"
             min={0}
             value={countInput}
-            onChange={(e) => setCountInput(e.target.value)}
+            onChange={(e) => { if (!learnerBlocked()) setCountInput(e.target.value); }}
             disabled={isCurrentChallengeCorrect}
+            aria-label="Total in cents"
             placeholder="¢"
             className="w-24 px-3 py-2 text-center text-lg"
           />
@@ -945,12 +1011,13 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
               key={coin}
               type={coin}
               onClick={() => {
-                if (isCurrentChallengeCorrect) return;
+                if (isCurrentChallengeCorrect || learnerBlocked()) return;
                 SoundManager.tap();
                 setPlacedCoins((prev) => [...prev, coin]);
               }}
               disabled={isCurrentChallengeCorrect}
               showValue={showCoinValues}
+              ariaLabel={`Add a ${coin}`}
             />
           ))}
         </div>
@@ -972,7 +1039,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
                 key={`placed-${i}`}
                 type={coin}
                 onClick={() => {
-                  if (isCurrentChallengeCorrect) return;
+                  if (isCurrentChallengeCorrect || learnerBlocked()) return;
                   SoundManager.tap();
                   setPlacedCoins((prev) => {
                     const next = [...prev];
@@ -982,6 +1049,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
                 }}
                 disabled={isCurrentChallengeCorrect}
                 showValue={showCoinValues}
+                ariaLabel={`Take out a ${coin}`}
                 className="hover:ring-2 hover:ring-red-400/50"
               />
             ))}
@@ -995,7 +1063,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setPlacedCoins([])}
+            onClick={() => { if (!learnerBlocked()) setPlacedCoins([]); }}
             className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400 text-xs mx-auto block"
           >
             Clear All
@@ -1013,11 +1081,12 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
           <button
             type="button"
             onClick={() => {
-              if (isCurrentChallengeCorrect) return;
+              if (isCurrentChallengeCorrect || learnerBlocked()) return;
               SoundManager.select();
               setSelectedGroup('A');
             }}
             disabled={isCurrentChallengeCorrect}
+            aria-label="Group A"
             className={`p-3 rounded-xl border-2 transition-all ${
               selectedGroup === 'A'
                 ? 'border-blue-400 bg-blue-500/10'
@@ -1029,11 +1098,12 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
           <button
             type="button"
             onClick={() => {
-              if (isCurrentChallengeCorrect) return;
+              if (isCurrentChallengeCorrect || learnerBlocked()) return;
               SoundManager.select();
               setSelectedGroup('B');
             }}
             disabled={isCurrentChallengeCorrect}
+            aria-label="Group B"
             className={`p-3 rounded-xl border-2 transition-all ${
               selectedGroup === 'B'
                 ? 'border-blue-400 bg-blue-500/10'
@@ -1048,7 +1118,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
             variant="ghost"
             size="sm"
             onClick={() => {
-              if (isCurrentChallengeCorrect) return;
+              if (isCurrentChallengeCorrect || learnerBlocked()) return;
               SoundManager.select();
               setSelectedGroup('equal');
             }}
@@ -1095,8 +1165,9 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
             inputMode="numeric"
             min={0}
             value={changeInput}
-            onChange={(e) => setChangeInput(e.target.value)}
+            onChange={(e) => { if (!learnerBlocked()) setChangeInput(e.target.value); }}
             disabled={isCurrentChallengeCorrect}
+            aria-label="Change in cents"
             placeholder="¢"
             className="w-24 px-3 py-2 text-center text-lg"
           />
@@ -1220,8 +1291,9 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
                 isEnactedCount || (isEnactedCountG1 && !allEnactedCounted) ? null : (
                 <LuminaActionButton
                   action="check"
-                  onClick={handleCheckAnswer}
+                  onClick={() => { if (!learnerBlocked()) handleCheckAnswer(); }}
                   disabled={
+                    (tutorOwned && progress.canAttempt === false) ||
                     (currentChallenge.type === 'identify' && !selectedCoin) ||
                     (currentChallenge.type === 'count' && !countInput) ||
                     (currentChallenge.type === 'make-amount' && placedCoins.length === 0) ||
@@ -1230,7 +1302,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
                   }
                 />
                 )
-              ) : (
+              ) : tutorOwned ? null : (
                 <LuminaActionButton
                   action="next"
                   onClick={advanceToNextChallenge}
@@ -1253,5 +1325,9 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const CoinCounter = withWorkspaceController<CoinCounterProps, ProgressOptions<CoinCounterChallenge>, Progress>(
+  'coin-counter', CoinCounterSurface, useScriptedProgress, useWorkspaceProgressFor('coin-counter'));
 
 export default CoinCounter;

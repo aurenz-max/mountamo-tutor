@@ -225,6 +225,17 @@ the record.
 - **Path:** either a catalog projection that says so honestly, or K money curriculum authoring —
   a `/curriculum-author` call, not a primitive change.
 
+### G7 — make-change can pay with a coin that does not exist · OPEN
+- **Shortfall:** the 2026-09-27 Grade 3 payload asks "You pay with a 75 cent coin". The paid amount is not
+  constrained to one real coin or a stated set of coins.
+- **Path:** generator → `/eval-fix`, oracle rule (paid amount is a real coin or a named coin set).
+
+### G8 — `fewest-coins` is checked as `make-amount` · OPEN
+- **Shortfall:** both modes render as challenge type `make-amount` and the check reads only the placed sum, so
+  7 pennies for 7¢ passes a "fewest coins" item. The mode's task (β5.0) is not checked by the activity.
+- **Path:** stamp the mode on the challenge (as `countMode`), check the coin count against `fewestCoins`
+  (`coinCounterWorkspace.ts`) on that mode, add a `more_coins_than_needed` miss → `/eval-fix`.
+
 ## Rulings recorded (2026-07-25)
 
 **`showCoinValues` default-true on LIKE coins = a LEGITIMATE RECOGNITION AID, not a rule-#1 leak.**
@@ -266,3 +277,9 @@ total teaches the interval by demonstration). **Kept default-true.** Sole except
   (never inspect `displayedCoins`); `showCoinValues` default-true on like coins. K (R9),
   count-mixed (R3), and identify (R4) verified unchanged — jsdom guards + eval-tests
   (6/6 @ G1 like, 6/6 @ K like, 6/6 @ G2 mixed, 0 desyncs) + real-Chrome probe.
+- 2026-09-27 — shared teaching workspace, W1 plain shape (`coinCounterWorkspace.ts`, `coinMiss`, catalog
+  `teachingWorkspace.misses`, `misconceptionScope: 'skill'` with server delivery, recording only). **R4
+  strengthened:** identify drew each coin's printed NAME under it ("penny", "nickel"), so "Which coin is the
+  nickel?" answered itself; identify coins now show neither name nor value (`showName={false}`, labelled
+  "Coin N"). The half-dollar's name slot printed "50¢" at every tier, a value under R8's hard tier; it now
+  prints "half". R3, R9, R11 unchanged (reader-fit suite green). G7, G8 found while saving payloads.

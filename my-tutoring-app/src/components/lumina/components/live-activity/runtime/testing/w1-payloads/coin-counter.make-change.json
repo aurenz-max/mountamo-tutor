@@ -1,0 +1,57 @@
+{
+ "source": "qa/tutor-reports/coin-counter-runtime-make-change-payload-2026-09-27.json",
+ "primitiveId": "coin-counter",
+ "evalMode": "make-change",
+ "data": {
+  "title": "Making Change Fun!",
+  "description": "Practice making change with coins.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "make-change",
+    "instruction": "You buy a bouncy ball that costs 10 cents. You pay with a 25 cent coin. How much change should you get?",
+    "hint": "Count up from 10 cents to 25 cents to find the difference.",
+    "paidAmount": 25,
+    "itemCost": 10,
+    "correctChange": 15
+   },
+   {
+    "id": "c2",
+    "type": "make-change",
+    "instruction": "You buy a colorful sticker that costs 15 cents. You pay with a 25 cent coin. How much change should you get?",
+    "hint": "Start at 15 cents and count up to reach 25 cents.",
+    "paidAmount": 25,
+    "itemCost": 15,
+    "correctChange": 10
+   },
+   {
+    "id": "c3",
+    "type": "make-change",
+    "instruction": "You buy a mini toy car that costs 20 cents. You pay with a 50 cent coin. How much change should you get?",
+    "hint": "Count up from 20 cents to 50 cents using dimes or quarters.",
+    "paidAmount": 50,
+    "itemCost": 20,
+    "correctChange": 30
+   },
+   {
+    "id": "c4",
+    "type": "make-change",
+    "instruction": "You buy a spinning top that costs 35 cents. You pay with a 50 cent coin. How much change should you get?",
+    "hint": "Start at 35 cents, add nickels or dimes until you reach 50 cents.",
+    "paidAmount": 50,
+    "itemCost": 35,
+    "correctChange": 15
+   },
+   {
+    "id": "c5",
+    "type": "make-change",
+    "instruction": "You buy a small puzzle that costs 40 cents. You pay with a 75 cent coin. How much change should you get?",
+    "hint": "Count up from 40 cents to 50 cents, and then up to 75 cents.",
+    "paidAmount": 75,
+    "itemCost": 40,
+    "correctChange": 35
+   }
+  ],
+  "gradeBand": "1"
+ }
+}

@@ -1,0 +1,90 @@
+{
+ "source": "qa/tutor-reports/coin-counter-runtime-identify-payload-2026-09-27.json",
+ "primitiveId": "coin-counter",
+ "evalMode": "identify",
+ "data": {
+  "title": "Coin Identification Fun!",
+  "description": "Practice coin identification with coins.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "identify",
+    "instruction": "Look at the yummy treats and the coins on the counter. Which coin is the penny?",
+    "hint": "A penny is copper and has Abraham Lincoln on it!",
+    "coins": [
+     {
+      "type": "penny",
+      "count": 1
+     },
+     {
+      "type": "nickel",
+      "count": 1
+     },
+     {
+      "type": "dime",
+      "count": 1
+     }
+    ],
+    "targetCoin": "penny",
+    "options": [
+     "penny",
+     "nickel",
+     "dime"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "identify",
+    "instruction": "Time to pay for a lollipop! Which coin is the nickel?",
+    "hint": "A nickel is thicker and a bit larger than a dime.",
+    "coins": [
+     {
+      "type": "dime",
+      "count": 1
+     },
+     {
+      "type": "penny",
+      "count": 1
+     },
+     {
+      "type": "nickel",
+      "count": 1
+     }
+    ],
+    "targetCoin": "nickel",
+    "options": [
+     "penny",
+     "nickel",
+     "dime"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "identify",
+    "instruction": "Let's count gummy bears. Can you spot the dime?",
+    "hint": "A dime is the smallest coin of all three!",
+    "coins": [
+     {
+      "type": "penny",
+      "count": 2
+     },
+     {
+      "type": "dime",
+      "count": 1
+     },
+     {
+      "type": "nickel",
+      "count": 1
+     }
+    ],
+    "targetCoin": "dime",
+    "options": [
+     "nickel",
+     "dime",
+     "penny"
+    ]
+   }
+  ],
+  "gradeBand": "K"
+ }
+}
