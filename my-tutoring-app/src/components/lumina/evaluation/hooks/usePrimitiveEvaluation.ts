@@ -9,6 +9,7 @@ import type {
 } from '../types';
 import type { DiagnosisEvidence } from '../diagnosis/types';
 import { useEvaluationContext } from '../contexts/EvaluationContext';
+import { useWorkspaceSubmission, withWorkspaceEvidence } from '../workspaceSubmission';
 import { useExhibitContext } from '../../contexts/ExhibitContext';
 import { resolveSubmittedEvalMode, warnUnresolvedEvalMode } from '../evalModeKey';
 import { resolveRemediationIdentity } from '../remediation/remediationTransport';
@@ -171,6 +172,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
 
   // Get context (may be null if no provider)
   const evaluationContext = useEvaluationContext();
+  const workspaceSubmission = useWorkspaceSubmission();
   // Exhibit context maps this component instance → its manifest objective(s),
   // which carry per-objective curriculum IDs on multi-subskill lessons.
   const exhibitContext = useExhibitContext();
@@ -349,6 +351,23 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     // Store for potential unmount submission
     pendingResultRef.current = result;
 
+    // Workspace-bound, in a lesson: send once the workspace has scored the session, with its evidence
+    // (each wrong check's named miss) added. The primitive's success, score and metrics are unchanged.
+    if (workspaceSubmission && evaluationContext && !localOnly) {
+      setIsSubmitting(true);
+      workspaceSubmission.whenScored(session => {
+        const sent: PrimitiveEvaluationResult<TMetrics> = session
+          ? { ...result, ...withWorkspaceEvidence(result.diagnosisEvidence, result.studentWork, session) } : result;
+        pendingResultRef.current = sent;
+        onSubmit?.(sent);
+        evaluationContext.submitEvaluation(sent)
+          .then(() => { setHasSubmitted(true); setSubmittedResult(sent); onSubmitSuccess?.(sent); })
+          .catch((error: Error) => { onSubmitError?.(error, sent); })
+          .finally(() => { setIsSubmitting(false); });
+      });
+      return result;
+    }
+
     // Call local callback
     onSubmit?.(result);
 
@@ -398,6 +417,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     evaluationContext,
     localOnly,
     exhibitContext,
+    workspaceSubmission,
   ]);
 
   /**

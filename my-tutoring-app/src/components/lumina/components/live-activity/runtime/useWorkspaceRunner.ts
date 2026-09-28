@@ -1,7 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useRef, type MutableRefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, type MutableRefObject } from 'react';
 import { useEvaluationContext } from '../../../evaluation';
+// The file, not the index: tests mock the index with only the hooks they substitute.
+import { useWorkspaceSubmission } from '../../../evaluation/workspaceSubmission';
 import { useTeachingWorkspace, type TeachingAssignment, type TeachingWorkspace } from './useTeachingWorkspace';
 import { teachingEvaluation } from './teachingEvaluation';
 import { useWorkspacePin } from './workspacePin';
@@ -174,10 +176,15 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
     ? teachingEvaluation(items.map(i => ({ ...options.assignment(i), checkResponse: () => null })), state, lesson.scored, evalMode)
     : null;
   const evaluationContext = useEvaluationContext();
+  const submission = useWorkspaceSubmission();
+  // Before any completion effect: the primitive's own submission waits for this runner's scored session.
+  useLayoutEffect(() => { submission?.expect(); }, [submission]);
   const finished = useRef(false);
   useEffect(() => {
     if (!evaluationContext || !teachingResult || finished.current) return;
     finished.current = true;
+    // First, so a primitive's submission waiting on the scored session goes out before `onFinished` runs.
+    submission?.scored(teachingResult);
     latest.current.onFinished?.(teachingResult);
   });
 
