@@ -14,7 +14,8 @@ import type { ObservationAssessment } from '../../components/live-activity/runti
 export interface ObservationKind<Request, Decision> {
   id: string;
   timeoutMs: number;
-  questions: Record<string, Question>;
+  /** Fixed, or built per request when the options are the item's own (`spoken_miss`: one option per known miss). */
+  questions: Record<string, Question> | ((request: Request) => Record<string, Question>);
   /** The exact model input. Kept inspectable on every decision. */
   state: (request: Request) => unknown;
   decide: (request: Request, answers: any, ms: number, model?: string) => Decision;
@@ -30,10 +31,11 @@ export async function runObservation<Request, Decision extends Assessed>(kind: O
   const timer = setTimeout(() => controller.abort(), kind.timeoutMs);
   try {
     const state = kind.state(request);
-    const result = await systemOne(state, kind.questions,
+    const questions = typeof kind.questions === 'function' ? kind.questions(request) : kind.questions;
+    const result = await systemOne(state, questions,
       { signal: cancelled ? AbortSignal.any([cancelled, controller.signal]) : controller.signal });
     return { ...kind.decide(request, result.answers, result.ms, result.model),
-      assessment: { state, questions: kind.questions, answers: result.answers } };
+      assessment: { state, questions, answers: result.answers } };
   } catch { return kind.abstain(controller.signal.aborted ? 'timeout' : 'unavailable', Math.round(performance.now() - start)); }
   finally { clearTimeout(timer); }
 }

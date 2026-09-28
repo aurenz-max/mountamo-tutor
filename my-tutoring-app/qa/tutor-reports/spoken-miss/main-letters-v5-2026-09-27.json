@@ -1,0 +1,6954 @@
+{
+  "runs": 3,
+  "byFamily": {
+    "letter-sound-link.see_hear": {
+      "total": 156,
+      "pass": 156,
+      "falsePositive": 0,
+      "abstained": 0,
+      "perGold": {
+        "none": {
+          "n": 84,
+          "right": 84,
+          "otherMiss": 0,
+          "unnamed": 0
+        },
+        "letter_name": {
+          "n": 36,
+          "right": 36,
+          "otherMiss": 0,
+          "unnamed": 0
+        },
+        "other_sound": {
+          "n": 18,
+          "right": 18,
+          "otherMiss": 0,
+          "unnamed": 0
+        },
+        "keyword_word": {
+          "n": 12,
+          "right": 12,
+          "otherMiss": 0,
+          "unnamed": 0
+        },
+        "added_vowel": {
+          "n": 6,
+          "right": 6,
+          "otherMiss": 0,
+          "unnamed": 0
+        }
+      }
+    }
+  },
+  "results": [
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "sss",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 1,
+      "reason": "correct",
+      "ms": 227,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 1,
+          "probabilities": {
+            "correct": 1,
+            "other_wrong": 0,
+            "added_vowel": 0,
+            "no_answer": 0,
+            "other_sound": 0,
+            "letter_name": 0,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.02
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.03
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "ssss",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 1,
+      "reason": "correct",
+      "ms": 226,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.99,
+          "probabilities": {
+            "no_answer": 0,
+            "added_vowel": 0,
+            "letter_name": 0,
+            "other_sound": 0,
+            "other_wrong": 0,
+            "correct": 1,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.04
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "ess",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 243,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "added_vowel": 0,
+            "other_wrong": 0,
+            "other_sound": 0,
+            "no_answer": 0,
+            "keyword_word": 0,
+            "correct": 0,
+            "letter_name": 1
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.4
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.38
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "correct_2",
+      "source": "constructed-noisy",
+      "learner": "s",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "letter_name",
+      "p": 0.55,
+      "reason": "below_gate",
+      "ms": 246,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.67,
+          "probabilities": {
+            "correct": 0.18,
+            "no_answer": 0.05,
+            "letter_name": 0.72,
+            "keyword_word": 0,
+            "added_vowel": 0.01,
+            "other_wrong": 0.02,
+            "other_sound": 0.02
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.55
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.2
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.11
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's ess",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 268,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "other_sound": 0,
+            "correct": 0,
+            "added_vowel": 0,
+            "other_wrong": 0,
+            "letter_name": 1,
+            "keyword_word": 0,
+            "no_answer": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.31
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.23
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 288,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 1,
+          "probabilities": {
+            "other_wrong": 0,
+            "no_answer": 0,
+            "letter_name": 0,
+            "keyword_word": 0,
+            "added_vowel": 0,
+            "correct": 0,
+            "other_sound": 1
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.97
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.58,
+      "reason": "no_answer",
+      "ms": 147,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.51,
+          "probabilities": {
+            "other_sound": 0.01,
+            "letter_name": 0.13,
+            "keyword_word": 0,
+            "correct": 0.25,
+            "added_vowel": 0.01,
+            "no_answer": 0.58,
+            "other_wrong": 0.02
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.34
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.11
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.25
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.22
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "keyword",
+      "source": "constructed",
+      "learner": "sun",
+      "gold": "keyword_word",
+      "correctAnswer": false,
+      "miss": "keyword_word",
+      "reading": "keyword_word",
+      "p": 0.92,
+      "reason": "named",
+      "ms": 170,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "keyword_word",
+          "confidence": 0.95,
+          "probabilities": {
+            "letter_name": 0.01,
+            "no_answer": 0,
+            "keyword_word": 0.96,
+            "other_sound": 0,
+            "correct": 0.03,
+            "other_wrong": 0,
+            "added_vowel": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.25
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.92
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.3
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.26
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "I don't know",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 1,
+      "reason": "no_answer",
+      "ms": 165,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 1,
+          "probabilities": {
+            "other_sound": 0,
+            "correct": 0,
+            "added_vowel": 0,
+            "other_wrong": 0,
+            "letter_name": 0,
+            "keyword_word": 0,
+            "no_answer": 1
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.04
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "added_vowel",
+      "source": "constructed",
+      "learner": "suh",
+      "gold": "added_vowel",
+      "correctAnswer": false,
+      "miss": "added_vowel",
+      "reading": "added_vowel",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 196,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "added_vowel",
+          "confidence": 0.97,
+          "probabilities": {
+            "correct": 0,
+            "no_answer": 0,
+            "keyword_word": 0,
+            "added_vowel": 0.98,
+            "letter_name": 0.02,
+            "other_wrong": 0,
+            "other_sound": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.35
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.39
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.38
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "aaa",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.99,
+      "reason": "correct",
+      "ms": 178,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.99,
+          "probabilities": {
+            "letter_name": 0.01,
+            "correct": 0.99,
+            "other_wrong": 0,
+            "other_sound": 0,
+            "no_answer": 0,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.04
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "ah",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.73,
+      "reason": "correct",
+      "ms": 217,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.68,
+          "probabilities": {
+            "no_answer": 0,
+            "letter_name": 0.03,
+            "keyword_word": 0,
+            "other_wrong": 0.11,
+            "correct": 0.73,
+            "other_sound": 0.13
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.12
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "correct_2",
+      "source": "constructed-noisy",
+      "learner": "a like in apple",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "keyword_word",
+      "p": 0.54,
+      "reason": "below_gate",
+      "ms": 154,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "keyword_word",
+          "confidence": 0.44,
+          "probabilities": {
+            "correct": 0.37,
+            "other_sound": 0.01,
+            "other_wrong": 0.05,
+            "letter_name": 0.03,
+            "keyword_word": 0.53,
+            "no_answer": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.54
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.05
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.96,
+      "reason": "named",
+      "ms": 178,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 1,
+          "probabilities": {
+            "no_answer": 0,
+            "letter_name": 0,
+            "keyword_word": 0,
+            "correct": 0,
+            "other_wrong": 0,
+            "other_sound": 1
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "ay",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 163,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "letter_name": 0.99,
+            "other_wrong": 0,
+            "no_answer": 0,
+            "other_sound": 0,
+            "keyword_word": 0,
+            "correct": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.09
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.51
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's ay",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 162,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "other_wrong": 0,
+            "keyword_word": 0,
+            "other_sound": 0,
+            "correct": 0,
+            "no_answer": 0,
+            "letter_name": 1
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.6
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "keyword",
+      "source": "constructed",
+      "learner": "apple",
+      "gold": "keyword_word",
+      "correctAnswer": false,
+      "miss": "keyword_word",
+      "reading": "keyword_word",
+      "p": 0.94,
+      "reason": "named",
+      "ms": 210,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "keyword_word",
+          "confidence": 0.91,
+          "probabilities": {
+            "no_answer": 0,
+            "letter_name": 0,
+            "other_sound": 0,
+            "other_wrong": 0,
+            "correct": 0.06,
+            "keyword_word": 0.9400000000000001
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.15
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.94
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.17
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.5,
+      "reason": "no_answer",
+      "ms": 200,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.38,
+          "probabilities": {
+            "other_sound": 0.15,
+            "other_wrong": 0.02,
+            "no_answer": 0.5,
+            "correct": 0.26,
+            "letter_name": 0.07,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.24
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.11
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.25
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "which one?",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.94,
+      "reason": "no_answer",
+      "ms": 177,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.93,
+          "probabilities": {
+            "correct": 0.02,
+            "other_sound": 0,
+            "no_answer": 0.94,
+            "letter_name": 0.02,
+            "other_wrong": 0.02,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.15
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.09
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.74,
+      "reason": "named",
+      "ms": 153,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 0.97,
+          "probabilities": {
+            "other_sound": 0.98,
+            "other_wrong": 0,
+            "no_answer": 0.02,
+            "correct": 0,
+            "letter_name": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.12
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.74
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "t",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "letter_name",
+      "p": 0.49,
+      "reason": "below_gate",
+      "ms": 166,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.47,
+          "probabilities": {
+            "no_answer": 0.12,
+            "letter_name": 0.58,
+            "other_wrong": 0.05,
+            "correct": 0.23,
+            "other_sound": 0.02
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.49
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.15
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "tuh",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.45,
+      "reason": "correct",
+      "ms": 164,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.3,
+          "probabilities": {
+            "correct": 0.45,
+            "no_answer": 0,
+            "letter_name": 0.24,
+            "other_wrong": 0.18,
+            "other_sound": 0.13
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.16
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.12
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "tee",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 177,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "other_wrong": 0,
+            "other_sound": 0,
+            "correct": 0,
+            "letter_name": 1,
+            "no_answer": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.2
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's tee",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 147,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "correct": 0,
+            "no_answer": 0,
+            "other_wrong": 0,
+            "other_sound": 0,
+            "letter_name": 1
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.27
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "keyword_accepted",
+      "source": "constructed",
+      "learner": "tent",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "other_wrong",
+      "p": 0.54,
+      "reason": "other_wrong",
+      "ms": 162,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_wrong",
+          "confidence": 0.42,
+          "probabilities": {
+            "letter_name": 0.02,
+            "correct": 0.42,
+            "other_wrong": 0.54,
+            "other_sound": 0.01,
+            "no_answer": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.14
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.75,
+      "reason": "no_answer",
+      "ms": 201,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.69,
+          "probabilities": {
+            "other_sound": 0.01,
+            "letter_name": 0.06,
+            "no_answer": 0.75,
+            "correct": 0.16,
+            "other_wrong": 0.02
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.35
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.18
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "iii",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.92,
+      "reason": "correct",
+      "ms": 214,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.9,
+          "probabilities": {
+            "other_wrong": 0.01,
+            "correct": 0.92,
+            "other_sound": 0.05,
+            "letter_name": 0.02,
+            "no_answer": 0,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.13
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.11
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "um",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 1,
+      "reason": "no_answer",
+      "ms": 235,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 1,
+          "probabilities": {
+            "no_answer": 1,
+            "letter_name": 0,
+            "other_wrong": 0,
+            "correct": 0,
+            "other_sound": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.07
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "ih",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.42,
+      "reason": "correct",
+      "ms": 158,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.3,
+          "probabilities": {
+            "letter_name": 0.02,
+            "no_answer": 0.01,
+            "other_wrong": 0.16,
+            "other_sound": 0.37,
+            "correct": 0.42,
+            "keyword_word": 0.02
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.11
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.17
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.24
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.89,
+      "reason": "named",
+      "ms": 159,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 1,
+          "probabilities": {
+            "no_answer": 0,
+            "keyword_word": 0,
+            "other_sound": 1,
+            "other_wrong": 0,
+            "letter_name": 0,
+            "correct": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.89
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "eye",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 151,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "other_sound": 0,
+            "correct": 0.01,
+            "keyword_word": 0,
+            "letter_name": 0.99,
+            "other_wrong": 0,
+            "no_answer": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.22
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.19
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "keyword",
+      "source": "constructed",
+      "learner": "itch",
+      "gold": "keyword_word",
+      "correctAnswer": false,
+      "miss": "keyword_word",
+      "reading": "keyword_word",
+      "p": 0.95,
+      "reason": "named",
+      "ms": 142,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "keyword_word",
+          "confidence": 0.94,
+          "probabilities": {
+            "letter_name": 0.01,
+            "correct": 0.04,
+            "other_sound": 0,
+            "other_wrong": 0,
+            "no_answer": 0,
+            "keyword_word": 0.95
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.09
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.95
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.37
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's eye",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.96,
+      "reason": "named",
+      "ms": 180,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "no_answer": 0,
+            "other_sound": 0,
+            "other_wrong": 0,
+            "correct": 0.01,
+            "letter_name": 0.99,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.96
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.28
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.19
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "can you say it first?",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.78,
+      "reason": "no_answer",
+      "ms": 143,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.74,
+          "probabilities": {
+            "keyword_word": 0,
+            "no_answer": 0.78,
+            "correct": 0.19,
+            "other_sound": 0.01,
+            "letter_name": 0.01,
+            "other_wrong": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.12
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.41,
+      "reason": "correct",
+      "ms": 177,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.29,
+          "probabilities": {
+            "correct": 0.41,
+            "other_sound": 0.38,
+            "no_answer": 0.11,
+            "letter_name": 0.08,
+            "other_wrong": 0.02,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.23
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.33
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "p",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "letter_name",
+      "p": 0.46,
+      "reason": "below_gate",
+      "ms": 152,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.63,
+          "probabilities": {
+            "other_sound": 0.01,
+            "correct": 0.2,
+            "letter_name": 0.71,
+            "no_answer": 0.05,
+            "other_wrong": 0.03
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.46
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.16
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "puh",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.7,
+      "reason": "correct",
+      "ms": 156,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.62,
+          "probabilities": {
+            "other_wrong": 0.07,
+            "other_sound": 0.14,
+            "correct": 0.7,
+            "letter_name": 0.09,
+            "no_answer": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.16
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.87,
+      "reason": "named",
+      "ms": 147,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 0.99,
+          "probabilities": {
+            "letter_name": 0,
+            "correct": 0,
+            "no_answer": 0,
+            "other_sound": 1,
+            "other_wrong": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.87
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "pee",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 154,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "other_sound": 0,
+            "correct": 0,
+            "letter_name": 1,
+            "no_answer": 0,
+            "other_wrong": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.41
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's pee",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 147,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "other_sound": 0,
+            "other_wrong": 0,
+            "no_answer": 0,
+            "letter_name": 1,
+            "correct": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.52
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.76,
+      "reason": "no_answer",
+      "ms": 156,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.7,
+          "probabilities": {
+            "other_wrong": 0.01,
+            "correct": 0.16,
+            "letter_name": 0.06,
+            "no_answer": 0.76,
+            "other_sound": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.36
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.19
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "I don't know",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 1,
+      "reason": "no_answer",
+      "ms": 148,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 1,
+          "probabilities": {
+            "letter_name": 0,
+            "other_sound": 0,
+            "correct": 0,
+            "no_answer": 1,
+            "other_wrong": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.05
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "keyword_accepted",
+      "source": "constructed",
+      "learner": "pig",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "other_wrong",
+      "p": 0.61,
+      "reason": "other_wrong",
+      "ms": 195,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_wrong",
+          "confidence": 0.52,
+          "probabilities": {
+            "correct": 0.36,
+            "no_answer": 0,
+            "other_wrong": 0.61,
+            "letter_name": 0.02,
+            "other_sound": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.19
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "nnn",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.99,
+      "reason": "correct",
+      "ms": 181,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.99,
+          "probabilities": {
+            "other_sound": 0,
+            "no_answer": 0,
+            "correct": 0.99,
+            "letter_name": 0.01,
+            "added_vowel": 0,
+            "keyword_word": 0,
+            "other_wrong": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.12
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.04
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "nnnn",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.98,
+      "reason": "correct",
+      "ms": 153,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.97,
+          "probabilities": {
+            "letter_name": 0.01,
+            "added_vowel": 0.01,
+            "correct": 0.98,
+            "other_wrong": 0,
+            "no_answer": 0,
+            "other_sound": 0,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.22
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.2
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.05
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.96,
+      "reason": "named",
+      "ms": 157,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 1,
+          "probabilities": {
+            "correct": 0,
+            "keyword_word": 0,
+            "letter_name": 0,
+            "other_sound": 1,
+            "other_wrong": 0,
+            "no_answer": 0,
+            "added_vowel": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "en",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 139,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.98,
+          "probabilities": {
+            "other_wrong": 0,
+            "correct": 0.01,
+            "added_vowel": 0.01,
+            "no_answer": 0,
+            "other_sound": 0,
+            "letter_name": 0.98,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.14
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.43
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.29
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "keyword",
+      "source": "constructed",
+      "learner": "net",
+      "gold": "keyword_word",
+      "correctAnswer": false,
+      "miss": "keyword_word",
+      "reading": "keyword_word",
+      "p": 0.93,
+      "reason": "named",
+      "ms": 144,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "keyword_word",
+          "confidence": 0.9,
+          "probabilities": {
+            "keyword_word": 0.92,
+            "other_sound": 0,
+            "other_wrong": 0,
+            "correct": 0.04,
+            "letter_name": 0.03,
+            "no_answer": 0,
+            "added_vowel": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.58
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.93
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.38
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.3
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's en",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 175,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "letter_name": 1,
+            "other_wrong": 0,
+            "other_sound": 0,
+            "correct": 0,
+            "no_answer": 0,
+            "added_vowel": 0,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.16
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.39
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.65
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "added_vowel",
+      "source": "constructed",
+      "learner": "nuh",
+      "gold": "added_vowel",
+      "correctAnswer": false,
+      "miss": "added_vowel",
+      "reading": "added_vowel",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 170,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "added_vowel",
+          "confidence": 0.95,
+          "probabilities": {
+            "other_wrong": 0,
+            "keyword_word": 0,
+            "no_answer": 0,
+            "correct": 0.01,
+            "added_vowel": 0.97,
+            "letter_name": 0.02,
+            "other_sound": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.48
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.19
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.3
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.38,
+      "reason": "no_answer",
+      "ms": 185,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.28,
+          "probabilities": {
+            "letter_name": 0.28,
+            "other_wrong": 0.02,
+            "other_sound": 0.02,
+            "keyword_word": 0,
+            "no_answer": 0.38,
+            "added_vowel": 0.02,
+            "correct": 0.28
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.54
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.31
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.17
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 1,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "which one?",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.92,
+      "reason": "no_answer",
+      "ms": 198,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.9,
+          "probabilities": {
+            "added_vowel": 0,
+            "other_wrong": 0.02,
+            "no_answer": 0.92,
+            "other_sound": 0,
+            "keyword_word": 0,
+            "correct": 0.02,
+            "letter_name": 0.04
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.19
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.18
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.13
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "sss",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 1,
+      "reason": "correct",
+      "ms": 190,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 1,
+          "probabilities": {
+            "letter_name": 0,
+            "added_vowel": 0,
+            "other_wrong": 0,
+            "other_sound": 0,
+            "keyword_word": 0,
+            "correct": 1,
+            "no_answer": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.02
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.02
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "ssss",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 1,
+      "reason": "correct",
+      "ms": 162,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.99,
+          "probabilities": {
+            "other_sound": 0,
+            "correct": 1,
+            "added_vowel": 0,
+            "other_wrong": 0,
+            "letter_name": 0,
+            "keyword_word": 0,
+            "no_answer": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.04
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "correct_2",
+      "source": "constructed-noisy",
+      "learner": "s",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "letter_name",
+      "p": 0.52,
+      "reason": "below_gate",
+      "ms": 168,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.64,
+          "probabilities": {
+            "other_wrong": 0.02,
+            "letter_name": 0.6799999999999999,
+            "keyword_word": 0,
+            "other_sound": 0.02,
+            "correct": 0.22,
+            "no_answer": 0.05,
+            "added_vowel": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.52
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.19
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.11
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 150,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 1,
+          "probabilities": {
+            "other_sound": 1,
+            "no_answer": 0,
+            "correct": 0,
+            "letter_name": 0,
+            "added_vowel": 0,
+            "keyword_word": 0,
+            "other_wrong": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.97
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "ess",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 186,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "correct": 0,
+            "keyword_word": 0,
+            "added_vowel": 0,
+            "other_wrong": 0,
+            "letter_name": 1,
+            "no_answer": 0,
+            "other_sound": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.39
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.33
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "keyword",
+      "source": "constructed",
+      "learner": "sun",
+      "gold": "keyword_word",
+      "correctAnswer": false,
+      "miss": "keyword_word",
+      "reading": "keyword_word",
+      "p": 0.92,
+      "reason": "named",
+      "ms": 150,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "keyword_word",
+          "confidence": 0.94,
+          "probabilities": {
+            "letter_name": 0.01,
+            "other_wrong": 0,
+            "correct": 0.03,
+            "other_sound": 0,
+            "keyword_word": 0.96,
+            "no_answer": 0,
+            "added_vowel": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.27
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.92
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.34
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.23
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "added_vowel",
+      "source": "constructed",
+      "learner": "suh",
+      "gold": "added_vowel",
+      "correctAnswer": false,
+      "miss": "added_vowel",
+      "reading": "added_vowel",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 153,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "added_vowel",
+          "confidence": 0.98,
+          "probabilities": {
+            "correct": 0,
+            "keyword_word": 0,
+            "added_vowel": 0.99,
+            "other_wrong": 0,
+            "letter_name": 0.01,
+            "no_answer": 0,
+            "other_sound": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.26
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.33
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.36
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's ess",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 175,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "no_answer": 0,
+            "other_sound": 0,
+            "other_wrong": 0,
+            "correct": 0,
+            "letter_name": 1,
+            "keyword_word": 0,
+            "added_vowel": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.11
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.31
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.21
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.55,
+      "reason": "no_answer",
+      "ms": 161,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.48,
+          "probabilities": {
+            "correct": 0.29,
+            "letter_name": 0.11,
+            "other_sound": 0.02,
+            "no_answer": 0.55,
+            "keyword_word": 0,
+            "added_vowel": 0.01,
+            "other_wrong": 0.02
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.33
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.11
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.27
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.2
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "I don't know",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 1,
+      "reason": "no_answer",
+      "ms": 160,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 1,
+          "probabilities": {
+            "letter_name": 0,
+            "keyword_word": 0,
+            "other_sound": 0,
+            "other_wrong": 0,
+            "no_answer": 1,
+            "added_vowel": 0,
+            "correct": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.05
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "correct_2",
+      "source": "constructed-noisy",
+      "learner": "a like in apple",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "keyword_word",
+      "p": 0.61,
+      "reason": "below_gate",
+      "ms": 158,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "keyword_word",
+          "confidence": 0.54,
+          "probabilities": {
+            "other_sound": 0.01,
+            "letter_name": 0.04,
+            "no_answer": 0,
+            "correct": 0.28,
+            "other_wrong": 0.06,
+            "keyword_word": 0.61
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.61
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.06
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "aaa",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.99,
+      "reason": "correct",
+      "ms": 167,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.99,
+          "probabilities": {
+            "other_wrong": 0,
+            "letter_name": 0.01,
+            "keyword_word": 0,
+            "correct": 0.99,
+            "no_answer": 0,
+            "other_sound": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.03
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "ah",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.73,
+      "reason": "correct",
+      "ms": 183,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.67,
+          "probabilities": {
+            "letter_name": 0.06,
+            "keyword_word": 0,
+            "other_sound": 0.09,
+            "other_wrong": 0.12,
+            "no_answer": 0,
+            "correct": 0.73
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.14
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.95,
+      "reason": "named",
+      "ms": 171,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 1,
+          "probabilities": {
+            "other_wrong": 0,
+            "other_sound": 1,
+            "letter_name": 0,
+            "keyword_word": 0,
+            "no_answer": 0,
+            "correct": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.95
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "ay",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 204,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "letter_name": 0.99,
+            "other_sound": 0,
+            "other_wrong": 0,
+            "keyword_word": 0,
+            "no_answer": 0,
+            "correct": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.41
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's ay",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 173,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "correct": 0.01,
+            "no_answer": 0,
+            "keyword_word": 0,
+            "other_wrong": 0,
+            "other_sound": 0,
+            "letter_name": 0.99
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.63
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "keyword",
+      "source": "constructed",
+      "learner": "apple",
+      "gold": "keyword_word",
+      "correctAnswer": false,
+      "miss": "keyword_word",
+      "reading": "keyword_word",
+      "p": 0.91,
+      "reason": "named",
+      "ms": 152,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "keyword_word",
+          "confidence": 0.88,
+          "probabilities": {
+            "no_answer": 0.01,
+            "letter_name": 0.01,
+            "keyword_word": 0.9,
+            "other_wrong": 0,
+            "correct": 0.08,
+            "other_sound": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.17
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.94
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.18
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "which one?",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.97,
+      "reason": "no_answer",
+      "ms": 152,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.95,
+          "probabilities": {
+            "letter_name": 0.01,
+            "no_answer": 0.97,
+            "other_wrong": 0.01,
+            "other_sound": 0,
+            "correct": 0.01,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.11
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.09
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.54,
+      "reason": "no_answer",
+      "ms": 202,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.44,
+          "probabilities": {
+            "other_sound": 0.13,
+            "letter_name": 0.08,
+            "no_answer": 0.54,
+            "correct": 0.23,
+            "other_wrong": 0.02,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.29
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.11
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.27
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "t",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "letter_name",
+      "p": 0.45,
+      "reason": "below_gate",
+      "ms": 192,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.47,
+          "probabilities": {
+            "other_sound": 0.02,
+            "other_wrong": 0.04,
+            "no_answer": 0.11,
+            "letter_name": 0.58,
+            "correct": 0.25
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.45
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.15
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "tuh",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.46,
+      "reason": "correct",
+      "ms": 139,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.32,
+          "probabilities": {
+            "other_wrong": 0.15,
+            "other_sound": 0.16,
+            "letter_name": 0.23,
+            "no_answer": 0,
+            "correct": 0.46
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.18
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.14
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.77,
+      "reason": "named",
+      "ms": 161,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 0.97,
+          "probabilities": {
+            "other_sound": 0.98,
+            "correct": 0,
+            "letter_name": 0,
+            "other_wrong": 0,
+            "no_answer": 0.02
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.77
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "tee",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 161,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "other_wrong": 0,
+            "letter_name": 0.99,
+            "correct": 0.01,
+            "other_sound": 0,
+            "no_answer": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.23
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "keyword_accepted",
+      "source": "constructed",
+      "learner": "tent",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "other_wrong",
+      "p": 0.51,
+      "reason": "other_wrong",
+      "ms": 147,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_wrong",
+          "confidence": 0.39,
+          "probabilities": {
+            "other_wrong": 0.51,
+            "other_sound": 0.01,
+            "letter_name": 0.03,
+            "no_answer": 0.01,
+            "correct": 0.44
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.13
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's tee",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 200,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "letter_name": 1,
+            "no_answer": 0,
+            "other_wrong": 0,
+            "correct": 0,
+            "other_sound": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.3
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.77,
+      "reason": "no_answer",
+      "ms": 160,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.71,
+          "probabilities": {
+            "other_sound": 0.01,
+            "letter_name": 0.06,
+            "correct": 0.15,
+            "no_answer": 0.77,
+            "other_wrong": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.36
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.19
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "um",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 1,
+      "reason": "no_answer",
+      "ms": 168,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 1,
+          "probabilities": {
+            "no_answer": 1,
+            "correct": 0,
+            "other_sound": 0,
+            "other_wrong": 0,
+            "letter_name": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.1
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "iii",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.91,
+      "reason": "correct",
+      "ms": 142,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.89,
+          "probabilities": {
+            "no_answer": 0,
+            "keyword_word": 0,
+            "other_sound": 0.05,
+            "correct": 0.91,
+            "other_wrong": 0.01,
+            "letter_name": 0.03
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.13
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.13
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "ih",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.46,
+      "reason": "correct",
+      "ms": 190,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.36,
+          "probabilities": {
+            "letter_name": 0.02,
+            "keyword_word": 0.01,
+            "other_sound": 0.32,
+            "other_wrong": 0.18,
+            "no_answer": 0.01,
+            "correct": 0.46
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.12
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.22
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.91,
+      "reason": "named",
+      "ms": 192,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 0.99,
+          "probabilities": {
+            "other_wrong": 0,
+            "correct": 0,
+            "letter_name": 0,
+            "other_sound": 1,
+            "no_answer": 0,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.91
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "eye",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 182,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.98,
+          "probabilities": {
+            "other_sound": 0,
+            "letter_name": 0.99,
+            "keyword_word": 0,
+            "correct": 0.01,
+            "no_answer": 0,
+            "other_wrong": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.17
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.18
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's eye",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.96,
+      "reason": "named",
+      "ms": 208,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "other_wrong": 0,
+            "keyword_word": 0,
+            "other_sound": 0,
+            "correct": 0.01,
+            "no_answer": 0,
+            "letter_name": 0.99
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.96
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.31
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.18
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.44,
+      "reason": "correct",
+      "ms": 166,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.33,
+          "probabilities": {
+            "no_answer": 0.1,
+            "keyword_word": 0,
+            "other_sound": 0.31,
+            "correct": 0.44,
+            "other_wrong": 0.02,
+            "letter_name": 0.13
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.23
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.35
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "keyword",
+      "source": "constructed",
+      "learner": "itch",
+      "gold": "keyword_word",
+      "correctAnswer": false,
+      "miss": "keyword_word",
+      "reading": "keyword_word",
+      "p": 0.96,
+      "reason": "named",
+      "ms": 200,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "keyword_word",
+          "confidence": 0.95,
+          "probabilities": {
+            "no_answer": 0,
+            "other_sound": 0,
+            "other_wrong": 0,
+            "correct": 0.04,
+            "letter_name": 0.01,
+            "keyword_word": 0.95
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.96
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.41
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "can you say it first?",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.81,
+      "reason": "no_answer",
+      "ms": 173,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.77,
+          "probabilities": {
+            "no_answer": 0.81,
+            "keyword_word": 0,
+            "other_wrong": 0.01,
+            "other_sound": 0.01,
+            "letter_name": 0.01,
+            "correct": 0.16
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.09
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.11
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "puh",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.71,
+      "reason": "correct",
+      "ms": 141,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.62,
+          "probabilities": {
+            "letter_name": 0.09,
+            "no_answer": 0,
+            "other_wrong": 0.07,
+            "correct": 0.71,
+            "other_sound": 0.13
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.14
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "p",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "letter_name",
+      "p": 0.55,
+      "reason": "below_gate",
+      "ms": 195,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.58,
+          "probabilities": {
+            "no_answer": 0.06,
+            "other_sound": 0.01,
+            "other_wrong": 0.03,
+            "correct": 0.23,
+            "letter_name": 0.67
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.55
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.14
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "pee",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 171,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "correct": 0,
+            "letter_name": 1,
+            "other_sound": 0,
+            "no_answer": 0,
+            "other_wrong": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.29
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's pee",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 176,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "no_answer": 0,
+            "correct": 0,
+            "letter_name": 1,
+            "other_wrong": 0,
+            "other_sound": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.44
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.86,
+      "reason": "named",
+      "ms": 193,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 0.99,
+          "probabilities": {
+            "other_sound": 0.99,
+            "no_answer": 0.01,
+            "other_wrong": 0,
+            "letter_name": 0,
+            "correct": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.11
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.86
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.77,
+      "reason": "no_answer",
+      "ms": 161,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.71,
+          "probabilities": {
+            "other_wrong": 0.01,
+            "other_sound": 0.01,
+            "no_answer": 0.77,
+            "letter_name": 0.05,
+            "correct": 0.16
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.35
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.19
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "keyword_accepted",
+      "source": "constructed",
+      "learner": "pig",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "other_wrong",
+      "p": 0.54,
+      "reason": "other_wrong",
+      "ms": 181,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_wrong",
+          "confidence": 0.41,
+          "probabilities": {
+            "no_answer": 0,
+            "letter_name": 0.02,
+            "correct": 0.43,
+            "other_wrong": 0.54,
+            "other_sound": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.15
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "I don't know",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 1,
+      "reason": "no_answer",
+      "ms": 162,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 1,
+          "probabilities": {
+            "other_sound": 0,
+            "letter_name": 0,
+            "other_wrong": 0,
+            "no_answer": 1,
+            "correct": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.09
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.05
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "nnn",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.99,
+      "reason": "correct",
+      "ms": 174,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.99,
+          "probabilities": {
+            "other_wrong": 0,
+            "added_vowel": 0,
+            "other_sound": 0,
+            "keyword_word": 0,
+            "correct": 0.99,
+            "letter_name": 0.01,
+            "no_answer": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.11
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.12
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.04
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "nnnn",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.98,
+      "reason": "correct",
+      "ms": 176,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.97,
+          "probabilities": {
+            "letter_name": 0.01,
+            "other_sound": 0,
+            "no_answer": 0,
+            "added_vowel": 0.01,
+            "other_wrong": 0,
+            "keyword_word": 0,
+            "correct": 0.98
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.2
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.17
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.05
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.96,
+      "reason": "named",
+      "ms": 173,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 1,
+          "probabilities": {
+            "added_vowel": 0,
+            "other_wrong": 0,
+            "no_answer": 0,
+            "other_sound": 1,
+            "keyword_word": 0,
+            "correct": 0,
+            "letter_name": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "en",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 192,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.98,
+          "probabilities": {
+            "letter_name": 0.99,
+            "other_wrong": 0,
+            "other_sound": 0,
+            "keyword_word": 0,
+            "no_answer": 0,
+            "added_vowel": 0,
+            "correct": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.14
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.42
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.23
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "keyword",
+      "source": "constructed",
+      "learner": "net",
+      "gold": "keyword_word",
+      "correctAnswer": false,
+      "miss": "keyword_word",
+      "reading": "keyword_word",
+      "p": 0.94,
+      "reason": "named",
+      "ms": 152,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "keyword_word",
+          "confidence": 0.92,
+          "probabilities": {
+            "other_sound": 0,
+            "correct": 0.04,
+            "other_wrong": 0,
+            "letter_name": 0.03,
+            "keyword_word": 0.92,
+            "added_vowel": 0.01,
+            "no_answer": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.56
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.94
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.38
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.27
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "added_vowel",
+      "source": "constructed",
+      "learner": "nuh",
+      "gold": "added_vowel",
+      "correctAnswer": false,
+      "miss": "added_vowel",
+      "reading": "added_vowel",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 153,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "added_vowel",
+          "confidence": 0.95,
+          "probabilities": {
+            "keyword_word": 0,
+            "other_sound": 0,
+            "other_wrong": 0,
+            "correct": 0.02,
+            "letter_name": 0.02,
+            "no_answer": 0,
+            "added_vowel": 0.96
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.47
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.2
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.33
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's en",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 234,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "other_wrong": 0,
+            "keyword_word": 0,
+            "no_answer": 0,
+            "other_sound": 0,
+            "added_vowel": 0,
+            "letter_name": 1,
+            "correct": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.16
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.41
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.58
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.45,
+      "reason": "no_answer",
+      "ms": 154,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.36,
+          "probabilities": {
+            "correct": 0.3,
+            "other_wrong": 0.02,
+            "no_answer": 0.45,
+            "other_sound": 0.01,
+            "letter_name": 0.21,
+            "added_vowel": 0.01,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.46
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.32
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.17
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 2,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "which one?",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.91,
+      "reason": "no_answer",
+      "ms": 167,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.88,
+          "probabilities": {
+            "no_answer": 0.91,
+            "added_vowel": 0,
+            "correct": 0.03,
+            "other_sound": 0,
+            "keyword_word": 0,
+            "other_wrong": 0.02,
+            "letter_name": 0.04
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.2
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.18
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.15
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "sss",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 1,
+      "reason": "correct",
+      "ms": 145,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.99,
+          "probabilities": {
+            "letter_name": 0,
+            "other_sound": 0,
+            "other_wrong": 0,
+            "correct": 1,
+            "added_vowel": 0,
+            "no_answer": 0,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.02
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.02
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "ssss",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 1,
+      "reason": "correct",
+      "ms": 189,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.99,
+          "probabilities": {
+            "other_wrong": 0,
+            "other_sound": 0,
+            "added_vowel": 0,
+            "keyword_word": 0,
+            "correct": 1,
+            "letter_name": 0,
+            "no_answer": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.04
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.96,
+      "reason": "named",
+      "ms": 171,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 1,
+          "probabilities": {
+            "keyword_word": 0,
+            "other_sound": 1,
+            "other_wrong": 0,
+            "correct": 0,
+            "letter_name": 0,
+            "no_answer": 0,
+            "added_vowel": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "ess",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 163,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "letter_name": 1,
+            "other_sound": 0,
+            "no_answer": 0,
+            "other_wrong": 0,
+            "added_vowel": 0,
+            "correct": 0,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.09
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.4
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.32
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "correct_2",
+      "source": "constructed-noisy",
+      "learner": "s",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "letter_name",
+      "p": 0.53,
+      "reason": "below_gate",
+      "ms": 184,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.6,
+          "probabilities": {
+            "other_wrong": 0.02,
+            "correct": 0.25,
+            "keyword_word": 0,
+            "letter_name": 0.65,
+            "no_answer": 0.05,
+            "other_sound": 0.02,
+            "added_vowel": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.53
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.23
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.13
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's ess",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 219,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "added_vowel": 0,
+            "letter_name": 1,
+            "no_answer": 0,
+            "other_wrong": 0,
+            "other_sound": 0,
+            "correct": 0,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.28
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.23
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "keyword",
+      "source": "constructed",
+      "learner": "sun",
+      "gold": "keyword_word",
+      "correctAnswer": false,
+      "miss": "keyword_word",
+      "reading": "keyword_word",
+      "p": 0.92,
+      "reason": "named",
+      "ms": 199,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "keyword_word",
+          "confidence": 0.95,
+          "probabilities": {
+            "correct": 0.03,
+            "letter_name": 0.01,
+            "other_sound": 0,
+            "no_answer": 0,
+            "keyword_word": 0.96,
+            "added_vowel": 0,
+            "other_wrong": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.27
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.92
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.26
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.24
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "added_vowel",
+      "source": "constructed",
+      "learner": "suh",
+      "gold": "added_vowel",
+      "correctAnswer": false,
+      "miss": "added_vowel",
+      "reading": "added_vowel",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 157,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "added_vowel",
+          "confidence": 0.98,
+          "probabilities": {
+            "letter_name": 0.01,
+            "added_vowel": 0.99,
+            "correct": 0,
+            "other_wrong": 0,
+            "no_answer": 0,
+            "other_sound": 0,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.3
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.38
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.38
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.49,
+      "reason": "no_answer",
+      "ms": 154,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.4,
+          "probabilities": {
+            "keyword_word": 0,
+            "other_sound": 0.04,
+            "other_wrong": 0.03,
+            "correct": 0.31,
+            "letter_name": 0.12,
+            "no_answer": 0.49,
+            "added_vowel": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.32
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.24
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.21
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch1(s)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "I don't know",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 1,
+      "reason": "no_answer",
+      "ms": 156,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 1,
+          "probabilities": {
+            "letter_name": 0,
+            "keyword_word": 0,
+            "correct": 0,
+            "other_sound": 0,
+            "other_wrong": 0,
+            "no_answer": 1,
+            "added_vowel": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.05
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "aaa",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.99,
+      "reason": "correct",
+      "ms": 158,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.98,
+          "probabilities": {
+            "keyword_word": 0,
+            "correct": 0.99,
+            "no_answer": 0,
+            "other_sound": 0,
+            "letter_name": 0.01,
+            "other_wrong": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.04
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "ah",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.75,
+      "reason": "correct",
+      "ms": 184,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.69,
+          "probabilities": {
+            "letter_name": 0.04,
+            "no_answer": 0,
+            "other_wrong": 0.1,
+            "keyword_word": 0,
+            "correct": 0.75,
+            "other_sound": 0.11
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.12
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.12
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "correct_2",
+      "source": "constructed-noisy",
+      "learner": "a like in apple",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "keyword_word",
+      "p": 0.56,
+      "reason": "below_gate",
+      "ms": 167,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "keyword_word",
+          "confidence": 0.47,
+          "probabilities": {
+            "letter_name": 0.03,
+            "other_wrong": 0.05,
+            "other_sound": 0.01,
+            "no_answer": 0.01,
+            "keyword_word": 0.55,
+            "correct": 0.35
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.56
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.05
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "keyword",
+      "source": "constructed",
+      "learner": "apple",
+      "gold": "keyword_word",
+      "correctAnswer": false,
+      "miss": "keyword_word",
+      "reading": "keyword_word",
+      "p": 0.9400000000000001,
+      "reason": "named",
+      "ms": 149,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "keyword_word",
+          "confidence": 0.92,
+          "probabilities": {
+            "no_answer": 0,
+            "other_sound": 0,
+            "other_wrong": 0,
+            "keyword_word": 0.93,
+            "letter_name": 0.01,
+            "correct": 0.05
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.14
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.95
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.19
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.95,
+      "reason": "named",
+      "ms": 176,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 1,
+          "probabilities": {
+            "other_wrong": 0,
+            "keyword_word": 0,
+            "letter_name": 0,
+            "no_answer": 0,
+            "correct": 0,
+            "other_sound": 1
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.95
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "ay",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 156,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "other_sound": 0,
+            "letter_name": 0.99,
+            "correct": 0.01,
+            "other_wrong": 0,
+            "keyword_word": 0,
+            "no_answer": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.54
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's ay",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 168,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "other_sound": 0,
+            "other_wrong": 0,
+            "no_answer": 0,
+            "letter_name": 1,
+            "correct": 0,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.64
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.43,
+      "reason": "no_answer",
+      "ms": 163,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.31,
+          "probabilities": {
+            "correct": 0.27,
+            "no_answer": 0.43,
+            "keyword_word": 0,
+            "other_wrong": 0.02,
+            "letter_name": 0.07,
+            "other_sound": 0.21
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.24
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.11
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.28
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "tuh",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.37,
+      "reason": "correct",
+      "ms": 157,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.21,
+          "probabilities": {
+            "no_answer": 0,
+            "letter_name": 0.2,
+            "other_wrong": 0.23,
+            "correct": 0.37,
+            "other_sound": 0.2
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.13
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.13
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "t",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "letter_name",
+      "p": 0.45,
+      "reason": "below_gate",
+      "ms": 165,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.51,
+          "probabilities": {
+            "other_wrong": 0.03,
+            "other_sound": 0.02,
+            "no_answer": 0.13,
+            "letter_name": 0.6,
+            "correct": 0.22
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.45
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.17
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.71,
+      "reason": "named",
+      "ms": 163,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 0.96,
+          "probabilities": {
+            "no_answer": 0.03,
+            "letter_name": 0,
+            "other_sound": 0.97,
+            "other_wrong": 0,
+            "correct": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.12
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.71
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch2(a)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "which one?",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.92,
+      "reason": "no_answer",
+      "ms": 178,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.91,
+          "probabilities": {
+            "letter_name": 0.02,
+            "correct": 0.03,
+            "no_answer": 0.92,
+            "other_wrong": 0.02,
+            "other_sound": 0,
+            "keyword_word": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.18
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.1
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "tee",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.96,
+      "reason": "named",
+      "ms": 178,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "letter_name": 0.99,
+            "other_wrong": 0,
+            "correct": 0.01,
+            "other_sound": 0,
+            "no_answer": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.96
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.18
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's tee",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 153,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "letter_name": 1,
+            "other_wrong": 0,
+            "no_answer": 0,
+            "other_sound": 0,
+            "correct": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.34
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "um",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 1,
+      "reason": "no_answer",
+      "ms": 151,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 1,
+          "probabilities": {
+            "other_wrong": 0,
+            "correct": 0,
+            "other_sound": 0,
+            "letter_name": 0,
+            "no_answer": 1
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.08
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.71,
+      "reason": "no_answer",
+      "ms": 161,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.64,
+          "probabilities": {
+            "other_sound": 0.02,
+            "correct": 0.18,
+            "other_wrong": 0.02,
+            "letter_name": 0.07,
+            "no_answer": 0.71
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.33
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.19
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "iii",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.9,
+      "reason": "correct",
+      "ms": 164,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.89,
+          "probabilities": {
+            "correct": 0.9,
+            "other_sound": 0.06,
+            "other_wrong": 0.01,
+            "letter_name": 0.03,
+            "keyword_word": 0,
+            "no_answer": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.17
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.13
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch3(t)",
+      "name": "keyword_accepted",
+      "source": "constructed",
+      "learner": "tent",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "other_wrong",
+      "p": 0.48,
+      "reason": "other_wrong",
+      "ms": 188,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_wrong",
+          "confidence": 0.35,
+          "probabilities": {
+            "other_wrong": 0.48,
+            "correct": 0.48,
+            "no_answer": 0,
+            "other_sound": 0.01,
+            "letter_name": 0.03
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.05
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.11
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "ih",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.41,
+      "reason": "correct",
+      "ms": 151,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.3,
+          "probabilities": {
+            "correct": 0.41,
+            "no_answer": 0.01,
+            "keyword_word": 0.01,
+            "other_wrong": 0.19,
+            "other_sound": 0.36,
+            "letter_name": 0.02
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.15
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.25
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.9,
+      "reason": "named",
+      "ms": 200,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 0.99,
+          "probabilities": {
+            "correct": 0,
+            "letter_name": 0,
+            "other_sound": 1,
+            "no_answer": 0,
+            "keyword_word": 0,
+            "other_wrong": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.9
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "eye",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 148,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "no_answer": 0,
+            "correct": 0.01,
+            "other_sound": 0,
+            "keyword_word": 0,
+            "other_wrong": 0,
+            "letter_name": 0.99
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.19
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.19
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's eye",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.96,
+      "reason": "named",
+      "ms": 171,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "letter_name": 0.99,
+            "other_wrong": 0,
+            "no_answer": 0,
+            "other_sound": 0,
+            "keyword_word": 0,
+            "correct": 0.01
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.96
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.27
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.19
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.41,
+      "reason": "correct",
+      "ms": 172,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.29,
+          "probabilities": {
+            "no_answer": 0.15,
+            "letter_name": 0.11,
+            "keyword_word": 0,
+            "correct": 0.41,
+            "other_wrong": 0.02,
+            "other_sound": 0.31
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.21
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.08
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.24
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "can you say it first?",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.79,
+      "reason": "no_answer",
+      "ms": 185,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.74,
+          "probabilities": {
+            "keyword_word": 0,
+            "other_sound": 0.01,
+            "other_wrong": 0.01,
+            "correct": 0.18,
+            "letter_name": 0.01,
+            "no_answer": 0.79
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.09
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.09
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.13
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch4(i)",
+      "name": "keyword",
+      "source": "constructed",
+      "learner": "itch",
+      "gold": "keyword_word",
+      "correctAnswer": false,
+      "miss": "keyword_word",
+      "reading": "keyword_word",
+      "p": 0.92,
+      "reason": "named",
+      "ms": 255,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "keyword_word",
+          "confidence": 0.89,
+          "probabilities": {
+            "other_sound": 0,
+            "letter_name": 0.01,
+            "correct": 0.08,
+            "no_answer": 0,
+            "other_wrong": 0,
+            "keyword_word": 0.91
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.12
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.94
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.33
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "puh",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.75,
+      "reason": "correct",
+      "ms": 145,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.68,
+          "probabilities": {
+            "correct": 0.75,
+            "letter_name": 0.08,
+            "no_answer": 0,
+            "other_wrong": 0.05,
+            "other_sound": 0.12
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.13
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "p",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "letter_name",
+      "p": 0.54,
+      "reason": "below_gate",
+      "ms": 152,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.58,
+          "probabilities": {
+            "other_wrong": 0.02,
+            "other_sound": 0.01,
+            "no_answer": 0.1,
+            "letter_name": 0.66,
+            "correct": 0.2
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.54
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.16
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.86,
+      "reason": "named",
+      "ms": 163,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 0.98,
+          "probabilities": {
+            "other_wrong": 0,
+            "letter_name": 0,
+            "no_answer": 0.01,
+            "correct": 0,
+            "other_sound": 0.99
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.13
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.86
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "pee",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 171,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "correct": 0,
+            "letter_name": 1,
+            "other_sound": 0,
+            "no_answer": 0,
+            "other_wrong": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.33
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's pee",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.98,
+      "reason": "named",
+      "ms": 181,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 1,
+          "probabilities": {
+            "other_wrong": 0,
+            "correct": 0,
+            "letter_name": 1,
+            "no_answer": 0,
+            "other_sound": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.98
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.57
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "keyword_accepted",
+      "source": "constructed",
+      "learner": "pig",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "other_wrong",
+      "p": 0.64,
+      "reason": "other_wrong",
+      "ms": 168,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_wrong",
+          "confidence": 0.55,
+          "probabilities": {
+            "letter_name": 0.02,
+            "other_wrong": 0.64,
+            "other_sound": 0.01,
+            "no_answer": 0,
+            "correct": 0.33
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.2
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.78,
+      "reason": "no_answer",
+      "ms": 144,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.73,
+          "probabilities": {
+            "letter_name": 0.06,
+            "other_wrong": 0.01,
+            "no_answer": 0.78,
+            "other_sound": 0.01,
+            "correct": 0.14
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.35
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.2
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "correct_0",
+      "source": "harness-correct",
+      "learner": "nnn",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 1,
+      "reason": "correct",
+      "ms": 150,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.99,
+          "probabilities": {
+            "no_answer": 0,
+            "letter_name": 0,
+            "other_wrong": 0,
+            "keyword_word": 0,
+            "correct": 1,
+            "other_sound": 0,
+            "added_vowel": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.11
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.03
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.03
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch5(p)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "I don't know",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 1,
+      "reason": "no_answer",
+      "ms": 216,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 1,
+          "probabilities": {
+            "other_wrong": 0,
+            "no_answer": 1,
+            "correct": 0,
+            "letter_name": 0,
+            "other_sound": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.14
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.06
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "plain_wrong",
+      "source": "harness-plainWrong",
+      "learner": "mmm",
+      "gold": "other_sound",
+      "correctAnswer": false,
+      "miss": "other_sound",
+      "reading": "other_sound",
+      "p": 0.96,
+      "reason": "named",
+      "ms": 142,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "other_sound",
+          "confidence": 1,
+          "probabilities": {
+            "keyword_word": 0,
+            "correct": 0,
+            "added_vowel": 0,
+            "no_answer": 0,
+            "other_sound": 1,
+            "letter_name": 0,
+            "other_wrong": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.06
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "correct_1",
+      "source": "constructed-noisy",
+      "learner": "nnnn",
+      "gold": null,
+      "correctAnswer": true,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.99,
+      "reason": "correct",
+      "ms": 178,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.98,
+          "probabilities": {
+            "letter_name": 0,
+            "correct": 0.99,
+            "other_sound": 0,
+            "other_wrong": 0.01,
+            "no_answer": 0,
+            "added_vowel": 0,
+            "keyword_word": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.14
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.04
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.18
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.05
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "signature_name",
+      "source": "harness-signatureWrong",
+      "learner": "en",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.96,
+      "reason": "named",
+      "ms": 145,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.98,
+          "probabilities": {
+            "keyword_word": 0,
+            "letter_name": 0.99,
+            "no_answer": 0,
+            "other_wrong": 0,
+            "other_sound": 0,
+            "correct": 0.01,
+            "added_vowel": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.96
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.13
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.41
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.28
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "name_sentence",
+      "source": "constructed",
+      "learner": "it's en",
+      "gold": "letter_name",
+      "correctAnswer": false,
+      "miss": "letter_name",
+      "reading": "letter_name",
+      "p": 0.97,
+      "reason": "named",
+      "ms": 217,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "letter_name",
+          "confidence": 0.99,
+          "probabilities": {
+            "correct": 0,
+            "no_answer": 0,
+            "keyword_word": 0,
+            "added_vowel": 0,
+            "letter_name": 1,
+            "other_wrong": 0,
+            "other_sound": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.19
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.4
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.64
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "keyword",
+      "source": "constructed",
+      "learner": "net",
+      "gold": "keyword_word",
+      "correctAnswer": false,
+      "miss": "keyword_word",
+      "reading": "keyword_word",
+      "p": 0.94,
+      "reason": "named",
+      "ms": 183,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "keyword_word",
+          "confidence": 0.93,
+          "probabilities": {
+            "letter_name": 0.02,
+            "other_wrong": 0,
+            "correct": 0.03,
+            "keyword_word": 0.94,
+            "no_answer": 0,
+            "added_vowel": 0.01,
+            "other_sound": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.51
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.94
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.39
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.31
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "added_vowel",
+      "source": "constructed",
+      "learner": "nuh",
+      "gold": "added_vowel",
+      "correctAnswer": false,
+      "miss": "added_vowel",
+      "reading": "added_vowel",
+      "p": 0.96,
+      "reason": "named",
+      "ms": 172,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "added_vowel",
+          "confidence": 0.96,
+          "probabilities": {
+            "other_sound": 0,
+            "correct": 0.01,
+            "keyword_word": 0,
+            "letter_name": 0.02,
+            "added_vowel": 0.97,
+            "other_wrong": 0,
+            "no_answer": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.5
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.15
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.96
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.28
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "no_answer",
+      "source": "constructed",
+      "learner": "which one?",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "no_answer",
+      "p": 0.89,
+      "reason": "no_answer",
+      "ms": 152,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "no_answer",
+          "confidence": 0.86,
+          "probabilities": {
+            "keyword_word": 0,
+            "letter_name": 0.05,
+            "no_answer": 0.89,
+            "other_wrong": 0.02,
+            "other_sound": 0,
+            "correct": 0.04,
+            "added_vowel": 0
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.21
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.07
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.19
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.15
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    },
+    {
+      "rep": 3,
+      "family": "letter-sound-link.see_hear",
+      "item": "ch6(n)",
+      "name": "other_letter_name",
+      "source": "constructed-unlisted",
+      "learner": "em",
+      "gold": null,
+      "correctAnswer": false,
+      "miss": null,
+      "reading": "correct",
+      "p": 0.39,
+      "reason": "correct",
+      "ms": 257,
+      "answers": {
+        "which": {
+          "type": "choice",
+          "choice": "correct",
+          "confidence": 0.28,
+          "probabilities": {
+            "other_wrong": 0.03,
+            "added_vowel": 0.01,
+            "keyword_word": 0,
+            "other_sound": 0.01,
+            "no_answer": 0.33,
+            "letter_name": 0.23,
+            "correct": 0.39
+          }
+        },
+        "fits_letter_name": {
+          "type": "noul",
+          "noul": 0.47
+        },
+        "fits_keyword_word": {
+          "type": "noul",
+          "noul": 0.1
+        },
+        "fits_added_vowel": {
+          "type": "noul",
+          "noul": 0.3
+        },
+        "fits_other_sound": {
+          "type": "noul",
+          "noul": 0.15
+        }
+      },
+      "pass": true,
+      "falsePositive": false
+    }
+  ]
+}
