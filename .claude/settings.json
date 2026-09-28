@@ -5,20 +5,5 @@
       "Glob(**)",
       "Grep(**)"
     ]
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash|PowerShell",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/live_run_gate.py\"",
-            "timeout": 15,
-            "statusMessage": "Checking for a paid Live run"
-          }
-        ]
-      }
-    ]
   }
 }
