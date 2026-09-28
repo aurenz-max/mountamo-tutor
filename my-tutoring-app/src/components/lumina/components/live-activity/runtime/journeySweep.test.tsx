@@ -49,6 +49,7 @@ export const JOURNEY_INVARIANTS = {
   'J6-completes-once': 'Answering every item completes the lesson, with at most one submission',
   'J7-commit-visible': 'A committed verdict, retry or advance is confirmed on screen by the real visibility wait: a later render of the same item and phase does not supersede it',
   'J8-miss-named': 'On a mode whose catalog entry lists misses, every checked miss names one from that list',
+  'J9-miss-answered': "On a mode with levers, every catalog miss is in some lever's answers or in the catalog's unanswered list",
 } as const;
 type Invariant = keyof typeof JOURNEY_INVARIANTS;
 
@@ -65,6 +66,8 @@ const BASELINE_FILE = join(DIR, 'journey-sweep-baseline.json');
 /** `{ "<payload file>": { "<invariant>": "<queue row>" } }` */
 const BASELINE: Record<string, Record<string, string>> = existsSync(BASELINE_FILE) ? JSON.parse(readFileSync(BASELINE_FILE, 'utf-8')) : {};
 const RESULTS: Result[] = [];
+/** Per `<primitive>.<mode>`, every lever `answers` id seen on its payloads' items (J9). */
+const ANSWERED = new Map<string, Set<string>>();
 const MAX_ITEMS = 24;
 
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
@@ -179,8 +182,16 @@ async function drive({ primitiveId, evalMode, data, file }: Payload & { file: st
   const result: Result = { payload: file, items: 0, findings: [], advisories: [] };
   const find = (invariant: Invariant, detail: string) => result.findings.push({ invariant, detail });
   const row = LIVE_JOURNEYS[primitiveId];
-  const declared = getComponentById(primitiveId)?.teachingWorkspace?.misses?.[evalMode];
+  const workspaceEntry = getComponentById(primitiveId)?.teachingWorkspace;
+  const declared = workspaceEntry?.misses?.[evalMode];
   const tally = { checked: 0, named: 0, declared: !!declared };
+  const modeKey = `${primitiveId}.${evalMode}`;
+  const noteLevers = () => {
+    const levers = h.state().task?.workspace?.levers;
+    if (!levers?.length) return;
+    if (!ANSWERED.has(modeKey)) ANSWERED.set(modeKey, new Set());
+    levers.forEach(l => l.answers?.forEach(m => ANSWERED.get(modeKey)!.add(m)));
+  };
   result.misses = tally;
   if (!row) return { ...result, skipped: 'no journey row' };
   if (row.execution === 'teaching') return { ...result, skipped: 'ungraded teaching surface (explore/finish program)' };
@@ -238,6 +249,7 @@ async function drive({ primitiveId, evalMode, data, file }: Payload & { file: st
   for (let n = 0; n < MAX_ITEMS && h.state().status === 'active' && h.state().task; n++) {
     const item = h.state().task!.itemId;
     result.items++;
+    noteLevers();
     const expected = h.state().task!.workspace?.expectedAnswer;
     const warmup = inputs('warmup', item);
     if (warmup?.length) try { perform(h, warmup); h.settle(); } catch (e) { find('J1-drivable', `${item} warmup: ${(e as Error).message}`); break; }
@@ -278,6 +290,7 @@ async function drive({ primitiveId, evalMode, data, file }: Payload & { file: st
       if (how === 'gesture' && s.task!.evidence.correctness === 'incorrect') {
         reveal('the screen after the miss', before.screen, screenText(h));
         reveal('the scene facts after the miss', before.facts, JSON.stringify(s.task!.demand ?? {}));
+        noteLevers();
         const miss = s.task!.workspace?.attempts.at(-1)?.miss;
         tally.checked++; if (miss) tally.named++;
         if (declared && (!miss || !declared.includes(miss)))
@@ -303,6 +316,14 @@ async function drive({ primitiveId, evalMode, data, file }: Payload & { file: st
     }
     const after = h.state();
     if (after.status === 'active' && after.task?.itemId === item) { find('J5-credit-moves-on', `${item}: credited, but the lesson stayed on the item`); break; }
+  }
+  // Checked on the mode's last payload, over all of them: a lever for one item shape (two jumps) is on some items only.
+  const answeredSet = ANSWERED.get(modeKey);
+  const lastOfMode = PAYLOADS.filter(p => `${p.primitiveId}.${p.evalMode}` === modeKey).at(-1)?.file === file;
+  if (answeredSet && declared && lastOfMode) {
+    const unanswered = workspaceEntry?.unanswered?.[evalMode] ?? [];
+    const open = declared.filter(m => !answeredSet.has(m) && !unanswered.includes(m));
+    if (open.length) find('J9-miss-answered', `no lever answers ${open.map(m => `"${m}"`).join(', ')}, and the catalog does not list ${open.length > 1 ? 'them' : 'it'} as unanswered`);
   }
   const end = h.state();
   if (!result.findings.length && end.status !== 'completed') find('J6-completes-once', `after ${result.items} items the lesson is ${end.status}`);

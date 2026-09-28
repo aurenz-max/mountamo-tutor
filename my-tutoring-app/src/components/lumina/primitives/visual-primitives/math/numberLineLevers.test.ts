@@ -86,7 +86,7 @@ describe('what a wrong jump shows, and the lever that answers it (code, not a Li
 
   it('one hop off, either way, or lost count on one jump: numbered hops come next', () => {
     const levers = jumpLevers(one, [], { min: 0, max: 20 });
-    for (const miss of ['one_short', 'one_past', 'off_by_more', 'wrong_direction']) expect(nextLever(levers, miss)).toBe('numbered_hops');
+    for (const miss of ['one_short', 'one_past', 'off_by_more', 'wrong_direction', 'no_landing']) expect(nextLever(levers, miss)).toBe('numbered_hops');
   });
 
   it('lost track across two jumps: the easier single jump comes next, before the hops', () => {

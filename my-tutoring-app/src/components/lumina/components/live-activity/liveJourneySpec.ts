@@ -288,9 +288,12 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const parent = ctx.itemId?.endsWith('~simpler')
         ? (ctx.data.challenges ?? []).find((c: { id: string }) => `${c.id}~simpler` === ctx.itemId) : null;
       const challenge = parent ? simplerJump(parent, ctx.data.range) : ctx.challenge;
-      const landing = challenge?.targetValues?.[0];
-      if (intent === 'warmup' || typeof landing !== 'number') return [];
-      return [{ type: 'place', value: intent === 'wrong' ? landing + 1 : landing }, { type: 'check' }];
+      // One landing per jump, in order. On two chained jumps the wrong answer lands the first right and the second one
+      // past (`second_jump_off`, the miss the easier single jump answers).
+      const landings: number[] = (challenge?.targetValues ?? []).filter((v: unknown): v is number => typeof v === 'number');
+      if (intent === 'warmup' || !landings.length) return [];
+      const placed = intent === 'wrong' ? landings.map((v, i) => i === landings.length - 1 ? v + 1 : v) : landings;
+      return [...placed.map((value): DriverInput => ({ type: 'place', value })), { type: 'check' }];
     },
     probes: { mounted: { selector: 'svg[viewBox="0 0 760 240"]' },
       modelHop: { selector: '[data-lever="model-hop"]', kind: 'count' } },

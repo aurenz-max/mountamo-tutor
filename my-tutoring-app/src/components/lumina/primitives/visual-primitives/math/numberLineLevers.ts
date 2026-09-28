@@ -117,8 +117,9 @@ export function jumpLevers(ch: NumberLineChallenge | null, pulled: readonly stri
     || endpoints.some((e, i) => learnerHops(i === 0 ? ops[0].startValue : endpoints[i - 1], e).length > 0);
   const levers: WorkspaceLever[] = drawable ? [{
     id: HOPS_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(HOPS_LEVER),
-    answers: ['one_short', 'one_past', 'off_by_more', 'wrong_direction'],
-    when: 'The learner lands one hop off, counts the start as a hop, or loses count.',
+    // A learner who checks with no landing placed does not know how to begin: the model hop from the start shows it.
+    answers: ['one_short', 'one_past', 'off_by_more', 'wrong_direction', 'no_landing'],
+    when: 'The learner lands one hop off, counts the start as a hop, loses count, or does not know where to begin.',
     does: "Numbers every hop of the learner's own jump on the line (1, 2, 3...) and draws hop 1 from the start as a model.",
   }] : [];
   if (simplerJump(ch, range)) levers.push({

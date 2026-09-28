@@ -34,7 +34,7 @@ it. Gesture misses are named for bound families; every later link is partial.
 | Test ladder | T0 dry sweep J1-J8 (free) · T1 miss/lever `it.each` (free) · T2 JEV observer on recorded packets (NOT BUILT) · T3 text replay, harm checks only · T4 Live, weekly sample (`LIVE_TESTING.md`) | 09-27 |
 | Gates | `typecheck:lumina` 0; full tsc 773 | 09-27 |
 | Human checks | 122 open, next free **#172** (`my-tutoring-app/qa/HUMAN-CHECKS.md`) | 09-27 |
-| Other session | holds `runtime/**`, math catalog and primitives, `backend/`; runs W1 C10-C19. Uncommitted: misses stored with the misconception (handoff 20 E), `coin-counter` W1, slice 6 evidence merge | 09-27 |
+| Other session | done 09-27 (user); its work shipped `e4174832`..`da269408`. `runtime/` and math files now held by the handoff 21 session (S2, then M1) | 09-27 |
 
 ## Phase 1 — A miss is one contract, detected on both channels (CURRENT)
 
@@ -70,7 +70,7 @@ its vitest gate; Live is 1-2 runs per class, never per primitive.
 
 | # | Item | Executor · queue | State |
 |---|---|---|---|
-| 3.0 | J9 shared sweep rule, then the trigger ladder in `runtime/` (user rulings 09-27: 2nd wrong auto-pulls help; stuck-first = help only; choice removal and single-try pulls are assisted) | `/add-support-tiers`, `/add-live-tutor-tools` · handoff 21 S1-S2 | open, first pull; `runtime/` held by other session |
+| 3.0 | J9 shared sweep rule, then the trigger ladder in `runtime/` (user rulings 09-27: 2nd wrong auto-pulls help; stuck-first = help only; choice removal and single-try pulls are assisted) | `/add-support-tiers`, `/add-live-tutor-tools` · handoff 21 S1-S2 | J9 DONE 09-27 (sweep rule, per mode over all its payloads; number-line `no_landing` now answered by `numbered_hops`; new payload `number-line.jump-hard`); S2 trigger ladder next |
 | 3.1 | Math by class M1-M4 (M1 `counting-board`, `number-bond`, `base-ten-blocks`, `place-value-chart`); vitest gate per primitive, 2 Live runs per class. L1 literacy may run in parallel. Inventory `qa/support-levers/inventory-2026-09-27/` | `/add-support-tiers` · handoff 21 | NEXT |
 | 3.1b | Literacy by class L1-L4 (L1 phonics taps first; L2 rhyme-studio pilots spoken levers); literacy files only, no `runtime/` | `/add-support-tiers` · handoff 22 | open, parallel to 3.1 |
 | 3.2 | Lever bench misses from Live runs | row executor · `qa/lever-bench/QUEUE.md` | 12 rows |

@@ -1911,7 +1911,12 @@ export interface ComponentDefinition {
      * answer, never a guessed cause (handoff 20). A mode listed here must name every checked miss from this
      * list; the dry journey (`journeySweep.test.tsx`, J8) holds it for every family.
      */
-    misses?: Readonly<Record<string, readonly string[]>> };
+    misses?: Readonly<Record<string, readonly string[]>>;
+    /**
+     * Per eval mode with levers, the misses no lever answers, each by decision (the reason beside it in the
+     * catalog). Every other miss in `misses` must be in some lever's `answers` (J9, handoff 21 S1).
+     */
+    unanswered?: Readonly<Record<string, readonly string[]>> };
   /** Optional Gemini Live audio-input request (e.g. manual voice-activity for
    *  DI live-judged packs). Sent at WebSocket auth; a lesson session applies it
    *  when ANY of its manifest items declares one. */

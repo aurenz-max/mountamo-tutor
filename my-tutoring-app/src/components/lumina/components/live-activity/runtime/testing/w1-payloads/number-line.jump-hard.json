@@ -1,0 +1,138 @@
+{
+ "source": "qa/tutor-reports/number-line-runtime-jump-hard-payload-2026-09-27.json",
+ "primitiveId": "number-line",
+ "evalMode": "jump",
+ "data": {
+  "title": "Hop and Jump Number Line Fun",
+  "description": "Practice adding and subtracting using two fun hops on the number line.",
+  "range": {
+   "min": 0,
+   "max": 30
+  },
+  "gradeBand": "K-2",
+  "numberType": "integer",
+  "interactionMode": "jump",
+  "challenges": [
+   {
+    "id": "show_jump-0",
+    "type": "show_jump",
+    "instruction": "Start your first jump at 16 and subtract 2. Then, take another jump from where you land to reach your final spot!",
+    "targetValues": [
+     14,
+     15
+    ],
+    "hint": "Think about which direction each jump goes. Count your hops carefully!",
+    "startValue": 16,
+    "operations": [
+     {
+      "type": "subtract",
+      "startValue": 16,
+      "changeValue": 2,
+      "showJumpArc": false
+     },
+     {
+      "type": "add",
+      "startValue": 14,
+      "changeValue": 1,
+      "showJumpArc": false
+     }
+    ],
+    "highlights": []
+   },
+   {
+    "id": "show_jump-1",
+    "type": "show_jump",
+    "instruction": "Put your finger on 20. Make your first hop by subtracting 1. Then, take your second hop from where you landed to finish your journey!",
+    "targetValues": [
+     19,
+     14
+    ],
+    "hint": "Remember, subtracting means hopping backwards to the left. Think about how many steps you need to take for that second hop.",
+    "startValue": 20,
+    "operations": [
+     {
+      "type": "subtract",
+      "startValue": 20,
+      "changeValue": 1,
+      "showJumpArc": false
+     },
+     {
+      "type": "subtract",
+      "startValue": 19,
+      "changeValue": 5,
+      "showJumpArc": false
+     }
+    ],
+    "highlights": []
+   },
+   {
+    "id": "show_jump-2",
+    "type": "show_jump",
+    "instruction": "Start your journey at 29. Take a big backward hop of 4, and then hop again from right where you land to finish your adventure!",
+    "targetValues": [
+     25,
+     29
+    ],
+    "hint": "Count backwards 4 hops first to find your first stop, then think about which way you need to hop next.",
+    "startValue": 29,
+    "operations": [
+     {
+      "type": "subtract",
+      "startValue": 29,
+      "changeValue": 4,
+      "showJumpArc": false
+     },
+     {
+      "type": "add",
+      "startValue": 25,
+      "changeValue": 4,
+      "showJumpArc": false
+     }
+    ],
+    "highlights": []
+   },
+   {
+    "id": "show_jump-3",
+    "type": "show_jump",
+    "instruction": "Put your frog on 27! First, hop backward 4 spaces. Then, from right where you land, take another hop until you reach your final spot.",
+    "targetValues": [
+     23,
+     25
+    ],
+    "hint": "Check which direction each jump goes. Count your hops carefully from where you are standing!",
+    "startValue": 27,
+    "operations": [
+     {
+      "type": "subtract",
+      "startValue": 27,
+      "changeValue": 4,
+      "showJumpArc": false
+     },
+     {
+      "type": "add",
+      "startValue": 23,
+      "changeValue": 2,
+      "showJumpArc": false
+     }
+    ],
+    "highlights": []
+   }
+  ],
+  "highlights": [],
+  "operations": [
+   {
+    "type": "subtract",
+    "startValue": 16,
+    "changeValue": 2,
+    "showJumpArc": false
+   },
+   {
+    "type": "add",
+    "startValue": 14,
+    "changeValue": 1,
+    "showJumpArc": false
+   }
+  ],
+  "supportTier": "hard"
+ }
+}

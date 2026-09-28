@@ -48,6 +48,8 @@ Some flags state the answer and **must not become levers as they stand**: ten-fr
 
 ## S1: J9, shared (free, first)
 
+**DONE 09-27.** `J9-miss-answered` in `journeySweep.test.tsx`, checked per `<primitive>.<mode>` over all its payloads (a lever for one item shape, such as two jumps, is on some items only). The explicit unanswered list is catalog `teachingWorkspace.unanswered` (per mode). ten-frame and fraction-circles passed as they were. number-line did not: nothing answered `no_landing` (now `numbered_hops`, whose model hop shows where to begin), and the only jump payload had no two-jump item, so `second_jump_off` was unseen: new payload `number-line.jump-hard` (hard tier, four two-jump items) and a journey row that places every landing. Mutation-checked (dropping `no_landing` fails J9).
+
 On a mode with levers, every miss listed in `teachingWorkspace.misses` must be in some lever's `answers` or in an explicit unanswered list. Add it as a sweep rule beside J8. It should pass today on number-line, ten-frame and fraction-circles; if it doesn't, fix their `answers`.
 
 ## S2: the trigger ladder (`runtime/`, `/add-live-tutor-tools`)
