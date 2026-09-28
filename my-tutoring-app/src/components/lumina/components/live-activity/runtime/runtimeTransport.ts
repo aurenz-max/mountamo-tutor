@@ -19,6 +19,14 @@ export interface DemonstrationNeed { note?: string }
 export type ComposedDemonstration = { demonstration: Demonstration; diagnosis: string } | { refused: string; diagnosis?: string };
 import { waitForVisible } from './waitForVisible';
 
+/** What the tutor is told after the observer pulls a lever for a stuck learner. Exported so tutor replay sends the same words. */
+export function leverPulledMessage(lever: { id: string; kind: string; does: string }): string {
+  return `The learner said they were stuck, so the host pulled ${lever.id} `
+    + `(${lever.kind}). It is on screen now: ${lever.does} First point the learner to it: say what is now drawn and where to look, `
+    + 'as a change to the picture; never call it a lever or a tool. '
+    + (lever.kind === 'simplify' ? 'Then let them try the easier item on screen.' : 'Then let them try the same question again; do not work it through for them.');
+}
+
 /**
  * `learner` rides beside the snapshot, never inside it: elapsed seconds differ on every
  * read, and a value that changes by the clock must not look like a scene change.
@@ -153,10 +161,7 @@ export class RuntimeTransport {
       input: { itemId: s.task.itemId, lever } });
     if (status !== 'visible' || this.closed) return;
     const itemId = this.runtime.getSnapshot().task?.itemId ?? s.task.itemId;
-    this.afterTurn = { itemId, content: `The learner said they were stuck, so the host pulled ${lever} `
-      + `(${declared.kind}). It is on screen now: ${declared.does} First point the learner to it: say what is now drawn and where to look, `
-      + 'as a change to the picture; never call it a lever or a tool. '
-      + (declared.kind === 'simplify' ? 'Then let them try the easier item on screen.' : 'Then let them try the same question again; do not work it through for them.') };
+    this.afterTurn = { itemId, content: leverPulledMessage(declared) };
     if (!this.releaseTurn) this.afterTurnFallback = setTimeout(() => this.sendAfterTurn(), AFTER_TURN_FALLBACK_MS);
   }
   private async dispatch(input: unknown, observed = false): Promise<string | undefined> {

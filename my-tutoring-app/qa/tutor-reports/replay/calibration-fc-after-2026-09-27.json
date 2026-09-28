@@ -1,0 +1,890 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "doctrineRev": null,
+ "runs": [
+  "..\\..\\..\\my-tutoring-app\\qa\\tutor-reports\\fraction-circles-levers-2026-09-27\\build-text-3.json"
+ ],
+ "actual": {
+  "start": {
+   "not_empty": [
+    0,
+    1
+   ],
+   "no_protocol_leak": [
+    0,
+    1
+   ],
+   "no_key_before_try": [
+    0,
+    1
+   ],
+   "no_fix_before_try": [
+    0,
+    1
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    1
+   ],
+   "no_protocol_leak": [
+    0,
+    1
+   ],
+   "no_key_before_try": [
+    0,
+    1
+   ],
+   "no_fix_before_try": [
+    0,
+    1
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    1
+   ],
+   "no_protocol_leak": [
+    1,
+    1
+   ],
+   "no_key_before_try": [
+    0,
+    1
+   ],
+   "no_fix_before_try": [
+    0,
+    1
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    1
+   ],
+   "no_protocol_leak": [
+    0,
+    1
+   ],
+   "no_key_before_try": [
+    1,
+    1
+   ],
+   "no_fix_before_try": [
+    0,
+    1
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    2
+   ],
+   "no_protocol_leak": [
+    0,
+    2
+   ]
+  }
+ },
+ "replay": {
+  "start": {
+   "not_empty": [
+    0,
+    5
+   ],
+   "no_protocol_leak": [
+    0,
+    5
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    5
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    5
+   ],
+   "no_protocol_leak": [
+    0,
+    5
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    5
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    5
+   ],
+   "no_protocol_leak": [
+    0,
+    5
+   ],
+   "no_key_before_try": [
+    4,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    5
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    5
+   ],
+   "no_protocol_leak": [
+    0,
+    5
+   ],
+   "no_key_before_try": [
+    5,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    5
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ]
+  }
+ },
+ "results": {
+  "actual": [
+   {
+    "payload": "build-text-3.json#1",
+    "primitiveId": "fraction-circles",
+    "evalMode": "build",
+    "moments": [
+     {
+      "kind": "start",
+      "itemId": "fc1",
+      "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+      "scoredWith": {
+       "keys": [
+        "1"
+       ],
+       "ask": "Shade the circle to show 1/2.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Let's start by shading the circle to show one half.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": true,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "miss",
+      "itemId": "fc1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"fc1\",\"response\":\"Shaded 2 of 2 slices\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace.",
+      "scoredWith": {
+       "keys": [
+        "1"
+       ],
+       "ask": "Shade the circle to show 1/2.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "That shows the whole circle shaded, but we only need to show one half. Let's try again by shading just the right amount.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": true,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "stuck",
+      "itemId": "fc1",
+      "trigger": "The learner said they were stuck, so the host pulled part_whole (help). It is on screen now: Draws a fraction frame under the circle: a picture of one shaded piece over a picture of the whole circle. No numbers. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work ",
+      "scoredWith": {
+       "keys": [
+        "1"
+       ],
+       "ask": "Shade the circle to show 1/2.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "I've pulled a lever to show you a fraction frame under your circle. Look at the top and bottom parts to decide how many equal slices to shade.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": false,
+         "no_key_before_try": true,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_protocol_leak": "lever"
+        },
+        "pulledLever": false
+       }
+      ]
+     },
+     {
+      "kind": "lever",
+      "itemId": "fc1",
+      "trigger": "",
+      "scoredWith": {
+       "keys": [
+        "1"
+       ],
+       "ask": "Shade the circle to show 1/2.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "I've added a picture under your circle showing one shaded slice over the whole circle. Look at that to see how many slices you need to shade to show one half.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": false,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_key_before_try": "1"
+        },
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "credit",
+      "itemId": "fc1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"fc1\",\"response\":\"Shaded 1 of 2 slices\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"part_whole\"]}. Respond to the learner using the current task and workspace.",
+      "scoredWith": {
+       "keys": [
+        "1"
+       ],
+       "ask": "Shade the circle to show 1/2.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "That's exactly right, you shaded one out of two slices to show one half.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "credit",
+      "itemId": "fc2",
+      "trigger": "The next task is now visible in liveRuntime. Introduce that task naturally and wait for the learner.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Shade the circle to show 2/3.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Now let's try another one where you need to shade the circle to show two thirds.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "replay": [
+   {
+    "payload": "build-text-3.json#1",
+    "primitiveId": "fraction-circles",
+    "evalMode": "build",
+    "moments": [
+     {
+      "kind": "start",
+      "itemId": "fc1",
+      "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+      "actual": "Let's start by shading the circle to show one half.",
+      "scoredWith": {
+       "keys": [
+        "1"
+       ],
+       "ask": "Shade the circle to show 1/2.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Let's look at the circle! Tap a slice to shade one half, then press Check.",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": true,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Welcome! Tap the circle to shade one half, then press Check.",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": true,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Welcome! Tap the circle slices to shade one half, then tap Check when you're ready.",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": true,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Welcome! Tap the circle slices to shade one half, then press Check.",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": true,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Welcome! Tap the circle to shade one half, then press Check.",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": true,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "miss",
+      "itemId": "fc1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"fc1\",\"response\":\"Shaded 2 of 2 slices\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace.",
+      "actual": "That shows the whole circle shaded, but we only need to show one half. Let's try again by shading just the right amount.",
+      "scoredWith": {
+       "keys": [
+        "1"
+       ],
+       "ask": "Shade the circle to show 1/2.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Good try! Take another look at the number on top, and give it another shot.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": true,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "That was a great try! Give it another shot and try shading the circle again.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": true,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "That was a great try! Give it another shot.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": true,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "That was a good try! Take another look at the fraction and give it another try.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": true,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "That was a good try! Take another look at how many slices you need, and give it another shot.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": true,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "stuck",
+      "itemId": "fc1",
+      "trigger": "The learner said they were stuck, so the host pulled part_whole (help). It is on screen now: Draws a fraction frame under the circle: a picture of one shaded piece over a picture of the whole circle. No numbers. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work ",
+      "actual": "I've pulled a lever to show you a fraction frame under your circle. Look at the top and bottom parts to decide how many equal slices to shade.",
+      "scoredWith": {
+       "keys": [
+        "1"
+       ],
+       "ask": "Shade the circle to show 1/2.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Look underneath the circle: there is now a picture showing one shaded slice on top and the whole circle on the bottom. Take a look at that picture and try shading your circle again!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": false,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_key_before_try": "1"
+        },
+        "pulledLever": false
+       },
+       {
+        "text": "Look right under the circle: there is a new picture showing one shaded slice on top and the whole circle on the bottom. Take another look and give it a try!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": false,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_key_before_try": "1"
+        },
+        "pulledLever": false
+       },
+       {
+        "text": "Take a look right under the circle: there is a new picture showing a single shaded piece over the whole circle to help you see the parts. Give it another try!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": true,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       },
+       {
+        "text": "Look right under the circle: there is a little picture showing one shaded slice on top and the whole circle on the bottom. Give it another try whenever you are ready!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": false,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_key_before_try": "1"
+        },
+        "pulledLever": false
+       },
+       {
+        "text": "Look right under the circle: there is a new picture showing one piece on top and the whole circle on the bottom. Take another look and give it a try!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": false,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_key_before_try": "1"
+        },
+        "pulledLever": false
+       }
+      ]
+     },
+     {
+      "kind": "lever",
+      "itemId": "fc1",
+      "trigger": "",
+      "actual": "I've added a picture under your circle showing one shaded slice over the whole circle. Look at that to see how many slices you need to shade to show one half.",
+      "scoredWith": {
+       "keys": [
+        "1"
+       ],
+       "ask": "Shade the circle to show 1/2.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Look below the circle: there is now a picture showing one shaded slice on top and the whole circle on the bottom. Give it another try whenever you are ready!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": false,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_key_before_try": "1"
+        },
+        "pulledLever": null
+       },
+       {
+        "text": "A new picture appeared below your circle showing one shaded piece over the whole circle. Take a look at it and give shading the circle another try!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": false,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_key_before_try": "1"
+        },
+        "pulledLever": null
+       },
+       {
+        "text": "A frame appeared below your circle showing one piece on top and the whole circle underneath. Take another look at that frame and give it a try!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": false,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_key_before_try": "1"
+        },
+        "pulledLever": null
+       },
+       {
+        "text": "Look under your circle: there is now a picture showing one shaded slice on top and the whole circle on the bottom. Give it another try!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": false,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_key_before_try": "1"
+        },
+        "pulledLever": null
+       },
+       {
+        "text": "Under your circle, there is now a fraction picture showing one shaded slice on top and the whole circle below. Take a look at that picture and give shading one half another try!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": false,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_key_before_try": "1"
+        },
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "credit",
+      "itemId": "fc1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"fc1\",\"response\":\"Shaded 1 of 2 slices\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"part_whole\"]}. Respond to the learner using the current task and workspace.",
+      "actual": "That's exactly right, you shaded one out of two slices to show one half.",
+      "scoredWith": {
+       "keys": [
+        "1"
+       ],
+       "ask": "Shade the circle to show 1/2.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "You shaded one slice to show one half!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You did it\u2014you shaded one slice out of the two to make one half!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You shaded 1 of the 2 slices to make one half!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You did it! You shaded 1 of the 2 slices to show one half.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You did it\u2014you shaded exactly one slice out of the two to make one half!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "credit",
+      "itemId": "fc2",
+      "trigger": "The next task is now visible in liveRuntime. Introduce that task naturally and wait for the learner.",
+      "actual": "Now let's try another one where you need to shade the circle to show two thirds.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Shade the circle to show 2/3.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Now shade the circle to show two thirds.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Now let's try shading this circle to show two thirds.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Now, shade the circle to show two thirds.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Now shade the circle to show two thirds.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Now let's shade this circle to show two thirds.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

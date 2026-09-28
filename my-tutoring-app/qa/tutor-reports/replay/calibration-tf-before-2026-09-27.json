@@ -1,0 +1,2762 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "doctrineRev": "3cfb37a3^",
+ "runs": [
+  "..\\..\\..\\my-tutoring-app\\qa\\tutor-reports\\ten-frame-levers-2026-09-27\\run-1.json",
+  "..\\..\\..\\my-tutoring-app\\qa\\tutor-reports\\ten-frame-levers-2026-09-27\\run-3.json",
+  "..\\..\\..\\my-tutoring-app\\qa\\tutor-reports\\ten-frame-levers-2026-09-27\\run-4.json",
+  "..\\..\\..\\my-tutoring-app\\qa\\tutor-reports\\ten-frame-levers-2026-09-27\\run-5.json",
+  "..\\..\\..\\my-tutoring-app\\qa\\tutor-reports\\ten-frame-levers-2026-09-27\\run-6.json"
+ ],
+ "actual": {
+  "start": {
+   "not_empty": [
+    0,
+    5
+   ],
+   "no_protocol_leak": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    5
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    5
+   ],
+   "no_protocol_leak": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    1,
+    5
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    4
+   ],
+   "no_protocol_leak": [
+    0,
+    4
+   ],
+   "no_fix_before_try": [
+    0,
+    4
+   ]
+  },
+  "other": {
+   "not_empty": [
+    0,
+    5
+   ],
+   "no_protocol_leak": [
+    0,
+    5
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    3
+   ],
+   "no_protocol_leak": [
+    0,
+    3
+   ]
+  }
+ },
+ "replay": {
+  "start": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    13,
+    25
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    3,
+    20
+   ]
+  },
+  "other": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ]
+  }
+ },
+ "results": {
+  "actual": [
+   {
+    "payload": "run-1.json#1",
+    "primitiveId": "ten-frame",
+    "evalMode": "build",
+    "moments": [
+     {
+      "kind": "start",
+      "itemId": "c1",
+      "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Welcome to your ten-frame lesson, where we'll practice building numbers together! When you're ready, place two counters on the frame for me.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "miss",
+      "itemId": "c1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"1 counter on the frame\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Not quite yet, let's try again. Add one more counter to the frame so we have two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "Add one"
+        },
+        "pulledLever": null
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "payload": "run-3.json#1",
+    "primitiveId": "ten-frame",
+    "evalMode": "build",
+    "moments": [
+     {
+      "kind": "start",
+      "itemId": "c1",
+      "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Let's start by putting two counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "miss",
+      "itemId": "c1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"1 counter on the frame\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "You put one counter on the frame, but we need to add more to make two. Try adding another one.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "stuck",
+      "itemId": "c1",
+      "trigger": "The learner said they were stuck, so the host pulled the five_frame lever (help). It is on screen now: Outlines the top row of the frame and marks it 5, so the learner can count on from a full row. Talk about what changed and let the learner try.\n\nI'm stuck. I don't know how to do this one.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "I've marked the top row to show five. Let's add two counters to the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "payload": "run-4.json#1",
+    "primitiveId": "ten-frame",
+    "evalMode": "build",
+    "moments": [
+     {
+      "kind": "start",
+      "itemId": "c1",
+      "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+      "scoredWith": {
+       "keys": [
+        "3"
+       ],
+       "ask": "Put three counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Welcome to our ten frame challenge, where we'll build numbers together. Let's get started by placing three counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "miss",
+      "itemId": "c1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"2 counters on the frame\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace.",
+      "scoredWith": {
+       "keys": [
+        "3"
+       ],
+       "ask": "Put three counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "You have two counters on the frame, so let's add one more to make three.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "stuck",
+      "itemId": "c1",
+      "trigger": "The learner said they were stuck, so the host pulled the five_frame lever (help). It is on screen now: Outlines the top row of the frame and marks it 5, so the learner can count on from a full row. Talk about what changed and let the learner try.\n\nI'm stuck. I don't know how to do this one.",
+      "scoredWith": {
+       "keys": [
+        "3"
+       ],
+       "ask": "Put three counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "You already have two counters, so can you add just one more to make three?",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       }
+      ]
+     },
+     {
+      "kind": "other",
+      "itemId": "c1",
+      "trigger": "Can I try again?",
+      "scoredWith": {
+       "keys": [
+        "3"
+       ],
+       "ask": "Put three counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Yes, you can try again! See how the top row is outlined to help you?",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "credit",
+      "itemId": "c1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"3 counters on the frame\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"five_frame\"]}. Respond to the learner using the current task and workspace.",
+      "scoredWith": {
+       "keys": [
+        "3"
+       ],
+       "ask": "Put three counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Great job, you did it! You placed exactly three counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "credit",
+      "itemId": "c2",
+      "trigger": "The next task is now visible in liveRuntime. Introduce that task naturally and wait for the learner.",
+      "scoredWith": {
+       "keys": [
+        "5"
+       ],
+       "ask": "Put five counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "For our next challenge, let's build the number five on the ten frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "payload": "run-5.json#1",
+    "primitiveId": "ten-frame",
+    "evalMode": "build",
+    "moments": [
+     {
+      "kind": "start",
+      "itemId": "c1",
+      "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "To start, let's put two counters on the ten frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "miss",
+      "itemId": "c1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"1 counter on the frame\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "That's one counter! Can you add one more counter to the frame to make two?",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "stuck",
+      "itemId": "c1",
+      "trigger": "The learner said they were stuck, so the host pulled the five_frame lever (help). It is on screen now: Outlines the top row of the frame and marks it 5, so the learner can count on from a full row. Talk about what changed and let the learner try.\n\nI'm stuck. I don't know how to do this one.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "I see you're stuck, so I've highlighted the top row of the frame to help you count. You can place two counters anywhere on the frame now.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       }
+      ]
+     },
+     {
+      "kind": "other",
+      "itemId": "c1",
+      "trigger": "Can I try again?",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Of course, you can! Go ahead and place two counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "payload": "run-6.json#1",
+    "primitiveId": "ten-frame",
+    "evalMode": "build",
+    "moments": [
+     {
+      "kind": "start",
+      "itemId": "c1",
+      "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Let's start by using the ten frame to build some numbers.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "miss",
+      "itemId": "c1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"1 counter on the frame\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "You have one counter on the frame. Can you add one more to make it two?",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "stuck",
+      "itemId": "c1",
+      "trigger": "The learner said they were stuck, so the host pulled the five_frame lever (help). It is on screen now: Outlines the top row of the frame and marks it 5, so the learner can count on from a full row. Talk about what changed and let the learner try.\n\nI'm stuck. I don't know how to do this one.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "I've highlighted the top row to show you where five counters would go. Can you try placing two counters on the frame now?",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       }
+      ]
+     },
+     {
+      "kind": "other",
+      "itemId": "c1",
+      "trigger": "Can I try again?",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Of course, go ahead and place two counters on the frame!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "credit",
+      "itemId": "c1",
+      "trigger": "The learner chose to try this task again. Invite their new attempt.\n\nThe learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"2 counters on the frame\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"five_frame\"]}. Respond to the learner using the current task and workspace.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Take your time and place two counters on the frame whenever you're ready.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "other",
+      "itemId": "c1",
+      "trigger": "I am ready for the next one.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Great job placing two counters on the frame!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "other",
+      "itemId": "c2",
+      "trigger": "The next task is now visible in liveRuntime. Introduce that task naturally and wait for the learner.",
+      "scoredWith": {
+       "keys": [
+        "3"
+       ],
+       "ask": "Put three counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Let's try another one. Can you put three counters on the frame?",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "replay": [
+   {
+    "payload": "run-1.json#1",
+    "primitiveId": "ten-frame",
+    "evalMode": "build",
+    "moments": [
+     {
+      "kind": "start",
+      "itemId": "c1",
+      "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+      "actual": "Welcome to your ten-frame lesson, where we'll practice building numbers together! When you're ready, place two counters on the frame for me.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Put two counters on the frame to get started!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put two counters on the frame. Your turn!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put two counters on the frame. Your turn!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put two counters on the frame. Your turn!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put two counters on the frame. Your turn!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "miss",
+      "itemId": "c1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"1 counter on the frame\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace.",
+      "actual": "Not quite yet, let's try again. Add one more counter to the frame so we have two.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "You placed one counter on the frame so far. Try adding one more so we have two!",
+        "calls": [
+         {
+          "name": "perform_runtime_action",
+          "args": {
+           "actionId": "eba81f78-75e3-4101-9427-253a6566cd4c/3/1"
+          }
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "Try adding one"
+        },
+        "pulledLever": null
+       },
+       {
+        "text": "You put one counter on the frame! Give it another try so there are two counters.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You have one counter on the frame so far. Try adding another to make two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You have placed one counter on the frame so far. How many more do you need to add to make two?",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You have one counter on the frame. Try adding one more so we have two counters in total.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "Try adding one"
+        },
+        "pulledLever": null
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "payload": "run-3.json#1",
+    "primitiveId": "ten-frame",
+    "evalMode": "build",
+    "moments": [
+     {
+      "kind": "start",
+      "itemId": "c1",
+      "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+      "actual": "Let's start by putting two counters on the frame.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Put two counters on the frame. Your turn!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put two counters on the frame. Your turn!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put two counters on the frame. Your turn!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put two counters on the frame to get started!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put two counters on the frame.",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "miss",
+      "itemId": "c1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"1 counter on the frame\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace.",
+      "actual": "You put one counter on the frame, but we need to add more to make two. Try adding another one.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "You placed one counter so far. Try adding one more to make two!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "Try adding one"
+        },
+        "pulledLever": null
+       },
+       {
+        "text": "You have one counter on the frame so far. Try adding one more counter to make two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "Try adding one"
+        },
+        "pulledLever": null
+       },
+       {
+        "text": "You have one counter on the frame so far. Try adding one more counter to make two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "Try adding one"
+        },
+        "pulledLever": null
+       },
+       {
+        "text": "You have one counter on the frame so far. Try adding one more counter to make two!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "Try adding one"
+        },
+        "pulledLever": null
+       },
+       {
+        "text": "You placed one counter. Let's try adding one more to make two!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "Let's try adding one"
+        },
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "stuck",
+      "itemId": "c1",
+      "trigger": "The learner said they were stuck, so the host pulled the five_frame lever (help). It is on screen now: Outlines the top row of the frame and marks it 5, so the learner can count on from a full row. Talk about what changed and let the learner try.\n\nI'm stuck. I don't know how to do this one.",
+      "actual": "I've marked the top row to show five. Let's add two counters to the frame.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Now the top row is outlined to show five spots. You already have one counter on the frame, so try adding another one next to it to make two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       },
+       {
+        "text": "The top row has an outline showing where five counters fit. You have one counter placed, so go ahead and add one more to reach two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "You have one counter placed, so go ahead and add one"
+        },
+        "pulledLever": false
+       },
+       {
+        "text": "The top row is outlined now to show five spots. You already have one counter on the frame, so try adding another counter to make two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       },
+       {
+        "text": "Look at the top row\u2014it has five spaces outlined to help you see the spots. Go ahead and add another counter right next to your first one.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       },
+       {
+        "text": "Look at the top row\u2014now it's outlined to show where five counters can fit. Go ahead and add another counter to your frame so you have two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "payload": "run-4.json#1",
+    "primitiveId": "ten-frame",
+    "evalMode": "build",
+    "moments": [
+     {
+      "kind": "start",
+      "itemId": "c1",
+      "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+      "actual": "Welcome to our ten frame challenge, where we'll build numbers together. Let's get started by placing three counters on the frame.",
+      "scoredWith": {
+       "keys": [
+        "3"
+       ],
+       "ask": "Put three counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Put three counters on the frame. Your turn!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put three counters on the frame. Your turn!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put three counters on the frame. Your turn!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put three counters on the frame. Your turn!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put three counters on the frame. Your turn!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "miss",
+      "itemId": "c1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"2 counters on the frame\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace.",
+      "actual": "You have two counters on the frame, so let's add one more to make three.",
+      "scoredWith": {
+       "keys": [
+        "3"
+       ],
+       "ask": "Put three counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "You placed two counters. Give it another try to make three counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You placed 2 counters on the frame. Give it another try so there are 3!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You placed two counters. Give it another try to make three counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You placed 2 counters on the frame. Give it another try to make 3 counters.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You have 2 counters on the frame. Give it another try to make 3!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "stuck",
+      "itemId": "c1",
+      "trigger": "The learner said they were stuck, so the host pulled the five_frame lever (help). It is on screen now: Outlines the top row of the frame and marks it 5, so the learner can count on from a full row. Talk about what changed and let the learner try.\n\nI'm stuck. I don't know how to do this one.",
+      "actual": "You already have two counters, so can you add just one more to make three?",
+      "scoredWith": {
+       "keys": [
+        "3"
+       ],
+       "ask": "Put three counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "The top row now shows five spaces to help you count. Try adding one more counter to reach three.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "Try adding one"
+        },
+        "pulledLever": false
+       },
+       {
+        "text": "Look at that top row\u2014it shows five spaces to help us see the row clearly. You already have two counters, so give it another try to reach three!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       },
+       {
+        "text": "The top row is now outlined to show five spaces. We want to place three counters in that row.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       },
+       {
+        "text": "Now the top row is outlined to show five spaces. You have two counters in that row, so try adding one more counter to reach three!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       },
+       {
+        "text": "The top row is now outlined to show five spaces. You have two counters there right now\u2014put one more on to make three!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       }
+      ]
+     },
+     {
+      "kind": "other",
+      "itemId": "c1",
+      "trigger": "Can I try again?",
+      "actual": "Yes, you can try again! See how the top row is outlined to help you?",
+      "scoredWith": {
+       "keys": [
+        "3"
+       ],
+       "ask": "Put three counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Yes, you can try again! Go ahead and put your counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Yes, go ahead and place that next counter on the frame!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Yes, go ahead and put one more counter on the frame!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Yes, go right ahead and place one more!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Yes, go ahead and give it a try!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "credit",
+      "itemId": "c1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"3 counters on the frame\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"five_frame\"]}. Respond to the learner using the current task and workspace.",
+      "actual": "Great job, you did it! You placed exactly three counters on the frame.",
+      "scoredWith": {
+       "keys": [
+        "3"
+       ],
+       "ask": "Put three counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "You did it\u2014you placed three counters on the frame!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You did it! You put three counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You put three counters on the frame, exactly right!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You did it! You put three counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You put three counters on the frame, exactly three!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "credit",
+      "itemId": "c2",
+      "trigger": "The next task is now visible in liveRuntime. Introduce that task naturally and wait for the learner.",
+      "actual": "For our next challenge, let's build the number five on the ten frame.",
+      "scoredWith": {
+       "keys": [
+        "5"
+       ],
+       "ask": "Put five counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Now let's try five counters on the frame. Your turn!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Now, put five counters on the frame. It's your turn!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Now let's put five counters on the frame. Your turn!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Now put five counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Now put five counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "payload": "run-5.json#1",
+    "primitiveId": "ten-frame",
+    "evalMode": "build",
+    "moments": [
+     {
+      "kind": "start",
+      "itemId": "c1",
+      "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+      "actual": "To start, let's put two counters on the ten frame.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Put two counters on the frame. Your turn!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put two counters on the frame.",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put two counters on the frame. Your turn!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put two counters on the frame to get started!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put two counters on the frame!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "miss",
+      "itemId": "c1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"1 counter on the frame\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace.",
+      "actual": "That's one counter! Can you add one more counter to the frame to make two?",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "You have placed one counter so far. Try adding another counter to make two!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You have one counter on the frame so far. Try adding one more to make two!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "Try adding one"
+        },
+        "pulledLever": null
+       },
+       {
+        "text": "You placed one counter on the frame. Can you add one more so there are two?",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You have one counter on the frame so far. Try adding another one to make two!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You placed 1 counter. Try adding one more so there are 2 counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "Try adding one"
+        },
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "stuck",
+      "itemId": "c1",
+      "trigger": "The learner said they were stuck, so the host pulled the five_frame lever (help). It is on screen now: Outlines the top row of the frame and marks it 5, so the learner can count on from a full row. Talk about what changed and let the learner try.\n\nI'm stuck. I don't know how to do this one.",
+      "actual": "I see you're stuck, so I've highlighted the top row of the frame to help you count. You can place two counters anywhere on the frame now.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "The top row has an outline showing where five counters fit. Place another counter right next to your first one to make two!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       },
+       {
+        "text": "The top row is outlined now to show five spots. You already have one counter on the frame, so try adding one more to make two!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       },
+       {
+        "text": "The top row is outlined now to show five spaces. We just need two counters, so go ahead and put one more on!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "We just need two counters, so go ahead and put one"
+        },
+        "pulledLever": false
+       },
+       {
+        "text": "Look at the frame\u2014now the top row is outlined to show five spaces! You already have one counter there, so try adding one more beside it to make two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       },
+       {
+        "text": "Look at the frame\u2014the top row is now outlined with a five to help you see the spaces! Try putting one more counter into that top row so you have two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       }
+      ]
+     },
+     {
+      "kind": "other",
+      "itemId": "c1",
+      "trigger": "Can I try again?",
+      "actual": "Of course, you can! Go ahead and place two counters on the frame.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Yes, give it another try! You can place two counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Yes, go right ahead and try putting two counters on the frame!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Yes, you can! Put two counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Yes, go right ahead and try again!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Yes, you can! Put two counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "payload": "run-6.json#1",
+    "primitiveId": "ten-frame",
+    "evalMode": "build",
+    "moments": [
+     {
+      "kind": "start",
+      "itemId": "c1",
+      "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+      "actual": "Let's start by using the ten frame to build some numbers.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Welcome! Put two counters on the frame.",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Welcome! Put two counters on the frame to get started.",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put two counters on the frame.",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Welcome! Put two counters on the ten-frame to get started.",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Put two counters on the frame. Your turn!",
+        "calls": [
+         {
+          "name": "observe_runtime",
+          "args": {}
+         }
+        ],
+        "before": "",
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "miss",
+      "itemId": "c1",
+      "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"1 counter on the frame\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace.",
+      "actual": "You have one counter on the frame. Can you add one more to make it two?",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "You placed one counter on the frame! Go ahead and add one more so we have two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "Go ahead and add one"
+        },
+        "pulledLever": null
+       },
+       {
+        "text": "You have one counter on the frame so far. Try adding one more to make two!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "Try adding one"
+        },
+        "pulledLever": null
+       },
+       {
+        "text": "You have one counter on the frame so far. Try adding one more to make two!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "Try adding one"
+        },
+        "pulledLever": null
+       },
+       {
+        "text": "You placed 1 counter on the frame. Try adding another counter to make 2!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You have one counter on the frame so far. Try adding one more to make two!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": false,
+         "no_change_before_receipt": null
+        },
+        "evidence": {
+         "no_fix_before_try": "Try adding one"
+        },
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "stuck",
+      "itemId": "c1",
+      "trigger": "The learner said they were stuck, so the host pulled the five_frame lever (help). It is on screen now: Outlines the top row of the frame and marks it 5, so the learner can count on from a full row. Talk about what changed and let the learner try.\n\nI'm stuck. I don't know how to do this one.",
+      "actual": "I've highlighted the top row to show you where five counters would go. Can you try placing two counters on the frame now?",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Now the top row is outlined to show five spaces. Try placing counters in the top row until you have two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       },
+       {
+        "text": "Look, the top row is outlined now to help us count. Give it another try and add counters until you have two!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       },
+       {
+        "text": "Now the top row is outlined to show five spaces. Go ahead and place another counter right next to your first one.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       },
+       {
+        "text": "The top row is outlined now to show five boxes. Go ahead and place another counter to make two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       },
+       {
+        "text": "Now the top row is outlined to show five spaces. Place another counter in that row to make two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": true,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": false
+       }
+      ]
+     },
+     {
+      "kind": "other",
+      "itemId": "c1",
+      "trigger": "Can I try again?",
+      "actual": "Of course, go ahead and place two counters on the frame!",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Yes, go ahead and give it another try!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Yes, go ahead and put two counters on the frame!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Yes, go ahead and put two counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Yes, give it another try! Put two counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Yes, go right ahead and try again!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "credit",
+      "itemId": "c1",
+      "trigger": "The learner chose to try this task again. Invite their new attempt.\n\nThe learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"2 counters on the frame\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"five_frame\"]}. Respond to the learner using the current task and workspace.",
+      "actual": "Take your time and place two counters on the frame whenever you're ready.",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "You put two counters on the frame! That makes two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You put two counters on the frame. That makes two!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You put two counters on the frame! Great job getting two.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You did it! You put two counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You did it! You put two counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "other",
+      "itemId": "c1",
+      "trigger": "I am ready for the next one.",
+      "actual": "Great job placing two counters on the frame!",
+      "scoredWith": {
+       "keys": [
+        "2"
+       ],
+       "ask": "Put two counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "You put two counters on the frame, exactly right! Let's keep going.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You put two counters on the frame, exactly right! Let's see what comes next.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You put two counters on the frame, exactly right!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You did it\u2014you placed two counters on the frame!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "You placed two counters on the frame, that is exactly two!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     },
+     {
+      "kind": "other",
+      "itemId": "c2",
+      "trigger": "The next task is now visible in liveRuntime. Introduce that task naturally and wait for the learner.",
+      "actual": "Let's try another one. Can you put three counters on the frame?",
+      "scoredWith": {
+       "keys": [
+        "3"
+       ],
+       "ask": "Put three counters on the frame. Your turn.",
+       "leakTokens": []
+      },
+      "samples": [
+       {
+        "text": "Now, put three counters on the frame. Your turn!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Now, put three counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Now, put three counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Now let's put three counters on the frame. Your turn!",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       },
+       {
+        "text": "Now, put three counters on the frame.",
+        "calls": [],
+        "checks": {
+         "not_empty": true,
+         "no_protocol_leak": true,
+         "no_key_before_try": null,
+         "no_fix_before_try": null,
+         "no_change_before_receipt": null
+        },
+        "evidence": {},
+        "pulledLever": null
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}
