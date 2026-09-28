@@ -678,6 +678,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     audioInput: { manual_activity: true },
     teachingWorkspace: {
       grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      // Dictated build items publish levers (`placeValueLevers.ts`, handoff 21 M1); the spoken asks do not yet.
+      levers: true,
       guidance: 'A printed number shows no column labels, because on a which-place item the label is the answer. '
         + 'On a write-the-number item the number is never printed, so say it aloud before the learner writes; the chart checks the written digits itself once the '
         + 'learner stops, even with a column empty. You cannot write, clear or highlight digits.',

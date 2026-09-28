@@ -85,6 +85,8 @@ import {
   type PlaceValueMode,
   type PlaceValueTier,
 } from './placeValueScript';
+import { MODEL_LEVER, PLAIN_LEVER, READBACK_LEVER, TEEN_LEVER, WORTH_LEVER, leverFacts, placeValueLevers, plainItem,
+  startLevers, teenDigit } from './placeValueLevers';
 import { placeLabel } from './spokenNumberWords';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
@@ -258,6 +260,12 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
   // ── Per-item stage state ──────────────────────────────────────────────────
   /** The child's written digits, keyed by PLACE. Their trace, not the key. */
   const [digitsByPlace, setDigitsByPlace] = useState<Record<number, string>>({});
+  // In-item levers (`placeValueLevers.ts`), keyed by the session item they were pulled on, and the plainer
+  // dictation a simplify lever put on screen in its place. The refs are what event handlers read.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<PlaceValueItem | null>(null);
+  const practiceRef = useRef<PlaceValueItem | null>(null);
+  const displayItemRef = useRef<PlaceValueItem | null>(null);
   /** Post-answer only (answer-leak rule). NOT cleared when the next item opens:
    *  that clear and the `onAffirmed` that set it land in one React batch, so
    *  the reveal would paint on the last item and nowhere else (18b).
@@ -364,7 +372,8 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
     gradeLevel: gradeLevel || 'Grade 3',
     exhibitId,
     onFinished: handleFinished,
-    onItemOpened: resetStageFor,
+    // A fresh item never carries a plainer dictation over from the last one.
+    onItemOpened: () => { practiceRef.current = null; setPractice(null); resetStageFor(); },
     onAffirmed: (item) => {
       // The first moment an answer may appear on screen. The reveal is the
       // PAIRING (digit, place, worth) — the thing the click era printed as a
@@ -397,7 +406,14 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
     },
   });
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the plainer dictation while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  displayItemRef.current = currentItem;
+  const leverTier: PlaceValueTier = supportTier ?? 'medium';
+  const sessionNumbers = useMemo(() => new Set(items.map(i => i.targetNumber)), [items]);
+  const startPulled = startLevers(sessionItem, { showMultipliers, showExpandedForm });
+  const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : startPulled;
   // The workspace path shows its summary without an evaluation provider (the live host has none).
   const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
 
@@ -423,7 +439,7 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
   // No Submit control: nothing on screen may carry the child forward. The
   // close describes the written number; THE MATCH IS COMPUTED IN CODE.
   const commitChart = useCallback(() => {
-    const item = runner.currentItem;
+    const item = displayItemRef.current;
     if (!item || item.kind !== 'build_number') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const written = writtenOf(item, writtenRef.current);
@@ -437,7 +453,7 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
    *  re-arms it, and the runner cancels it at item open, at a correction and
    *  at the commit. */
   const armWriteSettle = useCallback((next: Record<number, string>) => {
-    const item = runner.currentItem;
+    const item = displayItemRef.current;
     writtenRef.current = next;
     if (!item || item.kind !== 'build_number') return;
     const complete = chartComplete(item, writtenOf(item, next));
@@ -445,7 +461,7 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
   }, [runner, commitChart]);
 
   const handleDigitChange = useCallback((place: number, value: string) => {
-    const item = runner.currentItem;
+    const item = displayItemRef.current;
     if (!item || item.kind !== 'build_number') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const sanitized = value.replace(/[^0-9]/g, '').slice(-1);
@@ -523,8 +539,8 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
       <div className="py-4 px-2">
         <div className="overflow-x-auto">
           <div className="inline-flex flex-col min-w-full items-center">
-            {showMultipliers && (
-              <div className="flex gap-2 mb-1">
+            {pulledLevers.includes(WORTH_LEVER) && (
+              <div className="flex gap-2 mb-1" data-lever="column-worth">
                 {item.chartPlaces.map((p) => (
                   <div key={`m${p}`} className="w-16 text-center text-[10px] font-mono text-indigo-300/70">
                     {multiplierLabel(p)}
@@ -569,14 +585,26 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
             {child}
           </div>
         )}
-        {showExpandedForm && expandedParts.length > 0 && (
-          <div className="mt-2 text-center text-sm font-mono text-slate-400">
+        {pulledLevers.includes(READBACK_LEVER) && expandedParts.length > 0 && (
+          <div className="mt-2 text-center text-sm font-mono text-slate-400" data-lever="expanded-readback">
             {expandedParts.join(' + ')}
           </div>
         )}
       </div>
     );
   };
+
+  /** A small model chart: the number's digits in labelled boxes, beside the learner's chart, never in it. */
+  const renderModel = (n: number, places: number, lever: string) => (
+    <div data-lever={lever} className="flex gap-1">
+      {Array.from({ length: places }, (_, i) => places - 1 - i).map((p) => (
+        <div key={p} className="w-10 rounded-md border border-amber-300/40 bg-amber-400/5 text-center">
+          <div className="text-[9px] uppercase text-amber-200/70">{placeLabel(p)}</div>
+          <div className="text-lg font-mono text-amber-100">{Math.floor(n / 10 ** p) % 10}</div>
+        </div>
+      ))}
+    </div>
+  );
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
@@ -607,7 +635,31 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentItem) return;
-    workspace.current = { ...workspaceScene(currentItem, { written: writtenOf(currentItem, digitsByPlace) }) };
+    const scene = workspaceScene(currentItem, { written: writtenOf(currentItem, digitsByPlace) });
+    const onScreen = leverFacts(sessionItem, pulledLevers, startPulled);
+    const levers = practice ? [] : placeValueLevers(sessionItem, pulledLevers, sessionNumbers, leverTier);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the chart changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (id === PLAIN_LEVER) {
+          const easier = plainItem(sessionItem, sessionNumbers, leverTier);
+          if (!easier) return 'There is no plainer number for this item.';
+          setLeverState(pulled);
+          practiceRef.current = easier; setPractice(easier); resetStageFor(); runner.clearStillness();
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { practiceRef.current = null; setPractice(null); resetStageFor(); },
+    };
   });
   // AFTER the runtime mount is registered, never before: `start()` waits for
   // `grantOwnership('runner')`, which cannot be granted until this primitive's
@@ -690,6 +742,15 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
             {/* The stage. The tutor speaks the ask — no printed instruction. */}
             <div ref={pip.ref('stage')} data-pip-object="stage" className="bg-white/[0.02] rounded-xl border border-white/5 overflow-x-auto">
               {isGestureItem ? renderChart(currentItem) : renderNumeral(currentItem)}
+              {isGestureItem && sessionItem && (pulledLevers.includes(MODEL_LEVER) || pulledLevers.includes(TEEN_LEVER)) && (
+                <div className="mt-3 flex flex-wrap items-start justify-center gap-4">
+                  {pulledLevers.includes(MODEL_LEVER) && renderModel(sessionItem.modelNumber, sessionItem.chartPlaces.length, 'model-chart')}
+                  {pulledLevers.includes(TEEN_LEVER) && <div className="flex gap-3">
+                    {renderModel(10 + teenDigit(sessionItem.targetNumber), 2, 'model-teen')}
+                    {renderModel(teenDigit(sessionItem.targetNumber) * 10, 2, 'model-teen')}
+                  </div>}
+                </div>
+              )}
             </div>
 
             {/* The reward — the first moment an answer may appear. Gated on

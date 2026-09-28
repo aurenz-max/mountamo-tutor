@@ -54,7 +54,7 @@ Calibration channel [4] not read (needs auth). No topic-fidelity or reader-fit r
 - **Evidence:** `armWriteSettle`, `WRITE_SETTLE_MS`/`WRITE_COMPLETE_SETTLE_MS` (`PlaceValueChart.tsx:181-184`, :439-445), component docblock "never correctness-gated"; `buildVerdictCue` incomplete branch.
 - **Probe:** workspace "build: the chart checks a still, full chart, Try again clears it, and a right one completes once"; "build: a half-written chart that stays still commits and is checked wrong, as on the runner"; di-script "an incomplete chart gets the every-column-gets-a-digit line, not the walk".
 
-### R6 — tutor-facing text describes the commit as it happens · OBSERVED · VIOLATED, fix queued (handoff 21 M1)
+### R6 — tutor-facing text describes the commit as it happens · OBSERVED · FIXED 2026-09-28
 - **Property:** what the tutor and observer read about the build check matches R5: the chart checks when the learner stops writing, full or not.
 - **Demanded by:** the live tutor, which reads the catalog guidance and the scene `constraints` fact; a tutor told the chart waits for a full chart would stay silent over a half-written one, or say it has not been checked when it has.
 - **Evidence:** VIOLATED in three places, all written in `5a749406` (2026-09-23), the same commit that added the R5 test: scene constraint `placeValueWorkspace.ts:74` ("checks the number once every column is filled and the learner stops"), catalog guidance `math.ts:682-683` (same wording), and the journey-spec comment `liveJourneySpec.ts:768` ("a half-written chart never commits", a code comment only). The stillness commit predates them (2026-08-18 port) and the misses that depend on it came later (2026-09-27).
@@ -67,13 +67,13 @@ Calibration channel [4] not read (needs auth). No topic-fidelity or reader-fit r
 - **Evidence:** `placeValueWorkspace.ts:37-61`; catalog `teachingWorkspace.misses`.
 - **Probe:** `placeValueWorkspace.test.ts` (11 rows + "a spoken item names no miss"); `placeValueCapture.test.ts` "records a named miss beside its phase and eval mode …".
 
-### R8 — the readout under the chart is the learner's own writing · OBSERVED · VIOLATED, fix queued (handoff 21 M1)
+### R8 — the readout under the chart is the learner's own writing · OBSERVED · FIXED 2026-09-28
 - **Property:** the number readout and the expanded-form readout show only digits the learner wrote, in neutral colour at every tier (no match colouring). An empty column reads as empty, never as 0.
 - **Demanded by:** pedagogy rule #1 and R5/R7: the check marks a chart with an empty zero column wrong (`zero_left_empty`), and the correction teaches that writing the zero is the learner's job, so a readout that supplies the zero contradicts the verdict; the component docblock ("the readout survives as the child's own trace"); the M1 `expanded_readback` lever ("the learner's own digits").
 - **Evidence:** VIOLATED at `PlaceValueChart.tsx:515` (`digitsByPlace[p] || '0'`) and :517 (the expanded parts treat an empty column as 0 and drop it): for 501 written "5 _ 1" the readout shows "501" and "500 + 1", both correct-looking, while the chart is checked wrong with `zero_left_empty`. No test covers the readout.
 - **Probe (to add with the fix):** mount a build item for 501, write 5 and 1 with tens empty: no element reads "501" or "500 + 1"; after settle the miss is `zero_left_empty`. A full "5 0 1" still shows its readout.
 
-### R9 — the build correction models a foreign number of the same width · OBSERVED · VIOLATED, fix queued (handoff 21 M1)
+### R9 — the build correction models a foreign number of the same width · OBSERVED · FIXED 2026-09-28
 - **Property:** after a wrong full chart, the scripted correction walks `modelNumber` column by column and re-dictates the target, never the target's own walk. `modelNumber` is not a session number (printed or dictated), carries a zero column, has the same number of digits as the chart, and shares no digit in any column with the target.
 - **Demanded by:** the scripted DI correction ("modeling the target's own walk would turn the retry into a copy task"; a shared column digit is part of that copy); the M1 `model_chart` lever ("model ≠ target, not a session number, no shared column digit"), which needs a model the width of the chart it sits beside.
 - **Evidence:** holds: foreign and carries a zero (di-script test). VIOLATED: `buildModelFor` caps width at 3 (`placeValueScript.ts:263-267`, `Math.min(3, magnitude)`), so the 4- and 5-digit candidates are unreachable, and it never compares digits with the target. On the saved payloads: identify dictates 44 → model 40 (tens 4 shared); build dictates 501 → 306 (tens 0 shared); compare dictates 3580 → 306 (3 digits for a 4-column chart); expanded_form dictates 72603 → 306 (3 digits for 5 columns, tens 0 shared). The lever table's case, 406 → 306, shares tens 0 and ones 6. The workspace path does not speak this correction (the tutor teaches in its own words); the scripted runner and DI harness do (2026-08-18 build drive: "the foreign model walk on 306").
@@ -133,6 +133,10 @@ Calibration channel [4] not read (needs auth). No topic-fidelity or reader-fit r
 - **Evidence:** `PlaceValueChart.tsx:407-420`, :545-547, :687-690.
 - **Probe:** `pip/PlaceValueChart.surface.test.tsx` (2).
 
+### R19 — in-item levers on dictated build items (slice 1) · IMPLEMENTED 2026-09-28
+- **Property:** `placeValueLevers.ts` declares on every build_number item, with a synchronous `pullLever`: `model_chart` (a small chart of the correction's own `modelNumber`, R9, beside the learner's; plain boxes, no input, no place-label aria-label, no digit pip object), `column_worth` and `expanded_readback` (the tier's `showMultipliers`/`showExpandedForm` are their starting positions, never recorded pulls; still only on build items, R3/R12), `model_teen` (a teen and its -ty from a digit the item does not use in its last two places) and `plain_number` (simplify; an ungraded dictation with the same places, no zero, no teen, no shared column digit, no session number, only when the item has a zero or a teen; `data.challenges` and the item list are untouched). Each declares the `placeValueMiss` ids it answers (J9). The spoken asks (find_place, say_value) declare no levers yet.
+- **Evidence:** `placeValueLevers.test.ts` (13, incl. plain_number over 4000 targets), `PlaceValueChart.levers.workspace.test.tsx` (3), W1 binding test (tools gain `pull_lever` on build items only), sweep J1-J9 on four payloads, replay 4 payloads x 5 clean (`qa/tutor-reports/replay/place-value-chart-2026-09-28.json`).
+
 ## Conflicts
 
 ### C1 — R12 (structural tier) vs build's zero-trap identity (R4/R5/R7) — OPEN
@@ -161,6 +165,8 @@ Proposed only; not applied.
 - **teachingWorkspace.guidance (outside the curator prompt):** "the chart checks the written digits itself once every column is filled and the learner stops" becomes "the chart checks the written digits itself when the learner stops writing, whether or not every column is filled" (R6).
 
 ## Changelog
+
+- 2026-09-28 — R19 added (build-item levers). Compatible: an untiered build item renders as before (worth row and read-back start pulled); the model and teen charts render only when pulled and outside the learner's chart.
 
 - 2026-09-28 — R6, R8, R9 fixed (handoff 21 M1, before the levers). R6: the behavior was right; the scene constraint, the catalog guidance and the journey comment now say a written chart is checked once the learner stops, even with a column empty. R8: the readout reads back only a full chart; an empty column shows as a gap ("5 _ 1"), and the expanded form waits for a full chart; mounted probe in `PlaceValueChart.workspace.test.tsx`, mutation-checked. R9: `buildModelFor(target, width, session, askedPairs)` builds a model as wide as the chart, never a session number, no column digit shared with the target or with a say_value ask, a zero where the target has none; `placeValueModel.test.ts` over every seventh target to 99999. Also: compare and expanded_form payloads saved. Compatible: place-value suites and sweep green.
 

@@ -68,6 +68,7 @@ Once the gate passes and the user has seen the report, set this as the session g
 | M1a | `counting-board` | Handoff 21 M1 | **DONE 09-28:** give_me_n 4 levers, subitize_perceptual 2 (contract R15); vitest gate green, replay clean |
 | M1b | `number-bond` | Handoff 21 M1 | **Slice 1 DONE 09-28:** decompose, ten_and_ones (help + simplify), related_fact move, missing_part tray; equation levers open. Contract derived first; three leak fixes (R12-R14) before the levers |
 | M1c | `base-ten-blocks` | Handoff 21 M1 | **Slice 1 DONE 09-28:** build_number (column counts, total, ten bracket, plainer build); contract derived first and four leaks fixed. operate and the spoken mat open |
+| M1d | `place-value-chart` | Handoff 21 M1 | **Slice 1 DONE 09-28:** dictated build items (model chart, column worth, read-back, teen pair, plainer number); contract derived first and three defects fixed. say_value label open |
 | C1 | `rhyme-studio` | First literacy and first pre-reader case: every lever needs a voice carrier | Run `/primitive-contract` first; levers act on a model pair outside the item (a rime highlight answers recognition); check the stale `aiDirectives` |
 | C2 | one primitive of a different archetype, chosen with the user | Tests that the design holds outside math manipulatives | Pick from the diagnosis log (`logs/demonstrations/`) where real diagnoses recur |
 

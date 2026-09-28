@@ -84,7 +84,10 @@ it.each(['identify', 'build', 'compare', 'expanded_form'] as const)(
     const h = mount(mode);
     expect(h.state().owner).toBe('tutor');
     expect(h.state().task!.task).not.toMatch(/Say exactly|\[PV/);
-    expect(tutorTools(h)).toEqual(['begin_help']);
+    // A dictated item carries in-item levers (handoff 21 M1); a printed one offers help only.
+    const dictated = h.state().task!.workspace!.levers?.length;
+    expect(tutorTools(h)).toEqual(dictated ? ['begin_help', 'pull_lever'] : ['begin_help']);
+    expect(!!dictated).toBe(mode === 'build');
     expect(seam.send.mock.calls.flat().join(' ')).not.toMatch(/\[PV|Say exactly/);
     // The runner's re-ask button has nothing to call here; the learner asks the tutor.
     expect(h.view.container.querySelector('[aria-label="Hear the question again"]')).toBeNull();

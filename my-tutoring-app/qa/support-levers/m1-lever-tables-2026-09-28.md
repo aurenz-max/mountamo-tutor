@@ -60,7 +60,7 @@ No contract doc. It has two surfaces: the click mat (build_number, operate, mixe
   3. The not_traded_up feedback names the exact trade.
   4. operate has no payload.
 
-## place-value-chart
+## place-value-chart — slice 1 (dictated build items) DONE 09-28; say_value label still to build
 
 No contract doc.
 
