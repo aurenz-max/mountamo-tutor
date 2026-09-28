@@ -36,7 +36,7 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from './testing/live
 import { mountWorkspace, type WorkspaceHarness } from './testing/workspaceHarness';
 import { getComponentById } from '../../../service/manifest/catalog';
 import { buildLiveActivitySpec } from '../liveActivitySpec';
-import { lastMiss, nextLever } from './observerLever';
+import { helpBeforeLastWrong, lastMiss, nextLever } from './observerLever';
 import { leverPulledMessage } from './runtimeTransport';
 
 /** The rules every bound family owes on the dry journey. Ids are stable: the baseline and the sweep report cite them. */
@@ -350,7 +350,7 @@ interface MomentRecord { payload: string; primitiveId: string; evalMode: string;
   gradeLevel: string | null; leakTokens: string[]; ask: string; keys: string[]; moments: Moment[]; stopped?: string }
 const MOMENTS: MomentRecord[] = [];
 
-function recordMoments({ primitiveId, evalMode, data, file }: Payload & { file: string }): MomentRecord | null {
+async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { file: string }): Promise<MomentRecord | null> {
   const row = LIVE_JOURNEYS[primitiveId];
   if (!row || row.execution === 'teaching') return null;
   seam.evaluationContext = { lesson: 'replay' };
@@ -409,7 +409,22 @@ function recordMoments({ primitiveId, evalMode, data, file }: Payload & { file: 
     // A gesture key no input names (a fraction build's slice count): the challenge's own answer fields.
     if (!record.keys.length) for (const [field, value] of Object.entries(context().challenge ?? {}))
       if (/target|answer|correct|numerator/i.test(field) && typeof value === 'number') record.keys.push(String(value));
-    if (wrong.length && answer(wrong, 'miss') && task().itemId === item && h.state().status === 'active') {
+    if (LADDER === 'second_wrong' && wrong.length && answer(wrong, 'miss') && task().itemId === item) {
+      // The ladder's auto-pull (handoff 21 S2): a second wrong answer, no "I'm stuck"; the transport pulls help itself.
+      if (task().phase !== 'working' && h.offer('retry')) { h.dispatch('retry'); h.confirmVisible(); h.settle(); }
+      const before = new Set((task().workspace?.levers ?? []).filter(l => l.pulled).map(l => l.id));
+      if (answer(row.inputsFor('wrong', context()), 'miss')) {
+        // The transport pulls after the commit's notification, in a microtask of its own.
+        await act(async () => { await Promise.resolve(); });
+        h.settle(); h.confirmVisible(); h.settle();
+        const declared = (task().workspace?.levers ?? []).find(l => l.pulled && !before.has(l.id));
+        if (!declared) { record.stopped = 'the second wrong answer pulled no lever'; return record; }
+        moment('lever', { host: [leverPulledMessage(declared, helpBeforeLastWrong(task().workspace!, item) ? 'wrong_with_help' : 'second_wrong')],
+          lever: { id: declared.id, kind: declared.kind, does: declared.does } });
+        if (task().workspace?.practice) { record.stopped = 'a simplify lever opened a practice item'; return record; }
+        if (task().phase !== 'working' && h.offer('retry')) { h.dispatch('retry'); h.confirmVisible(); h.settle(); }
+      }
+    } else if (wrong.length && answer(wrong, 'miss') && task().itemId === item && h.state().status === 'active') {
       if (task().phase !== 'working' && h.offer('retry') && !task().workspace?.levers?.some(l => !l.pulled)) {
         h.dispatch('retry'); h.confirmVisible(); h.settle();
       }
@@ -457,11 +472,13 @@ afterAll(() => {
   if (process.env.TUTOR_REPLAY_OUT) writeFileSync(process.env.TUTOR_REPLAY_OUT, JSON.stringify({ lessonEntry: LESSON_ENTRY, records: MOMENTS }, null, 1));
 });
 
+/** `TUTOR_REPLAY_LADDER=second_wrong` records the auto-pull path (two wrong answers, no "I'm stuck") in place of stuck-then-pull. */
+const LADDER = process.env.TUTOR_REPLAY_LADDER;
 /** `TUTOR_REPLAY_ONLY=number-line,ten-frame` limits recording to those families. */
 const REPLAY_ONLY = (process.env.TUTOR_REPLAY_ONLY ?? '').split(',').filter(Boolean);
 describe.runIf(!!process.env.TUTOR_REPLAY_OUT)('tutor replay moments', () => {
-  it.each(PAYLOADS.filter(p => !REPLAY_ONLY.length || REPLAY_ONLY.includes(p.primitiveId)).map(p => [p.file, p] as const))('%s', (_file, payload) => {
-    const record = recordMoments(payload);
+  it.each(PAYLOADS.filter(p => !REPLAY_ONLY.length || REPLAY_ONLY.includes(p.primitiveId)).map(p => [p.file, p] as const))('%s', async (_file, payload) => {
+    const record = await recordMoments(payload);
     if (record) MOMENTS.push(record);
   }, 30_000);
 });

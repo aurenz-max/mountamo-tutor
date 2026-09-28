@@ -583,6 +583,12 @@ async def lever_journey(s):
         raise JourneyStop('No item offered a lever after a wrong answer')
     s.record('lever_item', itemId=first)
     pulls = lambda: [e for e in s.events if e['type'] == 'lever_pull']
+    if getattr(s.args, 'lever_ladder', None) == 'second-wrong' and not pulls():
+        # Handoff 21 S2: a second wrong answer on the same item, no "I'm stuck"; the observer pulls help on its own.
+        if s.state['task']['phase'] != 'working':
+            await s.step({'type': 'learner_progress', 'action': 'retry'})
+        await s.learner('wrong')
+        await turn('wrong-again')
     for label, prompt in (('stuck', "I'm stuck. I don't know how to do this one."),
                           ('stuck-again', "I still don't get it.")):
         if not pulls():
@@ -891,6 +897,7 @@ async def main():
     parser.add_argument('--answer-prefix', default='', help='Natural conversational preface for actual spoken answers; requires --audio')
     parser.add_argument('--demonstration', action='store_true', help='LA-15: wrong answer, a request to be shown, a composed demonstration detour and return (requires --lesson-entry)')
     parser.add_argument('--lever', action='store_true', help='Handoff 18: wrong answer, "I am stuck", an unprompted lever pull, then the full item credited (requires --lesson-entry)')
+    parser.add_argument('--lever-ladder', choices=['second-wrong'], help='--lever: after the first wrong answer, answer wrong again instead of saying "I am stuck" (the auto-pull, handoff 21 S2)')
     parser.add_argument('--no-review', action='store_true', help='Skip the after-run lever reviewer')
     parser.add_argument('--objective', help='Objective text the demonstration author reads; defaults to the topic')
     parser.add_argument('--progression-only', action='store_true', help='Reproduce wrong answer, correction, next challenge and finish without a help detour')

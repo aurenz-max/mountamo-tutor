@@ -172,10 +172,10 @@ it('the observer pulls the next lever when a learner who answered wrong says the
   const stuck = vi.fn(async () => ({ asksForHelp: .95, wantsToStop: .01, attemptsAnswer: .02, accepted: true, reason: 'observed', ms: 1 }));
   const transport = new RuntimeTransport(h.runtime, m => sent.push(m), vi.fn(async () => ({ verdict: 'none' as const, transition: 'none' as const,
     confidence: 0, grounded: 0, accepted: false, reason: 'test', ms: 1 })), stuck);
-  // Stuck before any wrong answer: no pull.
-  await act(async () => { transport.learnerText("I'm stuck", true); await new Promise(r => setTimeout(r, 50)); });
-  expect(levers(h).some(l => l.pulled)).toBe(false);
   h.tap(6); h.check();
+  // One wrong answer names the miss and pulls nothing.
+  await act(async () => { await new Promise(r => setTimeout(r, 20)); });
+  expect(levers(h).some(l => l.pulled)).toBe(false);
   // The surface certifies a paint with two animation frames, which this environment does not run: paint by hand.
   const paint = async () => { for (let i = 0; i < 5; i++) await act(async () => {
     await new Promise(r => setTimeout(r, 20)); h.runtime.acknowledgeVisible(h.state().revision); }); };
@@ -190,6 +190,65 @@ it('the observer pulls the next lever when a learner who answered wrong says the
   act(() => { transport.learnerText('I still do not get it', true); });
   await paint();
   expect(h.state().task!.itemId).toBe('j0~simpler');
+  transport.close();
+});
+
+it('the second wrong answer pulls help on its own, once, and tells the tutor why after its reply (handoff 21 S2)', async () => {
+  const h = mount();
+  const sent: any[] = [];
+  const transport = new RuntimeTransport(h.runtime, m => sent.push(m), vi.fn(async () => ({ verdict: 'none' as const, transition: 'none' as const,
+    confidence: 0, grounded: 0, accepted: false, reason: 'test', ms: 1 })), vi.fn());
+  const paint = async () => { for (let i = 0; i < 5; i++) await act(async () => {
+    await new Promise(r => setTimeout(r, 20)); h.runtime.acknowledgeVisible(h.state().revision); }); };
+  const told = () => sent.filter(m => m.type === 'text' && /pulled/.test(m.content));
+  h.tap(6); h.check();
+  await paint();
+  expect(levers(h).some(l => l.pulled)).toBe(false);
+  h.dispatch('retry');
+  await paint();
+  h.tap(6); h.check();
+  await paint();
+  // The screen changed with no "I'm stuck": the learner's hops are numbered. Help only, never simplify.
+  expect(levers(h).filter(l => l.pulled).map(l => l.id)).toEqual(['numbered_hops']);
+  expect(h.hopLabels('learner-hops')).toEqual(['1', '2']);
+  expect(h.state().task!.itemId).toBe('j0');
+  // Republishes of the same attempt pull nothing more.
+  for (let i = 0; i < 3; i++) act(() => { transport.publish(); });
+  await paint();
+  expect(levers(h).filter(l => l.pulled).map(l => l.id)).toEqual(['numbered_hops']);
+  // The tutor's reply to the wrong answer comes first; then it hears why the screen changed, once.
+  expect(told()).toHaveLength(0);
+  act(() => { transport.beginTurn('Not quite.'); transport.endTurn(false); });
+  expect(told()).toHaveLength(1);
+  expect(told()[0].content).toMatch(/^The learner answered this item wrong a second time, so the host pulled numbered_hops/);
+  // The next try carries the lever: assisted work.
+  h.dispatch('retry');
+  await paint();
+  h.tap(5); h.check();
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['numbered_hops'] });
+  transport.close();
+});
+
+it('stuck before any attempt pulls help only; a wrong answer with that help on screen pulls simplify', async () => {
+  const h = mount();
+  const sent: any[] = [];
+  const stuck = vi.fn(async () => ({ asksForHelp: .95, wantsToStop: .01, attemptsAnswer: .02, accepted: true, reason: 'observed', ms: 1 }));
+  const transport = new RuntimeTransport(h.runtime, m => sent.push(m), vi.fn(async () => ({ verdict: 'none' as const, transition: 'none' as const,
+    confidence: 0, grounded: 0, accepted: false, reason: 'test', ms: 1 })), stuck);
+  const paint = async () => { for (let i = 0; i < 5; i++) await act(async () => {
+    await new Promise(r => setTimeout(r, 20)); h.runtime.acknowledgeVisible(h.state().revision); }); };
+  act(() => { transport.learnerText("I'm stuck", true); });
+  await paint();
+  expect(levers(h).filter(l => l.pulled).map(l => l.id)).toEqual(['numbered_hops']);
+  expect(h.state().task!.itemId).toBe('j0');
+  act(() => { transport.beginTurn('Look at the line.'); transport.endTurn(false); });
+  h.tap(6); h.check();
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, assisted: true, levers: ['numbered_hops'] });
+  await paint();
+  expect(h.state().task!.itemId).toBe('j0~simpler');
+  act(() => { transport.beginTurn('Let us try.'); transport.endTurn(false); });
+  expect(sent.filter(m => m.type === 'text' && /pulled/.test(m.content)).map(m => m.content.split(',')[0]))
+    .toEqual(['The learner said they were stuck', 'The learner answered wrong with the help already on screen']);
   transport.close();
 });
 

@@ -1,6 +1,6 @@
 import { DialogueObserver, classifyDialogue, type DialogueClassifier } from './DialogueObserver';
 import { LearnerObserver, classifyLearnerIntent, type LearnerIntentClassifier } from './LearnerObserver';
-import { observerLever } from './observerLever';
+import { helpBeforeLastWrong, leverTrigger, type LeverEvent } from './observerLever';
 import { LEARNER_FACTS_NOTE, type LearnerSignals } from './learnerSignals';
 import type { LearnerObservation } from './learnerIntentContract';
 import { itemScopeKey } from './observationContract';
@@ -19,9 +19,17 @@ export interface DemonstrationNeed { note?: string }
 export type ComposedDemonstration = { demonstration: Demonstration; diagnosis: string } | { refused: string; diagnosis?: string };
 import { waitForVisible } from './waitForVisible';
 
-/** What the tutor is told after the observer pulls a lever for a stuck learner. Exported so tutor replay sends the same words. */
-export function leverPulledMessage(lever: { id: string; kind: string; does: string }): string {
-  return `The learner said they were stuck, so the host pulled ${lever.id} `
+/** Why the observer pulled a lever, as the tutor is told it. */
+export const LEVER_CAUSES = {
+  stuck: 'The learner said they were stuck',
+  second_wrong: 'The learner answered this item wrong a second time',
+  wrong_with_help: 'The learner answered wrong with the help already on screen',
+} as const;
+export type LeverCause = keyof typeof LEVER_CAUSES;
+
+/** What the tutor is told after the observer pulls a lever. Exported so tutor replay sends the same words. */
+export function leverPulledMessage(lever: { id: string; kind: string; does: string }, cause: LeverCause = 'stuck'): string {
+  return `${LEVER_CAUSES[cause]}, so the host pulled ${lever.id} `
     + `(${lever.kind}). It is on screen now: ${lever.does} First point the learner to it: say what is now drawn and where to look, `
     + 'as a change to the picture; never call it a lever or a tool. '
     + (lever.kind === 'simplify' ? 'Then let them try the easier item on screen.' : 'Then let them try the same question again; do not work it through for them.');
@@ -51,6 +59,8 @@ export class RuntimeTransport {
   private afterTurnFallback: ReturnType<typeof setTimeout> | null = null;
   private closed = false;
   private unsubscribe: () => void;
+  /** Wrong attempts already answered by the ladder (`<item>#<attempt>`), so a republish never pulls twice. */
+  private seenWrong = new Set<string>();
 
   readonly dialogue: DialogueObserver;
   readonly learnerObserver: LearnerObserver;
@@ -63,14 +73,14 @@ export class RuntimeTransport {
       // Only a newly raised request is worth a packet of its own. Everything else rides the next publish.
       if (report.status === 'observed' && runtime.learner.intent(itemScopeKey(report.request.scope), report.observation!, report.flags!))
         this.publish();
-      if (report.status === 'observed') void this.pullForStuckLearner(report.flags!.helpRequested);
+      if (report.status === 'observed' && report.flags!.helpRequested) void this.pullLever('help');
     });
     this.dialogue = new DialogueObserver(runtime.getSnapshot, classify, command => this.dispatch(command, true), message => {
       if (message.type === 'dialogue_observation') runtime.trace.record({ stage: 'dialogue', status: String(message.status),
         reason: String(message.reason), input: message.input, result: message });
       send(message);
     });
-    this.unsubscribe = runtime.subscribe(() => { this.publish(); this.dialogue.stateChanged(); });
+    this.unsubscribe = runtime.subscribe(() => { this.publish(); this.dialogue.stateChanged(); this.wrongCommitted(); });
   }
   /** The packet the tutor receives. Every shared-workspace binding carries learner facts; nothing is wired per primitive. */
   private packet(state: RuntimeSnapshot = this.runtime.getSnapshot()) {
@@ -140,8 +150,21 @@ export class RuntimeTransport {
         : 'The learner chose to try this task again. Invite their new attempt.' });
   }
   /**
-   * A learner who answered this item wrong and now says they are stuck gets the next lever from the
-   * observer (`observerLever`). The tutor is told what changed once it is on screen, as facts.
+   * A newly committed wrong attempt on a session item is a rung of the ladder (`leverTrigger`): the second
+   * one pulls help, one after help pulls simplify. Once per attempt; a republish of the same attempt is not
+   * a new one. After the notification, never inside it: the pull is a dispatch of its own.
+   */
+  private wrongCommitted() {
+    const s = this.runtime.getSnapshot(), task = s.task, last = task?.workspace?.attempts.at(-1);
+    if (this.closed || !task || !last || last.correct || last.practice || last.itemId !== task.itemId) return;
+    const key = `${task.itemId}#${task.evidence.attemptNumber}`;
+    if (this.seenWrong.has(key)) return;
+    this.seenWrong.add(key);
+    queueMicrotask(() => { void this.pullLever('wrong'); });
+  }
+  /**
+   * The observer pulls the lever the ladder names (`leverTrigger`) when the learner says they are stuck or
+   * commits a wrong answer. The tutor is told what changed once it is on screen, as facts.
    *
    * The pull is immediate; the message is not. With audio the tutor is usually already answering
    * "I'm stuck" when the pull lands (lever bench LB-8: cue 29.1s, reply 29.8s), and a message sent
@@ -150,18 +173,20 @@ export class RuntimeTransport {
    * so the message waits for it to settle and opens the next turn. If no reply begins within
    * AFTER_TURN_FALLBACK_MS, the message goes out anyway: a silent tutor must not strand it.
    */
-  private async pullForStuckLearner(helpRequested: boolean) {
-    const s = this.runtime.getSnapshot(), lever = observerLever(s, helpRequested);
+  private async pullLever(event: LeverEvent) {
+    const s = this.runtime.getSnapshot(), lever = leverTrigger(s, event);
     if (this.closed || !lever || !s.instanceId || !s.task) return;
     const declared = s.task.workspace!.levers!.find(l => l.id === lever)!;
+    const cause: LeverCause = event === 'help' ? 'stuck'
+      : helpBeforeLastWrong(s.task.workspace!, s.task.itemId) ? 'wrong_with_help' : 'second_wrong';
     const status = await this.dispatch({ sessionEpoch: s.sessionEpoch, instanceId: s.instanceId, itemId: s.task.itemId,
       expectedRevision: s.revision, commandId: `observer:${crypto.randomUUID()}`,
       action: { type: 'workspace', operation: 'pull_lever', input: { lever } } }, true);
-    this.runtime.trace.record({ stage: 'observer_lever', status: status ?? 'dropped', reason: `Learner stuck after a wrong answer; pulled ${lever}`,
+    this.runtime.trace.record({ stage: 'observer_lever', status: status ?? 'dropped', reason: `${LEVER_CAUSES[cause]}; pulled ${lever}`,
       input: { itemId: s.task.itemId, lever } });
     if (status !== 'visible' || this.closed) return;
     const itemId = this.runtime.getSnapshot().task?.itemId ?? s.task.itemId;
-    this.afterTurn = { itemId, content: leverPulledMessage(declared) };
+    this.afterTurn = { itemId, content: leverPulledMessage(declared, cause) };
     if (!this.releaseTurn) this.afterTurnFallback = setTimeout(() => this.sendAfterTurn(), AFTER_TURN_FALLBACK_MS);
   }
   private async dispatch(input: unknown, observed = false): Promise<string | undefined> {

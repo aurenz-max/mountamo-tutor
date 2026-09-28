@@ -15,7 +15,7 @@ SHARED_LEAK = r"User['’]s message content|System['’]s response|CURRENT|RUNTI
 
 CHECKS = {
     'lever_offered': 'An item offered a lever after a wrong answer',
-    'lever_pulled': 'A lever was pulled, by the tutor or the observer, after "I am stuck"',
+    'lever_pulled': 'A lever was pulled, by the tutor or the observer, after "I am stuck" or a second wrong answer',
     'pull_changed_screen': 'Every pull changed the screen (lever marks drawn, or an easier item opened)',
     'no_answer_in_lever_facts': 'No lever fact states the full item\'s answer numbers',
     'practice_returned': 'An easier practice item returned to the full item',
@@ -59,6 +59,7 @@ def analyze(run, leak_tokens=None):
     reached = lambda kind: any(e['type'] == kind for e in events)
     stuck_said = any(e['type'] in ('learner', 'learner_audio') and 'stuck' in e.get('text', '').lower() for e in events)
     wrong_done = any(e['type'] == 'learner_input' and e.get('intent') == 'wrong' for e in events)
+    second_wrong = sum(e['type'] == 'learner_input' and e.get('intent') == 'wrong' for e in events) >= 2
     correct_after_pull = pulls and any(e['type'] == 'learner_input' and e.get('intent') == 'correct'
                                        and events.index(e) > events.index(pulls[0]) for e in events)
     landings = _landings(run, first)
@@ -78,7 +79,7 @@ def analyze(run, leak_tokens=None):
     checks = {
         'lever_offered': (False if 'No item offered a lever' in (stop or '') else True if first else None) if wrong_done else None,
         # Missed only once the learner has said they are stuck and nothing was pulled.
-        'lever_pulled': True if pulls else (False if stuck_said else None),
+        'lever_pulled': True if pulls else (False if stuck_said or second_wrong else None),
         'pull_changed_screen': (False if False in (seen := [changed(p) for p in pulls]) else True if True in seen else None) if pulls else None,
         # None when the run saved no items (runs before 09-27): there is nothing to compare the facts against.
         'no_answer_in_lever_facts': not any(landings & set(re.findall(r'\d+', facts(p))) for p in pulls) if pulls and landings else None,

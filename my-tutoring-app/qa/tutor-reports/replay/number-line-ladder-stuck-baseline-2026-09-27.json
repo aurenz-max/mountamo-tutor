@@ -1,0 +1,1153 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    1,
+    10
+   ],
+   "no_change_before_receipt": [
+    0,
+    10
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    2,
+    10
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    5
+   ],
+   "no_protocol_leak": [
+    0,
+    5
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "number-line.jump-hard",
+   "primitiveId": "number-line",
+   "evalMode": "jump",
+   "keys": [
+    "15"
+   ],
+   "stopped": "a simplify lever opened a practice item",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "show_jump-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "15"
+      ],
+      "ask": "Start your first jump at 16 and subtract 2. Then, take another jump from where you land to reach your final spot!",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Find 16 on the number line to make your first jump.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's start at 16 on the number line and jump backward to subtract!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the number line to start your first jump at 16.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Find 16 on the number line to get ready for your first jump backwards.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the number line! You can start at 16 and jump backwards to show subtracting.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "show_jump-0",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"show_jump-0\",\"response\":\"Landed the jumps at 14, 16\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"second_jump_off\"}. Respond to the learner using the current task and workspace.",
+     "miss": "second_jump_off",
+     "scoredWith": {
+      "keys": [
+       "15"
+      ],
+      "ask": "Start your first jump at 16 and subtract 2. Then, take another jump from where you land to reach your final spot!",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's try one jump first. Start at 18 and jump back 2!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "simpler_jump",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's try one jump first. Start at 18 and jump back 2!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "simpler_jump"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's try one jump first. Start at 18 and jump back 2!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "simpler_jump",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's try one jump first. Start at 18 and jump back 2!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "simpler_jump"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's try one jump first. Start at 18 and jump back 2!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "simpler_jump"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "show_jump-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "15"
+      ],
+      "ask": "Start your first jump at 16 and subtract 2. Then, take another jump from where you land to reach your final spot!",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ]
+     },
+     "samples": [
+      {
+       "text": "We have an easier jump to try first: start at 18 and count back 2 hops. Give that one a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0",
+          "lever": "numbered_hops"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "simpler_jump"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I set up an easier practice jump for us. Start at 18 and jump back 2!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "simpler_jump"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0",
+          "lever": "numbered_hops"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "numbered_hops"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "simpler_jump",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I made a simpler practice jump for us on the screen. Try starting at 18 and jumping back 2.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "simpler_jump",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I made an easier practice jump for us. Start at 18 and count back 2 hops!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "numbered_hops",
+          "actionId": "test/4/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "simpler_jump",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "show_jump-0~simpler",
+     "trigger": "The learner said they were stuck, so the host pulled simpler_jump (simplify). It is on screen now: Opens an easier practice jump first, one jump instead of two from a different start. It is not graded; the full item comes back after it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier i",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "15"
+      ],
+      "ask": "Start your first jump at 16 and subtract 2. Then, take another jump from where you land to reach your final spot!",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the screen\u2014we have just one jump to practice with now! Start at 18 and jump back 2 hops.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A simpler practice jump is on the screen now, starting at 18. Try jumping back 2 spots from 18!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "Try jumping back"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "The line changed to show an easier practice jump starting at 18. Look at 18 and try jumping back 2 hops!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new practice jump is on the screen for you. Look at 18 on the number line, and try jumping back 2 from there!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "Look at 18 on the number line, and try jumping back"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the line\u2014it's showing a single jump starting at 18. Count back 2 spaces to see where you land!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "number-line.jump",
+   "primitiveId": "number-line",
+   "evalMode": "jump",
+   "keys": [
+    "4"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "show_jump-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4"
+      ],
+      "ask": "Put your finger on the number 6. Hop backward 2 spaces to the left to see where you land!",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Start at 6 and hop backward 2 spaces to the left to see where you land.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Put your finger on the number 6 and hop backward 2 spaces to the left.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Start at 6 and hop backward 2 spaces to the left to see where you land.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Start at number 6 and hop backward 2 spaces to the left to see where you land.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Start at 6, and hop 2 spaces backward to the left!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "show_jump-0",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"show_jump-0\",\"response\":\"Landed the jumps at 5\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"one_short\"}. Respond to the learner using the current task and workspace.",
+     "miss": "one_short",
+     "scoredWith": {
+      "keys": [
+       "4"
+      ],
+      "ask": "Put your finger on the number 6. Hop backward 2 spaces to the left to see where you land!",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The first hop is drawn for you, numbered 1. Try hopping backward one more space to complete your 2 hops!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "numbered_hops"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, the screen now shows hop number 1 modeled for you. Try hopping backward 2 spaces to see where you land!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "numbered_hops",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the line now\u2014hop 1 is numbered to show the first step backward. Try hopping 2 full spaces to see where you land!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "numbered_hops",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, now the first hop is numbered for you. Try hopping one more space backward to complete your jump!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "numbered_hops",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, your hops are numbered now so you can see each step. Try hopping two spaces backward to see where you land!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "numbered_hops"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "show_jump-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4"
+      ],
+      "ask": "Put your finger on the number 6. Hop backward 2 spaces to the left to see where you land!",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The screen now shows hop number 1 drawn from 6 to 5. Take hop number 2 to the left and see where you land!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "numbered_hops",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the number line: hop 1 is shown for you from 6 to 5. Take hop 2 backward to the left and see where you finish!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "numbered_hops",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, hop 1 is now marked from 6 to show the way! Take one more hop backward from there to see where 2 hops land.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "numbered_hops",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": true
+       },
+       "evidence": {
+        "no_fix_before_try": "Look, hop 1 is now marked from 6"
+       },
+       "pulledLever": true
+      },
+      {
+       "text": "Your first hop is now drawn and numbered on the line. Try taking one more hop to the left and see where you finish!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "numbered_hops",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The number line now shows your first hop numbered 1. Take one more hop backward to make 2 hops!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "numbered_hops",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "show_jump-0",
+     "trigger": "The learner said they were stuck, so the host pulled numbered_hops (help). It is on screen now: Numbers every hop of the learner's own jump on the line (1, 2, 3...) and draws hop 1 from the start as a model. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it t",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4"
+      ],
+      "ask": "Put your finger on the number 6. Hop backward 2 spaces to the left to see where you land!",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the number line\u2014hop number 1 is now drawn for you from 6 to 5. Give hop number 2 a try to see where you land!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the number line\u2014hop number 1 is now drawn for you from 6 to 5. Hop backward one more time to complete your 2 hops and see where you land!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Hop 1 is now marked with a number right on the line. Look at where that first hop lands, and try hopping one more time to the left.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the number line now\u2014the first hop backward is drawn and marked with a number 1. Make that second hop backward to the left and see where you land!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the number line now\u2014the first hop is drawn and labeled with a 1 from 6 to 5! Give it another try and make the second hop backward to see where you land.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "show_jump-0",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"show_jump-0\",\"response\":\"Landed the jumps at 4\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"numbered_hops\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4"
+      ],
+      "ask": "Put your finger on the number 6. Hop backward 2 spaces to the left to see where you land!",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You hopped backward 2 spaces and landed right on 4! Great job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You hopped back 2 spaces from 6 and landed right on 4!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You hopped backward 2 spaces and landed right on 4!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You hopped backward 2 spaces and landed right on 4! Great job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You hopped backward 2 spaces and landed right on 4!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
