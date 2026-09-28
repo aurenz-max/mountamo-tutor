@@ -71,7 +71,7 @@ export function workspaceScene(item: PlaceValueItem, view: { written: WrittenCha
       ...(build ? { columns: item.chartPlaces.length, columnsFilled: view.written.filter(d => d !== null).length }
         : { printedNumber: item.targetNumber, glowingDigit: item.digit }),
       constraints: build
-        ? 'The tutor says the number; the learner writes one digit in each labelled column. The chart checks the number once every column is filled and the learner stops.'
+        ? 'The tutor says the number; the learner writes one digit in each labelled column. The chart checks what is written once the learner stops, even with a column left empty.'
         : 'The learner says the answer. The number is printed without column labels.',
     },
   };

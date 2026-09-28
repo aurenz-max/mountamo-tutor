@@ -510,11 +510,12 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
    *  the only grader. */
   const renderChart = (item: PlaceValueItem) => {
     const written = item.chartPlaces.map((p) => digitsByPlace[p] ?? '');
-    const child = written.every((d) => d === '')
-      ? null
-      : Number(item.chartPlaces.map((p) => digitsByPlace[p] || '0').join(''));
-    const expandedParts = item.chartPlaces
-      .map((p) => Number(digitsByPlace[p] || '0') * Math.pow(10, p))
+    // A column left empty is a gap, never a zero (contract R8): "5_1" is not 501, and the check says so.
+    const complete = written.every((d) => d !== '');
+    const child: string | null = written.every((d) => d === '') ? null
+      : complete ? Number(written.join('')).toLocaleString() : written.map((d) => d || '_').join(' ');
+    const expandedParts = !complete ? [] : item.chartPlaces
+      .map((p) => Number(digitsByPlace[p]) * Math.pow(10, p))
       .filter((v) => v > 0)
       .map((v) => v.toLocaleString());
 
@@ -565,7 +566,7 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
             presses itself. */}
         {child !== null && (
           <div className="mt-4 text-center text-lg font-mono text-indigo-300">
-            {child.toLocaleString()}
+            {child}
           </div>
         )}
         {showExpandedForm && expandedParts.length > 0 && (

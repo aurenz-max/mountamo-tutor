@@ -260,10 +260,30 @@ const BUILD_MODEL_CANDIDATES: Record<number, readonly number[]> = {
   5: [30407, 60013, 50208],
 };
 
-const buildModelFor = (magnitude: number, sessionNumbers: ReadonlySet<number>): number => {
-  const m = Math.min(3, magnitude);
-  const candidates = BUILD_MODEL_CANDIDATES[m] ?? BUILD_MODEL_CANDIDATES[3];
-  return candidates.find((n) => !sessionNumbers.has(n)) ?? candidates[0];
+/** Digits for a place, in the order a model number tries them. */
+const MODEL_DIGITS = [3, 4, 6, 2, 7, 5, 8, 9, 1];
+
+/**
+ * The foreign number the build correction models (contract R9): as wide as the chart, never a session number,
+ * never the target's digit in any column, never a (digit, place) a say_value ask names, and a zero in a column
+ * where the target has none, so the walk still teaches the zero-trap. The fixed candidates come first.
+ */
+export const buildModelFor = (target: number, magnitude: number, sessionNumbers: ReadonlySet<number>,
+  askedPairs: ReadonlySet<string> = new Set()): number => {
+  const width = Math.max(2, Math.min(5, magnitude));
+  const digitAt = (n: number, place: number) => Math.floor(n / 10 ** place) % 10;
+  const clean = (n: number) => String(n).length === width && !sessionNumbers.has(n)
+    && Array.from({ length: width }, (_, p) => p).every(p => digitAt(n, p) !== digitAt(target, p) && !askedPairs.has(`${digitAt(n, p)}@${p}`));
+  const fixed = (BUILD_MODEL_CANDIDATES[width] ?? []).find(clean);
+  if (fixed !== undefined) return fixed;
+  // Built column by column: the zero goes in the lowest column where the target has none (not the leading one).
+  const zeroAt = Array.from({ length: width - 1 }, (_, p) => p).find(p => digitAt(target, p) !== 0 && !askedPairs.has(`0@${p}`));
+  let n = 0;
+  for (let p = width - 1; p >= 0; p--) {
+    const d = p === zeroAt ? 0 : MODEL_DIGITS.find(x => x !== digitAt(target, p) && !askedPairs.has(`${x}@${p}`)) ?? 1;
+    n += d * 10 ** p;
+  }
+  return n;
 };
 
 /**
@@ -403,10 +423,11 @@ export const itemsFromChallenges = (
     ctx.tier === 'easy' && modelCandidate
       ? `${cap(an(digitWord(modelCandidate.digit)))} in the ${placeWord(modelCandidate.place)} place is worth ${digitValueWord(modelCandidate.digit, modelCandidate.place)}. `
       : '';
+  const askedPairs = new Set(items.filter(i => i.kind === 'say_value').map(i => `${i.digit}@${i.place}`));
   for (const item of items) {
     if (item.kind === 'say_value') item.modelClause = modelClause;
     if (item.kind === 'build_number') {
-      item.modelNumber = buildModelFor(item.chartPlaces.length, sessionNumbers);
+      item.modelNumber = buildModelFor(item.targetNumber, item.chartPlaces.length, sessionNumbers, askedPairs);
     }
   }
 

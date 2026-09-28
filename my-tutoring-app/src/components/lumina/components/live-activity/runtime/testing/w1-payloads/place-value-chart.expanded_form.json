@@ -1,0 +1,108 @@
+{
+ "source": "qa/tutor-reports/place-value-chart-runtime-expanded_form-payload-2026-09-28.json",
+ "primitiveId": "place-value-chart",
+ "evalMode": "expanded_form",
+ "data": {
+  "title": "Exploring Place Values: Tens and Ones",
+  "description": "Join your tutor to explore numbers by identifying places, saying what each digit is worth, and writing numbers into the chart across three engaging phases. Speak your answers out loud and build strong place value skills together!",
+  "challenges": [
+   {
+    "id": "pvc-1",
+    "targetNumber": 57626,
+    "highlightedDigitPlace": 1,
+    "minPlace": 0,
+    "maxPlace": 4,
+    "placeNameChoices": [
+     "Ones",
+     "Hundreds",
+     "Tens",
+     "Thousands"
+    ],
+    "digitValueChoices": [
+     {
+      "value": 2,
+      "wordForm": "Two"
+     },
+     {
+      "value": 200,
+      "wordForm": "Two Hundred"
+     },
+     {
+      "value": 20,
+      "wordForm": "Twenty"
+     },
+     {
+      "value": 0.2,
+      "wordForm": "Two Tenths"
+     }
+    ]
+   },
+   {
+    "id": "pvc-2",
+    "targetNumber": 72603,
+    "highlightedDigitPlace": 2,
+    "minPlace": 0,
+    "maxPlace": 4,
+    "placeNameChoices": [
+     "Tens",
+     "Hundreds",
+     "Thousands",
+     "Ones"
+    ],
+    "digitValueChoices": [
+     {
+      "value": 600,
+      "wordForm": "Six Hundred"
+     },
+     {
+      "value": 60,
+      "wordForm": "Sixty"
+     },
+     {
+      "value": 6000,
+      "wordForm": "Six Thousand"
+     },
+     {
+      "value": 6,
+      "wordForm": "Six"
+     }
+    ]
+   },
+   {
+    "id": "pvc-3",
+    "targetNumber": 37700,
+    "highlightedDigitPlace": 3,
+    "minPlace": 0,
+    "maxPlace": 4,
+    "placeNameChoices": [
+     "Hundreds",
+     "Ten Thousands",
+     "Thousands",
+     "Tens"
+    ],
+    "digitValueChoices": [
+     {
+      "value": 7000,
+      "wordForm": "Seven Thousand"
+     },
+     {
+      "value": 700,
+      "wordForm": "Seven Hundred"
+     },
+     {
+      "value": 70000,
+      "wordForm": "Seventy Thousand"
+     },
+     {
+      "value": 70,
+      "wordForm": "Seventy"
+     }
+    ]
+   }
+  ],
+  "challengeType": "expanded_form",
+  "showExpandedForm": true,
+  "showMultipliers": true,
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

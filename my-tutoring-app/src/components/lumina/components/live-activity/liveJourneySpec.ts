@@ -765,7 +765,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     prompts: WORKSPACE_PROMPTS,
     // Every mode alternates a printed number (spoken answer) with a dictated one, written
     // into the chart's labelled columns. A wrong chart is complete, with its ones digit off
-    // by one; a half-written chart never commits.
+    // by one. A half-written chart also commits once the learner stops (contract R6), so every column is written.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
       const item = placeValueItems(ctx.data.challenges ?? [], { mode: ctx.data.challengeType,

@@ -679,8 +679,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     teachingWorkspace: {
       grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
       guidance: 'A printed number shows no column labels, because on a which-place item the label is the answer. '
-        + 'On a write-the-number item the number is never printed, so say it aloud before the learner writes; the chart checks the written digits itself once every column '
-        + 'is filled and the learner stops. You cannot write, clear or highlight digits.',
+        + 'On a write-the-number item the number is never printed, so say it aloud before the learner writes; the chart checks the written digits itself once the '
+        + 'learner stops, even with a column empty. You cannot write, clear or highlight digits.',
       // The chart's own check of a dictated number (`placeValueMiss`), which every mode alternates with printed
       // numbers; the spoken place and value asks name none yet (Part B).
       misses: sameMisses<PlaceValueMiss>(['identify', 'build', 'compare', 'expanded_form'],

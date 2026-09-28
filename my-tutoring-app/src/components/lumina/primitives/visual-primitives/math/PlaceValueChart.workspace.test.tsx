@@ -140,3 +140,14 @@ it('identify: the place name reveal waits for the credited answer, then the valu
   expect(h.state().task!.itemId).not.toBe(first);
   expect(h.state().task!.workspace!.expectedAnswer).toBe('forty');
 });
+
+it('build: an empty column reads back as a gap, never a zero, and the expanded form waits for a full chart (R8)', () => {
+  const h = mount('build', [{ ...challenge('p1', 501), maxPlace: 2 }]);
+  h.write('5', '', '1');
+  const text = h.view.container.textContent ?? '';
+  expect(text).toContain('5 _ 1');
+  expect(text).not.toContain('501');
+  expect(text).not.toContain('500 + 1');
+  h.write('5', '0', '1');
+  expect(h.view.container.textContent).toContain('500 + 1');
+});

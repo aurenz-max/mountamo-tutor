@@ -27,6 +27,8 @@ non-K consumers.
 
 ## Done
 
+- **place-value-chart — derived 2026-09-28** → `docs/contracts/place-value-chart.md`. 18 requirements (all OBSERVED), 1 open conflict (C1: build is the zero-trap skill, but the tier ladder makes every column non-zero at medium and hard; outside M1, needs a `/pm` routing decision). R6 (stale "checks when full" text; the behavior was right), R8 (readout fills empty columns with 0), R9 (model number: 3-digit cap, shared column digits) were VIOLATED and fixed the same day (handoff 21 M1).
+
 - **base-ten-blocks — derived 2026-09-28** → `docs/contracts/base-ten-blocks.md`. 20 requirements (19 OBSERVED, 1 INFERRED), 0 conflicts. R12 (hint), R13 (operate total), R14 (named trade), R16 (operate payload) were VIOLATED and fixed the same day as handoff 21 M1 fixes 1-4. Static + authored map (6 NBT001 mappings); probes 94 tests + journey sweep green.
 
 - **number-bond — derived 2026-09-28** → `docs/contracts/number-bond.md`. 21 requirements
