@@ -2508,6 +2508,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'counting-board',
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1'],
+      // Handovers and hand matches publish levers (`countingBoardLevers.ts`, handoff 21 M1).
+      levers: true,
       guidance: 'Use demonstrate to show a selection on the actual board without changing learner work. '
         + 'Handovers and hand choices are checked directly by the board. '
         + 'Respect the current task constraints, including hidden quick-look objects and pre-numeric hand matching.',

@@ -45,6 +45,8 @@ import {
   type CountingItem,
 } from './countingBoardScript';
 import { boardGroups, countMiss, workspaceAssignment, workspaceScene } from './countingBoardDomain';
+import { COUNT_LEVER, HANDS_LEVER, LINE_LEVER, SMALLER_LEVER, TAGS_LEVER, countingBoardLevers, droppedHand, leverFacts,
+  smallerGive, startLevers } from './countingBoardLevers';
 import { countingBoardEvidenceSummary, countingObservation } from './countingBoardEvidence';
 import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
@@ -426,6 +428,13 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   const stableInstanceIdRef = useRef(instanceId || `counting-board-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
+  // In-item levers (`countingBoardLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // ask a simplify lever put on screen in its place. The refs are what event handlers read.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<CountingItem | null>(null);
+  const practiceRef = useRef<CountingItem | null>(null);
+  const displayItemRef = useRef<CountingItem | null>(null);
+
   const handChoiceRef = useRef<number | null>(null);
   /** How many the child handed over on the last give_me_n commit. A ref because
    *  the pack is memoized and would otherwise read a stale count. */
@@ -591,7 +600,8 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
     exhibitId,
     onFinished: handleFinished,
-    onItemOpened: resetBoardFor,
+    // A fresh item never carries an easier ask over from the last one.
+    onItemOpened: (item) => { practiceRef.current = null; setPractice(null); resetBoardFor(item); },
     // THE TUTOR OWNS THE STIMULUS CLOCK (19c). Before this the flash fired on a
     // wall-clock beat from item-open and raced her sentence - ten-frame's drive-3
     // defect, still live on this port because that fix had been written into one
@@ -602,7 +612,9 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
       // `revealHeld` keeps this on screen for the length of her affirmation (18b).
       setReward(item.kind === 'subitize_perceptual' ? 'match' : String(item.target));
     },
-    onCorrectionRetry: (item) => {
+    onCorrectionRetry: (sessionItem) => {
+      // Try again on the easier ask keeps it: reset ITS board, not the full item's.
+      const item = practiceRef.current ?? sessionItem;
       // The tutor's correction re-modeled and re-asked in-band; restore the
       // working surface for another go.
       if (item.kind === 'subitize_perceptual') {
@@ -628,8 +640,17 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   // mount exists. Declared earlier, its effect runs first and the runner spins.
   useLiveAutoStart(autoStart, resolvedInstanceId, runner.start);
 
-  const currentItem = runner.currentItem;
-  const currentChallenge = (currentItem ? challengeById.get(currentItem.id) : null) ?? null;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the easier ask while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  displayItemRef.current = currentItem;
+  const sessionChallenge = (sessionItem ? challengeById.get(sessionItem.id) : null) ?? null;
+  // The easier ask is the same pile under its own id, so it scatters anew and is never the learner's board.
+  const currentChallenge = practice && sessionChallenge
+    ? { ...sessionChallenge, id: practice.id, targetAnswer: practice.target } : sessionChallenge;
+  const startPulled = startLevers(sessionItem, { showRunningCount, showLastNumber });
+  const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : startPulled;
+  const leverArrangement = sessionChallenge?.arrangement ?? 'scattered';
 
   // ── Per-challenge layout ──────────────────────────────────────────────────
   const startCount = currentChallenge?.count ?? 5;
@@ -639,7 +660,7 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   const challengeCount = currentItem?.kind === 'add_more' ? startCount + changeBy : startCount;
   const challengeArrangement = currentItem?.kind === 'recount_moved' && hasMoved
     ? 'scattered'
-    : (currentChallenge?.arrangement ?? 'scattered');
+    : pulledLevers.includes(LINE_LEVER) ? 'line' : (currentChallenge?.arrangement ?? 'scattered');
   const challengeGroupSize = currentChallenge?.groupSize;
 
   const isKSubitize = gradeBand === 'K' && currentItem?.kind === 'subitize';
@@ -703,8 +724,10 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
       const j = Math.floor(rand() * (i + 1));
       [base[i], base[j]] = [base[j], base[i]];
     }
-    return base;
-  }, [currentItem?.kind, currentChallenge?.id, runner.currentIndex]);
+    // `two_hands`: the farthest hand is taken away; the others keep their places.
+    const dropped = pulledLevers.includes(HANDS_LEVER) && currentItem ? droppedHand(currentItem) : null;
+    return dropped === null ? base : base.filter(h => h !== dropped);
+  }, [currentItem, currentChallenge?.id, runner.currentIndex, pulledLevers]);
 
   // The primitive owns Pip's presentation. This is a projection of the runner's
   // phase and student events, never an action channel from the speech model.
@@ -828,7 +851,7 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
 
   // ── The give-me-N commit — the handover IS the answer ─────────────────────
   const handleGiveCommit = useCallback(() => {
-    const item = runner.currentItem;
+    const item = displayItemRef.current;
     if (!runner.canAttempt || evaluation.hasSubmitted) return;
     if (!item || item.kind !== 'give_me_n') return;
     if (runner.isAwaitingGesture()) return;
@@ -840,7 +863,7 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
 
   // ── The hand pick (subitize_perceptual) — the tap IS the commit ───────────
   const handleHandPick = useCallback((fingers: number) => {
-    const item = runner.currentItem;
+    const item = displayItemRef.current;
     if (!runner.canAttempt || evaluation.hasSubmitted) return;
     if (!item || item.kind !== 'subitize_perceptual') return;
     // Synchronous ref: `canAttempt` closes the pending window through batched
@@ -857,10 +880,30 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   /** `subitize_perceptual` is answered by picking a hand, so an all-perceptual
    *  run was never counted "out loud". */
   useLayoutEffect(() => {
+    const scene = currentItem ? workspaceScene(currentItem, { counted: countedObjects, removed: removedObjects,
+      added: addedExtras, moved: hasMoved, covered: coveredCount, hidden: isKSubitize && !isSubitizeFlashing })
+      : { objects: [], facts: {} };
+    const onScreen = leverFacts(currentItem, pulledLevers);
     workspace.current = {
-      ...(currentItem ? workspaceScene(currentItem, { counted: countedObjects, removed: removedObjects,
-        added: addedExtras, moved: hasMoved, covered: coveredCount, hidden: isKSubitize && !isSubitizeFlashing })
-        : { objects: [], facts: {} }),
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers: practice ? [] : countingBoardLevers(sessionItem, pulledLevers, leverArrangement),
+      // A synchronous commit (the workspace runs it inside flushSync): the board changes before this returns.
+      pullLever: (id) => {
+        const lever = countingBoardLevers(sessionItem, pulledLevers, leverArrangement).find(l => l.id === id);
+        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === SMALLER_LEVER) {
+          const easier = smallerGive(sessionItem);
+          if (!easier) return 'There is no easier ask for this item.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          practiceRef.current = easier; setPractice(easier); resetBoardFor(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => { practiceRef.current = null; setPractice(null); },
       demonstration,
       canDemonstrate: !['subitize', 'subitize_perceptual'].includes(currentItem?.kind ?? '') && !hasMoved,
       canPresent: isKSubitize,
@@ -920,6 +963,10 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   }
 
   const kind = currentItem?.kind;
+  // On give_me_n the running count and the tags are levers; the tier only sets where they start.
+  const runningCountOn = kind === 'give_me_n' ? pulledLevers.includes(COUNT_LEVER) : showRunningCount;
+  const runningCountPulledLive = kind === 'give_me_n' && pulledLevers.includes(COUNT_LEVER) && !startPulled.includes(COUNT_LEVER);
+  const tagsOn = kind === 'give_me_n' ? pulledLevers.includes(TAGS_LEVER) : showLastNumber;
   const boardTappable = kind !== 'subitize' && kind !== 'subitize_perceptual'
     && !(kind === 'recount_moved' && hasMoved);
   const stageWord = runner.stage === 'affirmed'
@@ -1119,8 +1166,8 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
                         {emoji}
                       </text>
 
-                      {showLastNumber && isCounted && countNum !== undefined && (
-                        <g>
+                      {tagsOn && isCounted && countNum !== undefined && (
+                        <g data-lever="count-tag">
                           <circle
                             cx={pos.x + OBJECT_SIZE / 2 - 4}
                             cy={pos.y - OBJECT_SIZE / 2 + 4}
@@ -1156,8 +1203,8 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
             {/* Running count — the child's own trace ONLY. The "/ total" the
                 old tally printed was the answer, typeset next to the child's
                 progress; it does not survive the spoken-answer port. */}
-            {showRunningCount && boardTappable && countedObjects.size > 0 && (
-              <div className="flex items-center justify-center text-sm">
+            {runningCountOn && boardTappable && (countedObjects.size > 0 || runningCountPulledLive) && (
+              <div className="flex items-center justify-center text-sm" data-lever="running-count">
                 <span className="text-slate-300">
                   Counted: <span className="text-orange-300 font-bold text-lg">{countedObjects.size}</span>
                 </span>
@@ -1216,6 +1263,7 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
                         key={choice}
                         type="button"
                         aria-label="Pick this hand"
+                        data-pip-object={`hand-${choice}`}
                         className={`h-24 w-24 p-2 rounded-lg border flex items-center justify-center transition-colors disabled:opacity-50 ${answerStateClass(isPicked ? 'selected' : 'idle')}`}
                         onClick={() => handleHandPick(choice)}
                         disabled={!runner.canAttempt}

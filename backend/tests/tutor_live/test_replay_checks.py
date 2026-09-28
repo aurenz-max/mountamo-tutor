@@ -26,6 +26,8 @@ PULL = {'name': 'perform_runtime_action', 'args': {'actionId': 'e/3/0', 'lever':
     ('I pulled a lever to help you. See the numbers?', 'lever', [], 'Jump back 2 from 6', 'no_protocol_leak'),
     ('[ANSWER_CORRECT] Great job!', 'credit', [], '', 'no_protocol_leak'),
     ('', 'miss', [], '', 'not_empty'),
+    # counting-board two_hands (09-28 replay): a number word on a pre-numeric hand match whose group is one.
+    ('One hand went away to make it easier. Give it another try!', 'lever', ['1'], 'Look at the fish. Your turn. Tap the hand that matches.', 'no_key_before_try'),
 ])
 def test_a_known_miss_is_caught(text, kind, keys, ask, missed):
     assert check(text, kind, keys, ask)['checks'][missed] is False
@@ -41,6 +43,12 @@ def test_a_known_miss_is_caught(text, kind, keys, ask, missed):
     ('How many more counters do you need to add?', 'miss', ['2'], 'Show 2 on the ten frame'),
     # "one" as a pronoun.
     ('Let\'s move on to the next one. Take your time on this one.', 'start', ['3'], 'Show 3'),
+    # counting-board two_hands (09-28 replay): "the one that matches" is a pronoun, on a group of one.
+    ('I took away a hand that does not match. Take a look at the hands left and pick the one that matches!', 'lever', ['1'],
+     'Look at the fish. Your turn. Tap the hand that matches.'),
+    # The partitive (5/5 two_hands replies, 09-28): which hand went, not how many fish.
+    ('One of the hands went away to give you fewer choices. Look at the fish, and tap the hand that matches!', 'lever', ['1'],
+     'Look at the fish. Your turn. Tap the hand that matches.'),
     # After a try, the answer belongs in the credit.
     ('You hopped backward 2 spaces and landed right on 4!', 'credit', ['4'], 'Jump back 2 from 6'),
     ('That was not quite it, but that\'s okay! Let\'s try it again together and count back carefully.', 'miss', ['3'], 'Solve 8 minus 5'),

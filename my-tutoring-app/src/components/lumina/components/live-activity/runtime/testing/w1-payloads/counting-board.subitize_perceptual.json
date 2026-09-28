@@ -1,0 +1,94 @@
+{
+ "source": "qa/tutor-reports/counting-board-runtime-subitize_perceptual-payload-2026-09-28.json",
+ "primitiveId": "counting-board",
+ "evalMode": "subitize_perceptual",
+ "data": {
+  "title": "Spot the Fish!",
+  "description": "Practice quick visual recognition and perceptual subitizing with cheerful fish.",
+  "objects": {
+   "type": "fish"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "subitize_perceptual",
+    "instruction": "Look at the fish! How many do you see?",
+    "targetAnswer": 1,
+    "count": 1,
+    "arrangement": "scattered",
+    "hint": "Take a quick peek at the little swimmers!",
+    "narration": "Oh look! There is a little fish swimming by. How many do you see?"
+   },
+   {
+    "id": "c2",
+    "type": "subitize_perceptual",
+    "instruction": "Flash! How many fish are here?",
+    "targetAnswer": 2,
+    "count": 2,
+    "arrangement": "groups",
+    "hint": "Look closely at the pair of fish!",
+    "narration": "Here come more fish swimming together! Can you tell how many there are?",
+    "groupSize": 2
+   },
+   {
+    "id": "c3",
+    "type": "subitize_perceptual",
+    "instruction": "Quick look! How many fish are swimming?",
+    "targetAnswer": 3,
+    "count": 3,
+    "arrangement": "scattered",
+    "hint": "Try to see them all at once!",
+    "narration": "Wow, look at them go! How many fish are on the screen?"
+   },
+   {
+    "id": "c4",
+    "type": "subitize_perceptual",
+    "instruction": "Flash! How many fish can you spot?",
+    "targetAnswer": 1,
+    "count": 1,
+    "arrangement": "scattered",
+    "hint": "Just a single friendly swimmer here.",
+    "narration": "There is a lone fish exploring the water. How many do you see?"
+   },
+   {
+    "id": "c5",
+    "type": "subitize_perceptual",
+    "instruction": "Quick peek! How many fish are there?",
+    "targetAnswer": 2,
+    "count": 2,
+    "arrangement": "groups",
+    "hint": "Count the little buddies together!",
+    "narration": "Two fish are playing hide and seek! How many are there?",
+    "groupSize": 2
+   },
+   {
+    "id": "c6",
+    "type": "subitize_perceptual",
+    "instruction": "Look fast! How many fish do you see?",
+    "targetAnswer": 3,
+    "count": 3,
+    "arrangement": "groups",
+    "hint": "A small school of fish is visiting!",
+    "narration": "A tiny group of fish swam up to say hello. How many are in the group?",
+    "groupSize": 3
+   },
+   {
+    "id": "c7",
+    "type": "subitize_perceptual",
+    "instruction": "One more quick flash! How many fish?",
+    "targetAnswer": 2,
+    "count": 2,
+    "arrangement": "scattered",
+    "hint": "Just a couple of fish having fun!",
+    "narration": "Look at these two happy fish! How many do you see?"
+   }
+  ],
+  "showOptions": {
+   "showRunningCount": false,
+   "showGroupCircles": false,
+   "highlightOnTap": true,
+   "showLastNumber": true
+  },
+  "gradeBand": "K"
+ }
+}

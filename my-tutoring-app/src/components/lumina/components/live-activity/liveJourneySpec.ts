@@ -332,11 +332,17 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     defaults: { grade: 'Kindergarten', mode: 'give_me_n', di: false, topic: 'Giving a requested number of objects from a larger collection' },
     leakTokens: ['CB_', 'COUNT_'],
     prompts: WORKSPACE_PROMPTS,
+    // The easier ask (the `smaller_give` lever) is not a generated challenge: the same pile, about half as many,
+    // as `smallerGive` builds it. A hand match picks the hand by its finger count; the wrong one is one finger off.
     inputsFor: (intent, ctx) => {
-      const ch = ctx.challenge;
+      const parent = ctx.itemId?.endsWith('~smaller')
+        ? (ctx.data.challenges ?? []).find((c: { id: string }) => `${c.id}~smaller` === ctx.itemId) : null;
+      const ch = parent ? { ...parent, targetAnswer: Math.ceil(parent.targetAnswer / 2) } : ctx.challenge;
       if (!ch) throw new Error('No current counting task');
       if (intent === 'warmup') return [];
       const n = ch.targetAnswer + (intent === 'wrong' ? 1 : 0);
+      if (ch.type === 'subitize_perceptual')
+        return [{ type: 'touch', target: `hand-${intent === 'wrong' ? (ch.targetAnswer === 3 ? 2 : ch.targetAnswer + 1) : ch.targetAnswer}` }];
       if (ch.type === 'give_me_n') return [...Array.from({ length: n }, (_, index) => ({ type: 'touch' as const, index })), { type: 'give' as const }];
       const work: DriverInput[] = ch.type === 'take_away' ? Array.from({ length: ch.changeBy }, (_, index) => ({ type: 'touch', index }))
         : ch.type === 'add_more' ? Array.from({ length: ch.changeBy }, (_, index) => ({ type: 'touch', index: ch.count + index }))

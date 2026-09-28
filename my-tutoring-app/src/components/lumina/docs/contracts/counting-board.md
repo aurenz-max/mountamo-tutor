@@ -113,6 +113,14 @@ The following records the 2026-09-17 implementation, not the current live contra
 - **Evidence:** `CountingBoard.runtime.test.tsx`, shared session/workspace tests, and real-model mounted-component handover/counting journeys. See [architecture](../TEACHING_WORKSPACE.md) and [results/limits](../../../../../qa/tutor-reports/counting-board-teaching-2026-09-19.md). All ten kinds have deterministic runtime coverage; only two modes have real-model journey coverage. Browser/microphone acceptance remains open.
 - **Student data:** the live sandbox records session-local attempts only. No legacy drill mastery score is synthesized from tutor-assisted work.
 
+### R15 — in-item levers on the gesture items · IMPLEMENTED, 2026-09-28
+
+- **Property:** give_me_n and subitize_perceptual items publish levers (`countingBoardLevers.ts`) with a synchronous `pullLever`. give_me_n: `running_count` ("Counted: k", k = objects taken), `count_tags` (order tags on taken objects), `line_up` (the pile in a single row), `smaller_give` (ungraded practice asking about half as many from the same pile, then the full item). subitize_perceptual: `line_up` (a hand one off) and `two_hands` (the hand farthest from the group taken away). Each lever declares the `countMiss` ids it answers; every catalog miss on both modes is answered (J9).
+- **Leak rules (code, `countingBoardLevers.test.ts`):** the running count never shows the ask or "k of N"; tags only the learner's own taken objects; the row keeps the pile's size; the easier ask is never the ask, at least 2 and smaller than the pile; `two_hands` never removes the matching hand and only exists for a group of 1 or 3; no lever text or scene fact carries a digit, and hand-match lever text carries no number word (the tutor repeats it: replay 09-28).
+- **Starting positions:** `showRunningCount` and `showLastNumber` start `running_count` and `count_tags` pulled on give_me_n; a starting position is not a pull and is never recorded. On the spoken counting kinds these flags stay as they were and are never levers: the child's tally there ends on the spoken answer (R9).
+- **Credit:** a pull is recorded on the item; the next attempt carries it and is assisted, never a first-response success. A removed hand is assisted work on the same item (handoff 21 ruling 3).
+- **Evidence:** `countingBoardLevers.test.ts` (50), `CountingBoard.levers.workspace.test.tsx` (4), sweep J1-J9 on the give_me_n, count and subitize_perceptual payloads, replay 3 payloads x 5 clean (`qa/tutor-reports/replay/counting-board-2026-09-28.json`). No real-learner evidence; spoken kinds declare no levers yet.
+
 ## Conflicts
 
 _None open._ Item 13 (R4) is **COMPATIBLE / fork-by-band+mode**. It changes only the K `subitize` display lifecycle. R2/R3 keep `count_all` tap-to-count and the `count`↔`targetAnswer` identity; R5 keeps Pre-K perceptual untouched; the reader-grade branch of R4 preserves Grade-1 subitize. No generator schema or catalog change is justified — `count`/`targetAnswer` already carry everything the flash needs, and display timing is a component concern.
@@ -139,6 +147,8 @@ _None open._ Item 13 (R4) is **COMPATIBLE / fork-by-band+mode**. It changes only
 - **evalModes:** faithful. `subitize` remains "quickly recognize quantity without counting"; the K flash lifecycle enacts exactly that recognition. `subitize_perceptual` description already says "Flash 1-3 objects" (see G2 — the component owes that behavior at Pre-K).
 
 ## Changelog
+
+- 2026-09-28 — R15 added (in-item levers, `/add-support-tiers`, handoff 21 M1). Additive: the give_me_n running count and tags become levers whose tier flags are their starting positions, so an untiered or easy board renders as before; a pulled `line_up` overrides the challenge's arrangement; hand buttons gain `data-pip-object="hand-N"` for the driver. No check, miss, verdict or spoken-kind rendering changed.
 
 - 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
 - 2026-09-27 — a wrong handover or hand pick names its miss (`countMiss` in `countingBoardDomain.ts`, handoff 20 A2) on give_me_n and subitize_perceptual. Compatible: no requirement changed, no verdict changed (the miss reads the same committed number the check compares). Occasion: `/add-support-tiers` handoff 20.

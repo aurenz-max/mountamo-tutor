@@ -77,8 +77,16 @@ def without_asked_fractions(text, ask):
     return text
 
 
+# "one" as a pronoun ("this one", "the one that matches") and "move on" name no amount.
+PRONOUN_ONE = re.compile(r"\b(?:this|that|next|each|every|which|another|other|last|first|new) one\b|\bthe one (?:that|which|who|you)\b"
+                         r"|\bmove on\b|\bone (?:at a time|by one|more time|step)\b", re.I)
+
+
 def said_key(text, keys):
     """The first key the reply says, in any spoken form, or None."""
+    # The partitive names which object, not how many ("one of the hands went away", counting-board 09-28). Only here:
+    # as an instruction it is an amount ("shade just one of the slices", LB-11), which `said_fix` still catches.
+    text = re.sub(r"\bone of (?:the|these|those|your)\b", '', PRONOUN_ONE.sub('', text), flags=re.I)
     return next((k for k in keys for f in forms(k) if says(text, f)), None)
 
 
@@ -86,8 +94,7 @@ def said_fix(text, ask):
     """A statement (not a question) telling the learner what to change by how much. An amount the ask itself states
     ("put two counters", "jump back 2") is the assignment; "shade one slice" for "show 1/2" is not in the ask."""
     asked = numbers_in(plain_ask(ask))
-    # "one" as a pronoun ("this one", "the next one") and "move on" name no amount.
-    text = re.sub(r"\b(?:this|that|next|each|every|which|another|other|last|first|new) one\b|\bmove on\b|\bone (?:at a time|by one|more time|step)\b", '', text, flags=re.I)
+    text = PRONOUN_ONE.sub('', text)
     # Names with a number in them are not amounts.
     text = re.sub(r"\bten[- ]frames?\b|\bhundreds? chart\b|\bfive[- ]frames?\b", 'frame', text, flags=re.I)
     text = without_asked_fractions(text, ask)  # "shade the circle to show 1/2" restates the ask
