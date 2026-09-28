@@ -1,0 +1,48 @@
+{
+ "source": "qa/tutor-reports/number-bond-runtime-related_fact-payload-2026-09-28.json",
+ "primitiveId": "number-bond",
+ "evalMode": "related_fact",
+ "data": {
+  "title": "Teen Numbers Fun!",
+  "description": "Learn to see teen numbers as one group of ten and some extra ones.",
+  "maxNumber": 5,
+  "showCounters": true,
+  "showEquation": true,
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "related-fact",
+    "instruction": "The whole is 5. Say the two facts that go with this number bond.",
+    "whole": 5,
+    "part1": 1,
+    "part2": 4,
+    "allPairs": null,
+    "factFamily": null,
+    "targetEquation": null
+   },
+   {
+    "id": "c2",
+    "type": "related-fact",
+    "instruction": "The whole is 5. Say the two facts that go with this number bond.",
+    "whole": 5,
+    "part1": 1,
+    "part2": 4,
+    "allPairs": null,
+    "factFamily": null,
+    "targetEquation": null
+   },
+   {
+    "id": "c3",
+    "type": "related-fact",
+    "instruction": "The whole is 5. Say the two facts that go with this number bond.",
+    "whole": 5,
+    "part1": 1,
+    "part2": 4,
+    "allPairs": null,
+    "factFamily": null,
+    "targetEquation": null
+   }
+  ]
+ }
+}

@@ -884,6 +884,7 @@ purpose and see whether the primitive lets you.**
 | RGW-1 | regrouping-workbench | all | HIGH (unprobed) | Key shown before retry | Prints "the correct answer is N" after a wrong answer, then allows a retry (`RegroupingWorkbench.tsx:535`). Blocks M6 (handoff 21). Executor: `/eval-fix`. | COMPONENT |
 | SHB-4 | shape-builder | build | HIGH (unprobed) | Answer leak | `showTargetGhost` draws the target outline on the grid (`gemini-shape-builder.ts:141`). Must not become a help lever as it stands. Blocks M6 (handoff 21). Executor: `/eval-fix`. | GENERATOR |
 | AC-8 | analog-clock | hand_name (blended) | MEDIUM (unprobed) | Answer leak | The hand legend can show on a blended `hand_name` item, naming the hands the item asks for (`gemini-analog-clock.ts:131`; code read, not run). Blocks M6 (handoff 21). Executor: `/eval-fix`. | GENERATOR |
+| NB-REP-1 | number-bond | related_fact, build_equation (fact_family to check) | MEDIUM | Repetition | Every challenge in a session is the same bond: saved payloads 2026-09-28 have related_fact 5=1+4 x3 and build_equation 10=5+5 x5 (fact_family 10=3+7 x5 may be one family by design). N challenges should be N problems. Executor: `/eval-fix` (then `/add-number-pool-service` if the values converge). | GENERATOR |
 
 ## Resolved Issues
 

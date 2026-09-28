@@ -1,0 +1,95 @@
+{
+ "source": "qa/tutor-reports/number-bond-runtime-fact_family-payload-2026-09-28.json",
+ "primitiveId": "number-bond",
+ "evalMode": "fact_family",
+ "data": {
+  "title": "Teen Numbers Fact Families",
+  "description": "Explore teen numbers by building fact families showing how a ten and some ones make a whole teen number.",
+  "maxNumber": 10,
+  "showCounters": true,
+  "showEquation": true,
+  "gradeBand": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "fact-family",
+    "instruction": "Build all 4 distinct equations for this number bond with 10.",
+    "whole": 10,
+    "factFamily": [
+     "3+7=10",
+     "7+3=10",
+     "10-3=7",
+     "10-7=3"
+    ],
+    "part1": 3,
+    "part2": 7,
+    "allPairs": null,
+    "targetEquation": null
+   },
+   {
+    "id": "c2",
+    "type": "fact-family",
+    "instruction": "Build all 4 distinct equations for this number bond with 10.",
+    "whole": 10,
+    "factFamily": [
+     "3+7=10",
+     "7+3=10",
+     "10-3=7",
+     "10-7=3"
+    ],
+    "part1": 3,
+    "part2": 7,
+    "allPairs": null,
+    "targetEquation": null
+   },
+   {
+    "id": "c3",
+    "type": "fact-family",
+    "instruction": "Build all 4 distinct equations for this number bond with 10.",
+    "whole": 10,
+    "factFamily": [
+     "3+7=10",
+     "7+3=10",
+     "10-3=7",
+     "10-7=3"
+    ],
+    "part1": 3,
+    "part2": 7,
+    "allPairs": null,
+    "targetEquation": null
+   },
+   {
+    "id": "c4",
+    "type": "fact-family",
+    "instruction": "Build all 4 distinct equations for this number bond with 10.",
+    "whole": 10,
+    "factFamily": [
+     "3+7=10",
+     "7+3=10",
+     "10-3=7",
+     "10-7=3"
+    ],
+    "part1": 3,
+    "part2": 7,
+    "allPairs": null,
+    "targetEquation": null
+   },
+   {
+    "id": "c5",
+    "type": "fact-family",
+    "instruction": "Build all 4 distinct equations for this number bond with 10.",
+    "whole": 10,
+    "factFamily": [
+     "3+7=10",
+     "7+3=10",
+     "10-3=7",
+     "10-7=3"
+    ],
+    "part1": 3,
+    "part2": 7,
+    "allPairs": null,
+    "targetEquation": null
+   }
+  ]
+ }
+}

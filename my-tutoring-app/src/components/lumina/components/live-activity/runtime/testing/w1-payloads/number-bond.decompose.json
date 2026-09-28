@@ -1,0 +1,81 @@
+{
+ "source": "qa/tutor-reports/number-bond-runtime-decompose-payload-2026-09-28.json",
+ "primitiveId": "number-bond",
+ "evalMode": "decompose",
+ "data": {
+  "title": "Teen Numbers Fun",
+  "description": "Learn how teen numbers are made of one group of ten and some extra ones.",
+  "maxNumber": 5,
+  "showCounters": true,
+  "showEquation": true,
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "decompose",
+    "instruction": "Find all the ways to break apart 5. How many pairs can you find?",
+    "whole": 5,
+    "allPairs": [
+     [
+      0,
+      5
+     ],
+     [
+      1,
+      4
+     ],
+     [
+      2,
+      3
+     ]
+    ],
+    "part1": null,
+    "part2": null
+   },
+   {
+    "id": "c2",
+    "type": "decompose",
+    "instruction": "Find all the ways to break apart 5. How many pairs can you find?",
+    "whole": 5,
+    "allPairs": [
+     [
+      0,
+      5
+     ],
+     [
+      1,
+      4
+     ],
+     [
+      2,
+      3
+     ]
+    ],
+    "part1": null,
+    "part2": null
+   },
+   {
+    "id": "c3",
+    "type": "decompose",
+    "instruction": "Find all the ways to break apart 5. How many pairs can you find?",
+    "whole": 5,
+    "allPairs": [
+     [
+      0,
+      5
+     ],
+     [
+      1,
+      4
+     ],
+     [
+      2,
+      3
+     ]
+    ],
+    "part1": null,
+    "part2": null
+   }
+  ]
+ }
+}

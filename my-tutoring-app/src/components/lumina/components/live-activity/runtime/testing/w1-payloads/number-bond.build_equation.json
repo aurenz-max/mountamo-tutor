@@ -1,0 +1,70 @@
+{
+ "source": "qa/tutor-reports/number-bond-runtime-build_equation-payload-2026-09-28.json",
+ "primitiveId": "number-bond",
+ "evalMode": "build_equation",
+ "data": {
+  "title": "Teen Numbers Explorer!",
+  "description": "Discover how teen numbers are made of one group of ten and some extra ones.",
+  "maxNumber": 10,
+  "showCounters": true,
+  "showEquation": true,
+  "gradeBand": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "build-equation",
+    "instruction": "Use the tiles to build an equation with 10.",
+    "whole": 10,
+    "part1": 5,
+    "part2": 5,
+    "targetEquation": "5+5=10",
+    "allPairs": null,
+    "factFamily": null
+   },
+   {
+    "id": "c2",
+    "type": "build-equation",
+    "instruction": "Use the tiles to build an equation with 10.",
+    "whole": 10,
+    "part1": 5,
+    "part2": 5,
+    "targetEquation": "10-5=5",
+    "allPairs": null,
+    "factFamily": null
+   },
+   {
+    "id": "c3",
+    "type": "build-equation",
+    "instruction": "Use the tiles to build an equation with 10.",
+    "whole": 10,
+    "part1": 5,
+    "part2": 5,
+    "targetEquation": "10-5=5",
+    "allPairs": null,
+    "factFamily": null
+   },
+   {
+    "id": "c4",
+    "type": "build-equation",
+    "instruction": "Use the tiles to build an equation with 10.",
+    "whole": 10,
+    "part1": 5,
+    "part2": 5,
+    "targetEquation": "5+5=10",
+    "allPairs": null,
+    "factFamily": null
+   },
+   {
+    "id": "c5",
+    "type": "build-equation",
+    "instruction": "Use the tiles to build an equation with 10.",
+    "whole": 10,
+    "part1": 5,
+    "part2": 5,
+    "targetEquation": "5+5=10",
+    "allPairs": null,
+    "factFamily": null
+   }
+  ]
+ }
+}

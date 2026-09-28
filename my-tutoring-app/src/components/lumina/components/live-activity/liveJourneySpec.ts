@@ -48,7 +48,7 @@ import { buildLetterSoundLinkItems, letterSoundLinkWorkspaceAnswers }
 import { itemsFromChallenges as frameItems, tenFrameHarnessAnswers, type TenFrameItem }
   from '../../primitives/visual-primitives/math/tenFrameScript';
 import { countsFlips } from '../../primitives/visual-primitives/math/tenFrameWorkspace';
-import { buildBondItems } from '../../primitives/visual-primitives/math/numberBondScript';
+import { buildBondItems, familyFormKeyFor } from '../../primitives/visual-primitives/math/numberBondScript';
 import { expandNumberBondInteractions } from '../../primitives/visual-primitives/math/numberBondModes';
 import { buildCompareItems, compareObjectsHarnessAnswers } from '../../primitives/visual-primitives/math/compareObjectsScript';
 import { itemsFromChallenges as placeValueItems, placeValueHarnessAnswers } from '../../primitives/visual-primitives/math/placeValueScript';
@@ -390,17 +390,33 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     prompts: WORKSPACE_PROMPTS,
     // A spoken phase says the number the workspace publishes; a split phase presses the board's own
     // move buttons: everything back to the whole, then a complete split (an incomplete one never
-    // commits). Wrong is a split with no full ten, or a decompose pair already made. Model and
-    // equation phases are not driven at W1.
+    // commits). Wrong is a split with no full ten, or a decompose pair already made. A model phase
+    // presses its move button (the only moves on offer are right ones, so it has no wrong input); an
+    // equation phase types the equation for the move the row made (join), wrong by one on the result.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
       const item = expandNumberBondInteractions(buildBondItems(ctx.data.challenges ?? [],
         { band: ctx.data.gradeBand ?? 'K', maxNumber: ctx.data.maxNumber ?? 10 }).items).find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current number-bond assignment');
       if (item.answerKind !== 'gesture') return spokenExpected(ctx, intent);
-      if (item.splitPhase !== 'build') throw new Error(`Number-bond ${item.interactionPhase ?? item.kind} hands phase is not driven at W1`);
-      const placed = Number(ctx.demand?.countersInLeftPart ?? 0) + Number(ctx.demand?.countersInRightPart ?? 0);
       const wrong = intent === 'wrong';
+      const phase = item.interactionPhase;
+      if (phase === 'equation-model' || phase === 'family-model' || phase === 'related-join' || phase === 'related-separate') {
+        if (wrong) return [];
+        const label = phase === 'equation-model' || item.bondAction === 'join' ? 'Join the groups'
+          : item.bondAction === 'swap' ? 'Swap the groups' : item.bondAction === 'separate-left' ? 'Move red group away' : 'Move blue group away';
+        return [{ type: 'choose', label }];
+      }
+      if (phase === 'equation-build' || phase === 'family-build') {
+        const key = phase === 'family-build' && item.familyForm
+          ? familyFormKeyFor(item.familyForm, item.whole, item.knownPart, item.otherPart) : `${item.knownPart}+${item.otherPart}=${item.whole}`;
+        const [lhs, result] = key.split('=');
+        return [{ type: 'write', label: 'Equation keyboard entry', text: `${lhs}=${wrong ? Number(result) + 1 : result}` }];
+      }
+      if (item.splitPhase !== 'build') throw new Error(`Number-bond ${item.interactionPhase ?? item.kind} hands phase is not driven at W1`);
+      // The first way to split a whole has no pair to repeat: every complete split is a new way, so no wrong input.
+      if (wrong && item.kind === 'decompose' && item.pairIndex === 0) return [];
+      const placed = Number(ctx.demand?.countersInLeftPart ?? 0) + Number(ctx.demand?.countersInRightPart ?? 0);
       const left = item.kind === 'ten-and-ones' ? (wrong ? 9 : 10) : wrong && item.pairIndex > 0 ? 0 : item.pairIndex;
       const right = item.whole - left;
       const press = (place: string, n: number) => Array.from({ length: n }, () => ({ type: 'choose' as const, label: `Move counter to ${place}` }));
