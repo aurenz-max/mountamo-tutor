@@ -51,7 +51,7 @@ import {
   revealTextFor,
   type HabitatItem,
 } from './habitatDioramaScript';
-import { ZONE_LABELS, describeHabitatMove, habitatAssignment, habitatMoveMatches, habitatScene } from './habitatDioramaWorkspace';
+import { ZONE_LABELS, describeHabitatMove, habitatAssignment, habitatMiss, habitatMoveMatches, habitatScene } from './habitatDioramaWorkspace';
 
 export type HabitatChallengeType = 'observe' | 'connect' | 'predict' | 'restore' | 'defend';
 export type HabitatZone = 'canopy' | 'open-land' | 'water' | 'shoreline' | 'ground' | 'underground';
@@ -324,7 +324,8 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId
   const activeIds = current?.kind === 'connect' && current.fromId ? [current.fromId] : current?.optionOrganismIds ?? [];
   const rewardIds = runner.revealHeld && reward ? reward.ids : [];
   const commitMove = (item: HabitatItem, move: { toId?: string; zone?: HabitatZone }) =>
-    commitGesture(runner, { response: describeHabitatMove(item, move), correct: habitatMoveMatches(item, move), cue: () => '' });
+    commitGesture(runner, { response: describeHabitatMove(item, move), correct: habitatMoveMatches(item, move), cue: () => '',
+      miss: habitatMiss(item, move, data.relationships ?? []) });
   const handleOrganismTap = (id: string) => {
     SoundManager.tap(); setSelectedId(id); onInteraction?.({ type: 'organism_inspected', organismId: id, timestamp: Date.now() });
     if (!current || !runner.canAttempt || current.kind !== 'connect' || id === current.fromId) return;

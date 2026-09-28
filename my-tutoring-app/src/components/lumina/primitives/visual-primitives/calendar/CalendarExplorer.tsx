@@ -35,6 +35,7 @@ import {
   calendarSequenceAssignment,
   calendarSequenceScene,
   calendarSequenceItemsFromChallenges,
+  calendarMiss,
   describeCalendarPick,
   hearSequenceRequest,
   isSpokenCalendarSession,
@@ -392,7 +393,8 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
       setFeedback({ correct: false, message: 'Not quite.' });
     }
     // The activity's own check: the workspace records it and the tutor hears what was picked, never the key.
-    progress.commitCheck(describeCalendarPick(currentChallenge, selectedAnswer), isCorrect);
+    progress.commitCheck(describeCalendarPick(currentChallenge, selectedAnswer), isCorrect,
+      isCorrect ? undefined : calendarMiss(currentChallenge, selectedAnswer));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallenge, selectedAnswer, currentAttempts, recordResult]);
 

@@ -10,7 +10,8 @@
  * Free exploration (`freeExplore`) is an ungraded sandbox and binds nothing.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { DEFAULT_RAMP_CHALLENGES, measureRampTrial, type RampChallenge, type RampInvestigationChallenge, type RampScenario } from './rampChallenges';
+import { changedRampVariables, DEFAULT_RAMP_CHALLENGES, easierComparisonChoice, maxWorkableAngle, measureRampTrial, minimumPushSetting,
+  type RampChallenge, type RampInvestigationChallenge, type RampScenario } from './rampChallenges';
 
 const VARIABLE: Record<RampInvestigationChallenge['variable'], string> = {
   mass: 'box mass', surface: 'surface', angle: 'ramp angle',
@@ -33,6 +34,51 @@ export function rampAssignment(c: RampChallenge | RampInvestigationChallenge): T
       expectedAnswer: `A true comparison that connects the changed ${VARIABLE[c.variable]} to both trials: ${rampConclusion(c)}` };
   }
   return { id: c.id, task: c.brief, response: 'gesture' };
+}
+
+/**
+ * What a checked wrong answer shows (handoff 20), from the learner's work alone:
+ *   - compare_conditions: `harder_setup` (picked the setup that needs more push), `same_for_different` (picked
+ *     "same" when the pushes differ), `one_for_same` (picked one setup when both need the same push);
+ *   - find_threshold: `load_did_not_move` (the push is below the threshold), `more_than_minimum` (it moves the
+ *     load, but a smaller step would too);
+ *   - design_with_budget: `over_budget` (too steep for the force budget), `not_steepest` (it works, but a
+ *     steeper ramp would too);
+ *   - plan_fair_test: `nothing_changed` (setup B equals A), `other_condition` (the requested condition is
+ *     unchanged, another one changed), `extra_condition` (the requested condition and another one changed).
+ * explain_from_trials is spoken (Part B).
+ */
+export type RampMiss = 'harder_setup' | 'same_for_different' | 'one_for_same' | 'load_did_not_move' | 'more_than_minimum'
+  | 'over_budget' | 'not_steepest' | 'nothing_changed' | 'other_condition' | 'extra_condition';
+
+const PLAN_KEY = { angle: 'angle', surface: 'frictionLevel', mass: 'loadWeight' } as const;
+
+export function rampMiss(c: RampChallenge, work: { choice?: string | null; push?: number; angle?: number; planB?: RampScenario }): RampMiss | undefined {
+  switch (c.mode) {
+    case 'compare_conditions': {
+      const right = easierComparisonChoice(c);
+      if (!work.choice || work.choice === right) return undefined;
+      return right === 'same' ? 'one_for_same' : work.choice === 'same' ? 'same_for_different' : 'harder_setup';
+    }
+    case 'find_threshold': {
+      const answer = minimumPushSetting(c.scenario, c.forceStep);
+      if (work.push == null || Math.abs(work.push - answer) < 0.001) return undefined;
+      return work.push < answer ? 'load_did_not_move' : 'more_than_minimum';
+    }
+    case 'design_with_budget': {
+      const answer = maxWorkableAngle(c.scenario, c.forceBudget, c.angleRange);
+      if (work.angle == null || work.angle === answer) return undefined;
+      return work.angle > answer ? 'over_budget' : 'not_steepest';
+    }
+    case 'plan_fair_test': {
+      if (!work.planB) return undefined;
+      const changed = changedRampVariables(c.scenarios.a, work.planB);
+      if (!changed.length) return 'nothing_changed';
+      if (!changed.includes(PLAN_KEY[c.variable])) return 'other_condition';
+      return changed.length > 1 ? 'extra_condition' : undefined;
+    }
+    default: return undefined;
+  }
 }
 
 const describeSetup = (s: RampScenario) => `${s.angle} degrees, ${s.loadWeight} kg, ${s.frictionLevel} friction`;

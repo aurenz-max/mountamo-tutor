@@ -6,6 +6,8 @@
  */
 
 import { ComponentDefinition } from '../../../types';
+import type { CalendarMiss } from '../../../primitives/visual-primitives/calendar/calendarExplorerWorkspace';
+import { missLists } from './missLists';
 
 export const CALENDAR_CATALOG: ComponentDefinition[] = [
   {
@@ -28,6 +30,16 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
         + 'learner says the one that comes next; it is judged against the successor you are given, and the given day '
         + 'said back is not it. There are no printed day or month names in the chain. Before an attempt never say the '
         + 'answer. The replay button asks you to repeat the question only. You cannot tap, mark or change the calendar.',
+      // The calendar's own check (`calendarMiss`), by answer kind. identify and pattern ask for a weekday or a date.
+      // day_sequence and month_sequence are spoken (handoff 20 Part B).
+      misses: missLists<CalendarMiss>({
+        identify: ['day_before', 'day_after', 'other_day', 'same_column_date', 'next_to_date', 'other_date'],
+        mark_events: ['same_column_date', 'next_to_date', 'other_date'],
+        count: ['one_less', 'one_more', 'other_count'],
+        day_offset: ['start_day', 'day_before', 'day_after', 'other_day'],
+        interval_count: ['one_less', 'one_more', 'other_count'],
+        pattern: ['day_before', 'day_after', 'other_day', 'same_column_date', 'next_to_date', 'other_date'],
+      }),
     },
     affordances: { representation: 'symbolic', answers: ['tap', 'spoken'], role: 'apply', minutes: 5 },
     audioInput: { manual_activity: true },

@@ -64,7 +64,7 @@ import {
   type PeriodicKind,
   type PeriodicTableItem,
 } from './chemistry-primitives/periodicTableScript';
-import { cellMatches, periodicAssignment, periodicItems, periodicScene } from './chemistry-primitives/periodicTableWorkspace';
+import { cellMatches, periodicAssignment, periodicItems, periodicMiss, periodicScene } from './chemistry-primitives/periodicTableWorkspace';
 
 interface PeriodicTableProps {
   data: PeriodicTableData;
@@ -215,7 +215,8 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
     setTappedName(element.name);
     const correct = cellMatches(item, element.number);
     if (!correct) setWrongTapNumber(element.number);
-    commitGesture(runner, { response: `Tapped ${element.name}'s box.`, correct, cue: () => '' });
+    commitGesture(runner, { response: `Tapped ${element.name}'s box.`, correct, cue: () => '',
+      miss: correct ? undefined : periodicMiss(item, element.number) });
   };
 
   // ── Phase summary ─────────────────────────────────────────────────────────

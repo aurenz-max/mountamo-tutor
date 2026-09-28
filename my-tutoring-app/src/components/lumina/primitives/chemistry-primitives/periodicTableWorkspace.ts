@@ -20,6 +20,7 @@ import {
   type PeriodicTableItem,
   type PeriodicTier,
 } from './periodicTableScript';
+import { ELEMENTS } from './constants';
 
 /** The items a payload asks, built by the pack's gates: shared by the component, the adapter and the journey. */
 export const periodicItems = (data: { challenges?: PeriodicChallengeLike[]; supportTier?: PeriodicTier }): PeriodicTableItem[] =>
@@ -79,6 +80,26 @@ export function periodicScene(item: PeriodicTableItem, tapped: string | null): W
 /** Whether a tapped box is the asked element. */
 export const cellMatches = (item: PeriodicTableItem, atomicNumber: number): boolean =>
   item.kind === 'find' && item.element?.number === atomicNumber;
+
+/**
+ * What a checked wrong tap shows on an Element Hunt (handoff 20), by where the tapped box sits against the asked
+ * one on the drawn table: `same_first_letter` (a spelled-symbol ask: the tapped symbol starts with the same
+ * letter), `next_box` (the box touching it), `same_row` (the same row, further along: on a group-and-period ask,
+ * the right period), `same_column` (the same column, another row: the right group), `other_box`.
+ * Name It and Trends are spoken (Part B).
+ */
+export type PeriodicMiss = 'same_first_letter' | 'next_box' | 'same_row' | 'same_column' | 'other_box';
+
+const cellOf = new Map(ELEMENTS.map(e => [e.number, e]));
+
+export function periodicMiss(item: PeriodicTableItem, tappedNumber: number): PeriodicMiss | undefined {
+  const want = item.element && cellOf.get(item.element.number), got = cellOf.get(tappedNumber);
+  if (item.kind !== 'find' || !want || !got || want.number === got.number) return undefined;
+  if (item.findBy === 'symbol' && want.symbol[0] === got.symbol[0]) return 'same_first_letter';
+  const dx = got.xpos - want.xpos, dy = got.ypos - want.ypos;
+  if (Math.abs(dx) + Math.abs(dy) === 1) return 'next_box';
+  return dy === 0 ? 'same_row' : dx === 0 ? 'same_column' : 'other_box';
+}
 
 /** The journey's answers: the pack's right and plainly wrong answers; a find is the box to tap, by element name. */
 export function periodicJourneyAnswers(item: PeriodicTableItem): { correct: string; plainWrong: string; tap?: { correct: string; wrong: string } } {

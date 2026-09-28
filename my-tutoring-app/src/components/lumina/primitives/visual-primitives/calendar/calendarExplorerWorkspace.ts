@@ -56,6 +56,41 @@ export function calendarGridScene(c: CalendarExplorerChallenge, view: CalendarGr
 export const describeCalendarPick = (c: CalendarExplorerChallenge, picked: string) =>
   isGridDateAnswer(c) ? `Picked the date ${picked}.` : `Picked "${picked}".`;
 
+/**
+ * What a checked wrong pick shows (handoff 20), by the kind of answer the item asks for:
+ *   - a weekday (identify, day_offset, pattern): `start_day` (day_offset: the day the count starts from),
+ *     `day_before` / `day_after` (the neighbouring day of the week), `other_day`;
+ *   - a date (identify, mark_events, pattern): `same_column_date` (a whole number of weeks off: the same
+ *     weekday), `next_to_date` (one day off), `other_date`;
+ *   - a count (count, interval_count): `one_less`, `one_more`, `other_count`.
+ * day_sequence and month_sequence are spoken (Part B).
+ */
+export type CalendarMiss = 'start_day' | 'day_before' | 'day_after' | 'other_day' | 'same_column_date' | 'next_to_date'
+  | 'other_date' | 'one_less' | 'one_more' | 'other_count';
+
+const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const weekday = (s: string) => WEEKDAYS.indexOf(s.trim().toLowerCase());
+/** "15" or "March 15" as the day of the month. */
+const dateNumber = (s: string) => { const m = /^(?:[a-z]+\s+)?(\d{1,2})$/i.exec(s.trim()); return m ? Number(m[1]) : NaN; };
+
+export function calendarMiss(c: CalendarExplorerChallenge, picked: string): CalendarMiss | undefined {
+  const key = c.correctAnswer ?? '';
+  if (!picked || picked.trim().toLowerCase() === key.trim().toLowerCase()) return undefined;
+  if (c.type === 'count' || c.type === 'interval_count') {
+    const d = Number(picked) - Number(key);
+    if (!Number.isFinite(d)) return undefined;
+    return d === -1 ? 'one_less' : d === 1 ? 'one_more' : 'other_count';
+  }
+  const want = weekday(key), got = weekday(picked);
+  if (want >= 0 && got >= 0) {
+    if (c.type === 'day_offset' && c.startDay && got === weekday(c.startDay)) return 'start_day';
+    return (got + 1) % 7 === want ? 'day_before' : (want + 1) % 7 === got ? 'day_after' : 'other_day';
+  }
+  const d = dateNumber(picked) - dateNumber(key);
+  if (!Number.isFinite(d) || c.type === 'day_offset') return undefined;
+  return d % 7 === 0 ? 'same_column_date' : Math.abs(d) === 1 ? 'next_to_date' : 'other_date';
+}
+
 const unitOf = (item: CalendarSequenceItem) => item.type === 'day_sequence'
   ? { unit: 'day', current: item.currentDay, expected: item.expectedDay }
   : { unit: 'month', current: item.currentMonth, expected: item.expectedMonth };

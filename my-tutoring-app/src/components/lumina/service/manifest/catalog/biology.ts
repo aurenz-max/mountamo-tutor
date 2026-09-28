@@ -6,6 +6,8 @@
  */
 
 import { ComponentDefinition } from '../../../types';
+import type { HabitatMiss } from '../../../primitives/visual-primitives/biology/habitatDioramaWorkspace';
+import { missLists } from './missLists';
 
 export const BIOLOGY_CATALOG: ComponentDefinition[] = [
   {
@@ -384,6 +386,11 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
         + 'living thing can meet its needs. The activity checks both taps. A K-2 learner does not read: read the question, the '
         + 'change and the choices aloud, and say names, never producer, consumer or decomposer. No living thing is mean; each '
         + 'is finding food. Before an attempt never say the answer or which choice is right. You cannot tap or place for them.',
+      // The activity's own checks (`habitatMiss`). observe, predict and defend are spoken (handoff 20 Part B).
+      misses: missLists<HabitatMiss>({
+        connect: ['same_kind_other_link', 'other_kind_link', 'leads_to_start', 'unconnected'],
+        restore: ['water_for_land', 'land_for_water', 'other_land_zone'],
+      }),
     },
   },
   {

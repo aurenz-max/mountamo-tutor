@@ -69,3 +69,4 @@ audio recognition reliability.
 ## Changelog
 
 - 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
+- 2026-09-27 — handoff 20 A4 (`/add-support-tiers`, misses): the lab's checks name what a wrong answer shows (`rampMiss` in `rampLabWorkspace.ts`: compare_conditions 3, find_threshold 2, design_with_budget 2, plan_fair_test 3), listed in the catalog `teachingWorkspace.misses`. The verdicts, feedback text and the key the tutor is never told are unchanged; explain_from_trials stays spoken. Compatible: no requirement changed.

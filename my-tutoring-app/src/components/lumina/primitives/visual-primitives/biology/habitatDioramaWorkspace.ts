@@ -10,7 +10,7 @@
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { askFor, habitatDioramaHarnessAnswers, type HabitatItem } from './habitatDioramaScript';
-import type { HabitatZone } from './HabitatDiorama';
+import type { HabitatZone, Relationship } from './HabitatDiorama';
 
 export const ZONE_LABELS: Record<HabitatZone, string> = {
   canopy: 'Canopy', 'open-land': 'Open land', water: 'Open water',
@@ -58,6 +58,36 @@ export const describeHabitatMove = (item: HabitatItem, move: { toId?: string; zo
   item.kind === 'connect'
     ? `Connected ${item.organismNames[item.fromId ?? ''] ?? 'the start'} to ${item.organismNames[move.toId ?? ''] ?? 'another living thing'}.`
     : `Placed ${item.organismNames[item.restorationEntityId ?? ''] ?? 'the living thing'} in the ${move.zone ? ZONE_LABELS[move.zone] : 'unplaced'} zone.`;
+
+/**
+ * What a checked wrong move shows (handoff 20), from the tap and the habitat's own relationships:
+ *   - connect: `same_kind_other_link` (the start has this kind of relationship with the tapped living thing
+ *     too, so the tap is defensible; see RP-7), `other_kind_link` (the start leads to it by another kind of
+ *     relationship), `leads_to_start` (the tapped one's relationship points at the start: the reverse
+ *     direction), `unconnected` (no relationship either way);
+ *   - restore: `water_for_land` (put in open water; its zone is on land or the shoreline), `land_for_water`
+ *     (its zone is open water; put on land or the shoreline), `other_land_zone` (neither zone is water).
+ * observe, predict and defend are spoken (Part B).
+ */
+export type HabitatMiss = 'same_kind_other_link' | 'other_kind_link' | 'leads_to_start' | 'unconnected'
+  | 'water_for_land' | 'land_for_water' | 'other_land_zone';
+
+export function habitatMiss(item: HabitatItem, move: { toId?: string; zone?: HabitatZone },
+  relationships: readonly Relationship[]): HabitatMiss | undefined {
+  if (habitatMoveMatches(item, move)) return undefined;
+  if (item.kind === 'connect') {
+    if (!move.toId) return undefined;
+    const out = relationships.filter(r => r.fromId === item.fromId && r.toId === move.toId);
+    if (out.some(r => r.type === item.relationshipType)) return 'same_kind_other_link';
+    if (out.length) return 'other_kind_link';
+    return relationships.some(r => r.fromId === move.toId && r.toId === item.fromId) ? 'leads_to_start' : 'unconnected';
+  }
+  if (item.kind === 'restore' && move.zone && item.restorationZone) {
+    if (move.zone === 'water') return 'water_for_land';
+    return item.restorationZone === 'water' ? 'land_for_water' : 'other_land_zone';
+  }
+  return undefined;
+}
 
 /** The journey's answers: a spoken choice, or the label of the button a gesture presses. */
 export function habitatJourneyAnswers(item: HabitatItem): { correct: string; plainWrong: string } {

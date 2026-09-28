@@ -6,6 +6,8 @@
 
 import { ComponentDefinition } from '../../../types';
 import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
+import type { RampMiss } from '../../../primitives/visual-primitives/engineering/rampLabWorkspace';
+import { missLists } from './missLists';
 
 export const ENGINEERING_CATALOG: ComponentDefinition[] = [
   {
@@ -81,6 +83,13 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         + 'to the push, using both trial results; a true comparison in their own words counts, and numbers are '
         + 'optional. A reversed comparison, one measurement alone, a slogan, or the question echoed back does not '
         + 'count. Never give the conclusion before an attempt. You cannot move sliders, pick setups or run trials.',
+      // The lab's own checks (`rampMiss`). explain_from_trials is spoken (handoff 20 Part B).
+      misses: missLists<RampMiss>({
+        compare_conditions: ['harder_setup', 'same_for_different', 'one_for_same'],
+        find_threshold: ['load_did_not_move', 'more_than_minimum'],
+        design_with_budget: ['over_budget', 'not_steepest'],
+        plan_fair_test: ['nothing_changed', 'other_condition', 'extra_condition'],
+      }),
     },
     tutoring: {
       taskDescription: 'Ramp investigation: {{evalMode}}. Current phase: {{phase}}. Question: {{question}}. Recorded trials: {{trialCount}}. Support: {{supportTier}}. Latest feedback: {{feedback}}. During explanation the active RAMP_EVIDENCE_ITEM contract owns every spoken line and verdict. During planning, guide comparison of settings without choosing them for the learner.',

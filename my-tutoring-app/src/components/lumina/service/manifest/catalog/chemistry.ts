@@ -6,6 +6,8 @@
  */
 
 import { ComponentDefinition } from '../../../types';
+import type { PeriodicMiss } from '../../../primitives/chemistry-primitives/periodicTableWorkspace';
+import { missLists } from './missLists';
 
 export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
   {
@@ -130,6 +132,8 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
         + 'are not a name. Trends: the learner says which of two named elements is bigger or more reactive, or how many '
         + 'electrons are in an element\'s outer shell; the group number is not the outer-electron count. Before an '
         + 'attempt never say the answer or the rule that decides it for this pair. You cannot point at or highlight boxes.',
+      // The table's own check of an Element Hunt tap (`periodicMiss`). identify and trend are spoken (handoff 20 Part B).
+      misses: missLists<PeriodicMiss>({ explore: ['same_first_letter', 'next_box', 'same_row', 'same_column', 'other_box'] }),
     },
   },
   {

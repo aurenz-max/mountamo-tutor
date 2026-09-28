@@ -13,7 +13,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult, type WorkspaceRun, type WorkspaceRunOptions }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { describeRampCheck, hearQuestionRequest, rampAssignment, rampItems, rampScene } from './rampLabWorkspace';
+import { describeRampCheck, hearQuestionRequest, rampAssignment, rampItems, rampMiss, rampScene } from './rampLabWorkspace';
 import {
   LuminaButton,
   LuminaCard,
@@ -350,9 +350,10 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
   };
 
   /** The lab's own check, committed to the workspace, which decides what happens next. */
-  const commitCheck = (challenge: RampChallenge, correct: boolean, response: string) => {
+  const commitCheck = (challenge: RampChallenge, correct: boolean, response: string,
+    work: { choice?: string | null; push?: number; angle?: number; planB?: RampScenario }) => {
     if (correct) markSolved(challenge); else recordWrong(challenge);
-    run.commitGesture({ response, correct, cue: () => '' });
+    run.commitGesture({ response, correct, cue: () => '', miss: correct ? undefined : rampMiss(challenge, work) });
   };
 
   const handleCheck = () => {
@@ -366,7 +367,7 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
       const correct = compareChoice === easierComparisonChoice(currentChallenge);
       setFeedback(correct ? { correct: true, message: 'Your prediction matches the force evidence.' }
         : { correct: false, message: 'The force evidence points to the other setup. Compare only the variable that changed.' });
-      commitCheck(currentChallenge, correct, describeRampCheck('compare_conditions', { choice: compareChoice }));
+      commitCheck(currentChallenge, correct, describeRampCheck('compare_conditions', { choice: compareChoice }), { choice: compareChoice });
       return;
     }
     if (currentChallenge.mode === 'find_threshold') {
@@ -381,7 +382,7 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
       } else {
         setFeedback({ correct: false, message: 'That force moves the load, but it is not the minimum. Reduce it and test again.' });
       }
-      commitCheck(currentChallenge, correct, describeRampCheck('find_threshold', { push: pushForce }));
+      commitCheck(currentChallenge, correct, describeRampCheck('find_threshold', { push: pushForce }), { push: pushForce });
       return;
     }
     if (currentChallenge.mode !== 'design_with_budget') return;
@@ -397,7 +398,7 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
     } else {
       setFeedback({ correct: false, message: 'This design works, but a steeper workable ramp would be shorter. Keep searching.' });
     }
-    commitCheck(currentChallenge, correct, describeRampCheck('design_with_budget', { angle: rampAngle }));
+    commitCheck(currentChallenge, correct, describeRampCheck('design_with_budget', { angle: rampAngle }), { angle: rampAngle });
   };
 
   // The workspace's record is the grade: it fires once, with the finished session, under an evaluation provider.
@@ -558,7 +559,7 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
               // An unfair plan is a checked miss; a fair one locks and the investigation continues.
               onPlanChecked={(fair, setupB) => {
                 totalChecksRef.current += 1;
-                if (!fair) commitCheck(currentChallenge, false, describeRampCheck('plan_fair_test', { planB: setupB }));
+                if (!fair) commitCheck(currentChallenge, false, describeRampCheck('plan_fair_test', { planB: setupB }), { planB: setupB });
               }}
               onRecord={evidence => {
                 evidenceRef.current = evidence;
