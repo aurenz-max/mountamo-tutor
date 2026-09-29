@@ -33,6 +33,7 @@ beforeEach(() => { vi.clearAllMocks(); seam.submitEvaluation.mockResolvedValue(u
 afterEach(() => { cleanup(); });
 
 const SESSION: ScoredWorkspaceSession = {
+  accuracy: 67,
   diagnosisEvidence: { challengeSummary: 'workspace summary', expected: 'Activity-checked response', observed: 'Chose: 7 < 4',
     firstResponseScore: 50, phases: [{ itemId: 'n1', phase: 'compare_numbers', challenge: 'c', expected: 'e', observed: 'o', support: 's', miss: 'reversed' }] },
   learningResponses: [{ itemId: 'n1' }], teachingAttempts: [{ itemId: 'n1', miss: 'reversed' }], assistanceProvenance: 'explicit-actions-only',
@@ -57,8 +58,8 @@ it('waits for the scored session, then sends the primitive\'s own record with th
   await act(async () => { submission.scored(SESSION); });
   expect(sent()).toHaveLength(1);
   const [result] = sent();
-  // Recording only: success, score and metrics are the primitive's.
-  expect([result.success, result.score, result.metrics.type]).toEqual([true, 100, 'comparison-builder']);
+  // The session's score replaces the primitive's 100; success and metrics are the primitive's.
+  expect([result.success, result.score, result.metrics.type]).toEqual([true, 67, 'comparison-builder']);
   expect(result.diagnosisEvidence).toEqual({ ...own, firstResponseScore: 50, phases: SESSION.diagnosisEvidence.phases });
   expect(result.studentWork).toMatchObject({ challengeResults: ['own'], teachingAttempts: SESSION.teachingAttempts,
     assistanceProvenance: 'explicit-actions-only' });
@@ -116,6 +117,8 @@ it('end to end: a plain binding\'s wrong check reaches the lesson submission as 
   const [result] = sent();
   expect(result.diagnosisEvidence.phases).toEqual([expect.objectContaining({ itemId: 'n1', phase: 'compare_numbers', miss: 'reversed' })]);
   expect(result.diagnosisEvidence.firstResponseScore).toBe(0);
+  // Wrong, then right on the retry: the record keeps the miss, not the primitive's 100.
+  expect(result.score).toBe(67);
   expect(result.studentWork.teachingAttempts).toHaveLength(2);
 });
 

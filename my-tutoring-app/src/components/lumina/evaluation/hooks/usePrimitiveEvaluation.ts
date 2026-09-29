@@ -352,12 +352,12 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     pendingResultRef.current = result;
 
     // Workspace-bound, in a lesson: send once the workspace has scored the session, with its evidence
-    // (each wrong check's named miss) added. The primitive's success, score and metrics are unchanged.
+    // (each wrong check's named miss) added and the session's score in place of the primitive's tally.
     if (workspaceSubmission && evaluationContext && !localOnly) {
       setIsSubmitting(true);
       workspaceSubmission.whenScored(session => {
-        const sent: PrimitiveEvaluationResult<TMetrics> = session
-          ? { ...result, ...withWorkspaceEvidence(result.diagnosisEvidence, result.studentWork, session) } : result;
+        const sent: PrimitiveEvaluationResult<TMetrics> = session ? { ...result, score: session.accuracy,
+          ...withWorkspaceEvidence(result.diagnosisEvidence, result.studentWork, session) } : result;
         pendingResultRef.current = sent;
         onSubmit?.(sent);
         evaluationContext.submitEvaluation(sent)

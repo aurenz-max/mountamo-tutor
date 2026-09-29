@@ -9,10 +9,13 @@ import type { DiagnosisEvidence } from './diagnosis/types';
  * A primitive with its own Check (plain shape) submits when its challenges are complete, from its own
  * tally. The teaching workspace scores the same session a moment later (`teachingEvaluation`), with each
  * wrong check's named miss on its evidence phase. `usePrimitiveEvaluation` waits for that scored session
- * and adds its evidence, so the misconception capture records the misses. Recording only: the primitive's
- * success, score and metrics are sent unchanged.
+ * and adds its evidence, so the misconception capture records the misses. The session's score replaces the
+ * primitive's: a primitive's own tally counts an item solved after a miss as right, so a retried run would
+ * record 100. The primitive's success and metrics are sent unchanged.
  */
 export interface ScoredWorkspaceSession {
+  /** Mean item score over the session (100 first try, 67 after one miss, 33 later, 0 unsolved). */
+  accuracy: number;
   diagnosisEvidence: DiagnosisEvidence;
   learningResponses: unknown[];
   teachingAttempts: unknown[];
