@@ -69,6 +69,10 @@ Once the gate passes and the user has seen the report, set this as the session g
 | M1b | `number-bond` | Handoff 21 M1 | **Slice 1 DONE 09-28:** decompose, ten_and_ones (help + simplify), related_fact move, missing_part tray; equation levers open. Contract derived first; three leak fixes (R12-R14) before the levers |
 | M1c | `base-ten-blocks` | Handoff 21 M1 | **Slice 1 DONE 09-28:** build_number (column counts, total, ten bracket, plainer build); contract derived first and four leaks fixed. operate and the spoken mat open |
 | M1d | `place-value-chart` | Handoff 21 M1 | **Slice 1 DONE 09-28:** dictated build items (model chart, column worth, read-back, teen pair, plainer number); contract derived first and three defects fixed. say_value label open |
+| M2a | `comparison-builder` | Handoff 21 M2 | **DONE 09-28:** all four modes (model match, tap count, quantity marks, slot steps, learner hops; four simplify items); leak LEV-CB-1 fixed first. Contract R9 |
+| M2b | `compare-objects` | Handoff 21 M2 | **order_three DONE 09-28:** order steps, touch slots, measure grid, far three. Spoken modes open |
+| M2c | `number-sequencer` | Handoff 21 M2 | **order_cards DONE 09-28:** train steps, card marks, three cards. Contract R11. Spoken modes open |
+| M2d | `ordinal-line` | Handoff 21 M2 | **build_sequence DONE 09-28:** front flag, place dots, three places. Spoken modes open |
 | C1 | `rhyme-studio` | First literacy and first pre-reader case: every lever needs a voice carrier | Run `/primitive-contract` first; levers act on a model pair outside the item (a rime highlight answers recognition); check the stale `aiDirectives` |
 | C2 | one primitive of a different archetype, chosen with the user | Tests that the design holds outside math manipulatives | Pick from the diagnosis log (`logs/demonstrations/`) where real diagnoses recur |
 

@@ -35,7 +35,7 @@ The per-mode levers in `inventory-2026-09-27/*.json` were drafted by four read-o
 
 | Leak | Where | Blocks |
 |---|---|---|
-| comparison-builder easy `compare_groups` draws every match line during the solve | `gemini-comparison-builder.ts:155` | M2 |
+| ~~comparison-builder easy `compare_groups` draws every match line during the solve~~ FIXED 09-28 (LEV-CB-1; also the G1 count badges and two text lines) | `gemini-comparison-builder.ts:155` | M2 |
 | fast-fact shows "The answer is X" on the first wrong tap while a retry remains, and credits the retry | `FastFact.tsx:388` | core K2 |
 | timeline-explorer, how-it-works, vocabulary-explorer: a multiple-choice question reveals the answer on the first wrong tap and never records the wrong answer | components | core K3 |
 | regrouping-workbench prints "the correct answer is N" and then allows a retry | `RegroupingWorkbench.tsx:535` | M6 |
@@ -51,6 +51,24 @@ Some flags state the answer and **must not become levers as they stand**: ten-fr
 **DONE 09-27.** `J9-miss-answered` in `journeySweep.test.tsx`, checked per `<primitive>.<mode>` over all its payloads (a lever for one item shape, such as two jumps, is on some items only). The explicit unanswered list is catalog `teachingWorkspace.unanswered` (per mode). ten-frame and fraction-circles passed as they were. number-line did not: nothing answered `no_landing` (now `numbered_hops`, whose model hop shows where to begin), and the only jump payload had no two-jump item, so `second_jump_off` was unseen: new payload `number-line.jump-hard` (hard tier, four two-jump items) and a journey row that places every landing. Mutation-checked (dropping `no_landing` fails J9).
 
 On a mode with levers, every miss listed in `teachingWorkspace.misses` must be in some lever's `answers` or in an explicit unanswered list. Add it as a sweep rule beside J8. It should pass today on number-line, ten-frame and fraction-circles; if it doesn't, fix their `answers`.
+
+## S1b: measure every math mode (2026-09-28)
+
+**DONE 09-28.** Saved payloads now exist for every graded math mode: 66 new files in `w1-payloads/` from `backend/tests/tutor_live/save_payload.py` (one Flash generation per mode, no Live). The sweep writes a lever inventory (`JOURNEY_SWEEP_OUT`, `leverInventory`): per bound family and mode, the levers seen on its payloads and each catalog miss as answered, unanswered by decision, or open. Coverage after this step: 24 of 319 graded modes show levers, 208 were driven with none, 87 are unmeasured (all non-math). Page: https://claude.ai/artifact/RfUu9zWnRWdBJHGw9NzpPx ("Measured coverage").
+
+53 of the 66 new payloads drive clean. The other 13 are in `journey-sweep-baseline.json`, each naming its row. Two are product defects, filed in `EVAL_TRACKER.md`: NL-2 (a one-tick miss is credited on plot and identify) and BS-3 (balance-scale `equality_hard` never completes in the sweep). A third, CO-6, came from generating `non_standard` at grade K: every item is dropped and the lesson throws. The payload was recaptured at Grade 1 and drives clean; CO-6 stays open for the throw and for whether K can reach that mode. The rest are journey rows that cannot drive the mode yet (executor `/add-live-tutor-tools`, `liveJourneySpec.ts`). Until a row drives its mode, J2-J9 say nothing about that mode, so fix a mode's row before its lever slice:
+
+| Row | Payload | What the driver lacks |
+|---|---|---|
+| SW-1 | `number-line.between` | Places both bounds; the item wants one point strictly between them |
+| SW-2 | `number-line.order` | "check: no enabled button" after its wrong input; confirm driver versus component |
+| SW-3 | `ten-frame.decompose` | Its correct split repeats the previous item's split, which the check rightly rejects (`same_way_again`) |
+| SW-4 | `counting-board.subitize` | Answers before the quick-look stimulus is presented |
+| ~~SW-5~~ | `comparison-builder.one_more_less` | ~~Two rows share labels~~ FIXED 09-28: each cell is named by its row ("one more 9") when both rows show; the row drives both |
+| SW-6 | `fraction-circles.touch_fraction` | The wrong pictures are random per mount; no stable wrong input |
+| SW-7 | `number-tracer.copy`, `.write`, `.sequence` | Tracing modes are not driven at W1 (stroke input) |
+| SW-8 | `strategy-picker.compare` | No wrong answer by design (no lever either, per the plan); baseline stays |
+| SW-9 | tutor replay moments | The recorder drives each payload's first item only, so levers on later steps (number-bond equation steps) get no replay. Record the first item that offers a lever, or every step type once |
 
 ## S2: the trigger ladder (`runtime/`, `/add-live-tutor-tools`)
 
@@ -77,7 +95,7 @@ Work one primitive at a time, `/add-support-tiers` end to end, and never as a wo
 | Class | Primitives | Notes from the draft |
 |---|---|---|
 | **M1** number manipulatives | `counting-board`, `number-bond`, `base-ten-blocks`, `place-value-chart` | Reuse ten-frame's running count, which counts only placed items, never the target, plus a smaller-total simplify. base-ten gets a trade model. place-value simplify keeps the same digit count (a number with no zero), because dropping a digit breaks R2 |
-| **M2** compare and order | `comparison-builder`, `compare-objects`, `number-sequencer`, `ordinal-line` | Fix the comparison-builder leak first. `match_pairs` replaces the easy tier's live correspondence. An ordering simplify never uses a subset of the item's values (R3). Spoken modes fall back to help-first |
+| **M2** compare and order (**tap modes DONE 09-28**, `qa/eval-reports/levers-M2-2026-09-28.md`; spoken modes open) | `comparison-builder`, `compare-objects`, `number-sequencer`, `ordinal-line` | Fix the comparison-builder leak first. `match_pairs` replaces the easy tier's live correspondence. An ordering simplify never uses a subset of the item's values (R3). Spoken modes fall back to help-first |
 | **M3** operations and facts | `addition-subtraction-scene`, `equation-builder`, `math-fact-fluency`, `bar-model`, `strategy-picker` | No timer on fact fluency. speed_round has no simplify lever. strategy-picker `compare` has no lever |
 | **M4** patterns, charts, space, money | `pattern-builder`, `hundreds-chart`, `spatial-scene`, `coin-counter`, `number-tracer`, ten-frame's other modes | hundreds-chart reuses `learnerHops`, and its simpler skip shares no cells with the item's answers |
 
@@ -97,11 +115,13 @@ Copy the three built primitives' test files as the pattern: `NumberLine`, `TenFr
 
 ### The gate for each class (Live, paid)
 
-After every primitive in the class passes its vitest gate, pick one primitive and run it:
+**Readiness (user ruling 2026-09-28, to manage cost):** a primitive is ready for Live only when EVERY eval mode it has, spoken modes included, has its miss function and its levers, and passes the vitest gate. One mode done is not ready. A class is ready when all its primitives are. A spoken mode waiting on `spoken_miss` (handoff 20 Part B) holds the whole class.
+
+The run uses the primitive's `mixed` eval mode, so one session crosses a variety of challenge types instead of repeating one mode. The journey row must drive every challenge type in the mixed payload; a row that throws on one (today base-ten-blocks `regroup` on the click mat) is not ready either.
 
 ```
-run_live_runtime.py --primitive <id> --mode <mode> --lever --lesson-entry --runs 1
-run_live_runtime.py --primitive <id> --mode <mode> --lever --lesson-entry --audio --runs 1
+run_live_runtime.py --primitive <id> --mode mixed --lever --lesson-entry --runs 1
+run_live_runtime.py --primitive <id> --mode mixed --lever --lesson-entry --audio --runs 1
 ```
 
 This is two sessions per class, or eight for M1-M4. The `--lever` journey today gives a wrong answer, then says "I am stuck". After S2, add a variant with two wrong answers and no "stuck", so the auto-pull is also exercised end to end. Add it to one of the two runs; don't add a third run. Live checks only two things: that the tutor or the auto-pull moves on its own, and that the screen changes before the tutor describes it. A lever-specific failure goes to `qa/lever-bench/QUEUE.md` with its executor. Re-run Live only if a fix changes tool narration or timing. Budget: `LIVE_TESTING.md` (about $35/day).

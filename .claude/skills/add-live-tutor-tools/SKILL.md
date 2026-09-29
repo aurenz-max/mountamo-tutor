@@ -165,7 +165,12 @@ below instead of step 2; steps 1, 3, 4, 5 and the checks are the same.
 Grep `components/live-activity` tests (including `runtime/`) for the id. Expected-id lists
 (`lessonWorkspacePlan.test.ts`) gain it. A family with a gesture check also names its misses (handoff 20):
 a pure `<x>Miss(item, work)` returning an exported union beside the check, passed to `commitCheck` /
-`commitGesture`, and `teachingWorkspace.misses: missLists<Union>({ mode: [...] })` in the catalog. Since batch A2 every live adapter is
+`commitGesture`, and `teachingWorkspace.misses: missLists<Union>({ mode: [...] })` in the catalog. A spoken item lists its known wrong
+answers instead (handoff 20 Part B): `<x>SpokenMisses(item): KnownMiss[]` on the assignment's `misses`, concrete for the
+item, the scene fact stated before the learner's answer, most specific first (`offByMisses`/`numberMisses` in
+`runtime/spokenMissContract.ts`); open-ended modes list none. The runtime asks `spoken_miss` and a not-credited verdict
+records the named one. Gate: the sweep with `SPOKEN_MISS_OUT=<f>` (J8) and `scripts/spoken-miss-probe.mjs --requests <f>`,
+0 false positives. Since batch A2 every live adapter is
 catalog-declared, so a test that needs "a family the catalog does not declare" uses a non-live
 catalog id such as `concept-card-grid` (display-only, held back).
 

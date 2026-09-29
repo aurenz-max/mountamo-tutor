@@ -46,17 +46,19 @@ Work on the gesture modes only. The spoken modes of these primitives join L2 or 
 
 | Primitive · mode | Misses (built) | Draft levers | Notes |
 |---|---|---|---|
-| `cvc-speller` spell_word | `cvcMiss`: which box is wrong, `letters_out_of_order` | help `sound_tokens` (the learner pushes one token per sound they say), `vowel_keyword_strip`; simplify `small_bank_word` | The catalog forbids sounding out the item word, so help acts on keyword letters and the learner's own tokens |
-| `letter-sound-link` hear_see | `letterSoundMiss`: `other_short_vowel`, `voicing_partner`, `other_letter` | help `keyword_under_both` (answers the vowel miss), `voice_feel_model` (answers the voicing miss); simplify `far_letter_pair` | `showKeywordAnchor` and `showSharedSoundHint` exist as generation flags; make them pullable |
-| `letter-spotter` find_it, match_it | `letterSpotterMiss`: `mirror_form`, `same_shape_family`, `other_letter` | help `other_case_reference`, `row_scan`, `mirror_model`; simplify `small_far_grid`, `two_far_choices` | Shape descriptions are banned in voice, so help is visual. The reference must never be the same form as the target |
-| `word-workout` picture_match | `wordWorkoutMiss`: `same_start`, `same_end`, `same_vowel`, `other_word` | help `sound_dots`; simplify `two_far_pictures` | No audio of the printed word |
-| `interactive-book` find-feature | `interactiveBookMiss`: `tapped_title` ... `tapped_page_number` | help `model_page` (a page outside the book with its parts outlined); simplify `two_part_page` | Never outline the item page's own parts |
+| ✅ `cvc-speller` spell_word (09-28, [report](../eval-reports/cvc-speller-levers-2026-09-28.md)) | `cvcMiss`: which box is wrong, `letters_out_of_order` | help `sound_tokens` (the learner pushes one token per sound they say), `vowel_keyword_strip`; simplify `small_bank_word` | The catalog forbids sounding out the item word, so help acts on keyword letters and the learner's own tokens |
+| ✅ `letter-sound-link` hear_see (09-28, [report](../eval-reports/letter-sound-link-levers-2026-09-28.md)) | `letterSoundMiss`: `other_short_vowel`, `voicing_partner`, `other_letter` | help `keyword_under_both` (answers the vowel miss), `voice_feel_model` (answers the voicing miss); simplify `far_letter_pair` | `showKeywordAnchor` and `showSharedSoundHint` exist as generation flags; make them pullable |
+| ✅ `letter-spotter` find_it, match_it (09-28, [report](../eval-reports/letter-spotter-levers-2026-09-28.md)) | `letterSpotterMiss`: `mirror_form`, `same_shape_family`, `other_letter` | help `other_case_reference`, `row_scan`, `mirror_model`; simplify `small_far_grid`, `two_far_choices` | Shape descriptions are banned in voice, so help is visual. The reference must never be the same form as the target |
+| ✅ `word-workout` picture_match (09-28, [report](../eval-reports/word-workout-levers-2026-09-28.md)) | `wordWorkoutMiss`: `same_start`, `same_end`, `same_vowel`, `other_word` | help `sound_dots`; simplify `two_far_pictures` | No audio of the printed word |
+| ✅ `interactive-book` find-feature (09-28, [class report](../eval-reports/levers-literacy-L1-2026-09-28.md)) | `interactiveBookMiss`: `tapped_title` ... `tapped_page_number` | help `model_page` (a page outside the book with its parts outlined); simplify `two_part_page` | Never outline the item page's own parts |
 
-After all five pass their gate, run the L1 Live pair on one of them (below).
+**L1 closed 09-28 on the free gates** ([class report](../eval-reports/levers-literacy-L1-2026-09-28.md), HUMAN-CHECKS #172). The Live pair below is not run: `LIVE_TESTING.md` (handoff 20 Part D) sets no Live runs for a lever-set gate, which conflicts with this handoff's per-class pair. A user ruling is owed.
 
 ## L2: spoken sound work (phonemic awareness)
 
 `rhyme-studio` goes first. It is handoff 18's C1 and the pilot for spoken levers and model pairs.
+
+✅ **rhyme-studio** done 09-28 ([report](../eval-reports/rhyme-studio-levers-2026-09-28.md)): directives removed, `rhymeModels.ts` shared pool, levers on all four modes (`hear_pair_again` dropped: the word card already repeats the question).
 
 1. **Fix rhyme-studio's stale directives first** (`/add-live-tutor-tools`). The catalog `aiDirectives` still order bracketed `[RS_ITEM]` turns for a retired runner (`literacy.ts:1672`). Removing them is the fix; confirm first that workspace sessions receive them.
 2. **Build the model pair once.** Extend `pickModelRhymePair` (5 pairs today) with emoji and an onset foil, and exclude every family used in the session. phoneme-explorer, sound-swap, syllable-clapper and poetry-lab reuse it.
@@ -66,19 +68,30 @@ After all five pass their gate, run the L1 Live pair on one of them (below).
    - production and collection: `onset_swap_model`, `onset_strip` (picture cards of single sounds that the learner combines with the rime); simplify `dense_family_item`
 4. Then `phoneme-explorer` (`push_tokens` for segment; `showBlendCue`, `showOperationDetail` and `showExampleWord` become pullable), `sound-swap`, `syllable-clapper` (the catalog's stretched-but-joined rung is help; chanted parts are an answer), and `word-flip` (a before/after card pair modelling the rule on a different word).
 
+**L2 closed 09-28 on the free gates** ([class report](../eval-reports/levers-literacy-L2-2026-09-28.md), HUMAN-CHECKS #173): ✅ rhyme-studio · ✅ phoneme-explorer · ✅ sound-swap · ✅ syllable-clapper · ✅ word-flip. Changes from the draft: `hear_pair_again` and `clap_counter` dropped, `start_picture` not built (see the report). The Live pair is not run; the L1 ruling is still owed.
+
 **Misses:** every spoken mode here names `proposed:*` ids that don't exist yet. They need `spoken_miss` (handoff 20 Part B, blocked on `runtime/`). Until it lands, a wrong answer judged by the tutor or JEV feeds the trigger ladder without a miss, and `nextLever` goes help-first. Put the proposed ids in each lever's `answers` now, so miss-driven choice works once spoken misses land, and add them to the J9 unanswered list until then.
 
 ## L3: decoding and reading
 
 Build **one shared print-support overlay** in the Lumina kit, used by every cold-read primitive: `sound_dots` under graphemes, a `tracking_underline`, a `chunk_divider`, and a `changed_letter` highlight. It is visual only and plays no audio. Primitives:
 
-- `word-workout`'s spoken modes
-- `decodable-reader` (plus `story_region` on comprehension, only after a miss)
-- `read-aloud-studio`
-- `interactive-book` read-focus-word
-- `phonics-blender`, which is bound but was **not inventoried**; draft its failure inventory first
+- ✅ `word-workout`'s spoken modes (09-28)
+- ✅ `decodable-reader` (plus `story_region` on comprehension, only after a miss) (09-28)
+- ✅ `read-aloud-studio` (09-28)
+- ✅ `interactive-book` read-focus-word (09-28)
+- ⏸ `phonics-blender`, which is bound but was **not inventoried**: inventory and lever table DRAFTED 09-28 in the class report; **levers not built, waiting on a user OK** (the skill's Phase 2 confirmation, plus one ruling: may `sound_dots` re-segment the hard tier's joined row?)
 
 Simplify levers use a shorter line, a CVC word in place of the focus word, or two choices where there were three. Each simplify item is built in code from a decodable pool and never contains the item's own words (R3).
+
+**L3 closed 09-28 on the free gates for four of five primitives** ([class report](../eval-reports/levers-literacy-L3-2026-09-28.md), HUMAN-CHECKS #174).
+- The overlay is `ui/LuminaPrintSupport.tsx`; the pool is `literacy/decodablePracticeLines.ts`.
+- Changes from the draft:
+  - "Two choices where there were three" is not built: on the same question it repeats the item (R3).
+  - read-along `picture_panels` is not built.
+  - word-workout's `chunk_divider` waits for a first try.
+  - `levers: true` is now set on word-workout and interactive-book, which fixes their L1 modes too.
+- The Live pair is not run; the L1 ruling is still owed.
 
 ## L4: K-1 vocabulary and story
 

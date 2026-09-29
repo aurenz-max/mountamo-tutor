@@ -27,6 +27,12 @@ non-K consumers.
 
 ## Done
 
+- **interactive-book — derived 2026-09-28** → `docs/contracts/interactive-book.md`. 10
+  requirements (all OBSERVED), 0 conflicts. Authored map: 0 consumers (live, 0 of 65).
+  Calibration not read (auth). Probes: 48 vitest green. Step 1 of handoff 22 L1 before
+  `find-feature` levers; changelog scopes `model_page` and `two_part_page`. Catalog
+  description/tutoring flagged stale (DI clock); not applied.
+
 - **place-value-chart — derived 2026-09-28** → `docs/contracts/place-value-chart.md`. 18 requirements (all OBSERVED), 1 open conflict (C1: build is the zero-trap skill, but the tier ladder makes every column non-zero at medium and hard; outside M1, needs a `/pm` routing decision). R6 (stale "checks when full" text; the behavior was right), R8 (readout fills empty columns with 0), R9 (model number: 3-digit cap, shared column digits) were VIOLATED and fixed the same day (handoff 21 M1).
 
 - **base-ten-blocks — derived 2026-09-28** → `docs/contracts/base-ten-blocks.md`. 20 requirements (19 OBSERVED, 1 INFERRED), 0 conflicts. R12 (hint), R13 (operate total), R14 (named trade), R16 (operate payload) were VIOLATED and fixed the same day as handoff 21 M1 fixes 1-4. Static + authored map (6 NBT001 mappings); probes 94 tests + journey sweep green.
@@ -38,6 +44,37 @@ non-K consumers.
   by `763e5e98`. Authored map: 10 of 111 MATHEMATICS mappings (live). Calibration channel not
   read (403). Written as step 1 of handoff 21 M1 before the levers. Fix 4 must stay out of the
   spoken DI corrections (R15), or it becomes a conflict. Catalog faithful; not edited.
+
+- **word-workout — derived 2026-09-28** → `docs/contracts/word-workout.md`. 10
+  requirements (all OBSERVED), 1 open conflict (C1: the draft `two_far_pictures` foil "sharing
+  no sound position" cannot exist under a one-vowel scope, R1). Authored map: 0 consumers (live,
+  0 of 65). Calibration not read (auth). Step 1 of handoff 22 L1 before `picture_match` levers.
+  Catalog description/tutoring flagged stale (DI clock); not applied.
+
+- **rhyme-studio, phoneme-explorer, sound-swap, syllable-clapper, word-flip — derived 2026-09-28** →
+  `docs/contracts/<id>.md`. Static derivations for handoff 22 L2 (no census; authored map and calibration
+  not read). rhyme-studio 9 requirements, 1 open conflict (C1: the easy tier colours the target's rime
+  before a try); the other four 4-6 requirements, no conflicts. Each carries its levers requirement.
+
+- **letter-spotter — derived 2026-09-28** → `docs/contracts/letter-spotter.md`. 9
+  requirements (7 OBSERVED, 2 INFERRED), 1 open conflict (C1: the find_it tier reference
+  prints the same form as the target; handoff 22 says other case only). Authored map: 0
+  consumers (live). Calibration not read (auth). Step 1 of handoff 22 L1 before `find_it` /
+  `match_it` levers; lever notes scope each draft lever. Catalog description/aiDirectives
+  flagged stale; not applied.
+
+- **letter-sound-link — derived 2026-09-28** → `docs/contracts/letter-sound-link.md`. 11
+  requirements (all OBSERVED), 0 conflicts. Authored map: 0 consumers (live, 0 of 65); census
+  K short-a 2026-07-14. Calibration channel not read (auth). Written as step 1 of handoff 22
+  L1 before `hear_see` levers; changelog carries the conditions for `keyword_under_both`,
+  `voice_feel_model`, `far_letter_pair`. Catalog description/constraints/tutoring flagged
+  stale (DI clock; stops now askable in see_hear); not applied.
+
+- **cvc-speller — derived 2026-09-27** → `docs/contracts/cvc-speller.md`. 11 requirements
+  (all OBSERVED), 0 conflicts. Authored map: 1 consumer (LA006-07-a, which also asks for
+  CVCe the primitive cannot serve). Calibration channel not read (auth). Written as step 1 of
+  handoff 22 before `spell_word` levers. Catalog description and `aiDirectives` flagged stale
+  (retired `[DI_CVC_*]` runner; bound sessions send `tutoring: null`); not applied.
 
 - **fraction-circles — derived 2026-09-27** → `docs/contracts/fraction-circles.md`. 11
   requirements (all OBSERVED), 0 conflicts. Census: routed on 8/8 fraction objectives G1-G4.

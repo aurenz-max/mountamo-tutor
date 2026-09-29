@@ -9,9 +9,53 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 
 ## Open — ONE list, newest first (as of 2026-09-09, K Language Arts atlas refresh)
 
-> **122 rows open.** **Newest:** #171 jump levers on the number line (handoff 18); #170 lesson demonstration detour (LA-15 D2); #169 composed demonstrations (LA-15) in the runtime lab; #168 counting-board THE THIRD BRANCH — say "can you help me" mid-item and hear an answer, not the correction line; #167 live runtime lab (help/return; mic after adoption); #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
+> **125 rows open.** **Newest:** #175 math M2 levers, compare and order tap modes (handoff 21); #174 literacy L3 levers, four reading primitives and the shared print overlay (handoff 22); #173 literacy L2 levers, five spoken sound-work primitives, SOUND ON (handoff 22); #172 literacy L1 levers, five phonics primitives (handoff 22); #171 jump levers on the number line (handoff 18); #170 lesson demonstration detour (LA-15 D2); #169 composed demonstrations (LA-15) in the runtime lab; #168 counting-board THE THIRD BRANCH — say "can you help me" mid-item and hear an answer, not the correction line; #167 live runtime lab (help/return; mic after adoption); #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
 > tablet + MIC · #144 You & Me role-switch MIC · #143 Letter Workshop manuscript/touch/audio ·
-> #142 ten-frame teen numbers. Next free ID is **#172**.
+> #142 ten-frame teen numbers. Next free ID is **#175**.
+
+### #175 — **math M2 levers: do the compare-and-order levers help without showing the answer?** (handoff 21)
+
+**Drive it:** the Math tester, Offline levers or a tutor lesson, Grade 1 and K. On each: answer wrong once, then say "I'm stuck."
+- comparison-builder compare_groups (easy): no match lines or counts before you answer; a small model of dots beside the groups. At K, after tap_count, tapping a bear numbers it and does NOT choose the side. one_more_less: hop numbers run from the target to your pick, never past it.
+- compare-objects order_three: bars that grow the way the order goes; a faint grid behind ribbons/towers; the easier set is blue, pink and green objects far apart.
+- number-sequencer order_cards: bars over the empty places; dots and ten-sticks on the cards; the easier train is three new cards.
+- ordinal-line build_sequence: a flag over the first place; 1, 2, 3, 4 dots under the places; the easier line is Cat, Frog, Owl.
+Say whether anything drawn tells a child the answer, and whether the marks are readable at tablet size. Owner: user.
+
+### #174 — **literacy L3 levers: do the print marks help a stuck reader without reading anything aloud?** (handoff 22)
+
+**Drive it:** a Grade 1 lesson per primitive, tutor connected, sound on. On each: read wrong once, then say "I'm stuck."
+- word-workout: real or silly: dots under both words. Word chains (hard tier): the changed letter lights; the easier item is two new words that change only at the start. Inflected (jumping): "I'm stuck" before any try is refused; after a wrong read, a bar between jump and ing, then an easier -s word. Sentence reading: an underline under each word; the easier sentence is three new words. The question gets a who/what/where icon.
+- decodable-reader: an underline under each word of the line, then dots; the easier line is three new words, not from the story. After a wrong one-word answer, two story sentences come back, nothing inside them marked.
+- read-aloud-studio (accuracy): the underline and dots on the line; the easier line is three new words.
+- interactive-book (read-focus-word): dots under the glowing word only; the easier sentence (not from the book) glows a short word.
+**Check:** the tutor never reads the printed word or line before the child tries; each mark appears before the tutor mentions it; the marks sit under the letters without moving or changing them (look on a phone width too); after an easier practice item the same full item comes back.
+
+Machine evidence: `qa/eval-reports/levers-literacy-L3-2026-09-28.md`.
+
+### #173 — **literacy L2 levers: does each screen help a stuck K child hear the sounds, without saying the answer?** (handoff 22) · SOUND ON
+
+**Drive it:** a K lesson per primitive, tutor connected, **sound on**. Answer wrong once, then say "I'm stuck." Listen as much as look.
+- rhyme-studio: recognition / identification: a model beside the item, bee and tree lit at their endings, bee and bus lit at their starts; the item's own cards unchanged. Production / collection: sock, rock, lock; then six picture cards of single first sounds under the word. The easier item is new words, not scored.
+- phoneme-explorer: isolate / ending / medial: another word in three sound boxes with one box lit. Blend: the tiles slide together; the tutor says the sounds with shorter gaps and stops before the word. Segment: a counter pad the child taps once per sound (nothing drawn ahead). Manipulate: the changing box empties.
+- sound-swap: in + /p/ = pin shown and said; an empty tile where an added sound goes (no letter).
+- syllable-clapper: count: another word (umbrella, napkin) with a clap per part; there is no clap button. Blend: a dot per part slides together. Delete: sun + hat, sun fades, hat is left.
+- word-flip: one hat, two hats (or mouse, mice for an irregular item).
+**Listen for:** the tutor never stretches, splits or chants the item's own word before the child tries; it describes a change only after it appears; after an easier practice item the same full item comes back.
+
+Machine evidence: `qa/eval-reports/levers-literacy-L2-2026-09-28.md`.
+
+### #172 — **literacy L1 levers: does each screen help a stuck K reader, without giving the answer?** (handoff 22)
+
+**Drive it:** a K lesson per primitive, tutor connected, sound on. On each: answer wrong once, then say "I'm stuck."
+- cvc-speller `spell_word`: build a word with the wrong middle letter. The vowel pictures appear, all alike; after a second miss, three blank tokens you tap one per sound. The easier word has four letters to choose from and is not scored.
+- letter-sound-link `hear_see`: tap the wrong letter. Pictures appear under BOTH cards; on a t/d or p/b item, a snake and a bee (no letters) with a hand on the throat.
+- letter-spotter: `find_it`: a small letter card beside the capital grid, or a highlight sweeping the rows without stopping on the answer's. `match_it`: after a wrong tap, that tile shows its own capital.
+- word-workout `picture_match`: dots under each sound of the printed word. Nothing is read aloud.
+- interactive-book `find-feature`: a small model cover or page beside the book (not the book) with the asked part outlined.
+Check: every change reads without reading, nothing marks the answer, and after an easier practice item the same full item comes back.
+
+Machine evidence: `qa/eval-reports/levers-literacy-L1-2026-09-28.md`.
 
 ### #171 — **number-line jump levers: does the line help a stuck child, without giving the answer?** (handoff 18)
 
