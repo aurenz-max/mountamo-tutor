@@ -30,7 +30,7 @@ it. Gesture misses are named for bound families; every later link is partial.
 
 | Item | State | As of |
 |---|---|---|
-| `main` | `87ecb56d`; branch pushed through `f26c2915` (M1 Live gate). ~127 paths uncommitted 09-29: knowledge-check levers (25), literacy K-2 close (24), `runtime/` (64 paths). `/ship` next | 09-29 |
+| `main` | `87ecb56d` (09-26); branch 90 ahead, pushed; tree clean after `/ship` 09-29 (handoffs 24, 25). Fast-forward proposed | 09-29 |
 | Test ladder | T0 dry sweep J1-J8 (free) · T1 miss/lever `it.each` (free) · T2 JEV observer on recorded packets (NOT BUILT) · T3 text replay, harm checks only · T4 Live, weekly sample (`LIVE_TESTING.md`) | 09-27 |
 | Gates | `typecheck:lumina` 0; full tsc 770 (handoff 24, 09-29) | 09-29 |
 | Human checks | 129 open, next free **#180** (`my-tutoring-app/qa/HUMAN-CHECKS.md`) | 09-29 |
