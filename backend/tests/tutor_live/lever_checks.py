@@ -39,8 +39,10 @@ def _item(run):
 
 def _landings(run, item_id):
     """The item's own answer numbers, whichever field the primitive keeps them in."""
-    challenge = next((c for c in run.get('items', []) if c.get('id') == item_id), {})
-    return {str(v) for k in ('targetValues', 'targetCount', 'answer') for v in
+    items = run.get('items', [])
+    # A challenge with no id is named by the workspace as `<type>-<index>` (base-ten-blocks).
+    challenge = next((c for i, c in enumerate(items) if (c.get('id') or f"{c.get('type')}-{i}") == item_id), {})
+    return {str(v) for k in ('targetValues', 'targetCount', 'targetNumber', 'targetAnswer', 'answer') for v in
             (challenge.get(k) if isinstance(challenge.get(k), list) else [challenge.get(k)]) if isinstance(v, (int, float))}
 
 

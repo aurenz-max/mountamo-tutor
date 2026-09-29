@@ -55,7 +55,8 @@ const server = await vite.createServer({ root: process.cwd(), configFile: false,
     { find: /.*\/utils\/SoundManager(?:\.ts)?$/, replacement: seams },
     { find: /.*\/components\/JudgedMicPanel(?:\.tsx)?$/, replacement: seams },
     { find: /.*\/evaluation\/index\.ts$/, replacement: seams },
-    { find: '../../../evaluation', replacement: seams },
+    // Exact id only: a string `find` also matches `find + '/…'`, which sent `evaluation/workspaceSubmission` to the seams.
+    { find: /^\.\.\/\.\.\/\.\.\/evaluation$/, replacement: seams },
     { find: '@', replacement: resolve('src') },
   ] }, server: { middlewareMode: true, hmr: false, ws: false, watch: null } });
 const load = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
