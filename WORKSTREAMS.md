@@ -72,7 +72,7 @@ its vitest gate; Live is 1-2 runs per class, never per primitive.
 |---|---|---|---|
 | 3.0 | J9 sweep rule + S2 trigger ladder in `runtime/` (2nd wrong auto-pulls help; stuck-first = help only) | `/add-support-tiers`, `/add-live-tutor-tools` · handoff 21 S1-S2 | DONE 09-27 (replay 2/30 vs 3/20 baseline) |
 | 3.0b | Measure every math mode: payloads + sweep `leverInventory` | handoff 21 S1b | DONE 09-28: 24/319 graded modes have levers; findings NL-2, BS-3 (`/eval-fix`), CO-6, SW-1..8 (`/add-live-tutor-tools`); backend session-score ruling open |
-| 3.1 | Math by class; vitest gate per primitive · `qa/support-levers/reinventory-2026-09-29.md` | `/add-support-tiers` · handoff 21, **23** | M1 every mode DONE 09-29, Live-ready. M2 tap modes only (12 spoken modes open). Next: handoff 23 (M1 Live pair, M2 spoken, M2 Live pair), then M3 |
+| 3.1 | Math by class; vitest gate per primitive · `qa/support-levers/reinventory-2026-09-29.md` | `/add-support-tiers` · handoff 21, **23** | M1 every mode DONE 09-29, **Live gate passed 09-29** (`qa/tutor-reports/m1-live-gate-2026-09-29.md`; LB-15 open). M2 tap modes only (12 spoken modes open). Next: handoff 23 step 2 (M2 spoken: compare-objects, number-sequencer, ordinal-line), then the M2 Live pair, then M3 |
 | 3.1b | Literacy by class; literacy files only | `/add-support-tiers` · handoff 22, **24** | L1-L4 closed on measured modes; 48/93 modes unmeasured. Next: handoff 24 (measure, close K-2 gaps incl. phonics-blender, Live pairs) |
 | 3.1c | knowledge-check levers (every subject; near/far tag first) | `/add-support-tiers` · handoff **25** | open |
 | 3.2 | Lever bench misses from Live runs | row executor · `qa/lever-bench/QUEUE.md` | 12 rows |

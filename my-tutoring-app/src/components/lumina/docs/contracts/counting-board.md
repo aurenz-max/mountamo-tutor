@@ -153,6 +153,7 @@ _None open._ Item 13 (R4) is **COMPATIBLE / fork-by-band+mode**. It changes only
 
 ## Changelog
 
+- 2026-09-29 — the board SVG carries `data-lever` (`line-up`, `five-groups`, `rows-apart`) while a layout lever is pulled, so a pull that only moves objects is findable on screen (LB-14, M1 Live gate). Markup only: no layout, fact, check or verdict changed. Verified: CountingBoard suites 208/208.
 - 2026-09-29 — R16 added (spoken-kind levers). Compatible: unpulled boards render as before; the spoken kinds' tier flags are unchanged (R9).
 - 2026-09-28 — R15 added (in-item levers, `/add-support-tiers`, handoff 21 M1). Additive: the give_me_n running count and tags become levers whose tier flags are their starting positions, so an untiered or easy board renders as before; a pulled `line_up` overrides the challenge's arrangement; hand buttons gain `data-pip-object="hand-N"` for the driver. No check, miss, verdict or spoken-kind rendering changed.
 

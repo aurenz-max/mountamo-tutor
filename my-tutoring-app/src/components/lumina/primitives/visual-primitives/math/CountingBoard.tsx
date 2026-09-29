@@ -683,6 +683,9 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
       : (currentChallenge?.arrangement ?? 'scattered');
   const challengeGroupSize = pulledLevers.includes(FIVES_LEVER) ? 5 : currentChallenge?.groupSize;
   const rowsApart = pulledLevers.includes(ROWS_LEVER) && currentItem?.kind === 'compare';
+  // A layout lever draws no mark of its own; the board carries it, so a pull the screen shows is findable (Live LB check).
+  const layoutLever = rowsApart ? 'rows-apart' : challengeArrangement === 'line' && pulledLevers.includes(LINE_LEVER) ? 'line-up'
+    : challengeArrangement === 'groups' && pulledLevers.includes(FIVES_LEVER) ? 'five-groups' : undefined;
 
   const isKSubitize = gradeBand === 'K' && currentItem?.kind === 'subitize';
   /**
@@ -1065,6 +1068,7 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
             {/* Counting Workspace */}
             <div className="flex justify-center">
               <svg
+                data-lever={layoutLever}
                 width={WORKSPACE_WIDTH}
                 height={WORKSPACE_HEIGHT}
                 viewBox={`0 0 ${WORKSPACE_WIDTH} ${WORKSPACE_HEIGHT}`}

@@ -118,8 +118,10 @@ it('count: line_up puts the board in one row in the same commit; the smaller boa
     data: spokenData('K', { type: 'count_all', count: 7, targetAnswer: 7 }, { type: 'count_all', count: 6, targetAnswer: 6 }) });
   expect(levers(h).map(l => [l.id, l.kind])).toEqual([['line_up', 'help'], ['smaller_set', 'simplify']]);
   h.say('six'); h.feedback('incorrect', 'retry');
+  expect(h.view.container.querySelector('[data-lever]')).toBeNull();
   h.dispatch('pull_lever', { lever: 'line_up' });
   expect(objectRows(h).size).toBe(1);
+  expect(h.view.container.querySelector('svg[data-lever="line-up"]')).not.toBeNull();
   expect(drawn(h)).toBe(7);
   expect(h.state().task!.demand.onScreen).toMatch(/single row/);
   const full = h.state().task!.itemId;
@@ -142,6 +144,7 @@ it('compare: rows_apart puts each group in its own row with the left edges lined
   const h = mountWorkspace({ primitiveId: 'counting-board', evalMode: 'compare', instanceId: 'board',
     data: spokenData('1', { type: 'compare', count: 9, groupSize: 5, targetAnswer: 5, arrangement: 'groups' }) });
   h.dispatch('pull_lever', { lever: 'rows_apart' });
+  expect(h.view.container.querySelector('svg[data-lever="rows-apart"]')).not.toBeNull();
   const pos = Array.from(h.view.container.querySelectorAll('[data-pip-object^="object-"] > circle:last-of-type'))
     .map(c => [Number(c.getAttribute('cx')), Number(c.getAttribute('cy'))]);
   const rows = Array.from(new Set(pos.map(p => p[1])));
@@ -169,6 +172,7 @@ it('K subitize: five_groups shows the hidden set again in rows of five, for the 
   h.dispatch('pull_lever', { lever: 'five_groups' });
   expect(drawn(h)).toBe(7);
   expect(objectRows(h).size).toBe(2);
+  expect(h.view.container.querySelector('svg[data-lever="five-groups"]')).not.toBeNull();
   expect(h.state().task!.demand.onScreen).toMatch(/rows of five/);
   h.settle(5000);
   expect(drawn(h)).toBe(0);

@@ -20,6 +20,8 @@ M1 is the first class with levers on every eval mode (09-29 sweep: counting-boar
 
 ## Step 1: M1 Live pair (paid, 2 runs)
 
+**DONE 09-29: passed.** Run 1 base-ten mixed, second-wrong auto-pull, PASS. Run 2 swapped to counting-board `count` with `--audio` (spoken levers): the pull and its screen change came before the tutor's words; the two failed code checks were a missing `[data-lever]` mark on layout levers (LB-14, fixed, vitest) and a transcript-only system-prompt chunk that was not voiced (LB-15, open). Also found: every Live drive crashed at startup (LB-13, driver alias, fixed); `--input` needs the runner-shaped payload (`qa/tutor-reports/<id>-runtime-<mode>-payload-*.json`, `generatedData`), not the `w1-payloads` file; the runner drives only the first two challenges, so the mixed run covers build and read_blocks only. Summary: `qa/tutor-reports/m1-live-gate-2026-09-29.md`.
+
 ```
 run_live_runtime.py --primitive base-ten-blocks --input <w1-payloads>/base-ten-blocks.mixed.json --lever --lesson-entry --lever-ladder second-wrong --runs 1
 run_live_runtime.py --primitive base-ten-blocks --input <w1-payloads>/base-ten-blocks.mixed.json --lever --lesson-entry --audio --runs 1

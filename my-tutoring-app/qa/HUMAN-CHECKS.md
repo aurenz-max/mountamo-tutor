@@ -20,7 +20,7 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 - number-bond say turns: the counters you are asked about sit in a ten-frame outline, nothing filled in for you.
 - base-ten read_blocks: one ten-stick "= 10" beside the mat (never on the worth step when only one is on the mat); other sizes fade; the asked blocks five, a gap, the rest. regroup: a small model trade with different counts beside your mat; the ones column glows round the ones already there. Also on the click mat (mixed lesson): trade and press Check straight away; it must count the trade.
 - place-value say_value: a different number with a different digit glowing and its worth; the glowing digit as blocks under the number, no words.
-**Check:** each change appears before the tutor mentions it; nothing drawn or said gives the number before a try; the lever is gone on the next item. [Report](eval-reports/levers-M1-spoken-2026-09-29.md). Owner: user.
+**Check:** each change appears before the tutor mentions it; nothing drawn or said gives the number before a try; the lever is gone on the next item. [Report](eval-reports/levers-M1-spoken-2026-09-29.md). Live gate passed 09-29 on base-ten build and counting-board count ([summary](tutor-reports/m1-live-gate-2026-09-29.md)); the rest of this list has only vitest and text replay behind it. Owner: user.
 
 ### #176 — **literacy L4 levers: do the role, ribbon and mat aids help a stuck K-1 speaker without giving the answer?** (handoff 22)
 
