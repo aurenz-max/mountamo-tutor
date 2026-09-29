@@ -230,7 +230,7 @@ function buildBinarySortSchema(gradeKey: string): Schema {
   const wordProps: Record<string, Schema> = {};
   for (let i = 0; i < 8; i++) {
     wordProps[`word${i}Text`] = { type: Type.STRING, description: `Word ${i} display text` };
-    wordProps[`word${i}Emoji`] = { type: Type.STRING, description: `Word ${i} emoji — a single emoji that SHOWS the word's meaning` };
+    wordProps[`word${i}Emoji`] = { type: Type.STRING, description: `Word ${i} emoji — a single emoji that SHOWS the word's meaning; never the same emoji as any bucket` };
     wordProps[`word${i}Bucket`] = { type: Type.STRING, description: `Word ${i} correct bucket — must exactly match bucket0 or bucket1` };
   }
 
@@ -277,7 +277,7 @@ function buildTernarySortSchema(gradeKey: string): Schema {
   const wordProps: Record<string, Schema> = {};
   for (let i = 0; i < 10; i++) {
     wordProps[`word${i}Text`] = { type: Type.STRING, description: `Word ${i} display text` };
-    wordProps[`word${i}Emoji`] = { type: Type.STRING, description: `Word ${i} emoji — a single emoji that SHOWS the word's meaning` };
+    wordProps[`word${i}Emoji`] = { type: Type.STRING, description: `Word ${i} emoji — a single emoji that SHOWS the word's meaning; never the same emoji as any bucket` };
     wordProps[`word${i}Bucket`] = { type: Type.STRING, description: `Word ${i} correct bucket — must exactly match bucket0, bucket1, or bucket2` };
   }
 
@@ -415,7 +415,11 @@ interface FlatChallenge {
   [key: string]: unknown;
 }
 
-function reconstructSortChallenge(
+/** Emoji identity ignoring the variation selector (U+FE0F) that renders the same picture. */
+const sameEmoji = (a: string, b: string): boolean =>
+  a.replace(/️/g, '').trim() === b.replace(/️/g, '').trim();
+
+export function reconstructSortChallenge(
   flat: FlatChallenge,
   type: 'binary_sort' | 'ternary_sort',
   scaffold?: WordSorterSupportScaffold,
@@ -475,10 +479,18 @@ function reconstructSortChallenge(
       continue;
     }
 
+    // WS-2: a card showing a group's own picture (pup 🐶 beside Dogs 🐶) is
+    // sorted by matching two identical pictures, not by knowing the word.
+    const emoji = (flat[`word${i}Emoji`] as string) || undefined;
+    if (emoji && bucketEmojis.some((b) => b && sameEmoji(b, emoji))) {
+      console.warn(`[WordSorter] Skipped word "${text}" — its picture ${emoji} is a group's picture`);
+      continue;
+    }
+
     words.push({
       id: `w${i}`,
       word: text,
-      emoji: (flat[`word${i}Emoji`] as string) || undefined,
+      emoji,
       correctBucket: matchedBucket,
     });
   }
@@ -637,6 +649,7 @@ For each challenge:
 - wordCount: 6-8 words
 - word0Text..word7Text: The words to sort
 - word0Emoji..word7Emoji: Emoji for each word (REQUIRED for K — the emoji must show the word's meaning; recommended for grade 1-2)
+  Never reuse a bucket emoji on a word: a pup is 🐕 when the Dogs bucket is 🐶.
 - word0Bucket..word7Bucket: Must EXACTLY match bucket0 or bucket1
 
 ${SPOKEN_CONTENT_RULES}
@@ -696,6 +709,7 @@ For each challenge:
 - wordCount: 8-10 words
 - word0Text..word9Text: The words to sort
 - word0Emoji..word9Emoji: Emoji for each word (REQUIRED for K — the emoji must show the word's meaning)
+  Never reuse a bucket emoji on a word: a pup is 🐕 when the Dogs bucket is 🐶.
 - word0Bucket..word9Bucket: Must EXACTLY match bucket0, bucket1, or bucket2
 
 ${SPOKEN_CONTENT_RULES}

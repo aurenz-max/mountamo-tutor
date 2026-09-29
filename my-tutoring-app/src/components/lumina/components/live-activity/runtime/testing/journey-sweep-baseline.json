@@ -44,8 +44,5 @@
  },
  "read-aloud-studio.expression": {
   "J1-drivable": "handoff 24 SW-L2"
- },
- "word-sorter.ternary_sort": {
-  "J9-miss-answered": "EVAL_TRACKER WS-2"
  }
 }

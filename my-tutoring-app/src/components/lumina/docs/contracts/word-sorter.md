@@ -29,3 +29,10 @@ Static derivation for the word-sorter slice of handoff 22 L4.
 - **Property:** `group_pictures` (sorts; a picture on every mat; answers `other_group`, `said_word_back`) and `filed_examples` (the learner's own credited words or pairs of this challenge; answers `other_group` / `other_bank_word`), both help, shown, offered only where the tier withdrew the aid. `filed_examples` is offered only once something is filed. Leak rule `groupPicturesLeak`: no pictures lever when a mat picture is the item's own picture. match_pairs `said_word_back` has no lever by decision. No simplify.
 - **Demanded by:** handoff 22 L4.
 - **Probe:** `npm test -- wordSorterLevers WordSorter.levers`.
+
+## Changelog
+
+- 2026-09-29 — handoff 28 row 3, WS-2 (`/eval-fix`): the generator skips a sort word whose picture is a group mat's picture, so
+  R4's `groupPicturesLeak` should rarely fire on generated content. R3 unchanged (K mats keep their pictures). `--check`
+  **COMPATIBLE**: word-sorter vitest and the journey sweep green on all six word-sorter payloads; the K ternary payload was
+  regenerated and its hard fixture re-derived at grade 1.

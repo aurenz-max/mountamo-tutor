@@ -1,150 +1,150 @@
 {
- "source": "qa/tutor-reports/word-sorter-runtime-ternary_sort-payload-2026-09-24.json",
+ "source": "qa/tutor-reports/word-sorter-runtime-ternary_sort-payload-2026-09-29.json",
  "primitiveId": "word-sorter",
  "evalMode": "ternary_sort",
  "data": {
-  "title": "Fun Word Sort for Kids",
+  "title": "Fun Word Sorting Adventure",
   "gradeLevel": "K",
-  "sortingTopic": "Animals and Foods",
+  "sortingTopic": "Sorting animals and foods",
   "challenges": [
    {
     "id": "ternary_sort-0",
     "type": "ternary_sort",
-    "instruction": "Sort these words into cats, dogs, and snacks!",
+    "instruction": "Sort these words into the right group",
     "bucketLabels": [
-     "Cats",
-     "Dogs",
-     "Food"
+     "Animals",
+     "Food",
+     "Toys"
     ],
     "bucketEmojis": [
-     "🐱",
-     "🐶",
-     "🍎"
+     "\ud83d\udc3e",
+     "\ud83c\udf4e",
+     "\ud83e\uddf8"
     ],
     "words": [
      {
-      "id": "w8",
-      "word": "hound",
-      "emoji": "🦴",
-      "correctBucket": "Dogs"
-     },
-     {
-      "id": "w6",
-      "word": "pie",
-      "emoji": "🥧",
+      "id": "w7",
+      "word": "jam",
+      "emoji": "\ud83c\udf53",
       "correctBucket": "Food"
      },
      {
       "id": "w5",
-      "word": "kit",
-      "emoji": "🐈",
-      "correctBucket": "Cats"
+      "word": "car",
+      "emoji": "\ud83d\ude97",
+      "correctBucket": "Toys"
      },
      {
       "id": "w2",
-      "word": "pup",
-      "emoji": "🐶",
-      "correctBucket": "Dogs"
-     },
-     {
-      "id": "w1",
-      "word": "milk",
-      "emoji": "🥛",
-      "correctBucket": "Food"
+      "word": "ball",
+      "emoji": "\u26bd",
+      "correctBucket": "Toys"
      },
      {
       "id": "w0",
       "word": "cat",
-      "emoji": "🐱",
-      "correctBucket": "Cats"
+      "emoji": "\ud83d\udc08",
+      "correctBucket": "Animals"
+     },
+     {
+      "id": "w8",
+      "word": "kite",
+      "emoji": "\ud83e\ude81",
+      "correctBucket": "Toys"
      },
      {
       "id": "w3",
-      "word": "fish",
-      "emoji": "🐟",
-      "correctBucket": "Food"
+      "word": "dog",
+      "emoji": "\ud83d\udc15",
+      "correctBucket": "Animals"
      },
      {
       "id": "w4",
-      "word": "dog",
-      "emoji": "🐕",
-      "correctBucket": "Dogs"
+      "word": "milk",
+      "emoji": "\ud83e\udd5b",
+      "correctBucket": "Food"
      },
      {
-      "id": "w7",
-      "word": "pet",
-      "emoji": "🐾",
-      "correctBucket": "Cats"
+      "id": "w6",
+      "word": "pig",
+      "emoji": "\ud83d\udc16",
+      "correctBucket": "Animals"
+     },
+     {
+      "id": "w1",
+      "word": "pie",
+      "emoji": "\ud83e\udd67",
+      "correctBucket": "Food"
      }
     ]
    },
    {
     "id": "ternary_sort-1",
     "type": "ternary_sort",
-    "instruction": "Sort these words into bugs, birds, and treats!",
+    "instruction": "Put each word where it belongs",
     "bucketLabels": [
      "Bugs",
-     "Birds",
-     "Snacks"
+     "Fruit",
+     "Clothes"
     ],
     "bucketEmojis": [
-     "🐛",
-     "🐦",
-     "🍿"
+     "\ud83d\udc1e",
+     "\ud83c\udf4c",
+     "\ud83d\udc55"
     ],
     "words": [
      {
-      "id": "w0",
-      "word": "fly",
-      "emoji": "🪰",
-      "correctBucket": "Bugs"
+      "id": "w8",
+      "word": "grape",
+      "emoji": "\ud83c\udf47",
+      "correctBucket": "Fruit"
      },
      {
       "id": "w1",
-      "word": "nut",
-      "emoji": "🥜",
-      "correctBucket": "Snacks"
+      "word": "bee",
+      "emoji": "\ud83d\udc1d",
+      "correctBucket": "Bugs"
      },
      {
-      "id": "w8",
-      "word": "duck",
-      "emoji": "🐤",
-      "correctBucket": "Birds"
+      "id": "w2",
+      "word": "pear",
+      "emoji": "\ud83c\udf50",
+      "correctBucket": "Fruit"
+     },
+     {
+      "id": "w5",
+      "word": "plum",
+      "emoji": "\ud83c\udf51",
+      "correctBucket": "Fruit"
+     },
+     {
+      "id": "w7",
+      "word": "shirt",
+      "emoji": "\ud83d\udc54",
+      "correctBucket": "Clothes"
+     },
+     {
+      "id": "w4",
+      "word": "sock",
+      "emoji": "\ud83e\udde6",
+      "correctBucket": "Clothes"
      },
      {
       "id": "w3",
       "word": "ant",
-      "emoji": "🐜",
+      "emoji": "\ud83d\udc1c",
       "correctBucket": "Bugs"
      },
      {
-      "id": "w7",
-      "word": "plum",
-      "emoji": "🍑",
-      "correctBucket": "Snacks"
-     },
-     {
-      "id": "w4",
-      "word": "egg",
-      "emoji": "🥚",
-      "correctBucket": "Snacks"
-     },
-     {
-      "id": "w5",
-      "word": "jay",
-      "emoji": "🐦",
-      "correctBucket": "Birds"
-     },
-     {
-      "id": "w2",
-      "word": "owl",
-      "emoji": "🦉",
-      "correctBucket": "Birds"
+      "id": "w0",
+      "word": "hat",
+      "emoji": "\ud83e\udde2",
+      "correctBucket": "Clothes"
      },
      {
       "id": "w6",
-      "word": "bee",
-      "emoji": "🐝",
+      "word": "fly",
+      "emoji": "\ud83e\udeb0",
       "correctBucket": "Bugs"
      }
     ]
@@ -152,59 +152,71 @@
    {
     "id": "ternary_sort-2",
     "type": "ternary_sort",
-    "instruction": "Sort these words into farm pets, wild beasts, and yummy lunch items!",
+    "instruction": "Sort the words into matching groups",
     "bucketLabels": [
-     "Pig",
-     "Bear",
-     "Soup"
+     "Birds",
+     "Sweet",
+     "Colors"
     ],
     "bucketEmojis": [
-     "🐷",
-     "🐻",
-     "🥣"
+     "\ud83d\udc26",
+     "\ud83c\udf6c",
+     "\ud83c\udfa8"
     ],
     "words": [
      {
-      "id": "w8",
-      "word": "grizzly",
-      "emoji": "🐾",
-      "correctBucket": "Bear"
-     },
-     {
       "id": "w4",
-      "word": "hog",
-      "emoji": "🐖",
-      "correctBucket": "Pig"
-     },
-     {
-      "id": "w7",
-      "word": "sow",
-      "emoji": "🐽",
-      "correctBucket": "Pig"
-     },
-     {
-      "id": "w6",
-      "word": "stew",
-      "emoji": "🍲",
-      "correctBucket": "Soup"
+      "word": "duck",
+      "emoji": "\ud83e\udd86",
+      "correctBucket": "Birds"
      },
      {
       "id": "w3",
-      "word": "rice",
-      "emoji": "🍚",
-      "correctBucket": "Soup"
+      "word": "red",
+      "emoji": "\ud83d\udd34",
+      "correctBucket": "Colors"
+     },
+     {
+      "id": "w8",
+      "word": "fudge",
+      "emoji": "\ud83c\udf6b",
+      "correctBucket": "Sweet"
+     },
+     {
+      "id": "w5",
+      "word": "gum",
+      "emoji": "\ud83e\udee7",
+      "correctBucket": "Sweet"
      },
      {
       "id": "w2",
-      "word": "cub",
-      "emoji": "🐻",
-      "correctBucket": "Bear"
+      "word": "cake",
+      "emoji": "\ud83c\udf82",
+      "correctBucket": "Sweet"
+     },
+     {
+      "id": "w0",
+      "word": "blue",
+      "emoji": "\ud83d\udcd8",
+      "correctBucket": "Colors"
+     },
+     {
+      "id": "w7",
+      "word": "pink",
+      "emoji": "\ud83c\udf38",
+      "correctBucket": "Colors"
+     },
+     {
+      "id": "w6",
+      "word": "hen",
+      "emoji": "\ud83d\udc14",
+      "correctBucket": "Birds"
      },
      {
       "id": "w1",
-      "word": "pear",
-      "emoji": "🍐",
-      "correctBucket": "Soup"
+      "word": "owl",
+      "emoji": "\ud83e\udd89",
+      "correctBucket": "Birds"
      }
     ]
    }
