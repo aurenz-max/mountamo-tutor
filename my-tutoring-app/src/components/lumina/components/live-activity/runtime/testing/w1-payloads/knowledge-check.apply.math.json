@@ -1,0 +1,49 @@
+{
+ "source": "qa/tutor-reports/knowledge-check-runtime-apply-payload-2026-09-29.json",
+ "primitiveId": "knowledge-check",
+ "evalMode": "apply",
+ "data": {
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "id": "mc_1",
+    "difficulty": "medium",
+    "gradeLevel": "elementary",
+    "question": "Leo has 7 green apples: \ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f. He finds 5 red apples: \ud83c\udf4e\ud83c\udf4e\ud83c\udf4e\ud83c\udf4e\ud83c\udf4e. How many apples does Leo have in total?",
+    "options": [
+     {
+      "id": "A",
+      "text": "11",
+      "distance": "near"
+     },
+     {
+      "id": "B",
+      "text": "12",
+      "distance": "key"
+     },
+     {
+      "id": "C",
+      "text": "13",
+      "distance": "near"
+     },
+     {
+      "id": "D",
+      "text": "2",
+      "distance": "far"
+     }
+    ],
+    "correctOptionId": "B",
+    "rationale": "To find the total, add 7 and 5 together. You can start at 7 and count on 5 more: 8, 9, 10, 11, 12. Therefore, Leo has 12 apples altogether.",
+    "teachingNote": "Encourage students to use the 'make ten' strategy: take 3 from the 5 red apples to make 10 with the 7 green apples, leaving 2 more for a total of 12.",
+    "successCriteria": [
+     "Apply addition strategies to add two single-digit numbers whose sum is within 20",
+     "Solve a simple one-step addition word problem using visual representations"
+    ],
+    "subject": "MATHEMATICS"
+   }
+  ],
+  "problemType": "orchestrated",
+  "topic": "Adding within 20",
+  "gradeContext": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

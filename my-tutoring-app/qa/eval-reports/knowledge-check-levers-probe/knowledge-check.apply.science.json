@@ -1,0 +1,53 @@
+{
+ "source": "qa/tutor-reports/knowledge-check-runtime-apply-payload-2026-09-29.json",
+ "primitiveId": "knowledge-check",
+ "evalMode": "apply",
+ "data": {
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "id": "mc_plant_needs_1",
+    "difficulty": "medium",
+    "gradeLevel": "elementary",
+    "question": "Look at the two plants. Plant A is tall and green, but Plant B is drooping and dry. Why is Plant A growing so well while Plant B is struggling?",
+    "options": [
+     {
+      "id": "A",
+      "text": "Plant A is eating extra dirt from the pot to make food.",
+      "distance": "near"
+     },
+     {
+      "id": "B",
+      "text": "Plant A gets both the sunlight and water it needs.",
+      "distance": "key"
+     },
+     {
+      "id": "C",
+      "text": "Plant A is kept away from the light so it can rest.",
+      "distance": "near"
+     },
+     {
+      "id": "D",
+      "text": "Plant A has warm blankets wrapped around its stem.",
+      "distance": "far"
+     }
+    ],
+    "correctOptionId": "B",
+    "rationale": "Plants need sunlight and water to stay healthy and make their own food. Plant A receives both light and moisture, which helps it stand tall and maintain its green color. Without light and water, Plant B cannot make food and begins to wilt.",
+    "teachingNote": "A common misconception among elementary students is that plants 'eat' soil like animals eat food. Emphasize that leaves capture sunlight and roots absorb water to create the plant's nourishment.",
+    "successCriteria": [
+     "Identify that plants require water and sunlight to grow and stay healthy",
+     "Apply knowledge of basic plant needs to explain observed differences between two plants"
+    ],
+    "cue": {
+     "picture": "\ud83e\udeb4",
+     "shows": "a potted plant"
+    },
+    "subject": "SCIENCE"
+   }
+  ],
+  "problemType": "orchestrated",
+  "topic": "Plants and what they need to grow",
+  "gradeContext": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

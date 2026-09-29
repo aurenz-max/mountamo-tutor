@@ -1,0 +1,51 @@
+{
+ "source": "qa/tutor-reports/knowledge-check-runtime-recall-payload-2026-09-29.json",
+ "primitiveId": "knowledge-check",
+ "evalMode": "recall",
+ "data": {
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "id": "mc_1",
+    "difficulty": "easy",
+    "gradeLevel": "kindergarten",
+    "question": "Which of these is a living thing?",
+    "options": [
+     {
+      "id": "A",
+      "text": "Puppy",
+      "emoji": "\ud83d\udc36",
+      "distance": "key"
+     },
+     {
+      "id": "B",
+      "text": "Teddy bear",
+      "emoji": "\ud83e\uddf8",
+      "distance": "near"
+     },
+     {
+      "id": "C",
+      "text": "Rock",
+      "emoji": "\ud83e\udea8",
+      "distance": "far"
+     }
+    ],
+    "correctOptionId": "A",
+    "rationale": "A puppy is a living thing because it grows, breathes, and needs food and water. A teddy bear and a rock are nonliving toys and objects that do not eat, drink, or grow. Even though a teddy bear looks like an animal, it is not alive.",
+    "teachingNote": "Young children often confuse pretend animals or stuffed toys with living things because they have faces. Remind students that living things must grow, breathe, and need food and water to survive.",
+    "successCriteria": [
+     "Identify a living thing from a set of common objects",
+     "Distinguish between living animals and nonliving objects"
+    ],
+    "cue": {
+     "picture": "\ud83c\udf31",
+     "shows": "growing plant"
+    },
+    "subject": "SCIENCE"
+   }
+  ],
+  "problemType": "orchestrated",
+  "topic": "Living and nonliving things",
+  "gradeContext": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+ }
+}

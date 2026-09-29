@@ -451,6 +451,15 @@ export const generateMultipleChoiceProblems = async (
     // Picture-primary at K: every option carries an emoji the pre-reader taps.
     optionProps.emoji = { type: Type.STRING, description: 'ONE emoji that depicts this option (e.g. cat → 🐱). Required.' };
   }
+  // Support levers (handoff 25): which wrong options a learner who half-understood would rule out.
+  optionProps.distance = {
+    type: Type.STRING,
+    enum: ['key', 'near', 'far'],
+    description: '"key" for the correct option. A wrong option: "near" if it is a tempting mistake (same kind of thing, a '
+      + 'common error), "far" if a learner who understood the question even a little would rule it out.',
+  };
+  // A picture of what the question is about, for recall/apply only (the `cue_picture` lever), never on symbol menus.
+  const wantsCue = (!bloomsTier || bloomsTier === 'recall' || bloomsTier === 'apply') && insetType !== 'katex';
 
   const multipleChoiceSchema: Schema = {
     type: Type.OBJECT,
@@ -482,7 +491,7 @@ export const generateMultipleChoiceProblems = async (
               items: {
                 type: Type.OBJECT,
                 properties: optionProps,
-                required: isPreReader ? ["id", "text", "emoji"] : ["id", "text"]
+                required: isPreReader ? ["id", "text", "emoji", "distance"] : ["id", "text", "distance"]
               }
             },
             correctOptionId: {
@@ -514,6 +523,15 @@ export const generateMultipleChoiceProblems = async (
   const itemSchema = (multipleChoiceSchema.properties as any).problems.items;
   injectInsetIntoSchema(itemSchema, insetType);
   injectVisualFields(itemSchema, visualType);
+  if (wantsCue) {
+    const props = itemSchema.properties as Record<string, Schema>;
+    props.cuePicture = { type: Type.STRING, description: '1-2 emoji picturing what the QUESTION is about (its subject or setting). '
+      + 'Never the correct answer, any option, or a hint at why the answer is right. Empty string when the answer is a number, '
+      + 'the question is about words or sentences themselves, or no picture helps.' };
+    props.cueShows = { type: Type.STRING, description: '2-5 words naming what cuePicture shows (empty when cuePicture is empty). '
+      + 'Must not contain the words of any option.' };
+    itemSchema.required.push('cuePicture', 'cueShows');
+  }
 
   // Add optionFormat to schema when katex inset (options may also be LaTeX)
   if (insetType === 'katex') {
@@ -553,6 +571,12 @@ Create ${count} high-quality multiple choice question${count > 1 ? 's' : ''} tha
 - Avoid "all of the above" or "none of the above" options
 - Ensure options are parallel in structure and length
 - Mix up the position of the correct answer (don't always make it B or C)
+- Tag every option's "distance": "key" on the correct one; each wrong one "near" (tempting) or "far" (easy to rule out).
+  Include at least one "far" option when there are 3 or more options.${wantsCue ? `
+- "cuePicture": 1-2 emoji of what the question is ABOUT, so a learner who is stuck understands what is asked.
+  It must NOT picture the answer or any option (question "Which animal makes honey?": 🍯 is fine, 🐝 is not).
+  Leave it empty when the answer is a number, when the question is about words, letters or sentences themselves,
+  or when the picture would hint at why the answer is right.` : ''}
 
 ### 3. DIFFICULTY PROGRESSION
 ${count > 1 ? `- Start with easier questions, build to harder ones
@@ -610,6 +634,8 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
         ...(extractInset(problem, insetType) ? { inset: extractInset(problem, insetType) } : {}),
         ...(visual ? { visual } : {}),
         ...(problem.optionFormat === 'katex' ? { optionFormat: 'katex' as const } : {}),
+        ...(wantsCue && problem.cuePicture?.trim() && problem.cueShows?.trim()
+          ? { cue: { picture: problem.cuePicture.trim(), shows: problem.cueShows.trim() } } : {}),
       };
     });
 

@@ -1,0 +1,49 @@
+{
+ "source": "qa/tutor-reports/knowledge-check-runtime-evaluate-payload-2026-09-29.json",
+ "primitiveId": "knowledge-check",
+ "evalMode": "evaluate",
+ "data": {
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "id": "mc_1",
+    "difficulty": "hard",
+    "gradeLevel": "elementary",
+    "question": "Look at the two pictures:\n\n[Panel A]: A tall, bright green plant sitting by a sunny window with moist soil.\n[Panel B]: A wilted, dry plant sitting in a dark closet with dry soil.\n\nWhich plan is best to save the drooping plant in Panel B?",
+    "options": [
+     {
+      "id": "A",
+      "text": "Add fresh garden soil to the pot and leave it in the closet.",
+      "distance": "near"
+     },
+     {
+      "id": "B",
+      "text": "Move the pot to a sunny spot and give it water.",
+      "distance": "key"
+     },
+     {
+      "id": "C",
+      "text": "Only give the pot water while keeping it inside the closet.",
+      "distance": "near"
+     },
+     {
+      "id": "D",
+      "text": "Turn on a small flashlight next to the plant without watering it.",
+      "distance": "far"
+     }
+    ],
+    "correctOptionId": "B",
+    "rationale": "Plants need both sunlight and water together to make food and stay healthy. Even with good soil, a plant cannot survive in a dark closet without light and water. Combining sunlight and moisture provides everything the drooping plant needs to recover.",
+    "teachingNote": "Young learners frequently hold the misconception that soil alone 'feeds' a plant like food feeds an animal. Use this question to guide students toward synthesizing the combined roles of sunlight and water in plant growth.",
+    "successCriteria": [
+     "Evaluate the environmental conditions required for a plant to survive",
+     "Identify that plants require both water and light together, not just soil"
+    ],
+    "subject": "SCIENCE"
+   }
+  ],
+  "problemType": "orchestrated",
+  "topic": "Plants and what they need to grow",
+  "gradeContext": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

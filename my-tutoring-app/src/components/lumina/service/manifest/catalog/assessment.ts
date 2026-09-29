@@ -173,11 +173,20 @@ export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
         + 'the sign in the number sentence; the activity checks both. Before an attempt never say the answer, which choice '
         + 'it is, or rule a choice out. Saying the statement, the item being sorted or matched, or a word-bank word back is '
         + 'not an answer. For kindergarten, read every choice aloud each time. You cannot point at or highlight anything.',
+      levers: true,
       // The tap's own check (`knowledgeCheckMiss`): a tapped choice and point_to, in any mode; and the spoken kinds'
       // known wrong answers (`knowledgeCheckSpokenMisses`, handoff 20 Part B). A spoken choice reuses the tap's ids.
       misses: sameMisses<KnowledgeCheckMiss | SpokenKnowledgeCheckMiss>(['recall', 'apply', 'analyze', 'evaluate'],
         ['one_less', 'one_more', 'other_number', 'other_choice', 'sign_token', 'other_number_token', 'opposite_verdict',
           'two_choices', 'said_card_back', 'other_bank_word', 'said_start', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
+      // Levers (`knowledgeCheckLevers.ts`, handoff 25) act on a choice: `cue_picture` answers other_choice,
+      // `drop_far_choice` the four choice misses. Unanswered by decision: two_choices (a hedge between the key and a
+      // near choice; greying a far one does not settle it), said_card_back (no answer was given; the tutor asks
+      // again), opposite_verdict (a true/false is already the smallest judgement), and the kinds with no lever built
+      // yet: point_to (sign_token, other_number_token), blank (other_bank_word), how_many (said_start and the counts).
+      unanswered: sameMisses<KnowledgeCheckMiss | SpokenKnowledgeCheckMiss>(['recall', 'apply', 'analyze', 'evaluate'],
+        ['two_choices', 'said_card_back', 'opposite_verdict', 'sign_token', 'other_number_token', 'other_bank_word',
+          'said_start', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
     },
     evalModes: [
       {

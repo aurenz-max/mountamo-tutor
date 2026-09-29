@@ -136,7 +136,7 @@ These follow the same method and gate, using the classes in `plan.html`:
   - L3 decoding: visual levers only, nothing voiced.
   - L4 K-1 vocabulary and story. `phonics-blender` is bound but was not inventoried; draft it first.
 - **Core:**
-  - `knowledge-check` first; it is used in every subject. Text options need a generator `near|far` tag before `drop_far_choice` can work on them.
+  - `knowledge-check` first; it is used in every subject. **DONE 09-29 (handoff 25):** generator `distance` tag, `cue_picture` + `drop_far_choice`, all four modes levered; report `qa/eval-reports/knowledge-check-levers-2026-09-29.md`.
   - Then `fast-fact`, after its leak fix and binding.
   - Then the explainer checks, sharing one source-spotlight lever. The anchors already exist in the data.
   - The 8 ungraded core primitives get no levers.

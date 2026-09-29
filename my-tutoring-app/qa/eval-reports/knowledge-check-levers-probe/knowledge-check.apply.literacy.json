@@ -1,0 +1,49 @@
+{
+ "source": "qa/tutor-reports/knowledge-check-runtime-apply-payload-2026-09-29.json",
+ "primitiveId": "knowledge-check",
+ "evalMode": "apply",
+ "data": {
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "id": "mc_1",
+    "difficulty": "easy",
+    "gradeLevel": "elementary",
+    "question": "Read this sentence: \"The happy dog barks loudly.\" Which word is the verb (the action word)?",
+    "options": [
+     {
+      "id": "A",
+      "text": "happy",
+      "distance": "near"
+     },
+     {
+      "id": "B",
+      "text": "dog",
+      "distance": "near"
+     },
+     {
+      "id": "C",
+      "text": "barks",
+      "distance": "key"
+     },
+     {
+      "id": "D",
+      "text": "The",
+      "distance": "far"
+     }
+    ],
+    "correctOptionId": "C",
+    "rationale": "The word \"barks\" is the verb because it tells the action that the dog is doing. Words like \"happy\" describe how someone feels rather than showing an action, while \"dog\" is the noun naming the animal.",
+    "teachingNote": "Young learners often mistake emotion or feeling words (adjectives like happy, sad, angry) for verbs because feelings feel active to them. Remind students to ask: \"Can you physically do this action?\"",
+    "successCriteria": [
+     "Identify the verb (action word) in a simple sentence.",
+     "Distinguish between nouns, adjectives, and verbs in context."
+    ],
+    "subject": "LANGUAGE_ARTS"
+   }
+  ],
+  "problemType": "orchestrated",
+  "topic": "Nouns and verbs in a sentence",
+  "gradeContext": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

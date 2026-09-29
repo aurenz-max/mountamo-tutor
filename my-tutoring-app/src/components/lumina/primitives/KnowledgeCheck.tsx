@@ -74,6 +74,8 @@ import {
   type KnowledgeCheckItem,
 } from './knowledgeCheckScript';
 import { knowledgeCheckAssignment, knowledgeCheckItems, knowledgeCheckMiss, knowledgeCheckScene } from './knowledgeCheckWorkspace';
+import { CUE_LEVER, DROP_LEVER, NO_LEVERS, farChoice, knowledgeCheckLevers, leversOnScreen,
+  type KnowledgeCheckLeverState } from './knowledgeCheckLevers';
 
 interface KnowledgeCheckProps {
   data: KnowledgeCheckData | {
@@ -243,6 +245,15 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
   const [filed, setFiled] = useState<Record<string, { focus: string; group: string; problemIndex: number }>>({});
   /** choice_tap / point_to: which option or sign the child committed (pre-verdict selection). */
   const [tappedId, setTappedId] = useState<string | null>(null);
+  /** In-item levers (`knowledgeCheckLevers.ts`), keyed by the item they belong to. `wrongs` counts retries after a
+   *  wrong answer; `picked` the choices touched wrong. A new item starts from NO_LEVERS. */
+  const [leverState, setLeverState] = useState<{ item: string } & KnowledgeCheckLeverState>({ item: '', ...NO_LEVERS });
+  const leversFor = (id: string | undefined): KnowledgeCheckLeverState => (id && leverState.item === id ? leverState : NO_LEVERS);
+  const updateLevers = (id: string, change: (s: KnowledgeCheckLeverState) => Partial<KnowledgeCheckLeverState>) =>
+    setLeverState((prev) => {
+      const base = prev.item === id ? prev : { item: id, ...NO_LEVERS };
+      return { ...base, ...change(base) };
+    });
 
   const revealTextFor = (item: KnowledgeCheckItem): string => {
     switch (item.kind) {
@@ -283,9 +294,10 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
       // this callback (18b).
       setTappedId(null);
     },
-    onCorrectionRetry: () => {
+    onCorrectionRetry: (item) => {
       setTappedId(null);
       pip.clear();
+      updateLevers(item.id, (s) => ({ wrongs: s.wrongs + 1 }));
     },
   });
   // The live host has no evaluation provider, so `onFinished` (and `finished`) never fire there.
@@ -296,10 +308,35 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
   useLayoutEffect(() => {
     const item = runner.currentItem;
     if (!item) return;
-    workspace.current = { ...knowledgeCheckScene(item, preReader) };
+    const own = leversFor(item.id);
+    // A wrong answer not yet retried counts as a tried choice (its retry has not run).
+    const pendingWrong = runner.running && !runner.canAttempt && !runner.currentSolved ? 1 : 0;
+    const s = { ...own, wrongs: own.wrongs + pendingWrong };
+    const levers = knowledgeCheckLevers(item, s);
+    const scene = knowledgeCheckScene(item, preReader);
+    const onScreen = leversOnScreen(item, s);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === DROP_LEVER) {
+          const drop = farChoice(item, s);
+          if (!drop) return 'No choice can be greyed out: too few untried choices would remain.';
+          updateLevers(item.id, (prev) => ({ pulled: [...prev.pulled, id], dropped: [...prev.dropped, drop] }));
+          return true;
+        }
+        updateLevers(item.id, (prev) => ({ pulled: [...prev.pulled, id] }));
+        return true;
+      },
+    };
   });
 
   const currentItem = runner.currentItem;
+  const currentLevers = leversFor(currentItem?.id);
 
   // ── Pip shared surface ────────────────────────────────────────────────────
   // A projection of the runner's phase onto the question card and the child's
@@ -323,8 +360,10 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
   const handleTapChoice = (item: KnowledgeCheckItem, optionId: string) => {
     if (!runner.canAttempt || item.answerKind !== 'gesture') return;
     if (runner.isAwaitingGesture()) return;
+    if (leversFor(item.id).dropped.includes(optionId)) return;
     pip.look(`option-${optionId}`);
     setTappedId(optionId);
+    if (optionId !== item.correctOptionId) updateLevers(item.id, (s) => ({ picked: [...s.picked, optionId] }));
     // The match is CODE-COMPUTED.
     const text = item.options?.find((o) => o.id === optionId)?.text ?? optionId;
     commitGesture(runner, { response: `Touched "${text}".`, correct: optionId === item.correctOptionId, cue: () => '',
@@ -364,9 +403,13 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
     const showAsAnswer = runner.revealHeld && reveal?.itemId === item.id && isTarget;
     const isTapKind = item.kind === 'choice_tap';
     const tapped = isTapKind && tappedId === option.id;
+    // drop_far_choice: a greyed-out choice stays in its place (positions the tutor named do not shift).
+    const dropped = currentLevers.dropped.includes(option.id);
     const surface = `flex min-h-[6rem] flex-col items-center justify-center gap-2 rounded-xl border-2 p-4
       text-center transition-all duration-200
-      ${showAsAnswer
+      ${dropped
+        ? 'border-white/5 bg-slate-900/40 opacity-30 line-through'
+        : showAsAnswer
         ? 'border-emerald-400/60 bg-emerald-500/15 ring-2 ring-emerald-400/40'
         : tapped
           ? 'border-blue-400/60 bg-blue-500/15'
@@ -386,7 +429,9 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
         ref={pip.ref(`option-${option.id}`)}
         data-pip-object={`option-${option.id}`}
         type="button"
-        disabled={!runner.canAttempt}
+        disabled={!runner.canAttempt || dropped}
+        aria-disabled={dropped || undefined}
+        data-dropped={dropped || undefined}
         aria-label={option.text}
         onClick={() => handleTapChoice(item, option.id)}
         className={`${surface} ${runner.canAttempt ? 'cursor-pointer hover:border-white/25' : 'opacity-80'}`}
@@ -394,7 +439,7 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
         {inner}
       </button>
     ) : (
-      <li key={option.id} className={surface}>
+      <li key={option.id} className={surface} data-dropped={dropped || undefined}>
         {inner}
       </li>
     );
@@ -415,6 +460,12 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
       <div className="space-y-4">
         <div ref={pip.ref('question')} data-pip-object="question" className="rounded-2xl border border-blue-400/20 bg-gradient-to-br from-blue-500/10 to-slate-900/50 p-6">
           {prompt}
+          {/* cue_picture: what the question is about, only once pulled (never a choice's picture, cueLeak). */}
+          {currentLevers.pulled.includes(CUE_LEVER) && item.cue && (
+            <div className={`mt-4 text-center ${motion.pop}`} key={`${item.id}-cue`} data-lever-cue>
+              <span className="text-5xl leading-none" role="img" aria-label={item.cue.shows}>{item.cue.picture}</span>
+            </div>
+          )}
           {/* Production kinds (KC redesign P2): the STIMULUS the child names,
               counts, or points at. Static for the spoken kinds; for point_to
               the tokens are the one honest tap surface of this pack. */}

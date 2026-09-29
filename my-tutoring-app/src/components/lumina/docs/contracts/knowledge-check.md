@@ -1,7 +1,7 @@
 # Contract: knowledge-check
 
-- **Derived:** 2026-08-02 · evidence window: eval/reader-fit reports 2026-06-07 →
-  2026-07-14, Grade-1 census 2026-08-01, git log to `66b3cd8`
+- **Derived:** 2026-08-02 · **refreshed 2026-09-29** (handoff 25, levers) · evidence window: eval/reader-fit
+  reports 2026-06-07 → 2026-07-14, Grade-1 census 2026-08-01, 15 saved Flash payloads 2026-09-29, git log to `9720f987`
 - **Component:** `primitives/KnowledgeCheck.tsx` plus
   `primitives/problem-primitives/*` · **Generator:**
   `service/knowledge-check/gemini-knowledge-check.ts` +
@@ -143,6 +143,36 @@ manifest.
   is present and structurally non-empty before accepting it; question/evidence coherence
   remains an eval-test semantic judgment.
 
+### R10 — a lever never shows or names the key · OBSERVED
+- **Property:** `cue_picture` shows only a generated picture of what the question is about; code withholds it
+  (`cueLeak`) when a picture equals an option's emoji or appears in an option's text, when its `shows` words share a word
+  or a word start with a choice (words every choice shares are exempt), when there are more than three pictures, or when the
+  key is a number. `drop_far_choice` greys out a wrong, unpicked choice and never the key; the greyed choice keeps its
+  place so the positions the tutor named do not shift. The `levers_on_screen` fact names the greyed choice, never the key.
+- **Demanded by:** every subject's closing check (rule #1); handoff 25.
+- **Evidence:** `knowledgeCheckLevers.ts`; `knowledgeCheckLevers.test.ts` (cue table, 500 random menus, 15 saved payloads
+  across math/science/literacy/social studies, K and G1-2).
+- **Probe:** `npm test -- src/components/lumina/primitives/knowledgeCheckLevers.test.ts`.
+
+### R11 — removing a choice leaves two untried choices, and is assisted work · OBSERVED
+- **Property:** after `drop_far_choice` at least two choices remain that the learner has not tried; every wrong attempt
+  counts as one tried choice (a spoken wrong answer does not say which), including a wrong answer not yet retried. So a
+  3-choice menu offers the drop only before any wrong answer. The next attempt carries the lever (`assisted`, never
+  first-response credit in `diagnosisEvidence`). User ruling 09-27.
+- **Demanded by:** handoff 25; handoff 21 rule 5.
+- **Evidence:** `KnowledgeCheck.levers.workspace.test.tsx` (spoken 3-choice: no drop after a wrong answer; touched
+  4-choice: greyed choice cannot be touched; credit assisted).
+- **Probe:** `npm test -- src/components/lumina/primitives/KnowledgeCheck.levers.workspace.test.tsx`.
+
+### R12 — MCQ options carry a near/far tag; recall/apply may carry a picture cue · OBSERVED
+- **Property:** every generated `multiple_choice` option has `distance` (`key` on the correct option, `near` or `far` on
+  each wrong one), in the response schema, never rendered. At recall/apply/mixed (not KaTeX) the problem may carry
+  `cue {picture, shows}`, empty for number answers and for questions about words or sentences themselves.
+- **Demanded by:** R10/R11's levers.
+- **Evidence:** 12/12 probe generations tagged, one sensible `far` each (`qa/eval-reports/knowledge-check-levers-2026-09-29.md`).
+- **Probe:** `backend/tests/tutor_live/save_payload.py --primitive knowledge-check --mode <m> --topic <t> --grade <g>`, then the
+  saved-payload block of `knowledgeCheckLevers.test.ts`.
+
 ## Conflicts
 
 ### C1 — R2 K picture primacy vs R3 Grade-1 independent reading — RESOLVED via band + task gate (2026-08-02)
@@ -266,3 +296,9 @@ problem needs a picture.
   `qa/tutor-reports/workspace-rollout-C8-2026-09-26.md`.
 - 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
 - 2026-09-27 — handoff 20 A5 (`/add-support-tiers`, misses): the two tapped kinds name what a wrong tap shows (`knowledgeCheckMiss` in `knowledgeCheckWorkspace.ts`: a numeric choice `one_less`/`one_more`/`other_number`, any other choice `other_choice` because generated options record no reason; point_to `sign_token`/`other_number_token`), listed on all four modes in the catalog `teachingWorkspace.misses`. Verdicts, the response text and every spoken kind are unchanged. Compatible: no requirement changed.
+- 2026-09-29 — handoff 25 (`/add-support-tiers`): refreshed; R10-R12 added. Levers `cue_picture` (help) and
+  `drop_far_choice` (on-item simplify) on `choice`/`choice_tap`; every other kind declares none and its misses are catalog
+  `unanswered` with the reason. Generator adds the option `distance` tag and the recall/apply cue. R1 (keys resolve), R2 (K
+  picture menu, read-aloud), R4, R7/R8 (`::pN` bridges, test green) unchanged: the drop greys a choice in place, removes
+  nothing from the payload, and changes no check or submission. `--check` **COMPATIBLE**
+  (`qa/primitive-contracts/knowledge-check-check-2026-09-29.md`).

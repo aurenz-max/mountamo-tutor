@@ -719,6 +719,10 @@ export interface MultipleChoiceOption {
   /** Picture-primary emoji for the option (required at K by the generator so a
    *  pre-reader answers by picture, not by decoding the label). reader-fit PRE. */
   emoji?: string;
+  /** How far a wrong option is from the key, tagged by the generator (`key` on the correct option): `near` is a
+   *  tempting mistake, `far` one a learner who half-understood would rule out. The `drop_far_choice` lever reads
+   *  it (knowledgeCheckLevers.ts); never rendered. */
+  distance?: 'key' | 'near' | 'far';
 }
 
 export interface MultipleChoiceProblemData extends BaseProblemData {
@@ -729,6 +733,9 @@ export interface MultipleChoiceProblemData extends BaseProblemData {
   correctOptionId: string;
   /** When 'katex', option text strings are rendered through KaTeX */
   optionFormat?: 'text' | 'katex';
+  /** A picture of what the question is about (recall/apply), shown only when the `cue_picture` lever is pulled.
+   *  `shows` is what it depicts, for the tutor and the leak check; neither may picture or name any option. */
+  cue?: { picture: string; shows: string };
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;

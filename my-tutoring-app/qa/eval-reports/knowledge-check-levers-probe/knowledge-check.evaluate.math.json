@@ -1,0 +1,49 @@
+{
+ "source": "qa/tutor-reports/knowledge-check-runtime-evaluate-payload-2026-09-29.json",
+ "primitiveId": "knowledge-check",
+ "evalMode": "evaluate",
+ "data": {
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "id": "mc_1",
+    "difficulty": "hard",
+    "gradeLevel": "elementary",
+    "question": "Leo has 8 stickers. He gets 7 more. Which strategy is most effective for Leo to find the total without losing count when crossing 10?",
+    "options": [
+     {
+      "id": "A",
+      "text": "Count on by ones: start at 8 and count 7 more on fingers, because you do not have to break any numbers apart.",
+      "distance": "near"
+     },
+     {
+      "id": "B",
+      "text": "Make a ten: break 7 into 2 and 5 so that 8 + 2 = 10, and then 10 + 5 = 15.",
+      "distance": "key"
+     },
+     {
+      "id": "C",
+      "text": "Count all: draw all 8 stickers and all 7 stickers and count them starting from 1.",
+      "distance": "far"
+     },
+     {
+      "id": "D",
+      "text": "Use doubles: solve 8 + 8 = 16 and add 1 more, because doubles are easy to recall.",
+      "distance": "near"
+     }
+    ],
+    "correctOptionId": "B",
+    "rationale": "Breaking 7 into 2 and 5 allows Leo to reach the landmark number 10 first (8 + 2 = 10) and then easily add the remaining 5 to get 15. This 'make a ten' strategy uses place value to eliminate the risk of miscounting or losing track when crossing over ten. While counting on is common, students frequently make off-by-one errors when transitioning from 9 to 10 and beyond.",
+    "teachingNote": "Watch for students who choose counting on; they often understand the problem conceptually but lack the place-value decomposition skills needed for efficient mental math beyond 10. Emphasize ten-frames to help them visualize how 8 needs 2 to fill a ten.",
+    "successCriteria": [
+     "Evaluate addition strategies within 20 for efficiency and accuracy.",
+     "Apply the 'make a ten' strategy to add single-digit numbers whose sum exceeds 10."
+    ],
+    "subject": "MATHEMATICS"
+   }
+  ],
+  "problemType": "orchestrated",
+  "topic": "Adding within 20",
+  "gradeContext": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

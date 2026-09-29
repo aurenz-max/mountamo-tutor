@@ -1,0 +1,49 @@
+{
+ "source": "qa/tutor-reports/knowledge-check-runtime-recall-payload-2026-09-29.json",
+ "primitiveId": "knowledge-check",
+ "evalMode": "recall",
+ "data": {
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "id": "mc_1",
+    "difficulty": "easy",
+    "gradeLevel": "elementary",
+    "question": "Read the sentence: 'The cat sleeps on the rug.' Which of these words is a noun?",
+    "options": [
+     {
+      "id": "A",
+      "text": "sleeps",
+      "distance": "near"
+     },
+     {
+      "id": "B",
+      "text": "cat",
+      "distance": "key"
+     },
+     {
+      "id": "C",
+      "text": "on",
+      "distance": "far"
+     },
+     {
+      "id": "D",
+      "text": "the",
+      "distance": "far"
+     }
+    ],
+    "correctOptionId": "B",
+    "rationale": "A noun is a word that names a person, place, or thing. In this sentence, 'cat' is a noun because it names an animal. The word 'sleeps' tells what the cat does, which makes it a verb instead of a noun.",
+    "teachingNote": "Remind students that nouns answer who or what the sentence is about. A helpful prompt for elementary learners is asking whether the word is something you can see, touch, or name.",
+    "successCriteria": [
+     "Identify a noun in a simple sentence.",
+     "Distinguish a noun from an action word (verb)."
+    ],
+    "subject": "LANGUAGE_ARTS"
+   }
+  ],
+  "problemType": "orchestrated",
+  "topic": "Nouns and verbs in a sentence",
+  "gradeContext": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

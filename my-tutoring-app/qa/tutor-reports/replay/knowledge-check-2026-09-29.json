@@ -1,0 +1,4971 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    45
+   ],
+   "no_protocol_leak": [
+    0,
+    45
+   ],
+   "no_key_before_try": [
+    7,
+    45
+   ],
+   "no_fix_before_try": [
+    0,
+    45
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    45
+   ],
+   "no_protocol_leak": [
+    0,
+    45
+   ],
+   "no_key_before_try": [
+    1,
+    45
+   ],
+   "no_fix_before_try": [
+    0,
+    45
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    45
+   ],
+   "no_protocol_leak": [
+    0,
+    45
+   ],
+   "no_key_before_try": [
+    0,
+    45
+   ],
+   "no_fix_before_try": [
+    0,
+    45
+   ],
+   "no_change_before_receipt": [
+    0,
+    40
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    40
+   ],
+   "no_protocol_leak": [
+    0,
+    40
+   ],
+   "no_key_before_try": [
+    0,
+    40
+   ],
+   "no_fix_before_try": [
+    0,
+    40
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    45
+   ],
+   "no_protocol_leak": [
+    0,
+    45
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "knowledge-check.analyze.literacy",
+   "primitiveId": "knowledge-check",
+   "evalMode": "analyze",
+   "keys": [
+    "\"barks\" (choice 2 of 4). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"happy\", \"dog\", \"the\" are wrong, and so is naming two choices or hedging between them."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "p0-mc",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"barks\" (choice 2 of 4). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"happy\", \"dog\", \"the\" are wrong, and so is naming two choices or hedging between them."
+      ],
+      "ask": "Compare the jobs of the underlined words in this sentence: '<u>The</u> <u>happy</u> <u>dog</u> <u>barks</u>.' Which underlined word is the action word (verb)? Is it happy, barks, dog, or The? Tell me which one.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "In the sentence \"The happy dog barks,\" which underlined word is the action word: happy, barks, dog, or The?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "In the sentence, \"The happy dog barks,\" which underlined word is the action word: happy, barks, dog, or The?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "In the sentence, \"The happy dog barks,\" which underlined word is the action word: happy, barks, dog, or The?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "In the sentence \"The happy dog barks,\" which underlined word is the action word\u2014happy, barks, dog, or The?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the sentence: \"The happy dog barks.\" Which underlined word is the action word\u2014happy, barks, dog, or The?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "p0-mc",
+     "trigger": "happy",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"barks\" (choice 2 of 4). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"happy\", \"dog\", \"the\" are wrong, and so is naming two choices or hedging between them."
+      ],
+      "ask": "Compare the jobs of the underlined words in this sentence: '<u>The</u> <u>happy</u> <u>dog</u> <u>barks</u>.' Which underlined word is the action word (verb)? Is it happy, barks, dog, or The? Tell me which one.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite, \"happy\" tells us how the dog feels. Which word tells what the dog is doing?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Happy\" describes how the dog feels. Which word tells what the dog is doing?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite\u2014\"happy\" tells us how the dog feels. Which word tells what the dog is doing?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite\u2014\"happy\" tells us how the dog feels. Which word tells what the dog is doing?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Happy tells how the dog feels. Which word tells what the dog is doing?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "p0-mc",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"barks\" (choice 2 of 4). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"happy\", \"dog\", \"the\" are wrong, and so is naming two choices or hedging between them."
+      ],
+      "ask": "Compare the jobs of the underlined words in this sentence: '<u>The</u> <u>happy</u> <u>dog</u> <u>barks</u>.' Which underlined word is the action word (verb)? Is it happy, barks, dog, or The? Tell me which one.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I greyed out \"The\" for you so there are fewer choices. Which of the remaining words tells what the dog does?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "drop_far_choice",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I greyed out \"The\" to make it easier. Now look at the remaining words: which one shows an action?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "drop_far_choice"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I greyed out \"The\" to give you fewer choices. Which word tells what the dog is doing: happy, barks, or dog?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "drop_far_choice",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I greyed out \"The\" for you so there are fewer choices. Which of the remaining words shows an action: happy, barks, or dog?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "drop_far_choice",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I greyed out \"The\" so there are fewer choices. Which word tells what action the dog is doing: happy, barks, or dog?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "drop_far_choice"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "p0-mc",
+     "trigger": "The learner said they were stuck, so the host pulled drop_far_choice (simplify). It is on screen now: Greys out one wrong choice that is easy to rule out, so fewer choices remain. The next answer counts as helped. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"barks\" (choice 2 of 4). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"happy\", \"dog\", \"the\" are wrong, and so is naming two choices or hedging between them."
+      ],
+      "ask": "Compare the jobs of the underlined words in this sentence: '<u>The</u> <u>happy</u> <u>dog</u> <u>barks</u>.' Which underlined word is the action word (verb)? Is it happy, barks, dog, or The? Tell me which one.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the choices now\u2014\"The\" is greyed out so you can cross it off. Which one of the other words tells what the dog does?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the screen\u2014the word \"The\" has been greyed out to make things easier! Which of the remaining words shows the action the dog is doing?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the screen\u2014the word \"The\" is greyed out now! Between happy, barks, and dog, which one tells what the dog does?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The word \"The\" is greyed out now, leaving happy, barks, and dog. Which of those shows the action?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the choices now\u2014the word \"The\" is greyed out. Which one of the remaining words is the action word?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "p0-mc",
+     "trigger": "barks",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"barks\" (choice 2 of 4). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"happy\", \"dog\", \"the\" are wrong, and so is naming two choices or hedging between them."
+      ],
+      "ask": "Compare the jobs of the underlined words in this sentence: '<u>The</u> <u>happy</u> <u>dog</u> <u>barks</u>.' Which underlined word is the action word (verb)? Is it happy, barks, dog, or The? Tell me which one.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it, \"barks\" is the action word!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! \"Barks\" is the action word because barking is what the dog does.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! \"Barks\" is the action word because barking is what the dog does.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, \"barks\" is the action word!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, \"barks\" is the action word!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "knowledge-check.analyze.math",
+   "primitiveId": "knowledge-check",
+   "evalMode": "analyze",
+   "keys": [
+    "the first jump lands on 13, so you need to jump forward 2 more units to reach 15.",
+    "2"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "p0-mct",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the first jump lands on 13, so you need to jump forward 2 more units to reach 15.",
+       "2"
+      ],
+      "ask": "What is the relationship between the first jump shown on the number line and the missing jump needed to reach a total of 15? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "What is the relationship between the first jump shown on the number line and the missing jump needed to reach a total of 15? Look at the choices on the screen, and touch the one you pick.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What is the relationship between the first jump shown on the number line and the missing jump needed to reach a total of 15? Look at the choices on the screen, and touch the one you pick.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What is the relationship between the first jump shown on the number line and the missing jump needed to reach a total of 15? Look at the choices on your screen and touch the one you pick.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What is the relationship between the first jump shown on the number line and the missing jump needed to reach a total of 15? Look at the choices on the screen, and touch the one you pick.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What is the relationship between the first jump shown on the number line and the missing jump needed to reach a total of 15? Look at the choices on the screen, and touch the one you pick.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "p0-mct",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"p0-mct\",\"response\":\"Touched \\\"The first jump lands on 13, so you need to jump forward 3 more units to reach 15.\\\".\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"other_choice\"}. Respond to the learner using the current task and workspace.",
+     "miss": "other_choice",
+     "scoredWith": {
+      "keys": [
+       "the first jump lands on 13, so you need to jump forward 2 more units to reach 15.",
+       "2"
+      ],
+      "ask": "What is the relationship between the first jump shown on the number line and the missing jump needed to reach a total of 15? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite, but you are very close! Look at where the jump landed at 13, and count how many steps it takes to reach 15.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at the number line again. How many spaces do you count from 13 to reach 15?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take another look at the number line and count how many units you need to go from 13 to reach 15. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Look at 13 on the number line and count how many jumps it takes to get to 15, then pick your answer again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, but you're very close! Let's count how many jumps it takes to go from 13 up to 15, and try touching a choice again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "p0-mct",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the first jump lands on 13, so you need to jump forward 2 more units to reach 15.",
+       "2"
+      ],
+      "ask": "What is the relationship between the first jump shown on the number line and the missing jump needed to reach a total of 15? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I took away one of the choices to make it easier. Now count forward from 13 up to 15, and choose the matching sentence!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "drop_far_choice",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I crossed out one choice to give you fewer options. Try counting forward from 13 to 15, and choose the answer that matches.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "drop_far_choice",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I greyed out one of the choices to make it easier. Now take another look and try picking the best choice!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "drop_far_choice",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I took away one of the tricky choices for you. Try counting forward from 13 to 15, and choose the answer that matches.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "drop_far_choice"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I took away one of the choices to make it easier. Try counting up from 13 to 15, and see which remaining choice matches!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "drop_far_choice",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "p0-mct",
+     "trigger": "The learner said they were stuck, so the host pulled drop_far_choice (simplify). It is on screen now: Greys out one wrong choice that is easy to rule out, so fewer choices remain. The next answer counts as helped. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the first jump lands on 13, so you need to jump forward 2 more units to reach 15.",
+       "2"
+      ],
+      "ask": "What is the relationship between the first jump shown on the number line and the missing jump needed to reach a total of 15? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "One of the choices is now greyed out so you have fewer to pick from! Look at the number line starting where the first jump landed at 13, and see how many more jumps you need to reach 15.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "One of the choices is greyed out on the screen now so you have fewer to pick from. Look at 13 on the number line and count how many steps it takes to get to 15, then touch your choice.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "One of the choices is now greyed out on the screen so you have fewer to pick from. Look at where the jump landed on 13, count how many steps it takes to reach 15, and touch your choice!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "One of the choices has been greyed out so you have fewer to pick from. Look at 13 on the number line and count how many jumps it takes to get to 15!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the bottom choice\u2014it is greyed out now, so you have fewer choices to think about! Start at 13 on the number line, count how many jumps you need to reach 15, and touch your answer.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "p0-mct",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"p0-mct\",\"response\":\"Touched \\\"The first jump lands on 13, so you need to jump forward 2 more units to reach 15.\\\".\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"drop_far_choice\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the first jump lands on 13, so you need to jump forward 2 more units to reach 15.",
+       "2"
+      ],
+      "ask": "What is the relationship between the first jump shown on the number line and the missing jump needed to reach a total of 15? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You found that since the first jump lands on 13, jumping forward 2 more units brings you right to 15.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You figured out that from 13, you need to jump forward 2 more units to reach 15.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You figured out that from 13, you need to jump forward 2 more units to reach 15.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You figured out that from 13, you need to jump forward 2 more units to reach 15.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found that since the first jump lands on 13, jumping forward 2 more units brings you right to 15.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "knowledge-check.apply.math",
+   "primitiveId": "knowledge-check",
+   "evalMode": "apply",
+   "keys": [
+    "12"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "p0-mct",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "12"
+      ],
+      "ask": "Leo has 7 green apples: \ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f. He finds 5 red apples: \ud83c\udf4e\ud83c\udf4e\ud83c\udf4e\ud83c\udf4e\ud83c\udf4e. How many apples does Leo have in total? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Leo has 7 green apples and finds 5 red apples. How many apples does Leo have in total? Touch the choice you pick on the screen.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Leo has 7 green apples and finds 5 red apples. How many apples does Leo have in total? Look at the choices on the screen, and touch the one you pick: 11, 12, 13, or 2.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "12"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Leo has 7 green apples and finds 5 red apples. How many apples does Leo have in total? Look at the choices on the screen, and touch the one you pick: 11, 12, 13, or 2.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "12"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Leo has 7 green apples and finds 5 red apples. How many apples does Leo have in total? Touch the choice you pick on the screen.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Leo has 7 green apples and finds 5 red apples. How many apples does Leo have in total? Touch the choice you pick on the screen.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "p0-mct",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"p0-mct\",\"response\":\"Touched \\\"11\\\".\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"one_less\"}. Respond to the learner using the current task and workspace.",
+     "miss": "one_less",
+     "scoredWith": {
+      "keys": [
+       "12"
+      ],
+      "ask": "Leo has 7 green apples: \ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f. He finds 5 red apples: \ud83c\udf4e\ud83c\udf4e\ud83c\udf4e\ud83c\udf4e\ud83c\udf4e. How many apples does Leo have in total? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That was close! Try counting on 5 more starting right after 7, and pick your answer again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite 11. Try starting at 7 and counting on 5 more to find the total.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, but good try. Start at 7 and count on 5 more to find the total.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That was close! Try counting on 5 more starting right after 7.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite 11. Try starting at 7 and counting on 5 more to see what you get!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "p0-mct",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "12"
+      ],
+      "ask": "Leo has 7 green apples: \ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f. He finds 5 red apples: \ud83c\udf4e\ud83c\udf4e\ud83c\udf4e\ud83c\udf4e\ud83c\udf4e. How many apples does Leo have in total? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I greyed out 2 to make it easier. Start at 7 and count 5 more on your fingers, then touch your choice.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "drop_far_choice",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I greyed out 2 to make it easier. Start at 7 and count each of the 5 red apples to find the total!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "drop_far_choice"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I greyed out 2 to make it easier. Start at 7 and count forward 5 times to find the total!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "drop_far_choice"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I greyed out 2 so there are fewer choices to think about. Start at 7 and count the 5 red apples one by one to find the total!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "drop_far_choice",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I greyed out 2 to make it easier. Start at 7 and count forward 5 times to find the total!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "drop_far_choice"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "p0-mct",
+     "trigger": "The learner said they were stuck, so the host pulled drop_far_choice (simplify). It is on screen now: Greys out one wrong choice that is easy to rule out, so fewer choices remain. The next answer counts as helped. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "12"
+      ],
+      "ask": "Leo has 7 green apples: \ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f. He finds 5 red apples: \ud83c\udf4e\ud83c\udf4e\ud83c\udf4e\ud83c\udf4e\ud83c\udf4e. How many apples does Leo have in total? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the choices now\u2014number 2 is greyed out so you have fewer choices! Count on 5 more after 7, and tap your pick.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The number 2 is greyed out now, so you have fewer choices to pick from. Look at the remaining numbers and touch your choice!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the choices on the screen: the choice 2 is greyed out now, so you have fewer options to choose from. Try counting 5 more starting right after 7, and touch the answer you pick!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the choices now\u2014number 2 is greyed out so you have fewer choices! Count on 5 more starting from 7, and tap the number you get.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the choices\u2014the number 2 is greyed out now, so you only have three to pick from. Count 5 more on your fingers starting right after 7, and tap your answer!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "p0-mct",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"p0-mct\",\"response\":\"Touched \\\"12\\\".\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"drop_far_choice\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "12"
+      ],
+      "ask": "Leo has 7 green apples: \ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f\ud83c\udf4f. He finds 5 red apples: \ud83c\udf4e\ud83c\udf4e\ud83c\udf4e\ud83c\udf4e\ud83c\udf4e. How many apples does Leo have in total? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You found the total of 12 apples!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! 7 green apples plus 5 red apples makes 12 apples in total!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, Leo has 12 apples in total!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You found the total of 12 apples.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You found the total of 12 apples.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "knowledge-check.evaluate.literacy",
+   "primitiveId": "knowledge-check",
+   "evalMode": "evaluate",
+   "keys": [
+    "'barks' is the action verb because it tells the physical action that the dog does."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "p0-mct",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "'barks' is the action verb because it tells the physical action that the dog does."
+      ],
+      "ask": "Evaluate which explanation correctly identifies the action verb in the sentence: 'The happy dog barks.'? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Which explanation correctly identifies the action verb in the sentence: \"The happy dog barks\"? Look at the choices on your screen and touch the one you pick!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which explanation correctly identifies the action verb in the sentence: \"The happy dog barks\"? Look at the choices on your screen and touch the one you pick.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which explanation correctly identifies the action verb in the sentence: \"The happy dog barks\"? Look at the choices on the screen, and touch the one you pick.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which explanation correctly identifies the action verb in the sentence: \"The happy dog barks\"? Look at the choices on the screen, and touch the one you pick.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which explanation correctly identifies the action verb in the sentence: \"The happy dog barks\"? Look at the choices on your screen and touch the one you pick!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "p0-mct",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"p0-mct\",\"response\":\"Touched \\\"'dog' is the action verb because it is the important animal in the sentence.\\\".\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"other_choice\"}. Respond to the learner using the current task and workspace.",
+     "miss": "other_choice",
+     "scoredWith": {
+      "keys": [
+       "'barks' is the action verb because it tells the physical action that the dog does."
+      ],
+      "ask": "Evaluate which explanation correctly identifies the action verb in the sentence: 'The happy dog barks.'? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Good try! Remember, an action verb tells what the animal does. What is the dog doing in that sentence? Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Remember, an action verb tells what the animal does. What is the dog doing in that sentence? Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Remember, an action verb tells what the animal does. What is the dog doing?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Remember, an action verb tells what the animal does. What is the dog doing in that sentence? Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite! Remember, an action verb tells what an animal or person *does*. What action is the dog doing in that sentence? Give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "p0-mct",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "'barks' is the action verb because it tells the physical action that the dog does."
+      ],
+      "ask": "Evaluate which explanation correctly identifies the action verb in the sentence: 'The happy dog barks.'? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I removed one choice that doesn't fit to make it easier. Now look at the choices left and touch the word that shows what the dog does!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "drop_far_choice"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I greyed out one of the choices to make it easier for you. Now, take a look at the remaining choices and touch what the dog is doing!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "drop_far_choice",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I took away one of the choices to make it easier. Now look at what the dog is actually doing, and tap your choice!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "drop_far_choice",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "One of the choices that was not the answer has been greyed out to make it easier. Think about what action the dog is doing, and touch your choice!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "drop_far_choice",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "One choice has been greyed out for you so there are fewer to pick from. Think about what action the dog does, and tap your best choice!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "drop_far_choice",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "p0-mct",
+     "trigger": "The learner said they were stuck, so the host pulled drop_far_choice (simplify). It is on screen now: Greys out one wrong choice that is easy to rule out, so fewer choices remain. The next answer counts as helped. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "'barks' is the action verb because it tells the physical action that the dog does."
+      ],
+      "ask": "Evaluate which explanation correctly identifies the action verb in the sentence: 'The happy dog barks.'? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the screen: that fourth choice starting with \"The\" is greyed out now, so you have fewer to think about. Out of the choices left, touch the one that tells the action the dog does.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The choice with the word \"The\" is now greyed out so you can ignore it. Look at the remaining choices and touch the one that tells what action the dog does.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "One choice is greyed out at the bottom so there are fewer choices to look at. Which of the remaining choices tells the action that the dog does? Touch the one you pick!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the screen\u2014one of the choices is greyed out now so there are fewer to pick from. Think about what action the dog is doing, and touch your choice!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice how that last choice with the word \"The\" is greyed out now. Take a look at the remaining choices and touch the one that tells the action the dog does.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "p0-mct",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"p0-mct\",\"response\":\"Touched \\\"'barks' is the action verb because it tells the physical action that the dog does.\\\".\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"drop_far_choice\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "'barks' is the action verb because it tells the physical action that the dog does."
+      ],
+      "ask": "Evaluate which explanation correctly identifies the action verb in the sentence: 'The happy dog barks.'? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You picked that \"barks\" is the action verb because barking is the action the dog does. Great job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You picked \"barks\" because barking is the action that the dog does.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You picked \"barks\" because barking is the action the dog is doing. Great work!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You picked that \"barks\" is the action verb because barking is the action the dog does. Great job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You picked \"barks,\" which is the action verb because barking is what the dog does.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "knowledge-check.recall",
+   "primitiveId": "knowledge-check",
+   "evalMode": "recall",
+   "keys": [
+    "5"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "p0-mct",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "5"
+      ],
+      "ask": "What is the number of stars: \u2b50\u2b50\u2b50\u2b50\u2b50? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "What is the number of stars? Your choices are 4, 5, or 6. Touch the one you pick!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "5"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "What is the number of stars? Your choices are 4, 5, or 6. Touch the one you pick!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "5"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "What is the number of stars? Your choices are 4, 5, or 6. Touch the one you pick!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "5"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "How many stars do you see here? Your choices are 4, 5, or 6. Touch the one you pick!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "5"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "What is the number of stars? Your choices are 4, 5, or 6. Touch the one you pick!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "5"
+       },
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "p0-mct",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"p0-mct\",\"response\":\"Touched \\\"4\\\".\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"one_less\"}. Respond to the learner using the current task and workspace.",
+     "miss": "one_less",
+     "scoredWith": {
+      "keys": [
+       "5"
+      ],
+      "ask": "What is the number of stars: \u2b50\u2b50\u2b50\u2b50\u2b50? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That was a good try! Let's count them carefully one by one and try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's count the stars together one by one, and give it another try! Your choices are 4, 5, or 6.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "5"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, let's try counting them together! How many stars are there in all?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That was close! Try counting each star again, and touch the number you get.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, let's try counting them carefully together. How many stars do you see in the row?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "p0-mct",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "5"
+      ],
+      "ask": "What is the number of stars: \u2b50\u2b50\u2b50\u2b50\u2b50? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Point your finger at each star and count them one by one. How many do you count?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's count each star together using your finger. How many stars do you find when you point to each one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's count each star together using your finger: one, two, three, four... what comes next?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's point to each star together: 1, 2, 3, 4... what comes next?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's touch each star together as we count them: 1, 2, 3, 4... what number comes next?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "p0-mct",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"p0-mct\",\"response\":\"Touched \\\"5\\\".\",\"source\":\"gesture\",\"correct\":true,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "5"
+      ],
+      "ask": "What is the number of stars: \u2b50\u2b50\u2b50\u2b50\u2b50? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You counted all 5 stars and picked 5! That is exactly right!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You picked 5, and there are 5 stars!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You chose 5, and there are 5 stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You found the number 5 for the five stars!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You chose 5, and there are 5 stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "knowledge-check.recall.math",
+   "primitiveId": "knowledge-check",
+   "evalMode": "recall",
+   "keys": [
+    "15"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "p0-mct",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "15"
+      ],
+      "ask": "What is the sum of the two numbers shown in the problem? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "What is 9 plus 6? Look at the choices on the screen and touch the one you pick.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What is 9 plus 6? Look at the numbers on the screen and touch the one you choose.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What is nine plus six? Look at the choices on the screen, and touch the one you pick.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What is the sum of nine plus six? Look at the choices on the screen, and touch the one you pick.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What is 9 plus 6? Look at the numbers on the screen and touch the one you choose.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "p0-mct",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"p0-mct\",\"response\":\"Touched \\\"14\\\".\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"one_less\"}. Respond to the learner using the current task and workspace.",
+     "miss": "one_less",
+     "scoredWith": {
+      "keys": [
+       "15"
+      ],
+      "ask": "What is the sum of the two numbers shown in the problem? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite, but good try! Take another look at 9 plus 6 and touch your choice.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice try! Let's count up 6 more starting from 9, and give it another shot.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, let's try again! You can start at 9 and count up 6 more.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That was close! Try counting on 6 more starting from 9, and choose again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, but you are very close! Try counting on 6 more starting from 9, and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "p0-mct",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "15"
+      ],
+      "ask": "What is the sum of the two numbers shown in the problem? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I greyed out 12 so there are fewer choices. Try starting at 9 and counting up 6 more to see which choice you get!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "drop_far_choice"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I greyed out 12 so there are fewer choices to look at. Try starting at 9 and counting up 6 more!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "drop_far_choice",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I greyed out 12 so there are fewer choices. Try starting at 9 and counting up 6 more to see which choice you get!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "drop_far_choice"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I greyed out 12 so there are fewer choices. Try starting at 9 and counting up 6 more to see which choice you get!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "drop_far_choice"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I greyed out 12 so there are fewer choices. Try starting at 9 and counting up 6 more!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "drop_far_choice"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "p0-mct",
+     "trigger": "The learner said they were stuck, so the host pulled drop_far_choice (simplify). It is on screen now: Greys out one wrong choice that is easy to rule out, so fewer choices remain. The next answer counts as helped. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "15"
+      ],
+      "ask": "What is the sum of the two numbers shown in the problem? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "One of the choices, 12, is greyed out now so you have fewer to pick from. Take another look and touch the choice you think is 9 plus 6.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "One of the choices is greyed out now, so you only have three choices left to look at. Try counting up 6 more starting from 9, and touch the number you get!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The number 12 is greyed out now, so you can pick from the choices left on the screen. Start at 9 and count up 6 to find which one it is!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the choices on the screen: 12 is greyed out now, so you have fewer choices to think about! Start at 9 and count up 6 more to see which one you get.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the choices now\u201412 is greyed out, so that leaves fewer to choose from. Try starting at 9 and counting up 6 more to see which one you get!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "p0-mct",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"p0-mct\",\"response\":\"Touched \\\"15\\\".\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"drop_far_choice\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "15"
+      ],
+      "ask": "What is the sum of the two numbers shown in the problem? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found it! You chose 15, and 9 plus 6 equals 15.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! 9 plus 6 is 15.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You picked 15, and 9 plus 6 equals 15.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You picked 15, and 9 plus 6 equals 15.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You found that 9 plus 6 equals 15!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "knowledge-check.recall.science-k",
+   "primitiveId": "knowledge-check",
+   "evalMode": "recall",
+   "keys": [
+    "\"puppy\" (choice 1 of 3). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"teddy bear\", \"rock\" are wrong, and so is naming two choices or hedging between them."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "p0-mc",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"puppy\" (choice 1 of 3). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"teddy bear\", \"rock\" are wrong, and so is naming two choices or hedging between them."
+      ],
+      "ask": "Which of these is a living thing? Is it Puppy, Teddy bear, or Rock? Tell me which one.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Which of these is a living thing? Is it puppy, teddy bear, or rock?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which of these is a living thing? Is it Puppy, Teddy bear, or Rock? Tell me which one!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which of these is a living thing? Is it Puppy, Teddy bear, or Rock? Tell me which one!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which of these is a living thing? Is it Puppy, Teddy bear, or Rock? Tell me which one!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which of these is a living thing: puppy, teddy bear, or rock? Tell me which one!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "p0-mc",
+     "trigger": "Teddy bear",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"puppy\" (choice 1 of 3). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"teddy bear\", \"rock\" are wrong, and so is naming two choices or hedging between them."
+      ],
+      "ask": "Which of these is a living thing? Is it Puppy, Teddy bear, or Rock? Tell me which one.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite. Look, a picture of a growing plant appeared next to the question! Which of our choices is a living thing: puppy, teddy bear, or rock?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "cue_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A teddy bear is a toy, not a living thing. Now look beside the question\u2014there is a picture of a growing plant to remind us what living things do! Which one is a living thing: puppy, teddy bear, or rock?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look, a picture of a growing plant appeared to remind us what living things do! Which of these is a living thing: puppy, teddy bear, or rock?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "cue_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A picture of a growing plant popped up to remind us about living things. Which of our choices is a living thing: puppy, teddy bear, or rock?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "cue_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. There is a picture of a growing plant on the screen to remind us of what living things do, like growing and breathing. Is it Puppy, Teddy bear, or Rock?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "p0-mc",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"puppy\" (choice 1 of 3). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"teddy bear\", \"rock\" are wrong, and so is naming two choices or hedging between them."
+      ],
+      "ask": "Which of these is a living thing? Is it Puppy, Teddy bear, or Rock? Tell me which one.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A picture of a little growing plant popped up beside our question to remind us what living things do! Which of our choices is a living thing: puppy, teddy bear, or rock?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "cue_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "There is a new picture of a growing plant beside the question! Living things can grow and need food or water. Which one of these is a living thing: puppy, teddy bear, or rock?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "cue_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A picture of a little growing plant appeared beside our question. Living things grow and need food and water\u2014is our living thing puppy, teddy bear, or rock?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "There is a picture of a growing plant on the screen now. Which one grows and is a living thing: puppy, teddy bear, or rock?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A picture of a little growing plant appeared beside the question. Which of these can grow and is alive: puppy, teddy bear, or rock?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "p0-mc",
+     "trigger": "The learner said they were stuck, so the host pulled cue_picture (help). It is on screen now: Shows a picture of what the question is about beside it. Say what it shows. It never pictures the answer or a choice. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"puppy\" (choice 1 of 3). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"teddy bear\", \"rock\" are wrong, and so is naming two choices or hedging between them."
+      ],
+      "ask": "Which of these is a living thing? Is it Puppy, Teddy bear, or Rock? Tell me which one.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look beside the question\u2014there is a picture of a growing plant showing what living things do! Which one is a living thing: puppy, teddy bear, or rock?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right beside the question\u2014there is a picture of a little growing plant! Which of these is a living thing: puppy, teddy bear, or rock?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the question\u2014there is a picture of a little growing plant! Which of these is a living thing: puppy, teddy bear, or rock?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the question\u2014there is a picture of a little growing plant! Which of these is a living thing: puppy, teddy bear, or rock?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a little green plant growing right next to the question to show us something alive! Which one of these is a living thing: puppy, teddy bear, or rock?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "p0-mc",
+     "trigger": "puppy",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"puppy\" (choice 1 of 3). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"teddy bear\", \"rock\" are wrong, and so is naming two choices or hedging between them."
+      ],
+      "ask": "Which of these is a living thing? Is it Puppy, Teddy bear, or Rock? Tell me which one.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right! A puppy is a living thing because it grows and breathes.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! A puppy is a living thing because it grows and breathes.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! A puppy is a living thing because it grows and breathes.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! A puppy is a living thing.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! A puppy is a living thing because it grows and breathes.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "knowledge-check.recall.science",
+   "primitiveId": "knowledge-check",
+   "evalMode": "recall",
+   "keys": [
+    "sunlight and water"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "p0-mct",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sunlight and water"
+      ],
+      "ask": "Look at these three items: sunlight, water, and a toy car. Which items does a living plant need to grow? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at these three items: sunlight, water, and a toy car. Which items does a living plant need to grow? Touch your choice on the screen!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at these three items: sunlight, water, and a toy car. Which items does a living plant need to grow? Touch the choice you pick on the screen.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at these three items: sunlight, water, and a toy car. Which items does a living plant need to grow? Touch the choice you pick on the screen.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at these three items: sunlight, water, and a toy car. Which items does a living plant need to grow? Touch the choice you pick on the screen.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at these three items: sunlight, water, and a toy car. Which items does a living plant need to grow? Touch the choice you pick on your screen!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "p0-mct",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"p0-mct\",\"response\":\"Touched \\\"Sunlight and the toy car\\\".\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"other_choice\"}. Respond to the learner using the current task and workspace.",
+     "miss": "other_choice",
+     "scoredWith": {
+      "keys": [
+       "sunlight and water"
+      ],
+      "ask": "Look at these three items: sunlight, water, and a toy car. Which items does a living plant need to grow? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There is a picture of a potted plant on the screen now. Take another look at what a plant needs, and try touching your choice again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "cue_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new picture of a potted plant beside the question. Think about what a real plant needs, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a picture of a potted plant on the screen to help you picture it. Try picking your choice again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a picture of a potted plant on your screen now. Think about what a living plant really needs, and try touching your choice again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now there is a picture of a potted plant beside the question. Think about what a living plant needs to grow, and try touching your choice again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "cue_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "p0-mct",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sunlight and water"
+      ],
+      "ask": "Look at these three items: sunlight, water, and a toy car. Which items does a living plant need to grow? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A picture of a potted plant has appeared beside the question to help you picture it. Think about what helps a living plant like that grow, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A picture of a potted plant just appeared next to the question! Think about what real, living plants need to stay green and grow, and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A picture of a potted plant has appeared beside the question to help you picture it. Think about what helps that plant stay alive and grow, and touch your choice!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "cue_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A picture of a potted plant just appeared beside the question. Think about what a real, green plant needs every day to stay alive and grow, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A picture of a potted plant just appeared beside the question. Think about what a real living plant needs to stay alive and grow, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "p0-mct",
+     "trigger": "The learner said they were stuck, so the host pulled cue_picture (help). It is on screen now: Shows a picture of what the question is about beside it. Say what it shows. It never pictures the answer or a choice. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sunlight and water"
+      ],
+      "ask": "Look at these three items: sunlight, water, and a toy car. Which items does a living plant need to grow? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look beside the question\u2014there is a picture of a little potted plant growing green leaves in a pot! What items from the list does that plant need to grow?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the question\u2014there is now a picture of a green potted plant! Think about what real plants like this one need to grow, and touch your choice on the screen.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the question\u2014there is now a picture of a green potted plant growing in soil! Touch which items that living plant needs to grow.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the question, there is now a picture of a green potted plant in soil. Which items does a living plant like that need to grow? Go ahead and touch your choice!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the question\u2014there is a picture of a little potted plant growing green leaves in a pot! What does a plant like that need to grow big and strong? Touch your choice when you're ready.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "p0-mct",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"p0-mct\",\"response\":\"Touched \\\"Sunlight and water\\\".\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"cue_picture\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sunlight and water"
+      ],
+      "ask": "Look at these three items: sunlight, water, and a toy car. Which items does a living plant need to grow? Look at the choices on the screen, and touch the one you pick.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You picked sunlight and water, which are exactly what a living plant needs to grow.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You picked sunlight and water, which are exactly what living plants need to grow.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You picked sunlight and water, which are exactly what a living plant needs to grow.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You picked sunlight and water, which are exactly what a living plant needs to grow.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You picked sunlight and water, which are the exact things a living plant needs to grow.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "knowledge-check.recall.social-k",
+   "primitiveId": "knowledge-check",
+   "evalMode": "recall",
+   "keys": [
+    "\"firefighter hat\" (choice 2 of 3). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"police badge\", \"stethoscope\" are wrong, and so is naming two choices or hedging between them."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "p0-mc",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"firefighter hat\" (choice 2 of 3). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"police badge\", \"stethoscope\" are wrong, and so is naming two choices or hedging between them."
+      ],
+      "ask": "Which community helper uses a hose and puts out fires? Is it Police badge, Firefighter hat, or Stethoscope? Tell me which one.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Which community helper uses a hose and puts out fires? Is it Police badge, Firefighter hat, or Stethoscope? Tell me which one.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which community helper uses a hose and puts out fires? Is it Police badge, Firefighter hat, or Stethoscope?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which community helper uses a hose and puts out fires? Is it Police badge, Firefighter hat, or Stethoscope? Tell me which one!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which community helper uses a hose and puts out fires? Is it Police badge, Firefighter hat, or Stethoscope?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which community helper uses a hose and puts out fires? Is it Police badge, Firefighter hat, or Stethoscope? Tell me which one.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "p0-mc",
+     "trigger": "Police badge",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"firefighter hat\" (choice 2 of 3). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"police badge\", \"stethoscope\" are wrong, and so is naming two choices or hedging between them."
+      ],
+      "ask": "Which community helper uses a hose and puts out fires? Is it Police badge, Firefighter hat, or Stethoscope? Tell me which one.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite. Look at the screen\u2014there is a picture of burning fire flames beside the question! \n\nIs it Police badge, Firefighter hat, or Stethoscope? Tell me which one.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. There is a picture of burning flames beside the question now! Which one uses a hose to put out fires: Police badge, Firefighter hat, or Stethoscope?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "cue_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look, there is a picture of burning flames beside the question! Which one uses a hose and puts out fires: Police badge, Firefighter hat, or Stethoscope?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite! A picture of burning fire popped up beside the question. \n\nWhich community helper uses a hose to put out fires: Police badge, Firefighter hat, or Stethoscope?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. A picture of burning flames just appeared beside our question! Which community helper uses a hose and puts out fires: Police badge, Firefighter hat, or Stethoscope?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "cue_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "p0-mc",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"firefighter hat\" (choice 2 of 3). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"police badge\", \"stethoscope\" are wrong, and so is naming two choices or hedging between them."
+      ],
+      "ask": "Which community helper uses a hose and puts out fires? Is it Police badge, Firefighter hat, or Stethoscope? Tell me which one.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A picture of burning flames popped up right beside the question! \n\nIs it Police badge, Firefighter hat, or Stethoscope? Tell me which one.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A picture of burning fire flames just appeared beside the question! \n\nWhich community helper uses a hose and puts out fires: Police badge, Firefighter hat, or Stethoscope?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A picture of burning flames just appeared beside our question to help us picture the fire!\n\nIs it Police badge, Firefighter hat, or Stethoscope? Tell me which one.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "cue_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A picture of burning fire flames just appeared beside the question to help us! \n\nWhich helper uses a hose and puts out fires: Police badge, Firefighter hat, or Stethoscope?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cue_picture",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A picture of burning flames just appeared next to the question! \n\nWhich one helps put out fires: Police badge, Firefighter hat, or Stethoscope? Tell me which one.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "cue_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "p0-mc",
+     "trigger": "The learner said they were stuck, so the host pulled cue_picture (help). It is on screen now: Shows a picture of what the question is about beside it. Say what it shows. It never pictures the answer or a choice. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"firefighter hat\" (choice 2 of 3). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"police badge\", \"stethoscope\" are wrong, and so is naming two choices or hedging between them."
+      ],
+      "ask": "Which community helper uses a hose and puts out fires? Is it Police badge, Firefighter hat, or Stethoscope? Tell me which one.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look beside the question\u2014there is now a picture showing bright burning flames! \n\nWhich helper uses a hose and puts out fires: Police badge, Firefighter hat, or Stethoscope? Tell me which one.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right beside our question\u2014there is a picture of bright, burning flames! \n\nWhich helper uses a hose to put out those fires: Police badge, Firefighter hat, or Stethoscope?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right next to the question\u2014there is a picture of burning flames! \n\nWhich helper uses a hose to put out those fires: Police badge, Firefighter hat, or Stethoscope?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right beside our question\u2014there is a picture of bright, burning fire flames! \n\nWhich helper uses a hose and puts out fires: Police badge, Firefighter hat, or Stethoscope? Tell me which one.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right next to the question\u2014there is a picture of burning flames! \n\nWhich helper uses a hose and puts out fires: Police badge, Firefighter hat, or Stethoscope? Tell me which one.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "p0-mc",
+     "trigger": "firefighter",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"firefighter hat\" (choice 2 of 3). the whole choice, the part that tells it apart from the others, what its picture shows, or its place in the list (\"the second one\") all count. \"police badge\", \"stethoscope\" are wrong, and so is naming two choices or hedging between them."
+      ],
+      "ask": "Which community helper uses a hose and puts out fires? Is it Police badge, Firefighter hat, or Stethoscope? Tell me which one.",
+      "leakTokens": [
+       "KC_ITEM",
+       "KC_MOVE",
+       "KC_COMPLETE",
+       "KC_HEAR",
+       "KC_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right! Firefighter hat is the helper who puts out fires.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! Firefighter hat is the helper who puts out fires!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! A firefighter wears the firefighter hat and puts out fires.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! A firefighter wears the firefighter hat and puts out fires.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You picked firefighter hat, the helper who puts out fires!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

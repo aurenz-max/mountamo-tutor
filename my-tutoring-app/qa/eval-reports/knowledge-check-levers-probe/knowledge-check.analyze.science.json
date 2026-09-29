@@ -1,0 +1,49 @@
+{
+ "source": "qa/tutor-reports/knowledge-check-runtime-analyze-payload-2026-09-29.json",
+ "primitiveId": "knowledge-check",
+ "evalMode": "analyze",
+ "data": {
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "id": "mc_1",
+    "difficulty": "medium",
+    "gradeLevel": "elementary",
+    "question": "Look at the two bean plants in the picture: [Plant A: stands tall with bright green leaves, labeled 'Gets sunlight and water'] vs. [Plant B: droops down with yellow leaves, labeled 'Gets no sunlight, gets water']. Why is Plant A healthy while Plant B is struggling?",
+    "options": [
+     {
+      "id": "A",
+      "text": "Plant B needs sunlight as well as water to make food and stay healthy.",
+      "distance": "key"
+     },
+     {
+      "id": "B",
+      "text": "Plant B was given too much water, which made its green leaves turn yellow.",
+      "distance": "near"
+     },
+     {
+      "id": "C",
+      "text": "Plant B needs to be planted in a larger pot with more soil to stand up tall.",
+      "distance": "near"
+     },
+     {
+      "id": "D",
+      "text": "Plant A grew better simply because bean plants do not need water to survive.",
+      "distance": "far"
+     }
+    ],
+    "correctOptionId": "A",
+    "rationale": "Even though both plants received water, Plant B is drooping and yellow because plants also need sunlight to make their own food. Without sunlight, a plant cannot stay healthy or strong, showing that water alone is not enough for plant growth.",
+    "teachingNote": "A very common elementary misconception is that plants 'drink' water as their only food source, so water should be sufficient. Comparing two setups where only sunlight varies helps students analyze sunlight as an essential input for making food.",
+    "successCriteria": [
+     "Analyze a visual comparison between two plants to determine how sunlight affects growth",
+     "Explain why plants need both sunlight and water rather than water alone"
+    ],
+    "subject": "SCIENCE"
+   }
+  ],
+  "problemType": "orchestrated",
+  "topic": "Plants and what they need to grow",
+  "gradeContext": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

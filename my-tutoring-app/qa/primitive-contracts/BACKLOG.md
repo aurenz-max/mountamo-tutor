@@ -142,6 +142,7 @@ non-K consumers.
   live, 14k replay measured (stays open, mechanism pinned into C1). Channel [4] again
   `Not authenticated` (third consecutive run; still worth fixing before a contract run that
   needs item history). Report: `qa/reader-fit/number-line-14m-2026-08-03.md`.
+- **knowledge-check — refreshed 2026-09-29** (handoff 25 levers): R10-R12 added (lever leak rule, two untried choices, near/far tag); `--check` **COMPATIBLE** (`knowledge-check-check-2026-09-29.md`).
 - **knowledge-check — derived 2026-08-02** → `docs/contracts/knowledge-check.md`. Pulled as the
   mandatory contract-first step of reader-fit **14f**. **9 requirements**, **2 conflicts resolved**
   up front (K picture primacy vs Grade-1 independent reading → precise-grade + visual-task gate;

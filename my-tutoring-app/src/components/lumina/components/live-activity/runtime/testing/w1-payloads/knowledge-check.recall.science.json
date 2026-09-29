@@ -1,0 +1,53 @@
+{
+ "source": "qa/tutor-reports/knowledge-check-runtime-recall-payload-2026-09-29.json",
+ "primitiveId": "knowledge-check",
+ "evalMode": "recall",
+ "data": {
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "id": "mc_1",
+    "difficulty": "easy",
+    "gradeLevel": "elementary",
+    "question": "Look at these three items: sunlight, water, and a toy car. Which items does a living plant need to grow?",
+    "options": [
+     {
+      "id": "A",
+      "text": "Sunlight and water",
+      "distance": "key"
+     },
+     {
+      "id": "B",
+      "text": "Sunlight and the toy car",
+      "distance": "near"
+     },
+     {
+      "id": "C",
+      "text": "Water and the toy car",
+      "distance": "near"
+     },
+     {
+      "id": "D",
+      "text": "Only the toy car",
+      "distance": "far"
+     }
+    ],
+    "correctOptionId": "A",
+    "rationale": "Plants are living things that need sunlight and water to make food and grow strong. A toy car is a non-living object and is not needed for a plant to stay alive. Sunlight provides energy for the plant, while water helps move nutrients through its stems and leaves.",
+    "teachingNote": "Reinforce the difference between living things and non-living objects by asking students what living things need to survive compared to what toys need.",
+    "successCriteria": [
+     "Identify the essential resources a plant needs to grow (sunlight and water).",
+     "Distinguish between what living plants need and non-living objects."
+    ],
+    "cue": {
+     "picture": "\ud83e\udeb4",
+     "shows": "a potted plant"
+    },
+    "subject": "SCIENCE"
+   }
+  ],
+  "problemType": "orchestrated",
+  "topic": "Plants and what they need to grow",
+  "gradeContext": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

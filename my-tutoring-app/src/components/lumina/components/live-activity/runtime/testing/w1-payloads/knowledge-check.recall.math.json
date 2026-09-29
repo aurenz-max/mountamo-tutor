@@ -1,0 +1,56 @@
+{
+ "source": "qa/tutor-reports/knowledge-check-runtime-recall-payload-2026-09-29.json",
+ "primitiveId": "knowledge-check",
+ "evalMode": "recall",
+ "data": {
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "id": "mc_1",
+    "difficulty": "easy",
+    "gradeLevel": "elementary",
+    "question": "What is the sum of the two numbers shown in the problem?",
+    "options": [
+     {
+      "id": "A",
+      "text": "14",
+      "distance": "near"
+     },
+     {
+      "id": "B",
+      "text": "15",
+      "distance": "key"
+     },
+     {
+      "id": "C",
+      "text": "16",
+      "distance": "near"
+     },
+     {
+      "id": "D",
+      "text": "12",
+      "distance": "far"
+     }
+    ],
+    "correctOptionId": "B",
+    "rationale": "To find the sum of 9 and 6, you can make a ten first by taking 1 from 6 to give to 9, making 10. Then, add the remaining 5 to 10 to get 15. Counting 6 numbers forward from 9 also leads directly to 15.",
+    "teachingNote": "Using a 'make-a-ten' strategy or a double ten-frame is an effective mental math technique for elementary students working with sums between 10 and 20.",
+    "successCriteria": [
+     "Recall basic addition facts within 20 accurately",
+     "Add two single-digit numbers to find a sum greater than 10"
+    ],
+    "inset": {
+     "insetType": "katex",
+     "expression": "9 + 6 = \\text{?}",
+     "displayMode": "display",
+     "caption": "Find the total.",
+     "label": "Equation"
+    },
+    "subject": "MATHEMATICS"
+   }
+  ],
+  "problemType": "orchestrated",
+  "topic": "Adding within 20",
+  "gradeContext": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

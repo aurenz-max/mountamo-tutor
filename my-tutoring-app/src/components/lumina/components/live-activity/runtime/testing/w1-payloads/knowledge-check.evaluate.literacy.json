@@ -1,0 +1,57 @@
+{
+ "source": "qa/tutor-reports/knowledge-check-runtime-evaluate-payload-2026-09-29.json",
+ "primitiveId": "knowledge-check",
+ "evalMode": "evaluate",
+ "data": {
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "id": "mc_1",
+    "difficulty": "hard",
+    "gradeLevel": "elementary",
+    "question": "Evaluate which explanation correctly identifies the action verb in the sentence: 'The happy dog barks.'",
+    "options": [
+     {
+      "id": "A",
+      "text": "'dog' is the action verb because it is the important animal in the sentence.",
+      "distance": "near"
+     },
+     {
+      "id": "B",
+      "text": "'happy' is the action verb because it describes the feeling of the animal.",
+      "distance": "near"
+     },
+     {
+      "id": "C",
+      "text": "'barks' is the action verb because it tells the physical action that the dog does.",
+      "distance": "key"
+     },
+     {
+      "id": "D",
+      "text": "'The' is the action verb because it begins the action of the sentence.",
+      "distance": "far"
+     }
+    ],
+    "correctOptionId": "C",
+    "rationale": "According to the definition, an action verb tells what someone or something does. In this sentence, 'barks' is the action being performed by the dog, whereas 'dog' is a naming word (noun) and 'happy' is a describing word (adjective).",
+    "teachingNote": "A very common elementary error is identifying the noun subject ('dog') as the verb because it is the character doing the action. Remind students to ask: 'What is the subject DOING?' to locate the verb.",
+    "successCriteria": [
+     "Distinguish between a sentence's noun subject and its action verb.",
+     "Apply the definition of an action verb to justify word choice in context."
+    ],
+    "inset": {
+     "insetType": "definition-box",
+     "term": "Action Verb",
+     "definition": "A word that tells what a person, animal, or thing does.",
+     "exampleSentence": "The brown horse runs across the open field.",
+     "label": "Grammar Rule",
+     "partOfSpeech": "noun"
+    },
+    "subject": "LANGUAGE_ARTS"
+   }
+  ],
+  "problemType": "orchestrated",
+  "topic": "Nouns and verbs in a sentence",
+  "gradeContext": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

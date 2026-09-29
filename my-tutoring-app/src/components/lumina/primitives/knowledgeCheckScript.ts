@@ -183,6 +183,8 @@ export interface KnowledgeCheckOption {
   id: string;
   text: string;
   emoji?: string;
+  /** choice / choice_tap: the generator's near/far tag on a wrong option (`drop_far_choice`). Never rendered. */
+  distance?: 'key' | 'near' | 'far';
 }
 
 export interface KnowledgeCheckItem extends JudgedScriptItem {
@@ -221,6 +223,8 @@ export interface KnowledgeCheckItem extends JudgedScriptItem {
   alternates?: string[];
   /** point_to: the number-sentence token the child must touch. */
   targetTokenId?: string;
+  /** choice / choice_tap: the generated picture cue (`cue_picture` lever), shown only when pulled. */
+  cue?: { picture: string; shows: string };
 }
 
 // ── Small helpers (family idiom) ────────────────────────────────────────────
@@ -349,6 +353,7 @@ const itemsFromChoice = (
     id: o.id,
     text: sanitize(o.text),
     emoji: o.emoji,
+    ...(o.distance ? { distance: o.distance } : {}),
   }));
   if (options.length < 2 || options.length > 5) return [];
   if (!p.correctOptionId || !options.some((o) => o.id === p.correctOptionId)) return [];
@@ -374,6 +379,7 @@ const itemsFromChoice = (
       correctOptionId: p.correctOptionId,
       ...(p.inset ? { inset: p.inset } : {}),
       ...(p.visual ? { visual: p.visual } : {}),
+      ...(p.cue ? { cue: p.cue } : {}),
     }];
   }
 
@@ -394,6 +400,7 @@ const itemsFromChoice = (
     tapReason,
     ...(p.inset ? { inset: p.inset } : {}),
     ...(p.visual ? { visual: p.visual } : {}),
+    ...(p.cue ? { cue: p.cue } : {}),
   }];
 };
 

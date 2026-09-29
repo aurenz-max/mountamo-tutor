@@ -29,3 +29,5 @@ Handoff 21's apply. The draft's open "R4" question is settled: removing a choice
 ## Closing
 
 Contract, a report in `qa/eval-reports/`, handoff 21's core line, `WORKSTREAMS.md` Phase 3, one HUMAN-CHECKS row. knowledge-check is its own class for Live: one pair once every mode is levered.
+
+**DONE 2026-09-29.** Report `qa/eval-reports/knowledge-check-levers-2026-09-29.md`; contract R10-R12, `--check` COMPATIBLE; HUMAN-CHECKS #178. Finding KC-UB (`/eval-fix`) in WORKSTREAMS 3.1c.

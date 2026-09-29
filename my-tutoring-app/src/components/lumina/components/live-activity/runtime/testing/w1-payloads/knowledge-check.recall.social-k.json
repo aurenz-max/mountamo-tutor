@@ -1,0 +1,50 @@
+{
+ "source": "qa/tutor-reports/knowledge-check-runtime-recall-payload-2026-09-29.json",
+ "primitiveId": "knowledge-check",
+ "evalMode": "recall",
+ "data": {
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "id": "mc_1",
+    "difficulty": "easy",
+    "gradeLevel": "kindergarten",
+    "question": "Which community helper uses a hose and puts out fires?",
+    "options": [
+     {
+      "id": "A",
+      "text": "Police badge",
+      "emoji": "\ud83d\udee1\ufe0f",
+      "distance": "near"
+     },
+     {
+      "id": "B",
+      "text": "Firefighter hat",
+      "emoji": "\u26d1\ufe0f",
+      "distance": "key"
+     },
+     {
+      "id": "C",
+      "text": "Stethoscope",
+      "emoji": "\ud83e\ude7a",
+      "distance": "far"
+     }
+    ],
+    "correctOptionId": "B",
+    "rationale": "Firefighters wear protective hats and use strong hoses with water to put out fires. A police badge belongs to police officers who keep neighborhoods safe, while a stethoscope is used by doctors. The firefighter hat matches the brave helper who puts out fires.",
+    "teachingNote": "Reinforce community helpers by discussing the unique tools and uniforms each worker uses to help people stay safe.",
+    "successCriteria": [
+     "Identify the tools and gear associated with firefighters"
+    ],
+    "cue": {
+     "picture": "\ud83d\udd25",
+     "shows": "burning flames"
+    },
+    "subject": "SOCIAL_STUDIES"
+   }
+  ],
+  "problemType": "orchestrated",
+  "topic": "Community helpers and their jobs",
+  "gradeContext": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+ }
+}

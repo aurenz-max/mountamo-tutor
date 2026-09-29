@@ -1,0 +1,49 @@
+{
+ "source": "qa/tutor-reports/knowledge-check-runtime-analyze-payload-2026-09-29.json",
+ "primitiveId": "knowledge-check",
+ "evalMode": "analyze",
+ "data": {
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "id": "mc_1",
+    "difficulty": "hard",
+    "gradeLevel": "elementary",
+    "question": "Compare the jobs of the underlined words in this sentence: '<u>The</u> <u>happy</u> <u>dog</u> <u>barks</u>.' Which underlined word is the action word (verb)?",
+    "options": [
+     {
+      "id": "A",
+      "text": "happy",
+      "distance": "near"
+     },
+     {
+      "id": "B",
+      "text": "barks",
+      "distance": "key"
+     },
+     {
+      "id": "C",
+      "text": "dog",
+      "distance": "near"
+     },
+     {
+      "id": "D",
+      "text": "The",
+      "distance": "far"
+     }
+    ],
+    "correctOptionId": "B",
+    "rationale": "The word 'barks' is an action verb because it tells what the dog is doing. Students often pick 'happy' because it describes a strong feeling, but 'happy' is an adjective that describes the dog rather than an action. 'Dog' is a noun that names the animal doing the barking.",
+    "teachingNote": "A helpful strategy is to have students act out each word: you can physically bark (action), but you cannot act out 'The' or 'dog', and 'happy' only describes how the dog feels.",
+    "successCriteria": [
+     "Differentiate between nouns, adjectives, and verbs in a simple sentence",
+     "Identify the action verb in a grade-level sentence"
+    ],
+    "subject": "LANGUAGE_ARTS"
+   }
+  ],
+  "problemType": "orchestrated",
+  "topic": "Nouns and verbs in a sentence",
+  "gradeContext": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}
