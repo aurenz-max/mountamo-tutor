@@ -23,3 +23,11 @@ it.each([
 ] as const)('row %#', (c, v, miss) => {
   expect(equationBuilderMiss(c, v)).toBe(miss);
 });
+
+// RP-4: a "−" tile row (older payloads) is judged by value, like "-".
+it('a row built with the Unicode minus is judged true by value', async () => {
+  const { evaluateEquation, buildMatches } = await import('./equationBuilderWorkspace');
+  expect(evaluateEquation('8 − 3 = 5')).toBe(true);
+  expect(evaluateEquation('8 − 3 = 6')).toBe(false);
+  expect(buildMatches(['5', '=', '8', '−', '3'], '8 − 3 = 5')).toBe(true);
+});

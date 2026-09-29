@@ -29,7 +29,8 @@ function evalSide(side: string): number | null {
 
 /** The value both sides share when an equation is true, else null. */
 function trueValue(eq: string): number | null {
-  const parts = eq.replace(/\s+/g, '').split('=');
+  // A "−" tile is the same minus (RP-4): judge it by value, not only by exact string.
+  const parts = eq.replace(/\s+/g, '').replace(/−/g, '-').split('=');
   if (parts.length !== 2) return null;
   const left = evalSide(parts[0]), right = evalSide(parts[1]);
   return left !== null && left === right ? left : null;

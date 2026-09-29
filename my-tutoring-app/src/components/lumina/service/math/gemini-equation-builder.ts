@@ -539,6 +539,12 @@ function shuffle<T>(arr: T[]): T[] {
 // Post-validation: reconstruct arrays + verify mathematical correctness
 // ---------------------------------------------------------------------------
 
+/** Unicode minus and en dash, the two a model writes for "minus". */
+const asciiMinus = (text: string) => text.replace(/[−–]/g, '-');
+
+const EQUATION_FIELDS = ['targetEquation', 'equation', 'displayEquation', 'leftSide', 'rightSide', 'originalEquation',
+  'tile0', 'tile1', 'tile2', 'tile3', 'tile4', 'tile5', 'tile6'] as const;
+
 interface RawChallenge {
   id?: string;
   type?: string;
@@ -572,6 +578,14 @@ function validateChallenge(
   if (!raw.id || !raw.type || !raw.instruction) {
     console.log(`[EquationBuilder] REJECT challenge — missing id/type/instruction:`, JSON.stringify(raw));
     return null;
+  }
+
+  // RP-4: every parser here (and the builder's check) reads an ASCII "-". A model
+  // that writes "8 − 3 = 5" would otherwise have a true statement keyed False, or a
+  // true build/rewrite target rejected. Normalize once, at ingest.
+  for (const field of EQUATION_FIELDS) {
+    const value = raw[field];
+    if (typeof value === 'string') raw[field] = asciiMinus(value);
   }
 
   // The support-tier choice-breadth lever keys off the EVAL MODE (the same

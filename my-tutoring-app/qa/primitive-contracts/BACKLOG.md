@@ -27,6 +27,7 @@ non-K consumers.
 
 ## Done
 
+- **equation-builder — derived 2026-09-29 (static)** → `docs/contracts/equation-builder.md`. 4 requirements, 0 conflicts, as the contract-first step of handoff 28 row 5 (RP-4); `--check` COMPATIBLE.
 - **interactive-book — derived 2026-09-28** → `docs/contracts/interactive-book.md`. 10
   requirements (all OBSERVED), 0 conflicts. Authored map: 0 consumers (live, 0 of 65).
   Calibration not read (auth). Probes: 48 vitest green. Step 1 of handoff 22 L1 before
