@@ -12,6 +12,7 @@
  * no longer closes a step, so the page only ever writes what the child earned.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { numberMisses, offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { numberWord as w, PLACES, type Place } from './diWorkedProcedurePlan';
 import { itemsFromProblems, withWorkedProcedureAction, type DiWorkedProcedureData, type WorkedProcedureItem } from './diWorkedProcedureScript';
 
@@ -47,8 +48,48 @@ export function workedProcedureKey(item: WorkedProcedureItem): string {
     + `error.${lent}`;
 }
 
+/** What a wrong spoken step shows (handoff 20 Part B). */
+export type SpokenProcedureMiss = OffByMiss | 'upside_down_column' | 'no_decrement' | 'said_no_regroup' | 'regrouped_needlessly'
+  | 'read_crossed_out';
+
+/**
+ * A spoken step's known wrong answers, in precedence order, for the `spoken_miss` observer: the ringed column's
+ * digits stated first, then the learner's move or number. Concrete per column, never a cause.
+ */
+export function workedProcedureSpokenMisses(item: WorkedProcedureItem): KnownMiss[] {
+  const c = item.column;
+  const col = `The ${c.place} column has ${c.topAfterLend} on top${c.lent ? ` (the ${c.top} is crossed out)` : ''} and ${c.bottom} below`;
+  const flip = `${w(c.bottom)} minus ${w(c.topAfterLend)}`;
+  if (item.kind === 'decide' && item.regroup) {
+    const above = item.placeAbove as Place;
+    const fact = `${col}, so it must regroup: ${item.newAbove} ${above} and ${c.effectiveTop} ${c.place}.`;
+    return [
+      { id: 'upside_down_column', pattern: `${fact} The learner subtracts the top from the bottom instead, "${flip}".`,
+        examples: [`${flip} is ${w(c.bottom - c.topAfterLend)}`] },
+      { id: 'no_decrement', pattern: `${fact} The learner says to regroup and names ${c.effectiveTop} ${c.place}, but says nothing about the ${above} becoming ${item.newAbove}.`,
+        examples: [`regroup, ${w(c.effectiveTop)} ${c.place}`] },
+      { id: 'said_no_regroup', pattern: `${fact} The learner says no regrouping is needed or subtracts straight away.`, examples: ['no regrouping'] },
+    ];
+  }
+  const fact = `${col}; ${c.effectiveTop} minus ${c.bottom} is ${c.difference}.`;
+  if (item.kind === 'subtract') {
+    return [...numberMisses(c.difference, [{ id: 'upside_down_column', value: c.bottom - c.topAfterLend,
+      pattern: v => `${fact} The learner's answer is ${v}, the ${c.bottom} below minus the ${c.topAfterLend} on top.` }]),
+      ...offByMisses(c.difference, `the difference ${c.difference}`)];
+  }
+  return [
+    { id: 'regrouped_needlessly', pattern: `${fact} No regrouping is needed; the learner says to regroup or works from ${c.topAfterLend + 10}.`,
+      examples: ['regroup', `${w(c.topAfterLend + 10)} minus ${w(c.bottom)}`] },
+    ...numberMisses(c.difference, [{ id: 'read_crossed_out', value: c.lent ? c.top - c.bottom : undefined,
+      pattern: v => `${fact} The learner's answer is ${v}, subtracting from the crossed-out ${c.top}.` }]),
+    ...offByMisses(c.difference, `the difference ${c.difference}`),
+  ];
+}
+
 export function workedProcedureAssignment(item: WorkedProcedureItem): TeachingAssignment {
-  return { id: item.id, task: workedProcedureAskFor(item), response: 'speech', expectedAnswer: workedProcedureKey(item) };
+  const misses = workedProcedureSpokenMisses(item);
+  return { id: item.id, task: workedProcedureAskFor(item), response: 'speech', expectedAnswer: workedProcedureKey(item),
+    ...(misses.length ? { misses } : {}) };
 }
 
 /** What the page shows: the problem in columns, the current column ringed, and the marks already credited on

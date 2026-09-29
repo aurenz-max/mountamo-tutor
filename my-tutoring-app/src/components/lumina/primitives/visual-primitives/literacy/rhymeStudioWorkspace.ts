@@ -8,7 +8,9 @@
  * (production), or a new rhyme for the family being collected (collection).
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { rhymeStudioHarnessAnswers, type RhymeItem } from './rhymeStudioScript';
+import { onsetOf, rimeOfWord } from './rhymeModels';
 
 /** The ask, in the pack's words. The ending sound is never named: it is the answer's family. */
 export function rhymeAsk(item: RhymeItem): string {
@@ -36,7 +38,36 @@ export function rhymeAssignment(item: RhymeItem, collected: readonly string[] = 
         ? `Any real word that rhymes with ${item.targetWord} (ends in -${item.rime})${other}. A made-up word is not.`
         : `A real word that rhymes with ${item.targetWord} (ends in -${item.rime})${other}`
           + (collected.length ? ` and not one already collected (${collected.join(', ')}).` : '.');
-  return { id: item.id, task: rhymeAsk(item), response: 'speech', expectedAnswer };
+  const misses = rhymeSpokenMisses(item);
+  return { id: item.id, task: rhymeAsk(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) };
+}
+
+const OFF_MENU_WORDS = ['ball', 'fish', 'tree', 'moon', 'duck'];
+
+/**
+ * A spoken item's known wrong answers (handoff 20 Part B), from the ids `RHYME_MISSES` declares. recognition: the
+ * one wrong verdict, named by what the pair shares. identification: a choice that only starts like the target, the
+ * target said back, a word that is no choice. Production and collection accept any real rhyme: none yet.
+ */
+export function rhymeSpokenMisses(item: RhymeItem): KnownMiss[] {
+  const target = item.targetWord.toLowerCase();
+  if (item.mode === 'recognition' && item.comparisonWord) {
+    const other = item.comparisonWord.toLowerCase(), pair = `"${target}" and "${other}"`;
+    if (item.doesRhyme) return [{ id: 'no_to_rhyme', pattern: `${pair} rhyme: they end with the same sound. The learner says no, they do not rhyme.`, examples: ['no', "no, they don't"] }];
+    const sameStart = !!onsetOf(target) && onsetOf(target) === onsetOf(other);
+    return [sameStart
+      ? { id: 'yes_same_start', pattern: `${pair} start with the same sound but do not rhyme. The learner says yes, they rhyme.`, examples: ['yes', 'yes, they rhyme'] }
+      : { id: 'yes_no_rhyme', pattern: `${pair} do not rhyme and do not start alike. The learner says yes, they rhyme.`, examples: ['yes', 'yes, they rhyme'] }];
+  }
+  if (item.mode !== 'identification') return [];
+  const choices = item.choices.map(c => c.word.toLowerCase()), menu = choices.join(', ');
+  const foils = choices.filter(w => w !== item.answer.toLowerCase() && !!onsetOf(w) && onsetOf(w) === onsetOf(target));
+  const off = OFF_MENU_WORDS.filter(w => !choices.includes(w) && w !== target && rimeOfWord(w) !== rimeOfWord(target)).slice(0, 1);
+  return [
+    ...(foils.length ? [{ id: 'onset_foil', pattern: `The choices are ${menu}. ${foils.map(w => `"${w}"`).join(' and ')} starts with the same sound as "${target}" but does not rhyme with it. The learner says ${foils.map(w => `"${w}"`).join(' or ')}.`, examples: foils }] : []),
+    { id: 'echo_target', pattern: `The word to rhyme with is "${target}". The learner says "${target}" itself back instead of a choice.`, examples: [target] },
+    { id: 'off_menu', pattern: `The choices on the screen are ${menu}. The learner says a word that is none of them and not "${target}" either.`, examples: off },
+  ];
 }
 
 export interface RhymeView {

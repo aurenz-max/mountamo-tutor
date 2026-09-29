@@ -17,6 +17,7 @@ import {
   SHAPE_WORD, STORY_SHAPES, wrongWayAnswer, type FamilySlot, type WordProblemPlan,
 } from './diWordProblemPlan';
 import { itemsFromProblems, type DiWordProblemSetupData, type WordProblemItem } from './diWordProblemScript';
+import { numberMisses, offByMisses, spokenNumber, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 
 export type FamilyPlacements = Record<FamilySlot, string | null>;
 
@@ -70,11 +71,66 @@ export function wordProblemKey(item: WordProblemItem): string | undefined {
   }
 }
 
+/** What a wrong spoken step shows (handoff 20 Part B). */
+export type SpokenWordProblemMiss = OffByMiss | 'signature_kind' | 'other_kind' | 'big_in_small_slot' | 'subtraction_sentence'
+  | 'opposite_operation' | 'wrong_way' | 'said_story_number';
+
+/** The story kind a child most often names instead: the one the scripted key calls the signature error. */
+const SIGNATURE_KIND: Record<WordProblemPlan['shape'], WordProblemPlan['shape']> = {
+  change: 'comparison', comparison: 'change', part_whole: 'comparison',
+};
+
+/**
+ * A spoken step's known wrong answers, in precedence order, for the `spoken_miss` observer: the story's own kinds,
+ * family and numbers stated first, then the learner's words. Concrete per story, never a cause. The hands step
+ * (`big_number`) names none here: `wordProblemMiss` checks it.
+ */
+export function wordProblemSpokenMisses(item: WordProblemItem): KnownMiss[] {
+  const p = item.plan;
+  switch (item.kind) {
+    case 'classify': {
+      const fact = `This story is a ${SHAPE_WORD[p.shape]} story.`;
+      const signature = SIGNATURE_KIND[p.shape], other = STORY_SHAPES.find(s => s !== p.shape && s !== signature)!;
+      return [
+        { id: 'signature_kind', pattern: `${fact} The learner's answer is ${SHAPE_WORD[signature]}.`, examples: [SHAPE_WORD[signature]] },
+        { id: 'other_kind', pattern: `${fact} The learner's answer is ${SHAPE_WORD[other]}.`, examples: [SHAPE_WORD[other]] },
+      ];
+    }
+    case 'family': {
+      const subtraction = familyAsSubtraction(p);
+      const fact = `The story's family is "${familySpoken(p)}".`;
+      return [
+        { id: 'big_in_small_slot', pattern: `${fact} The learner says "${familyMisplaced(p)}", the big number in a small slot.`, examples: [familyMisplaced(p)] },
+        ...(subtraction ? [{ id: 'subtraction_sentence', pattern: `${fact} The learner says a subtraction, "${subtraction}", instead of the family.`,
+          examples: [subtraction] }] : []),
+      ];
+    }
+    case 'operation': {
+      const wrong = p.operation === 'add' ? 'subtract' : 'add';
+      return [{ id: 'opposite_operation', pattern: `The box is ${boxRole(p)} in "${familySpoken(p)}", so the operation is ${p.operation}. `
+        + `The learner's answer is ${wrong}.`, examples: [wrong, wrong === 'add' ? 'plus' : 'minus'] }];
+    }
+    case 'solve': {
+      const known = p.quantities.filter(x => x.known).map(x => x.value);
+      const fact = `The story's numbers are ${known.join(' and ')}; the answer is ${p.answer}.`;
+      const wrongWay = numberMisses(p.answer, [{ id: 'wrong_way', value: wrongWayAnswer(p),
+        pattern: v => `${fact} The learner's answer is ${v}, the two numbers ${p.operation === 'add' ? 'subtracted' : 'added'}.` }]);
+      const printed = Array.from(new Set(known)).filter(v => v >= 1 && v !== p.answer && v !== wrongWayAnswer(p));
+      return [...wrongWay,
+        ...(printed.length ? [{ id: 'said_story_number', pattern: `${fact} The learner's answer is ${printed.join(' or ')}, a number printed in the story.`,
+          examples: printed.map(spokenNumber) }] : []),
+        ...offByMisses(p.answer, `the answer ${p.answer}`)];
+    }
+    default: return [];
+  }
+}
+
 export function wordProblemAssignment(item: WordProblemItem): TeachingAssignment {
   const key = wordProblemKey(item);
+  const misses = key === undefined ? [] : wordProblemSpokenMisses(item);
   return key === undefined
     ? { id: item.id, task: wordProblemAskFor(item), response: 'gesture' }
-    : { id: item.id, task: wordProblemAskFor(item), response: 'speech', expectedAnswer: key };
+    : { id: item.id, task: wordProblemAskFor(item), response: 'speech', expectedAnswer: key, ...(misses.length ? { misses } : {}) };
 }
 
 /** The hands step's check, as the scripted verdict cue computed it: the card in the big slot decides, and a

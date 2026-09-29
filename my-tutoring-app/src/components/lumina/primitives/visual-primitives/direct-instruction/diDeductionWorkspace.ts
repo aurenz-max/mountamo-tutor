@@ -12,6 +12,7 @@
  * a wrong answer no longer closes a case, so the page never writes a conclusion the child did not earn.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { withArticle } from './diDeductionPlan';
 import { VERDICT_MENU, itemsFromRules, withDeductionAction, type DeductionItem, type DiDeductionData } from './diDeductionScript';
 
@@ -44,8 +45,49 @@ export function deductionKey(item: DeductionItem): string {
     + 'is not yet the answer.';
 }
 
+/** What a wrong spoken deduction shows (handoff 20 Part B). */
+export type SpokenDeductionMiss = 'said_negation' | 'read_rule_back' | 'read_case_back' | 'said_member' | 'said_cannot_tell'
+  | 'backwards_yes' | 'said_not_member' | 'verdict_without_reason';
+
+/**
+ * A case's known wrong answers, in precedence order, for the `spoken_miss` observer: the rule and the case
+ * stated first, then the learner's verdict or words. Concrete per case, never a cause.
+ */
+export function deductionSpokenMisses(item: DeductionItem): KnownMiss[] {
+  const r = item.rule, s = item.case.subject, cat = withArticle(r.category);
+  const fact = `The rule is "${item.ruleText}" The case is "${item.case.caseText}"`;
+  if (item.shape === 'conclude') {
+    return [
+      { id: 'said_negation', pattern: `${fact} So ${s} ${r.propertySingular}. The learner says the opposite: ${s} ${r.propertyNegated}.`,
+        examples: [`it ${r.propertyNegated}`] },
+      { id: 'read_rule_back', pattern: `${fact} The learner only reads the rule back ("all ${r.categoryPlural} ${r.propertyPlural}") and says nothing about ${s}.`,
+        examples: [`all ${r.categoryPlural} ${r.propertyPlural}`] },
+      { id: 'read_case_back', pattern: `${fact} The learner only reads the case back and does not say that ${s} ${r.propertySingular}.`,
+        examples: [item.case.caseText.replace(/\.$/, '')] },
+    ];
+  }
+  if (item.shape === 'deny') {
+    return [
+      { id: 'said_member', pattern: `${fact} So ${s} is not ${cat}. The learner's verdict is yes, that ${s} is ${cat}.`,
+        examples: [`yes, it is ${cat}`] },
+      { id: 'said_cannot_tell', pattern: `${fact} So ${s} is not ${cat}. The learner's verdict is can't tell.`, examples: ["can't tell"] },
+      { id: 'verdict_without_reason', pattern: `${fact} So ${s} is not ${cat}. The learner says only no, with no reason from the rule.`,
+        examples: ['no'] },
+    ];
+  }
+  return [
+    { id: 'backwards_yes', pattern: `${fact} The rule does not say only ${r.categoryPlural} ${r.propertyPlural}. The learner's verdict is yes, `
+      + `that it is ${cat} because it ${r.propertySingular}.`, examples: [`yes, because it ${r.propertySingular}`] },
+    { id: 'said_not_member', pattern: `${fact} The rule does not say only ${r.categoryPlural} ${r.propertyPlural}. The learner's verdict is no, `
+      + `it is not ${cat}, with no reason about other things that ${r.propertyPlural}.`, examples: [`no, it is not ${cat}`] },
+    { id: 'verdict_without_reason', pattern: `${fact} The learner says only can't tell (or maybe), with no reason from the rule.`,
+      examples: ["can't tell"] },
+  ];
+}
+
 export function deductionAssignment(item: DeductionItem): TeachingAssignment {
-  return { id: item.id, task: deductionAskFor(item), response: 'speech', expectedAnswer: deductionKey(item) };
+  const misses = deductionSpokenMisses(item);
+  return { id: item.id, task: deductionAskFor(item), response: 'speech', expectedAnswer: deductionKey(item), ...(misses.length ? { misses } : {}) };
 }
 
 export function deductionScene(item: DeductionItem): WorkspaceScene {

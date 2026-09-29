@@ -9,6 +9,7 @@
  * leads to) and restore (tap the zone) are checked by the activity.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { askFor, habitatDioramaHarnessAnswers, type HabitatItem } from './habitatDioramaScript';
 import type { HabitatZone, Relationship } from './HabitatDiorama';
 
@@ -21,8 +22,24 @@ export function habitatAssignment(item: HabitatItem): TeachingAssignment {
   const task = askFor(item);
   if (item.answerKind === 'gesture') return { id: item.id, task, response: 'gesture' };
   const short = item.answerTerms.length ? ` The distinguishing short form ${item.answerTerms.map(t => `"${t}"`).join(' or ')} also counts.` : '';
+  const misses = habitatSpokenMisses(item);
   return { id: item.id, task, response: 'speech',
-    expectedAnswer: `${item.answerText}.${short} "${item.signatureWrong}", another choice on screen, is not it.` };
+    expectedAnswer: `${item.answerText}.${short} "${item.signatureWrong}", another choice on screen, is not it.`, ...(misses.length ? { misses } : {}) };
+}
+
+/** What a wrong spoken choice shows (handoff 20 Part B). */
+export type SpokenHabitatMiss = 'other_choice';
+
+/**
+ * observe, predict and defend's known wrong answer: another choice on screen. The build records no relation between
+ * a foil and the answer, so the choices are one kind.
+ */
+export function habitatSpokenMisses(item: HabitatItem): KnownMiss[] {
+  if (item.answerKind === 'gesture') return [];
+  const others = item.optionTexts.filter(o => o !== item.answerText);
+  return others.length ? [{ id: 'other_choice',
+    pattern: `The right answer is "${item.answerText}". The learner's answer names another choice on screen: ${others.map(o => `"${o}"`).join(' or ')}.`,
+    examples: others.slice(0, 2) }] : [];
 }
 
 export interface HabitatView {
@@ -66,7 +83,7 @@ export const describeHabitatMove = (item: HabitatItem, move: { toId?: string; zo
  *     direction), `unconnected` (no relationship either way);
  *   - restore: `water_for_land` (put in open water; its zone is on land or the shoreline), `land_for_water`
  *     (its zone is open water; put on land or the shoreline), `other_land_zone` (neither zone is water).
- * observe, predict and defend are spoken (Part B).
+ * observe, predict and defend are spoken: `habitatSpokenMisses` (Part B).
  */
 export type HabitatMiss = 'other_kind_link' | 'leads_to_start' | 'unconnected'
   | 'water_for_land' | 'land_for_water' | 'other_land_zone';

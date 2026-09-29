@@ -6,7 +6,8 @@
  */
 
 import { ComponentDefinition } from '../../../types';
-import type { ChainMiss } from '../../../primitives/visual-primitives/history/causeEffectChainWorkspace';
+import type { ChainMiss, SpokenChainMiss } from '../../../primitives/visual-primitives/history/causeEffectChainWorkspace';
+import type { SpokenEraMiss } from '../../../primitives/visual-primitives/history/eraExplorerWorkspace';
 import { missLists } from './missLists';
 
 export const HISTORY_CATALOG: ComponentDefinition[] = [
@@ -158,8 +159,10 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
         + 'Before an attempt never say which event is a cause, which comes first, next or last, or which one is the answer, '
         + 'and do not single out one card as a hint. When the ask carries the events (grades 1-2), read them in the order '
         + 'given. You cannot move or highlight cards.',
-      // The board's own check (`chainMiss`). identify_cause and root_vs_proximate are spoken (handoff 20 Part B).
-      misses: missLists<ChainMiss>({ build_chain: ['reversed', 'two_swapped', 'other_order'] }),
+      // The board's own check (`chainMiss`), and identify_cause's spoken verdict by the event's role
+      // (`causeEffectSpokenMisses`, handoff 20 Part B). root_vs_proximate names none yet.
+      misses: missLists<ChainMiss | SpokenChainMiss>({ build_chain: ['reversed', 'two_swapped', 'other_order'],
+        identify_cause: ['cause_denied', 'consequence_as_cause', 'background_as_cause'] }),
     },
   },
   {
@@ -297,6 +300,9 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
         + 'answer before an attempt. "Today" is not a choice when two past eras are compared, and saying what changed is '
         + 'not a cause. For kindergarten and grade 1, read the detail aloud, and a card when the learner asks. No choice '
         + 'is printed until credit. You cannot point at or open cards.',
+      // The spoken pick's known wrong answers (`eraSpokenMisses`, handoff 20 Part B). lens_id and era_compare name none yet.
+      misses: missLists<SpokenEraMiss>({ era_sort: ['said_back_then', 'said_today', 'said_both'],
+        cause_of_change: ['other_cause', 'said_what_changed'] }),
     },
   },
 ];

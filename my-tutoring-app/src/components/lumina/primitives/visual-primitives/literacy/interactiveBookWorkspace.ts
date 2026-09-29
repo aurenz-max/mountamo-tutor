@@ -8,6 +8,7 @@
  * spoken: the tutor reads the sentence up to the glowing word and the learner reads the word.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { FEATURE_SPOKEN, askFor, interactiveBookHarnessAnswers, type InteractiveBookItem } from './interactiveBookScript';
 import type { BookFeatureKind, InteractiveBookVolume } from './InteractiveBook';
 
@@ -58,9 +59,27 @@ export const interactiveBookMiss = (item: InteractiveBookItem, hotspot: BookHots
 
 export function interactiveBookAssignment(item: InteractiveBookItem): TeachingAssignment {
   if (item.mode === 'find-feature') return { id: item.id, task: ask(item), response: 'gesture' };
+  const misses = interactiveBookSpokenMisses(item);
   return { id: item.id, task: ask(item), response: 'speech',
     expectedAnswer: `${item.targetText}, the glowing word read aloud. The sentence lead-in said back, or a different `
-      + 'word, is not it.' };
+      + 'word, is not it.', ...(misses.length ? { misses } : {}) };
+}
+
+/** What a wrong spoken read of the glowing word shows (handoff 20 Part B). */
+export type SpokenInteractiveBookMiss = 'said_lead_in' | 'context_guess';
+
+/**
+ * read-focus-word's known wrong answers, most specific first: the sentence lead-in said back (the pack's signature
+ * wrong), a different word that fits the sentence (`context_guess`, which the dots lever answers). No code knows
+ * which words fit, so `context_guess` carries no example.
+ */
+export function interactiveBookSpokenMisses(item: InteractiveBookItem): KnownMiss[] {
+  if (item.mode !== 'read-focus-word') return [];
+  const word = item.targetText.toLowerCase(), lead = item.readLead?.trim();
+  return [
+    ...(lead ? [{ id: 'said_lead_in', pattern: `The sentence begins "${lead}" and then the glowing word "${word}". The learner says the beginning of the sentence back, "${lead}", and not the glowing word.`, examples: [lead] }] : []),
+    { id: 'context_guess', pattern: `The glowing word is "${word}"${lead ? `, after "${lead}"` : ''}. The learner says a different word that would make sense in the sentence but is not "${word}".` },
+  ];
 }
 
 export function interactiveBookScene(item: InteractiveBookItem): WorkspaceScene {

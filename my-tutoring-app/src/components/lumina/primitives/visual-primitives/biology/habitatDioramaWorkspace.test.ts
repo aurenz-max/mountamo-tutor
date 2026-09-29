@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { habitatMiss } from './habitatDioramaWorkspace';
+import { habitatMiss, habitatSpokenMisses } from './habitatDioramaWorkspace';
 import type { HabitatItem } from './habitatDioramaScript';
 import type { Relationship } from './HabitatDiorama';
 
@@ -20,4 +20,15 @@ it.each([
   [toWater, { zone: 'shoreline' }, 'land_for_water'], [toWater, { zone: 'underground' }, 'land_for_water'],
 ] as const)('row %#', (it_, move, miss) => {
   expect(habitatMiss(it_, move, web)).toBe(miss);
+});
+
+// A spoken choice's known wrong answer (handoff 20 Part B): another choice on screen, never the answer.
+it.each([
+  [item({ kind: 'observe', answerKind: 'voice', answerText: 'Cattail', optionTexts: ['Cattail', 'Tadpole', 'Pond Snail'] }), ['other_choice'], ['Cattail']],
+  [item({ kind: 'connect', answerKind: 'gesture', answerText: 'Frog', optionTexts: [] }), [], []],
+] as const)('spoken row %#', (it_, ids, accepted) => {
+  const misses = habitatSpokenMisses(it_);
+  expect(misses.map(m => m.id)).toEqual(ids);
+  const ok = accepted.map(a => a.toLowerCase());
+  for (const m of misses) for (const e of m.examples ?? []) expect(ok).not.toContain(e.toLowerCase());
 });

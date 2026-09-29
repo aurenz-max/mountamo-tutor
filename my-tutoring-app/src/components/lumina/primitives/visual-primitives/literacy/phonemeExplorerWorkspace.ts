@@ -8,7 +8,9 @@
  * the new word after one sound changes. The task is the pack's own ask.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { speakablePhoneme } from './phonemeVoice';
+import { LETTER_NAME, wordReadingMisses } from './spokenReadingMisses';
 import { askFor, phonemeExplorerHarnessAnswers, spokenPhonemeToken, spokenSound, type PhonemeExplorerItem }
   from './phonemeExplorerScript';
 
@@ -32,7 +34,28 @@ export function phonemeAssignment(item: PhonemeExplorerItem): TeachingAssignment
         return `${item.answer}. ${item.originalWord} said back unchanged is not it.`;
     }
   })();
-  return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer };
+  const misses = phonemeSpokenMisses(item);
+  return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) };
+}
+
+/**
+ * A spoken item's known wrong answers (handoff 20 Part B), from the ids `PHONEME_MISSES` declares. isolate: the
+ * example word said back, the letter's name. blend: the sounds with no word, a real word one sound off. The other
+ * modes have no saved payload to measure a list against yet, so they name none.
+ */
+export function phonemeSpokenMisses(item: PhonemeExplorerItem): KnownMiss[] {
+  if (item.kind === 'blend' && item.phonemeSequence?.length) {
+    return wordReadingMisses(item.answer, { sounds: item.phonemeSequence, nearId: 'near_word', only: ['sounds_no_word', 'near_word'],
+      fact: `The sounds on the tiles are ${item.phonemeSequence.join(', ')}, and they blend into "${item.answer.toLowerCase()}". ` });
+  }
+  if (item.kind !== 'isolate') return [];
+  const menu = cards(item), letter = (item.phoneme ?? '').toLowerCase(), name = LETTER_NAME[letter];
+  const example = item.exampleWord?.toLowerCase();
+  const onMenu = (item.menu ?? []).some(c => c.word.toLowerCase() === example);
+  return [
+    ...(example && item.voiceExample && !onMenu ? [{ id: 'echo_stimulus', pattern: `The example word is "${example}", and it is not one of the cards (${menu}). The learner says "${example}", the example word, instead of a card.`, examples: [example] }] : []),
+    ...(name && letter.length === 1 ? [{ id: 'letter_name', pattern: `The sound is written with the letter ${letter.toUpperCase()}. The learner says the letter's NAME, "${name}", and no card word.`, examples: [name, letter.toUpperCase()] }] : []),
+  ];
 }
 
 export function phonemeScene(item: PhonemeExplorerItem): WorkspaceScene {

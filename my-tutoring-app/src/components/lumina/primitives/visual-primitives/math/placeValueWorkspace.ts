@@ -8,12 +8,58 @@
  * checked by code, so the tutor is not handed its digits.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { askFor, type PlaceValueItem } from './placeValueScript';
-import { placeWord } from './spokenNumberWords';
+import { digitValueWord, digitWord, MAX_SPOKEN_PLACE, placeWord, spokenIntegerWord } from './spokenNumberWords';
+
+/** What a wrong spoken place or value shows (handoff 20 Part B). */
+export type SpokenPlaceValueMiss = 'said_value' | 'said_digit' | 'next_place' | 'other_place' | 'said_place' | 'shifted_place'
+  | 'said_number' | 'next_digit_value';
+
+/**
+ * A spoken ask's known wrong answers, in precedence order, for the `spoken_miss` observer, from the printed number
+ * and its glowing digit: which place (the digit's worth or the digit for the place name, another column) and what it
+ * is worth (the bare digit, the place name, the worth one column over, the whole number, a digit one away).
+ */
+export function placeValueSpokenMisses(item: PlaceValueItem): KnownMiss[] {
+  if (item.answerKind === 'gesture') return [];
+  const { digit: d, place: p, targetNumber: n } = item, dw = digitWord(d), pw = placeWord(p), worth = digitValueWord(d, p);
+  const places = item.chartPlaces.filter(q => q !== p && q <= MAX_SPOKEN_PLACE);
+  if (item.kind === 'find_place') {
+    const next = places.filter(q => Math.abs(q - p) === 1), far = places.filter(q => Math.abs(q - p) > 1);
+    const names = (qs: number[]) => qs.map(q => `the ${placeWord(q)} place`).join(' or ');
+    return [
+      ...(p > 0 ? [{ id: 'said_value', pattern: `The glowing ${dw} is worth ${worth}. The learner's answer is ${worth}, `
+        + 'what the digit is worth, instead of the name of its place.', examples: [worth] }] : []),
+      { id: 'said_digit', pattern: `The glowing digit is ${dw}. The learner's answer is ${dw}, the digit itself, instead of the name of its place.`,
+        examples: [dw] },
+      ...(next.length ? [{ id: 'next_place', pattern: `The glowing ${dw} is in the ${pw} place. The learner names ${names(next)}, a column next to it.`,
+        examples: next.map(q => placeWord(q)) }] : []),
+      ...(far.length ? [{ id: 'other_place', pattern: `The glowing ${dw} is in the ${pw} place. The learner names ${names(far)}, a column further away.`,
+        examples: far.map(q => placeWord(q)) }] : []),
+    ];
+  }
+  const shifted = [p - 1, p + 1].filter(q => q >= 0 && q <= MAX_SPOKEN_PLACE).map(q => digitValueWord(d, q));
+  const near = [d - 1, d + 1].filter(x => x >= 1 && x <= 9).map(x => digitValueWord(x, p));
+  const whole = spokenIntegerWord(n);
+  return [
+    ...(p > 0 ? [{ id: 'said_digit', pattern: `The glowing digit is ${dw}, in the ${pw} place. The learner's answer is ${dw}, the digit alone, `
+      + `not what it is worth in the ${pw} place.`, examples: [dw] }] : []),
+    ...(p > 0 ? [{ id: 'said_place', pattern: `The glowing digit is in the ${pw} place. The learner's answer is the place name, ${pw}, with no number.`,
+      examples: [`the ${pw} place`] }] : []),
+    { id: 'shifted_place', pattern: `The glowing ${dw} is in the ${pw} place. The learner's answer is ${shifted.join(' or ')}, `
+      + 'what that digit would be worth one column over.', examples: shifted },
+    ...(n >= 10 ? [{ id: 'said_number', pattern: `The whole printed number is ${whole}. The learner's answer is ${whole}, `
+      + 'the whole number read aloud, instead of the worth of one digit.', examples: [whole] }] : []),
+    ...(near.length ? [{ id: 'next_digit_value', pattern: `The glowing ${dw} is in the ${pw} place. The learner's answer is ${near.join(' or ')}, `
+      + 'the worth of a digit one more or one less in that place.', examples: near }] : []),
+  ];
+}
 
 export function workspaceAssignment(item: PlaceValueItem): TeachingAssignment {
   if (item.answerKind === 'gesture') return { id: item.id, task: askFor(item), response: 'gesture' };
-  return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer: item.answerText };
+  const misses = placeValueSpokenMisses(item);
+  return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer: item.answerText, ...(misses.length ? { misses } : {}) };
 }
 
 /** The chart as written, one entry per column HIGH → LOW; `null` is an empty column. */

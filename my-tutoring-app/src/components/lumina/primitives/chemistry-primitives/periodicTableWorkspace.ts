@@ -10,6 +10,7 @@
  * outer electrons) are spoken, with the pack's signature misses in their keys.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../components/live-activity/runtime/useTeachingWorkspace';
+import { numberMisses, offByMisses, type KnownMiss, type OffByMiss } from '../../components/live-activity/runtime/spokenMissContract';
 import {
   askFor,
   itemsFromChallenges,
@@ -58,9 +59,33 @@ function key(item: PeriodicTableItem): string | undefined {
 
 export function periodicAssignment(item: PeriodicTableItem): TeachingAssignment {
   const expectedAnswer = key(item);
+  const misses = expectedAnswer ? periodicSpokenMisses(item) : [];
   return expectedAnswer
-    ? { id: item.id, task: ask(item), response: 'speech', expectedAnswer }
+    ? { id: item.id, task: ask(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) }
     : { id: item.id, task: ask(item), response: 'gesture' };
+}
+
+/** What a wrong spoken answer shows on Trends (handoff 20 Part B). */
+export type SpokenPeriodicMiss = 'other_of_pair' | 'group_number' | OffByMiss;
+
+/**
+ * A Trends item's known wrong answers, in precedence order, for the `spoken_miss` observer: the other element of
+ * the pair (compare); the group number, then off-by counts of the outer electrons (valence). Name It names none yet.
+ */
+export function periodicSpokenMisses(item: PeriodicTableItem): KnownMiss[] {
+  if (item.kind === 'compare' && item.pair) {
+    const other = item.answerName === item.pair[0].name ? item.pair[1].name : item.pair[0].name;
+    const trait = item.axis === 'reactivity' ? 'more reactive' : 'the bigger atom';
+    return [{ id: 'other_of_pair', pattern: `Of ${item.pair[0].name} and ${item.pair[1].name}, ${item.answerName} is ${trait}. The learner's answer is ${other}, the other one.`,
+      examples: [other] }];
+  }
+  if (item.kind === 'valence' && item.element && item.answerCount) {
+    const n = item.answerCount, e = item.element;
+    return [...numberMisses(n, [{ id: 'group_number', value: (e.group ?? 0) >= 13 ? e.group ?? undefined : undefined,
+      pattern: g => `${e.name} is in group ${g} and has ${n} outer electrons. The learner's answer is ${g}, the group number.` }]),
+      ...offByMisses(n, `the ${n} outer electrons of ${e.name}`)];
+  }
+  return [];
 }
 
 export function periodicScene(item: PeriodicTableItem, tapped: string | null): WorkspaceScene {
@@ -86,7 +111,7 @@ export const cellMatches = (item: PeriodicTableItem, atomicNumber: number): bool
  * one on the drawn table: `same_first_letter` (a spelled-symbol ask: the tapped symbol starts with the same
  * letter), `next_box` (the box touching it), `same_row` (the same row, further along: on a group-and-period ask,
  * the right period), `same_column` (the same column, another row: the right group), `other_box`.
- * Name It and Trends are spoken (Part B).
+ * Name It and Trends are spoken; Trends names its misses in `periodicSpokenMisses` (Part B).
  */
 export type PeriodicMiss = 'same_first_letter' | 'next_box' | 'same_row' | 'same_column' | 'other_box';
 

@@ -10,6 +10,7 @@
  * the band floor the ask carries the sentence for the tutor to read.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import {
   askFor,
   CONFUSABLE_WITH,
@@ -43,7 +44,38 @@ export function sentenceAssignment(item: SentenceAnalyzerItem): TeachingAssignme
       + (item.action === 'name-role' ? ' A part of speech ("noun", "verb") answers a different question and is wrong.' : '')
       + ' Any other grammar label is wrong.';
   }
-  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer };
+  const misses = sentenceSpokenMisses(item);
+  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) };
+}
+
+/** What a wrong spoken label shows (handoff 20 Part B). */
+export type SpokenSentenceMiss = 'other_side' | 'part_of_speech' | 'confusable_label' | 'other_label';
+
+/**
+ * An item's known wrong answers, in precedence order, for the `spoken_miss` observer: the other side (name-side);
+ * a part of speech where the job was asked (name-role); the label the lesson pairs with the answer, then any other
+ * label on the printed wall.
+ */
+export function sentenceSpokenMisses(item: SentenceAnalyzerItem): KnownMiss[] {
+  const word = speakableWord(item.targetWord);
+  if (item.action === 'name-side') {
+    const side = item.answer.toLowerCase(), other = side === 'subject' ? 'predicate' : 'subject';
+    return [{ id: 'other_side', pattern: `In "${item.sentence}", the word "${word}" is in the ${side}. The learner's answer is "${other}", the other side.`,
+      examples: [other, `the ${other}`] }];
+  }
+  const about = item.action === 'name-type' ? `The sentence "${item.sentence}" is ${item.answer}.`
+    : `In "${item.sentence}", the word "${word}" is ${item.action === 'name-role' ? 'the' : 'a'} ${item.answer}.`;
+  const confusable = (CONFUSABLE_WITH[item.answer] ?? []).filter(label => item.wallLabels.includes(label));
+  const others = item.wallLabels.filter(label => label !== item.answer && !confusable.includes(label));
+  const quote = (xs: readonly string[]) => xs.map(x => `"${x}"`).join(' or ');
+  return [
+    ...(item.action === 'name-role' ? [{ id: 'part_of_speech', pattern: `${about} The learner's answer is a part of speech such as "noun" or "verb", not a job in the sentence.`,
+      examples: ['noun', 'verb'] }] : []),
+    ...(confusable.length ? [{ id: 'confusable_label', pattern: `${about} The learner's answer is ${quote(confusable)}, a different label that is often mixed up with ${item.answer}.`,
+      examples: confusable.slice(0, 2) }] : []),
+    ...(others.length ? [{ id: 'other_label', pattern: `${about} The learner's answer is another label from the printed wall: ${quote(others)}.`,
+      examples: others.slice(-2) }] : []),
+  ];
 }
 
 export function sentenceScene(item: SentenceAnalyzerItem, readsAloud: boolean): WorkspaceScene {

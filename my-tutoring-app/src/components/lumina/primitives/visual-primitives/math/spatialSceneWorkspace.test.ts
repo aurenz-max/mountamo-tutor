@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { spatialMiss } from './spatialSceneWorkspace';
+import { spatialAssignment, spatialMiss, spatialSpokenMisses } from './spatialSceneWorkspace';
 import type { SpatialSceneChallenge } from './SpatialScene';
 
 const obj = (name: string, row: number, col: number) => ({ name, image: '', position: { row, col } });
@@ -33,4 +33,16 @@ it.each([
   [ch('place', { correctCell: cell(0, 1) }), { cell: cell(2, 2) }, undefined],
 ] as const)('row %#', (c, view, miss) => {
   expect(spatialMiss(c, view)).toBe(miss);
+});
+
+const scene = (correctPosition: SpatialSceneChallenge['correctPosition']) => ch('describe_scene',
+  { sceneObjects: [obj('cat', 1, 0), obj('tree', 1, 2)], targetObject: obj('cat', 1, 0), referenceObjectName: 'tree', correctPosition });
+it.each([
+  [scene('left_of'), ['The cat is right of the tree.']], [scene('in_front_of'), ['The cat is behind the tree.']],
+  [scene('next_to'), []], [above, []],
+] as const)('spoken %#: only the reversed relation', (c, examples) => {
+  const misses = spatialSpokenMisses(c);
+  expect(misses.flatMap(m => m.examples ?? [])).toEqual(examples);
+  expect(misses.every(m => m.id === 'opposite_word')).toBe(true);
+  expect(spatialAssignment(c).misses).toEqual(misses.length ? misses : undefined);
 });

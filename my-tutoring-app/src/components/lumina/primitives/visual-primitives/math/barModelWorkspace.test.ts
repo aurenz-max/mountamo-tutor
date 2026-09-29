@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { barModelMiss, type BarModelView } from './barModelWorkspace';
+import { barModelMiss, barModelSpokenMisses, workspaceAssignment, type BarModelView } from './barModelWorkspace';
 import type { BarModelChallenge } from './BarModel';
 
 const rows = (...vs: number[]) => vs.map((value, i) => ({ label: `r${i}`, value }));
@@ -31,3 +31,20 @@ it.each([
 ] as const)('row %#', (c, view, miss) => {
   expect(barModelMiss(c, view)).toBe(miss);
 });
+
+const twoGraphs = ch('compare_two_graphs', { graphLabel: 'Morning', secondGraphLabel: 'Afternoon', values: rows(3, 5, 2),
+  secondValues: rows(3, 4, 2) });
+it.each([
+  [ch('say_what_it_shows', {}), ['reversed_comparison', 'same_for_different', 'no_comparison'],
+    ['There are more r2 than r1', 'r1 and r2 are the same', 'r1', '5']],
+  [twoGraphs, ['reversed_comparison', 'same_for_different', 'rows_not_graphs', 'no_comparison'],
+    ['Afternoon has more r1 than Morning', 'Morning and Afternoon have the same number of r1', 'r0 and r1 are different', 'r1', '5']],
+  [ch('say_what_it_shows', { values: rows(4, 4) }), ['no_comparison'], ['r0', '4']],
+] as const)('spoken %#: known misses in order, none a true comparison', (c, ids, examples) => {
+  const misses = barModelSpokenMisses(c);
+  expect(misses.map(m => m.id)).toEqual(ids);
+  expect(misses.flatMap(m => m.examples ?? [])).toEqual(examples);
+  expect(workspaceAssignment(c).misses).toEqual(misses);
+});
+
+it('a graph answered on screen lists none', () => expect(barModelSpokenMisses(read)).toEqual([]));

@@ -8,6 +8,7 @@
  * carries facts only, and never the measurements behind the drawing.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { askFor, type CompareObjectsItem } from './compareObjectsScript';
 
 /** The spoken key the observer judges the tutor's feedback against. */
@@ -17,10 +18,40 @@ function spokenAnswer(item: CompareObjectsItem): string {
   return item.answerNames[0];
 }
 
+/** What a wrong spoken comparison shows (handoff 20 Part B). */
+export type SpokenCompareMiss = OffByMiss | 'other_object' | 'other_attribute';
+
+const SHOWS: Record<CompareObjectsItem['attribute'], string> = {
+  length: 'how long they are', height: 'how tall they are', weight: 'how heavy they are', capacity: 'how much they hold' };
+
+/**
+ * A spoken item's known wrong answers, in precedence order, for the `spoken_miss` observer: the other object on
+ * compare_two (the comparison turned around), another menu attribute on identify_attribute, and the off-by counts of
+ * the unit boxes on non_standard.
+ */
+export function compareObjectsSpokenMisses(item: CompareObjectsItem): KnownMiss[] {
+  if (item.answerKind === 'gesture') return [];
+  if (item.kind === 'compare_two') {
+    const winner = item.answerNames[0], others = item.objectNames.filter(n => n !== winner), w = item.comparisonWord;
+    const asked = w.startsWith('holds') ? w.replace('_', ' ') : `is ${w === 'shorter_height' ? 'shorter' : w}`;
+    return others.length ? [{ id: 'other_object', pattern: `The question asks which one ${asked}, and that is the `
+      + `${winner}. The learner names the ${others.join(' or the ')}, the other object, which is the comparison turned around.`, examples: others }] : [];
+  }
+  if (item.kind === 'identify_attribute') {
+    const others = item.attributeOptions.filter(a => a !== item.attribute);
+    return others.length ? [{ id: 'other_attribute', pattern: `The picture shows ${SHOWS[item.attribute]}. The learner's answer is `
+      + `${others.map(a => SHOWS[a]).join(' or ')}, another choice from the question that the picture does not show.`,
+      examples: others.map(a => SHOWS[a]) }] : [];
+  }
+  if (item.kind === 'non_standard') return offByMisses(item.unitCount, `the ${item.unitCount} ${item.unitName} boxes along the ${item.objectNames[0]}`);
+  return [];
+}
+
 export function workspaceAssignment(item: CompareObjectsItem): TeachingAssignment {
   // An arrangement is checked by the board, so the tutor is not handed its key.
   if (item.answerKind === 'gesture') return { id: item.id, task: askFor(item), response: 'gesture' };
-  return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer: spokenAnswer(item) };
+  const misses = compareObjectsSpokenMisses(item);
+  return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer: spokenAnswer(item), ...(misses.length ? { misses } : {}) };
 }
 
 /** Does the committed arrangement name every object, in the asked order? */

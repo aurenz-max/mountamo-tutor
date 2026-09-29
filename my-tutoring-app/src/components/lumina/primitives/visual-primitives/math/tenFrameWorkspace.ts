@@ -10,6 +10,7 @@
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { askFor, isTeenKind, type TenFrameItem } from './tenFrameScript';
+import { numberMisses, offByMisses, spokenNumber, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 
 /** Challenge types whose catalog eval mode has a different name; every other type is its own mode. */
 export const evalModeForKind = (kind: TenFrameItem['kind']): string =>
@@ -28,12 +29,45 @@ export function describeFrameResponse(item: TenFrameItem, value: number): string
   return `${n(value, 'counter')} on the frame`;
 }
 
+/** What a wrong spoken number on the frame shows (handoff 20 Part B). */
+export type SpokenFrameMiss = OffByMiss | 'empty_count' | 'said_shown' | 'said_capacity' | 'said_addend' | 'said_start' | 'said_change';
+
+/**
+ * A spoken item's known wrong answers, in precedence order, for the `spoken_miss` observer: the numbers on this
+ * frame first, then the off-by misses. Quick look is the pilot's (qa/tutor-reports/spoken-miss/, empty boxes first).
+ */
+export function tenFrameSpokenMisses(item: TenFrameItem): KnownMiss[] {
+  if (item.answerKind === 'gesture') return [];
+  const n = item.answer, cap = item.capacity;
+  switch (item.kind) {
+    case 'subitize': return [...numberMisses(n, [{ id: 'empty_count', value: cap - n,
+      pattern: v => `The learner's answer is ${v}, the number of EMPTY boxes on the frame rather than the counters.` }]),
+      ...offByMisses(n, `the ${n} counters shown`)];
+    case 'make_ten': return [...numberMisses(n, [
+      { id: 'said_shown', value: item.shown, pattern: v => `The learner's answer is ${v}, the counters already on the frame, not how many more make ${cap}.` },
+      { id: 'said_capacity', value: cap, pattern: v => `The learner's answer is ${v}, the number to make, not how many more are needed.` }]),
+      ...offByMisses(n, `the ${n} more counters that make ${cap}`)];
+    case 'add': {
+      const addends = [item.addend1, item.addend2].filter((a): a is number => !!a && a !== n);
+      return [...(addends.length ? [{ id: 'said_addend', pattern: `The learner's answer is ${Array.from(new Set(addends)).join(' or ')}, `
+        + 'one of the two numbers being added, not how many altogether.', examples: addends.map(spokenNumber) }] : []),
+        ...offByMisses(n, `the ${n} altogether`)];
+    }
+    case 'subtract': return [...numberMisses(n, [
+      { id: 'said_start', value: item.shown, pattern: v => `The learner's answer is ${v}, how many counters there were before any were taken away.` },
+      { id: 'said_change', value: item.removed, pattern: v => `The learner's answer is ${v}, how many counters were taken away, not how many are left.` }]),
+      ...offByMisses(n, `the ${n} counters left`)];
+    default: return offByMisses(n, `the answer ${n}`);
+  }
+}
+
 export function workspaceAssignment(item: TenFrameItem): TeachingAssignment {
   const speech = item.answerKind !== 'gesture';
   // A placement is checked by the frame, so the tutor is not handed its key;
   // a spoken number is judged from the tutor's feedback against the answer.
+  const misses = speech ? tenFrameSpokenMisses(item) : [];
   return { id: item.id, task: askFor(item), response: speech ? 'speech' : 'gesture',
-    ...(speech ? { expectedAnswer: String(item.answer) } : {}) };
+    ...(speech ? { expectedAnswer: String(item.answer) } : {}), ...(misses.length ? { misses } : {}) };
 }
 
 export interface TenFrameView {

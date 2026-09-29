@@ -1,0 +1,7524 @@
+[
+ {
+  "rep": 1,
+  "payload": "cvc-speller.fill_vowel",
+  "item": "c3",
+  "learner": "ih",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.96,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.94,
+    "probabilities": {
+     "no_answer": 0,
+     "letter_name": 0,
+     "other_vowel": 0.04,
+     "correct": 0.96,
+     "last_sound": 0,
+     "other_wrong": 0,
+     "whole_word": 0,
+     "first_sound": 0
+    }
+   },
+   "fits_whole_word": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_first_sound": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_other_vowel": {
+    "type": "noul",
+    "noul": 0.13
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "cvc-speller.fill_vowel",
+  "item": "c2",
+  "learner": "eee",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.6,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.54,
+    "probabilities": {
+     "whole_word": 0,
+     "other_wrong": 0,
+     "correct": 0.6,
+     "no_answer": 0,
+     "last_sound": 0,
+     "other_vowel": 0.01,
+     "first_sound": 0,
+     "letter_name": 0.39
+    }
+   },
+   "fits_whole_word": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.56
+   },
+   "fits_first_sound": {
+    "type": "noul",
+    "noul": 0.01
+   },
+   "fits_last_sound": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_other_vowel": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "cvc-speller.fill_vowel",
+  "item": "c3",
+  "learner": "iii",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "whole_word": 0,
+     "correct": 0.99,
+     "letter_name": 0.01,
+     "other_wrong": 0,
+     "last_sound": 0,
+     "other_vowel": 0,
+     "no_answer": 0,
+     "first_sound": 0
+    }
+   },
+   "fits_whole_word": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_first_sound": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound": {
+    "type": "noul",
+    "noul": 0.01
+   },
+   "fits_other_vowel": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "cvc-speller.fill_vowel",
+  "item": "c1",
+  "learner": "aaa",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "letter_name": 0,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "whole_word": 0,
+     "correct": 1,
+     "first_sound": 0,
+     "other_vowel": 0,
+     "last_sound": 0
+    }
+   },
+   "fits_whole_word": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_first_sound": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_other_vowel": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "cvc-speller.fill_vowel",
+  "item": "c2",
+  "learner": "eh",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.8,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.77,
+    "probabilities": {
+     "whole_word": 0,
+     "correct": 0.8,
+     "letter_name": 0.02,
+     "other_wrong": 0.01,
+     "last_sound": 0,
+     "other_vowel": 0.17,
+     "no_answer": 0,
+     "first_sound": 0
+    }
+   },
+   "fits_whole_word": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.17
+   },
+   "fits_first_sound": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_last_sound": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_other_vowel": {
+    "type": "noul",
+    "noul": 0.17
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "cvc-speller.fill_vowel",
+  "item": "c1",
+  "learner": "ah",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.9,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.89,
+    "probabilities": {
+     "first_sound": 0,
+     "letter_name": 0.04,
+     "other_vowel": 0.05,
+     "no_answer": 0,
+     "whole_word": 0,
+     "last_sound": 0,
+     "correct": 0.9,
+     "other_wrong": 0.01
+    }
+   },
+   "fits_whole_word": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.13
+   },
+   "fits_first_sound": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_last_sound": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_other_vowel": {
+    "type": "noul",
+    "noul": 0.07
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "decodable-reader.literal",
+  "item": "line-s1",
+  "learner": "pat is a cat with a hat",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.93,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.92,
+    "probabilities": {
+     "word_swap": 0.01,
+     "word_skip": 0.04,
+     "other_wrong": 0.02,
+     "no_answer": 0,
+     "correct": 0.93
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.08
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "decodable-reader.literal",
+  "item": "line-s1",
+  "learner": "Pat is a cat with a hat.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0,
+     "word_skip": 0,
+     "correct": 1,
+     "word_swap": 0
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "decodable-reader.literal",
+  "item": "line-s2",
+  "learner": "The fat... The fat cat sat on a mat.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "no_answer": 0,
+     "word_skip": 0,
+     "other_wrong": 0.01,
+     "correct": 0.99,
+     "word_swap": 0
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.07
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "decodable-reader.literal",
+  "item": "line-s1",
+  "learner": "Pat is... Pat is a cat with a hat.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.94,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.92,
+    "probabilities": {
+     "other_wrong": 0.02,
+     "correct": 0.94,
+     "no_answer": 0,
+     "word_skip": 0.04,
+     "word_swap": 0
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.11
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "decodable-reader.literal",
+  "item": "line-s2",
+  "learner": "The fat cat sat on a mat.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "word_swap": 0,
+     "correct": 1,
+     "no_answer": 0,
+     "word_skip": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "decodable-reader.literal",
+  "item": "line-s2",
+  "learner": "the fat cat sat on a mat",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.95,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.92,
+    "probabilities": {
+     "word_skip": 0.04,
+     "word_swap": 0.01,
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 0.95
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "decodable-reader.literal",
+  "item": "line-s3",
+  "learner": "Pat had a rat in the bag.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "no_answer": 0,
+     "word_swap": 0,
+     "word_skip": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "decodable-reader.literal",
+  "item": "line-s3",
+  "learner": "Pat had... Pat had a rat in the bag.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.96,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.95,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0.01,
+     "word_skip": 0.03,
+     "word_swap": 0,
+     "correct": 0.96
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.1
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "decodable-reader.read_along",
+  "item": "q-1",
+  "learner": "the cat",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "lifted_word": 0,
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 1,
+     "retell": 0
+    }
+   },
+   "fits_retell": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_lifted_word": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "decodable-reader.read_along",
+  "item": "q-1",
+  "learner": "cat",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "no_answer": 0,
+     "lifted_word": 0,
+     "correct": 1,
+     "retell": 0
+    }
+   },
+   "fits_retell": {
+    "type": "noul",
+    "noul": 0.08
+   },
+   "fits_lifted_word": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "decodable-reader.literal",
+  "item": "line-s3",
+  "learner": "pat had a rat in the bag",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.93,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.92,
+    "probabilities": {
+     "correct": 0.93,
+     "no_answer": 0,
+     "other_wrong": 0.01,
+     "word_swap": 0.01,
+     "word_skip": 0.04
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.07
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "decodable-reader.read_along",
+  "item": "q-2",
+  "learner": "rat",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "lifted_word": 0,
+     "correct": 1,
+     "no_answer": 0,
+     "retell": 0
+    }
+   },
+   "fits_retell": {
+    "type": "noul",
+    "noul": 0.07
+   },
+   "fits_lifted_word": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "decodable-reader.read_along",
+  "item": "q-2",
+  "learner": "the rat",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "other_wrong": 0,
+     "lifted_word": 0,
+     "retell": 0,
+     "no_answer": 0
+    }
+   },
+   "fits_retell": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_lifted_word": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "di-word-reading.cvc_reading",
+  "item": "diwr-2-mat",
+  "learner": "m... a... t... mat",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.9,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.88,
+    "probabilities": {
+     "other_wrong": 0,
+     "no_answer": 0,
+     "letter_name": 0.05,
+     "sounds_no_word": 0.05,
+     "correct": 0.9,
+     "last_sound_changed": 0,
+     "first_sound_changed": 0,
+     "middle_sound_changed": 0
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.24
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.11
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "decodable-reader.read_along",
+  "item": "q-3",
+  "learner": "nap",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "retell": 0,
+     "lifted_word": 0,
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 1
+    }
+   },
+   "fits_retell": {
+    "type": "noul",
+    "noul": 0.13
+   },
+   "fits_lifted_word": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "decodable-reader.read_along",
+  "item": "q-3",
+  "learner": "the nap",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.95,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.94,
+    "probabilities": {
+     "other_wrong": 0.02,
+     "no_answer": 0,
+     "retell": 0,
+     "lifted_word": 0.03,
+     "correct": 0.95
+    }
+   },
+   "fits_retell": {
+    "type": "noul",
+    "noul": 0.1
+   },
+   "fits_lifted_word": {
+    "type": "noul",
+    "noul": 0.12
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "di-word-reading.cvc_reading",
+  "item": "diwr-1-cat",
+  "learner": "c... a... t... cat",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.93,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.91,
+    "probabilities": {
+     "middle_sound_changed": 0,
+     "other_wrong": 0,
+     "correct": 0.93,
+     "letter_name": 0.06,
+     "first_sound_changed": 0,
+     "last_sound_changed": 0,
+     "no_answer": 0,
+     "sounds_no_word": 0.01
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.31
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "di-word-reading.cvc_reading",
+  "item": "diwr-3-pan",
+  "learner": "p... a... n... pan",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.93,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.92,
+    "probabilities": {
+     "middle_sound_changed": 0,
+     "last_sound_changed": 0,
+     "letter_name": 0.05,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "sounds_no_word": 0.02,
+     "first_sound_changed": 0,
+     "read_backwards": 0,
+     "correct": 0.93
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.41
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.1
+   },
+   "fits_read_backwards": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "di-word-reading.read_word",
+  "item": "diwr-1-and",
+  "learner": "a... n... d... and",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.83,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.79,
+    "probabilities": {
+     "no_answer": 0,
+     "sounds_no_word": 0.08,
+     "correct": 0.83,
+     "similar_word": 0,
+     "letter_name": 0.09,
+     "other_wrong": 0
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.53
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.19
+   },
+   "fits_similar_word": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "di-word-reading.read_word",
+  "item": "diwr-2-cat",
+  "learner": "c... a... t... cat",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.95,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.94,
+    "probabilities": {
+     "last_sound_changed": 0,
+     "middle_sound_changed": 0,
+     "correct": 0.95,
+     "no_answer": 0,
+     "letter_name": 0.04,
+     "sounds_no_word": 0.01,
+     "first_sound_changed": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.3
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.07
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "di-word-reading.read_word",
+  "item": "diwr-3-pig",
+  "learner": "p... i... g... pig",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.96,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.95,
+    "probabilities": {
+     "correct": 0.96,
+     "first_sound_changed": 0,
+     "letter_name": 0.03,
+     "other_wrong": 0,
+     "sounds_no_word": 0.01,
+     "last_sound_changed": 0,
+     "no_answer": 0,
+     "middle_sound_changed": 0
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.36
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "di-word-reading.sight_word",
+  "item": "diwr-2-the",
+  "learner": "t... h... e... the",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.85,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.82,
+    "probabilities": {
+     "sounds_no_word": 0.03,
+     "no_answer": 0,
+     "letter_name": 0.12,
+     "similar_word": 0,
+     "other_wrong": 0,
+     "correct": 0.85
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.34
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.11
+   },
+   "fits_similar_word": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "di-word-reading.word_reading_review",
+  "item": "diwr-1-and",
+  "learner": "a... n... d... and",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.78,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.73,
+    "probabilities": {
+     "sounds_no_word": 0.1,
+     "letter_name": 0.12,
+     "no_answer": 0,
+     "similar_word": 0,
+     "other_wrong": 0,
+     "correct": 0.78
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.6
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.21
+   },
+   "fits_similar_word": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "di-word-reading.sight_word",
+  "item": "diwr-1-and",
+  "learner": "a... n... d... and",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.76,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.71,
+    "probabilities": {
+     "sounds_no_word": 0.09,
+     "no_answer": 0,
+     "correct": 0.76,
+     "letter_name": 0.15,
+     "other_wrong": 0,
+     "similar_word": 0
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.5
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.18
+   },
+   "fits_similar_word": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "di-word-reading.sight_word",
+  "item": "diwr-3-see",
+  "learner": "s... e... e... see",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.79,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.74,
+    "probabilities": {
+     "correct": 0.79,
+     "other_wrong": 0,
+     "similar_word": 0,
+     "sounds_no_word": 0.02,
+     "no_answer": 0,
+     "letter_name": 0.19
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.54
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.12
+   },
+   "fits_similar_word": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "di-word-reading.word_reading_review",
+  "item": "diwr-2-cat",
+  "learner": "c... a... t... cat",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.94,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.94,
+    "probabilities": {
+     "other_wrong": 0,
+     "correct": 0.94,
+     "middle_sound_changed": 0,
+     "letter_name": 0.04,
+     "no_answer": 0,
+     "first_sound_changed": 0,
+     "sounds_no_word": 0.02,
+     "last_sound_changed": 0
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.31
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "di-word-reading.word_reading_review",
+  "item": "diwr-3-the",
+  "learner": "t... h... e... the",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.89,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.86,
+    "probabilities": {
+     "similar_word": 0,
+     "letter_name": 0.09,
+     "sounds_no_word": 0.02,
+     "no_answer": 0,
+     "correct": 0.89,
+     "other_wrong": 0
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.32
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.11
+   },
+   "fits_similar_word": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "interactive-book.read-focus-word",
+  "item": "interactive-book-word-1-1",
+  "learner": "barn",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "context_guess": 0,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "said_lead_in": 0,
+     "correct": 1
+    }
+   },
+   "fits_said_lead_in": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_context_guess": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "interactive-book.read-focus-word",
+  "item": "interactive-book-word-2-1",
+  "learner": "tractor",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "context_guess": 0,
+     "other_wrong": 0,
+     "said_lead_in": 0,
+     "no_answer": 0,
+     "correct": 1
+    }
+   },
+   "fits_said_lead_in": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_context_guess": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "interactive-book.read-focus-word",
+  "item": "interactive-book-word-1-2",
+  "learner": "sheep",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "said_lead_in": 0,
+     "context_guess": 0,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "correct": 1
+    }
+   },
+   "fits_said_lead_in": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_context_guess": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "interactive-book.read-focus-word",
+  "item": "interactive-book-word-1-1",
+  "learner": "the barn",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.97,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.96,
+    "probabilities": {
+     "no_answer": 0,
+     "correct": 0.97,
+     "said_lead_in": 0.02,
+     "context_guess": 0,
+     "other_wrong": 0.01
+    }
+   },
+   "fits_said_lead_in": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_context_guess": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "interactive-book.read-focus-word",
+  "item": "interactive-book-word-1-2",
+  "learner": "the sheep",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.93,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.91,
+    "probabilities": {
+     "other_wrong": 0.01,
+     "no_answer": 0,
+     "context_guess": 0,
+     "said_lead_in": 0.06,
+     "correct": 0.93
+    }
+   },
+   "fits_said_lead_in": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_context_guess": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "interactive-book.read-focus-word",
+  "item": "interactive-book-word-2-1",
+  "learner": "the tractor",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "other_wrong": 0,
+     "context_guess": 0,
+     "no_answer": 0,
+     "correct": 0.99,
+     "said_lead_in": 0.01
+    }
+   },
+   "fits_said_lead_in": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_context_guess": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "letter-spotter.name_it",
+  "item": "ch1",
+  "learner": "S",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "letter_not_in_word": 0,
+     "correct": 1,
+     "said_the_word": 0,
+     "later_letter": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.01
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "letter-spotter.name_it",
+  "item": "ch1",
+  "learner": "sss",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "no_answer": 0,
+     "letter_not_in_word": 0,
+     "other_wrong": 0.01,
+     "said_the_word": 0,
+     "correct": 0.99,
+     "later_letter": 0
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "letter-spotter.name_it",
+  "item": "ch2",
+  "learner": "A",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "said_the_word": 0,
+     "correct": 1,
+     "letter_not_in_word": 0,
+     "no_answer": 0,
+     "later_letter": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "letter-spotter.name_it",
+  "item": "ch1",
+  "learner": "it's S",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "later_letter": 0,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "letter_not_in_word": 0,
+     "said_the_word": 0,
+     "correct": 1
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.01
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "letter-spotter.name_it",
+  "item": "ch2",
+  "learner": "aaa",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.91,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.9,
+    "probabilities": {
+     "later_letter": 0,
+     "correct": 0.91,
+     "said_the_word": 0.01,
+     "other_wrong": 0.06,
+     "letter_not_in_word": 0.01,
+     "no_answer": 0.01
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.1
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.06
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "letter-spotter.name_it",
+  "item": "ch3",
+  "learner": "ttt",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.97,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.95,
+    "probabilities": {
+     "said_the_word": 0.01,
+     "other_wrong": 0.02,
+     "no_answer": 0,
+     "later_letter": 0,
+     "correct": 0.97,
+     "letter_not_in_word": 0
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.1
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "letter-spotter.name_it",
+  "item": "ch2",
+  "learner": "it's A",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "letter_not_in_word": 0,
+     "later_letter": 0,
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 1,
+     "said_the_word": 0
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "letter-spotter.name_it",
+  "item": "ch3",
+  "learner": "it's T",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "said_the_word": 0,
+     "no_answer": 0,
+     "correct": 1,
+     "later_letter": 0,
+     "other_wrong": 0,
+     "letter_not_in_word": 0
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "letter-spotter.name_it",
+  "item": "ch3",
+  "learner": "T",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "said_the_word": 0,
+     "letter_not_in_word": 0,
+     "correct": 1,
+     "later_letter": 0,
+     "no_answer": 0
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "phoneme-explorer.blend",
+  "item": "c1",
+  "learner": "dog",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "sounds_no_word": 0,
+     "correct": 1,
+     "no_answer": 0,
+     "near_word": 0
+    }
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_near_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "phoneme-explorer.blend",
+  "item": "c1",
+  "learner": "d... o... g... dog",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "near_word": 0,
+     "sounds_no_word": 0.01,
+     "no_answer": 0,
+     "correct": 0.99,
+     "other_wrong": 0
+    }
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.1
+   },
+   "fits_near_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "phoneme-explorer.blend",
+  "item": "c3",
+  "learner": "bus",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "near_word": 0,
+     "other_wrong": 0,
+     "correct": 1,
+     "sounds_no_word": 0,
+     "no_answer": 0
+    }
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_near_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "phoneme-explorer.blend",
+  "item": "c2",
+  "learner": "s... u... n... sun",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "correct": 0.99,
+     "no_answer": 0,
+     "near_word": 0,
+     "other_wrong": 0,
+     "sounds_no_word": 0.01
+    }
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.11
+   },
+   "fits_near_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "phoneme-explorer.blend",
+  "item": "c2",
+  "learner": "sun",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "near_word": 0,
+     "correct": 1,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "sounds_no_word": 0
+    }
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_near_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "phoneme-explorer.blend",
+  "item": "c3",
+  "learner": "b... u... s... bus",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "correct": 0.99,
+     "other_wrong": 0,
+     "near_word": 0,
+     "sounds_no_word": 0.01,
+     "no_answer": 0
+    }
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.13
+   },
+   "fits_near_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "phoneme-explorer.isolate",
+  "item": "c1",
+  "learner": "Cup",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "echo_stimulus": 0,
+     "correct": 1,
+     "letter_name": 0,
+     "no_answer": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_echo_stimulus": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "phoneme-explorer.isolate",
+  "item": "c1",
+  "learner": "cup!",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "other_wrong": 0,
+     "echo_stimulus": 0,
+     "no_answer": 0,
+     "letter_name": 0
+    }
+   },
+   "fits_echo_stimulus": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "phoneme-explorer.isolate",
+  "item": "c2",
+  "learner": "Duck",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "letter_name": 0,
+     "echo_stimulus": 0,
+     "other_wrong": 0,
+     "correct": 1
+    }
+   },
+   "fits_echo_stimulus": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "phoneme-explorer.isolate",
+  "item": "c2",
+  "learner": "duck!",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "echo_stimulus": 0,
+     "correct": 1,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "letter_name": 0
+    }
+   },
+   "fits_echo_stimulus": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "phoneme-explorer.isolate",
+  "item": "c3",
+  "learner": "Sock",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "no_answer": 0,
+     "letter_name": 0,
+     "echo_stimulus": 0,
+     "correct": 1
+    }
+   },
+   "fits_echo_stimulus": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "phoneme-explorer.isolate",
+  "item": "c3",
+  "learner": "sock!",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "echo_stimulus": 0,
+     "other_wrong": 0,
+     "correct": 1,
+     "no_answer": 0,
+     "letter_name": 0
+    }
+   },
+   "fits_echo_stimulus": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "phonics-blender.cvc",
+  "item": "w3",
+  "learner": "s... u... n... sun",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "middle_sound_changed": 0,
+     "correct": 0.99,
+     "other_wrong": 0,
+     "first_sound_changed": 0,
+     "no_answer": 0,
+     "last_sound_changed": 0,
+     "letter_name": 0,
+     "sounds_no_word": 0.01
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.1
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "phonics-blender.cvc",
+  "item": "w2",
+  "learner": "d... o... g... dog",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "letter_name": 0.01,
+     "correct": 0.99,
+     "sounds_no_word": 0,
+     "no_answer": 0,
+     "last_sound_changed": 0,
+     "other_wrong": 0,
+     "first_sound_changed": 0,
+     "middle_sound_changed": 0
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.12
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "phonics-blender.cvc",
+  "item": "w1",
+  "learner": "c... a... t... cat",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.98,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "other_wrong": 0,
+     "last_sound_changed": 0,
+     "middle_sound_changed": 0,
+     "letter_name": 0.01,
+     "no_answer": 0,
+     "first_sound_changed": 0,
+     "sounds_no_word": 0.01,
+     "correct": 0.98
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.13
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-1",
+  "learner": "Bright sunlight warms the quiet pond water.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "correct": 1,
+     "word_drop": 0,
+     "word_swap": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-2",
+  "learner": "Green frogs sit still upon large lily pads.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "correct": 1,
+     "word_drop": 0,
+     "other_wrong": 0,
+     "word_swap": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.06
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-1",
+  "learner": "bright sunlight warms the quiet pond water",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.65,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.55,
+    "probabilities": {
+     "correct": 0.65,
+     "no_answer": 0,
+     "word_swap": 0.01,
+     "word_drop": 0.31,
+     "other_wrong": 0.03
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.19
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-1",
+  "learner": "Bright sunlight... Bright sunlight warms the quiet pond water.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "word_drop": 0,
+     "other_wrong": 0.01,
+     "word_swap": 0,
+     "correct": 0.99,
+     "no_answer": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-2",
+  "learner": "green frogs sit still upon large lily pads",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.71,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.64,
+    "probabilities": {
+     "word_swap": 0,
+     "word_drop": 0.27,
+     "no_answer": 0,
+     "other_wrong": 0.02,
+     "correct": 0.71
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.08
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-3",
+  "learner": "Small fish swim quickly beneath the surface.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0,
+     "word_swap": 0,
+     "correct": 1,
+     "word_drop": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-2",
+  "learner": "Green frogs... Green frogs sit still upon large lily pads.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "no_answer": 0,
+     "word_drop": 0,
+     "correct": 0.99,
+     "word_swap": 0,
+     "other_wrong": 0.01
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-3",
+  "learner": "small fish swim quickly beneath the surface",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.74,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.69,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0.03,
+     "word_drop": 0.21,
+     "correct": 0.74,
+     "word_swap": 0.02
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.24
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-1",
+  "learner": "Look at... Look at that tiny puppy hiding there.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "paraphrase": 0,
+     "word_drop": 0,
+     "other_wrong": 0.01,
+     "word_swap": 0,
+     "correct": 0.99,
+     "no_answer": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-1",
+  "learner": "Look at that tiny puppy hiding there.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "word_swap": 0,
+     "other_wrong": 0,
+     "paraphrase": 0,
+     "word_drop": 0,
+     "no_answer": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-1",
+  "learner": "look at that tiny puppy hiding there",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.98,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.96,
+    "probabilities": {
+     "other_wrong": 0,
+     "correct": 0.98,
+     "paraphrase": 0,
+     "word_swap": 0,
+     "word_drop": 0.02,
+     "no_answer": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-3",
+  "learner": "Small fish... Small fish swim quickly beneath the surface.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "no_answer": 0,
+     "correct": 0.99,
+     "other_wrong": 0.01,
+     "word_drop": 0,
+     "word_swap": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-2",
+  "learner": "he looks very cold and terribly scared",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.94,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.93,
+    "probabilities": {
+     "other_wrong": 0,
+     "word_swap": 0.02,
+     "no_answer": 0,
+     "paraphrase": 0,
+     "correct": 0.94,
+     "word_drop": 0.04
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.07
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-2",
+  "learner": "He looks very cold and terribly scared.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 1,
+     "word_swap": 0,
+     "paraphrase": 0,
+     "word_drop": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-2",
+  "learner": "He looks... He looks very cold and terribly scared.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "word_swap": 0,
+     "other_wrong": 0.01,
+     "paraphrase": 0,
+     "no_answer": 0,
+     "word_drop": 0,
+     "correct": 0.99
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-3",
+  "learner": "We should gently pick him up now.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "word_swap": 0,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "word_drop": 0,
+     "correct": 1,
+     "paraphrase": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-3",
+  "learner": "we should gently pick him up now",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.98,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.97,
+    "probabilities": {
+     "correct": 0.98,
+     "word_swap": 0.01,
+     "other_wrong": 0,
+     "paraphrase": 0,
+     "word_drop": 0.01,
+     "no_answer": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "rhyme-studio.identification",
+  "item": "c1",
+  "learner": "hat",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "off_menu": 0,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "echo_target": 0,
+     "correct": 1,
+     "onset_foil": 0
+    }
+   },
+   "fits_onset_foil": {
+    "type": "noul",
+    "noul": 0.08
+   },
+   "fits_echo_target": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_off_menu": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-3",
+  "learner": "We should... We should gently pick him up now.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "word_drop": 0,
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 1,
+     "word_swap": 0,
+     "paraphrase": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "rhyme-studio.identification",
+  "item": "c1",
+  "learner": "hat rhymes",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.98,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.97,
+    "probabilities": {
+     "onset_foil": 0,
+     "no_answer": 0,
+     "echo_target": 0,
+     "other_wrong": 0.01,
+     "correct": 0.98,
+     "off_menu": 0.01
+    }
+   },
+   "fits_onset_foil": {
+    "type": "noul",
+    "noul": 0.09
+   },
+   "fits_echo_target": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_off_menu": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "rhyme-studio.identification",
+  "item": "c2",
+  "learner": "wig",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "off_menu": 0,
+     "other_wrong": 0,
+     "echo_target": 0,
+     "no_answer": 0,
+     "correct": 1,
+     "onset_foil": 0
+    }
+   },
+   "fits_onset_foil": {
+    "type": "noul",
+    "noul": 0.08
+   },
+   "fits_echo_target": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_off_menu": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "rhyme-studio.identification",
+  "item": "c2",
+  "learner": "wig rhymes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "onset_foil": 0,
+     "no_answer": 0,
+     "echo_target": 0,
+     "correct": 1,
+     "other_wrong": 0,
+     "off_menu": 0
+    }
+   },
+   "fits_onset_foil": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_echo_target": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_off_menu": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "rhyme-studio.identification",
+  "item": "c3",
+  "learner": "log",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "off_menu": 0,
+     "correct": 1,
+     "other_wrong": 0,
+     "echo_target": 0,
+     "no_answer": 0
+    }
+   },
+   "fits_echo_target": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_off_menu": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "rhyme-studio.identification",
+  "item": "c3",
+  "learner": "log rhymes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "other_wrong": 0,
+     "echo_target": 0,
+     "correct": 1,
+     "no_answer": 0,
+     "off_menu": 0
+    }
+   },
+   "fits_echo_target": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_off_menu": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "rhyme-studio.recognition",
+  "item": "c1",
+  "learner": "yes, they do",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_to_rhyme": 0,
+     "correct": 1,
+     "no_answer": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_no_to_rhyme": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "rhyme-studio.recognition",
+  "item": "c2",
+  "learner": "no",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 1,
+     "yes_no_rhyme": 0
+    }
+   },
+   "fits_yes_no_rhyme": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "rhyme-studio.recognition",
+  "item": "c1",
+  "learner": "yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 1,
+     "no_to_rhyme": 0
+    }
+   },
+   "fits_no_to_rhyme": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "rhyme-studio.recognition",
+  "item": "c2",
+  "learner": "no, they don't",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "correct": 1,
+     "no_answer": 0,
+     "yes_no_rhyme": 0
+    }
+   },
+   "fits_yes_no_rhyme": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "rhyme-studio.recognition",
+  "item": "c3",
+  "learner": "yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "no_to_rhyme": 0,
+     "correct": 1,
+     "no_answer": 0
+    }
+   },
+   "fits_no_to_rhyme": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "syllable-clapper.blend_syllables",
+  "item": "c2",
+  "learner": "monkey",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "other_wrong": 0,
+     "parts_back": 0,
+     "no_answer": 0,
+     "correct": 1
+    }
+   },
+   "fits_parts_back": {
+    "type": "noul",
+    "noul": 0.16
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "syllable-clapper.blend_syllables",
+  "item": "c1",
+  "learner": "zebra",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "parts_back": 0,
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 1
+    }
+   },
+   "fits_parts_back": {
+    "type": "noul",
+    "noul": 0.12
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "syllable-clapper.blend_syllables",
+  "item": "c3",
+  "learner": "penguin",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0,
+     "parts_back": 0,
+     "correct": 1
+    }
+   },
+   "fits_parts_back": {
+    "type": "noul",
+    "noul": 0.11
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "rhyme-studio.recognition",
+  "item": "c3",
+  "learner": "yes, they do",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "correct": 1,
+     "no_answer": 0,
+     "no_to_rhyme": 0
+    }
+   },
+   "fits_no_to_rhyme": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "syllable-clapper.count_parts",
+  "item": "c1",
+  "learner": "one",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "counted_sounds": 0,
+     "count_one_over": 0,
+     "correct": 1,
+     "no_answer": 0,
+     "word_for_count": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_word_for_count": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_counted_sounds": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_count_one_over": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "syllable-clapper.count_parts",
+  "item": "c2",
+  "learner": "two",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0,
+     "count_one_over": 0,
+     "correct": 1,
+     "word_for_count": 0
+    }
+   },
+   "fits_word_for_count": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_count_one_over": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "syllable-clapper.count_parts",
+  "item": "c1",
+  "learner": "one parts",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "other_wrong": 0,
+     "counted_sounds": 0,
+     "no_answer": 0,
+     "word_for_count": 0,
+     "correct": 1,
+     "count_one_over": 0
+    }
+   },
+   "fits_word_for_count": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_counted_sounds": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_count_one_over": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "syllable-clapper.count_parts",
+  "item": "c2",
+  "learner": "two parts",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 1,
+     "count_one_over": 0,
+     "word_for_count": 0
+    }
+   },
+   "fits_word_for_count": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_count_one_over": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "syllable-clapper.count_parts",
+  "item": "c3",
+  "learner": "two parts",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0,
+     "word_for_count": 0,
+     "correct": 1,
+     "count_one_over": 0
+    }
+   },
+   "fits_word_for_count": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_count_one_over": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "syllable-clapper.count_parts",
+  "item": "c3",
+  "learner": "two",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "word_for_count": 0,
+     "other_wrong": 0,
+     "correct": 1,
+     "no_answer": 0,
+     "count_one_over": 0
+    }
+   },
+   "fits_word_for_count": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_count_one_over": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "word-flip.plural_s",
+  "item": "word-flip-1",
+  "learner": "two cars",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "unchanged": 0,
+     "other_wrong": 0,
+     "double_ending": 0,
+     "correct": 1,
+     "no_answer": 0
+    }
+   },
+   "fits_unchanged": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_double_ending": {
+    "type": "noul",
+    "noul": 0.11
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "word-flip.plural_s",
+  "item": "word-flip-1",
+  "learner": "cars",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "no_answer": 0,
+     "double_ending": 0,
+     "unchanged": 0.01,
+     "correct": 0.99,
+     "other_wrong": 0
+    }
+   },
+   "fits_unchanged": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_double_ending": {
+    "type": "noul",
+    "noul": 0.2
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "word-flip.plural_s",
+  "item": "word-flip-2",
+  "learner": "socks",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "unchanged": 0.01,
+     "double_ending": 0,
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 0.99
+    }
+   },
+   "fits_unchanged": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_double_ending": {
+    "type": "noul",
+    "noul": 0.16
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "word-flip.plural_s",
+  "item": "word-flip-3",
+  "learner": "frogs",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 0.99,
+     "double_ending": 0,
+     "unchanged": 0.01
+    }
+   },
+   "fits_unchanged": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_double_ending": {
+    "type": "noul",
+    "noul": 0.24
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "word-flip.plural_s",
+  "item": "word-flip-2",
+  "learner": "two socks",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "double_ending": 0,
+     "unchanged": 0,
+     "no_answer": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_unchanged": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_double_ending": {
+    "type": "noul",
+    "noul": 0.12
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "word-flip.plural_s",
+  "item": "word-flip-3",
+  "learner": "two frogs",
+  "miss": null,
+  "reading": "other_wrong",
+  "p": 0.86,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "other_wrong",
+    "confidence": 0.82,
+    "probabilities": {
+     "other_wrong": 0.86,
+     "unchanged": 0.03,
+     "no_answer": 0,
+     "correct": 0.11,
+     "double_ending": 0
+    }
+   },
+   "fits_unchanged": {
+    "type": "noul",
+    "noul": 0.11
+   },
+   "fits_double_ending": {
+    "type": "noul",
+    "noul": 0.09
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "word-workout.real_vs_nonsense",
+  "item": "c1",
+  "learner": "cat",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "other_wrong": 0,
+     "no_answer": 0,
+     "said_nonword": 0
+    }
+   },
+   "fits_said_nonword": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "word-workout.real_vs_nonsense",
+  "item": "c3",
+  "learner": "dog",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "said_nonword": 0,
+     "no_answer": 0,
+     "correct": 1
+    }
+   },
+   "fits_said_nonword": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 1,
+  "payload": "word-workout.real_vs_nonsense",
+  "item": "c2",
+  "learner": "pen",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "said_nonword": 0,
+     "correct": 1,
+     "other_wrong": 0
+    }
+   },
+   "fits_said_nonword": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "cvc-speller.fill_vowel",
+  "item": "c1",
+  "learner": "ah",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.91,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.89,
+    "probabilities": {
+     "other_wrong": 0.01,
+     "other_vowel": 0.04,
+     "first_sound": 0,
+     "no_answer": 0,
+     "letter_name": 0.04,
+     "last_sound": 0,
+     "correct": 0.91,
+     "whole_word": 0
+    }
+   },
+   "fits_whole_word": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.13
+   },
+   "fits_first_sound": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_last_sound": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_other_vowel": {
+    "type": "noul",
+    "noul": 0.07
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "cvc-speller.fill_vowel",
+  "item": "c2",
+  "learner": "eh",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.81,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.79,
+    "probabilities": {
+     "last_sound": 0,
+     "first_sound": 0,
+     "no_answer": 0,
+     "letter_name": 0.02,
+     "other_wrong": 0.01,
+     "correct": 0.81,
+     "whole_word": 0,
+     "other_vowel": 0.16
+    }
+   },
+   "fits_whole_word": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.17
+   },
+   "fits_first_sound": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_last_sound": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_other_vowel": {
+    "type": "noul",
+    "noul": 0.14
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "cvc-speller.fill_vowel",
+  "item": "c2",
+  "learner": "eee",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.68,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.62,
+    "probabilities": {
+     "correct": 0.68,
+     "first_sound": 0,
+     "whole_word": 0,
+     "other_wrong": 0,
+     "other_vowel": 0,
+     "no_answer": 0,
+     "last_sound": 0,
+     "letter_name": 0.32
+    }
+   },
+   "fits_whole_word": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.57
+   },
+   "fits_first_sound": {
+    "type": "noul",
+    "noul": 0.01
+   },
+   "fits_last_sound": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_other_vowel": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "cvc-speller.fill_vowel",
+  "item": "c1",
+  "learner": "aaa",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "whole_word": 0,
+     "letter_name": 0,
+     "first_sound": 0,
+     "no_answer": 0,
+     "other_vowel": 0,
+     "correct": 1,
+     "last_sound": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_whole_word": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_first_sound": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound": {
+    "type": "noul",
+    "noul": 0.01
+   },
+   "fits_other_vowel": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "decodable-reader.literal",
+  "item": "line-s1",
+  "learner": "pat is a cat with a hat",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.94,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.92,
+    "probabilities": {
+     "other_wrong": 0.01,
+     "no_answer": 0,
+     "correct": 0.94,
+     "word_skip": 0.04,
+     "word_swap": 0.01
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.08
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "cvc-speller.fill_vowel",
+  "item": "c3",
+  "learner": "iii",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "other_wrong": 0,
+     "whole_word": 0,
+     "no_answer": 0,
+     "correct": 0.99,
+     "first_sound": 0,
+     "last_sound": 0,
+     "other_vowel": 0,
+     "letter_name": 0.01
+    }
+   },
+   "fits_whole_word": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_first_sound": {
+    "type": "noul",
+    "noul": 0.01
+   },
+   "fits_last_sound": {
+    "type": "noul",
+    "noul": 0.01
+   },
+   "fits_other_vowel": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "cvc-speller.fill_vowel",
+  "item": "c3",
+  "learner": "ih",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.94,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.93,
+    "probabilities": {
+     "correct": 0.94,
+     "whole_word": 0,
+     "first_sound": 0,
+     "other_wrong": 0,
+     "other_vowel": 0.06,
+     "no_answer": 0,
+     "last_sound": 0,
+     "letter_name": 0
+    }
+   },
+   "fits_whole_word": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_first_sound": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_other_vowel": {
+    "type": "noul",
+    "noul": 0.16
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "decodable-reader.literal",
+  "item": "line-s1",
+  "learner": "Pat is a cat with a hat.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0,
+     "word_swap": 0,
+     "correct": 1,
+     "word_skip": 0
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "decodable-reader.literal",
+  "item": "line-s1",
+  "learner": "Pat is... Pat is a cat with a hat.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.96,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.95,
+    "probabilities": {
+     "word_skip": 0.03,
+     "no_answer": 0,
+     "word_swap": 0,
+     "other_wrong": 0.01,
+     "correct": 0.96
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.11
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "decodable-reader.literal",
+  "item": "line-s2",
+  "learner": "The fat cat sat on a mat.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "word_swap": 0,
+     "word_skip": 0,
+     "other_wrong": 0,
+     "correct": 1,
+     "no_answer": 0
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "decodable-reader.literal",
+  "item": "line-s2",
+  "learner": "the fat cat sat on a mat",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.95,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.93,
+    "probabilities": {
+     "other_wrong": 0,
+     "word_swap": 0.01,
+     "no_answer": 0,
+     "correct": 0.95,
+     "word_skip": 0.04
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "decodable-reader.literal",
+  "item": "line-s2",
+  "learner": "The fat... The fat cat sat on a mat.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.97,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.97,
+    "probabilities": {
+     "correct": 0.97,
+     "no_answer": 0,
+     "word_swap": 0,
+     "word_skip": 0.01,
+     "other_wrong": 0.02
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.07
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "decodable-reader.literal",
+  "item": "line-s3",
+  "learner": "Pat had a rat in the bag.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "correct": 1,
+     "word_skip": 0,
+     "word_swap": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "decodable-reader.literal",
+  "item": "line-s3",
+  "learner": "pat had a rat in the bag",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.95,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.94,
+    "probabilities": {
+     "word_skip": 0.03,
+     "word_swap": 0.01,
+     "other_wrong": 0.01,
+     "correct": 0.95,
+     "no_answer": 0
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "decodable-reader.read_along",
+  "item": "q-1",
+  "learner": "cat",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "other_wrong": 0,
+     "no_answer": 0,
+     "lifted_word": 0,
+     "retell": 0
+    }
+   },
+   "fits_retell": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_lifted_word": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "decodable-reader.literal",
+  "item": "line-s3",
+  "learner": "Pat had... Pat had a rat in the bag.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.96,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.94,
+    "probabilities": {
+     "word_swap": 0,
+     "correct": 0.96,
+     "word_skip": 0.03,
+     "no_answer": 0,
+     "other_wrong": 0.01
+    }
+   },
+   "fits_word_skip": {
+    "type": "noul",
+    "noul": 0.1
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "decodable-reader.read_along",
+  "item": "q-1",
+  "learner": "the cat",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "lifted_word": 0,
+     "no_answer": 0,
+     "retell": 0,
+     "other_wrong": 0,
+     "correct": 1
+    }
+   },
+   "fits_retell": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_lifted_word": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "decodable-reader.read_along",
+  "item": "q-3",
+  "learner": "nap",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "lifted_word": 0,
+     "correct": 1,
+     "no_answer": 0,
+     "retell": 0
+    }
+   },
+   "fits_retell": {
+    "type": "noul",
+    "noul": 0.08
+   },
+   "fits_lifted_word": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "decodable-reader.read_along",
+  "item": "q-2",
+  "learner": "rat",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "retell": 0,
+     "no_answer": 0,
+     "correct": 1,
+     "lifted_word": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_retell": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_lifted_word": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "decodable-reader.read_along",
+  "item": "q-2",
+  "learner": "the rat",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "retell": 0,
+     "lifted_word": 0,
+     "no_answer": 0,
+     "correct": 1,
+     "other_wrong": 0
+    }
+   },
+   "fits_retell": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_lifted_word": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "decodable-reader.read_along",
+  "item": "q-3",
+  "learner": "the nap",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.95,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.93,
+    "probabilities": {
+     "lifted_word": 0.03,
+     "no_answer": 0,
+     "other_wrong": 0.02,
+     "correct": 0.95,
+     "retell": 0
+    }
+   },
+   "fits_retell": {
+    "type": "noul",
+    "noul": 0.11
+   },
+   "fits_lifted_word": {
+    "type": "noul",
+    "noul": 0.13
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "di-word-reading.cvc_reading",
+  "item": "diwr-1-cat",
+  "learner": "c... a... t... cat",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.91,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.89,
+    "probabilities": {
+     "middle_sound_changed": 0,
+     "correct": 0.91,
+     "other_wrong": 0,
+     "first_sound_changed": 0,
+     "no_answer": 0,
+     "last_sound_changed": 0,
+     "letter_name": 0.08,
+     "sounds_no_word": 0.01
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.37
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "di-word-reading.cvc_reading",
+  "item": "diwr-2-mat",
+  "learner": "m... a... t... mat",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.93,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.92,
+    "probabilities": {
+     "first_sound_changed": 0,
+     "other_wrong": 0,
+     "sounds_no_word": 0.04,
+     "last_sound_changed": 0,
+     "letter_name": 0.03,
+     "correct": 0.93,
+     "middle_sound_changed": 0,
+     "no_answer": 0
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.26
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.1
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "di-word-reading.cvc_reading",
+  "item": "diwr-3-pan",
+  "learner": "p... a... n... pan",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.93,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.92,
+    "probabilities": {
+     "middle_sound_changed": 0,
+     "correct": 0.93,
+     "read_backwards": 0,
+     "first_sound_changed": 0,
+     "other_wrong": 0,
+     "no_answer": 0,
+     "last_sound_changed": 0,
+     "letter_name": 0.05,
+     "sounds_no_word": 0.01
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.42
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.08
+   },
+   "fits_read_backwards": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "di-word-reading.read_word",
+  "item": "diwr-1-and",
+  "learner": "a... n... d... and",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.78,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.73,
+    "probabilities": {
+     "sounds_no_word": 0.09,
+     "other_wrong": 0,
+     "letter_name": 0.13,
+     "correct": 0.78,
+     "no_answer": 0,
+     "similar_word": 0
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.54
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.21
+   },
+   "fits_similar_word": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "di-word-reading.read_word",
+  "item": "diwr-2-cat",
+  "learner": "c... a... t... cat",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.93,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.92,
+    "probabilities": {
+     "correct": 0.93,
+     "other_wrong": 0,
+     "middle_sound_changed": 0,
+     "letter_name": 0.06,
+     "no_answer": 0,
+     "first_sound_changed": 0,
+     "sounds_no_word": 0.01,
+     "last_sound_changed": 0
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.3
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "di-word-reading.sight_word",
+  "item": "diwr-2-the",
+  "learner": "t... h... e... the",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.83,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.8,
+    "probabilities": {
+     "correct": 0.83,
+     "similar_word": 0,
+     "sounds_no_word": 0.04,
+     "letter_name": 0.13,
+     "other_wrong": 0,
+     "no_answer": 0
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.27
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.11
+   },
+   "fits_similar_word": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "di-word-reading.sight_word",
+  "item": "diwr-1-and",
+  "learner": "a... n... d... and",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.8,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.74,
+    "probabilities": {
+     "similar_word": 0,
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 0.8,
+     "sounds_no_word": 0.08,
+     "letter_name": 0.12
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.6
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.18
+   },
+   "fits_similar_word": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "di-word-reading.read_word",
+  "item": "diwr-3-pig",
+  "learner": "p... i... g... pig",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.95,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.94,
+    "probabilities": {
+     "sounds_no_word": 0.01,
+     "other_wrong": 0,
+     "last_sound_changed": 0,
+     "letter_name": 0.04,
+     "no_answer": 0,
+     "middle_sound_changed": 0,
+     "first_sound_changed": 0,
+     "correct": 0.95
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.37
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "di-word-reading.sight_word",
+  "item": "diwr-3-see",
+  "learner": "s... e... e... see",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.76,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.71,
+    "probabilities": {
+     "similar_word": 0,
+     "no_answer": 0,
+     "sounds_no_word": 0.02,
+     "letter_name": 0.22,
+     "other_wrong": 0,
+     "correct": 0.76
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.57
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.13
+   },
+   "fits_similar_word": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "di-word-reading.word_reading_review",
+  "item": "diwr-3-the",
+  "learner": "t... h... e... the",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.86,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.83,
+    "probabilities": {
+     "letter_name": 0.11,
+     "other_wrong": 0,
+     "sounds_no_word": 0.03,
+     "no_answer": 0,
+     "correct": 0.86,
+     "similar_word": 0
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.28
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.11
+   },
+   "fits_similar_word": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "di-word-reading.word_reading_review",
+  "item": "diwr-2-cat",
+  "learner": "c... a... t... cat",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.93,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.92,
+    "probabilities": {
+     "no_answer": 0,
+     "first_sound_changed": 0,
+     "letter_name": 0.06,
+     "correct": 0.93,
+     "last_sound_changed": 0,
+     "middle_sound_changed": 0,
+     "other_wrong": 0,
+     "sounds_no_word": 0.01
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.28
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "interactive-book.read-focus-word",
+  "item": "interactive-book-word-1-1",
+  "learner": "barn",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "said_lead_in": 0,
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 1,
+     "context_guess": 0
+    }
+   },
+   "fits_said_lead_in": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_context_guess": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "di-word-reading.word_reading_review",
+  "item": "diwr-1-and",
+  "learner": "a... n... d... and",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.81,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.77,
+    "probabilities": {
+     "no_answer": 0,
+     "similar_word": 0,
+     "other_wrong": 0,
+     "sounds_no_word": 0.08,
+     "letter_name": 0.1,
+     "correct": 0.81
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.56
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.19
+   },
+   "fits_similar_word": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "interactive-book.read-focus-word",
+  "item": "interactive-book-word-1-1",
+  "learner": "the barn",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.97,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.97,
+    "probabilities": {
+     "context_guess": 0.01,
+     "correct": 0.97,
+     "no_answer": 0,
+     "other_wrong": 0.01,
+     "said_lead_in": 0.01
+    }
+   },
+   "fits_said_lead_in": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_context_guess": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "interactive-book.read-focus-word",
+  "item": "interactive-book-word-1-2",
+  "learner": "sheep",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "correct": 1,
+     "said_lead_in": 0,
+     "context_guess": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_said_lead_in": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_context_guess": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "interactive-book.read-focus-word",
+  "item": "interactive-book-word-1-2",
+  "learner": "the sheep",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.96,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.95,
+    "probabilities": {
+     "context_guess": 0.01,
+     "no_answer": 0,
+     "other_wrong": 0.01,
+     "correct": 0.96,
+     "said_lead_in": 0.02
+    }
+   },
+   "fits_said_lead_in": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_context_guess": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "letter-spotter.name_it",
+  "item": "ch1",
+  "learner": "S",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "said_the_word": 0,
+     "other_wrong": 0,
+     "letter_not_in_word": 0,
+     "correct": 1,
+     "later_letter": 0
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "interactive-book.read-focus-word",
+  "item": "interactive-book-word-2-1",
+  "learner": "tractor",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "said_lead_in": 0,
+     "context_guess": 0,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "correct": 1
+    }
+   },
+   "fits_said_lead_in": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_context_guess": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "interactive-book.read-focus-word",
+  "item": "interactive-book-word-2-1",
+  "learner": "the tractor",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "correct": 0.99,
+     "other_wrong": 0,
+     "no_answer": 0,
+     "said_lead_in": 0.01,
+     "context_guess": 0
+    }
+   },
+   "fits_said_lead_in": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_context_guess": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "letter-spotter.name_it",
+  "item": "ch1",
+  "learner": "it's S",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "letter_not_in_word": 0,
+     "no_answer": 0,
+     "later_letter": 0,
+     "other_wrong": 0,
+     "correct": 1,
+     "said_the_word": 0
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.01
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "letter-spotter.name_it",
+  "item": "ch1",
+  "learner": "sss",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.98,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.97,
+    "probabilities": {
+     "other_wrong": 0.02,
+     "no_answer": 0,
+     "later_letter": 0,
+     "correct": 0.98,
+     "said_the_word": 0,
+     "letter_not_in_word": 0
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "letter-spotter.name_it",
+  "item": "ch2",
+  "learner": "A",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "said_the_word": 0,
+     "correct": 1,
+     "letter_not_in_word": 0,
+     "no_answer": 0,
+     "later_letter": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "letter-spotter.name_it",
+  "item": "ch3",
+  "learner": "ttt",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.97,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.95,
+    "probabilities": {
+     "said_the_word": 0.01,
+     "other_wrong": 0.02,
+     "no_answer": 0,
+     "later_letter": 0,
+     "correct": 0.97,
+     "letter_not_in_word": 0
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.1
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "letter-spotter.name_it",
+  "item": "ch2",
+  "learner": "aaa",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.89,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.88,
+    "probabilities": {
+     "no_answer": 0.01,
+     "letter_not_in_word": 0.01,
+     "correct": 0.89,
+     "said_the_word": 0.03,
+     "later_letter": 0,
+     "other_wrong": 0.06
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.13
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.06
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "phoneme-explorer.blend",
+  "item": "c1",
+  "learner": "dog",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "correct": 1,
+     "other_wrong": 0,
+     "near_word": 0,
+     "sounds_no_word": 0
+    }
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_near_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "letter-spotter.name_it",
+  "item": "ch2",
+  "learner": "it's A",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "letter_not_in_word": 0,
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 1,
+     "later_letter": 0,
+     "said_the_word": 0
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "letter-spotter.name_it",
+  "item": "ch3",
+  "learner": "T",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "said_the_word": 0,
+     "later_letter": 0,
+     "correct": 1,
+     "other_wrong": 0,
+     "letter_not_in_word": 0,
+     "no_answer": 0
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.01
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "letter-spotter.name_it",
+  "item": "ch3",
+  "learner": "it's T",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "later_letter": 0,
+     "correct": 1,
+     "said_the_word": 0,
+     "other_wrong": 0,
+     "letter_not_in_word": 0,
+     "no_answer": 0
+    }
+   },
+   "fits_said_the_word": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_later_letter": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_not_in_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "phoneme-explorer.blend",
+  "item": "c2",
+  "learner": "sun",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "correct": 1,
+     "sounds_no_word": 0,
+     "no_answer": 0,
+     "near_word": 0
+    }
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_near_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "phoneme-explorer.blend",
+  "item": "c2",
+  "learner": "s... u... n... sun",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0,
+     "sounds_no_word": 0.01,
+     "near_word": 0,
+     "correct": 0.99
+    }
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.12
+   },
+   "fits_near_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "phoneme-explorer.blend",
+  "item": "c1",
+  "learner": "d... o... g... dog",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "near_word": 0,
+     "correct": 0.99,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "sounds_no_word": 0.01
+    }
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.12
+   },
+   "fits_near_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "phoneme-explorer.blend",
+  "item": "c3",
+  "learner": "bus",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "sounds_no_word": 0,
+     "correct": 1,
+     "no_answer": 0,
+     "near_word": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_near_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "phoneme-explorer.blend",
+  "item": "c3",
+  "learner": "b... u... s... bus",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.98,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "other_wrong": 0,
+     "correct": 0.98,
+     "near_word": 0,
+     "sounds_no_word": 0.02,
+     "no_answer": 0
+    }
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.11
+   },
+   "fits_near_word": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "phoneme-explorer.isolate",
+  "item": "c1",
+  "learner": "Cup",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "echo_stimulus": 0,
+     "other_wrong": 0,
+     "letter_name": 0,
+     "no_answer": 0
+    }
+   },
+   "fits_echo_stimulus": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "phoneme-explorer.isolate",
+  "item": "c2",
+  "learner": "duck!",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "other_wrong": 0,
+     "echo_stimulus": 0,
+     "no_answer": 0,
+     "letter_name": 0
+    }
+   },
+   "fits_echo_stimulus": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "phoneme-explorer.isolate",
+  "item": "c3",
+  "learner": "Sock",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "echo_stimulus": 0,
+     "other_wrong": 0,
+     "letter_name": 0,
+     "no_answer": 0
+    }
+   },
+   "fits_echo_stimulus": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "phonics-blender.cvc",
+  "item": "w1",
+  "learner": "c... a... t... cat",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.98,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "sounds_no_word": 0.01,
+     "last_sound_changed": 0,
+     "middle_sound_changed": 0,
+     "letter_name": 0.01,
+     "no_answer": 0,
+     "first_sound_changed": 0,
+     "other_wrong": 0,
+     "correct": 0.98
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.12
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "phoneme-explorer.isolate",
+  "item": "c3",
+  "learner": "sock!",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "echo_stimulus": 0,
+     "correct": 1,
+     "other_wrong": 0,
+     "letter_name": 0,
+     "no_answer": 0
+    }
+   },
+   "fits_echo_stimulus": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "phoneme-explorer.isolate",
+  "item": "c2",
+  "learner": "Duck",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "no_answer": 0,
+     "letter_name": 0,
+     "echo_stimulus": 0,
+     "correct": 1
+    }
+   },
+   "fits_echo_stimulus": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "phoneme-explorer.isolate",
+  "item": "c1",
+  "learner": "cup!",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "letter_name": 0,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "correct": 1,
+     "echo_stimulus": 0
+    }
+   },
+   "fits_echo_stimulus": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "phonics-blender.cvc",
+  "item": "w2",
+  "learner": "d... o... g... dog",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "other_wrong": 0,
+     "letter_name": 0.01,
+     "first_sound_changed": 0,
+     "last_sound_changed": 0,
+     "sounds_no_word": 0,
+     "middle_sound_changed": 0,
+     "no_answer": 0,
+     "correct": 0.99
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.1
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-1",
+  "learner": "Bright sunlight... Bright sunlight warms the quiet pond water.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "word_drop": 0,
+     "other_wrong": 0.01,
+     "word_swap": 0,
+     "no_answer": 0,
+     "correct": 0.99
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.07
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-1",
+  "learner": "bright sunlight warms the quiet pond water",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.71,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.63,
+    "probabilities": {
+     "word_drop": 0.25,
+     "other_wrong": 0.03,
+     "word_swap": 0.01,
+     "no_answer": 0,
+     "correct": 0.71
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.18
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-1",
+  "learner": "Bright sunlight warms the quiet pond water.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "word_swap": 0,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "word_drop": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "phonics-blender.cvc",
+  "item": "w3",
+  "learner": "s... u... n... sun",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "letter_name": 0,
+     "middle_sound_changed": 0,
+     "no_answer": 0,
+     "correct": 0.99,
+     "first_sound_changed": 0,
+     "last_sound_changed": 0,
+     "sounds_no_word": 0.01,
+     "other_wrong": 0
+    }
+   },
+   "fits_letter_name": {
+    "type": "noul",
+    "noul": 0.09
+   },
+   "fits_sounds_no_word": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_first_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_middle_sound_changed": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_last_sound_changed": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-2",
+  "learner": "Green frogs sit still upon large lily pads.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "word_drop": 0,
+     "correct": 1,
+     "other_wrong": 0,
+     "word_swap": 0,
+     "no_answer": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.06
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-2",
+  "learner": "green frogs sit still upon large lily pads",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.8,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.74,
+    "probabilities": {
+     "other_wrong": 0.02,
+     "no_answer": 0,
+     "word_swap": 0,
+     "word_drop": 0.18,
+     "correct": 0.8
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.07
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-2",
+  "learner": "Green frogs... Green frogs sit still upon large lily pads.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "correct": 0.99,
+     "other_wrong": 0.01,
+     "no_answer": 0,
+     "word_swap": 0,
+     "word_drop": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-3",
+  "learner": "Small fish swim quickly beneath the surface.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "correct": 1,
+     "other_wrong": 0,
+     "word_drop": 0,
+     "word_swap": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-3",
+  "learner": "small fish swim quickly beneath the surface",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.8,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.76,
+    "probabilities": {
+     "other_wrong": 0.01,
+     "no_answer": 0,
+     "correct": 0.8,
+     "word_drop": 0.17,
+     "word_swap": 0.01
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.22
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.05
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-1",
+  "learner": "Look at that tiny puppy hiding there.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "word_drop": 0,
+     "correct": 1,
+     "word_swap": 0,
+     "paraphrase": 0,
+     "other_wrong": 0,
+     "no_answer": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.accuracy",
+  "item": "line-3",
+  "learner": "Small fish... Small fish swim quickly beneath the surface.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.98,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "word_drop": 0,
+     "no_answer": 0,
+     "correct": 0.98,
+     "other_wrong": 0.02,
+     "word_swap": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.04
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-1",
+  "learner": "look at that tiny puppy hiding there",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.96,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.96,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0.01,
+     "word_drop": 0.03,
+     "word_swap": 0,
+     "paraphrase": 0,
+     "correct": 0.96
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-1",
+  "learner": "Look at... Look at that tiny puppy hiding there.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "word_drop": 0,
+     "paraphrase": 0,
+     "correct": 0.99,
+     "word_swap": 0,
+     "no_answer": 0,
+     "other_wrong": 0.01
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-2",
+  "learner": "He looks very cold and terribly scared.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "correct": 1,
+     "word_drop": 0,
+     "word_swap": 0,
+     "paraphrase": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-2",
+  "learner": "He looks... He looks very cold and terribly scared.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.98,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0.01,
+     "word_drop": 0.01,
+     "word_swap": 0,
+     "paraphrase": 0,
+     "correct": 0.98
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-2",
+  "learner": "he looks very cold and terribly scared",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.96,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.95,
+    "probabilities": {
+     "no_answer": 0,
+     "word_drop": 0.03,
+     "word_swap": 0.01,
+     "correct": 0.96,
+     "paraphrase": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.07
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-3",
+  "learner": "We should... We should gently pick him up now.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "word_drop": 0,
+     "paraphrase": 0,
+     "no_answer": 0,
+     "word_swap": 0,
+     "correct": 1,
+     "other_wrong": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.03
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-3",
+  "learner": "we should gently pick him up now",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.98,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.97,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0,
+     "paraphrase": 0,
+     "word_drop": 0.01,
+     "correct": 0.98,
+     "word_swap": 0.01
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.06
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "read-aloud-studio.dialogue",
+  "item": "line-3",
+  "learner": "We should gently pick him up now.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "word_swap": 0,
+     "no_answer": 0,
+     "correct": 1,
+     "paraphrase": 0,
+     "word_drop": 0
+    }
+   },
+   "fits_word_drop": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_word_swap": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_paraphrase": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "rhyme-studio.identification",
+  "item": "c1",
+  "learner": "hat rhymes",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.98,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "echo_target": 0,
+     "onset_foil": 0,
+     "no_answer": 0,
+     "off_menu": 0.01,
+     "other_wrong": 0.01,
+     "correct": 0.98
+    }
+   },
+   "fits_onset_foil": {
+    "type": "noul",
+    "noul": 0.07
+   },
+   "fits_echo_target": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_off_menu": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "rhyme-studio.identification",
+  "item": "c1",
+  "learner": "hat",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "echo_target": 0,
+     "onset_foil": 0,
+     "off_menu": 0,
+     "other_wrong": 0,
+     "correct": 1
+    }
+   },
+   "fits_onset_foil": {
+    "type": "noul",
+    "noul": 0.1
+   },
+   "fits_echo_target": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_off_menu": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "rhyme-studio.identification",
+  "item": "c2",
+  "learner": "wig",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "onset_foil": 0,
+     "no_answer": 0,
+     "echo_target": 0,
+     "other_wrong": 0,
+     "correct": 1,
+     "off_menu": 0
+    }
+   },
+   "fits_onset_foil": {
+    "type": "noul",
+    "noul": 0.08
+   },
+   "fits_echo_target": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_off_menu": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "rhyme-studio.identification",
+  "item": "c2",
+  "learner": "wig rhymes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "off_menu": 0,
+     "no_answer": 0,
+     "onset_foil": 0,
+     "echo_target": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_onset_foil": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_echo_target": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_off_menu": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "rhyme-studio.recognition",
+  "item": "c1",
+  "learner": "yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0,
+     "correct": 1,
+     "no_to_rhyme": 0
+    }
+   },
+   "fits_no_to_rhyme": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "rhyme-studio.identification",
+  "item": "c3",
+  "learner": "log",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "off_menu": 0,
+     "other_wrong": 0,
+     "no_answer": 0,
+     "correct": 1,
+     "echo_target": 0
+    }
+   },
+   "fits_echo_target": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_off_menu": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "rhyme-studio.identification",
+  "item": "c3",
+  "learner": "log rhymes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "other_wrong": 0,
+     "no_answer": 0,
+     "echo_target": 0,
+     "correct": 1,
+     "off_menu": 0
+    }
+   },
+   "fits_echo_target": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_off_menu": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "rhyme-studio.recognition",
+  "item": "c2",
+  "learner": "no, they don't",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0,
+     "correct": 1,
+     "yes_no_rhyme": 0
+    }
+   },
+   "fits_yes_no_rhyme": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "rhyme-studio.recognition",
+  "item": "c2",
+  "learner": "no",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "yes_no_rhyme": 0,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "correct": 1
+    }
+   },
+   "fits_yes_no_rhyme": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "rhyme-studio.recognition",
+  "item": "c3",
+  "learner": "yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_to_rhyme": 0,
+     "correct": 1,
+     "no_answer": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_no_to_rhyme": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "rhyme-studio.recognition",
+  "item": "c1",
+  "learner": "yes, they do",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "no_to_rhyme": 0,
+     "correct": 1,
+     "no_answer": 0
+    }
+   },
+   "fits_no_to_rhyme": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "rhyme-studio.recognition",
+  "item": "c3",
+  "learner": "yes, they do",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "no_to_rhyme": 0,
+     "no_answer": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_no_to_rhyme": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "syllable-clapper.blend_syllables",
+  "item": "c1",
+  "learner": "zebra",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "parts_back": 0.01,
+     "correct": 0.99,
+     "no_answer": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_parts_back": {
+    "type": "noul",
+    "noul": 0.11
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "syllable-clapper.blend_syllables",
+  "item": "c3",
+  "learner": "penguin",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "parts_back": 0
+    }
+   },
+   "fits_parts_back": {
+    "type": "noul",
+    "noul": 0.11
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "syllable-clapper.count_parts",
+  "item": "c1",
+  "learner": "one",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "count_one_over": 0,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "correct": 1,
+     "counted_sounds": 0,
+     "word_for_count": 0
+    }
+   },
+   "fits_word_for_count": {
+    "type": "noul",
+    "noul": 0.03
+   },
+   "fits_counted_sounds": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_count_one_over": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "syllable-clapper.blend_syllables",
+  "item": "c2",
+  "learner": "monkey",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "other_wrong": 0,
+     "correct": 0.99,
+     "no_answer": 0,
+     "parts_back": 0.01
+    }
+   },
+   "fits_parts_back": {
+    "type": "noul",
+    "noul": 0.14
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "syllable-clapper.count_parts",
+  "item": "c2",
+  "learner": "two parts",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "count_one_over": 0,
+     "word_for_count": 0,
+     "correct": 1,
+     "other_wrong": 0,
+     "no_answer": 0
+    }
+   },
+   "fits_word_for_count": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_count_one_over": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "syllable-clapper.count_parts",
+  "item": "c1",
+  "learner": "one parts",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "other_wrong": 0.01,
+     "correct": 0.99,
+     "no_answer": 0,
+     "counted_sounds": 0,
+     "count_one_over": 0,
+     "word_for_count": 0
+    }
+   },
+   "fits_word_for_count": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_counted_sounds": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_count_one_over": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "syllable-clapper.count_parts",
+  "item": "c3",
+  "learner": "two",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "count_one_over": 0,
+     "no_answer": 0,
+     "other_wrong": 0,
+     "word_for_count": 0
+    }
+   },
+   "fits_word_for_count": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_count_one_over": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "syllable-clapper.count_parts",
+  "item": "c2",
+  "learner": "two",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "correct": 1,
+     "word_for_count": 0,
+     "count_one_over": 0,
+     "no_answer": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_word_for_count": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_count_one_over": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "syllable-clapper.count_parts",
+  "item": "c3",
+  "learner": "two parts",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "word_for_count": 0,
+     "count_one_over": 0,
+     "correct": 1,
+     "other_wrong": 0
+    }
+   },
+   "fits_word_for_count": {
+    "type": "noul",
+    "noul": 0.02
+   },
+   "fits_count_one_over": {
+    "type": "noul",
+    "noul": 0.01
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "word-flip.plural_s",
+  "item": "word-flip-1",
+  "learner": "cars",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "no_answer": 0,
+     "double_ending": 0,
+     "other_wrong": 0,
+     "correct": 0.99,
+     "unchanged": 0.01
+    }
+   },
+   "fits_unchanged": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_double_ending": {
+    "type": "noul",
+    "noul": 0.19
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "word-flip.plural_s",
+  "item": "word-flip-1",
+  "learner": "two cars",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "other_wrong": 0,
+     "no_answer": 0,
+     "double_ending": 0,
+     "correct": 1,
+     "unchanged": 0
+    }
+   },
+   "fits_unchanged": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_double_ending": {
+    "type": "noul",
+    "noul": 0.15
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "word-flip.plural_s",
+  "item": "word-flip-2",
+  "learner": "socks",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.98,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.98,
+    "probabilities": {
+     "correct": 0.98,
+     "unchanged": 0.02,
+     "no_answer": 0,
+     "double_ending": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_unchanged": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_double_ending": {
+    "type": "noul",
+    "noul": 0.16
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "word-flip.plural_s",
+  "item": "word-flip-2",
+  "learner": "two socks",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "unchanged": 0,
+     "other_wrong": 0,
+     "double_ending": 0,
+     "correct": 1,
+     "no_answer": 0
+    }
+   },
+   "fits_unchanged": {
+    "type": "noul",
+    "noul": 0.05
+   },
+   "fits_double_ending": {
+    "type": "noul",
+    "noul": 0.14
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "word-flip.plural_s",
+  "item": "word-flip-3",
+  "learner": "frogs",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 0.99,
+    "probabilities": {
+     "no_answer": 0,
+     "unchanged": 0.01,
+     "correct": 0.99,
+     "double_ending": 0,
+     "other_wrong": 0
+    }
+   },
+   "fits_unchanged": {
+    "type": "noul",
+    "noul": 0.04
+   },
+   "fits_double_ending": {
+    "type": "noul",
+    "noul": 0.23
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "word-flip.plural_s",
+  "item": "word-flip-3",
+  "learner": "two frogs",
+  "miss": null,
+  "reading": "other_wrong",
+  "p": 0.83,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "other_wrong",
+    "confidence": 0.77,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0.83,
+     "correct": 0.14,
+     "double_ending": 0,
+     "unchanged": 0.03
+    }
+   },
+   "fits_unchanged": {
+    "type": "noul",
+    "noul": 0.12
+   },
+   "fits_double_ending": {
+    "type": "noul",
+    "noul": 0.13
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "word-workout.real_vs_nonsense",
+  "item": "c1",
+  "learner": "cat",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "said_nonword": 0,
+     "correct": 1,
+     "other_wrong": 0
+    }
+   },
+   "fits_said_nonword": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "word-workout.real_vs_nonsense",
+  "item": "c3",
+  "learner": "dog",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0,
+     "correct": 1,
+     "said_nonword": 0
+    }
+   },
+   "fits_said_nonword": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ },
+ {
+  "rep": 2,
+  "payload": "word-workout.real_vs_nonsense",
+  "item": "c2",
+  "learner": "pen",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "answers": {
+   "which": {
+    "type": "choice",
+    "choice": "correct",
+    "confidence": 1,
+    "probabilities": {
+     "no_answer": 0,
+     "other_wrong": 0,
+     "correct": 1,
+     "said_nonword": 0
+    }
+   },
+   "fits_said_nonword": {
+    "type": "noul",
+    "noul": 0.02
+   }
+  }
+ }
+]

@@ -10,6 +10,7 @@
  * first or stays solid (compare).
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import {
   askFor,
   CHANGE_VERB,
@@ -51,7 +52,54 @@ export function statesAssignment(item: StatesOfMatterItem): TeachingAssignment {
       break;
     }
   }
-  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer };
+  const misses = statesSpokenMisses(item);
+  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) };
+}
+
+/** What a wrong spoken answer shows (handoff 20 Part B). */
+export type SpokenStatesMiss = 'said_start_state' | 'other_state' | 'said_substance_back' | 'said_end_state' | 'opposite_change'
+  | 'other_of_pair';
+
+const STATES = ['solid', 'liquid', 'gas'] as const;
+const OPPOSITE: Record<string, string> = { melting: 'freezing', freezing: 'melting', boiling: 'condensing', condensing: 'boiling' };
+
+/**
+ * An item's known wrong answers, in precedence order, for the `spoken_miss` observer: the state it is in now, then
+ * another state (predict_state); another state or the substance's name (name_state); the state it ends in, then the
+ * opposite change (predict_change); the other substance (melt_first, stay_solid).
+ */
+export function statesSpokenMisses(item: StatesOfMatterItem): KnownMiss[] {
+  const s = item.substance;
+  switch (item.kind) {
+    case 'name_state':
+    case 'predict_state': {
+      if (!s || !item.answerState) return [];
+      const answer = item.answerState, start = item.kind === 'predict_state' && item.startState !== answer ? item.startState : undefined;
+      const fact = item.kind === 'name_state' ? `The ${s.name} in the beaker is a ${answer}.` : `At ${item.targetTemp} degrees the ${s.name} will be a ${answer}.`;
+      const others = STATES.filter(x => x !== answer && x !== start);
+      return [
+        ...(start ? [{ id: 'said_start_state', pattern: `${fact} The learner's answer is "${start}", the state it is in now, before the change.`, examples: [start] }] : []),
+        { id: 'other_state', pattern: `${fact} The learner's answer is ${others.map(x => `"${x}"`).join(' or ')}, another state.`, examples: [...others] },
+        ...(item.kind === 'name_state' ? [{ id: 'said_substance_back', pattern: `The learner says "${s.name}" back and no state word.`, examples: [s.name] }] : []),
+      ];
+    }
+    case 'predict_change': {
+      if (!s || !item.answerChange || item.targetTemp === undefined) return [];
+      const end = stateAt(s, item.targetTemp), change = item.answerChange, opposite = OPPOSITE[change];
+      const fact = `The ${s.name} goes through ${change} and ends up a ${end}.`;
+      return [
+        { id: 'said_end_state', pattern: `${fact} The learner's answer is "${end}", the state it ends up in, not the change.`, examples: [end] },
+        ...(opposite ? [{ id: 'opposite_change', pattern: `${fact} The learner's answer is "${opposite}", the opposite change.`, examples: [opposite] }] : []),
+      ];
+    }
+    case 'melt_first':
+    case 'stay_solid': {
+      if (!item.pair || !item.answerName) return [];
+      const [a, b] = item.pair, other = item.answerName === a.name ? b.name : a.name;
+      return [{ id: 'other_of_pair', pattern: `Of ${a.name} and ${b.name}, the answer is ${item.answerName}. The learner's answer is ${other}, the other one.`, examples: [other] }];
+    }
+  }
+  return [];
 }
 
 export function statesScene(item: StatesOfMatterItem): WorkspaceScene {

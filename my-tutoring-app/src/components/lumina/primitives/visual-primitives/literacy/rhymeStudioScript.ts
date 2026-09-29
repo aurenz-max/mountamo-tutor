@@ -139,6 +139,7 @@ import type {
   JudgedScriptItem,
   ResponseClassId,
 } from '../../../hooks/judgedScriptContract';
+import { pickModelRhymeSet, sessionWords, type SessionWords } from './rhymeModels';
 
 /**
  * `production` is the OPEN mode: the child says any real word that rhymes, off
@@ -411,12 +412,9 @@ export const recordCollectedRhyme = (
 // tightening: exclusion is by FAMILY. A model pair from the -at family gives
 // away every -at item in the run even though it shares no letters with them.)
 
+/** The retired runner's opening model, kept for its cue lines when every model family is in the session. */
 const MODEL_RHYME_PAIRS: ReadonlyArray<{ pair: readonly [string, string]; rime: string }> = [
   { pair: ['bee', 'tree'], rime: 'ee' },
-  { pair: ['star', 'car'], rime: 'ar' },
-  { pair: ['snake', 'cake'], rime: 'ake' },
-  { pair: ['moon', 'spoon'], rime: 'oon' },
-  { pair: ['sock', 'rock'], rime: 'ock' },
 ];
 
 export interface RhymeModelPair {
@@ -424,22 +422,20 @@ export interface RhymeModelPair {
   rime: string;
 }
 
+/** Every word a session asks, compares or offers, with its families: what a model or practice item may not use. */
+export const rhymeSessionWords = (
+  items: ReadonlyArray<Pick<RhymeItem, 'rime' | 'targetWord' | 'comparisonWord' | 'choices'>>,
+): SessionWords => sessionWords(
+  items.flatMap((i) => [i.targetWord, i.comparisonWord ?? '', ...i.choices.map((c) => c.word)]),
+  items.map((i) => i.rime),
+);
+
+/** The first two words of the shared model set (`rhymeModels.ts`), which excludes by family and by word. */
 export const pickModelRhymePair = (
   items: ReadonlyArray<Pick<RhymeItem, 'rime' | 'targetWord' | 'comparisonWord' | 'choices'>>,
 ): RhymeModelPair => {
-  const rimes = new Set(items.map((i) => i.rime));
-  const words = new Set(
-    items.flatMap((i) => [
-      i.targetWord.toLowerCase(),
-      (i.comparisonWord ?? '').toLowerCase(),
-      ...i.choices.map((c) => c.word.toLowerCase()),
-    ]),
-  );
-  return (
-    MODEL_RHYME_PAIRS.find(
-      (m) => !rimes.has(m.rime) && !m.pair.some((w) => words.has(w)),
-    ) ?? MODEL_RHYME_PAIRS[0]
-  );
+  const set = pickModelRhymeSet(rhymeSessionWords(items));
+  return set ? { pair: [set.words[0].word, set.words[1].word], rime: set.rime } : MODEL_RHYME_PAIRS[0];
 };
 
 // ── Small speakable helpers ─────────────────────────────────────────────────

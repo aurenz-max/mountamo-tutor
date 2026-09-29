@@ -11,6 +11,7 @@
  *    learner says the one that comes next.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { CalendarExplorerChallenge } from './CalendarExplorer';
 import { calendarSequenceHarnessAnswers, type CalendarDaySequenceItem, type CalendarSequenceItem } from './calendarExplorerScript';
 
@@ -63,7 +64,7 @@ export const describeCalendarPick = (c: CalendarExplorerChallenge, picked: strin
  *   - a date (identify, mark_events, pattern): `same_column_date` (a whole number of weeks off: the same
  *     weekday), `next_to_date` (one day off), `other_date`;
  *   - a count (count, interval_count): `one_less`, `one_more`, `other_count`.
- * day_sequence and month_sequence are spoken (Part B).
+ * day_sequence names its spoken misses in `calendarSpokenMisses` (Part B); month_sequence names none yet.
  */
 export type CalendarMiss = 'start_day' | 'day_before' | 'day_after' | 'other_day' | 'same_column_date' | 'next_to_date'
   | 'other_date' | 'one_less' | 'one_more' | 'other_count';
@@ -97,9 +98,33 @@ const unitOf = (item: CalendarSequenceItem) => item.type === 'day_sequence'
 
 export function calendarSequenceAssignment(item: CalendarSequenceItem): TeachingAssignment {
   const { unit, current, expected } = unitOf(item);
+  const misses = calendarSpokenMisses(item);
   return { id: item.id, task: `Listen: ${current}. What ${unit} comes next?`, response: 'speech',
     expectedAnswer: `${expected}. ${current} said back, a different ${unit}, or several names that do not land on `
-      + `${expected} is not it.` };
+      + `${expected} is not it.`, ...(misses.length ? { misses } : {}) };
+}
+
+/** What a wrong spoken weekday shows (handoff 20 Part B): the tap's weekday kinds. */
+export type SpokenCalendarMiss = Extract<CalendarMiss, 'start_day' | 'day_after' | 'other_day'> | 'day_before_start';
+
+/**
+ * day_sequence's known wrong answers, in precedence order, for the `spoken_miss` observer: the given day said back
+ * (`start_day`, the tap's id), the day after the answer (one skipped), the day before the given one (counted
+ * backwards), any other day. month_sequence names none yet (no saved payload).
+ */
+export function calendarSpokenMisses(item: CalendarSequenceItem): KnownMiss[] {
+  if (item.type !== 'day_sequence') return [];
+  const at = weekday(item.currentDay), want = weekday(item.expectedDay);
+  if (at < 0 || want < 0) return [];
+  const day = (i: number) => { const d = WEEKDAYS[(i + 7) % 7]; return d[0].toUpperCase() + d.slice(1); };
+  const fact = `The day after ${day(at)} is ${day(want)}.`;
+  return [
+    { id: 'start_day', pattern: `${fact} The learner's answer is ${day(at)}, the day they were given, said back.`, examples: [day(at)] },
+    { id: 'day_after', pattern: `${fact} The learner's answer is ${day(want + 1)}, one day past ${day(want)}.`, examples: [day(want + 1)] },
+    { id: 'day_before_start', pattern: `${fact} The learner's answer is ${day(at - 1)}, the day before ${day(at)}: counting backwards.`, examples: [day(at - 1)] },
+    { id: 'other_day', pattern: `${fact} The learner's answer is another day of the week, not ${day(at)}, ${day(want)}, ${day(want + 1)} or ${day(at - 1)}.`,
+      examples: [day(want + 3)] },
+  ];
 }
 
 export function calendarSequenceScene(item: CalendarSequenceItem): WorkspaceScene {

@@ -5,6 +5,8 @@
  */
 
 import { ComponentDefinition } from '../../../types';
+import type { SpokenSolarMiss } from '../../../primitives/visual-primitives/astronomy/solarSystemWorkspace';
+import { missLists } from './missLists';
 
 export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
   {
@@ -181,6 +183,10 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
         + 'learner has no cards and does not read, so say the question aloud. The Sun is a star, not a planet answer. A '
         + 'colour or "that one" with no name does not answer. Before an attempt never say the answer or describe the '
         + 'planets for them. You cannot move or mark a planet.',
+      // Every item is one spoken planet name: its known wrong answers (`solarSpokenMisses`, handoff 20 Part B).
+      misses: missLists<SpokenSolarMiss>({ identify: ['said_sun', 'neighbour_planet', 'other_planet'],
+        order_from_sun: ['said_sun', 'signature_planet', 'other_planet'], classify: ['said_sun', 'signature_planet', 'other_planet'],
+        compare_attribute: ['said_sun', 'signature_planet', 'other_planet'], orbital_reasoning: ['said_sun', 'signature_planet', 'other_planet'] }),
     },
   },
   {

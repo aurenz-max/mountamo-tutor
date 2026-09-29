@@ -13,6 +13,7 @@
  * decide what ships, so the ask never contains the answer.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { DI_SPOKEN_PRACTICE_MODES } from './diSpokenPracticeModes';
 import { conceptAffirmForm, numberWordFor, type SpokenPracticeItem } from './diSpokenPracticeScript';
 
@@ -39,8 +40,43 @@ export function spokenPracticeKey(item: SpokenPracticeItem): string {
   return `"${item.expectedAnswer}"${also}.${menu}${rule}${miss}`;
 }
 
+/** What a wrong spoken answer shows on the two bounded modes (handoff 20 Part B). */
+export type SpokenPracticeMiss = OffByMiss | 'skipped_a_number' | 'other_menu_word' | 'said_same' | 'said_thing_name';
+
+const bare = (thing: string) => thing.replace(/^(a|an|the)\s+/i, '').trim();
+const SAME = /^(the )?same$|^equal$/i;
+
+/**
+ * A bounded item's known wrong answers, in precedence order, for the `spoken_miss` observer: on count_and_say the
+ * counting walk and the off-by misses, on compare_choice the other menu word(s) and a picture's name. The other
+ * modes name none: say_answer and read_aloud keys are generated with no recorded distractor, and explain_concept is
+ * judged on meaning.
+ */
+export function spokenPracticeSpokenMisses(item: SpokenPracticeItem): KnownMiss[] {
+  const accepted = new Set([item.expectedAnswer, ...item.alternates].map(a => a.trim().toLowerCase()));
+  if (item.mode === 'count_and_say' && item.stimulusCount > 0) {
+    const n = item.stimulusCount;
+    return [...(n >= 3 ? [{ id: 'skipped_a_number', pattern: 'The learner counts aloud and leaves a number out of the counting sequence, whatever number they end on.',
+      examples: ['one, two, four'] }] : []), ...offByMisses(n, `the ${n} ${item.stimulusText} in the picture`)];
+  }
+  if (item.mode !== 'compare_choice' || !item.choices?.length) return [];
+  const a = bare(item.stimulusText), b = bare(item.stimulusText2 ?? '');
+  const fact = `The pictures are ${item.stimulusText} and ${item.stimulusText2 ?? 'another thing'}; the word that fits is ${item.expectedAnswer}.`;
+  const wrong = item.choices.filter(c => !accepted.has(c.trim().toLowerCase()));
+  const other = wrong.filter(c => !SAME.test(c.trim())), same = wrong.filter(c => SAME.test(c.trim()));
+  return [
+    ...(other.length ? [{ id: 'other_menu_word', pattern: `${fact} The learner's answer is ${other.join(' or ')}, another word from the menu.`,
+      examples: other.slice(0, 2) }] : []),
+    ...(same.length ? [{ id: 'said_same', pattern: `${fact} The learner's answer is ${same[0]}.`, examples: [same[0]] }] : []),
+    ...(a && b ? [{ id: 'said_thing_name', pattern: `${fact} The learner names a picture (${a} or ${b}) and says no word from the menu.`,
+      examples: [a] }] : []),
+  ];
+}
+
 export function spokenPracticeAssignment(item: SpokenPracticeItem): TeachingAssignment {
-  return { id: item.id, task: spokenPracticeAskFor(item), response: 'speech', expectedAnswer: spokenPracticeKey(item) };
+  const misses = spokenPracticeSpokenMisses(item);
+  return { id: item.id, task: spokenPracticeAskFor(item), response: 'speech', expectedAnswer: spokenPracticeKey(item),
+    ...(misses.length ? { misses } : {}) };
 }
 
 /** What the screen shows, without the answer: a count item never prints its numeral, a picture to name is

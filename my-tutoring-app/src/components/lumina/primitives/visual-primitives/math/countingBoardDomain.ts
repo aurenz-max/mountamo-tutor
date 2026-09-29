@@ -24,6 +24,7 @@
 
 import type { ResponseClassId, TeachingItem } from '../../../hooks/teachingItemContract';
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { numberMisses, offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 
 
 export type CountingItemKind =
@@ -391,9 +392,51 @@ export function countMiss(item: CountingItem | null, committed: number): CountMi
   return off < 0 ? 'short_by_more' : 'over_by_more';
 }
 
+/** What a wrong spoken count shows (handoff 20 Part B): the family's own numbers first, then the off-by misses. */
+export type SpokenCountMiss = OffByMiss | 'skipped_a_number' | 'said_start' | 'said_change' | 'smaller_group' | 'said_total'
+  | 'said_group_count';
+
+/**
+ * A spoken item's known wrong answers, in precedence order, for the `spoken_miss` observer. Concrete per item: the
+ * numbers on this board, never a cause. The count walk is the pilot's (qa/tutor-reports/spoken-miss/).
+ */
+export function countingBoardSpokenMisses(item: CountingItem): KnownMiss[] {
+  if (item.answerKind !== 'voice') return [];
+  const t = item.target, noun = item.objectWord, change = item.changeBy;
+  const walk: KnownMiss = { id: 'skipped_a_number', pattern: 'The learner counts aloud and leaves a number out of the counting sequence, whatever number they end on.', examples: ['one, two, four'] };
+  const own = (() => {
+    switch (item.kind) {
+      case 'count_all': return [walk];
+      case 'count_on': return [walk, ...numberMisses(t, [{ id: 'said_start', value: item.startFrom,
+        pattern: n => `The learner's answer is ${n}, the number already in the covered group, not how many altogether.` }])];
+      case 'group_count': return numberMisses(t, [{ id: 'said_group_count', value: item.groupSize ? t / item.groupSize : undefined,
+        pattern: n => `The learner's answer is ${n}, the number of groups, not how many ${noun} altogether.` }]);
+      case 'compare': return numberMisses(t, [
+        { id: 'smaller_group', value: item.compareGroups ? Math.min(...item.compareGroups) : undefined,
+          pattern: n => `The group with fewer ${noun} has ${n}. The learner's answer is ${n}, the count of that smaller group.` },
+        { id: 'said_total', value: item.count, pattern: n => `The two groups have ${n} ${noun} together. The learner's answer is ${n}, both groups counted as one.` }]);
+      case 'take_away': return numberMisses(t, [
+        { id: 'said_start', value: item.count, pattern: n => `The learner's answer is ${n}, how many ${noun} there were before any were taken away.` },
+        { id: 'said_change', value: change, pattern: n => `The learner's answer is ${n}, how many ${noun} were taken away, not how many are left.` }]);
+      case 'add_more': return numberMisses(t, [
+        { id: 'said_start', value: item.count, pattern: n => `The learner's answer is ${n}, how many ${noun} there were before more were put on.` },
+        { id: 'said_change', value: change, pattern: n => `The learner's answer is ${n}, how many ${noun} were put on, not how many altogether.` }]);
+      default: return [];
+    }
+  })();
+  const of = item.kind === 'subitize' ? `the ${t} ${noun} shown` : item.kind === 'take_away' ? `the ${t} ${noun} left`
+    : item.kind === 'compare' ? `the ${t} ${noun} in the group with more`
+    : item.kind === 'count_on' || item.kind === 'add_more' || item.kind === 'group_count' ? `the ${t} ${noun} altogether`
+    : `the ${t} ${noun} on the board`;
+  return [...own, ...offByMisses(t, of)];
+}
+
 /** The item as the tutor and the outcome observer are told it. */
-export const workspaceAssignment = (item: CountingItem): TeachingAssignment => ({ id: item.id, task: askFor(item),
-  response: item.answerKind === 'voice' ? 'speech' : 'gesture', expectedAnswer: String(item.target) });
+export const workspaceAssignment = (item: CountingItem): TeachingAssignment => {
+  const misses = countingBoardSpokenMisses(item);
+  return { id: item.id, task: askFor(item), response: item.answerKind === 'voice' ? 'speech' : 'gesture',
+    expectedAnswer: String(item.target), ...(misses.length ? { misses } : {}) };
+};
 
 /** What the learner has done on the board, and what is hidden from them right now. */
 export interface CountingBoardView {

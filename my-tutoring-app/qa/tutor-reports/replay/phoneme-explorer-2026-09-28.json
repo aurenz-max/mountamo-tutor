@@ -1,0 +1,1124 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ],
+   "no_change_before_receipt": [
+    0,
+    5
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "phoneme-explorer.blend",
+   "primitiveId": "phoneme-explorer",
+   "evalMode": "blend",
+   "keys": [
+    "dog. sounding it out and landing on dog counts; the sounds with no word at the end do not.",
+    "dog"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "dog. sounding it out and landing on dog counts; the sounds with no word at the end do not.",
+       "dog"
+      ],
+      "ask": "Listen: /d/ \u2026 ooo \u2026 /g/. Your turn. Say it fast. What word?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen: /d/ \u2026 ooo \u2026 /g/. Say it fast. What word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: /d/ \u2026 ooo \u2026 /g/. Say it fast. What word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: /d/ \u2026 ooo \u2026 /g/. Your turn. Say it fast, what word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: /d/ \u2026 ooo \u2026 /g/. Say it fast. What word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: /d/ \u2026 ooo \u2026 /g/. Say it fast. What word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "ladder",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "dog. sounding it out and landing on dog counts; the sounds with no word at the end do not.",
+       "dog"
+      ],
+      "ask": "Listen: /d/ \u2026 ooo \u2026 /g/. Your turn. Say it fast. What word?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite. Listen again: /d/ \u2026 ooo \u2026 /g/. What word does that make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Listen again: /d/ \u2026 ooo \u2026 /g/. What word does that make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite ladder. Listen again: /d/ \u2026 ooo \u2026 /g/. What word does that make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Listen again: /d/ \u2026 ooo \u2026 /g/. Try saying those sounds fast!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Listen again: /d/ \u2026 ooo \u2026 /g/. What word do those sounds make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "dog. sounding it out and landing on dog counts; the sounds with no word at the end do not.",
+       "dog"
+      ],
+      "ask": "Listen: /d/ \u2026 ooo \u2026 /g/. Your turn. Say it fast. What word?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The sound tiles slid close together over an arrow! Listen: /d/\u2026ooo\u2026/g/. What word do those sounds make?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "slide_tiles",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The sound tiles slid close together over an arrow! Listen: /d/\u2026ooo\u2026/g/. Say it fast. What word?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "slide_tiles"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, the sound tiles slid closer together over the arrow! Listen as they connect: /d/\u2026ooo\u2026/g/. What word is that?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "slide_tiles"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, the sound tiles slid closer together! Listen: /d/\u2026ooo\u2026/g/. Say it fast.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "slide_tiles",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The tiles slid together over the arrow! Listen closely as they connect: /d/\u2026ooo\u2026/g/. What word do they make?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "slide_tiles",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled slide_tiles (help). It is on screen now: Slides the sound tiles together over an arrow. Say the sounds again with short gaps, each held into the next; stop before the word. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "dog. sounding it out and landing on dog counts; the sounds with no word at the end do not.",
+       "dog"
+      ],
+      "ask": "Listen: /d/ \u2026 ooo \u2026 /g/. Your turn. Say it fast. What word?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, the sound tiles slid together right above the arrow! \n\nListen closely as they connect: /d/\u2026ooo\u2026/g/. Say it fast, what word is that?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, the sound tiles slid together right above the arrow! \n\nListen closely as they connect: /d/\u2026ooo\u2026/g/. What word do you hear?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, the sound tiles slid together right along the arrow! \n\nListen closely as they connect: /d/\u2026ooo\u2026/g/. What word do you hear?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, the sound tiles moved together across the arrow! Listen closely as they connect: /d/\u2026ooo\u2026/g/. What word do you hear?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen\u2014the tiles slid close together along an arrow! Listen: /d/\u2026ooo\u2026/g/. What word do you hear?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "dog",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "dog. sounding it out and landing on dog counts; the sounds with no word at the end do not.",
+       "dog"
+      ],
+      "ask": "Listen: /d/ \u2026 ooo \u2026 /g/. Your turn. Say it fast. What word?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You blended those sounds together and made the word dog.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You blended those sounds to make dog!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You blended those sounds together to say dog!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! /d/ \u2026 ooo \u2026 /g/ makes the word dog!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Those sounds make the word dog.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "phoneme-explorer.isolate",
+   "primitiveId": "phoneme-explorer",
+   "evalMode": "isolate",
+   "keys": [
+    "cup, the card that starts with kuh. the example word cat is not a card, so it is not the answer."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cup, the card that starts with kuh. the example word cat is not a card, so it is not the answer."
+      ],
+      "ask": "Listen: kuh, like Cat. The words are: Bus, Pig, Cup, Sun. Your turn. Which word starts with kuh?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen: /k/, like Cat. Which word starts with /k/ \u2014 Bus, Pig, Cup, or Sun?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: /k/, like cat. The words are bus, pig, cup, and sun. Which word starts with /k/?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: /k/, like Cat. The words are Bus, Pig, Cup, and Sun. Which word starts with /k/?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: /k/, like Cat. Which word starts with /k/: Bus, Pig, Cup, or Sun?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: /k/, like Cat. Which word starts with /k/ \u2014 Bus, Pig, Cup, or Sun?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "Sun",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cup, the card that starts with kuh. the example word cat is not a card, so it is not the answer."
+      ],
+      "ask": "Listen: kuh, like Cat. The words are: Bus, Pig, Cup, Sun. Your turn. Which word starts with kuh?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite. Let's try again: which word starts with /k/ \u2014 Bus, Pig, or Cup?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sun starts with /s/. Let's try again: which word starts with /k/ like Cat \u2014 Bus, Pig, or Cup?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not Sun. Listen for the word that starts with /k/ like Cat. Try again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sun starts with /s/. Let's try again: which word starts with /k/ like Cat?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sun starts with /s/. Let's try again: which word starts with /k/ like Cat? Bus, Pig, or Cup?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cup, the card that starts with kuh. the example word cat is not a card, so it is not the answer."
+      ],
+      "ask": "Listen: kuh, like Cat. The words are: Bus, Pig, Cup, Sun. Your turn. Which word starts with kuh?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Say each word slowly with me: Bus, Pig, Cup. Which one starts with that clicking /k/ sound?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Say each word slowly with me: Bus, Pig, Cup. Which one begins with that /k/ sound?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Listen closely to the first sound in Cat: /k/. Say the words slowly with me: Bus... Pig... Cup. Which one begins with /k/?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We are listening for the very first sound you make with your mouth, /k/. Say the names slowly with me: Bus, Pig, Cup. Which one begins with that /k/ sound?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Say the first sound of each word slowly with me: /b/ Bus, /p/ Pig, /k/ Cup. Which one begins with /k/?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled position_model (help). It is on screen now: Shows another word in three sound boxes with the first box lit. Say the model word and that sound; never this item's sound. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cup, the card that starts with kuh. the example word cat is not a card, so it is not the answer."
+      ],
+      "ask": "Listen: kuh, like Cat. The words are: Bus, Pig, Cup, Sun. Your turn. Which word starts with kuh?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, we have three sound boxes showing the word \"bat,\" and the very first box is glowing for its first sound, /b/. Now look back at your cards: which word starts with /k/ \u2014 Bus, Pig, or Cup?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes on the screen: for \"bat\", that first box lights up for /b/. Now look back at your cards: which word starts with /k/ \u2014 Bus, Pig, or Cup?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes on screen: the word is \"bat,\" and that first lit-up box shows its very first sound, /b/. Now look back at our cards\u2014Bus, Pig, and Cup\u2014and tell me which one starts with /k/.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the sound boxes on screen: for the word \"bat,\" the very first box is lit up for the /b/ sound. \n\nNow listen to our words again: which word starts with /k/ \u2014 Bus, Pig, Cup, or Sun?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the three boxes on your screen: the word is \"bat,\" and the first box is lit up for /b/. Now look back at your cards: which word starts with /k/ \u2014 Bus, Pig, or Cup?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "Cup",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cup, the card that starts with kuh. the example word cat is not a card, so it is not the answer."
+      ],
+      "ask": "Listen: kuh, like Cat. The words are: Bus, Pig, Cup, Sun. Your turn. Which word starts with kuh?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! Cup starts with the /k/ sound!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Cup starts with the /k/ sound!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Cup starts with the /k/ sound!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Cup starts with the /k/ sound!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Cup starts with the /k/ sound!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

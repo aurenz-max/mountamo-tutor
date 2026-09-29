@@ -10,6 +10,8 @@
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { textFacts } from '../../../components/live-activity/runtime/sceneFacts';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import { lineReadingMisses } from './spokenReadingMisses';
 import {
   askFor,
   choicesSpokenFor,
@@ -44,7 +46,30 @@ function expectedFor(item: DecodableReaderItem): string {
 }
 
 export function decodableReaderAssignment(item: DecodableReaderItem): TeachingAssignment {
-  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer: expectedFor(item) };
+  const misses = decodableSpokenMisses(item);
+  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer: expectedFor(item), ...(misses.length ? { misses } : {}) };
+}
+
+/**
+ * A spoken item's known wrong answers (handoff 20 Part B), from the ids `DECODABLE_MISSES` declares. A read line: a
+ * word left out, a word read as another. A one-word answer: a story sentence retold without the answer, another
+ * story word. A choice question names none: the item does not know its mode, and literal does not list
+ * `other_choice`.
+ */
+export function decodableSpokenMisses(item: DecodableReaderItem): KnownMiss[] {
+  if (item.kind === 'read_line') return lineReadingMisses(item.text, { skip: 'word_skip' });
+  if (item.kind !== 'answer_spoken' || !item.answerWord) return [];
+  const answer = item.answerWord.toLowerCase(), question = item.question ?? '';
+  const asked = new Set(question.toLowerCase().match(/[a-z]+/g) ?? []);
+  const lifted = (item.storyContentWords ?? []).filter(w => w !== answer && !asked.has(w) && !answer.includes(w)).slice(0, 2);
+  const retold = (item.storyText ?? '').split(/(?<=[.!?])\s+/).map(s => s.trim())
+    .find(s => s && !s.toLowerCase().includes(answer));
+  const fact = `The answer to "${question}" is "${answer}". `;
+  return [
+    { id: 'retell', pattern: `${fact}The learner retells the story instead, saying a whole story sentence or more that does not contain "${answer}".`,
+      ...(retold ? { examples: [retold] } : {}) },
+    ...(lifted.length ? [{ id: 'lifted_word', pattern: `${fact}The learner says a different word from the story that does not answer the question, like ${lifted.map(w => `"${w}"`).join(' or ')}.`, examples: lifted }] : []),
+  ];
 }
 
 export function decodableReaderScene(item: DecodableReaderItem): WorkspaceScene {

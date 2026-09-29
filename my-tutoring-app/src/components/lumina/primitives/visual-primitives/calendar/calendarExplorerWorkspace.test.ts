@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
-import { calendarMiss } from './calendarExplorerWorkspace';
+import { calendarMiss, calendarSpokenMisses } from './calendarExplorerWorkspace';
+import type { CalendarSequenceItem } from './calendarExplorerScript';
 import type { CalendarExplorerChallenge } from './CalendarExplorer';
 
 const ch = (type: CalendarExplorerChallenge['type'], correctAnswer: string, extra: Partial<CalendarExplorerChallenge> = {}) =>
@@ -20,4 +21,17 @@ it.each([
   [interval, '5', 'one_less'], [interval, '7', 'one_more'], [interval, '6', undefined],
 ] as const)('row %#', (c, picked, miss) => {
   expect(calendarMiss(c, picked)).toBe(miss);
+});
+
+// day_sequence's known wrong answers (handoff 20 Part B): ids in precedence order, and no example is the successor.
+const next = (currentDay: string, expectedDay: string) => ({ id: 's', type: 'day_sequence', currentDay, expectedDay }) as CalendarSequenceItem;
+it.each([
+  [next('Saturday', 'Sunday'), ['start_day', 'day_after', 'day_before_start', 'other_day'], ['Saturday', 'Monday', 'Friday', 'Wednesday'], 'Sunday'],
+  [next('Monday', 'Tuesday'), ['start_day', 'day_after', 'day_before_start', 'other_day'], ['Monday', 'Wednesday', 'Sunday', 'Friday'], 'Tuesday'],
+  [{ id: 'm', type: 'month_sequence', currentMonth: 'May', expectedMonth: 'June' } as CalendarSequenceItem, [], [], ''],
+] as const)('spoken row %#', (item, ids, examples, key) => {
+  const misses = calendarSpokenMisses(item);
+  expect(misses.map(m => m.id)).toEqual(ids);
+  expect(misses.map(m => m.examples?.[0])).toEqual(examples);
+  for (const m of misses) expect(m.examples).not.toContain(key);
 });

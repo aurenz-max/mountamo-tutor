@@ -30,8 +30,17 @@
  * version of the same tension: 4 modes, but all "read this sentence aloud", so
  * a misconception genuinely does transfer.
  */
-import { sameMisses } from './missLists';
-import type { WordProblemMiss } from '../../../primitives/visual-primitives/direct-instruction/diWordProblemWorkspace';
+import { missLists, sameMisses } from './missLists';
+import type { SpokenWordProblemMiss, WordProblemMiss } from '../../../primitives/visual-primitives/direct-instruction/diWordProblemWorkspace';
+import type { SpokenDeductionMiss } from '../../../primitives/visual-primitives/direct-instruction/diDeductionWorkspace';
+import type { SpokenDiceMiss } from '../../../primitives/visual-primitives/direct-instruction/diDiceRollWorkspace';
+import type { SpokenFactMiss } from '../../../primitives/visual-primitives/direct-instruction/diMathFactsDomain';
+import type { SpokenPracticeMiss } from '../../../primitives/visual-primitives/direct-instruction/diSpokenPracticeWorkspace';
+import type { SpokenProcedureMiss } from '../../../primitives/visual-primitives/direct-instruction/diWorkedProcedureWorkspace';
+import type { SpokenShapeMiss } from '../../../primitives/visual-primitives/math/shapeSorterDomain';
+import type { SpokenDiLetterSoundMiss } from '../../../primitives/visual-primitives/direct-instruction/diLetterSoundsDomain';
+import type { SpokenWordReadingMiss } from '../../../primitives/visual-primitives/direct-instruction/diWordReadingDomain';
+import type { SpokenSentenceMiss } from '../../../primitives/visual-primitives/direct-instruction/diSentenceReadingDomain';
 import { ComponentDefinition } from '../../../types';
 import { DI_DEDUCTION_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diDeductionModes';
 import { DI_DICE_ROLL_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diDiceRollModes';
@@ -60,6 +69,9 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'Use demonstrate with the targets "stimulus" or "picture" to mark the card or the picture you are discussing, '
         + 'and [] to clear them. There is no other scene action: you cannot change the letter, replace the picture, '
         + 'write, or answer for the child.',
+      // The spoken sound's known wrong answers (`diLetterSoundSpokenMisses`).
+      misses: sameMisses<SpokenDiLetterSoundMiss>(['letter_sound', 'letter_sound_review', 'first_sound_in_word'],
+        ['keyword_word', 'letter_name', 'added_vowel', 'last_sound', 'other_sound']),
     },
     description: 'Live-judged Direct Instruction for continuous letter SOUNDS (not letter names): the tutor models a sound like /mmm/ as in "moon", practices it together, then asks the child to say it and judges the spoken audio. The child SPEAKS each sound aloud (voice/microphone). Perfect for kindergarten phonemic awareness and letter-sound correspondence. ESSENTIAL for K phonics / early reading foundations — grapheme-to-phoneme mapping for pre-readers. Also drills first-sound (onset) isolation from a spoken word and cumulative spaced review of taught sounds.',
     constraints: 'Requires microphone + live audio tutor. Continuous (stretchable) sounds and short vowels only — NOT letter names, digraphs, blends, or stop consonants. The manifest must NOT supply specific letters; the menu-scoped generator selects target letters from the objective and attaches keywords/pictures in code.',
@@ -167,6 +179,9 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'Use demonstrate with the target "word", or a letter target from workspace.objects on a decodable word, '
         + 'and [] to clear. There is no other scene action: you cannot change the word, add a picture, write, or '
         + 'answer for the child.',
+      // The spoken read's known wrong answers (`diWordReadingSpokenMisses`).
+      misses: sameMisses<SpokenWordReadingMiss>(['cvc_reading', 'read_word', 'sight_word', 'word_reading_review'],
+        ['letter_name', 'sounds_no_word', 'read_backwards', 'similar_word', 'first_sound_changed', 'middle_sound_changed', 'last_sound_changed']),
     },
     description: 'Live-judged Direct Instruction WORD READING (DISTAR "What word?"): the tutor models a printed word — sounding out a decodable CVC word ("sss-aaa-mmm… sam") or naming a sight word whole — practices it together, then asks the child to read it and judges the spoken audio. The child SEES the printed word and READS it aloud (voice/microphone). Perfect for kindergarten and grade 1 decoding: short-vowel CVC word reading, blending, and high-frequency sight-word recognition. ESSENTIAL for K/G1 early reading — print-to-speech decoding for beginning readers.',
     constraints: 'Requires microphone + live audio tutor. SHORT-vowel CVC words and starter sight words only — NO long-vowel or silent-e / magic-e (CVCe) words like cake, ride, or hope, and NO digraphs, blends, or multisyllable words. When the objective is the silent-e rule, long vowels, or any other pattern outside short-vowel CVC, use phonics-blender (cvce_blend), cvc-speller, or decodable-reader instead — this pack cannot serve those words and will fall back to short-vowel CVC ones. The manifest must NOT supply specific words; the menu-scoped generator selects target words from the objective (phonics pattern or sight-word set) and attaches graphemes/rewards in code. The printed word is the answer: no pictures or audio pre-cues before the child reads.',
@@ -304,6 +319,13 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'number has answered. Echoing a number out of the problem is a common miss, not a near answer. '
         + 'Use demonstrate with the target "problem", or a term target from workspace.objects, and [] to clear. '
         + 'No other scene action exists: you cannot write the answer, change the problem, or answer for the child.',
+      // Every item is spoken: its known wrong answers (`mathFactSpokenMisses`), named by the `spoken_miss` observer.
+      misses: missLists<SpokenFactMiss>({
+        ...sameMisses<SpokenFactMiss>(['answer_fact', 'fact_review'], ['said_addend', 'said_start', 'said_change', 'added_instead', 'teen_decade_swap', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
+        subtraction_fact: ['said_start', 'said_change', 'added_instead', 'teen_decade_swap', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        counting_next: ['said_printed', 'said_before', 'said_two_after', 'decade_rollover', 'teen_decade_swap', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        name_numeral: ['recited_sequence', 'look_alike_numeral', 'teen_decade_swap', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+      }),
     },
     description: 'Live-judged Direct Instruction MATH FACT fluency ("What is 2 plus 1?"): the tutor models a printed fact aloud ("two plus one is three"), practices it together, then asks the child and judges the spoken number-word answer. The child SEES the printed problem and SPEAKS the answer aloud (voice/microphone); response time is captured silently as the fluency signal — no visible timer. Perfect for kindergarten and grade 1 fact fluency: addition within 5 or 10, doubles, make-ten pairs, take-away (subtraction) facts in the same range, cumulative mixed review of taught facts, and the counting-sequence step underneath them — see a number, say the number that comes next, all the way to 120 (decade transitions like "39 → forty" and compound numerals like "one hundred seven"). ALSO serves pure NUMERAL RECOGNITION AND NAMING: the child sees one printed numeral ("7") and says its name aloud ("seven"), with no computation and no sequence — the primitive for K.CC.3-style "recognize and name the written numbers 1 through 10" objectives, where the child must PRODUCE the number name rather than point at a match. NOT for identifying the SIGNS themselves: an objective like "identify the minus sign and the equals sign" or "recognize + and = as math symbols" is served by a symbol-introduction or equation-building block, never by this pack — every mode here has the child compute or name a NUMBER, so a sign-identification objective gets no assessment from it. ESSENTIAL for K/G1 MATHEMATICS operations — spoken fact fluency and number-word production for early learners.',
     constraints: 'Requires microphone + live audio tutor. Addition and subtraction facts within 10 only — NO multiplication, division, or multi-digit arithmetic. The next-number counting step reaches 120 (a G1 "counting forward within 120" objective is served with a session windowed near the top of its range). Use a dedicated counting primitive when COUNTING ITSELF is the objective (counting objects, one-to-one correspondence); this pack drills only the say-the-next-number step as fluency. That carve-out is about COUNTING, not about numerals: naming a written numeral aloud is a recognition/production task with no counting in it, and IS served here. Likewise NOT for objectives asking the child to identify, name, or point at a printed OPERATOR or relational symbol (+, -, =): none of this pack\'s modes test symbol recognition — only numeral naming and fact computation — so a sign-identification objective needs a different primitive\'s introduce/apply block, not this one. The manifest must NOT supply specific facts; the scoped pool builds problems from the objective (within 5 / within 10 / within 120 counting / doubles / make ten) and attaches number words + ASR aliases in code. The printed problem is the stimulus and the spoken number word is the answer: the answer never appears on screen before the child says it.',
@@ -450,6 +472,12 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'more (left, right, or same), or how many dots altogether. No number is printed. Counting aloud and ending on '
         + 'the right number is an answer. A different number is wrong however close. You cannot roll, change a die or '
         + 'count for the child.',
+      // Every item is spoken: its known wrong answers (`diceSpokenMisses`), named by the `spoken_miss` observer.
+      misses: missLists<SpokenDiceMiss>({
+        count_pips: ['skipped_a_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        compare_dice: ['other_die', 'said_same', 'picked_a_side', 'said_number'],
+        sum_two_dice: ['said_addend', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+      }),
     },
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
@@ -563,6 +591,12 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'never say the shape name, because it gives the count away. On real objects the object is named but the '
         + 'shape in it is the answer. Never say the answer before the child tries. You cannot draw, rotate or '
         + 'resize the shape.',
+      // Every item is spoken: its known wrong answers (`shapesSpokenMisses`, shape-sorter's ids), named by the `spoken_miss` observer.
+      misses: missLists<SpokenShapeMiss>({
+        ...sameMisses<SpokenShapeMiss>(['name_shape', 'shape_review'], ['near_name', 'other_shape_name']),
+        find_real_object: ['said_object', 'near_name', 'other_shape_name'],
+        ...sameMisses<SpokenShapeMiss>(['count_sides', 'count_corners'], ['said_shape_name', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
+      }),
     },
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
@@ -691,6 +725,9 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'sounding-out that lands on the right words is correct. A different word is wrong however close it sounds. '
         + 'Use demonstrate with the target "sentence" to point at it while you teach, and [] to clear. There is no '
         + 'other scene action: you cannot change the sentence, add a picture, write, or answer for the child.',
+      // The spoken read's known wrong answers (`diSentenceSpokenMisses`).
+      misses: sameMisses<SpokenSentenceMiss>(['decodable_sentence', 'read_sentence', 'sentence_review', 'sight_phrase_sentence'],
+        ['word_skip', 'word_swap']),
     },
     description: 'Live-judged Direct Instruction SENTENCE READING (connected text): the tutor models a printed short sentence read fluently ("Listen: The cat sat."), reads it together with the child, then asks the child to read it alone and judges the spoken audio WORD BY WORD — a skipped, added, or swapped word is corrected, not waved through. The child SEES the printed sentence and READS it aloud (voice/microphone). Perfect for kindergarten through grade 2 reading accuracy and fluency on short decodable sentences: reading fully sound-it-out CVC sentences (blending carried into connected text), reading sentences that carry irregular high-frequency sight words which must be recognised whole, and cumulative spaced review of sentences already taught. ESSENTIAL for K/G1/G2 early reading — the rung above single-word decoding, where reading accuracy first becomes measurable.',
     constraints: 'Requires microphone + live audio tutor. Short DECODABLE sentences of 3-8 words only — the 8-word ceiling is the benched limit for reliable one-word-error detection, and longer connected text is unverified. Short-vowel CVC vocabulary plus starter sight words; NO digraphs, blends, or multisyllable words. Use read-aloud-studio instead for CONNECTED PASSAGES at grades 1-6, or for phrasing / character-voice practice with older readers — since its own DI port (2026-08-12) that primitive is judged too, so the fork is no longer graded-vs-ungraded: this pack owns ISOLATED short sentences drawn from a phonics or sight-word menu at K-2, and read-aloud-studio owns a passage whose lines read as one continuous text. Use a single-word primitive (di-word-reading) when reading ONE word is the objective; this pack always reads connected text. The manifest must NOT supply specific sentences; the menu-scoped generator selects them from the objective (phonics pattern or sight-word focus) and attaches word counts/rewards in code. The printed sentence is the answer: no pictures or audio pre-cues beyond the scripted model line.',
@@ -852,6 +889,12 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'right. On explain items judge the idea, not the words; the stimulus read back or its name alone is not an '
         + 'explanation. Where the facts say the learner reads printed text aloud, the text is the answer: let them read '
         + 'it first. You cannot change the stimulus or add a picture.',
+      // The two bounded modes' known wrong answers (`spokenPracticeSpokenMisses`), named by the `spoken_miss` observer.
+      // None on say_answer and read_aloud (no distractor is recorded) or explain_concept (judged on meaning).
+      misses: missLists<SpokenPracticeMiss>({
+        count_and_say: ['skipped_a_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        compare_choice: ['other_menu_word', 'said_same', 'said_thing_name'],
+      }),
     },
     misconceptionScope: 'primitive',
     audioInput: { manual_activity: true },
@@ -971,6 +1014,11 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'printed. A regroup counts only with both new numbers; the upside-down column is the common miss. After a '
         + 'lend the crossed-out digit is no longer the top. Never say a column\'s numbers before the child tries. You '
         + 'cannot write on the problem or change it.',
+      // Every step is spoken: its known wrong answers (`workedProcedureSpokenMisses`), named by the `spoken_miss` observer.
+      misses: missLists<SpokenProcedureMiss>({
+        subtract_no_regroup: ['regrouped_needlessly', 'read_crossed_out', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        subtract_regroup: ['upside_down_column', 'no_decrement', 'said_no_regroup', 'regrouped_needlessly', 'read_crossed_out', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+      }),
     },
     misconceptionScope: 'primitive',
     audioInput: { manual_activity: true },
@@ -1089,6 +1137,12 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'reason from the rule: a right verdict with no reason is not yet the answer, so ask how they know. The rule does '
         + 'not run backwards: having the property does not make something a member, and the key names the thing that '
         + 'shows it. Never state the conclusion before the child tries. You cannot change the rule or the case.',
+      // Every case is spoken: its known wrong answers (`deductionSpokenMisses`), named by the `spoken_miss` observer.
+      misses: missLists<SpokenDeductionMiss>({
+        conclude: ['said_negation', 'read_rule_back', 'read_case_back'],
+        deny: ['said_member', 'said_cannot_tell', 'verdict_without_reason'],
+        cannot_tell: ['backwards_yes', 'said_not_member', 'verdict_without_reason'],
+      }),
     },
     misconceptionScope: 'primitive',
     audioInput: { manual_activity: true },
@@ -1204,8 +1258,15 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'and the activity checks it: you cannot place a card, and never say which part is the big amount or where a '
         + 'part belongs before they try. The family decides the operation, not the story\'s words. Nothing they must '
         + 'say is printed before it is credited.',
-      // The activity's own check of the big slot (`wordProblemMiss`); the spoken steps name none yet (Part B).
-      misses: sameMisses<WordProblemMiss>(['find_big_number', 'build_family', 'classify_and_build'], ['box_in_big', 'printed_small_in_big']),
+      // The activity's own check of the big slot (`wordProblemMiss`), then the spoken steps' known wrong answers
+      // (`wordProblemSpokenMisses`), named by the `spoken_miss` observer.
+      misses: missLists<WordProblemMiss | SpokenWordProblemMiss>({
+        find_big_number: ['box_in_big', 'printed_small_in_big', 'wrong_way', 'said_story_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        build_family: ['box_in_big', 'printed_small_in_big', 'big_in_small_slot', 'subtraction_sentence', 'opposite_operation',
+          'wrong_way', 'said_story_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        classify_and_build: ['signature_kind', 'other_kind', 'box_in_big', 'printed_small_in_big', 'big_in_small_slot',
+          'subtraction_sentence', 'opposite_operation', 'wrong_way', 'said_story_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+      }),
     },
     misconceptionScope: 'primitive',
     audioInput: { manual_activity: true },

@@ -9,6 +9,7 @@
  * Everything printed is read cold, so the scene tells the tutor not to say it first.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { askFor, chainWordOf, wordWorkoutHarnessAnswers, type WordWorkoutItem } from './wordWorkoutScript';
 
 function expectedFor(item: WordWorkoutItem): string {
@@ -37,7 +38,18 @@ function expectedFor(item: WordWorkoutItem): string {
 export function wordWorkoutAssignment(item: WordWorkoutItem): TeachingAssignment {
   // Picture match is checked by the activity: its key never reaches the tutor.
   if (item.kind === 'picture_tap') return { id: item.id, task: askFor(item), response: 'gesture' };
-  return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer: expectedFor(item) };
+  const misses = wordWorkoutSpokenMisses(item);
+  return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer: expectedFor(item), ...(misses.length ? { misses } : {}) };
+}
+
+/**
+ * A spoken item's known wrong answers (handoff 20 Part B), from `WORD_WORKOUT_SPOKEN_MISSES`. Real or silly: the
+ * made-up word said as the real one. The other spoken modes have no saved payload to measure a list against yet.
+ */
+export function wordWorkoutSpokenMisses(item: WordWorkoutItem): KnownMiss[] {
+  if (item.kind !== 'real_word' || !item.realWord || !item.nonsenseWord) return [];
+  const real = item.realWord.toLowerCase(), fake = item.nonsenseWord.toLowerCase();
+  return [{ id: 'said_nonword', pattern: `The two printed words are "${real}", a real word, and "${fake}", a made-up word. The learner says "${fake}", the made-up one, as the real word.`, examples: [fake] }];
 }
 
 /** What is printed, and that reading it is the task. */

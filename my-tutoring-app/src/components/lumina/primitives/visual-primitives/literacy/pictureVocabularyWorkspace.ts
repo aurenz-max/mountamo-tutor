@@ -9,6 +9,7 @@
  * with it (an open set), the missing scale rung, or the word that finishes the sentence.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { askFor, pictureVocabularyHarnessAnswers, scaleSpokenFor, type PictureVocabItem } from './pictureVocabularyScript';
 
 function expectedFor(item: PictureVocabItem): string {
@@ -27,7 +28,26 @@ function expectedFor(item: PictureVocabItem): string {
 export function pictureVocabAssignment(item: PictureVocabItem): TeachingAssignment {
   // Receptive match is checked by the activity: its key never reaches the tutor as an expected answer.
   if (item.answerKind === 'gesture') return { id: item.id, task: askFor(item), response: 'gesture' };
-  return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer: expectedFor(item) };
+  const misses = pictureVocabSpokenMisses(item);
+  return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer: expectedFor(item), ...(misses.length ? { misses } : {}) };
+}
+
+/** What a wrong spoken answer shows (handoff 20 Part B). */
+export type SpokenPictureVocabMiss = 'category_word' | 'other_thing';
+
+/**
+ * A spoken item's known wrong answers, in precedence order, for the `spoken_miss` observer. Naming only: the
+ * other spoken modes have open or single-rung answers the item records no wrong kinds for.
+ */
+export function pictureVocabSpokenMisses(item: PictureVocabItem): KnownMiss[] {
+  if (item.answerKind === 'gesture' || item.kind !== 'naming') return [];
+  const w = item.word, other = w.toLowerCase() === 'button' ? 'ladder' : 'button';
+  return [
+    { id: 'category_word', pattern: `The picture shows a ${w}. The learner's answer is a word for a whole group of things, such as "a thing", "stuff" or "toys", not the name ${w} or another name for it.`,
+      examples: ['a thing', 'stuff'] },
+    { id: 'other_thing', pattern: `The picture shows a ${w}. The learner's answer names a different object, such as "${other}", that is not a ${w} and not another name for a ${w}.`,
+      examples: [other] },
+  ];
 }
 
 const shown = (item: PictureVocabItem): string => {

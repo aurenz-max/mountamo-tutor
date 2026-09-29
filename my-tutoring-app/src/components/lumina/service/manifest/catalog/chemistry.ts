@@ -6,7 +6,9 @@
  */
 
 import { ComponentDefinition } from '../../../types';
-import type { PeriodicMiss } from '../../../primitives/chemistry-primitives/periodicTableWorkspace';
+import type { PeriodicMiss, SpokenPeriodicMiss } from '../../../primitives/chemistry-primitives/periodicTableWorkspace';
+import type { SpokenMatterMiss } from '../../../primitives/visual-primitives/chemistry/matterExplorerWorkspace';
+import type { SpokenStatesMiss } from '../../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
 import { missLists } from './missLists';
 
 export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
@@ -132,8 +134,10 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
         + 'are not a name. Trends: the learner says which of two named elements is bigger or more reactive, or how many '
         + 'electrons are in an element\'s outer shell; the group number is not the outer-electron count. Before an '
         + 'attempt never say the answer or the rule that decides it for this pair. You cannot point at or highlight boxes.',
-      // The table's own check of an Element Hunt tap (`periodicMiss`). identify and trend are spoken (handoff 20 Part B).
-      misses: missLists<PeriodicMiss>({ explore: ['same_first_letter', 'next_box', 'same_row', 'same_column', 'other_box'] }),
+      // The table's own check of an Element Hunt tap (`periodicMiss`), and trend's spoken answers (`periodicSpokenMisses`,
+      // handoff 20 Part B). identify is spoken and names none yet.
+      misses: missLists<PeriodicMiss | SpokenPeriodicMiss>({ explore: ['same_first_letter', 'next_box', 'same_row', 'same_column', 'other_box'],
+        trend: ['other_of_pair', 'group_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'] }),
     },
   },
   {
@@ -234,6 +238,9 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
         + 'aloud. Naming the object back, or a state word on a property or change question, is not an answer. When the scene '
         + 'has a rule you may say it before the ask; without one, add no choices beyond those in the question. Before an attempt '
         + 'never say the answer. You cannot move or show the object.',
+      // Every item is spoken: its known wrong answers by kind (`matterSpokenMisses`, handoff 20 Part B). property names none yet.
+      misses: missLists<SpokenMatterMiss>({ sort: ['other_state', 'said_object_back'], mystery: ['other_state'],
+        change: ['other_way', 'said_change_back', 'state_word'] }),
     },
   },
   {
@@ -414,6 +421,9 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
         + 'substance named back, the state it is in now on a predict question, or the end state on a change question is not '
         + 'the answer. When the scene has a rule you may say it before the ask; without one add no choices beyond those in '
         + 'the question. Before an attempt never say the answer. You cannot change the temperature.',
+      // Every item is spoken: its known wrong answers by kind (`statesSpokenMisses`, handoff 20 Part B).
+      misses: missLists<SpokenStatesMiss>({ observe: ['other_state', 'said_substance_back'],
+        predict: ['said_start_state', 'other_state', 'said_end_state', 'opposite_change'], compare: ['other_of_pair'] }),
     },
   },
   {

@@ -22,6 +22,8 @@
  */
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import { LETTER_NAME, childSound } from '../literacy/spokenReadingMisses';
 import { diLetterSoundModePlan, DI_LETTER_SOUNDS_MODES, type DiLetterSoundChallengeType }
   from './diLetterSoundsModes';
 
@@ -219,8 +221,43 @@ export function buildLetterSoundItems(challenges: DiLetterSoundChallenge[] = [])
 
 /** The item as the tutor and the outcome observer are told it. Every mode is spoken: the
  *  child produces a sound, the tutor hears the audio and JEV reads its completed feedback. */
-export const workspaceAssignment = (item: LetterSoundItem): TeachingAssignment =>
-  ({ id: item.id, task: item.ask, expectedAnswer: item.accepted, response: 'speech' });
+export const workspaceAssignment = (item: LetterSoundItem): TeachingAssignment => {
+  const misses = diLetterSoundSpokenMisses(item);
+  return { id: item.id, task: item.ask, expectedAnswer: item.accepted, response: 'speech', ...(misses.length ? { misses } : {}) };
+};
+
+/** What a wrong spoken sound shows (handoff 20 Part B); ids shared with letter-sound-link where the pattern is. */
+export type SpokenDiLetterSoundMiss = 'keyword_word' | 'letter_name' | 'added_vowel' | 'last_sound' | 'other_sound';
+
+const HELD = new Set(['s', 'n', 'm', 'f', 'l', 'r', 'v', 'z']);
+const NAME_HEARD_AS_SOUND = new Set(['s', 'f', 'r']);
+
+/**
+ * An item's known wrong answers, most specific first. A held sound: the picture word, the letter's name, the sound
+ * with a vowel after it, (first sound in a word) the word's last sound, another held sound. A clipped sound accepts
+ * its picture word and any word starting with it: the name and another sound only. A vowel item asks the learner
+ * to repeat its keyword ("Say the word apple"): none. A name that transcribes like the held sound itself (s, f, r:
+ * the payloads list "ess", "ef", "ar" as ASR forms of sss, fff, rrr) is never stated.
+ */
+export function diLetterSoundSpokenMisses(item: LetterSoundItem): KnownMiss[] {
+  const l = item.letter.toLowerCase(), keyword = item.keyword.toLowerCase();
+  const name = LETTER_NAME[l];
+  const stimulus = item.stimulus === 'word' ? `The word is "${keyword}" and its first sound is ${item.spoken}. ` : `The printed letter is ${l} and its sound is ${item.spoken}. `;
+  const nameMiss = name && !NAME_HEARD_AS_SOUND.has(l) ? [{ id: 'letter_name', pattern: `${stimulus}The learner says the NAME of the letter, "${name}", instead of the sound.`, examples: [name] }] : [];
+  if (item.elicitation === 'keyword') return [];
+  const decoys = ['mmm', 'fff', 'lll', 'sss'].filter(d => d !== item.spoken).slice(0, 2);
+  const otherSound = { id: 'other_sound', pattern: `${stimulus}The learner says the sound of a different letter. A held consonant such as "mmm" or "nnn" is a letter sound, not filler.`, examples: decoys };
+  if (item.articulation === 'clipped') return [...nameMiss, otherSound];
+  const last = keyword.match(/[a-z]$/)?.[0];
+  const lastSaid = last && last !== l && HELD.has(last) ? childSound(last) : undefined;
+  return [
+    { id: 'keyword_word', pattern: `${stimulus}The learner says a whole word instead of the sound on its own: the picture word "${keyword}" or any other word, even one that starts with the right sound.`, examples: [keyword] },
+    ...nameMiss,
+    ...(HELD.has(l) ? [{ id: 'added_vowel', pattern: `${stimulus}The learner says the sound with a vowel after it, "${l}uh", instead of holding the sound on its own.`, examples: [`${l}uh`] }] : []),
+    ...(item.stimulus === 'word' && lastSaid ? [{ id: 'last_sound', pattern: `${stimulus}The learner says the LAST sound of "${keyword}", ${lastSaid}, instead of the first.`, examples: [lastSaid] }] : []),
+    otherSound,
+  ];
+}
 
 /** The drawn stage: the stimulus card and the keyword picture, both markable. */
 export const workspaceScene = (item: LetterSoundItem): WorkspaceScene => ({

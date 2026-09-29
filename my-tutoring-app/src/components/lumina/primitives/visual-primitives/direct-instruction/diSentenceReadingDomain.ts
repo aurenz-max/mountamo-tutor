@@ -37,6 +37,8 @@
  */
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import { lineReadingMisses } from '../literacy/spokenReadingMisses';
 import { diSentenceReadingModePlan, DI_SENTENCE_READING_MODES, type DiSentenceReadingChallengeType }
   from './diSentenceReadingModes';
 
@@ -182,8 +184,18 @@ export function buildSentenceReadingItems(challenges: DiSentenceReadingChallenge
 
 /** The item as the tutor and the outcome observer are told it. Every mode is spoken: the
  *  child reads print aloud, the tutor hears the audio and JEV reads its completed feedback. */
-export const workspaceAssignment = (item: SentenceReadingItem): TeachingAssignment =>
-  ({ id: item.id, task: item.ask, expectedAnswer: item.accepted, response: 'speech' });
+export const workspaceAssignment = (item: SentenceReadingItem): TeachingAssignment => {
+  const misses = diSentenceSpokenMisses(item);
+  return { id: item.id, task: item.ask, expectedAnswer: item.accepted, response: 'speech', ...(misses.length ? { misses } : {}) };
+};
+
+/** What a wrong spoken read of the sentence shows (handoff 20 Part B), with decodable-reader's ids. */
+export type SpokenSentenceMiss = 'word_skip' | 'word_swap';
+
+/** The sentence's known wrong reads (`lineReadingMisses`): a printed word left out, a word read as another. */
+export function diSentenceSpokenMisses(item: SentenceReadingItem): KnownMiss[] {
+  return lineReadingMisses(item.text, { skip: 'word_skip' });
+}
 
 /** The drawn stage: the printed sentence, one markable object. Connected text has no
  *  discrete sound-out sub-units the way a single decodable word does, so unlike

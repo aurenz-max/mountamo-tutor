@@ -32,6 +32,7 @@ import {
   type RealWorldShapeObjectId,
 } from '../shared/realWorldShapeObjects';
 import { resolveScaffolds, type LiveScaffold } from '../../../components/live-activity/runtime/liveScaffolds';
+import { offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 // LEGACY PROTOCOL GATE (retires with the sentinel engine at S5): a generated
 // sort label that opens with "Yes" or "My turn" would be read as a verdict by
 // the judged runner. The gate stays live for as long as any mode still runs on
@@ -826,30 +827,84 @@ export const stimulusFor = (item: ShapeSorterItem): string => {
 export const leakExemptSpanFor = (item: ShapeSorterItem): string | undefined =>
   item.mode === 'sort' && item.namesChoices ? choicesPhrase(item) : undefined;
 
+/** What a wrong spoken answer about a flat shape shows (handoff 20 Part B); di-shapes names the same ids. */
+export type SpokenShapeMiss = OffByMiss | 'said_object' | 'near_name' | 'other_shape_name' | 'said_shape_name' | 'other_group';
+
+/**
+ * The name misses of a flat-shape answer, after `fact` (what is on screen): the look-alike name first
+ * (`NEAR_SHAPE`, the pack's signature wrong answer), then any other shape name. `names` is the drawable set;
+ * accepted alternates are never listed.
+ */
+export function flatShapeNameMisses(answer: string, alternates: readonly string[], near: string | undefined,
+  names: readonly string[], fact: string): KnownMiss[] {
+  const accepted = new Set([answer, ...alternates].map(n => n.toLowerCase()));
+  const nearName = near && !accepted.has(near) ? near : undefined;
+  const others = names.filter(n => !accepted.has(n) && n !== nearName && !(SHAPE_ALTERNATES[n] ?? []).some(a => accepted.has(a)));
+  const list = others.length < 2 ? others.join('') : `${others.slice(0, -1).join(', ')} or ${others.at(-1)}`;
+  return [
+    ...(nearName ? [{ id: 'near_name', pattern: `${fact} The learner's answer is ${nearName}, the shape name that looks most like ${articleFor(answer)} ${answer}.`,
+      examples: [nearName] }] : []),
+    ...(others.length ? [{ id: 'other_shape_name', pattern: `${fact} The learner names a different shape: ${list}.`, examples: [others[0]] }] : []),
+  ];
+}
+
+/** A number answer about one drawn shape: its name said instead of a number, then the off-by misses. */
+export function shapeCountMisses(shape: string, n: number, noun: string): KnownMiss[] {
+  return [{ id: 'said_shape_name', pattern: `The shape drawn is ${articleFor(shape)} ${shape}. The learner's answer is "${shape}", the shape's name and no number.`,
+    examples: [shape] }, ...offByMisses(n, `the ${n} ${noun} of the ${shape}`)];
+}
+
+/**
+ * A spoken item's known wrong answers, in precedence order, for the `spoken_miss` observer. Concrete per item:
+ * the ringed shape, its object, its count or the printed mats, never a cause.
+ */
+export function shapeSorterSpokenMisses(item: ShapeSorterItem): KnownMiss[] {
+  const shape = item.shape;
+  if (item.mode === 'count') return item.countNumeral != null ? shapeCountMisses(shape, item.countNumeral, countNounOf(item)) : [];
+  if (item.mode === 'sort') {
+    const others = item.choices.filter(c => c.toLowerCase() !== item.answer.toLowerCase());
+    const fact = `The mats are ${item.choices.join(', ')}; the gold-ringed ${shape} belongs on ${item.answer}.`;
+    return [
+      { id: 'said_shape_name', pattern: `${fact} The learner's answer is ${shape}, the shape's own name, not a mat.`, examples: [shape] },
+      ...(others.length ? [{ id: 'other_group', pattern: `${fact} The learner's answer is ${others.join(' or ')}, another mat.`,
+        examples: others.slice(0, 2) }] : []),
+    ];
+  }
+  const a = articleFor(item.answer);
+  const fact = item.realObject ? `The ${item.realObject} is drawn as ${a} ${item.answer}.` : `The shape in the gold ring is ${a} ${item.answer}.`;
+  return [
+    ...(item.realObject ? [{ id: 'said_object', pattern: `${fact} The learner's answer is ${item.realObject}, the object's own name, not a shape name.`,
+      examples: [item.realObject] }] : []),
+    ...flatShapeNameMisses(item.answer, item.spokenAlternates, NEAR_SHAPE[item.answer], VALID_SHAPES, fact),
+  ];
+}
+
 /** An item as the tutor and the outcome observer are told it, across every mode this
  *  family binds to the teaching workspace: naming (plain or a real-object drawing),
  *  counting, and sorting into a printed group. */
 export const workspaceAssignment = (item: ShapeSorterItem): TeachingAssignment => {
+  const found = shapeSorterSpokenMisses(item);
+  const misses = found.length ? { misses: found } : {};
   if (item.mode === 'count') {
     const noun = countNounOf(item);
     const alternates = item.countNumeral != null ? [String(item.countNumeral)] : [];
     return { id: item.id, task: `Count the gold-ringed shape's own ${noun} and say the number.`,
-      expectedAnswer: [item.answer, ...alternates].join(' or '), response: 'speech' };
+      expectedAnswer: [item.answer, ...alternates].join(' or '), response: 'speech', ...misses };
   }
   if (item.mode === 'sort') {
     const alternates = item.rule === 'sides' ? [item.answer.split(' ')[0]] : [];
     return { id: item.id, task: 'Say which printed mat the gold-ringed shape belongs to. Naming the shape itself is not the group.',
-      expectedAnswer: [item.answer, ...alternates].join(' or '), response: 'speech' };
+      expectedAnswer: [item.answer, ...alternates].join(' or '), response: 'speech', ...misses };
   }
   if (item.realObjectId) {
     return { id: item.id,
       task: item.realObject
         ? `Name the 2D shape the gold-ringed ${item.realObject} is drawn as. Naming the object itself is not the answer.`
         : 'Name the 2D shape the gold-ringed everyday object is drawn as. Naming the object itself is not the answer.',
-      expectedAnswer: [item.answer, ...item.spokenAlternates].join(' or '), response: 'speech' };
+      expectedAnswer: [item.answer, ...item.spokenAlternates].join(' or '), response: 'speech', ...misses };
   }
   return { id: item.id, task: 'Name the shape inside the gold ring. What shape is it?',
-    expectedAnswer: [item.answer, ...item.spokenAlternates].join(' or '), response: 'speech' };
+    expectedAnswer: [item.answer, ...item.spokenAlternates].join(' or '), response: 'speech', ...misses };
 };
 
 /** What is actually drawn for one item. Only the whole objects genuinely visible on

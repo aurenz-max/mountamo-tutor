@@ -173,7 +173,7 @@ export class RuntimeTransport {
    * so the message waits for it to settle and opens the next turn. If no reply begins within
    * AFTER_TURN_FALLBACK_MS, the message goes out anyway: a silent tutor must not strand it.
    */
-  private async pullLever(event: LeverEvent) {
+  async pullLever(event: LeverEvent) {
     const s = this.runtime.getSnapshot(), lever = leverTrigger(s, event);
     if (this.closed || !lever || !s.instanceId || !s.task) return;
     const declared = s.task.workspace!.levers!.find(l => l.id === lever)!;

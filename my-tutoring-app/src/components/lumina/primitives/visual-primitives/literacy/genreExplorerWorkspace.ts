@@ -11,11 +11,13 @@
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { textFacts } from '../../../components/live-activity/runtime/sceneFacts';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import {
   ALL_GENRE_IDS,
   askFor,
   GENRE_ALTERNATES,
   GENRE_LABEL,
+  GENRE_SIBLING,
   genreExplorerHarnessAnswers,
   type GenreExplorerItem,
   type ResolvedExcerpt,
@@ -47,7 +49,50 @@ export function genreAssignment(item: GenreExplorerItem): TeachingAssignment {
       break;
     }
   }
-  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer };
+  const misses = genreSpokenMisses(item);
+  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) };
+}
+
+/** What a wrong spoken answer shows (handoff 20 Part B), by action. */
+export type SpokenGenreMiss = 'opposite_verdict' | 'said_feature_back' | 'other_text' | 'said_both' | 'close_relative' | 'other_genre';
+
+/**
+ * An item's known wrong answers, in precedence order, for the `spoken_miss` observer: the other verdict or the
+ * feature said back (check-feature), the other text or "both" (pick-excerpt), a close relative from the menu, then
+ * any other printed kind (name-genre).
+ */
+export function genreSpokenMisses(item: GenreExplorerItem): KnownMiss[] {
+  switch (item.action) {
+    case 'check-feature': {
+      const does = item.answer === 'yes';
+      return [
+        { id: 'opposite_verdict', pattern: `The right verdict is "${item.answer}": ${item.excerptOrdinal} ${does ? 'does' : 'does not'} ${item.predicate}. `
+          + `The learner gives the opposite verdict, ${does ? '"no" (or "nope", "it does not")' : '"yes" (or "yeah", "it does")'}.`,
+          examples: [does ? 'no' : 'yes', does ? 'it does not' : 'it does'] },
+        { id: 'said_feature_back', pattern: `The learner says the feature back ("${item.predicate}") with no yes or no.`, examples: [item.predicate] },
+      ];
+    }
+    case 'pick-excerpt': {
+      const other = item.choices.find(c => c !== item.answer);
+      return [
+        ...(other ? [{ id: 'other_text', pattern: `The feature is true of ${item.answer}, not ${other}. The learner's answer is ${other}.`, examples: [other] }] : []),
+        { id: 'said_both', pattern: 'The feature is true of exactly one of the two texts. The learner\'s answer is "both" or "neither".', examples: ['both of them', 'neither'] },
+      ];
+    }
+    case 'name-genre': {
+      const id = ALL_GENRE_IDS.find(g => GENRE_LABEL[g] === item.answer);
+      const others = item.choices.filter(c => c !== item.answer);
+      const close = (id ? GENRE_SIBLING[id] ?? [] : []).map(g => GENRE_LABEL[g]).filter(label => others.includes(label));
+      const rest = others.filter(c => !close.includes(c));
+      const quote = (xs: string[]) => xs.map(x => `"${x}"`).join(' or ');
+      return [
+        ...(close.length ? [{ id: 'close_relative', pattern: `This text is ${item.answer}. The learner's answer is ${quote(close)}, a kind of writing close to ${item.answer} on the printed list.`,
+          examples: close.slice(0, 2) }] : []),
+        ...(rest.length ? [{ id: 'other_genre', pattern: `This text is ${item.answer}. The learner's answer is ${quote(rest)}, another kind of writing on the printed list.`,
+          examples: rest.slice(0, 2) }] : []),
+      ];
+    }
+  }
 }
 
 export function genreScene(item: GenreExplorerItem, excerpts: readonly ResolvedExcerpt[], menu: readonly string[],

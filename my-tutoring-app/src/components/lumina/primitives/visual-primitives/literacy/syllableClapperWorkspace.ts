@@ -9,6 +9,7 @@
  * inverts between the acts, so the scene states it per item.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { spokenNumber, type KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { askFor, chantOf, syllableClapperHarnessAnswers, type SyllableClapperItem } from './syllableClapperScript';
 
 export function syllableAssignment(item: SyllableClapperItem): TeachingAssignment {
@@ -18,7 +19,28 @@ export function syllableAssignment(item: SyllableClapperItem): TeachingAssignmen
     : item.task === 'delete_compound'
       ? `${item.answer}, the word left when ${item.removePart} is taken away. The whole word said back is not it.`
       : `${item.word}, said as one joined word. The parts said back one at a time are not yet the word.`;
-  return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer };
+  const misses = syllableSpokenMisses(item);
+  return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) };
+}
+
+/**
+ * The item's known wrong answers (handoff 20 Part B), from the ids `SYLLABLE_MISSES` declares. blend: the parts
+ * said back apart. count: the word for a count, the sounds counted (stated only on a three-sound word, whose sound
+ * count code knows), one part over. delete_compound has no saved payload to measure against yet: none.
+ */
+export function syllableSpokenMisses(item: SyllableClapperItem): KnownMiss[] {
+  const word = item.word.toLowerCase();
+  if (item.task === 'blend_syllables' && item.parts.length > 1) {
+    const apart = item.parts.join('... ');
+    return [{ id: 'parts_back', pattern: `The parts are ${item.parts.map(p => `"${p}"`).join(', ')}, and joined they make "${word}". The learner says the parts back one at a time with pauses, "${apart}", and never the joined word.`, examples: [apart] }];
+  }
+  if (item.task !== 'count_parts') return [];
+  const n = item.partCount, threeSounds = /^[bcdfghjklmnprstvwz][aeiou][bcdfgklmnprstvz]$/.test(word) && n === 1;
+  return [
+    { id: 'word_for_count', pattern: `The word is "${word}". The learner says the word "${word}" itself and no number of parts.`, examples: [word] },
+    ...(threeSounds ? [{ id: 'counted_sounds', pattern: `"${word}" has ${spokenNumber(n)} part and three sounds. The learner's answer is three, the number of sounds, not parts.`, examples: ['three'] }] : []),
+    { id: 'count_one_over', pattern: `"${word}" has ${spokenNumber(n)} part${n === 1 ? '' : 's'}. The learner's answer is ${n + 1}, one more than the ${spokenNumber(n)} part${n === 1 ? '' : 's'}.`, examples: [spokenNumber(n + 1)] },
+  ];
 }
 
 /** How the stimulus is said: joined on count and delete (a split hands the count over), in parts on blend. */

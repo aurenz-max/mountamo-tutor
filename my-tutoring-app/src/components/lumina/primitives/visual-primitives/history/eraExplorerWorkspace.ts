@@ -11,6 +11,7 @@
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { textFacts } from '../../../components/live-activity/runtime/sceneFacts';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import {
   askFor,
   correctChoiceOf,
@@ -61,7 +62,38 @@ export function eraAssignment(item: EraExplorerItem): TeachingAssignment {
     + `whole phrase back: ${quoted([c.distinguisher, ...c.alsoCounts])} count on their own or in a sentence, and so does its `
     + `place in the menu. ${quoted(others)} are wrong, and so is an answer that does not pick exactly one of the three. `
     + SIGNATURE[item.kind](c.distinguisher === 'both');
-  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer };
+  const misses = eraSpokenMisses(item);
+  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) };
+}
+
+/** What a wrong spoken pick shows (handoff 20 Part B), by the choice picked. */
+export type SpokenEraMiss = 'said_back_then' | 'said_today' | 'said_both' | 'other_cause' | 'said_what_changed';
+
+/** era_sort's menu, in the ask's order: only then, only today, both. */
+const SORT_IDS = ['said_back_then', 'said_today', 'said_both'] as const;
+
+/**
+ * An item's known wrong answers, in precedence order, for the `spoken_miss` observer: on era_sort, each other time
+ * named for what it is; on cause_of_change, another offered cause, then what changed said instead of why.
+ * lens_id and era_compare name none yet (no saved payload).
+ */
+export function eraSpokenMisses(item: EraExplorerItem): KnownMiss[] {
+  const right = correctChoiceOf(item);
+  if (item.kind === 'era_sort' && item.choices.length === 3) {
+    return item.choices.flatMap((c, i) => i === item.correctIndex ? [] : [{ id: SORT_IDS[i],
+      pattern: `The right choice is "${right.phrase}". The learner picks "${c.phrase}" instead, for example ${[c.distinguisher, ...c.alsoCounts].slice(0, 2).map(w => `"${w}"`).join(' or ')}.`,
+      examples: [c.distinguisher] }]);
+  }
+  if (item.kind === 'cause_of_change') {
+    const others = item.choices.filter((_, i) => i !== item.correctIndex);
+    return [
+      { id: 'other_cause', pattern: `The right choice is "${right.phrase}". The learner picks another offered cause instead: ${others.map(o => `"${o.phrase}"`).join(' or ')}.`,
+        examples: others.map(o => o.distinguisher).slice(0, 2) },
+      { id: 'said_what_changed', pattern: `The learner says what changed ("${item.statement.replace(/[.!?]+$/, '')}") instead of why it changed.`,
+        examples: [item.statement.replace(/[.!?]+$/, '')] },
+    ];
+  }
+  return [];
 }
 
 export function eraScene(item: EraExplorerItem, data: EraPayloadLike, cardsOpen: boolean, readsAloud: boolean): WorkspaceScene {

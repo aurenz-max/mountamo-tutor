@@ -8,13 +8,37 @@
  * named letter) and match it (tap the little form of the big letter) are taps the activity checks.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { askFor, letterSpotterHarnessAnswers, type LetterSpotterItem } from './letterSpotterScript';
+import { LETTER_NAME } from './spokenReadingMisses';
 
 export function letterSpotterAssignment(item: LetterSpotterItem): TeachingAssignment {
   if (item.mode !== 'name-it') return { id: item.id, task: askFor(item), response: 'gesture' };
+  const misses = letterSpotterSpokenMisses(item);
   return { id: item.id, task: askFor(item), response: 'speech',
     expectedAnswer: `The letter ${item.targetLetter.toUpperCase()}, the first letter of ${item.targetWord}. Its name or its `
-      + `sound counts; ${item.targetWord} said back is not a letter.` };
+      + `sound counts; ${item.targetWord} said back is not a letter.`, ...(misses.length ? { misses } : {}) };
+}
+
+/** What a wrong spoken letter on name_it shows (handoff 20 Part B). */
+export type SpokenLetterSpotterMiss = 'said_the_word' | 'later_letter' | 'letter_not_in_word';
+
+/**
+ * name_it's known wrong answers, most specific first: the hidden word said back, a letter from later in that word,
+ * a letter not in the word. The target's name and its sound are both correct, so neither is ever an example.
+ */
+export function letterSpotterSpokenMisses(item: LetterSpotterItem): KnownMiss[] {
+  if (item.mode !== 'name-it' || !item.targetWord) return [];
+  const word = item.targetWord.toLowerCase(), want = item.targetLetter.toLowerCase(), cap = want.toUpperCase();
+  const later = Array.from(new Set(word.slice(1).split(''))).filter(l => l !== want && /[a-z]/.test(l));
+  const other = ['m', 'b', 'r', 'd'].find(l => l !== want && !word.includes(l)) ?? 'z';
+  return [
+    { id: 'said_the_word', pattern: `The hidden letter is the first letter of "${word}". The learner says the whole word "${word}" instead of naming a letter.`, examples: [word] },
+    ...(later.length ? [{ id: 'later_letter', pattern: `The hidden letter is ${cap}, the first letter of "${word}". The learner names a letter from later in "${word}" (${later.map(l => l.toUpperCase()).join(', ')}), by its name or its sound, instead of the first one.`,
+      examples: [later.at(-1)!.toUpperCase(), LETTER_NAME[later.at(-1)!] ?? later.at(-1)!] }] : []),
+    { id: 'letter_not_in_word', pattern: `The hidden letter is ${cap}, the first letter of "${word}". The learner names a different letter that is not in "${word}" at all, by its name or its sound.`,
+      examples: [other.toUpperCase(), LETTER_NAME[other]] },
+  ];
 }
 
 export function letterSpotterScene(item: LetterSpotterItem): WorkspaceScene {
@@ -41,8 +65,8 @@ export function letterSpotterScene(item: LetterSpotterItem): WorkspaceScene {
 export type LetterSpotterMiss = 'mirror_form' | 'same_shape_family' | 'other_letter';
 
 // Mirrors `CONFUSABLE_CLUSTERS` in service/literacy/gemini-letter-spotter.ts (not imported: a generator module).
-const SHAPE_FAMILIES = ['bdpqg', 'mnhru', 'iltjf', 'ceoas', 'vwyxzk'];
-const MIRRORS = new Set(['bd', 'pq', 'bp', 'dq', 'nu', 'mw']);
+export const SHAPE_FAMILIES = ['bdpqg', 'mnhru', 'iltjf', 'ceoas', 'vwyxzk'];
+export const MIRRORS = new Set(['bd', 'pq', 'bp', 'dq', 'nu', 'mw']);
 
 export function letterSpotterMiss(item: LetterSpotterItem, tapped: string): LetterSpotterMiss | undefined {
   const want = item.targetLetter.toLowerCase(), got = tapped.toLowerCase();

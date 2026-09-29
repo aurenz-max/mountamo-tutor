@@ -6,6 +6,8 @@
  */
 
 import { ComponentDefinition } from '../../../types';
+import type { SpokenPushPullMiss } from '../../../primitives/visual-primitives/physics/pushPullArenaWorkspace';
+import { missLists } from './missLists';
 
 export const PHYSICS_CATALOG: ComponentDefinition[] = [
   {
@@ -183,6 +185,9 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
         + 'farther). Design: the learner experiments with direction, strength and Go, then says big or little. The '
         + 'arena plays predict and compare once the answer is credited. A description of the motion or a restated '
         + 'setup is not an answer. Before an attempt never say the answer. You cannot press Go or move an object.',
+      // Every item is one spoken word: its known wrong answers by kind (`pushPullSpokenMisses`, handoff 20 Part B).
+      misses: missLists<SpokenPushPullMiss>({ observe: ['opposite_force', 'described_motion'], predict: ['opposite_outcome'],
+        compare: ['other_object'], design: ['opposite_size'] }),
     },
   },
   {

@@ -1,7 +1,7 @@
 import 'server-only';
 import type { ChoiceQuestion, NoulQuestion, Question } from '../manifest/typesafe/typesafeClient';
 import { runObservation, type ObservationKind } from './observationKinds';
-import { abstainSpokenMiss, MISS_GATE, NON_MISS, validReading, type SpokenMissDecision, type SpokenMissRequest } from './spokenMissContract';
+import { abstainSpokenMiss, MISS_GATE, NON_MISS, validReading, type SpokenMissDecision, type SpokenMissRequest } from '../../components/live-activity/runtime/spokenMissContract';
 
 const READ = 'A young learner answered `task` aloud and `learner` is a speech transcript of it: it may be noisy, clipped, '
   + 'phonetic, a homophone of a number word, digits, or in another language. When the learner says several numbers or '

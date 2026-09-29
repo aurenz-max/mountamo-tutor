@@ -9,6 +9,7 @@
  *   - describe_scene: spoken, judged on the relation AND the reference object (contract R16).
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { SpatialSceneChallenge } from './SpatialScene';
 import { modelSpatialDescription } from './spatialSceneDescriptionScript';
 
@@ -18,11 +19,27 @@ const relationText = (relation: string) => relation.replaceAll('_', ' ');
 export const describeSceneAsk = (c: SpatialSceneChallenge) =>
   `Look from the YOU arrow. Tell where the ${c.targetObject.name} is compared with the ${c.referenceObjectName}.`;
 
+/**
+ * A described scene's known wrong answer for the `spoken_miss` observer: the relation word that points the other way
+ * (right of for left of, behind for in front of). The rest of a description is open, so nothing else is listed.
+ */
+export function spatialSpokenMisses(c: SpatialSceneChallenge): KnownMiss[] {
+  // `OPPOSITE` (below) is the harness's wrong relation, already in words.
+  const opposite = c.type === 'describe_scene' ? OPPOSITE[c.correctPosition] : undefined;
+  if (!opposite) return [];
+  const t = c.targetObject.name, ref = c.referenceObjectName;
+  return [{ id: 'opposite_word', pattern: `From the YOU arrow, the ${t} is ${relationText(c.correctPosition)} the ${ref}. The learner says `
+    + `the ${t} is ${opposite} the ${ref}, the relation that points the other way.`,
+    examples: [`The ${t} is ${opposite} the ${ref}.`] }];
+}
+
 export function spatialAssignment(c: SpatialSceneChallenge): TeachingAssignment {
   if (c.type === 'describe_scene') {
+    const misses = spatialSpokenMisses(c);
     return { id: c.id, task: describeSceneAsk(c), response: 'speech',
       expectedAnswer: `A description naming BOTH the relation "${relationText(c.correctPosition)}" and the reference `
-        + `object ${c.referenceObjectName}, from the YOU viewpoint, for example "${modelSpatialDescription(c)}"` };
+        + `object ${c.referenceObjectName}, from the YOU viewpoint, for example "${modelSpatialDescription(c)}"`,
+      ...(misses.length ? { misses } : {}) };
   }
   return { id: c.id, task: c.instruction, response: 'gesture' };
 }

@@ -5,16 +5,16 @@
  * letter-sound-link see_hear.
  *
  *   node scripts/spoken-miss-probe.mjs [--runs N] [--only counting-board] [out.json]
+ *   node scripts/spoken-miss-probe.mjs --requests <sweep requests.json> [--items 2] [--runs 2] [out.json]   # every wired family
  *
  * Needs TYPESAFE_API_KEY in .env.local; no dev server (the kind runs in-process through vite's module runner,
  * the same loader vitest uses), no Gemini call. Items, tasks and expected answers come from the saved W1 payloads
  * and the families' own domain functions; wrong answers from their harness `plainWrong`/`signatureWrong` and the
  * liveJourneySpec wrong input, plus transcripts seen on saved Live audio runs and constructed noisy forms.
  *
- * The per-item miss lists below are the PILOT FIXTURE of what each family's domain will export at wiring
- * (`<x>SpokenMisses(item)` beside `countMiss`/`frameMiss`); they are here only because primitives/ is frozen.
- * Gold labels are computed by one function per family from the answer's value, with the same precedence as the
- * miss list, so a case writer cannot drift from the list the model sees.
+ * The miss lists are the families' own (`countingBoardSpokenMisses`, `tenFrameSpokenMisses`,
+ * `letterSoundSpokenMisses`), read from `workspaceAssignment(item).misses` exactly as the runtime sends them. Gold
+ * labels are computed by one function per family from the answer's value, with the same precedence as the list.
  *
  * Reported: accuracy per miss id, and the false-positive count (a correct answer named as a miss), which must be 0.
  */
@@ -30,9 +30,9 @@ for (const line of readFileSync(join(ROOT, '.env.local'), 'utf8').split(/\r?\n/)
 }
 const argv = process.argv.slice(2);
 const opt = (name, dflt) => argv.includes(`--${name}`) ? argv[argv.indexOf(`--${name}`) + 1] : dflt;
-const RUNS = Number(opt('runs', 3));
+const RUNS = Number(opt('runs', argv.includes('--requests') ? 2 : 3));
 const ONLY = opt('only', null);
-const OUT = argv.find(a => a.endsWith('.json'));
+const OUT = argv.find((a, i) => a.endsWith('.json') && argv[i - 1] !== '--requests');
 // Held-out phrasings, written after the decision policy was fixed on the main set: the policy is judged on these.
 const HELD = argv.includes('--heldout');
 
@@ -48,7 +48,7 @@ const tfw = await runner.import(`${L}/primitives/visual-primitives/math/tenFrame
 const lss = await runner.import(`${L}/primitives/visual-primitives/literacy/letterSoundLinkScript.ts`);
 const { runObservation } = await runner.import(`${L}/service/typesafe/observationKinds.ts`);
 const { spokenMissKind } = await runner.import(`${L}/service/typesafe/observeSpokenMiss.ts`);
-const { validSpokenMissRequest } = await runner.import(`${L}/service/typesafe/spokenMissContract.ts`);
+const { validSpokenMissRequest } = await runner.import(`${L}/components/live-activity/runtime/spokenMissContract.ts`);
 const payload = name => JSON.parse(readFileSync(join(ROOT, `src/components/lumina/components/live-activity/runtime/testing/w1-payloads/${name}.json`), 'utf8')).data;
 
 const W = cb.numberWordFor;
@@ -56,15 +56,6 @@ const digitWalk = n => Array.from({ length: n }, (_, i) => i + 1).join(' ');
 const uniqueBy = (xs, key) => xs.filter((x, i) => xs.findIndex(y => key(y) === key(x)) === i);
 
 // ── counting-board count (count_all) ────────────────────────────────────────
-function countingMisses(t, noun) {
-  return [
-    { id: 'skipped_a_number', pattern: 'The learner counts aloud and leaves a number out of the counting sequence, whatever number they end on.', examples: ['one, two, four'] },
-    { id: 'one_short', pattern: `The learner's answer is ${t - 1}, one fewer than the ${t} ${noun} on the board.`, examples: [W(t - 1)] },
-    { id: 'one_over', pattern: `The learner's answer is ${t + 1}, one more than the ${t} ${noun} on the board.`, examples: [W(t + 1)] },
-    ...(t - 2 >= 1 ? [{ id: 'short_by_more', pattern: `The learner's answer is ${t - 2} or fewer (but more than zero), two or more fewer than the ${t} ${noun}.`, examples: [W(t - 2)] }] : []),
-    { id: 'over_by_more', pattern: `The learner's answer is ${t + 2} or more, two or more more than the ${t} ${noun}.`, examples: [W(t + 2)] },
-  ];
-}
 const countingGold = (t, value, skipped = false) => skipped ? 'skipped_a_number' : value === t ? null
   : value === t - 1 ? 'one_short' : value === t + 1 ? 'one_over' : value < t ? 'short_by_more' : 'over_by_more';
 const HOMOPHONE = { 2: 'too', 4: 'for', 5: "It's 5:00.", 6: 'sicks', 8: 'ate', 9: 'nueve', 7: 'Seven?' };
@@ -107,21 +98,11 @@ function countingCases() {
     ];
     return rows.map(([name, learner, gold, source]) => ({ family: 'counting-board.count', item: `${item.id}(${t})`, name, source, gold,
       correctAnswer: name.startsWith('correct'),
-      request: { task: a.task, expectedAnswer: a.expectedAnswer, learner, misses: countingMisses(t, item.objectWord) } }));
+      request: { task: a.task, expectedAnswer: a.expectedAnswer, learner, misses: a.misses } }));
   });
 }
 
 // ── ten-frame subitize ──────────────────────────────────────────────────────
-function frameMisses(n) {
-  const empty = 10 - n;
-  return [
-    ...(empty > 0 && empty !== n ? [{ id: 'empty_count', pattern: `The learner's answer is ${empty}, the number of EMPTY boxes on the frame rather than the counters.`, examples: [W(empty)] }] : []),
-    ...(n - 1 >= 1 ? [{ id: 'one_short', pattern: `The learner's answer is ${n - 1}, one fewer than the ${n} counters shown.`, examples: [W(n - 1)] }] : []),
-    { id: 'one_over', pattern: `The learner's answer is ${n + 1}, one more than the ${n} counters shown.`, examples: [W(n + 1)] },
-    ...(n - 2 >= 1 ? [{ id: 'short_by_more', pattern: `The learner's answer is ${n - 2} or fewer (but more than zero), two or more fewer than the ${n} counters shown.`, examples: [W(n - 2)] }] : []),
-    { id: 'over_by_more', pattern: `The learner's answer is ${n + 2} or more, two or more more than the ${n} counters shown.`, examples: [W(n + 2)] },
-  ];
-}
 const frameGold = (n, v) => v === n ? null : (10 - n > 0 && 10 - n !== n && v === 10 - n) ? 'empty_count'
   : v === n - 1 ? 'one_short' : v === n + 1 ? 'one_over' : v < n ? 'short_by_more' : 'over_by_more';
 const SPANISH = { 2: 'dos', 3: 'tres', 4: 'cuatro', 5: 'cinco', 6: 'seis', 8: 'ocho', 10: 'diez' };
@@ -160,22 +141,12 @@ function frameCases() {
     ];
     return rows.map(([name, learner, gold, source]) => ({ family: 'ten-frame.subitize', item: `${item.id}(${n})`, name, source, gold,
       correctAnswer: name.startsWith('correct'),
-      request: { task: a.task, expectedAnswer: a.expectedAnswer, learner, misses: frameMisses(n) } }));
+      request: { task: a.task, expectedAnswer: a.expectedAnswer, learner, misses: a.misses } }));
   });
 }
 
 // ── letter-sound-link see_hear ──────────────────────────────────────────────
 const CONTINUOUS = new Set(['s', 'n', 'm', 'f', 'l', 'r', 'v', 'z']);
-function letterMisses(item) {
-  const l = item.letter.toLowerCase(), clipped = lss.isClippedSound(l);
-  const decoys = ['mmm', 'fff', 'lll', 'sss'].filter(s => s !== item.spoken).slice(0, 2);
-  return [
-    { id: 'letter_name', pattern: `The learner says the NAME of the letter, "${lss.letterNameFor(l)}", instead of the sound it makes.`, examples: [lss.letterNameFor(l)] },
-    ...(!clipped ? [{ id: 'keyword_word', pattern: `The learner says a whole word instead of the sound on its own: the picture word "${item.keyword}" or any other word, even one that starts with the right sound.`, examples: [item.keyword] }] : []),
-    ...(CONTINUOUS.has(l) ? [{ id: 'added_vowel', pattern: `The learner says the sound with a vowel after it, "${l}uh", instead of holding the sound on its own.`, examples: [`${l}uh`] }] : []),
-    { id: 'other_sound', pattern: 'The learner says the sound of a different letter. A held consonant such as "mmm" or "nnn" is a letter sound, not filler.', examples: decoys },
-  ];
-}
 const CHILD_CORRECT = { s: ['sss', 'ssss', 's'], n: ['nnn', 'nnnn'], a: ['aaa', 'ah', 'a like in apple'], i: ['iii', 'ih'],
   t: ['t', 'tuh'], p: ['p', 'puh'] };
 
@@ -211,11 +182,40 @@ function letterCases() {
     ];
     return rows.map(([nm, learner, gold, source, alsoFair = []]) => ({ family: 'letter-sound-link.see_hear', item: `${item.id}(${l})`, name: nm, source, gold, alsoFair,
       correctAnswer: nm.startsWith('correct') || nm === 'keyword_accepted',
-      request: { task: a.task, expectedAnswer: a.expectedAnswer, learner, misses: letterMisses(item) } }));
+      request: { task: a.task, expectedAnswer: a.expectedAnswer, learner, misses: a.misses } }));
   });
 }
 
-const cases = [...countingCases(), ...frameCases(), ...letterCases()].filter(c => !ONLY || c.family.startsWith(ONLY));
+// ── Every wired family: the runtime's own requests from the dry sweep ───────
+// `SPOKEN_MISS_OUT=<file> npm test -- …/journeySweep.test.tsx` writes one request per spoken item. Per item: the key
+// (and its word or digit form) and two non-answers must name nothing (false positives), and each miss's own examples
+// must name that miss, or the first listed miss that gives the same example (the list order is the precedence).
+const REQUESTS = opt('requests', null);
+const ITEMS = Number(opt('items', 2));
+function requestCases() {
+  const byPayload = {};
+  for (const r of JSON.parse(readFileSync(REQUESTS, 'utf8'))) (byPayload[r.payload] ??= []).push(r);
+  return Object.entries(byPayload).flatMap(([payload, rs]) => rs.slice(0, ITEMS).flatMap((r, k) => {
+    const base = { task: r.task, expectedAnswer: r.expectedAnswer, misses: r.misses };
+    const key = String(r.expectedAnswer).trim(), n = Number(key);
+    // A key written as a sentence ("fifteen, straight away or after counting") is a rubric, not an answer to say:
+    // only short keys, and "x or y" alternatives of short words, become correct cases.
+    const short = (x) => x.length <= 40 && !/[.:;]/.test(x);
+    // `correctSaid`: the journey row's own correct spoken answer, as the sweep heard it.
+    const correct = uniqueBy([...(r.correctSaid ? [r.correctSaid] : []), ...(Number.isInteger(n) ? [W(n), key]
+      : short(key) ? key.split(' or ').map(x => x.trim()).filter(Boolean) : [])], x => x.toLowerCase());
+    const firstWith = example => r.misses.find(m => (m.examples ?? []).some(e => e.toLowerCase() === example.toLowerCase()))?.id ?? null;
+    const rows = [
+      ...correct.map((learner, i) => [`correct_${i}`, learner, null, 'key']),
+      ['no_answer_dont_know', "I don't know", null, 'constructed'], ['no_answer_filler', ['um', 'can you help me?'][k % 2], null, 'constructed'],
+      ...r.misses.flatMap(m => (m.examples ?? []).slice(0, 2).map((e, i) => [`${m.id}_${i}`, e, firstWith(e), 'miss-example'])),
+    ];
+    return rows.map(([name, learner, gold, source]) => ({ family: payload, item: r.scope.itemId, name, source, gold,
+      correctAnswer: name.startsWith('correct'), request: { ...base, learner } }));
+  }));
+}
+
+const cases = (REQUESTS ? requestCases() : [...countingCases(), ...frameCases(), ...letterCases()]).filter(c => !ONLY || c.family.startsWith(ONLY));
 const invalid = cases.filter(c => !validSpokenMissRequest({ scope: { sessionEpoch: 'probe', instanceId: 'probe', itemId: c.item }, ...c.request }));
 if (invalid.length) { console.error('invalid requests:', invalid.map(c => `${c.family} ${c.item} ${c.name}`)); process.exit(1); }
 console.log(`${cases.length} cases x ${RUNS} runs`);

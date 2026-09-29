@@ -33,6 +33,7 @@
  */
 import type { ResponseClassId, TeachingItem } from '../../../hooks/teachingItemContract';
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { speakablePhoneme } from './phonemeVoice';
 
 export type LetterSoundMode = 'see-hear' | 'hear-see' | 'keyword-match';
@@ -540,9 +541,40 @@ export const printedStimulus = (item: LetterSoundItem): string | null =>
 
 /** The item as the tutor and the outcome observer are told it. `hear-see` deliberately has
  *  no expected answer: the activity checks the tap, and the tutor is never told the letter. */
-export const workspaceAssignment = (item: LetterSoundItem): TeachingAssignment => ({ id: item.id, task: askFor(item),
-  ...(acceptedFor(item) !== undefined ? { expectedAnswer: acceptedFor(item) } : {}),
-  response: item.answerKind === 'gesture' ? 'gesture' : 'speech' });
+export const workspaceAssignment = (item: LetterSoundItem): TeachingAssignment => {
+  const misses = letterSoundSpokenMisses(item);
+  return { id: item.id, task: askFor(item),
+    ...(acceptedFor(item) !== undefined ? { expectedAnswer: acceptedFor(item) } : {}),
+    response: item.answerKind === 'gesture' ? 'gesture' : 'speech', ...(misses.length ? { misses } : {}) };
+};
+
+/** What a wrong spoken answer shows (handoff 20 Part B). */
+export type SpokenLetterMiss = 'letter_name' | 'keyword_word' | 'added_vowel' | 'other_sound' | 'other_picture' | 'said_the_sound';
+/** Held consonants: said on their own they are a sound, and with a vowel after them they are `added_vowel`. */
+const CONTINUOUS = new Set(['s', 'n', 'm', 'f', 'l', 'r', 'v', 'z']);
+
+/**
+ * A spoken item's known wrong answers, in precedence order, for the `spoken_miss` observer. see-hear is the pilot's
+ * list and wording (qa/tutor-reports/spoken-miss/); a clipped sound accepts its picture word (`acceptedFor`), so
+ * `keyword_word` is listed only for the held sounds.
+ */
+export function letterSoundSpokenMisses(item: LetterSoundItem): KnownMiss[] {
+  if (item.mode === 'hear-see') return [];
+  const l = item.letter.toLowerCase(), name = letterNameFor(l);
+  const nameMiss = name ? [{ id: 'letter_name', pattern: `The learner says the NAME of the letter, "${name}", instead of the sound it makes.`, examples: [name] }] : [];
+  if (item.mode === 'see-hear') {
+    const decoys = ['mmm', 'fff', 'lll', 'sss'].filter(d => d !== item.spoken).slice(0, 2);
+    return [...nameMiss,
+      ...(!isClippedSound(l) ? [{ id: 'keyword_word', pattern: `The learner says a whole word instead of the sound on its own: the picture word "${item.keyword}" or any other word, even one that starts with the right sound.`, examples: [item.keyword] }] : []),
+      ...(CONTINUOUS.has(l) ? [{ id: 'added_vowel', pattern: `The learner says the sound with a vowel after it, "${l}uh", instead of holding the sound on its own.`, examples: [`${l}uh`] }] : []),
+      { id: 'other_sound', pattern: 'The learner says the sound of a different letter. A held consonant such as "mmm" or "nnn" is a letter sound, not filler.', examples: decoys }];
+  }
+  if (item.mode === 'keyword-match') return [
+    { id: 'other_picture', pattern: `The learner says "${item.distractor}", the other picture's word, which does not start with the letter's sound.`, examples: [item.distractor] },
+    ...nameMiss,
+    { id: 'said_the_sound', pattern: `The learner says only the letter's sound, "${item.spoken}", and no picture word.`, examples: [item.spoken] }];
+  return [];
+}
 
 /** The drawn stage. `tapped` is the letter the learner last tapped on a `hear-see` item. */
 export function workspaceScene(item: LetterSoundItem, tapped: string | null = null): WorkspaceScene {

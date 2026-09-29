@@ -42,6 +42,7 @@
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { spokenIntegerWord } from '../math/spokenNumberWords';
+import { offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { diMathFactsModePlan, DI_MATH_FACTS_MODES, type DiMathFactsChallengeType }
   from './diMathFactsModes';
 
@@ -252,10 +253,70 @@ export function buildMathFactItems(challenges: DiMathFactsChallenge[] = []): Mat
   }));
 }
 
+/** What a wrong spoken number on a printed fact shows (handoff 20 Part B). */
+export type SpokenFactMiss = OffByMiss | 'said_addend' | 'said_start' | 'said_change' | 'added_instead' | 'said_printed'
+  | 'said_before' | 'said_two_after' | 'decade_rollover' | 'teen_decade_swap' | 'recited_sequence' | 'look_alike_numeral';
+
+/** One number miss with its spoken form as the example (number words past twenty too). */
+const factMiss = (id: string, value: number, pattern: string): KnownMiss =>
+  ({ id, pattern, examples: [spokenIntegerWord(value)] });
+
+/**
+ * A printed fact's known wrong answers, in precedence order, for the `spoken_miss` observer: the numbers printed
+ * in the problem first, then the teen/decade swap, then the off-by misses. Concrete per item, never a cause.
+ */
+export function mathFactSpokenMisses(item: MathFactItem): KnownMiss[] {
+  const n = item.answerNumeral, printed = item.display;
+  const nums = (item.terms.length ? item.terms : [item.display]).filter(t => /^[0-9]+$/.test(t)).map(Number);
+  const op = item.terms.find(t => !/^[0-9]+$/.test(t));
+  const own: KnownMiss[] = [];
+  const seen = new Set<number>([n]);
+  const add = (id: string, value: number | undefined, pattern: (v: number) => string) => {
+    if (value === undefined || !Number.isInteger(value) || value < 0 || seen.has(value)) return;
+    seen.add(value);
+    own.push(factMiss(id, value, pattern(value)));
+  };
+  const [a, b] = nums;
+  if (item.challengeType === 'name_numeral') {
+    if (n >= 2) own.push({ id: 'recited_sequence', pattern: `The printed numeral is ${printed}. The learner recites the counting sequence from one up to it instead of naming the numeral.`,
+      examples: [Array.from({ length: Math.min(n, 10) }, (_, i) => spokenIntegerWord(i + 1)).join(', ')] });
+    const lookAlike = n === 6 ? 9 : n === 9 ? 6 : undefined;
+    add('look_alike_numeral', lookAlike, v => `The printed numeral is ${printed}. The learner's answer is ${spokenIntegerWord(v)}, the numeral that looks like ${printed} turned upside down.`);
+  } else if (op === '→') {
+    add('said_printed', a, v => `The printed number is ${v}; the number after it is ${n}. The learner's answer is ${spokenIntegerWord(v)}, the printed number said again.`);
+    add('said_before', a !== undefined ? a - 1 : undefined, v => `The printed number is ${a}; the number after it is ${n}. The learner's answer is ${spokenIntegerWord(v)}, the number before ${a}.`);
+    add('said_two_after', a !== undefined ? a + 2 : undefined, v => `The printed number is ${a}; the number after it is ${n}. The learner's answer is ${spokenIntegerWord(v)}, the number two after ${a}.`);
+    if (a !== undefined && a % 10 === 9 && a > 10 && a < 100) {
+      const decade = spokenIntegerWord(a - 9);
+      own.push({ id: 'decade_rollover', pattern: `The printed number is ${a}; the number after it is ${spokenIntegerWord(n)}. The learner's answer is "${decade}-ten", the ${decade}s carried past nine.`,
+        examples: [`${decade}-ten`, `${decade} ten`] });
+    }
+  } else if (op === '-' || op === '−') {
+    add('said_start', a, v => `The problem is ${printed}. The learner's answer is ${spokenIntegerWord(v)}, the number before taking away.`);
+    add('said_change', b, v => `The problem is ${printed}. The learner's answer is ${spokenIntegerWord(v)}, the number taken away, not what is left.`);
+    add('added_instead', a !== undefined && b !== undefined ? a + b : undefined, v => `The problem is ${printed}. The learner's answer is ${spokenIntegerWord(v)}, the two numbers added.`);
+  } else {
+    const addends = Array.from(new Set(nums)).filter(v => !seen.has(v));
+    addends.forEach(v => seen.add(v));
+    if (addends.length) own.push({ id: 'said_addend', pattern: `The problem is ${printed}. The learner's answer is `
+      + `${addends.map(spokenIntegerWord).join(' or ')}, one of the two numbers being added, not the total.`, examples: addends.map(spokenIntegerWord) });
+  }
+  // Above twelve: a teen and its decade (thirteen and thirty) are different numbers.
+  const swap = n >= 13 && n <= 19 ? (n - 10) * 10 : n >= 30 && n <= 90 && n % 10 === 0 ? n / 10 + 10 : undefined;
+  add('teen_decade_swap', swap, v => `The answer is ${spokenIntegerWord(n)}. The learner's answer is ${spokenIntegerWord(v)}, the ${v > n ? 'decade' : 'teen'} that sounds like it.`);
+  const of = item.challengeType === 'name_numeral' ? `the printed numeral ${n}` : item.challengeType === 'counting_next'
+    ? `${n}, the number after ${a}` : `the answer ${n} to ${printed}`;
+  // An exact off-by number the problem already names keeps the problem's pattern.
+  const named = new Set(own.flatMap(o => o.examples ?? []));
+  return [...own, ...offByMisses(n, of).filter(m => !(m.id === 'one_short' || m.id === 'one_over') || !named.has(spokenIntegerWord(n + (m.id === 'one_over' ? 1 : -1))))];
+}
+
 /** The item as the tutor and the outcome observer are told it. Every mode is spoken: the
  *  child says a number word, the tutor hears the audio and JEV reads its completed feedback. */
-export const workspaceAssignment = (item: MathFactItem): TeachingAssignment =>
-  ({ id: item.id, task: item.ask, expectedAnswer: item.answerWord, response: 'speech' });
+export const workspaceAssignment = (item: MathFactItem): TeachingAssignment => {
+  const misses = mathFactSpokenMisses(item);
+  return { id: item.id, task: item.ask, expectedAnswer: item.answerWord, response: 'speech', ...(misses.length ? { misses } : {}) };
+};
 
 /** Is this printed token a number the tutor can point at, or the operator
  *  between them? Both are markable; only the label differs. */

@@ -71,7 +71,7 @@ export function storyBridgeScene(item: StoryBridgeItem): WorkspaceScene {
  *   - venn_place: `both_for_one` (a one-story detail put in the middle), `one_for_both` (a shared detail put on
  *     one side), `other_side` (the other story's side);
  *   - sequence_two: `earlier_event`, `later_event` (story two's event before or after the matching one).
- * say_alike, say_different and main_idea_compare are spoken (Part B).
+ * say_alike, say_different and main_idea_compare are spoken and name no misses: each is an open comparison (Part B).
  */
 export type StoryBridgeMiss = 'same_look' | 'other_character' | 'same_for_different' | 'different_for_same'
   | 'both_for_one' | 'one_for_both' | 'other_side' | 'earlier_event' | 'later_event';

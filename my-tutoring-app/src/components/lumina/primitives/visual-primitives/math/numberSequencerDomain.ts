@@ -28,6 +28,9 @@ import type { TeachingItem } from '../../../hooks/teachingItemContract';
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { NumberSequencerChallenge } from './NumberSequencer';
 import { NUMBER_SEQUENCER_MODES, numberSequencerModePlan } from './numberSequencerModes';
+import { numberMisses, offByMisses, spokenNumber, type KnownMiss, type OffByMiss }
+  from '../../../components/live-activity/runtime/spokenMissContract';
+import { decadeWord, spokenIntegerWord } from './spokenNumberWords';
 
 const isNumber = (n: unknown): n is number => Number.isInteger(n) && Number(n) >= 1 && Number(n) <= 120;
 /** Exported because the order cue and the gesture checker both compare arrangements. */
@@ -178,11 +181,98 @@ export function assignmentFor(item: SequencerItem): string {
 /** The car the question is about. Spot-error asks about the whole train, so no car glows. */
 export const targetSlot = (item: SequencerItem): number => item.challengeType === 'spot-error' ? -1 : item.slot;
 
+/** What a wrong spoken number on the train shows (handoff 20 Part B). */
+export type SpokenSequencerMiss = OffByMiss | 'said_start' | 'wrong_direction' | 'skipped_one' | 'said_shown' | 'said_neighbor'
+  | 'wrong_side' | 'counted_by_one' | 'said_repair' | 'decade_word' | 'teen_ty_swap';
+
+/** The step of a train with a gap: from its first two printed numbers. */
+const trainStep = (seq: (number | null)[]) => {
+  const known = seq.flatMap((n, i) => n === null ? [] : [[i, n] as const]);
+  return known.length >= 2 ? (known[1][1] - known[0][1]) / (known[1][0] - known[0][0]) : 1;
+};
+
+/** One miss naming several printed numbers ("6 or 8"), when any is a real wrong answer. */
+const printedMiss = (id: string, values: Array<number | null | undefined>, answer: number, pattern: (ns: string) => string): KnownMiss[] => {
+  const ns = Array.from(new Set(values.filter((n): n is number => typeof n === 'number' && n >= 1 && n !== answer)));
+  return ns.length ? [{ id, pattern: pattern(ns.join(' or ')), examples: ns.map(spokenNumber) }] : [];
+};
+
+/** The sound-alike forms of a spoken number: a teen for its -ty or the reverse, and "twenty-ten" when counting up to a ten. */
+function soundAlikeMisses(a: number, countsUp: boolean): KnownMiss[] {
+  return [
+    ...(a >= 13 && a <= 19 ? [{ id: 'teen_ty_swap', pattern: `The right number is ${spokenIntegerWord(a)}. The learner's answer is `
+      + `${decadeWord(a - 10)}, the -ty number that sounds like it.`, examples: [decadeWord(a - 10)] }] : []),
+    ...(a >= 30 && a <= 90 && a % 10 === 0 ? [{ id: 'teen_ty_swap', pattern: `The right number is ${spokenIntegerWord(a)}. The learner's `
+      + `answer is ${spokenIntegerWord(a / 10 + 10)}, the teen number that sounds like it.`, examples: [spokenIntegerWord(a / 10 + 10)] }] : []),
+    ...(countsUp && a >= 30 && a <= 100 && a % 10 === 0 ? [{ id: 'decade_word', pattern: `The number after ${spokenIntegerWord(a - 1)} is `
+      + `${spokenIntegerWord(a)}. The learner says ${decadeWord(a / 10 - 1)}-ten, the ones counted on past nine instead of the next ten.`,
+      examples: [`${decadeWord(a / 10 - 1)}-ten`] }] : []),
+  ];
+}
+
+/**
+ * A spoken item's known wrong answers, in precedence order, for the `spoken_miss` observer: the numbers on this train
+ * (the start said again, the other direction, a printed neighbour, the repair on spot-error), then the sound-alike
+ * forms, then the off-by misses not already named.
+ */
+export function numberSequencerSpokenMisses(item: SequencerItem): KnownMiss[] {
+  if (item.answerKind === 'gesture') return [];
+  const a = item.answer, seq = item.sequence;
+  const withOffBy = (own: KnownMiss[], of: string) => {
+    const said = new Set(own.flatMap(m => m.examples ?? []));
+    return [...own, ...offByMisses(a, of).filter(m => !(m.examples ?? []).some(e => said.has(e)))];
+  };
+  switch (item.challengeType) {
+    case 'count-from': {
+      const p = item.previous, up = item.direction !== 'backward';
+      return [...numberMisses(a, [
+        { id: 'said_start', value: p, pattern: n => `The count is at ${n}. The learner's answer is ${n}, the number already said, not the next one.` },
+        { id: 'wrong_direction', value: up ? p - 1 : p + 1, pattern: n => `Counting ${item.direction} from ${p}, the next number is ${a}. `
+          + `The learner's answer is ${n}, the number on the other side of ${p}.` },
+        { id: 'skipped_one', value: 2 * a - p, pattern: n => `Counting ${item.direction} from ${p}, the next number is ${a}. `
+          + `The learner's answer is ${n}, one number further on, skipping ${a}.` }]), ...soundAlikeMisses(a, up)];
+    }
+    case 'before-after': {
+      const before = item.slot === 0, shown = seq[before ? 1 : 0]!;
+      return [...numberMisses(a, [
+        { id: 'said_shown', value: shown, pattern: n => `The printed number is ${n}. The learner's answer is ${n}, that printed number again.` },
+        { id: 'wrong_side', value: before ? shown + 1 : shown - 1, pattern: n => `The number ${before ? 'before' : 'after'} ${shown} is ${a}. `
+          + `The learner's answer is ${n}, the number ${before ? 'after' : 'before'} ${shown} instead.` },
+        { id: 'skipped_one', value: before ? a - 1 : a + 1, pattern: n => `The number ${before ? 'before' : 'after'} ${shown} is ${a}. `
+          + `The learner's answer is ${n}, one number further on, skipping ${a}.` }]),
+        ...soundAlikeMisses(a, !before)];
+    }
+    case 'spot-error': {
+      const i = item.slot;
+      return [...numberMisses(a, [{ id: 'said_repair', value: item.repair, pattern: n => `The printed ${a} breaks the count; ${n} should be in its `
+        + `place. The learner's answer is ${n}, the number that belongs there, not the printed number that does not belong.` }]),
+        ...printedMiss('said_neighbor', [seq[i - 1], seq[i + 1]], a, ns => `The printed ${a} breaks the count; ${ns} is printed right beside it. `
+          + `The learner's answer is ${ns}, a number that does belong in the count.`)];
+    }
+    default: {
+      const step = trainStep(seq), i = item.slot, before = a - step;
+      const printed = [seq[i - 1], seq[i + 1]].filter((n): n is number => typeof n === 'number');
+      const byOne = Math.abs(step) > 1 ? before + Math.sign(step) : undefined;
+      return withOffBy([
+        ...printedMiss('said_neighbor', printed, a, ns => `The cars beside the glowing gap show ${ns}. The learner's answer is ${ns}, `
+          + 'a number already printed next to the gap.'),
+        ...(byOne !== undefined && !printed.includes(byOne) ? numberMisses(a, [{ id: 'counted_by_one', value: byOne,
+          pattern: n => `The train counts by ${Math.abs(step)}s and the number before the gap is ${before}. The learner's answer is ${n}, `
+            + `the number next to ${before} when counting by ones.` }]) : []),
+        ...soundAlikeMisses(a, step === 1),
+      ], `the ${a} that belongs in the gap`);
+    }
+  }
+}
+
 /** The item as the tutor and the outcome observer are told it. Gesture items are checked
  *  by the train; the ordered string is what the tutor sees, not a parser. */
-export const workspaceAssignment = (item: SequencerItem): TeachingAssignment => ({ id: item.id, task: askFor(item),
-  expectedAnswer: item.answerKind === 'gesture' ? item.answerOrder.join(', ') : String(item.answer),
-  response: item.answerKind === 'gesture' ? 'gesture' : 'speech' });
+export const workspaceAssignment = (item: SequencerItem): TeachingAssignment => {
+  const misses = numberSequencerSpokenMisses(item);
+  return { id: item.id, task: askFor(item),
+    expectedAnswer: item.answerKind === 'gesture' ? item.answerOrder.join(', ') : String(item.answer),
+    response: item.answerKind === 'gesture' ? 'gesture' : 'speech', ...(misses.length ? { misses } : {}) };
+};
 
 /** `shown` is the drawn train, with slots of this challenge answered earlier filled in;
  *  `placed` is the learner's arrangement so far on an order-cards item. */

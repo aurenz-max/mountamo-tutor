@@ -1,0 +1,1257 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    5,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    4,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    5,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ],
+   "no_change_before_receipt": [
+    0,
+    10
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    5,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "rhyme-studio.identification",
+   "primitiveId": "rhyme-studio",
+   "evalMode": "identification",
+   "keys": [
+    "hat, the choice that rhymes with cat.",
+    "hat"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "hat, the choice that rhymes with cat.",
+       "hat"
+      ],
+      "ask": "Listen to this word: cat. Which word on the screen rhymes with cat? Say it.",
+      "leakTokens": [
+       "RS_ITEM",
+       "RS_MOVE",
+       "RS_COMPLETE",
+       "RS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen to this word: cat. Which word rhymes with cat: hat, or can?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to this word: cat. Which word rhymes with cat: hat or can?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to this word: cat. Which word rhymes with cat: hat or can?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to this word: cat. Which word on the screen rhymes with cat: hat or can?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to this word: cat. Which word rhymes with cat: hat, or can?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "can",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "hat, the choice that rhymes with cat.",
+       "hat"
+      ],
+      "ask": "Listen to this word: cat. Which word on the screen rhymes with cat? Say it.",
+      "leakTokens": [
+       "RS_ITEM",
+       "RS_MOVE",
+       "RS_COMPLETE",
+       "RS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the new pictures: bee and tree rhyme because their endings sound the same, but bee and bus just start the same. Which word rhymes with cat: hat, or can?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "contrast_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Look, bee and tree rhyme because their endings sound the same, but bee and bus only start the same. Which word rhymes with cat: hat, or can?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "contrast_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the model: bee and tree rhyme because their endings sound the same, while bee and bus only start the same. Which word rhymes with cat?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "contrast_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the model: bee and tree rhyme because their endings sound the same, while bee and bus only start the same. Which word rhymes with cat: hat, or can?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "contrast_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the helper: bee and tree rhyme because their endings match, while bee and bus only start the same. Which one rhymes with cat: hat, or can?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "contrast_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "hat, the choice that rhymes with cat.",
+       "hat"
+      ],
+      "ask": "Listen to this word: cat. Which word on the screen rhymes with cat? Say it.",
+      "leakTokens": [
+       "RS_ITEM",
+       "RS_MOVE",
+       "RS_COMPLETE",
+       "RS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the helper pictures: bee and tree end the same, but bee and bus only start the same. Now try our words again: which one rhymes with cat: hat, or can?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "contrast_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": true
+      },
+      {
+       "text": "Look beside our words: bee and tree rhyme because their endings sound the same, while bee and bus just start the same. Now try our words again\u2014which one rhymes with cat: hat, or can?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "contrast_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the pictures beside the words: bee and tree rhyme because their endings sound the same, while bee and bus only start the same. Which word rhymes with cat: hat, or can?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "contrast_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the new pictures: bee and tree rhyme because their endings sound the same, but bee and bus just start the same. Which word rhymes with cat: hat, or can?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "contrast_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the screen: bee and tree rhyme because their endings sound the same, while bee and bus just start the same. Which word rhymes with cat: hat, or can?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "contrast_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled contrast_model (help). It is on screen now: Shows a model beside the item on other words: a rhyming pair whose endings light up together and a pair that only starts the same. Say the model words; never this item's words stretched or split. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never c",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "hat, the choice that rhymes with cat.",
+       "hat"
+      ],
+      "ask": "Listen to this word: cat. Which word on the screen rhymes with cat? Say it.",
+      "leakTokens": [
+       "RS_ITEM",
+       "RS_MOVE",
+       "RS_COMPLETE",
+       "RS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look beside the picture: bee and tree light up at the end because they rhyme, while bee and bus light up at the start. Which word rhymes with cat: hat, or can?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "See the new pictures beside our words: bee and tree light up at the end because they rhyme, while bee and bus only start the same. Which word on the screen rhymes with cat: hat, or can?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the words at the new pictures: bee and tree light up together at the end because they rhyme, while bee and bus only light up at the start. Now listen again: which word rhymes with cat: hat, or can?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Beside our words, new pictures popped up! Bee and tree have their endings lit up because they rhyme, while bee and bus only light up at the beginning. Which word rhymes with cat: hat, or can?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside our words: bee and tree have endings that light up because they rhyme, while bee and bus only start the same. Which word rhymes with cat: hat, or can?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "hat"
+       },
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "hat",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "hat, the choice that rhymes with cat.",
+       "hat"
+      ],
+      "ask": "Listen to this word: cat. Which word on the screen rhymes with cat? Say it.",
+      "leakTokens": [
+       "RS_ITEM",
+       "RS_MOVE",
+       "RS_COMPLETE",
+       "RS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! Hat rhymes with cat because they have the same ending sound.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You found hat, and hat rhymes with cat!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Hat rhymes with cat because they both have that same ending sound.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, hat rhymes with cat!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Hat rhymes with cat because they have the same ending sound.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "rhyme-studio.recognition",
+   "primitiveId": "rhyme-studio",
+   "evalMode": "recognition",
+   "keys": [
+    "yes: cat and hat rhyme."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: cat and hat rhyme."
+      ],
+      "ask": "Listen to these two words: cat, hat. Do they rhyme? Say yes or no.",
+      "leakTokens": [
+       "RS_ITEM",
+       "RS_MOVE",
+       "RS_COMPLETE",
+       "RS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen to these two words: cat, hat. Do they rhyme? Say yes or no.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to these two words: cat, hat. Do they rhyme?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to these two words: cat, hat. Do they rhyme?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to these two words: cat, hat. Do they rhyme? Say yes or no.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to these two words: cat, hat. Do they rhyme? Say yes or no.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "no",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: cat and hat rhyme."
+      ],
+      "ask": "Listen to these two words: cat, hat. Do they rhyme? Say yes or no.",
+      "leakTokens": [
+       "RS_ITEM",
+       "RS_MOVE",
+       "RS_COMPLETE",
+       "RS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the screen: bee and tree end with the same sound, so they rhyme! Bee and bus only start the same. Now try cat and hat again\u2014do they rhyme?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "contrast_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the model on the side: bee and tree rhyme because their endings sound the same, while bee and bus only start the same. Now listen to cat and hat\u2014do they rhyme?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "contrast_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside our words: bee and tree rhyme because their endings sound the same, while bee and bus only start the same. Now listen to cat and hat again\u2014do they rhyme?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "contrast_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: bee and tree end the same, so they rhyme, but bee and bus only start the same. Now listen to cat and hat again\u2014do they rhyme?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "contrast_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: bee and tree end with the same sound, so they rhyme, while bee and bus only start the same. Now listen to cat and hat again\u2014do they rhyme?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "contrast_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: cat and hat rhyme."
+      ],
+      "ask": "Listen to these two words: cat, hat. Do they rhyme? Say yes or no.",
+      "leakTokens": [
+       "RS_ITEM",
+       "RS_MOVE",
+       "RS_COMPLETE",
+       "RS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the new pictures: bee and tree end with the same sound, but bee and bus only start the same. Now listen to cat and hat\u2014do they rhyme?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "contrast_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen shows bee and tree lighting up at the end because they rhyme, while bee and bus only start the same. Now give cat and hat another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "contrast_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model popped up on the side showing bee and tree, where the ending sounds match, and bee and bus, where only the starts match. Listen closely to cat and hat\u2014do they rhyme?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "contrast_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the new pictures: bee and tree have matching endings that light up, while bee and bus only start the same. Now listen to cat and hat\u2014do they rhyme?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "contrast_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A picture popped up showing bee and tree lighting up at the end because they rhyme, while bee and bus only start the same. Give cat and hat another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "contrast_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled contrast_model (help). It is on screen now: Shows a model beside the item on other words: a rhyming pair whose endings light up together and a pair that only starts the same. Say the model words; never this item's words stretched or split. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never c",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: cat and hat rhyme."
+      ],
+      "ask": "Listen to these two words: cat, hat. Do they rhyme? Say yes or no.",
+      "leakTokens": [
+       "RS_ITEM",
+       "RS_MOVE",
+       "RS_COMPLETE",
+       "RS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the pictures beside our words! Bee and tree have matching endings that light up, while bee and bus only start the same. Now think about cat and hat\u2014do they rhyme?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside our words to see the new pictures: bee and tree light up at the end because their ending sounds match, but bee and bus only start the same. Now listen to cat and hat\u2014do they rhyme?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the words: see how bee and tree light up together because they rhyme at the end? Now listen to cat and hat\u2014do they rhyme?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new pictures on the side: bee and tree end with the same sound so their endings light up together, while bee and bus only start the same. Now listen to cat and hat\u2014do they rhyme?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside our words: see how bee and tree light up at the end because their ending sounds match, while bee and bus only light up at the start! Now listen to cat and hat\u2014do they rhyme?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "yes",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: cat and hat rhyme."
+      ],
+      "ask": "Listen to these two words: cat, hat. Do they rhyme? Say yes or no.",
+      "leakTokens": [
+       "RS_ITEM",
+       "RS_MOVE",
+       "RS_COMPLETE",
+       "RS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! Cat and hat rhyme because they share the same ending sound!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014cat and hat rhyme!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, yes! Cat and hat rhyme because their endings sound the same.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Yes, you got it! Cat and hat both end with the -at sound, so they rhyme.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Cat and hat rhyme because their endings sound the same.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

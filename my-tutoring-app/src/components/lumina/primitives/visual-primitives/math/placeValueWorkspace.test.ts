@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import { itemsFromChallenges } from './placeValueScript';
-import { placeValueMiss } from './placeValueWorkspace';
+import { itemsFromChallenges, type PlaceValueItem } from './placeValueScript';
+import { placeValueMiss, placeValueSpokenMisses, workspaceAssignment } from './placeValueWorkspace';
 
 /** A dictated item: the rotation dictates the first challenge and prints the second. */
 const dictated = (targetNumber: number) => itemsFromChallenges([{ id: 'b', targetNumber }], { mode: 'build', tier: 'medium' })
@@ -20,4 +20,21 @@ it('a spoken item names no miss', () => {
   const printed = itemsFromChallenges([{ id: 'b', targetNumber: 406 }, { id: 'a', targetNumber: 2345, highlightedDigitPlace: 1 }],
     { mode: 'build', tier: 'medium' }).items.find(i => i.kind !== 'build_number')!;
   expect(placeValueMiss(printed, [])).toBeUndefined();
+});
+
+const spoken = (kind: 'find_place' | 'say_value', targetNumber: number, place: number, digit: number, answerText: string) =>
+  ({ id: kind, kind, answerKind: 'voice', targetNumber, place, digit, answerText,
+    chartPlaces: String(targetNumber).split('').map((_, i, all) => all.length - 1 - i) }) as unknown as PlaceValueItem;
+
+it.each([
+  [spoken('find_place', 47, 1, 4, 'tens'), ['said_value', 'said_digit', 'next_place']],
+  [spoken('find_place', 32, 0, 2, 'ones'), ['said_digit', 'next_place']],
+  [spoken('find_place', 2510, 1, 1, 'tens'), ['said_value', 'said_digit', 'next_place', 'other_place']],
+  [spoken('say_value', 47, 1, 4, 'forty'), ['said_digit', 'said_place', 'shifted_place', 'said_number', 'next_digit_value']],
+  [spoken('say_value', 32, 0, 2, 'two'), ['shifted_place', 'said_number', 'next_digit_value']],
+] as const)('spoken %#: known misses in order, none of them the answer', (item, ids) => {
+  expect(workspaceAssignment(item).expectedAnswer).toBe(item.answerText);
+  const misses = placeValueSpokenMisses(item);
+  expect(misses.map(m => m.id)).toEqual(ids);
+  expect(misses.flatMap(m => m.examples ?? []).filter(e => e === item.answerText)).toEqual([]);
 });

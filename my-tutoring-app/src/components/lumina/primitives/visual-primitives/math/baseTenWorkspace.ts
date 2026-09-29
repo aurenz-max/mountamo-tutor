@@ -12,6 +12,8 @@
  * The workspace is both surfaces' only teaching path (the scripted path was deleted, LA-14).
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { numberMisses, offByMisses, spokenNumber, type KnownMiss, type OffByMiss }
+  from '../../../components/live-activity/runtime/spokenMissContract';
 import type { BaseTenItem } from './baseTenScript';
 import {
   blockNoun,
@@ -35,11 +37,51 @@ export function spokenAnswer(item: BaseTenItem): number {
   }
 }
 
+/** What a wrong spoken number on the judged mat shows (handoff 20 Part B). */
+export type SpokenBaseTenMiss = OffByMiss | 'said_value' | 'said_count' | 'said_total' | 'other_block_count' | 'one_block_off'
+  | 'said_ten' | 'said_start';
+
+/**
+ * A spoken step's known wrong answers, in precedence order, for the `spoken_miss` observer: the numbers on this
+ * mat (the value for the count, the count for the value, the ten the trade makes), then the off-by misses.
+ */
+export function baseTenSpokenMisses(item: BaseTenItem): KnownMiss[] {
+  if (item.answerKind === 'gesture') return [];
+  const { problem } = item, answer = spokenAnswer(item), p = problem.place, count = readCount(problem);
+  const many = blockNounPlural(p), unit = placeValueOf(p);
+  if (item.step === 'predict') {
+    const lower = blockNounPlural(p - 1), before = problem.start[p - 1] ?? 0;
+    return [...numberMisses(answer, [
+      { id: 'said_ten', value: 10, pattern: n => `Breaking one ${blockNoun(p, 1)} makes ${n} ${lower}, and ${before} are already on the mat. `
+        + `The learner's answer is ${n}, only the new ${lower}, without the ${before} already there.` },
+      { id: 'said_start', value: before, pattern: n => `The mat has ${n} ${lower} before the trade. The learner's answer is ${n}, the ${lower} before the trade, with none added.` }]),
+      ...offByMisses(answer, `the ${answer} ${lower} after the trade`)];
+  }
+  const others = occupiedPlaces(problem.start).filter(q => q !== p).map(q => problem.start[q] ?? 0)
+    .filter(n => n >= 1 && n !== answer && n !== count && n !== count * unit);
+  const other: KnownMiss[] = others.length ? [{ id: 'other_block_count', pattern: `The mat also has other blocks: `
+    + `${occupiedPlaces(problem.start).filter(q => q !== p).map(q => `${problem.start[q]} ${blockNoun(q, problem.start[q] ?? 0)}`).join(', ')}. `
+    + `The learner's answer is ${Array.from(new Set(others)).join(' or ')}, the count of another kind of block, not the ${many}.`,
+    examples: Array.from(new Set(others)).map(spokenNumber) }] : [];
+  const total = { id: 'said_total', value: problem.target >= 10 ? problem.target : undefined,
+    pattern: (n: number) => `All the blocks on the mat together make ${n}. The learner's answer is ${n}, the whole mat, not only the ${many}.` };
+  if (item.step === 'count') return [...numberMisses(answer, [
+    { id: 'said_value', value: count * unit, pattern: n => `The ${count} ${blockNoun(p, count)} are worth ${n}. The learner's answer is ${n}, what the blocks are worth, not how many blocks there are.` },
+    total]), ...other, ...offByMisses(answer, `the ${answer} ${many} on the mat`)];
+  const near = [count - 1, count + 1].filter(n => n >= 1).map(n => n * unit);
+  return [...numberMisses(answer, [
+    { id: 'said_count', value: count, pattern: n => `There are ${n} ${blockNoun(p, n)}. The learner's answer is ${n}, how many blocks there are, not what they are worth.` },
+    total]), ...other,
+    ...(unit > 1 ? [{ id: 'one_block_off', pattern: `The learner's answer is ${near.join(' or ')}, what one ${blockNoun(p, 1)} fewer or one more than the ${count} on the mat would be worth.`,
+      examples: near.map(spokenNumber) }] : offByMisses(answer, `the ${answer} ${many} on the mat`))];
+}
+
 /** The step's own ask; a spoken step publishes its number, the trade does not. */
 export function diWorkspaceAssignment(item: BaseTenItem): TeachingAssignment {
   const task = item.actionContract.instruction;
   if (item.answerKind === 'gesture') return { id: item.id, task, response: 'gesture' };
-  return { id: item.id, task, response: 'speech', expectedAnswer: String(spokenAnswer(item)) };
+  const misses = baseTenSpokenMisses(item);
+  return { id: item.id, task, response: 'speech', expectedAnswer: String(spokenAnswer(item)), ...(misses.length ? { misses } : {}) };
 }
 
 /** The mat in the learner's terms, largest block first. */

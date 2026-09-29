@@ -47,10 +47,10 @@ beforeEach(() => {
   vi.useFakeTimers(); vi.clearAllMocks(); stream = 0; seam.ai.conversation = []; seam.ai.isConnected = true; seam.ai.sessionResumeCount = 0;
   vi.stubGlobal('IntersectionObserver', class { observe() {} disconnect() {} });
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
-  // Two observers share fetch. The advisory learner-turn route is unavailable here, so a
-  // one-shot outcome decision below is always consumed by the outcome observer.
+  // Three observers share fetch. The advisory learner-turn and spoken-miss routes are unavailable here,
+  // so a one-shot outcome decision below is always consumed by the outcome observer.
   seam.outcome = [];
-  vi.stubGlobal('fetch', vi.fn(async (url: unknown) => String(url).includes('observe-learner') ? { ok: false, json: async () => ({}) }
+  vi.stubGlobal('fetch', vi.fn(async (url: unknown) => /observe-learner|observe-spoken-miss/.test(String(url)) ? { ok: false, json: async () => ({}) }
     : { ok: true, json: async () => seam.outcome.shift() ?? ({ verdict: 'correct', transition: 'advance',
       accepted: true, confidence: .99, verdictConfidence: .99, grounded: 1, reason: 'settled', ms: 1 }) }));
 });

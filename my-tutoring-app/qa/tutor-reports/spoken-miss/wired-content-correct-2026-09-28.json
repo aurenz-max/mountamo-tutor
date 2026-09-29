@@ -1,0 +1,3202 @@
+[
+ {
+  "rep": 1,
+  "payload": "calendar-explorer.day_sequence",
+  "item": "c3",
+  "learner": "I think it's Tuesday",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "calendar-explorer.day_sequence",
+  "item": "c2",
+  "learner": "Monday",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "calendar-explorer.day_sequence",
+  "item": "c3",
+  "learner": "Tuesday",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "calendar-explorer.day_sequence",
+  "item": "c2",
+  "learner": "I think it's Monday",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "calendar-explorer.day_sequence",
+  "item": "c1",
+  "learner": "I think it's Sunday",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "calendar-explorer.day_sequence",
+  "item": "c1",
+  "learner": "Sunday",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "cause-effect-chain.identify_cause",
+  "item": "cec-1:cec-1-3",
+  "learner": "yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "cause-effect-chain.identify_cause",
+  "item": "cec-1:cec-1-2",
+  "learner": "I think it's yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "cause-effect-chain.identify_cause",
+  "item": "cec-1:cec-1-2",
+  "learner": "yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "cause-effect-chain.identify_cause",
+  "item": "cec-1:cec-1-d1",
+  "learner": "no",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "cause-effect-chain.identify_cause",
+  "item": "cec-1:cec-1-3",
+  "learner": "I think it's yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "cause-effect-chain.identify_cause",
+  "item": "cec-1:cec-1-d1",
+  "learner": "I think it's no",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "era-explorer.cause_of_change",
+  "item": "era-cause_of_change-2",
+  "learner": "automobile factories",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "era-explorer.cause_of_change",
+  "item": "era-cause_of_change-1",
+  "learner": "electric machines",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "era-explorer.cause_of_change",
+  "item": "era-cause_of_change-1",
+  "learner": "I think it's electric machines",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "era-explorer.cause_of_change",
+  "item": "era-cause_of_change-2",
+  "learner": "I think it's automobile factories",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "era-explorer.cause_of_change",
+  "item": "era-cause_of_change-3",
+  "learner": "districts built",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "era-explorer.cause_of_change",
+  "item": "era-cause_of_change-3",
+  "learner": "I think it's districts built",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "era-explorer.era_sort",
+  "item": "era-era_sort-1",
+  "learner": "both",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "era-explorer.era_sort",
+  "item": "era-era_sort-1",
+  "learner": "I think it's both",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "era-explorer.era_sort",
+  "item": "era-era_sort-2",
+  "learner": "I think it's today",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "era-explorer.era_sort",
+  "item": "era-era_sort-3",
+  "learner": "back then",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "era-explorer.era_sort",
+  "item": "era-era_sort-2",
+  "learner": "today",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "genre-explorer.classify_genre",
+  "item": "feature::e1::f1",
+  "learner": "yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "era-explorer.era_sort",
+  "item": "era-era_sort-3",
+  "learner": "I think it's back then",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "genre-explorer.classify_genre",
+  "item": "feature::e1::f2",
+  "learner": "no",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "genre-explorer.classify_genre",
+  "item": "feature::e1::f1",
+  "learner": "I think it's yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "genre-explorer.classify_genre",
+  "item": "feature::e1::f2",
+  "learner": "I think it's no",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "genre-explorer.classify_genre",
+  "item": "genre::e1",
+  "learner": "Myth",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "genre-explorer.classify_genre",
+  "item": "genre::e1",
+  "learner": "I think it's Myth",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "genre-explorer.identify_basic",
+  "item": "feature::e1::made-up-events",
+  "learner": "yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "genre-explorer.identify_basic",
+  "item": "feature::e2::made-up-events",
+  "learner": "I think it's no",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "genre-explorer.identify_basic",
+  "item": "feature::e2::made-up-events",
+  "learner": "no",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "habitat-diorama.observe",
+  "item": "chal-1",
+  "learner": "Green Algae",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "genre-explorer.identify_basic",
+  "item": "genre::e1",
+  "learner": "I think it's Fiction",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "habitat-diorama.observe",
+  "item": "chal-1",
+  "learner": "I think it's Green Algae",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "genre-explorer.identify_basic",
+  "item": "genre::e1",
+  "learner": "Fiction",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "genre-explorer.identify_basic",
+  "item": "feature::e1::made-up-events",
+  "learner": "I think it's yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "habitat-diorama.observe",
+  "item": "chal-2",
+  "learner": "I think it's Cattail",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "habitat-diorama.observe",
+  "item": "chal-2",
+  "learner": "Cattail",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "knowledge-check.recall",
+  "item": "p1-mc",
+  "learner": "sunshine",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "habitat-diorama.observe",
+  "item": "chal-3",
+  "learner": "I think it's Tadpole",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "habitat-diorama.observe",
+  "item": "chal-3",
+  "learner": "Tadpole",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "knowledge-check.recall",
+  "item": "p1-mc",
+  "learner": "I think it's sunshine",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "knowledge-check.recall",
+  "item": "p2-mc",
+  "learner": "cow",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "knowledge-check.recall",
+  "item": "p2-mc",
+  "learner": "I think it's cow",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "matter-explorer.change",
+  "item": "chal-1",
+  "learner": "I think it's go back",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "matter-explorer.change",
+  "item": "chal-1",
+  "learner": "go back",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "matter-explorer.change",
+  "item": "chal-3",
+  "learner": "I think it's for ever",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "matter-explorer.change",
+  "item": "chal-3",
+  "learner": "for ever",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "matter-explorer.change",
+  "item": "chal-2",
+  "learner": "go back",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "matter-explorer.sort",
+  "item": "chal-rock",
+  "learner": "solid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "matter-explorer.change",
+  "item": "chal-2",
+  "learner": "I think it's go back",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "matter-explorer.sort",
+  "item": "chal-rock",
+  "learner": "I think it's solid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "matter-explorer.sort",
+  "item": "chal-water",
+  "learner": "liquid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "matter-explorer.sort",
+  "item": "chal-water",
+  "learner": "I think it's liquid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "matter-explorer.sort",
+  "item": "chal-air",
+  "learner": "gas",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "matter-explorer.sort",
+  "item": "chal-air",
+  "learner": "I think it's gas",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "periodic-table.trend",
+  "item": "pt-1-trend",
+  "learner": "I think it's Selenium",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "periodic-table.trend",
+  "item": "pt-1-trend",
+  "learner": "Selenium",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "periodic-table.trend",
+  "item": "pt-2-trend",
+  "learner": "six",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "periodic-table.trend",
+  "item": "pt-2-trend",
+  "learner": "I think it's six",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "periodic-table.trend",
+  "item": "pt-3-trend",
+  "learner": "Potassium",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "periodic-table.trend",
+  "item": "pt-3-trend",
+  "learner": "I think it's Potassium",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "picture-vocabulary.naming",
+  "item": "pv-1",
+  "learner": "rug",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "picture-vocabulary.naming",
+  "item": "pv-1",
+  "learner": "I think it's rug",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "picture-vocabulary.naming",
+  "item": "pv-2",
+  "learner": "bed",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "picture-vocabulary.naming",
+  "item": "pv-2",
+  "learner": "I think it's bed",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "picture-vocabulary.naming",
+  "item": "pv-3",
+  "learner": "I think it's clock",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "push-pull-arena.observe",
+  "item": "c1",
+  "learner": "push",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "push-pull-arena.observe",
+  "item": "c2",
+  "learner": "pull",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "push-pull-arena.observe",
+  "item": "c3",
+  "learner": "push",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "push-pull-arena.observe",
+  "item": "c2",
+  "learner": "I think it's pull",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "push-pull-arena.observe",
+  "item": "c1",
+  "learner": "I think it's push",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "picture-vocabulary.naming",
+  "item": "pv-3",
+  "learner": "clock",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "push-pull-arena.predict",
+  "item": "c1",
+  "learner": "moves",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "push-pull-arena.observe",
+  "item": "c3",
+  "learner": "I think it's push",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "push-pull-arena.predict",
+  "item": "c2",
+  "learner": "I think it's stays",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "push-pull-arena.predict",
+  "item": "c2",
+  "learner": "stays",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "push-pull-arena.predict",
+  "item": "c3",
+  "learner": "moves",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "push-pull-arena.predict",
+  "item": "c1",
+  "learner": "I think it's moves",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "sentence-analyzer.identify_pos",
+  "item": "ch1-pos-0",
+  "learner": "Adjective",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "push-pull-arena.predict",
+  "item": "c3",
+  "learner": "I think it's moves",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "sentence-analyzer.identify_pos",
+  "item": "ch1-pos-0",
+  "learner": "I think it's Adjective",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "sentence-analyzer.identify_pos",
+  "item": "ch1-pos-2",
+  "learner": "I think it's Noun",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "sentence-analyzer.identify_pos",
+  "item": "ch1-pos-2",
+  "learner": "Noun",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "sentence-analyzer.identify_pos",
+  "item": "ch2-pos-0",
+  "learner": "Determiner",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "sentence-analyzer.identify_pos",
+  "item": "ch2-pos-0",
+  "learner": "I think it's Determiner",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "sentence-analyzer.parse_structure",
+  "item": "ch1-side-0",
+  "learner": "subject",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "sentence-analyzer.parse_structure",
+  "item": "ch1-side-0",
+  "learner": "I think it's subject",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "sentence-analyzer.parse_structure",
+  "item": "ch1-side-4",
+  "learner": "predicate",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "sentence-analyzer.parse_structure",
+  "item": "ch1-side-1",
+  "learner": "I think it's subject",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "sentence-analyzer.parse_structure",
+  "item": "ch1-side-1",
+  "learner": "subject",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "sentence-analyzer.parse_structure",
+  "item": "ch1-side-4",
+  "learner": "I think it's predicate",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "solar-system-explorer.compare_attribute",
+  "item": "ssc-1",
+  "learner": "I think it's Jupiter",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "solar-system-explorer.compare_attribute",
+  "item": "ssc-1",
+  "learner": "Jupiter",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "solar-system-explorer.compare_attribute",
+  "item": "ssc-2",
+  "learner": "Mercury",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "solar-system-explorer.compare_attribute",
+  "item": "ssc-2",
+  "learner": "I think it's Mercury",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "solar-system-explorer.compare_attribute",
+  "item": "ssc-3",
+  "learner": "I think it's Saturn",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "solar-system-explorer.compare_attribute",
+  "item": "ssc-3",
+  "learner": "Saturn",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "solar-system-explorer.identify",
+  "item": "ssc-1",
+  "learner": "Mercury",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "solar-system-explorer.identify",
+  "item": "ssc-1",
+  "learner": "I think it's Mercury",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "solar-system-explorer.identify",
+  "item": "ssc-2",
+  "learner": "Venus",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "solar-system-explorer.identify",
+  "item": "ssc-2",
+  "learner": "I think it's Venus",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "solar-system-explorer.identify",
+  "item": "ssc-3",
+  "learner": "Earth",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "states-of-matter.observe",
+  "item": "som-1-observe",
+  "learner": "solid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "states-of-matter.observe",
+  "item": "som-2-observe",
+  "learner": "gas",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "states-of-matter.observe",
+  "item": "som-1-observe",
+  "learner": "I think it's solid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "solar-system-explorer.identify",
+  "item": "ssc-3",
+  "learner": "I think it's Earth",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "states-of-matter.observe",
+  "item": "som-2-observe",
+  "learner": "I think it's gas",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "states-of-matter.predict",
+  "item": "som-1-predict",
+  "learner": "gas",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "states-of-matter.observe",
+  "item": "som-3-observe",
+  "learner": "liquid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "states-of-matter.predict",
+  "item": "som-2-predict",
+  "learner": "liquid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "states-of-matter.predict",
+  "item": "som-1-predict",
+  "learner": "I think it's gas",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "states-of-matter.observe",
+  "item": "som-3-observe",
+  "learner": "I think it's liquid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "states-of-matter.predict",
+  "item": "som-3-predict",
+  "learner": "freezing",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "states-of-matter.predict",
+  "item": "som-2-predict",
+  "learner": "I think it's liquid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "states-of-matter.predict",
+  "item": "som-3-predict",
+  "learner": "I think it's freezing",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "text-structure-analyzer.cause_effect",
+  "item": "signal::0::so",
+  "learner": "so",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "text-structure-analyzer.cause_effect",
+  "item": "signal::0::so",
+  "learner": "I think it's so",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "text-structure-analyzer.cause_effect",
+  "item": "signal::1::because",
+  "learner": "because",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "text-structure-analyzer.cause_effect",
+  "item": "signal::1::because",
+  "learner": "I think it's because",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "text-structure-analyzer.cause_effect",
+  "item": "signal::2::as-a-result",
+  "learner": "As a result",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "text-structure-analyzer.cause_effect",
+  "item": "signal::2::as-a-result",
+  "learner": "I think it's As a result",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "text-structure-analyzer.chronological_description",
+  "item": "signal::0::first",
+  "learner": "I think it's First",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "text-structure-analyzer.chronological_description",
+  "item": "signal::0::first",
+  "learner": "First",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "text-structure-analyzer.chronological_description",
+  "item": "signal::1::next",
+  "learner": "Next",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "text-structure-analyzer.chronological_description",
+  "item": "signal::1::next",
+  "learner": "I think it's Next",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-builder.compound_affix",
+  "item": "unhelpful",
+  "learner": "unhelpful",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "text-structure-analyzer.chronological_description",
+  "item": "signal::2::after",
+  "learner": "After",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "text-structure-analyzer.chronological_description",
+  "item": "signal::2::after",
+  "learner": "I think it's After",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-builder.compound_affix",
+  "item": "unhelpful",
+  "learner": "I think it's unhelpful",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-builder.compound_affix",
+  "item": "replayable",
+  "learner": "I think it's replayable",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-builder.compound_affix",
+  "item": "disagreement",
+  "learner": "I think it's disagreement",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-builder.compound_affix",
+  "item": "replayable",
+  "learner": "replayable",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-builder.simple_affix",
+  "item": "playful",
+  "learner": "I think it's playful",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-builder.simple_affix",
+  "item": "unkind",
+  "learner": "unkind",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-builder.simple_affix",
+  "item": "playful",
+  "learner": "playful",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-builder.compound_affix",
+  "item": "disagreement",
+  "learner": "disagreement",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-builder.simple_affix",
+  "item": "unkind",
+  "learner": "I think it's unkind",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-builder.simple_affix",
+  "item": "teacher",
+  "learner": "teacher",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.98,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-builder.simple_affix",
+  "item": "teacher",
+  "learner": "I think it's teacher",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-sorter.binary_sort",
+  "item": "binary_sort-0::w2",
+  "learner": "Animals",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-sorter.binary_sort",
+  "item": "binary_sort-0::w1",
+  "learner": "I think it's Food",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-sorter.binary_sort",
+  "item": "binary_sort-0::w2",
+  "learner": "I think it's Animals",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-sorter.binary_sort",
+  "item": "binary_sort-0::w1",
+  "learner": "Food",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-sorter.binary_sort",
+  "item": "binary_sort-0::w4",
+  "learner": "Animals",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-sorter.binary_sort",
+  "item": "binary_sort-0::w4",
+  "learner": "I think it's Animals",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-sorter.ternary_sort",
+  "item": "ternary_sort-0::w8",
+  "learner": "Dogs",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-sorter.ternary_sort",
+  "item": "ternary_sort-0::w8",
+  "learner": "I think it's Dogs",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-sorter.ternary_sort",
+  "item": "ternary_sort-0::w6",
+  "learner": "I think it's Food",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-sorter.ternary_sort",
+  "item": "ternary_sort-0::w5",
+  "learner": "Cats",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-sorter.ternary_sort",
+  "item": "ternary_sort-0::w6",
+  "learner": "Food",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "you-and-me.describe_action",
+  "item": "you-and-me-1-1",
+  "learner": "I washed the apple.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "word-sorter.ternary_sort",
+  "item": "ternary_sort-0::w5",
+  "learner": "I think it's Cats",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "you-and-me.describe_action",
+  "item": "you-and-me-1-1",
+  "learner": "I think it's I washed the apple.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.86,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "you-and-me.describe_action",
+  "item": "you-and-me-2-1",
+  "learner": "You caught the red ball.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "you-and-me.describe_action",
+  "item": "you-and-me-1-2",
+  "learner": "I think it's You washed the apple.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.96,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "you-and-me.describe_action",
+  "item": "you-and-me-2-1",
+  "learner": "I think it's You caught the red ball.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.97,
+  "reason": "correct"
+ },
+ {
+  "rep": 1,
+  "payload": "you-and-me.describe_action",
+  "item": "you-and-me-1-2",
+  "learner": "You washed the apple.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "calendar-explorer.day_sequence",
+  "item": "c1",
+  "learner": "Sunday",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "calendar-explorer.day_sequence",
+  "item": "c2",
+  "learner": "I think it's Monday",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "calendar-explorer.day_sequence",
+  "item": "c3",
+  "learner": "Tuesday",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "calendar-explorer.day_sequence",
+  "item": "c2",
+  "learner": "Monday",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "calendar-explorer.day_sequence",
+  "item": "c1",
+  "learner": "I think it's Sunday",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "calendar-explorer.day_sequence",
+  "item": "c3",
+  "learner": "I think it's Tuesday",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "cause-effect-chain.identify_cause",
+  "item": "cec-1:cec-1-2",
+  "learner": "yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "cause-effect-chain.identify_cause",
+  "item": "cec-1:cec-1-3",
+  "learner": "I think it's yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "cause-effect-chain.identify_cause",
+  "item": "cec-1:cec-1-2",
+  "learner": "I think it's yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "cause-effect-chain.identify_cause",
+  "item": "cec-1:cec-1-d1",
+  "learner": "no",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "cause-effect-chain.identify_cause",
+  "item": "cec-1:cec-1-3",
+  "learner": "yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "era-explorer.cause_of_change",
+  "item": "era-cause_of_change-1",
+  "learner": "electric machines",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "cause-effect-chain.identify_cause",
+  "item": "cec-1:cec-1-d1",
+  "learner": "I think it's no",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "era-explorer.cause_of_change",
+  "item": "era-cause_of_change-3",
+  "learner": "districts built",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "era-explorer.cause_of_change",
+  "item": "era-cause_of_change-1",
+  "learner": "I think it's electric machines",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "era-explorer.cause_of_change",
+  "item": "era-cause_of_change-2",
+  "learner": "automobile factories",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "era-explorer.cause_of_change",
+  "item": "era-cause_of_change-2",
+  "learner": "I think it's automobile factories",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "era-explorer.cause_of_change",
+  "item": "era-cause_of_change-3",
+  "learner": "I think it's districts built",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "era-explorer.era_sort",
+  "item": "era-era_sort-1",
+  "learner": "both",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "era-explorer.era_sort",
+  "item": "era-era_sort-1",
+  "learner": "I think it's both",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "era-explorer.era_sort",
+  "item": "era-era_sort-2",
+  "learner": "today",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "era-explorer.era_sort",
+  "item": "era-era_sort-3",
+  "learner": "I think it's back then",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "genre-explorer.classify_genre",
+  "item": "feature::e1::f1",
+  "learner": "yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "era-explorer.era_sort",
+  "item": "era-era_sort-2",
+  "learner": "I think it's today",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "genre-explorer.classify_genre",
+  "item": "feature::e1::f1",
+  "learner": "I think it's yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "era-explorer.era_sort",
+  "item": "era-era_sort-3",
+  "learner": "back then",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "genre-explorer.classify_genre",
+  "item": "feature::e1::f2",
+  "learner": "no",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "genre-explorer.classify_genre",
+  "item": "genre::e1",
+  "learner": "Myth",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "genre-explorer.classify_genre",
+  "item": "feature::e1::f2",
+  "learner": "I think it's no",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "genre-explorer.classify_genre",
+  "item": "genre::e1",
+  "learner": "I think it's Myth",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "genre-explorer.identify_basic",
+  "item": "feature::e1::made-up-events",
+  "learner": "I think it's yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "genre-explorer.identify_basic",
+  "item": "feature::e1::made-up-events",
+  "learner": "yes",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "genre-explorer.identify_basic",
+  "item": "genre::e1",
+  "learner": "Fiction",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "genre-explorer.identify_basic",
+  "item": "feature::e2::made-up-events",
+  "learner": "no",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "genre-explorer.identify_basic",
+  "item": "genre::e1",
+  "learner": "I think it's Fiction",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "genre-explorer.identify_basic",
+  "item": "feature::e2::made-up-events",
+  "learner": "I think it's no",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "habitat-diorama.observe",
+  "item": "chal-1",
+  "learner": "I think it's Green Algae",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "habitat-diorama.observe",
+  "item": "chal-1",
+  "learner": "Green Algae",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "habitat-diorama.observe",
+  "item": "chal-2",
+  "learner": "Cattail",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "habitat-diorama.observe",
+  "item": "chal-3",
+  "learner": "Tadpole",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "habitat-diorama.observe",
+  "item": "chal-2",
+  "learner": "I think it's Cattail",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "knowledge-check.recall",
+  "item": "p1-mc",
+  "learner": "I think it's sunshine",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "habitat-diorama.observe",
+  "item": "chal-3",
+  "learner": "I think it's Tadpole",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "knowledge-check.recall",
+  "item": "p1-mc",
+  "learner": "sunshine",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "knowledge-check.recall",
+  "item": "p2-mc",
+  "learner": "cow",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "knowledge-check.recall",
+  "item": "p2-mc",
+  "learner": "I think it's cow",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "matter-explorer.change",
+  "item": "chal-1",
+  "learner": "go back",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "matter-explorer.change",
+  "item": "chal-1",
+  "learner": "I think it's go back",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "matter-explorer.change",
+  "item": "chal-3",
+  "learner": "for ever",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "matter-explorer.change",
+  "item": "chal-3",
+  "learner": "I think it's for ever",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "matter-explorer.change",
+  "item": "chal-2",
+  "learner": "go back",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "matter-explorer.change",
+  "item": "chal-2",
+  "learner": "I think it's go back",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "matter-explorer.sort",
+  "item": "chal-rock",
+  "learner": "solid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "matter-explorer.sort",
+  "item": "chal-rock",
+  "learner": "I think it's solid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "matter-explorer.sort",
+  "item": "chal-water",
+  "learner": "I think it's liquid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "matter-explorer.sort",
+  "item": "chal-water",
+  "learner": "liquid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "matter-explorer.sort",
+  "item": "chal-air",
+  "learner": "gas",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "matter-explorer.sort",
+  "item": "chal-air",
+  "learner": "I think it's gas",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "periodic-table.trend",
+  "item": "pt-1-trend",
+  "learner": "Selenium",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "periodic-table.trend",
+  "item": "pt-1-trend",
+  "learner": "I think it's Selenium",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "periodic-table.trend",
+  "item": "pt-2-trend",
+  "learner": "six",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "periodic-table.trend",
+  "item": "pt-3-trend",
+  "learner": "Potassium",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "periodic-table.trend",
+  "item": "pt-2-trend",
+  "learner": "I think it's six",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "periodic-table.trend",
+  "item": "pt-3-trend",
+  "learner": "I think it's Potassium",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "picture-vocabulary.naming",
+  "item": "pv-1",
+  "learner": "rug",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "picture-vocabulary.naming",
+  "item": "pv-2",
+  "learner": "bed",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "picture-vocabulary.naming",
+  "item": "pv-1",
+  "learner": "I think it's rug",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "picture-vocabulary.naming",
+  "item": "pv-2",
+  "learner": "I think it's bed",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "picture-vocabulary.naming",
+  "item": "pv-3",
+  "learner": "clock",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "picture-vocabulary.naming",
+  "item": "pv-3",
+  "learner": "I think it's clock",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "push-pull-arena.observe",
+  "item": "c1",
+  "learner": "I think it's push",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "push-pull-arena.observe",
+  "item": "c1",
+  "learner": "push",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "push-pull-arena.observe",
+  "item": "c2",
+  "learner": "pull",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "push-pull-arena.observe",
+  "item": "c2",
+  "learner": "I think it's pull",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "push-pull-arena.observe",
+  "item": "c3",
+  "learner": "I think it's push",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "push-pull-arena.predict",
+  "item": "c1",
+  "learner": "I think it's moves",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "push-pull-arena.predict",
+  "item": "c1",
+  "learner": "moves",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "push-pull-arena.predict",
+  "item": "c2",
+  "learner": "stays",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "push-pull-arena.predict",
+  "item": "c2",
+  "learner": "I think it's stays",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "push-pull-arena.observe",
+  "item": "c3",
+  "learner": "push",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "push-pull-arena.predict",
+  "item": "c3",
+  "learner": "moves",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "push-pull-arena.predict",
+  "item": "c3",
+  "learner": "I think it's moves",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "sentence-analyzer.identify_pos",
+  "item": "ch1-pos-0",
+  "learner": "Adjective",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "sentence-analyzer.identify_pos",
+  "item": "ch1-pos-0",
+  "learner": "I think it's Adjective",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "sentence-analyzer.identify_pos",
+  "item": "ch1-pos-2",
+  "learner": "Noun",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "sentence-analyzer.identify_pos",
+  "item": "ch1-pos-2",
+  "learner": "I think it's Noun",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "sentence-analyzer.identify_pos",
+  "item": "ch2-pos-0",
+  "learner": "I think it's Determiner",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "sentence-analyzer.parse_structure",
+  "item": "ch1-side-0",
+  "learner": "subject",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "sentence-analyzer.identify_pos",
+  "item": "ch2-pos-0",
+  "learner": "Determiner",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "sentence-analyzer.parse_structure",
+  "item": "ch1-side-0",
+  "learner": "I think it's subject",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "sentence-analyzer.parse_structure",
+  "item": "ch1-side-1",
+  "learner": "subject",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "sentence-analyzer.parse_structure",
+  "item": "ch1-side-1",
+  "learner": "I think it's subject",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "sentence-analyzer.parse_structure",
+  "item": "ch1-side-4",
+  "learner": "predicate",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "sentence-analyzer.parse_structure",
+  "item": "ch1-side-4",
+  "learner": "I think it's predicate",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "solar-system-explorer.compare_attribute",
+  "item": "ssc-1",
+  "learner": "I think it's Jupiter",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "solar-system-explorer.compare_attribute",
+  "item": "ssc-1",
+  "learner": "Jupiter",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "solar-system-explorer.compare_attribute",
+  "item": "ssc-2",
+  "learner": "I think it's Mercury",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "solar-system-explorer.compare_attribute",
+  "item": "ssc-3",
+  "learner": "Saturn",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "solar-system-explorer.compare_attribute",
+  "item": "ssc-2",
+  "learner": "Mercury",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "solar-system-explorer.compare_attribute",
+  "item": "ssc-3",
+  "learner": "I think it's Saturn",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "solar-system-explorer.identify",
+  "item": "ssc-1",
+  "learner": "I think it's Mercury",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "solar-system-explorer.identify",
+  "item": "ssc-1",
+  "learner": "Mercury",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "solar-system-explorer.identify",
+  "item": "ssc-3",
+  "learner": "Earth",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "solar-system-explorer.identify",
+  "item": "ssc-2",
+  "learner": "Venus",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "solar-system-explorer.identify",
+  "item": "ssc-2",
+  "learner": "I think it's Venus",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "solar-system-explorer.identify",
+  "item": "ssc-3",
+  "learner": "I think it's Earth",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "states-of-matter.observe",
+  "item": "som-1-observe",
+  "learner": "solid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "states-of-matter.observe",
+  "item": "som-2-observe",
+  "learner": "I think it's gas",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "states-of-matter.observe",
+  "item": "som-1-observe",
+  "learner": "I think it's solid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "states-of-matter.observe",
+  "item": "som-2-observe",
+  "learner": "gas",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "states-of-matter.observe",
+  "item": "som-3-observe",
+  "learner": "I think it's liquid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "states-of-matter.observe",
+  "item": "som-3-observe",
+  "learner": "liquid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "states-of-matter.predict",
+  "item": "som-1-predict",
+  "learner": "gas",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "states-of-matter.predict",
+  "item": "som-1-predict",
+  "learner": "I think it's gas",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "states-of-matter.predict",
+  "item": "som-2-predict",
+  "learner": "I think it's liquid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "states-of-matter.predict",
+  "item": "som-2-predict",
+  "learner": "liquid",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "states-of-matter.predict",
+  "item": "som-3-predict",
+  "learner": "freezing",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "states-of-matter.predict",
+  "item": "som-3-predict",
+  "learner": "I think it's freezing",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "text-structure-analyzer.cause_effect",
+  "item": "signal::0::so",
+  "learner": "so",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "text-structure-analyzer.cause_effect",
+  "item": "signal::2::as-a-result",
+  "learner": "As a result",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "text-structure-analyzer.cause_effect",
+  "item": "signal::1::because",
+  "learner": "because",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "text-structure-analyzer.cause_effect",
+  "item": "signal::0::so",
+  "learner": "I think it's so",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "text-structure-analyzer.cause_effect",
+  "item": "signal::1::because",
+  "learner": "I think it's because",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "text-structure-analyzer.cause_effect",
+  "item": "signal::2::as-a-result",
+  "learner": "I think it's As a result",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "text-structure-analyzer.chronological_description",
+  "item": "signal::0::first",
+  "learner": "First",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "text-structure-analyzer.chronological_description",
+  "item": "signal::2::after",
+  "learner": "I think it's After",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "text-structure-analyzer.chronological_description",
+  "item": "signal::0::first",
+  "learner": "I think it's First",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-builder.compound_affix",
+  "item": "unhelpful",
+  "learner": "unhelpful",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "text-structure-analyzer.chronological_description",
+  "item": "signal::1::next",
+  "learner": "I think it's Next",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "text-structure-analyzer.chronological_description",
+  "item": "signal::1::next",
+  "learner": "Next",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "text-structure-analyzer.chronological_description",
+  "item": "signal::2::after",
+  "learner": "After",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-builder.compound_affix",
+  "item": "replayable",
+  "learner": "replayable",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-builder.compound_affix",
+  "item": "disagreement",
+  "learner": "disagreement",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-builder.compound_affix",
+  "item": "replayable",
+  "learner": "I think it's replayable",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-builder.compound_affix",
+  "item": "unhelpful",
+  "learner": "I think it's unhelpful",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-builder.compound_affix",
+  "item": "disagreement",
+  "learner": "I think it's disagreement",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-builder.simple_affix",
+  "item": "playful",
+  "learner": "I think it's playful",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-builder.simple_affix",
+  "item": "playful",
+  "learner": "playful",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-builder.simple_affix",
+  "item": "teacher",
+  "learner": "teacher",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-builder.simple_affix",
+  "item": "unkind",
+  "learner": "unkind",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-builder.simple_affix",
+  "item": "unkind",
+  "learner": "I think it's unkind",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.99,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-sorter.binary_sort",
+  "item": "binary_sort-0::w2",
+  "learner": "Animals",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-builder.simple_affix",
+  "item": "teacher",
+  "learner": "I think it's teacher",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-sorter.binary_sort",
+  "item": "binary_sort-0::w2",
+  "learner": "I think it's Animals",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-sorter.binary_sort",
+  "item": "binary_sort-0::w1",
+  "learner": "Food",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-sorter.binary_sort",
+  "item": "binary_sort-0::w4",
+  "learner": "Animals",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-sorter.binary_sort",
+  "item": "binary_sort-0::w1",
+  "learner": "I think it's Food",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-sorter.binary_sort",
+  "item": "binary_sort-0::w4",
+  "learner": "I think it's Animals",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-sorter.ternary_sort",
+  "item": "ternary_sort-0::w8",
+  "learner": "I think it's Dogs",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-sorter.ternary_sort",
+  "item": "ternary_sort-0::w8",
+  "learner": "Dogs",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-sorter.ternary_sort",
+  "item": "ternary_sort-0::w6",
+  "learner": "Food",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-sorter.ternary_sort",
+  "item": "ternary_sort-0::w6",
+  "learner": "I think it's Food",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-sorter.ternary_sort",
+  "item": "ternary_sort-0::w5",
+  "learner": "Cats",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "word-sorter.ternary_sort",
+  "item": "ternary_sort-0::w5",
+  "learner": "I think it's Cats",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "you-and-me.describe_action",
+  "item": "you-and-me-1-1",
+  "learner": "I washed the apple.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "you-and-me.describe_action",
+  "item": "you-and-me-1-2",
+  "learner": "I think it's You washed the apple.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.98,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "you-and-me.describe_action",
+  "item": "you-and-me-1-2",
+  "learner": "You washed the apple.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "you-and-me.describe_action",
+  "item": "you-and-me-1-1",
+  "learner": "I think it's I washed the apple.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.88,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "you-and-me.describe_action",
+  "item": "you-and-me-2-1",
+  "learner": "I think it's You caught the red ball.",
+  "miss": null,
+  "reading": "correct",
+  "p": 0.98,
+  "reason": "correct"
+ },
+ {
+  "rep": 2,
+  "payload": "you-and-me.describe_action",
+  "item": "you-and-me-2-1",
+  "learner": "You caught the red ball.",
+  "miss": null,
+  "reading": "correct",
+  "p": 1,
+  "reason": "correct"
+ }
+]

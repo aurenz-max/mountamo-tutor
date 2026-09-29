@@ -10,6 +10,7 @@
  * everyday change can go back (name_undo, read from CHANGE_CATALOG, never the payload).
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import {
   askFor,
   CHANGE_CATALOG,
@@ -45,7 +46,41 @@ export function matterAssignment(item: MatterExplorerItem): TeachingAssignment {
       break;
     }
   }
-  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer };
+  const misses = matterSpokenMisses(item);
+  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) };
+}
+
+/** What a wrong spoken answer shows (handoff 20 Part B). */
+export type SpokenMatterMiss = 'other_state' | 'said_object_back' | 'other_way' | 'said_change_back' | 'state_word';
+
+const STATES = ['solid', 'liquid', 'gas'] as const;
+
+/**
+ * An item's known wrong answers, in precedence order, for the `spoken_miss` observer: another state word or the
+ * object's name back (name_state, mystery_state); the other way, the change said back, or a state word
+ * (name_undo). name_property names none yet (no saved payload).
+ */
+export function matterSpokenMisses(item: MatterExplorerItem): KnownMiss[] {
+  if (item.kind === 'name_state' || item.kind === 'mystery_state') {
+    const others = STATES.filter(s => s !== item.answerState);
+    const thing = item.kind === 'name_state' ? `The ${item.objectName} is a ${item.answerState}.` : `The secret thing is a ${item.answerState}.`;
+    return [
+      { id: 'other_state', pattern: `${thing} The learner's answer is ${others.map(s => `"${s}"`).join(' or ')}, another state.`, examples: [...others] },
+      ...(item.kind === 'name_state' ? [{ id: 'said_object_back', pattern: `The learner says the object's name, "${item.objectName}", back and no state word.`, examples: [item.objectName] }] : []),
+    ];
+  }
+  if (item.kind === 'name_undo' && item.answerUndo && item.change) {
+    const right = CHANGE_OPTIONS[item.answerUndo], other = CHANGE_OPTIONS[item.answerUndo === 'can_go_back' ? 'changed_for_ever' : 'can_go_back'];
+    const story = CHANGE_CATALOG[item.change].storyFor(item.objectName);
+    const happened = story.split(' until ')[1] ?? story;
+    const fact = `${story}: ${right.phrase}.`;
+    return [
+      { id: 'other_way', pattern: `${fact} The learner's answer is the other way: ${other.phrase}.`, examples: [other.distinguisher, other.alsoCounts[0]] },
+      { id: 'said_change_back', pattern: `${fact} The learner says what happened ("${happened}") back, not whether it can go back.`, examples: [happened] },
+      { id: 'state_word', pattern: `${fact} The learner's answer is a state word ("solid", "liquid" or "gas"), not whether it can go back.`, examples: ['solid', 'liquid'] },
+    ];
+  }
+  return [];
 }
 
 export function matterScene(item: MatterExplorerItem): WorkspaceScene {

@@ -7,15 +7,24 @@
  * spoken answer, the whole word, so the observer judges it against `targetWord`.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { speakablePhoneme } from './phonemeVoice';
 import type { BlendItem } from './phonicsBlenderScript';
+import { wordReadingMisses, type WordReadingMiss } from './spokenReadingMisses';
 
-export const blendAssignment = (item: BlendItem): TeachingAssignment => ({
-  id: item.id,
-  task: 'Blend the sounds of the letters on screen and say the whole word out loud.',
-  response: 'speech',
-  expectedAnswer: item.targetWord,
-});
+export const blendAssignment = (item: BlendItem): TeachingAssignment => {
+  const misses = blendSpokenMisses(item);
+  return { id: item.id, task: 'Blend the sounds of the letters on screen and say the whole word out loud.',
+    response: 'speech', expectedAnswer: item.targetWord, ...(misses.length ? { misses } : {}) };
+};
+
+/** What a wrong spoken blend shows (handoff 20 Part B). */
+export type SpokenBlendMiss = Exclude<WordReadingMiss, 'similar_word'>;
+
+/** The item's known wrong blends, in precedence order: the word-reading patterns on its letters. */
+export function blendSpokenMisses(item: BlendItem): KnownMiss[] {
+  return wordReadingMisses(item.targetWord, { sounds: item.phonemes.map(p => p.letters) });
+}
 
 export interface BlendView {
   /** How much segmentation help the letter row gives (the support tier). */

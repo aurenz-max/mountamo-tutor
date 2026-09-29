@@ -10,6 +10,7 @@
  * is a stimulus the tutor brings in with `present` (or the learner with Show me).
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { numberMisses, offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import {
   addSubHarnessAnswers,
   askFor,
@@ -27,13 +28,40 @@ const ask = (item: AddSubSceneItem) => askFor(item).replace(/\s*Your turn(\.| â€
 export const isEnacted = (item: AddSubSceneItem) =>
   item.kind === 'create-story' || (item.kind === 'act-out' && (item.band === 'K' || item.operation === 'subtraction'));
 
+/** What a wrong spoken story answer shows (handoff 20 Part B). */
+export type SpokenAddSubMiss = OffByMiss | 'said_start' | 'said_change' | 'said_result' | 'other_operation';
+
+/**
+ * A spoken item's known wrong answers, in precedence order, for the `spoken_miss` observer: a number the story says
+ * (how many at the start, how many joined or left, how many at the end), the story's two numbers put together the
+ * other way, then the off-by misses.
+ */
+export function additionSubtractionSpokenMisses(item: AddSubSceneItem): KnownMiss[] {
+  if (item.answerKind === 'gesture') return [];
+  const a = item.answer, obj = item.objectType, join = item.operation === 'addition';
+  const unknown = item.kind === 'solve-story' ? item.unknownPosition : 'result';
+  const [x, y] = publicValuesFor(item), sum = x + y, diff = Math.abs(x - y);
+  return [...numberMisses(a, [
+    { id: 'said_start', value: unknown === 'start' ? undefined : item.startCount,
+      pattern: n => `The story starts with ${n} ${obj}. The learner's answer is ${n}, the number the story starts with.` },
+    { id: 'said_change', value: unknown === 'change' ? undefined : item.changeCount,
+      pattern: n => `In the story ${n} ${obj} ${join ? 'join' : 'go away'}. The learner's answer is ${n}, the number that ${join ? 'joined' : 'went away'}.` },
+    { id: 'said_result', value: unknown === 'result' ? undefined : item.resultCount,
+      pattern: n => `The story ends with ${n} ${obj}. The learner's answer is ${n}, the number at the end of the story.` },
+    { id: 'other_operation', value: a === sum ? diff : sum,
+      pattern: n => `The story's numbers are ${x} and ${y}. The learner's answer is ${n}, those two numbers ${a === sum ? 'taken apart' : 'added together'} instead.` },
+  ]), ...offByMisses(a, `the ${a} ${obj} the question asks for`)];
+}
+
 export function additionSubtractionAssignment(item: AddSubSceneItem): TeachingAssignment {
   if (item.answerKind === 'gesture') return { id: item.id, task: ask(item), response: 'gesture' };
   const echoed = publicValuesFor(item).filter(v => v !== item.answer);
+  const misses = additionSubtractionSpokenMisses(item);
   return { id: item.id, task: ask(item), response: 'speech',
     expectedAnswer: `${numberWordFor(item.answer)} (${item.answer}). Counting aloud that ends on ${numberWordFor(item.answer)} `
       + `counts, and so does the number with the ${item.objectType} named after it.`
-      + (echoed.length ? ` ${echoed.map(v => numberWordFor(v)).join(' or ')}, a number the story says out loud, is not it.` : '') };
+      + (echoed.length ? ` ${echoed.map(v => numberWordFor(v)).join(' or ')}, a number the story says out loud, is not it.` : ''),
+    ...(misses.length ? { misses } : {}) };
 }
 
 export interface AddSubView {

@@ -11,6 +11,7 @@
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { textFacts } from '../../../components/live-activity/runtime/sceneFacts';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import {
   askFor,
   causeEffectChainHarnessAnswers,
@@ -58,7 +59,26 @@ export function causeEffectAssignment(item: CauseEffectChainItem): TeachingAssig
       + `Its own words count on their own (${quoted([c.distinguisher, ...c.alsoCounts])}), and so does its place on screen. `
       + `Any other event is wrong (${quoted(others)}), and so is an answer that does not pick exactly one event.`;
   }
-  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer };
+  const misses = causeEffectSpokenMisses(item);
+  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) };
+}
+
+/** What a wrong spoken verdict shows (handoff 20 Part B), by the event's role. */
+export type SpokenChainMiss = 'cause_denied' | 'consequence_as_cause' | 'background_as_cause';
+
+/**
+ * identify_cause's known wrong answer, stated from the event's role: a real cause said not to help, an event that
+ * came after the ending said to cause it, or a background fact said to cause it. root_vs_proximate names none yet
+ * (no saved payload).
+ */
+export function causeEffectSpokenMisses(item: CauseEffectChainItem): KnownMiss[] {
+  if (item.kind !== 'identify_cause') return [];
+  const event = item.card.text.replace(/[.!?]+$/, ''), ending = item.outcome.text.replace(/[.!?]+$/, '');
+  if (item.isCause) return [{ id: 'cause_denied', pattern: `The right answer is "yes": "${event}" came before "${ending}" and helped cause it. The learner gives the opposite answer, "no" (or "nope", "it did not").`,
+    examples: ['no', 'it did not'] }];
+  return [item.role === 'consequence'
+    ? { id: 'consequence_as_cause', pattern: `The right answer is "no": "${event}" could only happen after "${ending}" had already happened. The learner gives the opposite answer, "yes" (or "yeah", "it helped").`, examples: ['yes', 'it helped'] }
+    : { id: 'background_as_cause', pattern: `The right answer is "no": "${event}" was only true at the time and pushed nothing along toward "${ending}". The learner gives the opposite answer, "yes" (or "yeah", "it helped").`, examples: ['yes', 'it helped'] }];
 }
 
 /** The cards in on-screen order, numbered: the page's own shuffle, never the causal order. */
@@ -93,7 +113,8 @@ export function chainMatches(item: BuildChainItem, placed: readonly (string | nu
 /**
  * What a checked wrong chain shows (handoff 20), the same shapes as number-sequencer's `orderMiss`: `reversed`
  * (the event nearest the ending placed first, the order run backwards), `two_swapped` (only two cards out of
- * place), `other_order`. identify_cause and root_vs_proximate are spoken (Part B).
+ * place), `other_order`. identify_cause and root_vs_proximate are spoken
+ * (`causeEffectSpokenMisses`, Part B).
  */
 export type ChainMiss = 'reversed' | 'two_swapped' | 'other_order';
 

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { knowledgeCheckMiss } from './knowledgeCheckWorkspace';
+import { knowledgeCheckMiss, knowledgeCheckSpokenMisses } from './knowledgeCheckWorkspace';
 import type { KnowledgeCheckItem } from './knowledgeCheckScript';
 
 const tap = (texts: string[], correct: number) => ({ id: 'p0-mc', kind: 'choice_tap', problemIndex: 0, prompt: '',
@@ -16,4 +16,22 @@ it.each([
   [{ ...stars, kind: 'choice' } as KnowledgeCheckItem, 'A', undefined],
 ] as const)('%#', (item, tapped, miss) => {
   expect(knowledgeCheckMiss(item, tapped)).toBe(miss);
+});
+
+// A spoken item's known wrong answers (handoff 20 Part B): ids in precedence order, and no example is accepted.
+const spoken = (extra: Partial<KnowledgeCheckItem>) => ({ id: 'p', problemIndex: 0, prompt: '', ...extra }) as KnowledgeCheckItem;
+it.each([
+  ['true_false', spoken({ kind: 'true_false', correctBool: true }), ['opposite_verdict'], ['true', 'yes']],
+  ['word choice', spoken({ ...words, kind: 'choice' }), ['other_choice', 'two_choices'], ['a park']],
+  ['number choice', spoken({ ...stars, kind: 'choice' }), ['one_less', 'one_more', 'other_number', 'two_choices'], ['5']],
+  ['sort', spoken({ ...words, kind: 'sort', focusText: 'a swing' }), ['other_choice', 'two_choices', 'said_card_back'], ['a park']],
+  ['blank', spoken({ kind: 'blank', answerWord: 'sun', wordBank: ['sun', 'rock'] }), ['other_bank_word'], ['sun']],
+  ['how_many', spoken({ kind: 'how_many', expectedAnswer: 'four', alternates: ['4'], stimulus: { insetType: 'arrangement', count: 6, removed: 2 } as never }),
+    ['said_start', 'one_short', 'one_over', 'short_by_more', 'over_by_more'], ['four', '4']],
+  ['tap', stars, [], []],
+] as const)('%s: spoken misses', (_name, item, ids, accepted) => {
+  const misses = knowledgeCheckSpokenMisses(item);
+  expect(misses.map(m => m.id)).toEqual(ids);
+  const ok = accepted.map(a => a.toLowerCase());
+  for (const m of misses) for (const e of m.examples ?? []) expect(ok).not.toContain(e.toLowerCase());
 });

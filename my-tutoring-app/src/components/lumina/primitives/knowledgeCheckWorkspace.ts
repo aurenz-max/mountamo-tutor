@@ -13,6 +13,7 @@
  */
 import type { TeachingAssignment, WorkspaceScene } from '../components/live-activity/runtime/useTeachingWorkspace';
 import { textFacts } from '../components/live-activity/runtime/sceneFacts';
+import { numberMisses, offByMisses, type KnownMiss } from '../components/live-activity/runtime/spokenMissContract';
 import type { ProblemData } from '../types';
 import {
   askFor,
@@ -79,7 +80,7 @@ function key(item: KnowledgeCheckItem): string | undefined {
  *   - a tapped choice where the key and the choice are both numbers: `one_less`, `one_more`, `other_number`;
  *     any other tapped choice is `other_choice`;
  *   - point_to on a printed number sentence: `sign_token` (a +, − or = sign), `other_number_token`.
- * Every other item kind is spoken (Part B).
+ * Every other item kind is spoken: `knowledgeCheckSpokenMisses` (Part B).
  */
 export type KnowledgeCheckMiss = 'one_less' | 'one_more' | 'other_number' | 'other_choice' | 'sign_token' | 'other_number_token';
 
@@ -100,9 +101,70 @@ export function knowledgeCheckMiss(item: KnowledgeCheckItem, tappedId: string): 
 
 export function knowledgeCheckAssignment(item: KnowledgeCheckItem): TeachingAssignment {
   const expectedAnswer = key(item);
+  const misses = expectedAnswer ? knowledgeCheckSpokenMisses(item) : [];
   return expectedAnswer
-    ? { id: item.id, task: ask(item), response: 'speech', expectedAnswer }
+    ? { id: item.id, task: ask(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) }
     : { id: item.id, task: ask(item), response: 'gesture' };
+}
+
+/**
+ * What a wrong spoken answer shows (handoff 20 Part B). A choice reuses the tap's ids (`one_less`, `one_more`,
+ * `other_number`, `other_choice`); the rest are the spoken kinds' own.
+ */
+export type SpokenKnowledgeCheckMiss = 'opposite_verdict' | 'one_less' | 'one_more' | 'other_number' | 'other_choice'
+  | 'two_choices' | 'said_card_back' | 'other_bank_word' | 'said_start' | 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more';
+
+/**
+ * A spoken item's known wrong answers, in precedence order, for the `spoken_miss` observer. The generated options
+ * record no reason for being wrong, so a choice names only what its text shows: a number next to the key, another
+ * printed choice, or two choices at once.
+ */
+export function knowledgeCheckSpokenMisses(item: KnowledgeCheckItem): KnownMiss[] {
+  const options = item.options ?? [];
+  const quote = (xs: readonly string[]) => xs.map(x => `"${x}"`).join(' or ');
+  switch (item.kind) {
+    case 'true_false': {
+      const truth = item.correctBool ? 'true' : 'false';
+      return [{ id: 'opposite_verdict', pattern: `The statement is ${truth}. The learner's answer says it is ${item.correctBool ? 'false' : 'true'}.`,
+        examples: item.correctBool ? ['false', 'no'] : ['true', 'yes'] }];
+    }
+    case 'choice':
+    case 'match':
+    case 'sort': {
+      const right = stripEnd(correctOptionText(item)), want = asNumber(right);
+      const others = options.filter(o => o.id !== item.correctOptionId).map(o => stripEnd(o.text));
+      const fact = `The right choice is "${right}".`;
+      const numeric = !Number.isNaN(want) && others.every(o => !Number.isNaN(asNumber(o)));
+      const own: KnownMiss[] = numeric ? [
+        ...others.filter(o => asNumber(o) === want - 1).map(o => ({ id: 'one_less', pattern: `${fact} The learner's answer is ${o}, one less.`, examples: [o] })),
+        ...others.filter(o => asNumber(o) === want + 1).map(o => ({ id: 'one_more', pattern: `${fact} The learner's answer is ${o}, one more.`, examples: [o] })),
+        ...(() => {
+          const far = others.filter(o => Math.abs(asNumber(o) - want) > 1);
+          return far.length ? [{ id: 'other_number', pattern: `${fact} The learner's answer is ${quote(far)}, another printed number.`, examples: far.slice(0, 2) }] : [];
+        })(),
+      ] : others.length ? [{ id: 'other_choice', pattern: `${fact} The learner's answer is ${quote(others)}, another printed choice.`, examples: others.slice(0, 2) }] : [];
+      return [...own,
+        ...(others.length ? [{ id: 'two_choices', pattern: `${fact} The learner names two of the choices, or hedges between them, without picking one.`,
+          examples: [`${others[0]} or ${right}`] }] : []),
+        ...(item.focusText && item.kind !== 'choice' ? [{ id: 'said_card_back',
+          pattern: `The learner says the card "${stripEnd(item.focusText)}" back and names no ${item.kind === 'sort' ? 'group' : 'partner'}.`, examples: [stripEnd(item.focusText)] }] : []),
+      ];
+    }
+    case 'blank': {
+      const others = (item.wordBank ?? []).filter(w => w.toLowerCase() !== (item.answerWord ?? '').toLowerCase());
+      return others.length ? [{ id: 'other_bank_word', pattern: `The missing word is "${item.answerWord}". The learner's answer is ${quote(others)}, another word from the word bank.`,
+        examples: others.slice(0, 2) }] : [];
+    }
+    case 'how_many': {
+      const n = Number((item.alternates ?? []).find(a => /^\d+$/.test(a)) ?? item.expectedAnswer);
+      if (!Number.isInteger(n) || n < 1) return [];
+      const s = item.stimulus;
+      const before = s?.insetType === 'arrangement' && (s.removed ?? 0) > 0 ? s.count : undefined;
+      return [...numberMisses(n, [{ id: 'said_start', value: before, pattern: v => `The learner's answer is ${v}, how many there were before any were taken away.` }]),
+        ...offByMisses(n, `the ${n} shown`)];
+    }
+    default: return [];
+  }
 }
 
 export function knowledgeCheckScene(item: KnowledgeCheckItem, preReader: boolean): WorkspaceScene {

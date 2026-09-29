@@ -10,6 +10,7 @@
  * total is the answer, and a comparison has three answers ("left", "right", "same") in the child's words.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { offByMisses, spokenNumber, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { DI_DICE_ROLL_MODES } from './diDiceRollModes';
 import { diceValuesFor, isTwoDiceChallenge, studentPrompt, type DiDiceRollChallenge } from './diDiceRollScript';
 
@@ -31,8 +32,43 @@ export function diceKey(item: DiDiceRollChallenge): string {
   return `"${item.spokenAnswer}". ${counted}`;
 }
 
+/** What a wrong spoken answer about the dice shows (handoff 20 Part B). */
+export type SpokenDiceMiss = OffByMiss | 'skipped_a_number' | 'other_die' | 'said_same' | 'picked_a_side' | 'said_number' | 'said_addend';
+
+const dots = (n: number) => `${n} dot${n === 1 ? '' : 's'}`;
+
+/**
+ * A rolled item's known wrong answers, in precedence order, for the `spoken_miss` observer: the dots on the dice
+ * stated first, then the learner's word. Concrete per roll, never a cause.
+ */
+export function diceSpokenMisses(item: DiDiceRollChallenge): KnownMiss[] {
+  if (item.challengeType === 'count_pips') {
+    return [...(item.value >= 3 ? [{ id: 'skipped_a_number', pattern: 'The learner counts aloud and leaves a number out of the counting sequence, whatever number they end on.',
+      examples: ['one, two, four'] }] : []), ...offByMisses(item.value, `the ${dots(item.value)} on the die`)];
+  }
+  const fact = `The left die shows ${dots(item.value)} and the right die shows ${dots(item.secondValue)}.`;
+  if (item.challengeType === 'sum_two_dice') {
+    const addends = Array.from(new Set([item.value, item.secondValue])).filter(v => v !== item.total);
+    return [...(addends.length ? [{ id: 'said_addend', pattern: `${fact} The learner's answer is ${addends.join(' or ')}, the dots on one die, not both together.`,
+      examples: addends.map(spokenNumber) }] : []), ...offByMisses(item.total, `the ${item.total} dots on both dice together`)];
+  }
+  const numbers = Array.from(new Set([item.value, item.secondValue]));
+  const said: KnownMiss = { id: 'said_number', pattern: `${fact} The learner says a number (${numbers.join(' or ')}) and not left, right or same.`,
+    examples: [spokenNumber(Math.max(...numbers))] };
+  if (item.comparison === 'same') {
+    return [{ id: 'picked_a_side', pattern: `${fact} The learner's answer is left or right, one die, not that they are the same.`, examples: ['left', 'right'] }, said];
+  }
+  const other = item.comparison === 'left' ? 'right' : 'left';
+  return [
+    { id: 'other_die', pattern: `${fact} The learner's answer is ${other}, the die with fewer dots.`, examples: [other, `the ${other} one`] },
+    { id: 'said_same', pattern: `${fact} The learner's answer is that they are the same.`, examples: ['same'] },
+    said,
+  ];
+}
+
 export function diceAssignment(item: DiDiceRollChallenge): TeachingAssignment {
-  return { id: item.id, task: diceAskFor(item), response: 'speech', expectedAnswer: diceKey(item) };
+  const misses = diceSpokenMisses(item);
+  return { id: item.id, task: diceAskFor(item), response: 'speech', expectedAnswer: diceKey(item), ...(misses.length ? { misses } : {}) };
 }
 
 export function diceScene(item: DiDiceRollChallenge, view: { ready: boolean }): WorkspaceScene {

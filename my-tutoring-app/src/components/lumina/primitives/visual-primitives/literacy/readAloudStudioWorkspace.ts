@@ -12,6 +12,8 @@
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { markedGroups, phraseAsk, type StudioItem } from './readAloudPhrasing';
 import { askFor } from './readAloudStudioScript';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import { lineReadingMisses } from './spokenReadingMisses';
 
 /** The ask for this item, without the pack's "Your turn." hand-over. */
 const ask = (item: StudioItem) => (item.step ? phraseAsk(item)
@@ -20,11 +22,21 @@ const ask = (item: StudioItem) => (item.step ? phraseAsk(item)
 
 export function readAloudAssignment(item: StudioItem): TeachingAssignment {
   if (item.step === 'mark') return { id: item.id, task: ask(item), response: 'gesture' };
+  const misses = readAloudSpokenMisses(item);
   return { id: item.id, task: ask(item), response: 'speech',
     expectedAnswer: `The printed line read aloud, every word in order: "${item.text}". A self-corrected slip and slow `
       + 'sounding-out that lands on the right words count. A word skipped, added or read as a different word is wrong. '
       + (item.kind === 'dialogue' ? 'Saying the idea in other words is not reading it. ' : '')
-      + 'How it sounds (phrasing, voice, speed) is never graded.' };
+      + 'How it sounds (phrasing, voice, speed) is never graded.', ...(misses.length ? { misses } : {}) };
+}
+
+/**
+ * A spoken read's known wrong answers (handoff 20 Part B), from the ids `READ_ALOUD_MISSES` declares: a printed word
+ * left out, a word read as another, and on a dialogue line the idea said in other words. Phrasing is never a miss.
+ */
+export function readAloudSpokenMisses(item: StudioItem): KnownMiss[] {
+  if (item.step === 'mark' || !item.text) return [];
+  return lineReadingMisses(item.text, { skip: 'word_drop', paraphrase: item.kind === 'dialogue' });
 }
 
 export function readAloudScene(item: StudioItem, breaks: readonly number[]): WorkspaceScene {

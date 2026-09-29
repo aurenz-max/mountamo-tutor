@@ -134,7 +134,7 @@ async function mount(inputs: ItemInput[]) {
       return { ok: true, body: { getReader: () => ({ read: async () =>
         lines.length ? { done: false, value: encoder.encode(lines.shift()!) } : { done: true, value: undefined } }) } };
     }
-    if (route.includes('observe-learner')) return { ok: false, json: async () => ({}) };
+    if (/observe-learner|observe-spoken-miss/.test(route)) return { ok: false, json: async () => ({}) };
     const next = seam.outcome.shift();
     return { ok: true, json: async () => (typeof next === 'function' ? next() : next) ?? ({ verdict: 'correct', transition: 'advance',
       accepted: true, confidence: .99, verdictConfidence: .99, grounded: 1, reason: 'settled', ms: 1 }) };

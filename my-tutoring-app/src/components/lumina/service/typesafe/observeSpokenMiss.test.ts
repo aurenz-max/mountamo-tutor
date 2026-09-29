@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { decideSpokenMiss, spokenMissKind, spokenMissQuestions } from './observeSpokenMiss';
-import { MISS_GATE, validSpokenMissRequest, type SpokenMissRequest } from './spokenMissContract';
+import { MISS_GATE, validSpokenMissRequest, type SpokenMissRequest } from '../../components/live-activity/runtime/spokenMissContract';
 
 const input: SpokenMissRequest = { scope: { sessionEpoch: 's', instanceId: 'board', itemId: 'c1' },
   task: 'How many butterflies?', expectedAnswer: '4', learner: '1 2 4 5',

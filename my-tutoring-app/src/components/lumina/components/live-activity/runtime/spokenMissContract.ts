@@ -5,10 +5,10 @@
  * words onto one of them or onto none, and code gates the answer. It names the observable pattern of a wrong
  * answer only; it never judges credit (the dialogue observer does, from the tutor) and never moves the lesson.
  *
- * Client-safe on purpose: it moves beside the other contracts in `runtime/` when the runtime wiring lands.
+ * Client-safe: the runtime (`useTeachingWorkspace`) posts it and the server route validates it.
  */
 import { boundedText as text, probability, validItemScope, type ItemScope, type ObservationAssessment }
-  from '../../components/live-activity/runtime/observationContract';
+  from './observationContract';
 
 /** One known wrong answer of THIS item, stated concretely by the family's domain (numbers, words, letters). */
 export interface KnownMiss {
@@ -70,3 +70,39 @@ export const abstainSpokenMiss = (reason: string, ms = 0): SpokenMissDecision =>
   ({ miss: null, reading: null, p: null, accepted: false, reason, ms });
 
 export const validReading = (p: unknown): p is number => probability(p);
+
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
+  'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'];
+/** How a learner might say `n`: its word up to twenty, its digits past that. */
+export const spokenNumber = (n: number) => NUMBER_WORDS[n] ?? String(n);
+
+/** The off-by misses of a spoken whole-number answer (`offByMisses`). */
+export type OffByMiss = 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more';
+
+/**
+ * The off-by misses of a spoken whole-number answer, in the pilot's measured wording (qa/tutor-reports/spoken-miss/,
+ * 0 false positives in 1,332 decisions). `of` names what the answer counts, with the number: "the 4 bears on the
+ * board". A family lists its own concrete misses (the empty boxes, the number before the change) BEFORE these, so
+ * an answer that is both is named by the family's pattern.
+ */
+export function offByMisses(answer: number, of: string): KnownMiss[] {
+  return [
+    ...(answer - 1 >= 1 ? [{ id: 'one_short', pattern: `The learner's answer is ${answer - 1}, one fewer than ${of}.`, examples: [spokenNumber(answer - 1)] }] : []),
+    { id: 'one_over', pattern: `The learner's answer is ${answer + 1}, one more than ${of}.`, examples: [spokenNumber(answer + 1)] },
+    ...(answer - 2 >= 1 ? [{ id: 'short_by_more', pattern: `The learner's answer is ${answer - 2} or fewer (but more than zero), two or more fewer than ${of}.`, examples: [spokenNumber(answer - 2)] }] : []),
+    { id: 'over_by_more', pattern: `The learner's answer is ${answer + 2} or more, two or more more than ${of}.`, examples: [spokenNumber(answer + 2)] },
+  ];
+}
+
+/**
+ * A family's concrete number misses ("said the number before taking away"), kept only when the number is a real
+ * wrong answer: not the key, above zero, and not already named by an earlier entry. Listed before `offByMisses`.
+ */
+export function numberMisses(answer: number, candidates: Array<{ id: string; value: number | undefined; pattern: (n: number) => string }>): KnownMiss[] {
+  const seen = new Set<number>([answer]);
+  return candidates.flatMap(({ id, value, pattern }) => {
+    if (value === undefined || !Number.isInteger(value) || value < 1 || seen.has(value)) return [];
+    seen.add(value);
+    return [{ id, pattern: pattern(value), examples: [spokenNumber(value)] }];
+  });
+}

@@ -34,6 +34,8 @@
  */
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import { wordReadingMisses, type WordReadingMiss } from '../literacy/spokenReadingMisses';
 import { diWordReadingModePlan, DI_WORD_READING_MODES, type DiWordReadingChallengeType }
   from './diWordReadingModes';
 
@@ -205,8 +207,24 @@ export function buildWordReadingItems(challenges: DiWordReadingChallenge[] = [])
 
 /** The item as the tutor and the outcome observer are told it. Every mode is spoken: the
  *  child reads print aloud, the tutor hears the audio and JEV reads its completed feedback. */
-export const workspaceAssignment = (item: WordReadingItem): TeachingAssignment =>
-  ({ id: item.id, task: item.ask, expectedAnswer: item.accepted, response: 'speech' });
+export const workspaceAssignment = (item: WordReadingItem): TeachingAssignment => {
+  const misses = diWordReadingSpokenMisses(item);
+  return { id: item.id, task: item.ask, expectedAnswer: item.accepted, response: 'speech', ...(misses.length ? { misses } : {}) };
+};
+
+/** What a wrong spoken read shows (handoff 20 Part B). */
+export type SpokenWordReadingMiss = WordReadingMiss;
+
+/** A few ASR forms of a correct read that are real words ("read" for red, "son" for sun): never an example. */
+const HEARD_AS = { red: ['read'], sun: ['son'], see: ['sea'], to: ['two', 'too'], for: ['four'], be: ['bee'] } as Record<string, string[]>;
+
+/**
+ * An item's known wrong reads, most specific first (`wordReadingMisses`): the letter names, the sounds with no word,
+ * the word backwards, then a real word one sound off by position on a decodable word or a look-alike on a sight word.
+ */
+export function diWordReadingSpokenMisses(item: WordReadingItem): KnownMiss[] {
+  return wordReadingMisses(item.word, { ...(item.letters.length ? { sounds: item.letters } : {}), accepted: HEARD_AS[item.word] ?? [] });
+}
 
 /** The drawn stage. Letter objects exist only where the letters really spell the word, so
  *  a sight word has no letter to sound out and the attempt is refused by the scene. */

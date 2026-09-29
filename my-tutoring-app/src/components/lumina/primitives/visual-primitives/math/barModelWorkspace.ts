@@ -11,6 +11,7 @@
  * was deleted, LA-14).
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { BarModelChallenge, BarModelEvalMode } from './BarModel';
 
 export const SPOKEN_GRAPH_MODES: ReadonlySet<BarModelEvalMode> = new Set<BarModelEvalMode>(['say_what_it_shows', 'compare_two_graphs']);
@@ -63,9 +64,44 @@ export function spokenGraphAnswer(c: BarModelChallenge): string {
     + ' Judge only the comparison: a count the learner says on the way, right or wrong, does not change whether the comparison is true.';
 }
 
+/** What a wrong spoken comparison shows (handoff 20 Part B). */
+export type SpokenGraphMiss = 'reversed_comparison' | 'same_for_different' | 'rows_not_graphs' | 'no_comparison';
+
+/**
+ * A spoken comparison's known wrong answers, in precedence order, for the `spoken_miss` observer, stated against the
+ * rows on screen: a comparison turned around, "the same" for rows that differ, two rows of one graph where two graphs
+ * were asked, and a bare count or row name with no comparison.
+ */
+export function barModelSpokenMisses(c: BarModelChallenge): KnownMiss[] {
+  if (!isSpokenGraph(c) || !c.values.length) return [];
+  const rows = (vs: readonly { label: string; value: number }[]) => vs.map(v => `${v.label} ${v.value}`).join(', ');
+  const sorted = [...c.values].sort((x, y) => y.value - x.value), big = sorted[0], small = sorted[sorted.length - 1];
+  const shown = c.secondValues ? `${c.graphLabel} shows ${rows(c.values)}; ${c.secondGraphLabel} shows ${rows(c.secondValues)}.`
+    : `The graph shows ${rows(c.values)}.`;
+  const differ = c.secondValues ? c.values.find((v, i) => v.value !== c.secondValues![i]?.value) : big.value !== small.value ? big : undefined;
+  const reversed = c.secondValues && differ ? (() => {
+    const other = c.secondValues!.find(v => v.label === differ.label)!;
+    const [more, less] = differ.value > other.value ? [c.graphLabel, c.secondGraphLabel] : [c.secondGraphLabel, c.graphLabel];
+    return `${less} has more ${differ.label} than ${more}`;
+  })() : big.value !== small.value ? `There are more ${small.label} than ${big.label}` : undefined;
+  return [
+    ...(reversed ? [{ id: 'reversed_comparison', pattern: `${shown} The learner says one has more (or the most) where the graph shows it `
+      + 'has fewer (or the fewest), or the other way round: a comparison turned around.', examples: [reversed] }] : []),
+    ...(differ ? [{ id: 'same_for_different', pattern: `${shown} The learner says two amounts are the same where the graph shows different numbers.`,
+      examples: [c.secondValues ? `${c.graphLabel} and ${c.secondGraphLabel} have the same number of ${differ.label}`
+        : `${big.label} and ${small.label} are the same`] }] : []),
+    ...(c.secondValues && c.values.length >= 2 ? [{ id: 'rows_not_graphs', pattern: `${shown} The question asks to compare ${c.graphLabel} with `
+      + `${c.secondGraphLabel}. The learner compares two rows inside one graph instead, for example ${c.values[0].label} with ${c.values[1].label}.`,
+      examples: [`${c.values[0].label} and ${c.values[1].label} are different`] }] : []),
+    { id: 'no_comparison', pattern: `${shown} The learner's whole answer is one number or one row name, with no comparison word `
+      + 'such as more, fewer or the same.', examples: [big.label, String(big.value)] },
+  ];
+}
+
 export function workspaceAssignment(c: BarModelChallenge): TeachingAssignment {
+  const misses = barModelSpokenMisses(c);
   return isSpokenGraph(c)
-    ? { id: c.id, task: graphExplanationAsk(c), response: 'speech', expectedAnswer: spokenGraphAnswer(c) }
+    ? { id: c.id, task: graphExplanationAsk(c), response: 'speech', expectedAnswer: spokenGraphAnswer(c), ...(misses.length ? { misses } : {}) }
     : { id: c.id, task: c.prompt, response: 'gesture' };
 }
 

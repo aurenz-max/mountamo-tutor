@@ -8,11 +8,61 @@
  * code (`placementMatches`), so the tutor is not handed the answer line as a key.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { askFor, frontOf, placementComplete, placementMatches, type OrdinalLineItem } from './ordinalLineScript';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import { numberWordFor } from './countingBoardScript';
+import { askFor, backOf, frontOf, ordinalWordFor, placementComplete, placementMatches, type OrdinalLineItem } from './ordinalLineScript';
+
+/** What a wrong spoken place or name shows (handoff 20 Part B). */
+export type SpokenOrdinalMiss = 'cardinal_for_ordinal' | 'wrong_end' | 'next_to_place' | 'said_anchor' | 'wrong_side';
+
+/**
+ * A spoken item's known wrong answers, in precedence order, for the `spoken_miss` observer: the counting number for
+ * the place word, the line counted from the other end, the one right beside the asked place; on relative_position the
+ * anchor itself and the one on its other side.
+ */
+export function ordinalSpokenMisses(item: OrdinalLineItem): KnownMiss[] {
+  if (item.answerKind === 'gesture') return [];
+  const k = item.askPosition, names = item.lineNames, n = names.length, front = frontOf(item.context), back = backOf(item.context);
+  const ord = ordinalWordFor(k), mirror = n + 1 - k;
+  const inLine = (ps: number[]) => ps.filter(p => p >= 1 && p <= n && p !== k);
+  const nameAt = (p: number) => names[p - 1];
+  const wantsName = item.kind === 'relative_position' || item.kind === 'identify' && item.direction === 'name_character';
+  // The line as the observer cannot see it: every place, counted from the front.
+  const line = `Counting from ${front}, the line is: ${names.map((name, i) => `${ordinalWordFor(i + 1)} the ${name}`).join(', ')}.`;
+  if (item.kind === 'relative_position') {
+    const target = item.relativeQuery === 'before' ? k - 1 : k + 1, other = item.relativeQuery === 'before' ? k + 1 : k - 1;
+    const asked = `The question asks who is right ${item.relativeQuery} the ${ordinalWordFor(k)} one, the ${nameAt(k)}: that is the ${nameAt(target)}.`;
+    return [
+      { id: 'said_anchor', pattern: `${line} The question names the ${ordinalWordFor(k)} one, the ${nameAt(k)}, and asks who is right `
+        + `${item.relativeQuery} it. The learner's answer is the ${nameAt(k)} itself, the one the question names.`, examples: [nameAt(k)] },
+      ...(inLine([other]).length ? [{ id: 'wrong_side', pattern: `${line} ${asked} The learner names the ${nameAt(other)}, who is right `
+        + `${item.relativeQuery === 'before' ? 'after' : 'before'} the ${nameAt(k)} instead.`, examples: [nameAt(other)] }] : []),
+    ];
+  }
+  const lineKinds = item.kind === 'identify';
+  // The story's places are its clues; a printed card has no line, only the place words one away.
+  const beside = (item.kind === 'sequence_story' ? [k - 1, k + 1].filter(p => p >= 1 && p <= item.clues.length)
+    : item.kind === 'match' ? [k - 1, k + 1].filter(p => p >= 1 && p <= 10) : inLine([k - 1, k + 1])).filter(p => !(lineKinds && p === mirror));
+  const say = (p: number) => wantsName ? `the ${nameAt(p)}` : ordinalWordFor(p);
+  const fact = item.kind === 'match' ? `The card shows ${item.symbol}, which is read ${ord}.`
+    : item.kind === 'sequence_story' ? `In the story the ${item.storyName} is ${ord}.`
+    : wantsName ? `${line} The question asks who is ${ord}: the ${nameAt(k)}.` : `${line} The ${nameAt(k)} is ${ord}.`;
+  return [
+    ...(wantsName ? [] : [{ id: 'cardinal_for_ordinal', pattern: `${fact} The learner's answer is ${numberWordFor(k)}, the counting number, `
+      + 'instead of the place word.', examples: [numberWordFor(k)] }]),
+    ...(lineKinds && mirror !== k && mirror >= 1 ? [{ id: 'wrong_end', pattern: `${fact} The learner's answer is ${say(mirror)}, `
+      + `${wantsName ? `who is ${ord}` : `the ${nameAt(k)}'s place`} counting from ${back}, the other end.`,
+      examples: [wantsName ? nameAt(mirror) : ordinalWordFor(mirror)] }] : []),
+    ...(beside.length ? [{ id: 'next_to_place', pattern: `${fact} The learner's answer is ${beside.map(say).join(' or ')}, `
+      + `${wantsName ? `who ${beside.length > 1 ? 'are' : 'is'} ${beside.map(p => ordinalWordFor(p)).join(' and ')}` : 'a place word'}, one place away.`,
+      examples: beside.map(p => wantsName ? nameAt(p) : ordinalWordFor(p)) }] : []),
+  ];
+}
 
 export function workspaceAssignment(item: OrdinalLineItem): TeachingAssignment {
   if (item.answerKind === 'gesture') return { id: item.id, task: askFor(item), response: 'gesture' };
-  return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer: item.answerText };
+  const misses = ordinalSpokenMisses(item);
+  return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer: item.answerText, ...(misses.length ? { misses } : {}) };
 }
 
 /** Does the committed line put every picture in its clued place? Empty places are ''. */

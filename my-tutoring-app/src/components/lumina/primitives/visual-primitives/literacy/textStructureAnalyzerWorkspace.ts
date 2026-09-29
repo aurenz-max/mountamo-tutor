@@ -11,6 +11,7 @@
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { textFacts } from '../../../components/live-activity/runtime/sceneFacts';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { stableShuffle } from '../../../utils/choiceOrder';
 import {
   askFor,
@@ -56,7 +57,44 @@ export function textStructureAssignment(item: TextStructureItem): TeachingAssign
         + 'counts. Saying the idea back is not an answer.';
       break;
   }
-  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer };
+  const misses = textStructureSpokenMisses(item);
+  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) };
+}
+
+/** Words of four letters or more that name no thing or action, kept out of `content_word`'s examples. */
+const SMALL_WORDS = new Set(['that', 'this', 'with', 'into', 'from', 'there', 'then', 'they', 'their', 'when', 'were', 'have', 'already', 'across', 'onto', 'over']);
+
+/** What a wrong spoken answer shows (handoff 20 Part B), by action. */
+export type SpokenTextStructureMiss = 'content_word' | 'other_structure' | 'other_part' | 'said_idea_back';
+
+/**
+ * An item's known wrong answers, in precedence order, for the `spoken_miss` observer: another word of the sentence
+ * that is not the linking word (find-signal), another printed structure (name-structure), the other part or the
+ * idea said back (place-idea).
+ */
+export function textStructureSpokenMisses(item: TextStructureItem): KnownMiss[] {
+  const quote = (xs: readonly string[]) => xs.map(x => `"${x}"`).join(' or ');
+  switch (item.action) {
+    case 'find-signal': {
+      const signal = item.answer.toLowerCase().split(/\s+/);
+      const words = (item.stimulusText.toLowerCase().match(/[a-z']+/g) ?? []).filter(w => !signal.includes(w) && w.length > 3 && !SMALL_WORDS.has(w));
+      return [{ id: 'content_word', pattern: `The linking word in "${item.stimulusText}" is "${item.answer}". The learner's answer is a different word from that sentence, one that names a thing, an action or a description.`,
+        examples: words.slice(0, 2) }];
+    }
+    case 'name-structure': {
+      const others = item.choices.filter(c => c !== item.answer);
+      return others.length ? [{ id: 'other_structure', pattern: `The passage is organised as ${item.answer}. The learner's answer is another printed structure: ${quote(others)}.`,
+        examples: others.slice(0, 2) }] : [];
+    }
+    case 'place-idea': {
+      const others = item.choices.filter(c => c !== item.answer);
+      return [
+        ...(others.length ? [{ id: 'other_part', pattern: `The idea "${item.stimulusText}" goes with ${item.answer}. The learner's answer is ${quote(others)}, another part.`,
+          examples: others.slice(0, 2) }] : []),
+        { id: 'said_idea_back', pattern: `The learner says the idea back ("${item.stimulusText}") without naming a part.`, examples: [item.stimulusText] },
+      ];
+    }
+  }
 }
 
 export function textStructureScene(item: TextStructureItem, passage: string): WorkspaceScene {

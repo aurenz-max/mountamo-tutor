@@ -7,7 +7,8 @@ import { useLiveRuntimeActive, usePrimitiveRuntime } from './LiveRuntimeContext'
 import { TeachingSession, teachingSummary } from './TeachingSession';
 import { abstainItemScore, gradeOf, scoreSession, type AttemptGrade, type ItemScoreDecision, type ItemScoreRequest,
   type ScoredSession } from './itemScoringContract';
-import { postObservation } from './observationContract';
+import { OBSERVATION_TIMEOUT_MS, postObservation } from './observationContract';
+import { abstainSpokenMiss, type KnownMiss, type SpokenMissDecision, type SpokenMissRequest } from './spokenMissContract';
 import { SoundManager } from '../../../utils/SoundManager';
 import { latestLearnerUtterance } from './learnerUtterance';
 import { lastMiss, nextLever } from './observerLever';
@@ -22,6 +23,12 @@ export interface TeachingItem {
   response: 'speech' | 'gesture';
   /** Checks gesture submissions only. Speech is judged by the tutor. The key stays private. */
   checkResponse: (response: string) => boolean | null;
+  /**
+   * A spoken item's known wrong answers, in precedence order (the family's `<x>SpokenMisses(item)`). The
+   * `spoken_miss` observer maps a pending answer onto one of them, and a not-credited verdict records it as the
+   * attempt's `miss`, as a gesture check does. Never published to the tutor: the patterns state the key.
+   */
+  misses?: KnownMiss[];
 }
 /**
  * What a primitive sets on `workspace.current` in a layout effect; the hook publishes it after every
@@ -81,6 +88,7 @@ const noSubscription = () => () => {};
 /** No scene yet is not ready; a scene that does not say otherwise is. */
 const isReady = (w: TeachingWorkspace | null | undefined) => !!w && w.readyForResponse !== false;
 const scoreAttempt = postObservation<ItemScoreRequest, ItemScoreDecision>('/api/lumina/observe-item-score', abstainItemScore);
+const nameSpokenMiss = postObservation<SpokenMissRequest, SpokenMissDecision>('/api/lumina/observe-spoken-miss', abstainSpokenMiss);
 /** The whole scoring pass waits at most this long; an attempt not graded by then keeps its flow verdict. */
 export const SCORING_BUDGET_MS = 5000;
 
@@ -109,6 +117,9 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
   const wasReady = useRef(false);
   const examinedSpeech = useRef(new Set<string>());
   const pendingSpeech = useRef<{ id: string; text: string } | null>(null);
+  /** The `spoken_miss` reading of the pending answer; `miss` is set once it lands (median 165 ms, before the tutor's reply). */
+  const spokenMiss = useRef<{ speechId: string; miss: string | null; abort: AbortController } | null>(null);
+  const dropSpokenMiss = () => { spokenMiss.current?.abort.abort(); spokenMiss.current = null; };
   /** The simpler item a simplify lever put on screen; the session holds only its id. */
   const practiceItem = useRef<TeachingItem | null>(null);
   const itemAt = (s: { index: number; practice: string | null }) =>
@@ -128,7 +139,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
   };
   /** A new response scope on the same surface: speech heard before it is not an answer to it. */
   const rescope = () => {
-    pendingSpeech.current = null;
+    pendingSpeech.current = null; dropSpokenMiss();
     speechFloor.current = aiRef.current.conversation.length;
     wasReady.current = false;
   };
@@ -140,7 +151,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     return true;
   };
   const reset = () => {
-    pendingSpeech.current = null;
+    pendingSpeech.current = null; dropSpokenMiss();
     latest.current.workspace.current?.clearPresentation?.();
     latest.current.onItemOpened?.(session.getSnapshot().index);
     speechFloor.current = aiRef.current.conversation.length;
@@ -239,9 +250,11 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
           execute: input => {
             const d = input?.dialogue, speech = pendingSpeech.current;
             if (!d || !speech || d.responseId !== speech.id || (d.transition === 'advance' && d.verdict !== 'correct')) return false;
+            // Only a reading of THIS answer that has already landed; a late one is dropped, never attached afterwards.
+            const miss = d.verdict !== 'correct' && spokenMiss.current?.speechId === speech.id ? spokenMiss.current.miss ?? undefined : undefined;
             return commit(() => {
-              if (!session.submit(speech.id, speech.text, 'speech', d.verdict === 'correct', true, d.tutor)) return false;
-              pendingSpeech.current = null;
+              if (!session.submit(speech.id, speech.text, 'speech', d.verdict === 'correct', true, d.tutor, miss)) return false;
+              pendingSpeech.current = null; dropSpokenMiss();
               if (d.verdict === 'correct' && !session.getSnapshot().practice) latest.current.onSolved?.(session.getSnapshot().index, speech.text);
               if (d.transition === 'retry') { session.retry(); reset(); }
               if (d.transition === 'advance' && session.getSnapshot().practice) closePractice();
@@ -277,7 +290,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     },
   }), [options.instanceId, options.primitiveId, options.objectiveId, options.planItemId, evalMode, session]);
   useLayoutEffect(() => { mounted.current = true; suspended.current = false; return () => {
-    mounted.current = false; suspended.current = true; pendingSpeech.current = null;
+    mounted.current = false; suspended.current = true; pendingSpeech.current = null; dropSpokenMiss();
   }; }, [mount]);
   const { runtime, changed } = usePrimitiveRuntime(mount);
   const runtimeStatus = useSyncExternalStore(runtime?.subscribe ?? noSubscription,
@@ -332,7 +345,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
   }, [active, runtime, runtimeStatus, options.instanceId]);
   useLayoutEffect(() => {
     // A focus/reconnect boundary cannot reuse speech heard on another surface.
-    pendingSpeech.current = null;
+    pendingSpeech.current = null; dropSpokenMiss();
     speechFloor.current = aiRef.current.conversation.length;
     wasReady.current = false;
   }, [active, ai.isConnected, ai.sessionResumeCount]);
@@ -360,8 +373,33 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
       runtime?.trace.record({ stage: 'learner_response', status: 'context', reason: 'Awaiting tutor feedback; transcript is supporting context.',
         input: { task: currentItem().task, utterance: speech.text,
           scope: { instanceId: latest.current.instanceId, itemId: currentItem().id } } });
+      observeSpokenMiss(speech);
     }
     changed();
+  };
+
+  /**
+   * Handoff 20 Part B: which of the item's known wrong answers this pending answer is, read from the learner's
+   * words in parallel with the tutor's reply. Advisory: it judges no credit and moves nothing; the dialogue
+   * observer's not-credited verdict carries it onto the attempt, where the packet and `nextLever` read it.
+   */
+  const observeSpokenMiss = (speech: { id: string; text: string }) => {
+    dropSpokenMiss();
+    const i = currentItem(), epoch = runtime?.getSnapshot().sessionEpoch;
+    if (!i.misses?.length || i.expectedAnswer === undefined || !epoch) return;
+    const abort = new AbortController(), entry = { speechId: speech.id, miss: null as string | null, abort };
+    spokenMiss.current = entry;
+    const request: SpokenMissRequest = { scope: { sessionEpoch: epoch, instanceId: latest.current.instanceId, itemId: i.id },
+      task: i.task.slice(0, 1500), expectedAnswer: String(i.expectedAnswer).slice(0, 2000), learner: speech.text.slice(-2000), misses: i.misses };
+    const timer = setTimeout(() => abort.abort(), OBSERVATION_TIMEOUT_MS);
+    void nameSpokenMiss(request, abort.signal).catch(() => abstainSpokenMiss(abort.signal.aborted ? 'timeout' : 'unavailable'))
+      .then(decision => {
+        if (spokenMiss.current !== entry) return;
+        entry.miss = decision.miss;
+        runtime?.trace.record({ stage: 'spoken_miss', status: decision.miss ? 'named' : decision.accepted ? 'unnamed' : 'abstained',
+          reason: decision.reason, input: request, result: decision });
+      })
+      .finally(() => clearTimeout(timer));
   };
 
   const submitGestureResponse = (response: string, miss?: string) => {

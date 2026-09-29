@@ -8,7 +8,9 @@
  * object but never the shape in it, and a naming item accepts the pack's spoken alternates.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { answerWordFor, countNoun, isCountingType, type DiShapesChallenge } from './diShapesScript';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import { NEAR_SHAPE, flatShapeNameMisses, shapeCountMisses } from '../math/shapeSorterDomain';
+import { answerWordFor, countNoun, isCountingType, type DiShapeName, type DiShapesChallenge } from './diShapesScript';
 
 /** The ask, without the answer in it. */
 export const shapesAskFor = (it: DiShapesChallenge): string =>
@@ -18,11 +20,30 @@ export const shapesAskFor = (it: DiShapesChallenge): string =>
       ? `How many ${countNoun(it.challengeType)} does this shape have?`
       : 'What shape is this?';
 
+const DRAWABLE: readonly DiShapeName[] = ['circle', 'triangle', 'square', 'rectangle', 'hexagon', 'oval', 'pentagon', 'rhombus', 'trapezoid'];
+
+/**
+ * A drawn shape's known wrong answers, in precedence order, for the `spoken_miss` observer, with shape-sorter's
+ * ids (`SpokenShapeMiss`): the object's name, the look-alike name, another name; on a count its name, then off-by.
+ */
+export function shapesSpokenMisses(it: DiShapesChallenge): KnownMiss[] {
+  if (isCountingType(it.challengeType)) {
+    return it.countNumeral ? shapeCountMisses(it.shapeWord, it.countNumeral, countNoun(it.challengeType)) : [];
+  }
+  const object = it.challengeType === 'name_real_object' ? it.realObjectLabel : undefined;
+  const fact = object ? `The ${object} is drawn as ${it.article} ${it.shapeWord}.` : `The shape drawn is ${it.article} ${it.shapeWord}.`;
+  return [
+    ...(object ? [{ id: 'said_object', pattern: `${fact} The learner's answer is ${object}, the object's own name, not a shape name.`, examples: [object] }] : []),
+    ...flatShapeNameMisses(it.shapeWord, it.spokenAlternates ?? [], NEAR_SHAPE[it.shapeWord], DRAWABLE, fact),
+  ];
+}
+
 export function shapesAssignment(it: DiShapesChallenge): TeachingAssignment {
   const answer = answerWordFor(it);
   const also = !isCountingType(it.challengeType) && it.spokenAlternates?.length
     ? ` (also accept ${it.spokenAlternates.join(' or ')})` : '';
-  return { id: it.id, task: shapesAskFor(it), response: 'speech', expectedAnswer: `${answer}${also}` };
+  const misses = shapesSpokenMisses(it);
+  return { id: it.id, task: shapesAskFor(it), response: 'speech', expectedAnswer: `${answer}${also}`, ...(misses.length ? { misses } : {}) };
 }
 
 export function shapesScene(it: DiShapesChallenge): WorkspaceScene {

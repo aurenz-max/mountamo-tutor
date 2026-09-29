@@ -114,7 +114,7 @@ export const countWordCapitalized = (count: number): string => {
  */
 export interface FlipModelPair { singular: string; plural: string }
 
-const MODEL_PAIRS: Record<WordFlipChallengeType, readonly FlipModelPair[]> = {
+export const MODEL_PAIRS: Record<WordFlipChallengeType, readonly FlipModelPair[]> = {
   plural_s: [
     { singular: 'hat', plural: 'hats' },
     { singular: 'cup', plural: 'cups' },
