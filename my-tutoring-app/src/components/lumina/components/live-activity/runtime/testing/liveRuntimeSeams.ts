@@ -108,6 +108,22 @@ export const evaluationSeam = () => ({
   usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: seam.submit, elapsedMs: 0, resetAttempt: vi.fn() }),
 });
 
+/**
+ * The real `usePrimitiveEvaluation`, so what `seam.submit` receives is the record the backend would: the workspace's
+ * scored session merged in (`workspaceSubmission.ts`), its score in place of the primitive's tally, one send per
+ * attempt. A test using it also mocks `evaluation/contexts/EvaluationContext` with `evaluationContextSeam` and sets
+ * `seam.evaluationContext` to `recordingEvaluationContext()`.
+ */
+export const submittedEvaluationSeam = async () => ({
+  useEvaluationContext: () => seam.evaluationContext,
+  usePrimitiveEvaluation: (await import('@/components/lumina/evaluation/hooks/usePrimitiveEvaluation')).usePrimitiveEvaluation,
+});
+export const evaluationContextSeam = () => ({ useEvaluationContext: () => seam.evaluationContext });
+/** A lesson's evaluation store whose backend write is `seam.submit`, with the sent record as its one argument. */
+export const recordingEvaluationContext = () => ({
+  submitEvaluation: (result: unknown) => { (seam.submit as (r: unknown) => void)(result); return Promise.resolve(); },
+});
+
 /** Getters answer like a live SoundManager (`isEnabled` true, volume 1); everything else is a stable spy. */
 export const soundSeam = () => ({ SoundManager: new Proxy({}, { get: (_, name: string) => {
   if (name === 'isEnabled') return () => true;

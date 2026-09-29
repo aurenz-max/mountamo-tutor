@@ -22,7 +22,9 @@
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
 vi.mock('@/components/lumina/hooks/useLuminaAI', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).legacyAISeam());
-vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+// The real submission hook (J10, J11 read the record the backend would receive); only the store's write is the seam.
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).submittedEvaluationSeam());
+vi.mock('@/components/lumina/evaluation/contexts/EvaluationContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationContextSeam());
 vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
 vi.mock('@/components/lumina/components/JudgedMicPanel', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).micPanelSeam());
 
@@ -32,7 +34,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 import { act, cleanup, fireEvent } from '@testing-library/react';
 import { LIVE_JOURNEYS, type DriverInput, type JourneyContext, type LearnerIntent } from '../liveJourneySpec';
 import type { LivePrimitiveId } from '../activityContract';
-import { installRuntimeTimers, restoreRuntimeTimers, seam } from './testing/liveRuntimeSeams';
+import { installRuntimeTimers, recordingEvaluationContext, restoreRuntimeTimers, seam } from './testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from './testing/workspaceHarness';
 import { UNIVERSAL_CATALOG, getComponentById } from '../../../service/manifest/catalog';
 import { buildLiveActivitySpec } from '../liveActivitySpec';
@@ -47,10 +49,12 @@ export const JOURNEY_INVARIANTS = {
   'J3-miss-reveals-nothing': 'A miss and its retry do not newly put the answer on screen, in the scene facts or in a host message',
   'J4-retry-reopens': 'After a miss the observer can reopen the same item for another try',
   'J5-credit-moves-on': 'A credited answer moves to the next item or completes the lesson: no dead end',
-  'J6-completes-once': 'Answering every item completes the lesson, with at most one submission',
+  'J6-completes-once': 'Answering every item completes the lesson, with at most one submission per evaluated instance',
   'J7-commit-visible': 'A committed verdict, retry or advance is confirmed on screen by the real visibility wait: a later render of the same item and phase does not supersede it',
   'J8-miss-named': "On a mode whose catalog entry lists misses, every checked miss names one from that list; a spoken item's known misses are all on the list and a wrong spoken answer records one",
   'J9-miss-answered': "On a mode with levers, every catalog miss is in some lever's answers or in the catalog's unanswered list",
+  'J10-clean-record': 'A clean program (every item right first time) submits once, and the record says so: passed, score 100, every item first try, no assistance',
+  'J11-recovery-record': 'The wrong-then-right program submits once, and the record says so: every item solved, each miss in teachingAttempts before its correct try, the score and first-response score set by the first-response gate',
 } as const;
 type Invariant = keyof typeof JOURNEY_INVARIANTS;
 
@@ -61,7 +65,9 @@ interface Result { payload: string; items: number; skipped?: string; findings: F
    * Checked gesture misses on this payload, and how many named a miss (handoff 20 coverage). `spoken`: wrong spoken
    * answers, and how many had a known-miss list to name one from (handoff 20 Part B).
    */
-  misses?: { checked: number; named: number; declared: boolean; spoken: { answered: number; named: number } } }
+  misses?: { checked: number; named: number; declared: boolean; spoken: { answered: number; named: number } };
+  /** What each program's submission recorded (J10, J11), for the sweep report. */
+  records?: Partial<Record<Program, { sent: number; success?: boolean; score?: number; firstResponseScore?: number; attempts?: number }>> }
 
 const DIR = join(process.cwd(), 'src/components/lumina/components/live-activity/runtime/testing');
 const PAYLOADS: Array<Payload & { file: string }> = readdirSync(join(DIR, 'w1-payloads')).filter(f => f.endsWith('.json')).sort()
@@ -207,7 +213,57 @@ function perform(h: WorkspaceHarness, inputs: DriverInput[]): string | null {
   return spoken;
 }
 
-async function drive({ primitiveId, evalMode, data, file }: Payload & { file: string }): Promise<Result> {
+/**
+ * J10 / J11: the records the backend receives, read against what the program did. Most families send one; a family
+ * that records per problem (knowledge-check, R7/R8) sends one per `::pN` instance, each with its own items' attempts.
+ * `missed`: each item the recover program committed a miss on, with the miss the workspace named then (null when unnamed).
+ */
+function checkRecord(program: Program, items: readonly string[], missed: ReadonlyMap<string, string | null>, sent: any[],
+  find: (invariant: Invariant, detail: string) => void) {
+  const invariant: Invariant = program === 'clean' ? 'J10-clean-record' : 'J11-recovery-record';
+  if (!sent.length) { find(invariant, 'the lesson completed but nothing was submitted'); return; }
+  const many = sent.length > 1;
+  const name = (r: any) => many ? `${r.instanceId}: ` : '';
+  const all: any[] = [];
+  for (const record of sent) {
+    const attempts: any[] | undefined = record.studentWork?.teachingAttempts;
+    if (record.success !== true) find(invariant, `${name(record)}every item was solved, but the record says success ${record.success}`);
+    if (!Array.isArray(attempts)) { find(invariant, `${name(record)}the record carries no teachingAttempts`); continue; }
+    all.push(...attempts);
+    // The items this record covers: all of them, or, per problem, the ones its attempts name.
+    const own = many ? items.filter(item => attempts.some(a => a?.itemId === item)) : items;
+    if (!own.length) continue;
+    // The first-response gate (`itemScoringContract.scoreSession`): 100 first try, 67 after one miss.
+    const score = Math.round(own.reduce((sum, item) => sum + (missed.has(item) ? 67 : 100), 0) / own.length);
+    if (record.score !== score) find(invariant, `${name(record)}score ${record.score}, not ${score} (${own.filter(i => missed.has(i)).length}/${own.length} items missed once)`);
+  }
+  // The first-response score is the session's: on every record that carries evidence, and on the one record of a single send.
+  const firstTry = Math.round((items.length - missed.size) / items.length * 100);
+  for (const record of sent) {
+    const firstResponse = record.diagnosisEvidence?.firstResponseScore;
+    if ((firstResponse !== undefined || !many) && firstResponse !== firstTry) find(invariant, `${name(record)}firstResponseScore ${firstResponse}, not ${firstTry}`);
+  }
+  if (sent.some(r => !Array.isArray(r.studentWork?.teachingAttempts))) return;
+  const mine = (item: string) => all.filter(a => a?.itemId === item);
+  if (program === 'clean') {
+    const late = items.filter(item => mine(item)[0]?.correct !== true);
+    if (late.length) find(invariant, `${items.length - late.length}/${items.length} items first try; not: ${late.slice(0, 4).join(', ')}`);
+    const helped = all.filter(a => a?.assisted || a?.levers?.length || (a?.answerExposure ?? 'none') !== 'none');
+    if (helped.length) find(invariant, `${helped.length} attempts record assistance on an unassisted run (${helped[0].itemId})`);
+    return;
+  }
+  for (const [item, miss] of Array.from(missed)) {
+    const own = mine(item), solvedAt = own.findIndex(a => a?.correct);
+    if (solvedAt < 0) { find(invariant, `${item}: solved after a miss, but recorded unsolved (${own.length} attempts)`); continue; }
+    if (solvedAt === 0) { find(invariant, `${item}: solved after a miss, but recorded first try`); continue; }
+    if (miss && !own.slice(0, solvedAt).some(a => a.miss === miss)) find(invariant, `${item}: the miss "${miss}" is not on its wrong attempt in teachingAttempts`);
+  }
+}
+
+/** `recover`: a wrong answer, the retry, then the correct one, on every item. `clean`: the correct answer first, on every item. */
+type Program = 'recover' | 'clean';
+
+async function drive({ primitiveId, evalMode, data, file }: Payload & { file: string }, program: Program = 'recover'): Promise<Result> {
   const result: Result = { payload: file, items: 0, findings: [], advisories: [] };
   driving = file;
   const find = (invariant: Invariant, detail: string) => result.findings.push({ invariant, detail });
@@ -232,7 +288,10 @@ async function drive({ primitiveId, evalMode, data, file }: Payload & { file: st
   result.misses = tally;
   if (!row) return { ...result, skipped: 'no journey row' };
   if (row.execution === 'teaching') return { ...result, skipped: 'ungraded teaching surface (explore/finish program)' };
-  seam.evaluationContext = { lesson: 'sweep' };
+  seam.evaluationContext = recordingEvaluationContext();
+  const submittedFrom = seam.submit.mock.calls.length;
+  const itemsSeen: string[] = [];
+  const missed = new Map<string, string | null>();
   const h = mountWorkspace({ primitiveId, evalMode, data });
   h.settle();
   const context = (): JourneyContext => {
@@ -285,12 +344,13 @@ async function drive({ primitiveId, evalMode, data, file }: Payload & { file: st
 
   for (let n = 0; n < MAX_ITEMS && h.state().status === 'active' && h.state().task; n++) {
     const item = h.state().task!.itemId;
-    result.items++;
+    result.items++; itemsSeen.push(item);
     noteLevers();
     const expected = h.state().task!.workspace?.expectedAnswer;
     const warmup = inputs('warmup', item);
     if (warmup?.length) try { perform(h, warmup); h.settle(); } catch (e) { find('J1-drivable', `${item} warmup: ${(e as Error).message}`); break; }
-    const wrong = inputs('wrong', item), correct = inputs('correct', item);
+    // The clean program never answers wrong, so a family with no wrong input still gets its record checked.
+    const wrong = program === 'clean' ? [] : inputs('wrong', item), correct = inputs('correct', item);
     if (!wrong || !correct) break;
     if (!correct.length) { find('J1-drivable', `${item}: the row has no correct input`); break; }
     // A key the ask itself states ("Give me four bears") is the assignment, not a secret.
@@ -300,7 +360,7 @@ async function drive({ primitiveId, evalMode, data, file }: Payload & { file: st
     if (expected && inFacts.length)
       result.advisories.push(`${item}: the scene facts contain the key "${inFacts[0]}" before any try (fine only when it is the stimulus, e.g. a word to read)`);
 
-    if (wrong.length) {
+    if (wrong.length && program === 'recover') {
       // The learner's own work before the committing action (counted apples, the hop drawn before Check) is on
       // screen before any verdict, so it belongs to the baseline: only what the MISS adds is checked.
       const commitAt = wrong.some(a => a.type === 'answer') ? wrong.findIndex(a => a.type === 'answer') : wrong.length - 1;
@@ -310,6 +370,8 @@ async function drive({ primitiveId, evalMode, data, file }: Payload & { file: st
       const how = await answer(wrong.slice(commitAt), item, 'wrong', 'incorrect', wrong.some(a => a.type !== 'answer'));
       if (!how) break;
       const s = h.state();
+      if (how === 'spoken' || how === 'gesture' && s.task?.itemId === item && s.task.evidence.correctness === 'incorrect')
+        missed.set(item, s.task?.workspace?.attempts.at(-1)?.miss ?? null);
       if (how === 'spoken') {
         const request = SPOKEN_MISS.slice(heardBefore).at(-1), miss = s.task?.workspace?.attempts.at(-1)?.miss;
         tally.spoken.answered++;
@@ -375,9 +437,21 @@ async function drive({ primitiveId, evalMode, data, file }: Payload & { file: st
     const open = declared.filter(m => !answeredSet.has(m) && !unanswered.includes(m));
     if (open.length) find('J9-miss-answered', `no lever answers ${open.map(m => `"${m}"`).join(', ')}, and the catalog does not list ${open.length > 1 ? 'them' : 'it'} as unanswered`);
   }
+  // The scoring pass and the submission it releases resolve in promises.
+  await act(async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); });
+  h.settle();
+  await act(async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); });
   const end = h.state();
+  const sent = seam.submit.mock.calls.slice(submittedFrom).map(c => c[0]);
   if (!result.findings.length && end.status !== 'completed') find('J6-completes-once', `after ${result.items} items the lesson is ${end.status}`);
-  if (seam.submit.mock.calls.length > 1) find('J6-completes-once', `${seam.submit.mock.calls.length} submissions`);
+  // One per instance: a family that records per problem sends one per `::pN`.
+  const instances = sent.map(r => r?.instanceId);
+  const twice = instances.filter((id, i) => instances.indexOf(id) !== i);
+  if (twice.length) find('J6-completes-once', `${sent.length} submissions (${twice.length} repeat an instance: ${twice[0]})`);
+  if (end.status === 'completed') checkRecord(program, itemsSeen, missed, sent, find);
+  const record = sent[0];
+  result.records = { [program]: { sent: sent.length, success: record?.success, score: record?.score,
+    firstResponseScore: record?.diagnosisEvidence?.firstResponseScore, attempts: record?.studentWork?.teachingAttempts?.length } };
   h.close();
   return result;
 }
@@ -567,6 +641,15 @@ describe('dry journey, every saved payload', () => {
     let result: Result;
     try { result = await drive(payload); } catch (e) {
       result = { payload: file, items: 0, findings: [{ invariant: 'J1-drivable', detail: `mount or drive threw: ${(e as Error).message}` }], advisories: [] };
+    }
+    // A second mount, the passing student (J10). Its findings on the shared rules join the recover program's.
+    try {
+      cleanup();
+      const clean = await drive(payload, 'clean');
+      result.findings.push(...clean.findings.map(f => ({ ...f, detail: `clean program: ${f.detail}` })));
+      result.records = { ...result.records, ...clean.records };
+    } catch (e) {
+      result.findings.push({ invariant: 'J10-clean-record', detail: `clean program: mount or drive threw: ${(e as Error).message}` });
     }
     RESULTS.push(result);
     const known = BASELINE[file] ?? {};

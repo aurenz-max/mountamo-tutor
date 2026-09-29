@@ -18,7 +18,8 @@
   "J5-credit-moves-on": "handoff 21 SW-3"
  },
  "counting-board.subitize": {
-  "J2-miss-committed": "handoff 21 SW-4"
+  "J2-miss-committed": "handoff 21 SW-4",
+  "J5-credit-moves-on": "handoff 21 SW-4"
  },
  "fraction-circles.touch_fraction": {
   "J1-drivable": "handoff 21 SW-6"
@@ -34,5 +35,11 @@
  },
  "strategy-picker.compare": {
   "J1-drivable": "handoff 21 SW-8 (by design)"
+ },
+ "push-pull-arena.observe": {
+  "J11-recovery-record": "handoff 19 slice 9a (user ruling)"
+ },
+ "push-pull-arena.predict": {
+  "J11-recovery-record": "handoff 19 slice 9a (user ruling)"
  }
 }
