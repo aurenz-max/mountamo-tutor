@@ -99,7 +99,8 @@ it.each(['identify', 'match', 'relative_position', 'sequence_story', 'build_sequ
     const h = mount(mode);
     expect(h.state().owner).toBe('tutor');
     expect(h.state().task!.task).not.toMatch(/Say exactly|\[OL/);
-    expect(tutorTools(h)).toEqual(mode === 'build_sequence' ? ['begin_help', 'pull_lever'] : ['begin_help']);
+    // Every mode publishes levers (build_sequence handoff 21, the spoken modes handoff 23).
+    expect(tutorTools(h)).toEqual(['begin_help', 'pull_lever']);
     expect(seam.send.mock.calls.flat().join(' ')).not.toMatch(/\[OL|Say exactly/);
     // The runner's re-ask button has nothing to call here; the learner asks the tutor.
     expect(h.view.container.querySelector('[aria-label="Hear the question again"]')).toBeNull();

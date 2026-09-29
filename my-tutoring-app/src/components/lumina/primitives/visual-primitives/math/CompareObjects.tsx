@@ -85,7 +85,10 @@ import {
   buildCompareItems,
   orderVerdictCue,
   compareObjectsPackBase,
+  ATTRIBUTE_CHILD_FORM,
   type CompareObjectsItem,
+  type ComparisonWord,
+  type MeasurableAttribute,
 } from './compareObjectsScript';
 import { numberWordFor } from './countingBoardScript';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
@@ -104,6 +107,9 @@ import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptio
 import { compareOrderMiss, describeOrder, orderMatches, workspaceAssignment, workspaceScene } from './compareObjectsWorkspace';
 import { FAR_LEVER, GRID_LEVER, SLOTS_LEVER, STEPS_LEVER, compareObjectsLevers, farThree, leverFacts, orderSteps }
   from './compareObjectsLevers';
+import { FAR_PAIR_LEVER, FEWER_CHOICES_LEVER, FIVE_MARKS_LEVER, MENU_LEVER, MENU_PICTURE, SHORTER_LEVER, TAP_BOXES_LEVER,
+  WORD_MODEL_LEVER, compareObjectsSpokenLevers, droppedChoice, farPair, shorterMeasure, spokenLeverFacts, wordModel }
+  from './compareObjectsSpokenLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -334,6 +340,7 @@ function renderNonStandardMeasure(
   unitName: string,
   unitCount: number,
   showNumbers: boolean,
+  levers: { tap?: { tapped: readonly number[]; onTap: (i: number) => void }; fives?: boolean } = {},
 ) {
   const width = Math.max(60, (obj.visualSize / 100) * 320);
   return (
@@ -347,19 +354,58 @@ function renderNonStandardMeasure(
       </div>
       <div className="flex items-center gap-3">
         <span className="text-slate-400 text-sm w-20 text-right shrink-0">{unitName}s</span>
-        <div className="flex gap-0.5">
-          {Array.from({ length: unitCount }).map((_, i) => (
-            // dropzone-triage: decorative measurement unit, out of scope
-            <div
-              key={i}
-              className="h-6 border border-dashed border-cyan-400/50 bg-cyan-500/10 rounded-sm flex items-center justify-center"
-              style={{ width: `${width / unitCount}px` }}
-            >
-              {showNumbers && <span className="text-[10px] text-cyan-300">{i + 1}</span>}
-            </div>
-          ))}
+        {/* tap_boxes lever: each box fills when the learner taps it; five_marks: a thicker line after every fifth box.
+            Neither prints a number. */}
+        <div className="flex gap-0.5" {...(levers.tap ? { 'data-lever': 'tap-boxes' } : {})}>
+          {Array.from({ length: unitCount }).map((_, i) => {
+            const filled = !!levers.tap?.tapped.includes(i);
+            const fifth = !!levers.fives && (i + 1) % 5 === 0 && i + 1 < unitCount;
+            const className = `h-6 border border-dashed border-cyan-400/50 rounded-sm flex items-center justify-center ${
+              filled ? 'bg-cyan-300/60' : 'bg-cyan-500/10'} ${fifth ? 'border-r-4 border-r-amber-300 border-solid' : ''}`;
+            const style = { width: `${width / unitCount}px` };
+            const mark = fifth ? { 'data-lever': 'five-marks' } : {};
+            const number = showNumbers && <span className="text-[10px] text-cyan-300">{i + 1}</span>;
+            return levers.tap
+              ? <button key={i} type="button" data-unit-box={i} data-filled={filled} aria-label="unit box" {...mark}
+                  className={className} style={style} onClick={() => levers.tap!.onTap(i)}>{number}</button>
+              // dropzone-triage: decorative measurement unit, out of scope
+              : <div key={i} data-unit-box={i} {...mark} className={className} style={style}>{number}</div>;
+          })}
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * word_model lever: a model pair of plain shapes, fixed per comparison word (never read from the item), the one the
+ * asked word names glowing.
+ */
+function renderWordModel(attribute: MeasurableAttribute, word: ComparisonWord) {
+  const { sizes, glow } = wordModel(word);
+  const tone = (i: number) => i === glow ? 'bg-amber-300 shadow-[0_0_12px_rgba(252,211,77,0.8)]' : 'bg-slate-500/70';
+  return (
+    <div data-lever="word-model" data-glow={glow} aria-label="a model pair"
+      className="mx-auto flex max-w-xs items-end justify-center gap-4 rounded-xl border border-amber-300/30 bg-slate-900/40 p-3">
+      {attribute === 'length'
+        ? <div className="flex w-40 flex-col gap-2">{sizes.map((s, i) =>
+            <span key={i} data-model={i} className={`block h-3 rounded-full ${tone(i)}`} style={{ width: `${s}%` }} />)}</div>
+        : sizes.map((s, i) => attribute === 'weight'
+          ? <span key={i} data-model={i} className={`block rounded-md ${tone(i)}`} style={{ width: s / 2, height: s / 2 }} />
+          : <span key={i} data-model={i} className={`block w-6 rounded-t ${tone(i)}`} style={{ height: s * 0.6 }} />)}
+    </div>
+  );
+}
+
+/** menu_pictures / fewer_choices levers: one picture per spoken choice, in ask order; none marked, one maybe greyed. */
+function renderMenuPictures(options: readonly MeasurableAttribute[], dropped: MeasurableAttribute | null) {
+  return (
+    <div data-lever="menu-pictures" className="flex justify-center gap-4">
+      {options.map(a => (
+        <span key={a} data-option={a} data-dropped={a === dropped} aria-label={ATTRIBUTE_CHILD_FORM[a]}
+          className={`flex h-14 w-14 items-center justify-center rounded-xl border border-white/20 bg-white/5 text-3xl ${
+            a === dropped ? 'opacity-20 grayscale' : ''}`}>{MENU_PICTURE[a]}</span>
+      ))}
     </div>
   );
 }
@@ -430,6 +476,8 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
   // simplify lever put on screen in its place (with the drawing it needs). The ref is what event handlers read.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<{ item: CompareObjectsItem; challenge: CompareObjectsChallenge } | null>(null);
+  /** tap_boxes: the unit boxes the learner has tapped, keyed by the item on screen. */
+  const [tappedBoxes, setTappedBoxes] = useState<{ item: string; boxes: number[] }>({ item: '', boxes: [] });
   const displayItemRef = useRef<CompareObjectsItem | null>(null);
 
   const stableInstanceIdRef = useRef(instanceId || `compare-objects-${Math.round(performance.now())}`);
@@ -585,6 +633,15 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
   const currentChallenge = practice?.challenge ?? sessionChallenge;
   const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
   const gridOn = pulledLevers.includes(GRID_LEVER) && currentItem?.kind === 'order_three';
+  const tapped = tappedBoxes.item === currentItem?.id ? tappedBoxes.boxes : [];
+  const tapBox = useCallback((i: number) => {
+    const id = displayItemRef.current?.id ?? '';
+    SoundManager.tap();
+    setTappedBoxes(prev => {
+      const boxes = prev.item === id ? prev.boxes : [];
+      return { item: id, boxes: boxes.includes(i) ? boxes.filter(b => b !== i) : [...boxes, i] };
+    });
+  }, []);
 
   // ── The gesture commit ────────────────────────────────────────────────────
   // No Check control: nothing on screen may carry the child forward. The close
@@ -638,6 +695,8 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
         currentItem.unitCount,
         // The count-along numbering IS the answer — reveal only, never a scaffold.
         runner.revealHeld,
+        { ...(pulledLevers.includes(TAP_BOXES_LEVER) ? { tap: { tapped, onTap: tapBox } } : {}),
+          fives: pulledLevers.includes(FIVE_MARKS_LEVER) },
       );
     }
 
@@ -673,15 +732,17 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
           </div>
         );
     }
-  }, [currentItem, currentChallenge, runner.revealHeld]);
+  }, [currentItem, currentChallenge, runner.revealHeld, pulledLevers, tapped, tapBox]);
 
   // Workspace path: what the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentItem) return;
     const scene = workspaceScene(currentItem, { placedOrder });
-    const onScreen = leverFacts(currentItem, pulledLevers, placedOrder.length);
-    const levers = practice ? [] : compareObjectsLevers(sessionItem, sessionChallenge, pulledLevers);
+    const onScreen = [leverFacts(currentItem, pulledLevers, placedOrder.length), spokenLeverFacts(currentItem, pulledLevers)]
+      .filter(Boolean).join(' ');
+    const levers = practice ? [] : [...compareObjectsLevers(sessionItem, sessionChallenge, pulledLevers),
+      ...compareObjectsSpokenLevers(sessionItem, sessionChallenge, pulledLevers, items)];
     workspace.current = {
       ...scene,
       ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
@@ -692,9 +753,10 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
         if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
         const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
-        if (id === FAR_LEVER) {
-          const easier = farThree(sessionItem, sessionChallenge);
-          if (!easier) return 'There is no easier order for this item.';
+        if (id === FAR_LEVER || id === FAR_PAIR_LEVER || id === SHORTER_LEVER) {
+          const easier = id === FAR_LEVER ? farThree(sessionItem, sessionChallenge)
+            : id === FAR_PAIR_LEVER ? farPair(sessionItem, sessionChallenge) : shorterMeasure(sessionItem, sessionChallenge, items);
+          if (!easier) return 'There is no easier one for this item.';
           setLeverState(pulled);
           setPractice(easier); resetStageFor(); runner.clearStillness();
           return { practice: workspaceAssignment(easier.item) };
@@ -832,6 +894,12 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
                 </div>
               </LuminaPanel>
             </div>
+
+            {kind === 'compare_two' && pulledLevers.includes(WORD_MODEL_LEVER)
+              && renderWordModel(currentItem.attribute, currentItem.comparisonWord)}
+            {kind === 'identify_attribute' && (pulledLevers.includes(MENU_LEVER) || pulledLevers.includes(FEWER_CHOICES_LEVER))
+              && renderMenuPictures(currentItem.attributeOptions,
+                pulledLevers.includes(FEWER_CHOICES_LEVER) ? droppedChoice(currentItem) : null)}
 
             {/* Pip's dock sits between the drawing and the name buttons, so a
                 pointer to the drawing never crosses a name on its way. */}

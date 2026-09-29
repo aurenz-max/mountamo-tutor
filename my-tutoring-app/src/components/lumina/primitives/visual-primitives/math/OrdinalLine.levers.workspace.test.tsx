@@ -93,9 +93,7 @@ function mount(evalMode: Mode, band: 'K' | '1' = 'K') {
 const levers = (h: ReturnType<typeof mount>) => h.state().task!.workspace!.levers ?? [];
 const drawn = (h: ReturnType<typeof mount>, kind: string) => h.view.container.querySelectorAll(`[data-lever="${kind}"]`);
 
-it('declares its levers on build_sequence only; the flag and the dots place no picture and ride on the next attempt', () => {
-  expect(levers(mount('identify'))).toEqual([]);
-  cleanup();
+it('build_sequence: the flag and the dots place no picture and ride on the next attempt', () => {
   const h = mount('build_sequence');
   expect(levers(h).map(l => [l.id, l.kind])).toEqual([['front_flag', 'help'], ['place_dots', 'help'], ['three_places', 'simplify']]);
   h.build('Mole', 'Duck', 'Bear', 'Fox'); h.settle();

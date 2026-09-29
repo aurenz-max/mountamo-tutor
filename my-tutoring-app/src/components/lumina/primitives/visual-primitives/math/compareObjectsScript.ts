@@ -245,7 +245,7 @@ const plural = (word: string): string =>
  * the reward ("Yes, how long they are. That is called length."). DISTAR: the
  * new word arrives attached to something the child has already got right.
  */
-const ATTRIBUTE_CHILD_FORM: Record<MeasurableAttribute, string> = {
+export const ATTRIBUTE_CHILD_FORM: Record<MeasurableAttribute, string> = {
   length: 'how long they are',
   height: 'how tall they are',
   weight: 'how heavy they are',

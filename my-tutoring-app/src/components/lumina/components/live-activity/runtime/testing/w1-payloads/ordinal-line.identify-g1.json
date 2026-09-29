@@ -1,0 +1,373 @@
+{
+ "source": "qa/tutor-reports/ordinal-line-runtime-identify-payload-2026-09-29.json",
+ "primitiveId": "ordinal-line",
+ "evalMode": "identify",
+ "data": {
+  "title": "Animal Race: Who is First?",
+  "description": "Join our fun animal race to learn ordinal numbers from first to tenth by seeing who crosses the finish line in each position.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "identify",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Cheetah",
+      "emoji": "\ud83d\udc06"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     },
+     {
+      "name": "Elephant",
+      "emoji": "\ud83d\udc18"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Giraffe",
+      "emoji": "\ud83e\udd92"
+     },
+     {
+      "name": "Zebra",
+      "emoji": "\ud83e\udd93"
+     },
+     {
+      "name": "Kangaroo",
+      "emoji": "\ud83e\udd98"
+     },
+     {
+      "name": "Koala",
+      "emoji": "\ud83d\udc28"
+     }
+    ],
+    "instruction": "Say who is tenth in the race.",
+    "targetPosition": 10,
+    "targetOrdinalWord": "tenth",
+    "targetOrdinalSymbol": "10th",
+    "correctAnswer": "10"
+   },
+   {
+    "id": "c2",
+    "type": "identify",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Cheetah",
+      "emoji": "\ud83d\udc06"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     },
+     {
+      "name": "Elephant",
+      "emoji": "\ud83d\udc18"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Giraffe",
+      "emoji": "\ud83e\udd92"
+     },
+     {
+      "name": "Zebra",
+      "emoji": "\ud83e\udd93"
+     },
+     {
+      "name": "Kangaroo",
+      "emoji": "\ud83e\udd98"
+     },
+     {
+      "name": "Koala",
+      "emoji": "\ud83d\udc28"
+     }
+    ],
+    "instruction": "Say who is second in the race.",
+    "targetPosition": 2,
+    "targetOrdinalWord": "second",
+    "targetOrdinalSymbol": "2nd",
+    "correctAnswer": "2"
+   },
+   {
+    "id": "c3",
+    "type": "identify",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Cheetah",
+      "emoji": "\ud83d\udc06"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     },
+     {
+      "name": "Elephant",
+      "emoji": "\ud83d\udc18"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Giraffe",
+      "emoji": "\ud83e\udd92"
+     },
+     {
+      "name": "Zebra",
+      "emoji": "\ud83e\udd93"
+     },
+     {
+      "name": "Kangaroo",
+      "emoji": "\ud83e\udd98"
+     },
+     {
+      "name": "Koala",
+      "emoji": "\ud83d\udc28"
+     }
+    ],
+    "instruction": "Say who is first in the race.",
+    "targetPosition": 1,
+    "targetOrdinalWord": "first",
+    "targetOrdinalSymbol": "1st",
+    "correctAnswer": "1"
+   },
+   {
+    "id": "c4",
+    "type": "identify",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Cheetah",
+      "emoji": "\ud83d\udc06"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     },
+     {
+      "name": "Elephant",
+      "emoji": "\ud83d\udc18"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Giraffe",
+      "emoji": "\ud83e\udd92"
+     },
+     {
+      "name": "Zebra",
+      "emoji": "\ud83e\udd93"
+     },
+     {
+      "name": "Kangaroo",
+      "emoji": "\ud83e\udd98"
+     },
+     {
+      "name": "Koala",
+      "emoji": "\ud83d\udc28"
+     }
+    ],
+    "instruction": "Say who is ninth in the race.",
+    "targetPosition": 9,
+    "targetOrdinalWord": "ninth",
+    "targetOrdinalSymbol": "9th",
+    "correctAnswer": "9"
+   },
+   {
+    "id": "c5",
+    "type": "identify",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Cheetah",
+      "emoji": "\ud83d\udc06"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     },
+     {
+      "name": "Elephant",
+      "emoji": "\ud83d\udc18"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Giraffe",
+      "emoji": "\ud83e\udd92"
+     },
+     {
+      "name": "Zebra",
+      "emoji": "\ud83e\udd93"
+     },
+     {
+      "name": "Kangaroo",
+      "emoji": "\ud83e\udd98"
+     },
+     {
+      "name": "Koala",
+      "emoji": "\ud83d\udc28"
+     }
+    ],
+    "instruction": "Say who is seventh in the race.",
+    "targetPosition": 7,
+    "targetOrdinalWord": "seventh",
+    "targetOrdinalSymbol": "7th",
+    "correctAnswer": "7"
+   },
+   {
+    "id": "c6",
+    "type": "identify",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Cheetah",
+      "emoji": "\ud83d\udc06"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     },
+     {
+      "name": "Elephant",
+      "emoji": "\ud83d\udc18"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Giraffe",
+      "emoji": "\ud83e\udd92"
+     },
+     {
+      "name": "Zebra",
+      "emoji": "\ud83e\udd93"
+     },
+     {
+      "name": "Kangaroo",
+      "emoji": "\ud83e\udd98"
+     },
+     {
+      "name": "Koala",
+      "emoji": "\ud83d\udc28"
+     }
+    ],
+    "instruction": "Say who is third in the race.",
+    "targetPosition": 3,
+    "targetOrdinalWord": "third",
+    "targetOrdinalSymbol": "3rd",
+    "correctAnswer": "3"
+   },
+   {
+    "id": "c7",
+    "type": "identify",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Cheetah",
+      "emoji": "\ud83d\udc06"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     },
+     {
+      "name": "Elephant",
+      "emoji": "\ud83d\udc18"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Giraffe",
+      "emoji": "\ud83e\udd92"
+     },
+     {
+      "name": "Zebra",
+      "emoji": "\ud83e\udd93"
+     },
+     {
+      "name": "Kangaroo",
+      "emoji": "\ud83e\udd98"
+     },
+     {
+      "name": "Koala",
+      "emoji": "\ud83d\udc28"
+     }
+    ],
+    "instruction": "Say who is fourth in the race.",
+    "targetPosition": 4,
+    "targetOrdinalWord": "fourth",
+    "targetOrdinalSymbol": "4th",
+    "correctAnswer": "4"
+   }
+  ],
+  "maxPosition": 10,
+  "context": "race",
+  "showOrdinalLabels": true,
+  "labelFormat": "both",
+  "gradeBand": "1"
+ }
+}

@@ -40,7 +40,7 @@ const obj = (name: string, size: number, value: number) => ({ name, visualSize: 
 const PAIR = [obj('pencil', 120, 12), obj('crayon', 60, 6)];
 
 /** One challenge per mode, each satisfying `itemFromChallenge`'s own gates. */
-function challengeFor(kind: Kind, id = kind): Record<string, any> {
+function challengeFor(kind: Kind, id: string = kind): Record<string, any> {
   const base = { id, type: kind, attribute: 'length' };
   switch (kind) {
     case 'compare_two': return { ...base, comparisonWord: 'longer', correctAnswer: 'pencil', objects: PAIR };
@@ -88,9 +88,7 @@ function mount(evalMode: string, challenges: Record<string, any>[]) {
 const levers = (h: ReturnType<typeof mount>) => h.state().task!.workspace!.levers ?? [];
 const drawn = (h: ReturnType<typeof mount>, kind: string) => h.view.container.querySelectorAll(`[data-lever="${kind}"]`);
 
-it('declares its levers on order_three only, and pulls change the board without naming a place', () => {
-  expect(levers(mount('compare_two', [challengeFor('compare_two')]))).toEqual([]);
-  cleanup();
+it('order_three pulls change the board without naming a place', () => {
   const h = mount('order_three', [challengeFor('order_three')]);
   expect(levers(h).map(l => [l.id, l.kind])).toEqual([['order_steps', 'help'], ['touch_slots', 'help'], ['measure_grid', 'help'],
     ['far_three', 'simplify']]);
@@ -132,4 +130,82 @@ it('the easier order is ungraded and returns to the full item, which alone is cr
   expect(attempts.map(a => [a.itemId, a.correct, 'practice' in a])).toEqual([
     ['order_three', false, false], ['order_three~simpler', true, true], ['order_three', true, false]]);
   expect(attempts.at(-1)).toMatchObject({ levers: ['far_three'], assisted: true });
+});
+
+// ── The spoken modes (handoff 23 step 2) ─────────────────────────────────────
+
+const close = (id = 'compare_two') => ({ ...challengeFor('compare_two', id), objects: [obj('pencil', 60, 12), obj('crayon', 50, 6)] });
+
+it('compare_two: word_model shows a fixed model pair beside the picture; the next spoken attempt carries it', () => {
+  const h = mount('compare_two', [challengeFor('compare_two')]);
+  expect(levers(h).map(l => [l.id, l.kind])).toEqual([['word_model', 'help']]);
+  h.say('the crayon'); h.feedback('incorrect', 'retry');
+  h.dispatch('pull_lever', { lever: 'word_model' });
+  const model = drawn(h, 'word-model');
+  expect(model).toHaveLength(1);
+  expect(model[0].getAttribute('data-glow')).toBe('0');
+  expect(model[0].textContent).toBe('');
+  const demand = h.state().task!.demand;
+  expect(demand.onScreen).toMatch(/model pair of plain shapes shows what "longer" means/);
+  for (const n of ['pencil', 'crayon']) expect(String(demand.onScreen)).not.toContain(n);
+  h.say('the pencil'); h.feedback('correct');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['word_model'] });
+});
+
+it('compare_two: far_pair on a close pair is an ungraded easier pair, then the full pair is credited', () => {
+  const h = mount('compare_two', [close(), { ...challengeFor('identify_attribute', 'next') }]);
+  expect(levers(h).map(l => l.id)).toEqual(['word_model', 'far_pair']);
+  h.say('crayon'); h.feedback('incorrect', 'retry');
+  h.dispatch('pull_lever', { lever: 'far_pair' });
+  const task = h.state().task!;
+  expect(task.itemId).toBe('compare_two~simpler');
+  expect(task.workspace!.practice).toEqual({ returnsTo: 'compare_two' });
+  expect(task.workspace!.expectedAnswer).toBe('blue ribbon');
+  h.say('blue ribbon'); h.feedback('correct', 'advance'); h.confirmVisible();
+  expect(h.state().task!.itemId).toBe('compare_two');
+  h.say('pencil'); h.feedback('correct');
+  const attempts = h.state().task!.workspace!.attempts;
+  expect(attempts.map(a => [a.itemId, a.correct, 'practice' in a])).toEqual([
+    ['compare_two', false, false], ['compare_two~simpler', true, true], ['compare_two', true, false]]);
+  expect(attempts.at(-1)).toMatchObject({ assisted: true, levers: ['far_pair'] });
+});
+
+it('identify_attribute: menu_pictures shows every choice alike; fewer_choices greys out one wrong one', () => {
+  const three = { ...challengeFor('identify_attribute'), attributeOptions: ['length', 'weight', 'capacity'] };
+  const h = mount('identify_attribute', [three]);
+  expect(levers(h).map(l => [l.id, l.kind])).toEqual([['menu_pictures', 'help'], ['fewer_choices', 'simplify']]);
+  h.dispatch('pull_lever', { lever: 'menu_pictures' });
+  const options = () => Array.from(drawn(h, 'menu-pictures')[0].querySelectorAll('[data-option]'));
+  expect(options().map(o => o.getAttribute('data-dropped'))).toEqual(['false', 'false', 'false']);
+  h.dispatch('pull_lever', { lever: 'fewer_choices' });
+  const dropped = options().filter(o => o.getAttribute('data-dropped') === 'true').map(o => o.getAttribute('data-option'));
+  expect(dropped).toHaveLength(1);
+  expect(dropped[0]).not.toBe('length');
+  expect(h.state().task!.demand.onScreen).toMatch(/greyed out/);
+  h.say('how long they are'); h.feedback('correct');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ assisted: true, levers: ['menu_pictures', 'fewer_choices'] });
+});
+
+it('non_standard: tap_boxes makes the boxes tappable and fills only the taps; shorter_measure opens a shorter measure', () => {
+  const eight = { ...challengeFor('non_standard'), unitCount: 8 };
+  const h = mount('non_standard', [eight]);
+  expect(levers(h).map(l => l.id)).toEqual(['tap_boxes', 'five_marks', 'shorter_measure']);
+  expect(h.view.container.querySelectorAll('button[data-unit-box]')).toHaveLength(0);
+  h.dispatch('pull_lever', { lever: 'tap_boxes' });
+  const boxes = () => Array.from(h.view.container.querySelectorAll('button[data-unit-box]'));
+  expect(boxes()).toHaveLength(8);
+  act(() => { fireEvent.click(boxes()[0]); fireEvent.click(boxes()[1]); });
+  expect(boxes().map(b => b.getAttribute('data-filled'))).toEqual(['true', 'true', 'false', 'false', 'false', 'false', 'false', 'false']);
+  expect(h.view.container.querySelector('[data-lever="tap-boxes"]')!.textContent).toBe('');
+  h.dispatch('pull_lever', { lever: 'five_marks' });
+  expect(Array.from(drawn(h, 'five-marks')).map(b => b.getAttribute('data-unit-box'))).toEqual(['4']);
+  expect(JSON.stringify(h.state().task!.demand)).not.toMatch(/\b8\b/);
+  h.say('nine'); h.feedback('incorrect', 'retry');
+  h.dispatch('pull_lever', { lever: 'shorter_measure' });
+  expect(h.state().task!.itemId).toBe('non_standard~simpler');
+  expect(h.state().task!.workspace!.expectedAnswer).toBe('4');
+  expect(boxes()).toHaveLength(4);
+  h.say('four'); h.feedback('correct', 'advance'); h.confirmVisible();
+  expect(h.state().task!.itemId).toBe('non_standard');
+  expect(boxes()).toHaveLength(8);
 });

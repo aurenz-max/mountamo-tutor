@@ -32,6 +32,8 @@ import { buildSequencerItems, orderMiss, sameOrder, targetSlot, workspaceAssignm
 import type { NumberSequencerChallenge, NumberSequencerData } from './NumberSequencer';
 import { MARKS_LEVER, STEPS_LEVER, THREE_LEVER, leverFacts, quantityParts, sequencerLevers, threeCards, trainSteps }
   from './numberSequencerLevers';
+import { CAR_MARKS_LEVER, MODEL_TRAIN_LEVER, SMALLER_LEVER, STEP_ARROW_LEVER, modelTrain, smallerNumbers, spokenLeverFacts,
+  spokenSequencerLevers, stepArrow } from './numberSequencerSpokenLevers';
 
 export interface NumberSequencerTeachingProps {
   data: NumberSequencerData;
@@ -125,11 +127,14 @@ function TrainWorkspace({ data, items, className, runtimePlanItemId }:
   }), [items, index, item]);
   const cards = useMemo(() => item.sequence.filter((n): n is number => n !== null), [item]);
   const target = targetSlot(item);
+  const arrow = leverOn(STEP_ARROW_LEVER) ? stepArrow(item) : null;
+  const model = leverOn(MODEL_TRAIN_LEVER) ? modelTrain(item) : null;
 
   useLayoutEffect(() => {
     const scene = workspaceScene(item, { shown, placed });
-    const onScreen = practice ? '' : leverFacts(sessionItem, pulled);
-    const levers = practice ? [] : sequencerLevers(sessionItem, pulled, data.gradeBand);
+    const onScreen = practice ? '' : [leverFacts(sessionItem, pulled), spokenLeverFacts(sessionItem, pulled)].filter(Boolean).join(' ');
+    const levers = practice ? [] : [...sequencerLevers(sessionItem, pulled, data.gradeBand),
+      ...spokenSequencerLevers(sessionItem, pulled, items)];
     workspace.current = {
       ...scene,
       ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
@@ -141,8 +146,8 @@ function TrainWorkspace({ data, items, className, runtimePlanItemId }:
         const lever = levers.find(l => l.id === id);
         if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        if (id === THREE_LEVER) {
-          const easier = threeCards(sessionItem, data.gradeBand);
+        if (id === THREE_LEVER || id === SMALLER_LEVER) {
+          const easier = id === THREE_LEVER ? threeCards(sessionItem, data.gradeBand) : smallerNumbers(sessionItem, items);
           if (!easier) return 'There is no easier train for this item.';
           setLeverState({ item: sessionItem.id, pulled: [...pulled, id] });
           setPractice(easier); setPlaced([]);
@@ -186,6 +191,14 @@ function TrainWorkspace({ data, items, className, runtimePlanItemId }:
       {data.showDotArrays && value !== null && value <= 20 && <span aria-hidden="true" className="grid grid-cols-5 gap-1">
         {Array.from({ length: value }, (_, n) => <span key={n} className="h-1.5 w-1.5 rounded-full bg-slate-300" />)}
       </span>}
+      {/* car_marks lever: a printed car's amount as sticks of ten and dots; an empty car shows none. */}
+      {leverOn(CAR_MARKS_LEVER) && value !== null && <CardMarks n={value} />}
+      {/* step_arrow lever: on the printed car beside the glowing one, pointing at it, marked with one step. */}
+      {arrow?.from === position && <span data-lever="step-arrow" aria-hidden="true"
+        className={`absolute top-1 whitespace-nowrap rounded bg-cyan-400/20 px-1 text-sm text-cyan-100 ${
+          target > position ? '-right-7' : '-left-7'}`}>
+        {target > position ? `${arrow.step > 0 ? '+' : '−'}${Math.abs(arrow.step)} →` : `← ${arrow.step > 0 ? '+' : '−'}${Math.abs(arrow.step)}`}
+      </span>}
       <span aria-hidden="true" className="absolute -bottom-2 left-3 h-3 w-3 rounded-full bg-slate-500" />
       <span aria-hidden="true" className="absolute -bottom-2 right-3 h-3 w-3 rounded-full bg-slate-500" />
     </div>;
@@ -226,6 +239,12 @@ function TrainWorkspace({ data, items, className, runtimePlanItemId }:
             </button>)}
         </div>
       </section> : <div className="flex flex-wrap justify-center gap-3 pb-3" aria-label="Number train">{shown.map(car)}</div>}
+      {/* model_train lever: a train with its own numbers, the one that does not belong circled. */}
+      {model && <div data-lever="model-train" aria-label="A model train" className="flex justify-center gap-2 opacity-80">
+        {model.cars.map((n, i) => <span key={i} data-model-wrong={i === model.wrong}
+          className={`flex h-10 w-10 items-center justify-center rounded-lg border text-lg text-slate-200 ${
+            i === model.wrong ? 'border-rose-300 ring-2 ring-rose-400' : 'border-slate-500/40'}`}>{n}</span>)}
+      </div>}
       {data.showNumberLine && !gesture && item.challengeType !== 'spot-error' && item.rangeMax - item.rangeMin <= 30
         && <div aria-label="Number line reference" className="flex flex-wrap justify-center gap-2 border-t border-slate-600 pt-3 text-sm text-slate-400">
           {Array.from({ length: item.rangeMax - item.rangeMin + 1 }, (_, i) => <span key={i} className="min-w-6 text-center">{item.rangeMin + i}</span>)}

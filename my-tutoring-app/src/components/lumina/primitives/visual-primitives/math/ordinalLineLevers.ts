@@ -21,7 +21,7 @@ export const FLAG_LEVER = 'front_flag';
 export const DOTS_LEVER = 'place_dots';
 export const THREE_LEVER = 'three_places';
 
-const CAST: ReadonlyArray<{ name: string; emoji: string }> = [
+export const CAST: ReadonlyArray<{ name: string; emoji: string }> = [
   { name: 'Cat', emoji: '🐱' }, { name: 'Duck', emoji: '🦆' }, { name: 'Bear', emoji: '🐻' },
   { name: 'Frog', emoji: '🐸' }, { name: 'Owl', emoji: '🦉' }, { name: 'Pig', emoji: '🐷' },
 ];

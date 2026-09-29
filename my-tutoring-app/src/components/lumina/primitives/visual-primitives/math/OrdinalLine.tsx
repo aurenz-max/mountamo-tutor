@@ -129,6 +129,8 @@ import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptio
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { describeLine, lineMatches, lineMiss, workspaceAssignment, workspaceScene } from './ordinalLineWorkspace';
 import { DOTS_LEVER, FLAG_LEVER, THREE_LEVER, leverFacts, ordinalLevers, threePlaces } from './ordinalLineLevers';
+import { FRONT_LEVER, PLACE_MODEL_LEVER, SHORTER_LEVER, SIDE_MODEL_LEVER, STORY_LEVER, TAP_LEVER, WORD_MODEL_LEVER,
+  ordinalSpokenLevers, placeModel, shortStory, shorterLine, sideModel, spokenLeverFacts } from './ordinalLineSpokenLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -323,6 +325,8 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<{ item: OrdinalLineItem; emojis: Map<string, string> } | null>(null);
   const displayItemRef = useRef<OrdinalLineItem | null>(null);
+  /** tap_marks: the pictures on the line the learner has tapped, keyed by the item on screen. */
+  const [tapped, setTapped] = useState<{ item: string; names: string[] }>({ item: '', names: [] });
 
   const stableInstanceIdRef = useRef(instanceId || `ordinal-line-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -543,6 +547,15 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
   const currentChallenge = challengeFor(sessionItem);
   const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
   const emojiOf = (name: string) => practice?.emojis.get(name) ?? emojiByName.get(name) ?? '⬤';
+  const tappedNames = tapped.item === currentItem?.id ? tapped.names : [];
+  const tapPicture = (name: string) => {
+    const id = displayItemRef.current?.id ?? '';
+    SoundManager.tap();
+    setTapped(prev => {
+      const names = prev.item === id ? prev.names : [];
+      return { item: id, names: names.includes(name) ? names.filter(n => n !== name) : [...names, name] };
+    });
+  };
   // The workspace path shows its summary without an evaluation provider (the live host has none).
   const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
 
@@ -621,6 +634,8 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
   const renderCharacterLine = (item: OrdinalLineItem, markPosition?: number) => (
     <div className="flex items-end justify-center gap-1 sm:gap-2 py-4 px-2">
       <div ref={pip.ref('start')} data-pip-object="start" className="flex flex-col items-center mr-2">
+        {/* front_flag lever: a flag at the front end, the end the ask names. Never a picture. */}
+        {pulledLevers.includes(FRONT_LEVER) && <span data-lever="front-flag" aria-label="the front" className="text-lg leading-none">🚩</span>}
         <span className="text-lg">{contextTheme.bgEmoji}</span>
         <span className="text-[10px] text-slate-500 mt-1">{contextTheme.startLabel}</span>
       </div>
@@ -628,12 +643,16 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
       {item.lineNames.map((name, idx) => {
         const pos = idx + 1;
         const isMarked = markPosition === pos;
+        // tap_marks lever: a picture the learner taps gets a ring; no order, no number.
+        const tappable = item.kind === 'identify' && pulledLevers.includes(TAP_LEVER);
+        const ringed = tappable && tappedNames.includes(name);
         return (
           <div
             key={name}
             ref={isMarked ? pip.ref('marked') : undefined}
             data-pip-object={isMarked ? 'marked' : undefined}
-            className={`flex flex-col items-center transition-all duration-200 ${isMarked ? 'scale-105' : ''}`}
+            {...(tappable ? { 'data-tap-mark': name, 'data-ringed': ringed, role: 'button', onClick: () => tapPicture(name) } : {})}
+            className={`flex flex-col items-center transition-all duration-200 ${isMarked ? 'scale-105' : ''} ${tappable ? 'cursor-pointer' : ''}`}
           >
             {/* ⭐ THE ORDINAL LABEL IS THE ANSWER. Reveal only — never a
                 scaffold, whatever the tier flag says (module docblock). */}
@@ -645,8 +664,8 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
               isMarked
                 ? 'bg-blue-500/20 border-2 border-blue-400/60 shadow-lg shadow-blue-500/20'
                 : 'bg-white/5 border border-white/10'
-            }`}>
-              {emojiByName.get(name) ?? '⬤'}
+            } ${ringed ? 'ring-2 ring-amber-300' : ''}`}>
+              {emojiOf(name)}
             </div>
 
             {/* The name prints for a reader; a pre-reader reads the picture. */}
@@ -679,7 +698,7 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
       {seededShuffle(item.clues.map((c) => c.name), item.id).map((name) => (
         <div key={name} className="flex flex-col items-center">
           <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl">
-            {emojiByName.get(name) ?? '⬤'}
+            {emojiOf(name)}
           </div>
           {!isPreReader && <span className="text-[10px] mt-1 text-slate-500">{name}</span>}
         </div>
@@ -756,6 +775,34 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     );
   };
 
+  /** A row of plain model circles (word_model, side_model, place_model): never the item's line. */
+  const renderModel = (lever: string, count: number, opts: { ringed?: number; glow?: number; symbols?: boolean }) => (
+    <div data-lever={lever} data-count={count} className="flex items-end justify-center gap-2 py-2">
+      <span className="text-lg leading-none">🚩</span>
+      {Array.from({ length: count }, (_, i) => (
+        <span key={i} className="flex flex-col items-center gap-1">
+          <span data-model-ringed={opts.ringed === i} data-model-glow={opts.glow === i}
+            className={`block h-7 w-7 rounded-full border ${opts.glow === i ? 'bg-amber-300 border-amber-200' : 'bg-slate-500/60 border-white/20'} ${
+              opts.ringed === i ? 'ring-2 ring-blue-400' : ''}`} />
+          {opts.symbols && <span className="text-[11px] text-slate-300">{getOrdinalLabel(i + 1, 'symbol')}</span>}
+        </span>
+      ))}
+    </div>
+  );
+
+  const renderModels = () => {
+    if (!currentItem || practice) return null;
+    return (
+      <>
+        {pulledLevers.includes(WORD_MODEL_LEVER) && renderModel('word-model', 3, { symbols: true })}
+        {pulledLevers.includes(SIDE_MODEL_LEVER) && currentItem.kind === 'relative_position'
+          && renderModel('side-model', 3, sideModel(currentItem.relativeQuery))}
+        {pulledLevers.includes(PLACE_MODEL_LEVER) && currentItem.kind === 'match'
+          && renderModel('place-model', placeModel(currentItem), { ringed: placeModel(currentItem) - 1 })}
+      </>
+    );
+  };
+
   const renderStage = () => {
     if (!currentItem) return null;
     switch (currentItem.kind) {
@@ -820,8 +867,9 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     const markedPlace = currentItem.kind === 'relative_position' && currentChallenge?.highlightTarget !== false
       ? currentItem.askPosition : undefined;
     const scene = workspaceScene(currentItem, { placedOrder, markedPlace });
-    const onScreen = leverFacts(currentItem, pulledLevers);
-    const levers = practice ? [] : ordinalLevers(sessionItem, pulledLevers);
+    const onScreen = practice ? leverFacts(currentItem, pulledLevers)
+      : [leverFacts(currentItem, pulledLevers), spokenLeverFacts(currentItem, pulledLevers)].filter(Boolean).join(' ');
+    const levers = practice ? [] : [...ordinalLevers(sessionItem, pulledLevers), ...ordinalSpokenLevers(sessionItem, pulledLevers)];
     workspace.current = {
       ...scene,
       ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
@@ -832,8 +880,8 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
         if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
         const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
-        if (id === THREE_LEVER) {
-          const easier = threePlaces(sessionItem);
+        if (id === THREE_LEVER || id === SHORTER_LEVER || id === STORY_LEVER) {
+          const easier = id === THREE_LEVER ? threePlaces(sessionItem) : id === SHORTER_LEVER ? shorterLine(sessionItem) : shortStory(sessionItem);
           if (!easier) return 'There is no easier line for this item.';
           setLeverState(pulled);
           setPractice(easier); resetStageFor(); runner.clearStillness();
@@ -932,6 +980,7 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
                 to listen. */}
             <div ref={pip.ref('stage')} data-pip-object="stage" className="bg-white/[0.02] rounded-xl border border-white/5 overflow-x-auto">
               {renderStage()}
+              {renderModels()}
             </div>
 
             {/* The reward — the first moment an answer may appear. */}

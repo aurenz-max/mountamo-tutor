@@ -95,7 +95,8 @@ it.each(['compare_two', 'identify_attribute', 'order_three', 'non_standard'] as 
     const h = mount(kind, [challengeFor(kind)]);
     expect(h.state().owner).toBe('tutor');
     expect(h.state().task!.task).not.toMatch(/Say exactly|\[CO_/);
-    expect(tutorTools(h)).toEqual(kind === 'order_three' ? ['begin_help', 'pull_lever'] : ['begin_help']);
+    // Every mode publishes levers (order_three handoff 21, the spoken modes handoff 23).
+    expect(tutorTools(h)).toEqual(['begin_help', 'pull_lever']);
     expect(seam.send.mock.calls.flat().join(' ')).not.toMatch(/\[CO_|Say exactly/);
   });
 

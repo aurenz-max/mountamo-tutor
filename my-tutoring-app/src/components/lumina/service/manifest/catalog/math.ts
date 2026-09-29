@@ -3506,7 +3506,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'Use demonstrate with visible car or card IDs to draw purple dashed tutor marks on the cars or cards you are '
         + 'discussing, and [] to clear them. You cannot fill an empty car, move a card into a place, reorder the train '
         + 'or count for the learner. Counting along out loud is teaching; the number the learner says is the answer.',
-      // order_cards publishes levers (`numberSequencerLevers.ts`, handoff 21 M2); the spoken modes do not yet.
+      // order_cards publishes levers (`numberSequencerLevers.ts`, handoff 21 M2), the spoken modes theirs
+      // (`numberSequencerSpokenLevers.ts`, handoff 23); every miss is answered.
       levers: true,
       // The train's own check of an arrangement (`orderMiss`), and the five spoken modes' known wrong numbers
       // (`numberSequencerSpokenMisses`).
@@ -3913,7 +3914,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'number said alone (three for third) is not the answer; where it is a name, a pointing word such as "that one" is not. '
         + 'The line checks a build itself once the learner stops touching, whether or not every place is filled; talk about a '
         + 'part-built line is teaching, not a verdict. You cannot move, place, mark or count the pictures.',
-      // build_sequence publishes levers (`ordinalLineLevers.ts`, handoff 21 M2); the spoken modes do not yet.
+      // build_sequence publishes levers (`ordinalLineLevers.ts`, handoff 21 M2), the spoken modes theirs
+      // (`ordinalLineSpokenLevers.ts`, handoff 23); every miss is answered.
       levers: true,
       // The line's own check of a build (`lineMiss`), and the four spoken modes' known wrong answers (`ordinalSpokenMisses`).
       misses: missLists<LineMiss | SpokenOrdinalMiss>({
@@ -5723,7 +5725,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'learner lands on is the answer. You cannot touch, reorder or measure the objects.',
       // The board's own check of an ordering (`compareOrderMiss`), and the three spoken modes' known wrong answers
       // (`compareObjectsSpokenMisses`).
-      // order_three publishes levers (`compareObjectsLevers.ts`, handoff 21 M2); the spoken modes do not yet.
+      // order_three publishes levers (`compareObjectsLevers.ts`, handoff 21 M2), the spoken modes theirs
+      // (`compareObjectsSpokenLevers.ts`, handoff 23); every miss is answered.
       levers: true,
       misses: missLists<CompareOrderMiss | SpokenCompareMiss>({
         order_three: ['not_all_placed', 'reversed', 'two_swapped', 'other_order'],
