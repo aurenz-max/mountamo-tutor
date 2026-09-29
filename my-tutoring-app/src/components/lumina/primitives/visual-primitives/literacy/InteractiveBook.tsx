@@ -56,6 +56,7 @@ import {
   LuminaCardHeader,
   LuminaCardTitle,
   LuminaChallengeCounter,
+  LuminaPrintSupport,
   answerStateClass,
   type AnswerChoiceState,
 } from '../../../ui';
@@ -83,6 +84,8 @@ import {
   tapMatches,
   type BookHotspot,
 } from './interactiveBookWorkspace';
+import { CVC_FOCUS_LEVER, FOCUS_DOTS_LEVER, MODEL_LEVER, TWO_PARTS_LEVER, cvcFocus, interactiveBookLevers, modelFor, practicePage }
+  from './interactiveBookLevers';
 import { generateConceptImage } from '../../../service/geminiClient-api';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
@@ -213,6 +216,15 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
   /** The tapped feature text (find-feature) — cleared on retry and item open. */
   const [tapped, setTapped] = useState<string | null>(null);
   const tappedRef = useRef<string | null>(null);
+  // In-item levers (`interactiveBookLevers.ts`), keyed by the session item they were pulled on, and the practice
+  // page a simplify lever put on screen in place of the book page.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  /** A practice page (find-feature: its tappable parts) or a practice sentence (read-focus-word: its line). */
+  type Practice = { item: InteractiveBookItem; parts: BookHotspot[]; line?: string };
+  const [practice, setPracticeState] = useState<Practice | null>(null);
+  const practiceRef = useRef<Practice | null>(null);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const setPractice = (next: Practice | null) => { practiceRef.current = next; setPracticeState(next); setPracticeSolved(false); };
 
   // ── Generated pictures (stimulus-side; prompts forbid printed text) ────────
   const [generatedImages, setGeneratedImages] = useState<Record<string, string>>({});
@@ -309,6 +321,7 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
     onItemOpened: () => {
       setTapped(null);
       tappedRef.current = null;
+      setPractice(null);
     },
     onCorrectionRetry: () => {
       // Try again frees the page for another go.
@@ -318,9 +331,14 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
     },
   });
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice page's item while a simplify lever holds it, else the session item. */
+  const currentItem = practice?.item ?? sessionItem;
+  const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
+  const model = !practice && pulledLevers.includes(MODEL_LEVER) && sessionItem && book ? modelFor(sessionItem, book) : null;
+  const focusDots = !practice && pulledLevers.includes(FOCUS_DOTS_LEVER);
   /** Credited: the first moment the answer may appear on screen. */
-  const revealed = runner.currentSolved;
+  const revealed = runner.currentSolved || practiceSolved;
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
   /** The view the lesson is on — the screen follows the current item. */
@@ -328,10 +346,11 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
   const currentPage = currentPageId === 'cover'
     ? null
     : book?.pages.find((page) => page.id === currentPageId) ?? null;
-  const hotspots = useMemo(
+  const bookHotspots = useMemo(
     () => (book ? hotspotsFor(book, currentPageId) : []),
     [book, currentPageId],
   );
+  const hotspots = practice?.parts ?? bookHotspots;
 
   const currentImage = useMemo(() => {
     if (!book) return null;
@@ -379,8 +398,45 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!currentItem) return;
-    workspace.current = { ...interactiveBookScene(currentItem) };
+    if (!currentItem || !sessionItem) return;
+    const levers = practice ? [] : interactiveBookLevers(sessionItem, pulledLevers, book);
+    const scene = interactiveBookScene(currentItem);
+    const lit = model?.parts.find(part => part.lit);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts,
+        ...(model && lit ? { levers_on_screen: `a small model ${model.kind} beside the book, not this book, with its ${lit.feature.replace('-', ' ')} `
+          + `outlined ("${lit.text}"); the book's own parts are not marked` } : {}),
+        ...(focusDots ? { levers_on_screen: 'a dot under each sound of the glowing word; nothing is said' } : {}),
+        ...(practice?.line ? { shown: 'a practice sentence, not from the book, with one short word glowing.',
+          practice: 'An easier practice sentence, ungraded. The book page comes back after it.' } : {}),
+        ...(practice && !practice.line ? { shown: `a practice page, not from the book, with two printed parts: ${practice.parts.map(part => `"${part.text}"`).join(' and ')}`,
+          practice: 'An easier practice page, ungraded. The book page comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever || !book) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === CVC_FOCUS_LEVER) {
+          const simpler = cvcFocus(sessionItem, book);
+          if (!simpler) return 'There is no easier sentence for this item.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice({ item: simpler.item, parts: [], line: simpler.line });
+          return { practice: interactiveBookAssignment(simpler.item) };
+        }
+        if (id === TWO_PARTS_LEVER) {
+          const simpler = practicePage(sessionItem, book);
+          if (!simpler) return 'There is no easier page for this item.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice(simpler);
+          setTapped(null); tappedRef.current = null;
+          return { practice: interactiveBookAssignment(simpler.item) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => { setPractice(null); setTapped(null); tappedRef.current = null; },
+    };
   });
 
   /** Asks the tutor for the question again: a silent host request, never the answer. */
@@ -391,7 +447,7 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
 
   // ── The tap IS the commit (find-feature), checked by the activity ─────────
   const handleHotspotTap = useCallback((hotspot: BookHotspot) => {
-    const item = runner.currentItem;
+    const item = practiceRef.current?.item ?? runner.currentItem;
     if (!item || item.mode !== 'find-feature') return;
     if (!runner.canAttempt || showSummary) return;
     // `canAttempt` closes the pending window through batched React state; this
@@ -401,6 +457,8 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
     pip.look(`part-${hotspot.id}`);
     setTapped(hotspot.text);
     tappedRef.current = hotspot.text;
+    // The practice page is ungraded: its success is local and never affirms the book item.
+    if (practiceRef.current && tapMatches(item, hotspot.text)) setPracticeSolved(true);
     commitGesture(runner, { response: describeBookTap(hotspot.text), correct: tapMatches(item, hotspot.text),
       cue: () => describeBookTap(hotspot.text), miss: interactiveBookMiss(item, hotspot) });
   }, [runner, showSummary, pip]);
@@ -512,7 +570,7 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
    */
   const renderParagraph = (paragraph: string, paragraphIndex: number) => {
     const isReadItem = currentItem?.mode === 'read-focus-word'
-      && currentPage?.id === currentItem.targetPageId;
+      && (currentPage?.id === currentItem.targetPageId || !!practice?.line);
     return (
       <p key={`${currentPageId}-paragraph-${paragraphIndex}`} className="text-lg leading-9 text-slate-100">
         {paragraph.split(/([A-Za-z][A-Za-z'-]*)/g).map((token, tokenIndex) => {
@@ -530,7 +588,7 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
                   : 'animate-pulse bg-amber-400/15 text-amber-100 decoration-amber-400 ring-2 ring-amber-300/70 ring-offset-2 ring-offset-slate-900'
               }`}
             >
-              {token}
+              {focusDots ? <LuminaPrintSupport text={token} soundDots /> : token}
             </span>
           );
         })}
@@ -598,7 +656,36 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
                 className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
             )}
 
-            {currentPageId === 'cover' ? (
+            {/* model_page: a model outside the book, the asked kind of part outlined. Its parts are not tappable. */}
+            {model && (
+              <div data-lever="model-page" className="mx-auto max-w-xs rounded-2xl border border-dashed border-cyan-300/40 bg-cyan-950/20 p-3 text-sm text-slate-200">
+                <div className="mb-1 text-[10px] uppercase tracking-widest text-cyan-300/80">model</div>
+                <div className={`space-y-1 ${model.kind === 'cover' ? '' : 'grid grid-cols-2 gap-1'}`}>
+                  {model.parts.map(part => (
+                    <div key={part.feature} data-model-part={part.feature} data-model-lit={part.lit || undefined}
+                      className={`rounded-lg px-2 py-1 ${part.feature === 'title' || part.feature === 'heading' ? 'font-black text-base' : 'text-xs'} ${
+                        part.lit ? 'ring-2 ring-amber-300 bg-amber-400/10' : 'opacity-70'}`}>
+                      {part.lit && <span aria-hidden="true" className="mr-1">👉</span>}{part.text}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {practice?.line ? (
+              // cvc_focus: a practice sentence, not from the book, its short word glowing. Read aloud by the learner.
+              <div ref={pip.ref('page')} data-pip-object="page" data-lever="practice-line" className="mx-auto max-w-md rounded-[2rem] border border-white/10 bg-slate-900/75 p-6 text-center shadow-2xl">
+                {renderParagraph(practice.line, 0)}
+              </div>
+            ) : practice ? (
+              // two_part_page: a practice page, not from the book, with two tappable parts in the page's own places.
+              <div ref={pip.ref('page')} data-pip-object="page" data-lever="practice-page" className="mx-auto max-w-md rounded-[2rem] border border-white/10 bg-slate-900/75 p-5 shadow-2xl">
+                {practice.parts.filter(part => part.feature !== 'caption').map(part => renderHotspot(part,
+                  part.feature === 'heading' ? 'text-2xl font-black text-cyan-50' : 'float-right text-sm font-bold'))}
+                <div className="clear-both my-4 flex h-24 items-center justify-center rounded-xl bg-white/5 text-4xl" aria-hidden="true">🖼️</div>
+                {practice.parts.filter(part => part.feature === 'caption').map(part => renderHotspot(part, 'w-full text-center italic'))}
+              </div>
+            ) : currentPageId === 'cover' ? (
               <div ref={pip.ref('page')} data-pip-object="page" className={`mx-auto max-w-xl rounded-r-[2rem] rounded-l-lg bg-gradient-to-br ${COVER_GRADIENTS[book.coverColor]} p-5 shadow-2xl ring-1 ring-white/15`}>
                 {renderImage()}
                 <div className="mt-5 space-y-3 text-white">

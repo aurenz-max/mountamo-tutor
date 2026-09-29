@@ -63,7 +63,7 @@
  * file writes a spoken line.
  */
 
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -95,6 +95,8 @@ import {
 } from './letterSpotterScript';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { CASE_LEVER, PARTNER_LEVER, SCAN_LEVER, SMALL_GRID_LEVER, TWO_CHOICES_LEVER, letterSpotterLevers, partnerCapitals,
+  practiceItem } from './letterSpotterLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { letterSpotterPipPose } from '../../../pip/letterSpotterPipPose';
 
@@ -228,6 +230,16 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
   const [tapped, setTapped] = useState<string | null>(null);
   /** The tapped grid index (find-it) — a cell, not a letter. */
   const [tappedCell, setTappedCell] = useState<number | null>(null);
+  // In-item levers (`letterSpotterLevers.ts`), keyed by the session item they were pulled on; the learner's
+  // wrong taps on it (kept through Try again, for `wrong_choice_partner`); the easier practice item a simplify
+  // lever put on screen in its place; and the row the `row_scan` highlight is on.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [wrongTaps, setWrongTaps] = useState<string[]>([]);
+  const [practice, setPracticeState] = useState<LetterSpotterItem | null>(null);
+  const practiceRef = useRef<LetterSpotterItem | null>(null);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const setPractice = (next: LetterSpotterItem | null) => { practiceRef.current = next; setPracticeState(next); setPracticeSolved(false); };
+  const [scanRow, setScanRow] = useState(0);
   /** [target, chosen] pairs from wrong taps — the confusion evidence this
    *  primitive exists to collect. */
   const confusedPairsRef = useRef<Array<[string, string]>>([]);
@@ -310,6 +322,8 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
     onItemOpened: () => {
       setTapped(null);
       setTappedCell(null);
+      setWrongTaps([]);
+      setPractice(null);
     },
     onCorrectionRetry: () => {
       // Try again frees the surface for another go.
@@ -319,7 +333,11 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
     },
   });
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
   // ── Pip shared surface ────────────────────────────────────────────────────
@@ -348,13 +366,49 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
   );
 
   /** Credited: the first moment the answer may appear on screen. */
-  const revealed = runner.currentSolved;
+  const revealed = runner.currentSolved || practiceSolved;
+  const scanning = leverOn(SCAN_LEVER) && currentItem?.mode === 'find-it' && runner.canAttempt && !revealed;
+  // row_scan: the highlight moves on a clock, alike over every row, and never waits on the target's.
+  useEffect(() => {
+    if (!scanning) return;
+    const timer = setInterval(() => setScanRow(r => (r + 1) % 4), 900);
+    return () => clearInterval(timer);
+  }, [scanning]);
+  const partners = leverOn(PARTNER_LEVER) && sessionItem ? partnerCapitals(sessionItem, wrongTaps) : [];
 
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!currentItem) return;
-    workspace.current = { ...letterSpotterScene(currentItem) };
+    if (!currentItem || !sessionItem) return;
+    const levers = practice ? [] : letterSpotterLevers(sessionItem, pulledLevers, items, data.letterGroup, wrongTaps);
+    const scene = letterSpotterScene(currentItem);
+    const shown = [
+      leverOn(CASE_LEVER) ? 'the named letter as a small letter on a card beside the grid' : '',
+      leverOn(SCAN_LEVER) ? 'a highlight sweeping the rows of the grid one at a time, over and over' : '',
+      partners.length ? `the big letter that goes with each little letter the learner tapped wrongly (${partners.join(', ')}), on that tile` : '',
+    ].filter(Boolean);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts, ...(shown.length ? { levers_on_screen: shown.join('; ') } : {}),
+        ...(practice ? { practice: 'An easier practice item with a different letter, ungraded. The full item comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === SMALL_GRID_LEVER || id === TWO_CHOICES_LEVER) {
+          const simpler = practiceItem(sessionItem, items, data.letterGroup);
+          if (!simpler) return 'There is no easier item here.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice(simpler);
+          setTapped(null); setTappedCell(null);
+          return { practice: letterSpotterAssignment(simpler) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => { setPractice(null); setTapped(null); setTappedCell(null); },
+    };
   });
 
   /** Asks the tutor for the question again: a silent host request, never the answer. */
@@ -372,21 +426,26 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
     SoundManager.tap();
     setTapped(letter);
     const correct = letter.toLowerCase() === item.targetLetter.toLowerCase();
-    if (!correct) confusedPairsRef.current.push([item.targetLetter.toLowerCase(), letter.toLowerCase()]);
+    // The practice item is ungraded: it stays out of the confusion pairs, and its success is local.
+    if (practiceRef.current) { if (correct) setPracticeSolved(true); }
+    else if (!correct) {
+      confusedPairsRef.current.push([item.targetLetter.toLowerCase(), letter.toLowerCase()]);
+      setWrongTaps(prev => prev.concat(letter.toLowerCase()));
+    }
     commitGesture(runner, { response: describeLetterTap(letter), correct, cue: () => describeLetterTap(letter),
       miss: letterSpotterMiss(item, letter) });
     return true;
   }, [runner, showSummary]);
 
   const handleOptionTap = useCallback((letter: string) => {
-    const item = runner.currentItem;
+    const item = practiceRef.current ?? runner.currentItem;
     // match-it is the only tile mode left — name-it's answer is spoken.
     if (!item || item.mode !== 'match-it') return;
     commitTap(item, letter);
   }, [runner, commitTap]);
 
   const handleCellTap = useCallback((index: number) => {
-    const item = runner.currentItem;
+    const item = practiceRef.current ?? runner.currentItem;
     if (!item || item.mode !== 'find-it') return;
     const letter = item.letterGrid?.[index];
     if (!letter) return;
@@ -442,6 +501,10 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
             `}
           >
             {option}
+            {/* wrong_choice_partner: the big letter this wrongly tapped little letter goes with. */}
+            {partners.includes(option.toLowerCase()) && (
+              <span data-lever="partner-capital" className="ml-2 text-2xl text-slate-300">{option.toUpperCase()}</span>
+            )}
           </button>
         );
       })}
@@ -499,6 +562,8 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
       case 'find-it': {
         const grid = item.letterGrid ?? [];
         const showReference = challengeById.get(item.id)?.showTargetReference;
+        // A practice grid of four sits in two columns; the session grid in four.
+        const cols = grid.length === 4 ? 'grid-cols-2 max-w-[12rem]' : 'grid-cols-4 max-w-md';
         return (
           <div className="space-y-4">
             <div className="flex justify-center">
@@ -526,10 +591,19 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
               </div>
             )}
 
+            {/* other_case_reference: the named letter in the OTHER case than the grid. */}
+            {leverOn(CASE_LEVER) && (
+              <div className="flex justify-center">
+                <div data-lever="other-case-reference" className="bg-white/5 border-2 border-cyan-400/30 rounded-xl px-5 py-2">
+                  <span className={`text-3xl font-bold ${letterColor(item.targetLetter)}`}>{item.targetLetter.toLowerCase()}</span>
+                </div>
+              </div>
+            )}
+
             {/* Pip outlines the grid as a whole; every cell is a choice. */}
             {pipDock}
 
-            <div ref={pip.ref('grid')} data-pip-object="grid" className="grid grid-cols-4 gap-2 max-w-md mx-auto">
+            <div ref={pip.ref('grid')} data-pip-object="grid" className={`grid ${cols} gap-2 mx-auto`}>
               {grid.map((letter, i) => {
                 const isTarget = letter.toLowerCase() === item.targetLetter.toLowerCase();
                 const state = revealed && isTarget
@@ -542,12 +616,14 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
                     key={`${item.id}-${i}`}
                     ref={pip.ref(`cell-${i}`)}
                     data-pip-object={`cell-${i}`}
+                    data-scan-row={scanning && Math.floor(i / 4) === scanRow ? 'lit' : undefined}
                     onClick={() => { pip.look(`cell-${i}`); handleCellTap(i); }}
                     disabled={!runner.canAttempt}
                     className={`
                       aspect-square rounded-xl border-2 font-bold text-2xl
                       transition-all select-none
                       ${answerStateClass(state)}
+                      ${scanning && Math.floor(i / 4) === scanRow ? 'ring-2 ring-cyan-300/70 bg-cyan-400/10' : ''}
                       ${revealed && isTarget ? 'ring-2 ring-emerald-400/40 scale-105' : ''}
                     `}
                   >

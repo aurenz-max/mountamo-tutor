@@ -16,13 +16,28 @@
 import { ComponentDefinition } from '../../../types';
 import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
 import { SYLLABLE_CLAPPER_EVAL_MODES } from '../../../primitives/visual-primitives/literacy/syllableClapperModes';
-import type { CvcMiss } from '../../../primitives/visual-primitives/literacy/cvcSpellerWorkspace';
-import type { LetterSoundMiss } from '../../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
+import type { CvcMiss, SpokenCvcMiss } from '../../../primitives/visual-primitives/literacy/cvcSpellerWorkspace';
+import type { SpokenBlendMiss } from '../../../primitives/visual-primitives/literacy/phonicsBlenderWorkspace';
+import type { SpokenLetterSpotterMiss } from '../../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
+import type { SpokenInteractiveBookMiss } from '../../../primitives/visual-primitives/literacy/interactiveBookWorkspace';
+import type { LetterSoundMiss, SpokenLetterMiss } from '../../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
 import type { LetterSpotterMiss } from '../../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
 import type { WordWorkoutMiss } from '../../../primitives/visual-primitives/literacy/wordWorkoutWorkspace';
 import type { InteractiveBookMiss } from '../../../primitives/visual-primitives/literacy/interactiveBookWorkspace';
 import type { StoryBridgeMiss } from '../../../primitives/visual-primitives/literacy/storyBridgeWorkspace';
-import { missLists } from './missLists';
+import type { RhymeMiss } from '../../../primitives/visual-primitives/literacy/rhymeStudioLevers';
+import type { PhonemeMiss } from '../../../primitives/visual-primitives/literacy/phonemeExplorerLevers';
+import type { SwapMiss } from '../../../primitives/visual-primitives/literacy/soundSwapLevers';
+import type { SyllableMiss } from '../../../primitives/visual-primitives/literacy/syllableClapperLevers';
+import type { FlipMiss } from '../../../primitives/visual-primitives/literacy/wordFlipLevers';
+import type { SpokenPictureVocabMiss } from '../../../primitives/visual-primitives/literacy/pictureVocabularyWorkspace';
+import type { SpokenGenreMiss } from '../../../primitives/visual-primitives/literacy/genreExplorerWorkspace';
+import type { SpokenTextStructureMiss } from '../../../primitives/visual-primitives/literacy/textStructureAnalyzerWorkspace';
+import type { SpokenWordSorterMiss } from '../../../primitives/visual-primitives/literacy/wordSorterWorkspace';
+import type { SpokenSentenceMiss } from '../../../primitives/visual-primitives/literacy/sentenceAnalyzerWorkspace';
+import type { SpokenWordBuilderMiss } from '../../../primitives/visual-primitives/literacy/wordBuilderWorkspace';
+import type { SpokenYouAndMeMiss } from '../../../primitives/visual-primitives/literacy/youAndMeWorkspace';
+import { missLists, sameMisses } from './missLists';
 
 export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
@@ -109,6 +124,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'scene echoed back does not. Hear the scene again asks you to repeat the scene and the ask only. Which of '
         + 'I or you (or myself or yourself) to use is the answer: never name it or give a model sentence before a '
         + 'real wrong attempt. You cannot change the scene or the roles.',
+      // Every turn is spoken: which word stands as the subject (`youAndMeSpokenMisses`, handoff 20 Part B).
+      misses: sameMisses<SpokenYouAndMeMiss>(['describe_action', 'describe_independent_action'], ['swapped_pronoun', 'said_name', 'said_he_she']),
     },
     affordances: { representation: 'pictorial', answers: ['spoken'], role: 'apply', minutes: 5 },
   },
@@ -134,7 +151,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'true comparison across BOTH stories counts, not only the reference wording, but a detail about one story '
         + 'alone is not a comparison. Before an attempt never say the comparison or which choice is right. The '
         + 'replay button asks you to read both stories and the question again. You cannot tap or mark anything.',
-      // The tap's own check (`storyBridgeMiss`). say_alike, say_different and main_idea_compare are spoken (handoff 20 Part B).
+      // The tap's own check (`storyBridgeMiss`). say_alike, say_different and main_idea_compare are spoken and name no
+      // misses: each is an open comparison judged against a reference, with no bounded wrong answer (handoff 20 Part B).
       misses: missLists<StoryBridgeMiss>({
         match_character: ['same_look', 'other_character'],
         match_setting: ['same_for_different', 'different_for_same'],
@@ -648,6 +666,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'close or contains the right one is wrong. Small words and describing words in front of the naming word are '
         + 'part of the complete subject: judge the side against the given answer. Before an attempt never say the label. '
         + 'No word is coloured or labelled until credit. You cannot point at or highlight words.',
+      // Every item is spoken: its known wrong labels by action (`sentenceSpokenMisses`, handoff 20 Part B).
+      misses: missLists<SpokenSentenceMiss>({ identify_pos: ['confusable_label', 'other_label'],
+        identify_role: ['part_of_speech', 'confusable_label', 'other_label'],
+        label_all: ['confusable_label', 'other_label'],
+        parse_structure: ['other_side', 'other_label'] }),
     },
   },
   {
@@ -681,6 +704,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'Before the learner has tried, never say the word, name which parts make it, or ask about one part; after '
         + 'an attempt you may take the meaning apart part by part. Say the clue again '
         + 'asks you to repeat the clue only. You cannot mark or move a part.',
+      // Every item is one spoken word: its known wrong answers (`wordBuilderSpokenMisses`, handoff 20 Part B).
+      misses: sameMisses<SpokenWordBuilderMiss>(['simple_affix', 'compound_affix', 'greek_latin', 'multi_morpheme'],
+        ['root_only', 'part_missing', 'parts_out_of_order']),
     },
     // ── DI MODALITY (2026-08-16) — the FIRST judged port above the K-2 band.
     // The tutor owns the clock: it states what the word means, waits, judges
@@ -903,6 +929,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'end, letter names, or a close but different word (cap for cat) are not yet the word. A tapped letter asks you '
         + 'for its sound: say only that sound, never the word. The word is never printed and its picture appears only '
         + 'after the word is credited. You cannot tap letters or show the picture.',
+      // The spoken blend's known wrong answers (`blendSpokenMisses`).
+      misses: sameMisses<SpokenBlendMiss>(['cvc', 'cvce_blend', 'digraph', 'advanced'], ['letter_name', 'sounds_no_word',
+        'read_backwards', 'first_sound_changed', 'middle_sound_changed', 'last_sound_changed']),
     },
     // ── DI MODALITY, PURELY VERBAL (2026-08-09, two user rulings) ──────────
     // The tutor owns the clock and the task is spoken end to end. It models the
@@ -1124,15 +1153,28 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      guidance: 'A decodable story, one item at a time, every answer spoken and nothing tapped. A read line is one '
+      guidance: 'A decodable story, one item at a time; every answer is spoken. A read line is one '
         + 'printed sentence the learner reads aloud cold: it is judged word by word, so a skipped, added or swapped '
         + 'small word ("the" for "a") is a miss, and slow sounding-out that lands on the right words is correct. '
-        + 'Never read a line, or any word of it, before the learner has tried; after an attempt you may model it. '
+        + 'Never read a line or any word of it before the learner has tried; after a try you may model it. '
         + 'A question is answered with one word from the story, or by saying which printed choice is right (the '
         + 'whole choice, the part that tells it apart, or its position all count). In read-along the learner '
         + 'cannot read yet: read the whole story aloud before the first question, and again if asked. Before an '
-        + 'attempt never say the answer or which choice is right. Say that again asks you to repeat the question '
-        + 'only. You cannot mark or move anything on screen.',
+        + 'attempt never say the answer or which choice is right. Say that again asks for the question again '
+        + 'only. Beyond its levers you cannot change the screen.',
+      levers: true,
+      // Spoken misses (`decodableReaderLevers.ts`), emitted by `decodableSpokenMisses` (read lines, one-word answers; a choice
+      // question names none yet). `unanswered` stays the levers' own list (`decodableReaderLevers.test.ts` pins it).
+      misses: {
+        literal: ['word_swap', 'word_skip', 'lifted_word', 'retell'], sequence: ['word_swap', 'word_skip', 'other_choice', 'retell'],
+        inference: ['word_swap', 'word_skip', 'other_choice', 'retell'], main_idea: ['word_swap', 'word_skip', 'other_choice', 'retell'],
+        read_along: ['lifted_word', 'retell'],
+      },
+      unanswered: {
+        literal: ['word_swap', 'word_skip', 'lifted_word', 'retell'], sequence: ['word_swap', 'word_skip', 'other_choice', 'retell'],
+        inference: ['word_swap', 'word_skip', 'other_choice', 'retell'], main_idea: ['word_swap', 'word_skip', 'other_choice', 'retell'],
+        read_along: ['lifted_word', 'retell'],
+      },
     },
     tutoring: {
       taskDescription:
@@ -1464,16 +1506,23 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
       guidance: 'One picture book; the screen shows the page the item is on. Read the glowing word: read the '
-        + 'sentence up to the glowing word aloud and stop; the learner reads that word out loud, judged against the '
-        + 'word you are given. The lead-in said back or a different word is not it; never say the glowing word '
+        + 'sentence up to it aloud and stop; the learner reads that word out loud, judged against the '
+        + 'given word. The lead-in said back or a different word is not it; never say the glowing word '
         + 'before they try. Find a book part: name the part (title, author\'s name, heading, picture caption, page '
         + 'number) and the learner taps it on the page; the activity checks the tap. Before they tap, never read out '
         + 'or point to which printed words are that part; after a tap you may say what each part is for. The '
-        + 'speaker button asks you to repeat the question only. You cannot tap, mark or turn a page.',
-      // The tap's own check (`interactiveBookMiss`). read-focus-word is spoken (handoff 20 Part B).
-      misses: missLists<InteractiveBookMiss>({
-        'find-feature': ['tapped_title', 'tapped_author', 'tapped_heading', 'tapped_caption', 'tapped_page_number'],
-      }),
+        + 'speaker button asks for the question again only. You cannot tap or turn a page.',
+      levers: true,
+      // The tap's own check (`interactiveBookMiss`), then read-focus-word's spoken miss.
+      misses: {
+        ...missLists<InteractiveBookMiss>({
+          'find-feature': ['tapped_title', 'tapped_author', 'tapped_heading', 'tapped_caption', 'tapped_page_number'],
+        }),
+        // Spoken (`interactiveBookSpokenMisses`). The dots and short-word levers answer `context_guess`; no lever
+        // answers the lead-in said back.
+        ...missLists<SpokenInteractiveBookMiss>({ 'read-focus-word': ['said_lead_in', 'context_guess'] }),
+      },
+      unanswered: { 'read-focus-word': ['said_lead_in'] },
     },
   },
 
@@ -1515,7 +1564,22 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'made-up word is not a rhyme. Before the learner has tried, never say which words rhyme, never name the '
         + 'ending, and never stretch a word to point at its ending. On identification read the choices aloud only '
         + 'when the namingChoices fact allows it. A tapped card asks you to repeat the question only. You cannot mark '
-        + 'a choice or fill a spot.',
+        + 'a choice or fill a spot. A lever\'s model uses other words: say those freely.',
+      levers: true,
+      // The misses a spoken answer names (`rhymeStudioLevers.ts`), emitted by `rhymeSpokenMisses` on recognition and
+      // identification. `unanswered` stays the levers' own list (`rhymeStudioLevers.test.ts` pins it).
+      misses: missLists<RhymeMiss>({
+        recognition: ['yes_same_start', 'yes_no_rhyme', 'no_to_rhyme'],
+        identification: ['onset_foil', 'echo_target', 'off_menu'],
+        production: ['echo_target', 'same_start', 'meaning_neighbour', 'nonword'],
+        collection: ['echo_target', 'same_start', 'meaning_neighbour', 'nonword', 'already_collected'],
+      }),
+      unanswered: {
+        recognition: ['yes_same_start', 'yes_no_rhyme', 'no_to_rhyme'],
+        identification: ['onset_foil', 'echo_target', 'off_menu'],
+        production: ['echo_target', 'same_start', 'meaning_neighbour', 'nonword'],
+        collection: ['echo_target', 'same_start', 'meaning_neighbour', 'nonword', 'already_collected'],
+      },
     },
     // ── DI MODALITY (2026-08-12) — eighth literacy port. The tutor owns the
     // clock in every mode; there is no advance timer, no push-to-talk mic, no
@@ -1607,8 +1671,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         'Live-judged Direct Instruction rhyming practice for a young child. Right now the mode is '
         + '"{{challengeMode}}" and the question side is "{{stimulus}}". The child answers every mode OUT LOUD and '
         + 'you judge the audio you heard — recognition is answered "yes" or "no", the other three with a word. '
-        + 'Nothing on screen is tapped to answer, so an answer will always reach you as speech. You speak the '
-        + 'exact scripted lines from each bracketed application message and nothing else. Hearing how two words '
+        + 'Nothing on screen is tapped to answer, so an answer will always reach you as speech. Hearing how two words '
         + 'END is the entire skill being practiced, so the child does the listening — you never say which words '
         + 'rhyme before they answer.',
       // Trimmed 10 -> 2, to exactly what the component pushes through
@@ -1665,43 +1728,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             + 'more, slowly — never a new question and never a remark about waiting.',
         },
       ],
-      aiDirectives: [
-        {
-          title: 'SCRIPTED TURNS ONLY — AND NEVER INVENT THE NEXT ONE',
-          instruction:
-            'Every turn you take is triggered by a bracketed application message ([RS_ITEM], [RS_MOVE], '
-            + '[RS_HEAR], [RS_COMPLETE]) and each one hands you the exact line to say. Speak that line and '
-            + 'nothing else — no greeting of your own, no extra encouragement, no describing the screen.\n'
-            + 'THE BRACKET TAG IS NEVER SPOKEN. It is an address on an envelope, not words for the child. Saying '
-            + '"RS ITEM" or "RS MOVE" out loud is always a mistake, and inventing a tag you were not sent is a '
-            + 'worse one.\n'
-            + 'AFTER YOU JUDGE, YOU STOP. Do not choose the next pair of words, do not move on to another '
-            + 'question, do not say "let us try another" and then ask one. The screen is showing the child a '
-            + 'specific pair that only the application can change, so a question you invent is a question about '
-            + 'something they cannot see. Say your one scripted verdict line, then wait to be handed the next '
-            + 'message.',
-        },
-        {
-          title: 'THE FIRST WORD OF A VERDICT IS LOAD-BEARING',
-          instruction:
-            'Each ask hands you two lines: one for a right answer and one for a wrong one. Use them EXACTLY as '
-            + 'written, starting with the first word. A right answer is affirmed with a line that begins "Yes," — '
-            + 'not "Correct", not "That\'s right", not "Great job". A wrong answer is corrected with a line that '
-            + 'begins "My turn:". Those two openings are how the lesson knows a verdict happened and moves the '
-            + 'child forward; any other opening reads as ordinary conversation and the activity silently stalls '
-            + 'on the same question.\n'
-            + 'This holds even when the affirmation sounds odd to you: when a child correctly answers that two '
-            + 'words do NOT rhyme, you still open with "Yes," — it means *you are right*, not *they rhyme*.',
-        },
-        {
-          title: 'NEVER ANSWER THE QUESTION YOU JUST ASKED',
-          instruction:
-            'Hearing the shared ending is the whole skill. Before the child answers, never say which words rhyme, '
-            + 'never name the rhyme family or ending sound of the words on screen, and never stretch a word to '
-            + 'point at its ending. The rhyming word is said for the first time in a scripted correction or a '
-            + 'scripted affirmation — both arrive in the application message, and neither is yours to improvise.',
-        },
-      ],
+      // aiDirectives removed 2026-09-28 (handoff 22 L2): they ordered bracketed [RS_ITEM] turns and the "Yes," /
+      // "My turn:" openers of the retired runner. Bound sessions send `tutoring: null`, so they reached no
+      // workspace tutor, only an unbound mount, which shows the needs-the-tutor card. The no-answer rule lives in
+      // teachingWorkspace.guidance.
     },
     supportsEvaluation: true,
   },
@@ -1742,6 +1772,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'exactly as the voicing fact tells you: splitting a count or delete word into parts before the learner has '
         + 'tried hands over the answer. The learner claps with their own hands; there is nothing to tap. The '
         + 'hear-again button asks you to repeat the question only. You cannot show the word or its parts.',
+      levers: true,
+      // Spoken misses (`syllableClapperLevers.ts`), emitted by `syllableSpokenMisses` on blend and count (delete names none yet).
+      // `unanswered` stays the levers' own list (`syllableClapperLevers.test.ts` pins it).
+      misses: missLists<SyllableMiss>({ blend_syllables: ['parts_back'], count_parts: ['count_one_over', 'counted_sounds', 'word_for_count'],
+        delete_compound: ['whole_word', 'removed_part'] }),
+      unanswered: { blend_syllables: ['parts_back'], count_parts: ['count_one_over', 'counted_sounds', 'word_for_count'],
+        delete_compound: ['whole_word', 'removed_part'] },
     },
     // ── DI MODALITY (2026-08-16) — literacy port. The click era shipped a
     // `👏 Clap!` button, six counter circles and a `Check (3 claps)` label: the
@@ -1950,6 +1987,25 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'tried, never name the ending or middle sound, never break a segment word into its sounds, and never say '
         + 'the blended or new word. Read the cards aloud only when the namingCards fact allows it. A tapped card or '
         + 'tile asks you for that word or sound only. You cannot mark a card or show the answer.',
+      levers: true,
+      // Spoken misses (`phonemeExplorerLevers.ts`), emitted by `phonemeSpokenMisses` on isolate and blend (the other modes name
+      // none yet). `unanswered` stays the levers' own list (`phonemeExplorerLevers.test.ts` pins it).
+      misses: missLists<PhonemeMiss>({
+        isolate: ['echo_stimulus', 'letter_name'],
+        ending: ['echo_stimulus', 'onset_match'],
+        medial: ['echo_stimulus', 'onset_match'],
+        blend: ['sounds_no_word', 'near_word'],
+        segment: ['word_for_count', 'count_off_one'],
+        manipulate: ['echo_original', 'other_position'],
+      }),
+      unanswered: {
+        isolate: ['echo_stimulus', 'letter_name'],
+        ending: ['echo_stimulus', 'onset_match'],
+        medial: ['echo_stimulus', 'onset_match'],
+        blend: ['sounds_no_word', 'near_word'],
+        segment: ['word_for_count', 'count_off_one'],
+        manipulate: ['echo_original', 'other_position'],
+      },
     },
     // ── DI MODALITY (2026-08-11) — sixth literacy port, second literacy
     // consumer of useJudgedScriptRunner. The 4-choice grid was a costume on
@@ -2214,6 +2270,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'word, is not yet the answer. Always name the sound to change: without it the ask has many right answers. A '
         + 'tapped sound asks you for that sound only. The new word is not shown until credited: never say it before the '
         + 'learner has tried. You cannot tap sounds or show the new word.',
+      levers: true,
+      // Spoken misses (`soundSwapLevers.ts`), emitted by `swapSpokenMisses`. `unanswered` stays the levers' own list
+      // (`soundSwapLevers.test.ts` pins it).
+      misses: missLists<SwapMiss>({ addition: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'], deletion: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'],
+        substitution: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'] }),
+      unanswered: { addition: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'], deletion: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'],
+        substitution: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'] },
     },
     // \u2500\u2500 DI MODALITY, PURELY VERBAL (2026-08-09) \u2014 second literacy port after
     // phonics-blender, same two user rulings. The tutor owns the clock and the
@@ -2406,10 +2469,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'spell or describe the shape of the answer letter before the learner has tried, and on match it never name '
         + 'the big letter: matching its shape is the task. The hear-again control asks you to repeat the question '
         + 'only. You cannot tap a letter.',
-      // The tap's own check (`letterSpotterMiss`). name_it is spoken (handoff 20 Part B).
-      misses: missLists<LetterSpotterMiss>({
+      // The tap's own check (`letterSpotterMiss`), and name_it's spoken wrong answers (`letterSpotterSpokenMisses`).
+      misses: missLists<LetterSpotterMiss | SpokenLetterSpotterMiss>({
         find_it: ['same_shape_family', 'other_letter'],
         match_it: ['mirror_form', 'same_shape_family', 'other_letter'],
+        name_it: ['said_the_word', 'later_letter', 'letter_not_in_word'],
       }),
     },
     // ── DI MODALITY (2026-08-13) — ELEVENTH literacy port. The tutor owns the
@@ -2632,7 +2696,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'answer over — mark the other picture to contrast, or the printed letter. There is no other scene action: '
         + 'you cannot change the letter, replace a picture, write, or answer for the child.',
       // The tap's own check (`letterSoundMiss`). see_hear and keyword_match are spoken (handoff 20 Part B).
-      misses: missLists<LetterSoundMiss>({ hear_see: ['other_short_vowel', 'voicing_partner', 'other_letter'] }),
+      // The tapped letter's kind (`letterSoundMiss`), and the spoken modes' known wrong answers (`letterSoundSpokenMisses`).
+      misses: missLists<LetterSoundMiss | SpokenLetterMiss>({ hear_see: ['other_short_vowel', 'voicing_partner', 'other_letter'],
+        see_hear: ['letter_name', 'keyword_word', 'added_vowel', 'other_sound'],
+        keyword_match: ['other_picture', 'letter_name', 'said_the_sound'] }),
     },
     misconceptionScope: 'primitive',
     description:
@@ -2888,6 +2955,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'that finishes the sentence. The shown word said back, a made-up word, or a category word like "a thing" is '
         + 'not the answer. Never say the answer, name the picture, or give the missing word before the learner has '
         + 'tried. Tapping the card asks you to repeat the question only. You cannot tap a card.',
+      // The known wrong answers of a spoken naming item (`pictureVocabSpokenMisses`, handoff 20 Part B). receptive_match
+      // names none: its foils are drawn at random, with no relation to the answer recorded.
+      misses: missLists<SpokenPictureVocabMiss>({ naming: ['category_word', 'other_thing'] }),
     },
     // ── DI MODALITY (2026-08-11) — fifth literacy port, first literacy consumer
     // of useJudgedScriptRunner. The tutor owns the clock in every mode; there is
@@ -3333,8 +3403,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'name is not yet the answer. On spell it the learner taps a letter into each of three boxes and the activity '
         + 'checks the third letter itself: never name, sound out or spell a letter of the word for them. Hear It asks '
         + 'you to say the whole word only. You cannot place letters or fill the blank.',
-      // The boxes' own check (`cvcMiss`). fill_vowel and word_sort are spoken (handoff 20 Part B).
-      misses: missLists<CvcMiss>({ spell_word: ['first_letter', 'middle_letter', 'last_letter', 'letters_out_of_order', 'two_or_more_letters'] }),
+      // The boxes' own check (`cvcMiss`), and the spoken middle sound's known wrong answers (`cvcSpokenMisses`).
+      misses: missLists<CvcMiss | SpokenCvcMiss>({ spell_word: ['first_letter', 'middle_letter', 'last_letter', 'letters_out_of_order', 'two_or_more_letters'],
+        ...sameMisses<SpokenCvcMiss>(['fill_vowel', 'word_sort'], ['whole_word', 'letter_name', 'first_sound', 'last_sound', 'other_vowel']) }),
     },
   },
   {
@@ -3376,17 +3447,29 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 6 },
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      guidance: 'Everything printed is read cold: the learner reads it before you say it. Never say a printed word, a '
+      guidance: 'Everything printed is read cold: never say a printed word, a '
         + 'part of one, or a sound in it before the learner has read it, and never read the sentence for them. On real '
-        + 'or silly the learner says the real word; the made-up one is not it. On word chains, inflected, compound and '
+        + 'or silly the learner says the real word, not the made-up one. On word chains, inflected, compound and '
         + 'near words the learner reads the lit word; the word before it in the chain or its near neighbour is not '
         + 'it. On sentence reading the learner reads the sentence, then says the answer to the question, which is '
         + 'a word in the sentence. On meaning and context items the learner says what the word means or which word '
         + 'fits the blank. On picture match the learner reads the word silently and taps its picture; the activity '
-        + 'checks the tap and tells you what was tapped. After an attempt you may model the word or its parts. The '
-        + 'hear-again button asks you to repeat the instruction or question only. You cannot tap a picture.',
-      // The tap's own check (`wordWorkoutMiss`). Every other mode is read aloud (handoff 20 Part B).
-      misses: missLists<WordWorkoutMiss>({ picture_match: ['same_start', 'same_end', 'same_vowel', 'other_word'] }),
+        + 'checks the tap. After an attempt you may model the word or its parts. Hear-again asks you to repeat the '
+        + 'instruction or question only. You cannot tap.',
+      levers: true,
+      // The tap's own check (`wordWorkoutMiss`), then the spoken misses (`wordWorkoutLevers.ts`); `wordWorkoutSpokenMisses`
+      // emits real_vs_nonsense's so far. `unanswered` stays the levers' own list (`wordWorkoutLevers.L3.test.ts` pins it).
+      misses: {
+        ...missLists<WordWorkoutMiss>({ picture_match: ['same_start', 'same_end', 'same_vowel', 'other_word'] }),
+        real_vs_nonsense: ['said_nonword'], word_chains: ['previous_word', 'other_word'], read_inflected: ['base_only', 'other_word'],
+        read_compound: ['base_only', 'other_word'], choose_in_context: ['misread_word', 'wrong_fit'],
+        sentence_reading: ['word_swap', 'word_skip', 'lifted_word'],
+      },
+      unanswered: {
+        real_vs_nonsense: ['said_nonword'], word_chains: ['previous_word', 'other_word'], read_inflected: ['base_only', 'other_word'],
+        read_compound: ['base_only', 'other_word'], choose_in_context: ['misread_word', 'wrong_fit'],
+        sentence_reading: ['word_swap', 'word_skip', 'lifted_word'],
+      },
     },
     // ── DI MODALITY (2026-08-14) — SIXTEENTH literacy port, the last of Phase 1.
     // The tutor owns the clock: it asks once, waits, judges the spoken answer
@@ -4069,6 +4152,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + '(three dogs, yesterday I jumped) is correct. The word said back unchanged, or the rule applied twice '
         + '(dogses, jumpeded), is not yet the answer. The new word is a blank until credited: never say it before the '
         + 'learner has tried. A tapped card asks you to say its word unchanged. You cannot tap or fill in the blank.',
+      levers: true,
+      // Spoken misses (`wordFlipLevers.ts`), emitted by `flipSpokenMisses`. `unanswered` stays the levers' own list
+      // (`wordFlipLevers.test.ts` pins it).
+      misses: missLists<FlipMiss>({ plural_s: ['unchanged', 'wrong_ending', 'double_ending'], plural_es: ['unchanged', 'wrong_ending', 'double_ending'], plural_y: ['unchanged', 'wrong_ending', 'double_ending'],
+        past_ed: ['unchanged', 'wrong_ending', 'double_ending'], irregulars: ['regularized', 'unchanged'], past_irregular: ['regularized', 'unchanged'] }),
+      unanswered: { plural_s: ['unchanged', 'wrong_ending', 'double_ending'], plural_es: ['unchanged', 'wrong_ending', 'double_ending'], plural_y: ['unchanged', 'wrong_ending', 'double_ending'],
+        past_ed: ['unchanged', 'wrong_ending', 'double_ending'], irregulars: ['regularized', 'unchanged'], past_irregular: ['regularized', 'unchanged'] },
     },
   },
   {
@@ -4212,6 +4302,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'is never the text: each feature is true of one. Before an attempt never say the answer or which genre a text '
         + 'is; a close relative genre is wrong. Nothing on screen marks a genre until credit. You cannot point at or '
         + 'highlight the text.',
+      // Every item is spoken: its known wrong answers by action (`genreSpokenMisses`, handoff 20 Part B).
+      misses: sameMisses<SpokenGenreMiss>(['identify_basic', 'classify_genre', 'compare_genres'],
+        ['opposite_verdict', 'said_feature_back', 'other_text', 'said_both', 'close_relative', 'other_genre']),
     },
     tutoring: {
       // ⚠️ `challengeType` IS THE STEP, NOT THE EVAL MODE. `identify_basic` names
@@ -4423,6 +4516,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'names a thing or an action is not a linking word; saying the idea back is not a part; a close structure is '
         + 'wrong. Before an attempt never say the answer. Nothing on screen marks a linking word or a structure until '
         + 'credit. You cannot point at or highlight the passage.',
+      // Every item is spoken: its known wrong answers by action (`textStructureSpokenMisses`, handoff 20 Part B).
+      misses: sameMisses<SpokenTextStructureMiss>(['chronological_description', 'cause_effect', 'compare_contrast', 'problem_solution'],
+        ['content_word', 'other_structure', 'other_part', 'said_idea_back']),
     },
     tutoring: {
       // ⚠️ `challengeType` IS THE STEP, NOT THE EVAL MODE. This primitive's eval
@@ -4894,6 +4990,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'commits a phrase plan (any plan is fine, it is not graded), reads the line once without a model, then you read '
         + 'the given groups and the learner rereads. A skipped, added or swapped word is wrong; a self-correction and slow '
         + 'sounding-out count. Never grade phrasing, voice or speed. You cannot tap the pause marks.',
+      levers: true,
+      // Spoken misses (`readAloudStudioLevers.ts`), emitted by `readAloudSpokenMisses`. `unanswered` stays the levers' own
+      // list (`readAloudStudioLevers.test.ts` pins it).
+      misses: { accuracy: ['word_swap', 'word_drop'], expression: ['word_swap', 'word_drop'], dialogue: ['word_swap', 'word_drop', 'paraphrase'] },
+      unanswered: { accuracy: ['word_swap', 'word_drop'], expression: ['word_swap', 'word_drop'], dialogue: ['word_swap', 'word_drop', 'paraphrase'] },
     },
     tutoring: {
       taskDescription:
@@ -5363,6 +5464,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'allows it: at the hardest level for readers the learner reads them. Never say which group or partner is '
         + 'right before the learner has tried. The hear-again button asks you to repeat the question only. Nothing is '
         + 'tapped or dragged; you cannot place a word.',
+      // Every item is spoken: another group or bank word, or the word said back (`wordSorterSpokenMisses`, handoff 20 Part B).
+      misses: missLists<SpokenWordSorterMiss>({ binary_sort: ['other_group', 'said_word_back'], ternary_sort: ['other_group', 'said_word_back'],
+        match_pairs: ['other_bank_word', 'said_word_back'] }),
     },
     // ── DI MODALITY (2026-08-16) — SEVENTEENTH literacy port. The tutor owns
     // the clock: it says the word, asks once, waits, judges the spoken answer

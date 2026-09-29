@@ -49,6 +49,7 @@ import {
   LuminaBadge,
   LuminaPanel,
   LuminaChallengeCounter,
+  LuminaPrintSupport,
   motion,
   type LuminaAccent,
 } from '../../../ui';
@@ -72,6 +73,7 @@ import {
   type ReadAloudMode,
 } from './readAloudStudioScript';
 import { describePhrasePlan, readAloudAssignment, readAloudScene } from './readAloudStudioWorkspace';
+import { DOTS_LEVER, TRACK_LEVER, leversOnScreen, readAloudLevers, shortLine } from './readAloudStudioLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -165,6 +167,10 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
   const phrasePlansRef = useRef<Record<string, number[]>>({});
   /** Steps credited so far, for the expression step rail. */
   const [solvedIds, setSolvedIds] = useState<ReadonlySet<string>>(() => new Set());
+  // In-item levers (`readAloudStudioLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // practice line a simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<StudioItem | null>(null);
 
   // ── Evaluation ────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<ReadAloudStudioMetrics>({
@@ -228,6 +234,7 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: (_item, index) => {
+      setPractice(null);
       if (index === 0) {
         phrasePlansRef.current = {};
         setPhrasePlans({});
@@ -237,7 +244,11 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
   });
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice line while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  const pulledLevers = !practice && leverState.item === sessionItem?.id ? leverState.pulled : [];
+  const on = (id: string) => pulledLevers.includes(id);
   /** Credited: the line is marked read in place. */
   const revealed = runner.currentSolved;
   const currentBreaks = currentItem ? phrasePlans[currentItem.lineId] ?? [] : [];
@@ -246,8 +257,32 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
   // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
-    if (!currentItem) return;
-    workspace.current = { ...readAloudScene(currentItem, phrasePlansRef.current[currentItem.lineId] ?? []) };
+    if (!currentItem || !sessionItem) return;
+    const levers = practice ? [] : readAloudLevers(sessionItem, pulledLevers, items);
+    const scene = readAloudScene(currentItem, phrasePlansRef.current[currentItem.lineId] ?? []);
+    const onScreen = practice ? null : leversOnScreen(pulledLevers);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts,
+        ...(onScreen ? { levers_on_screen: onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice line of three new words, not from the passage, ungraded. The line comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (lever.kind === 'simplify') {
+          const simpler = shortLine(sessionItem, items);
+          if (!simpler) return 'There is no easier line here.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice(simpler);
+          return { practice: readAloudAssignment(simpler) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => setPractice(null),
+    };
   });
 
   // Pip: the printed line is the whole question side. A phrase plan is a hands
@@ -352,6 +387,9 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
                         </React.Fragment>
                       ))}
                     </div>
+                  ) : on(TRACK_LEVER) || on(DOTS_LEVER) ? (
+                    // The pulled print marks, drawn by the shared overlay. Visual only.
+                    <LuminaPrintSupport text={currentItem.text} trackingUnderline={on(TRACK_LEVER)} soundDots={on(DOTS_LEVER)} />
                   ) : currentItem.step ? (
                     <span>{markedGroups(currentItem.text, currentBreaks).join(' / ')}</span>
                   ) : currentItem.kind === 'dialogue' ? `“${currentItem.text}”` : currentItem.text}

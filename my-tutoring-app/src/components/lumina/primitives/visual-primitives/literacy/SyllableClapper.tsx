@@ -61,6 +61,11 @@ import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { itemsFromChallenges, type SyllableClapperItem } from './syllableClapperScript';
 import { hearPartRequest, hearQuestionRequest, syllableAssignment, syllableScene } from './syllableClapperWorkspace';
+import {
+  BEATS_LEVER, CLAP_MODEL_LEVER, DELETE_MODEL_LEVER, SIMPLIFY_LEVER,
+  clapModelFor, deleteModelFor, leversOnScreen, practiceItemFor, syllableClapperLevers,
+} from './syllableClapperLevers';
+import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import type { SyllableTask } from './syllableClapperModes';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
@@ -196,6 +201,10 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId }: Syllable
   // NOT cleared when the next item opens: the hold is the gate, and the next
   // credit overwrites the payload.
   const [revealed, setRevealed] = useState<SyllableClapperItem | null>(null);
+  // In-item levers (`syllableClapperLevers.ts`), keyed by the session item they were pulled on, the easier practice
+  // item a simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<SyllableClapperItem | null>(null);
 
   // ── Evaluation ────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<SyllableClapperMetrics>({
@@ -261,7 +270,14 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId }: Syllable
     onAffirmed: setRevealed,
   });
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
+  const pulled = (id: string) => pulledLevers.includes(id);
+  const clapModel = pulled(CLAP_MODEL_LEVER) && sessionItem ? clapModelFor(sessionItem, items) : null;
+  const deleteModel = pulled(DELETE_MODEL_LEVER) && sessionItem ? deleteModelFor(sessionItem, items) : null;
+  const isPreReader = isPreReaderGrade(data.gradeLevel ?? '');
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   /** The credited item whose reveal is still on screen. `revealHeld`, never `currentSolved`. */
   const revealItem = runner.revealHeld ? revealed : null;
@@ -269,8 +285,32 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId }: Syllable
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!currentItem) return;
-    workspace.current = { ...syllableScene(currentItem) };
+    if (!currentItem || !sessionItem) return;
+    const levers = practice ? [] : syllableClapperLevers(sessionItem, pulledLevers, items);
+    const scene = syllableScene(currentItem);
+    const onScreen = leversOnScreen(currentItem, pulledLevers, items);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts,
+        ...(onScreen ? { levers_on_screen: onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice item on another word, ungraded. The full item comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === SIMPLIFY_LEVER[sessionItem.task]) {
+          const simpler = practiceItemFor(sessionItem, items);
+          if (!simpler) return 'There is no easier item here.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice(simpler);
+          return { practice: syllableAssignment(simpler) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => setPractice(null),
+    };
   });
 
   // ── Pip shared surface ────────────────────────────────────────────────────
@@ -373,6 +413,36 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId }: Syllable
                 {promptLineFor(currentItem)}
               </p>
             </div>
+
+            {/* Help: a dot per part slides together. The parts are never printed or pictured. */}
+            {pulled(BEATS_LEVER) && (
+              <div data-lever="part-beats" className="flex flex-col items-center gap-1">
+                <div className="flex items-center gap-0.5">
+                  {currentItem.parts.map((_, i) => <span key={i} data-beat className="h-6 w-6 rounded-full bg-purple-400/70" />)}
+                </div>
+                <span aria-hidden className="text-2xl text-purple-300/80">⟶</span>
+              </div>
+            )}
+            {clapModel && (
+              <div data-lever="clap-model" aria-label="Clap model"
+                className="flex items-center justify-center gap-3 rounded-2xl border border-emerald-300/20 bg-emerald-950/10 p-3">
+                <span className="text-4xl" role="img" aria-label={clapModel.word}>{clapModel.emoji}</span>
+                {!isPreReader && <span className="text-lg font-bold text-slate-100">{clapModel.word}</span>}
+                <div className="flex gap-1.5">
+                  {clapModel.parts.map((_, i) => <span key={i} data-clap className="text-2xl">👏</span>)}
+                </div>
+              </div>
+            )}
+            {deleteModel && (
+              <div data-lever="delete-model" aria-label="Take-away model"
+                className="flex items-center justify-center gap-3 rounded-2xl border border-amber-300/20 bg-amber-950/10 p-3">
+                <span className="text-4xl opacity-30 line-through" role="img" aria-label={deleteModel.parts[0]}>{deleteModel.partEmoji[0]}</span>
+                <span className="text-4xl" role="img" aria-label={deleteModel.parts[1]}>{deleteModel.partEmoji[1]}</span>
+                <span aria-hidden className="text-2xl text-slate-400">→</span>
+                <span className="text-4xl" role="img" aria-label={`${deleteModel.parts[1]} left`}>{deleteModel.partEmoji[1]}</span>
+                {!isPreReader && <span className="text-lg font-bold text-slate-100">{deleteModel.parts[1]}</span>}
+              </div>
+            )}
 
             {/* Pip's dock sits below the question, above the reveal bar. */}
             {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}

@@ -42,6 +42,8 @@ import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { countWord, countWordCapitalized } from './wordFlipScript';
 import { flipAssignment, flipScene, isPluralFlip, sourceWordRequest } from './wordFlipWorkspace';
+import { COMMON_IRREGULAR_LEVER, FAMILIAR_LEVER, FLIP_EMOJI, IRREGULAR_LEVER, RULE_LEVER, flipModelFor, leversOnScreen,
+  practiceItemFor, wordFlipLevers } from './wordFlipLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { wordFlipPipPose } from '../../../pip/wordFlipPipPose';
 
@@ -122,6 +124,10 @@ function WordFlipSurface({ data, className, runtimePlanItemId }: WordFlipProps) 
   const workspace = useRef<TeachingWorkspace | null>(null);
 
   const [wordTapped, setWordTapped] = useState(false);
+  // In-item levers (`wordFlipLevers.ts`), keyed by the session item they were pulled on, and the easier practice
+  // item a simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<WordFlipChallenge | null>(null);
   /** Visual only: clears the tapped-card highlight. Nothing here advances. */
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -172,8 +178,13 @@ function WordFlipSurface({ data, className, runtimePlanItemId }: WordFlipProps) 
     onFinished: finish,
     onItemOpened: () => setWordTapped(false),
   });
-  const currentChallenge = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionItem;
   const currentIndex = runner.currentIndex;
+  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
+  const flipModel = sessionItem && pulledLevers.some(id => id === RULE_LEVER || id === IRREGULAR_LEVER)
+    ? flipModelFor(sessionItem, challenges) : null;
   // The workspace shows its finish without an evaluation provider (the live host has none).
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
@@ -192,8 +203,32 @@ function WordFlipSurface({ data, className, runtimePlanItemId }: WordFlipProps) 
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!currentChallenge) return;
-    workspace.current = { ...flipScene(currentChallenge) };
+    if (!currentChallenge || !sessionItem) return;
+    const levers = practice ? [] : wordFlipLevers(sessionItem, pulledLevers, challenges);
+    const scene = flipScene(currentChallenge);
+    const onScreen = leversOnScreen(currentChallenge, pulledLevers, challenges);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts,
+        ...(onScreen ? { levers_on_screen: onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice item on another word, ungraded. The full item comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        if (id === FAMILIAR_LEVER || id === COMMON_IRREGULAR_LEVER) {
+          const simpler = practiceItemFor(sessionItem, challenges);
+          if (!simpler) return 'There is no easier item here.';
+          setPractice(simpler);
+          setWordTapped(false);
+          return { practice: flipAssignment(simpler) };
+        }
+        return true;
+      },
+      endPractice: () => { setPractice(null); setWordTapped(false); },
+    };
   });
 
   // ── Pip shared surface ───────────────────────────────────────────
@@ -320,6 +355,26 @@ function WordFlipSurface({ data, className, runtimePlanItemId }: WordFlipProps) 
             </div>
 
             <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
+
+            {/* Help: the same change on another word, before and after. Never the item's answer. */}
+            {flipModel && (
+              <div data-lever="rule-model" aria-label="Word change model"
+                className="flex items-center justify-center gap-3 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 p-3">
+                <div className="text-center">
+                  <div className="text-xs uppercase text-slate-500">{currentIsPlural ? 'One' : 'Today'}</div>
+                  <div className="text-3xl" role="img" aria-label={flipModel.singular}>{FLIP_EMOJI[flipModel.singular]}</div>
+                  <div className="font-bold text-slate-100">{flipModel.singular}</div>
+                </div>
+                <span aria-hidden className="text-xl text-slate-400">→</span>
+                <div className="text-center">
+                  <div className="text-xs uppercase text-slate-500">{currentIsPlural ? 'Two' : 'Yesterday'}</div>
+                  <div className="text-3xl" role="img" aria-label={flipModel.plural}>
+                    {currentIsPlural ? FLIP_EMOJI[flipModel.singular].repeat(2) : FLIP_EMOJI[flipModel.singular]}
+                  </div>
+                  <div className="font-bold text-emerald-200">{flipModel.plural}</div>
+                </div>
+              </div>
+            )}
 
             {!isPreReader && (
               <p className="text-center text-xs text-slate-500">

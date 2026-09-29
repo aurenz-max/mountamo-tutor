@@ -61,6 +61,7 @@ import {
   LuminaCardHeader,
   LuminaCardTitle,
   LuminaChallengeCounter,
+  LuminaPrintSupport,
   answerStateClass,
 } from '../../../ui';
 import {
@@ -86,6 +87,8 @@ import {
   type WordWorkoutPictureOption,
 } from './wordWorkoutScript';
 import { describePictureTap, hearQuestionRequest, wordWorkoutAssignment, wordWorkoutMiss, wordWorkoutScene } from './wordWorkoutWorkspace';
+import { CHANGED_LETTER_LEVER, CHUNK_LEVER, DOTS_LEVER, QUESTION_ICON_LEVER, TRACK_LEVER, chunkFor, lessonVowels, leversOnScreen,
+  practiceFor, questionIcon, wordWorkoutLevers } from './wordWorkoutLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { wordWorkoutPipPose } from '../../../pip/wordWorkoutPipPose';
 
@@ -222,6 +225,15 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
   );
 
   const [tapped, setTapped] = useState<string | null>(null);
+  // In-item levers (`wordWorkoutLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // practice item a simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPracticeState] = useState<WordWorkoutItem | null>(null);
+  const practiceRef = useRef<WordWorkoutItem | null>(null);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  /** The session item that has had a wrong answer: an extended word's chunks show only after a first try (contract R12). */
+  const [missedItem, setMissedItem] = useState('');
+  const setPractice = (next: WordWorkoutItem | null) => { practiceRef.current = next; setPracticeState(next); setPracticeSolved(false); };
   /** When each item opened and how long its credited read took, for the silent chain-fluency metric. */
   const openedAt = useRef(new Map<string, number>());
   const seconds = useRef(new Map<string, number>());
@@ -344,8 +356,10 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
     onItemOpened: (item) => {
       if (!openedAt.current.has(item.id)) openedAt.current.set(item.id, performance.now());
       setTapped(null);
+      setPractice(null);
     },
-    onCorrectionRetry: () => {
+    onCorrectionRetry: (item) => {
+      setMissedItem(item.id);
       // Try again frees the pictures.
       setTapped(null);
       pip.clear();
@@ -356,10 +370,16 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
     },
   });
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
+  /** A help lever draws on the session item only; a practice item is shown plain. */
+  const on = (id: string) => !practice && pulledLevers.includes(id);
+  const dotsOn = on(DOTS_LEVER);
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   /** Credited: the first moment an answer may be marked on screen. */
-  const revealed = runner.currentSolved;
+  const revealed = runner.currentSolved || practiceSolved;
   const meta = KIND_META[currentItem?.kind ?? 'real_word'];
 
   // ── Pip shared surface ────────────────────────────────────────────────────
@@ -386,13 +406,40 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!currentItem) return;
-    workspace.current = { ...wordWorkoutScene(currentItem) };
+    if (!currentItem || !sessionItem) return;
+    const vowels = lessonVowels(data.masteredVowels, items);
+    const levers = practice ? [] : wordWorkoutLevers(sessionItem, pulledLevers, items, vowels);
+    const scene = wordWorkoutScene(currentItem);
+    const onScreen = practice ? null : leversOnScreen(sessionItem, pulledLevers);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts,
+        ...(onScreen ? { levers_on_screen: onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice item on new words, ungraded. The full item comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === CHUNK_LEVER && missedItem !== sessionItem.id) return "The word's parts show only after a first try: let the learner read it first.";
+        if (lever.kind === 'simplify') {
+          const simpler = practiceFor(id, sessionItem, items, vowels);
+          if (!simpler) return 'There is no easier item here.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice(simpler);
+          setTapped(null);
+          return { practice: wordWorkoutAssignment(simpler) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => { setPractice(null); setTapped(null); },
+    };
   });
 
   // ── The tap — picture-match only; the tap IS the commit, checked by the activity ──
   const handlePictureTap = useCallback((option: WordWorkoutPictureOption) => {
-    const item = runner.currentItem;
+    const item = practiceRef.current ?? runner.currentItem;
     if (!runner.canAttempt || showSummary) return;
     if (!item || item.answerKind !== 'gesture') return;
     // `canAttempt` closes through batched state; this stops a second tap inside the same tick.
@@ -400,6 +447,8 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
     SoundManager.tap();
     pip.look(`picture-${option.word}`);
     setTapped(option.word);
+    // The practice item is ungraded: its success is local and never affirms the session item.
+    if (practiceRef.current && option.word === item.targetWord) setPracticeSolved(true);
     commitGesture(runner, { response: describePictureTap(option.word), correct: option.word === item.targetWord,
       cue: () => describePictureTap(option.word), miss: wordWorkoutMiss(item, option.word) });
   }, [runner, showSummary, pip]);
@@ -453,7 +502,9 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
               ${revealed && isReal ? 'scale-105' : ''}
             `}
           >
-            <span className="text-3xl font-bold text-slate-100 tracking-wide">{word}</span>
+            {dotsOn
+              ? <LuminaPrintSupport text={word} soundDots className="text-3xl font-bold text-slate-100 tracking-wide" />
+              : <span className="text-3xl font-bold text-slate-100 tracking-wide">{word}</span>}
           </div>
         );
       })}
@@ -465,7 +516,12 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
       <div className="text-center">
         <div ref={pip.ref('word')} data-pip-object="word"
           className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 border border-white/20">
-          <span className="text-3xl font-bold text-slate-100">{item.targetWord}</span>
+          {dotsOn ? (
+            // sound_dots: the shared print overlay, one dot under each grapheme. Visual only, never voiced.
+            <LuminaPrintSupport text={item.targetWord ?? ''} soundDots className="text-3xl font-bold text-slate-100" />
+          ) : (
+            <span className="text-3xl font-bold text-slate-100">{item.targetWord}</span>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -528,6 +584,11 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
               <span className={`text-xs font-mono w-6 ${idx <= position ? 'text-slate-300' : 'text-slate-600'}`}>
                 {idx + 1}.
               </span>
+              {isActive && !isRead && (on(DOTS_LEVER) || on(CHANGED_LETTER_LEVER)) ? (
+                // The pulled print marks on the lit word only: its dots, and where it changed. Never voiced.
+                <LuminaPrintSupport text={word} soundDots={on(DOTS_LEVER)} className="text-2xl font-bold tracking-wider text-blue-200"
+                  changedLetter={on(CHANGED_LETTER_LEVER) ? changedIdx ?? null : null} />
+              ) : (
               <span className="text-2xl font-bold tracking-wider">
                 {word.split('').map((letter, li) => (
                   <span
@@ -546,6 +607,7 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
                   </span>
                 ))}
               </span>
+              )}
               {showChangeDelta && previousWord && changedIdx !== undefined && idx <= position && (
                 <span className="text-xs text-slate-500 ml-auto">
                   {previousWord[changedIdx]} {'→'} {word[changedIdx]}
@@ -572,6 +634,13 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
     return (
       <div className="space-y-4">
         <div ref={pip.ref('sentence')} data-pip-object="sentence" className="rounded-xl bg-white/5 border border-white/10 p-6">
+          {isRead && on(TRACK_LEVER) ? (
+            // tracking_underline: the shared print overlay, one underline per word. Never voiced.
+            <div className="flex justify-center">
+              <LuminaPrintSupport text={item.sentence ?? ''} trackingUnderline className="text-xl font-bold text-slate-200"
+                wordClassName={(w) => (item.cvcWords ?? []).includes(w.replace(/[.,!?'"]/g, '').toLowerCase()) ? 'text-blue-200' : undefined} />
+            </div>
+          ) : (
           <div className="flex flex-wrap gap-2 justify-center">
             {words.map((word, idx) => {
               const clean = word.replace(/[.,!?'"]/g, '').toLowerCase();
@@ -595,9 +664,16 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
               );
             })}
           </div>
+          )}
         </div>
         {item.kind === 'answer_question' && (
-          <p className="text-center text-lg text-slate-200 font-semibold">{item.question}</p>
+          <p className="text-center text-lg text-slate-200 font-semibold">
+            {on(QUESTION_ICON_LEVER) && questionIcon(item) && (
+              // question_word_icon: the KIND of answer, never the word.
+              <span data-lever="question-icon" className="mr-2" role="img" aria-label={questionIcon(item)!.label}>{questionIcon(item)!.icon}</span>
+            )}
+            {item.question}
+          </p>
         )}
       </div>
     );
@@ -608,7 +684,9 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
   const renderExtendedWord = (item: WordWorkoutItem) => (
     <div className="space-y-4 text-center">
       <div ref={pip.ref('word')} data-pip-object="word" className="inline-flex px-10 py-6 rounded-2xl bg-white/5 border-2 border-white/15">
-        <span className="text-4xl font-bold tracking-wide text-slate-100">{item.targetWord}</span>
+        {item.kind === 'read_extended_word' && on(CHUNK_LEVER)
+          ? <LuminaPrintSupport text={item.targetWord ?? ''} chunkBreak={chunkFor(item)} className="text-4xl font-bold tracking-wide text-slate-100" />
+          : <span className="text-4xl font-bold tracking-wide text-slate-100">{item.targetWord}</span>}
       </div>
       {item.kind === 'read_extended_word' && revealed && (
         <div className="flex items-center justify-center gap-2 text-emerald-200">
@@ -657,7 +735,7 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
                     ? 'border-blue-400/50 bg-blue-500/15 text-blue-100'
                     : 'border-white/15 bg-white/5 text-slate-300'}`}
             >
-              {word}
+              {active && dotsOn ? <LuminaPrintSupport text={word} soundDots /> : word}
             </div>
           );
         })}

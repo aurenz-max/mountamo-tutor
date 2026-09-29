@@ -66,6 +66,11 @@ import {
   type RhymeTier,
 } from './rhymeStudioScript';
 import { hearRhymeRequest, rhymeAssignment, rhymeScene } from './rhymeStudioWorkspace';
+import {
+  CONTRAST_LEVER, DENSE_LEVER, FAR_FOIL_LEVER, FAR_PAIR_LEVER, NAME_CHOICES_LEVER, STRIP_LEVER, SWAP_LEVER,
+  contrastModelFor, leversOnScreen, onsetCardsFor, practiceItemFor, rhymeStudioLevers, swapModelFor, usedOnsets,
+} from './rhymeStudioLevers';
+import { onsetOf, rimeOfWord } from './rhymeModels';
 import { SoundManager } from '../../../utils/SoundManager';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
@@ -222,6 +227,10 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
   }, [items]);
   const collectedFor = (item: RhymeItem) =>
     collectedFamilies[item.collectionId ?? item.challengeId] ?? item.priorAcceptedWords;
+  // In-item levers (`rhymeStudioLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // practice item a simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<RhymeItem | null>(null);
 
   // ── Evaluation ────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<RhymeStudioMetrics>({
@@ -297,11 +306,17 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
     onAffirmed: handleAffirmed,
   });
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
+  const contrastModel = pulledLevers.includes(CONTRAST_LEVER) ? contrastModelFor(items) : null;
+  const swapModel = pulledLevers.includes(SWAP_LEVER) ? swapModelFor(items) : null;
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   /** Credited: the first moment the answer may appear on screen. */
   const revealed = runner.currentSolved;
-  const currentChallenge = challenges.find((challenge) => challenge.id === currentItem?.challengeId);
+  // A practice item has no challenge: no caption, no tier highlight.
+  const currentChallenge = practice ? undefined : challenges.find((challenge) => challenge.id === currentItem?.challengeId);
 
   // ── Pip shared surface ────────────────────────────────────────────────────
   // A projection of the workspace's committed state onto the card the ask names; Pip never
@@ -324,14 +339,39 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
 
   // ── Support-tier display levers (read with `!== false` so an ABSENT field is
   //    the full-help render). The band support always WINS at PRE. ──
-  const showRhymeFamilyHighlight = currentChallenge?.showRhymeFamilyHighlight !== false;
+  const showRhymeFamilyHighlight = !practice && currentChallenge?.showRhymeFamilyHighlight !== false;
   const showWordImage = isPreReader || currentChallenge?.showWordImage !== false;
 
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!currentItem) return;
-    workspace.current = { ...rhymeScene(currentItem, { collected: collectedFor(currentItem), familyShown: showRhymeFamilyHighlight && !isPreReader }) };
+    if (!currentItem || !sessionItem) return;
+    const levers = practice ? [] : rhymeStudioLevers(sessionItem, pulledLevers, items);
+    const scene = rhymeScene(currentItem, { collected: collectedFor(currentItem), familyShown: showRhymeFamilyHighlight && !isPreReader });
+    const onScreen = leversOnScreen(currentItem, pulledLevers, items);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts,
+        ...(pulledLevers.includes(NAME_CHOICES_LEVER) ? { namingChoices: 'Read every choice aloud, in screen order, evenly; stress none.' } : {}),
+        ...(onScreen ? { levers_on_screen: onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice item on other words, ungraded. The full item comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === FAR_PAIR_LEVER || id === FAR_FOIL_LEVER || id === DENSE_LEVER) {
+          const simpler = practiceItemFor(sessionItem, items);
+          if (!simpler) return 'There is no easier item here.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice(simpler);
+          return { practice: rhymeAssignment(simpler) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => setPractice(null),
+    };
   });
 
   /** Tapping a card asks the tutor for the question again: a silent host request, never the answer. */
@@ -448,6 +488,9 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
           <span className={isPreReader ? 'text-sm font-semibold text-slate-300' : 'text-2xl font-bold'}>
             {choice.word}
           </span>
+          {pulledLevers.includes(NAME_CHOICES_LEVER) && (
+            <span data-lever="name-choice" role="img" aria-label="read aloud" className="text-base leading-none">🔊</span>
+          )}
         </div>
       ))}
     </div>
@@ -538,6 +581,71 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
             intent rather than on data. */}
         {item.mode === 'identification' && renderChoiceCards(item)}
         {item.mode === 'collection' && renderCollectionSlots(item)}
+        {pulledLevers.includes(STRIP_LEVER) && renderOnsetStrip(item)}
+        {swapModel && renderSwapModel(swapModel)}
+      </div>
+    );
+  };
+
+  /** A model word with the part the model teaches lit: its ending (`end`) or its first sound (`start`). */
+  const renderModelWord = (word: string, emoji: string, lit: 'end' | 'start') => {
+    const cut = lit === 'end' ? word.length - rimeOfWord(word).length : onsetOf(word).length;
+    const [head, tail] = [word.slice(0, cut), word.slice(cut)];
+    return (
+      <div className="flex flex-col items-center gap-0.5 px-2">
+        <span className="text-4xl leading-none" role="img" aria-label={word}>{emoji}</span>
+        {!isPreReader && (
+          <span className="text-lg font-semibold text-slate-200">
+            {lit === 'start' ? <><span className="text-cyan-300">{head}</span>{tail}</> : <>{head}<span className="text-amber-300">{tail}</span></>}
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  /** Help: a rhyme and a same-start pair on model words outside the session. The item's words are untouched. */
+  const renderContrastModel = (model: NonNullable<typeof contrastModel>) => {
+    const [a, b] = model.words;
+    return (
+      <div data-lever="contrast-model" aria-label="Rhyme model" className="rounded-2xl border border-amber-300/20 bg-amber-950/10 p-3 space-y-2">
+        <div data-model-row="rhyme" className="flex items-center justify-center gap-2 rounded-xl ring-2 ring-amber-300/50 py-2">
+          {renderModelWord(a.word, a.emoji, 'end')}
+          <span aria-hidden className="text-2xl">🎵</span>
+          {renderModelWord(b.word, b.emoji, 'end')}
+        </div>
+        <div data-model-row="start" className="flex items-center justify-center gap-2 rounded-xl ring-2 ring-cyan-300/40 py-2">
+          {renderModelWord(a.word, a.emoji, 'start')}
+          <span aria-hidden className="text-2xl">✋</span>
+          {renderModelWord(model.onsetFoil.word, model.onsetFoil.emoji, 'start')}
+        </div>
+      </div>
+    );
+  };
+
+  /** Help: one model word, its first sound changed twice. */
+  const renderSwapModel = (model: NonNullable<typeof swapModel>) => (
+    <div data-lever="swap-model" aria-label="First sound model" className="flex items-center justify-center gap-1 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 p-3">
+      {model.words.slice(0, 3).map((w, i) => (
+        <React.Fragment key={w.word}>
+          {i > 0 && <span aria-hidden className="text-xl text-slate-400">→</span>}
+          {renderModelWord(w.word, w.emoji, 'start')}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+
+  /** Help: single first sounds on pictures, never the target's; a collection greys the ones it already used. */
+  const renderOnsetStrip = (item: RhymeItem) => {
+    const used = usedOnsets(item.mode === 'collection' ? collectedFor(item) : []);
+    return (
+      <div data-lever="onset-strip" aria-label="First sounds" className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+        {onsetCardsFor(item).map((card) => (
+          <div key={card.sound} data-onset={card.sound} data-used={used.has(card.sound) ? 'true' : undefined}
+            className={`rounded-xl border border-white/10 bg-white/5 p-2 flex flex-col items-center ${used.has(card.sound) ? 'opacity-30' : ''}`}>
+            <span className="text-3xl leading-none" role="img" aria-label={card.word}>{card.emoji}</span>
+            {!isPreReader && <span className="text-base font-bold text-cyan-300">{card.sound}</span>}
+          </div>
+        ))}
       </div>
     );
   };
@@ -599,6 +707,7 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
             )}
 
             {renderChallenge(currentItem)}
+            {contrastModel && renderContrastModel(contrastModel)}
           </>
         )}
 

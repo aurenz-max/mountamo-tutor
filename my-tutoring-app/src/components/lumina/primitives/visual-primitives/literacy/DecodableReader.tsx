@@ -54,7 +54,7 @@
  * primitives, and this one is no longer the exception.
  */
 
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -63,6 +63,7 @@ import {
   LuminaBadge,
   LuminaPanel,
   LuminaChallengeCounter,
+  LuminaPrintSupport,
   motion,
   type LuminaAccent,
 } from '../../../ui';
@@ -88,6 +89,8 @@ import {
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { decodableReaderPipPose } from '../../../pip/decodableReaderPipPose';
 import { decodableReaderAssignment, decodableReaderScene, hearAgainRequest } from './decodableReaderWorkspace';
+import { DOTS_LEVER, REGION_LEVER, TRACK_LEVER, decodableReaderLevers, leversOnScreen, shortLine, storyRegion }
+  from './decodableReaderLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -326,6 +329,13 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId }: Decodabl
     );
   };
 
+  // In-item levers (`decodableReaderLevers.ts`), keyed by the session item they were pulled on, the easier
+  // practice line a simplify lever put on screen in its place, and the item that has had a wrong answer (the story
+  // region is offered only after one).
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<DecodableReaderItem | null>(null);
+  const [missedItem, setMissedItem] = useState('');
+
   const runner = useWorkspaceRunner<DecodableReaderItem>({
     primitiveId: 'decodable-reader',
     assignment: decodableReaderAssignment,
@@ -336,9 +346,15 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId }: Decodabl
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
     instanceId: resolvedInstanceId,
     onFinished: finish,
+    onItemOpened: () => setPractice(null),
+    onCorrectionRetry: (item) => setMissedItem(item.id),
   });
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice line while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  const pulledLevers = !practice && leverState.item === sessionItem?.id ? leverState.pulled : [];
+  const on = (id: string) => pulledLevers.includes(id);
   /** Credited: the answer may appear on screen. Item-scoped, so a credit that also
    *  advances never shows the next item solved. */
   const revealed = runner.currentSolved;
@@ -347,8 +363,33 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId }: Decodabl
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!currentItem) return;
-    workspace.current = { ...decodableReaderScene(currentItem) };
+    if (!currentItem || !sessionItem) return;
+    const levers = practice ? [] : decodableReaderLevers(sessionItem, pulledLevers, sentences);
+    const scene = decodableReaderScene(currentItem);
+    const onScreen = practice ? null : leversOnScreen(pulledLevers);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts,
+        ...(onScreen ? { levers_on_screen: onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice line of three new words, not from the story, ungraded. The story line comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === REGION_LEVER && missedItem !== sessionItem.id) return 'The story sentences come back only after a wrong answer: let the learner try first.';
+        if (lever.kind === 'simplify') {
+          const simpler = shortLine(sessionItem, sentences);
+          if (!simpler) return 'There is no easier line here.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice(simpler);
+          return { practice: decodableReaderAssignment(simpler) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => setPractice(null),
+    };
   });
 
   /** Asks the tutor to repeat the question side: a silent host request, never an answer or the line. */
@@ -404,7 +445,16 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId }: Decodabl
   /** The printed line, word by word — the phonics tint is the decodable-text
    *  surface. No word is tappable: audio on demand is an echo route through the
    *  measurement (see the header). */
-  const renderLine = (item: DecodableReaderItem) => (
+  const wordTint = (item: DecodableReaderItem, i: number) => revealed
+    ? 'text-emerald-300'
+    : isEarlyBand ? 'text-white' : PATTERN_COLORS[item.words?.[i]?.phonicsPattern ?? 'other'] ?? 'text-slate-100';
+  const renderLine = (item: DecodableReaderItem) => on(TRACK_LEVER) || on(DOTS_LEVER) ? (
+    // The pulled print marks, drawn by the shared overlay. Visual only: nothing is said.
+    <p ref={pip.ref('line')} data-pip-object="line" className={`font-bold leading-snug tracking-wide ${lineSizeClass(item.wordCount)}`}>
+      <LuminaPrintSupport text={item.text} trackingUnderline={on(TRACK_LEVER)} soundDots={on(DOTS_LEVER)}
+        wordClassName={(_w, i) => wordTint(item, i)} />
+    </p>
+  ) : (
     <p ref={pip.ref('line')} data-pip-object="line" className={`font-bold leading-snug tracking-wide ${lineSizeClass(item.wordCount)}`}>
       {(item.words ?? []).map((word, i) => (
         <React.Fragment key={word.id}>
@@ -470,6 +520,14 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId }: Decodabl
       <div className="space-y-4">
         {/* read-along keeps the story on screen while the tutor reads it — a
             pre-reader following print IS the shared-reading task. */}
+        {on(REGION_LEVER) && storyRegion(item, sentences) && (
+          // story_region: two whole story sentences, nothing inside them marked.
+          <LuminaPanel accent="cyan" className="p-5" data-lever="story-region">
+            {storyRegion(item, sentences)!.map((line) => (
+              <p key={line} className="text-center text-2xl leading-relaxed text-slate-100">{line}</p>
+            ))}
+          </LuminaPanel>
+        )}
         {item.storyText && (
           <LuminaPanel accent="purple" className="p-5">
             <p ref={pip.ref('story')} data-pip-object="story" className="text-center text-2xl leading-relaxed text-slate-100">{item.storyText}</p>

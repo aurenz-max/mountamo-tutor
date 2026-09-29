@@ -150,7 +150,8 @@ it('offers demonstration where there is something to point at, and none where ev
   expect(operations('keyword_match')).toEqual(['begin_help', 'demonstrate']); cleanup();
   // hear_see: the only objects are the two letters the child chooses between, and
   // marking either one answers for them. The scene refuses the action.
-  expect(operations('hear_see')).toEqual(['begin_help']);
+  // Its in-item levers (`letterSoundLinkLevers.ts`) change the cards without marking either one.
+  expect(operations('hear_see')).toEqual(['begin_help', 'pull_lever']);
 });
 
 it('offers no letter-changing, writing or answering operation to the tutor', () => {

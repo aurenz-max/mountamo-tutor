@@ -34,9 +34,15 @@
  * packet at all — a tutor that had it could hand over the sound with it.
  * `keyword-match` is the one direction where the anchor word IS the answer, so
  * the tutor has it there and only there.
+ *
+ * The one exception is a pulled lever (`letterSoundLinkLevers.ts`, handoff 22 L1):
+ * `keyword_under_both` draws a keyword under BOTH hear-see cards alike, which marks
+ * neither, and the scene never says which picture sits under which card.
  */
 
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { FAR_PAIR_LEVER, KEYWORDS_LEVER, VOICE_LEVER, cardKeywords, fartherPair, laterStimuli, letterSoundLevers,
+  voiceModelFor } from './letterSoundLinkLevers';
 import { LuminaBadge, LuminaCard, LuminaCardContent, LuminaCardDescription, LuminaCardHeader,
   LuminaCardTitle, LuminaChallengeCounter, LuminaReadAloudGlyph, answerStateClass } from '../../../ui';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -82,6 +88,14 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [marks, mark] = useState<string[]>([]);
   const [tapped, setTapped] = useState<string | null>(null);
+  // In-item levers, keyed by the session item they were pulled on, and the easier practice item a
+  // simplify lever put on screen in its place. Retry on the practice item keeps it; only endPractice
+  // or a new session item removes it.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPracticeState] = useState<LetterSoundItem | null>(null);
+  const practiceRef = useRef<LetterSoundItem | null>(null);
+  const setPractice = (next: LetterSoundItem | null) => { practiceRef.current = next; setPracticeState(next); };
+  const openedIndex = useRef(-1);
 
   const assignments = useMemo<TeachingItem[]>(() => items.map(item => ({
     ...workspaceAssignment(item),
@@ -92,7 +106,13 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
 
   const lesson = useTeachingWorkspace({ instanceId: instance.current, primitiveId: 'letter-sound-link',
     objectiveId: data.objectiveId, planItemId: runtimePlanItemId, items: assignments, workspace,
-    onItemOpened: () => setTapped(null) });
+    onItemOpened: index => {
+      setTapped(null);
+      if (index !== openedIndex.current) setPractice(null);
+      openedIndex.current = index;
+    },
+    checkPractice: (id, response) => practiceRef.current?.id === id
+      ? response.trim().toLowerCase() === practiceRef.current.answer.trim().toLowerCase() : null });
 
   const evaluation = useTeachingEvaluation<LetterSoundLinkMetrics>({ primitiveType: 'letter-sound-link',
     instanceId: instance.current, data, assignments, lesson,
@@ -122,8 +142,13 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
         confusedSoundPairs: Array.from(confused), attemptsCount: result.attemptsCount };
     } });
 
-  const item = items[lesson.state.index];
+  const sessionItem = items[lesson.state.index];
+  const item = practice ?? sessionItem;
   const gesture = item.answerKind === 'gesture';
+  const pulled = leverState.item === sessionItem.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulled.includes(id);
+  const keywords = leverOn(KEYWORDS_LEVER) ? cardKeywords(sessionItem, laterStimuli(items, lesson.state.index)) : [];
+  const voiceModel = leverOn(VOICE_LEVER) ? voiceModelFor(sessionItem) : null;
   /** The first moment the anchor may appear: a committed correct attempt on
    *  THIS item. There is no `phase === 'affirmed'` on this path — the verdict
    *  and the advance commit together — so the reveal is keyed on the record. */
@@ -131,14 +156,42 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
   const printed = printedStimulus(item);
 
   useLayoutEffect(() => {
+    const levers = practice ? [] : letterSoundLevers(sessionItem, pulled, items, lesson.state.index, data.letterGroup);
+    const scene = workspaceScene(item, tapped);
+    const shown = [
+      keywords.length ? 'a keyword picture under each of the two letter cards, alike' : '',
+      voiceModel ? `a quiet sound and a buzzing sound on two pictures: a ${voiceModel.quiet.word} (${voiceModel.quiet.sound}) `
+        + `and a ${voiceModel.buzz.word} (${voiceModel.buzz.sound}), with a hand on the throat` : '',
+    ].filter(Boolean);
     workspace.current = {
-      ...workspaceScene(item, tapped),
+      ...scene,
+      facts: { ...scene.facts, ...(shown.length ? { levers_on_screen: shown.join('; ') } : {}),
+        ...(practice ? { practice: 'An easier practice item with a different sound, ungraded. The full item comes back after it.' } : {}) },
       demonstration: marks,
       canDemonstrate: !gesture, mark, clearPresentation: () => mark([]),
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the cards change before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === FAR_PAIR_LEVER) {
+          const simpler = fartherPair(sessionItem, items, data.letterGroup);
+          if (!simpler) return 'There is no easier pair for this item.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulled, id] });
+          setPractice(simpler);
+          setTapped(null);
+          return { practice: workspaceAssignment(simpler) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulled, id] });
+        return true;
+      },
+      endPractice: () => { setPractice(null); setTapped(null); },
     };
   });
 
   const tapLetter = (letter: string) => {
+    // On the practice item the tap is checked by `checkPractice` and names its own miss.
     if (!gesture || !lesson.canAttempt || lesson.isBlocked()) return;
     SoundManager.tap();
     setTapped(letter);
@@ -178,7 +231,18 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
           {printed}
         </div>}
 
-        {gesture && <div className="flex items-center justify-center gap-6 sm:gap-10">
+        {/* voice_feel_model: a quiet and a buzzing sound on two pictures, never this item's letters. */}
+        {voiceModel && <div data-lever="voice-model" className="flex items-center justify-center gap-6 rounded-2xl border border-amber-300/20 bg-amber-500/5 px-5 py-3">
+          <span aria-hidden="true" className="text-2xl">✋</span>
+          {[{ ...voiceModel.quiet, buzz: false }, { ...voiceModel.buzz, buzz: true }].map(m => (
+            <div key={m.word} data-voice-model={m.buzz ? 'buzz' : 'quiet'} className="flex flex-col items-center gap-1">
+              <span role="img" aria-label={m.word} className="text-4xl">{m.emoji}</span>
+              <span aria-hidden="true" className={`text-lg ${m.buzz ? 'text-amber-300' : 'text-slate-500'}`}>{m.buzz ? '〰〰' : '—'}</span>
+            </div>
+          ))}
+        </div>}
+
+        {gesture && <div className="flex items-start justify-center gap-6 sm:gap-10">
           {item.options.map(option => {
             const isTarget = option.value.toLowerCase() === item.answer.toLowerCase();
             const state = solved && isTarget ? 'correct'
@@ -191,6 +255,10 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
                 answerStateClass(state)} ${state === 'idle' ? letterColor(option.value) : ''} ${
                 solved && isTarget ? 'scale-105 ring-2 ring-emerald-400/40' : ''}`}>
               {option.value.toUpperCase()}
+              {/* keyword_under_both: the same size under both cards. */}
+              {keywords.some(k => k.letter === option.value.toLowerCase()) && <span data-lever="card-keyword"
+                role="img" aria-label={keywords.find(k => k.letter === option.value.toLowerCase())!.word}
+                className="mt-1 block text-3xl">{keywords.find(k => k.letter === option.value.toLowerCase())!.emoji}</span>}
             </button>;
           })}
         </div>}

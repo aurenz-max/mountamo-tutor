@@ -42,6 +42,9 @@ import { withWorkspaceOnly } from '../../../components/live-activity/runtime/wit
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { swapAssignment, swapScene, swapSoundRequest } from './soundSwapWorkspace';
+import { EASIER_LEVER, MARK_LEVER, MODEL_LEVER, leversOnScreen, practiceItemFor, soundSwapLevers, swapModelFor, targetTile }
+  from './soundSwapLevers';
+import { speakablePhoneme } from './phonemeVoice';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { soundSwapPipPose } from '../../../pip/soundSwapPipPose';
 
@@ -176,6 +179,10 @@ function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps
   const workspace = useRef<TeachingWorkspace | null>(null);
 
   const [activeSoundIdx, setActiveSoundIdx] = useState<number | null>(null);
+  // In-item levers (`soundSwapLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // practice item a simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<SoundSwapChallenge | null>(null);
   /** Visual only: clears the tapped-sound highlight. Nothing here advances. */
   const soundTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -229,8 +236,12 @@ function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps
     onFinished: finish,
     onItemOpened: () => setActiveSoundIdx(null),
   });
-  const currentChallenge = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionItem;
   const currentIndex = runner.currentIndex;
+  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
+  const swapModel = pulledLevers.includes(MODEL_LEVER) && sessionItem ? swapModelFor(sessionItem, challenges) : null;
   // The workspace shows its finish without an evaluation provider (the live host has none).
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
@@ -247,16 +258,45 @@ function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps
     soundTimerRef.current = setTimeout(() => setActiveSoundIdx(null), 1200);
   }, [ctx, currentChallenge]);
 
-  const highlightIdx = currentChallenge && currentChallenge.operation === 'substitution'
-    && currentChallenge.showTargetHighlight !== false && !runner.revealHeld
-    ? findTargetIndex(currentChallenge.originalPhonemes, currentChallenge.oldPhoneme, currentChallenge.substitutePosition)
-    : -1;
+  const highlightIdx = !currentChallenge || runner.revealHeld ? -1
+    : pulledLevers.includes(MARK_LEVER) ? targetTile(currentChallenge)
+      : currentChallenge.operation === 'substitution' && currentChallenge.showTargetHighlight !== false
+        ? findTargetIndex(currentChallenge.originalPhonemes, currentChallenge.oldPhoneme, currentChallenge.substitutePosition)
+        : -1;
+  /** An addition's empty tile, where the new sound goes: never its letter. */
+  const blankAt = currentChallenge?.operation === 'addition' && pulledLevers.includes(MARK_LEVER) && !runner.revealHeld
+    ? (currentChallenge.addPosition ?? 'beginning') : null;
 
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!currentChallenge) return;
-    workspace.current = { ...swapScene(currentChallenge, { highlighted: highlightIdx >= 0 }) };
+    if (!currentChallenge || !sessionItem) return;
+    const levers = practice ? [] : soundSwapLevers(sessionItem, pulledLevers, challenges);
+    const scene = swapScene(currentChallenge, { highlighted: highlightIdx >= 0 });
+    const onScreen = leversOnScreen(currentChallenge, pulledLevers, challenges);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts,
+        ...(onScreen ? { levers_on_screen: onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice item on other words, ungraded. The full item comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === EASIER_LEVER) {
+          const simpler = practiceItemFor(sessionItem, challenges);
+          if (!simpler) return 'There is no easier item here.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice(simpler);
+          setActiveSoundIdx(null);
+          return { practice: swapAssignment(simpler) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => { setPractice(null); setActiveSoundIdx(null); },
+    };
   });
 
   // ── Pip shared surface ───────────────────────────────────────────
@@ -307,6 +347,8 @@ function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps
    *  Nothing here names the new word — that is the answer. */
   const renderSounds = () => (
     <div className="flex flex-wrap items-center justify-center gap-2">
+      {blankAt === 'beginning' && <span data-lever="blank-tile" aria-label="empty tile"
+        className="h-14 w-12 animate-pulse rounded-xl border-2 border-dashed border-amber-300/70" />}
       {currentChallenge.originalPhonemes.map((phoneme, i) => (
         <button
           key={`${currentChallenge.id}-${i}`}
@@ -331,6 +373,22 @@ function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps
           <span className="text-2xl">{phoneme}</span>
         </button>
       ))}
+      {blankAt === 'end' && <span data-lever="blank-tile" aria-label="empty tile"
+        className="h-14 w-12 animate-pulse rounded-xl border-2 border-dashed border-amber-300/70" />}
+    </div>
+  );
+
+  /** Help: the same change on model words the session never uses, start to finish. */
+  const renderSwapModel = (model: NonNullable<typeof swapModel>) => (
+    <div data-lever="swap-model" aria-label="Sound change model"
+      className="flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 p-3 text-lg">
+      <span className="font-bold text-slate-100">{model.from}</span>
+      <span className="text-cyan-300">
+        {model.op === 'addition' ? '+' : model.op === 'deletion' ? '−' : `${speakablePhoneme(model.oldSound ?? '')} →`} {speakablePhoneme(model.sound)}
+      </span>
+      <span aria-hidden className="text-slate-400">=</span>
+      <span className="text-3xl" role="img" aria-label={model.to}>{model.emoji}</span>
+      {!isPreReader && <span className="font-bold text-emerald-200">{model.to}</span>}
     </div>
   );
 
@@ -384,6 +442,8 @@ function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps
               )}
               <div className="mt-2 text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
             </div>
+
+            {swapModel && renderSwapModel(swapModel)}
 
             {!isPreReader && (
               <p className="text-center text-xs text-slate-500">

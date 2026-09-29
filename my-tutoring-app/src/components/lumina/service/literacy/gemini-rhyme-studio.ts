@@ -5,6 +5,7 @@ import type { GenerationContext } from "../generation/generationContext";
 import { clampGradeToK2 } from "../scopeContext";
 import { RhymeStudioData } from "../../primitives/visual-primitives/literacy/RhymeStudio";
 import { isSentinelSafeWord } from "../../primitives/visual-primitives/literacy/rhymeStudioScript";
+import { K_RHYME_FAMILIES } from "../../primitives/visual-primitives/literacy/rhymeModels";
 import {
   resolveEvalModes,
   constrainChallengeTypeEnum,
@@ -47,20 +48,7 @@ const IRREGULAR_RHYME_WORDS = [
 // (b) attach the emoji deterministically in post-process. Every family carries
 // ≥3 members so the model can always build a rhyming pair AND a cross-family
 // distractor. Entropy stays in the prompt; the code owns the picture surface.
-const K_RHYME_FAMILIES: { family: string; words: Array<[string, string]> }[] = [
-  { family: '-at', words: [['cat', '🐱'], ['hat', '🎩'], ['bat', '🦇'], ['rat', '🐀'], ['mat', '🧘']] },
-  { family: '-an', words: [['pan', '🍳'], ['man', '👨'], ['fan', '🪭'], ['van', '🚐'], ['can', '🥫']] },
-  { family: '-ig', words: [['pig', '🐷'], ['wig', '💇'], ['dig', '⛏️'], ['zig', '⚡']] },
-  { family: '-og', words: [['dog', '🐶'], ['log', '🪵'], ['frog', '🐸'], ['hog', '🐗']] },
-  { family: '-ot', words: [['pot', '🍲'], ['hot', '🔥'], ['dot', '⚫'], ['cot', '🛏️']] },
-  { family: '-un', words: [['sun', '☀️'], ['bun', '🍞'], ['run', '🏃'], ['fun', '🎉']] },
-  { family: '-en', words: [['hen', '🐔'], ['pen', '🖊️'], ['ten', '🔟'], ['den', '🕳️']] },
-  { family: '-op', words: [['top', '🔝'], ['mop', '🧹'], ['pop', '🍿'], ['hop', '🐰']] },
-  { family: '-ug', words: [['bug', '🐛'], ['rug', '🧶'], ['mug', '☕'], ['hug', '🤗']] },
-  { family: '-ip', words: [['lip', '👄'], ['zip', '🤐'], ['ship', '🚢'], ['drip', '💧']] },
-  { family: '-ox', words: [['box', '📦'], ['fox', '🦊'], ['ox', '🐂']] },
-  { family: '-ed', words: [['bed', '🛌'], ['red', '🟥'], ['sled', '🛷']] },
-];
+// The menu itself is `rhymeModels.ts`, shared with rhyme-studio's practice items (handoff 22 L2).
 
 // Flat lowercase word → emoji lookup derived from the families above.
 const K_WORD_EMOJI: Record<string, string> = Object.fromEntries(

@@ -106,6 +106,9 @@ export {
   type LuminaReadAloudProps,
   type LuminaReadAloudGlyphProps,
 } from './LuminaReadAloud';
+// Print support for a cold read (handoff 22 L3): visual marks only, never audio.
+export { LuminaPrintSupport, type LuminaPrintSupportProps } from './LuminaPrintSupport';
+export { graphemes, dotsLeak, chunkBreak, changedLetter, printedWords } from './printSupport';
 
 // Spoken production — the shared "mic is live, speak now" capture surface.
 export {
