@@ -1,0 +1,158 @@
+{
+ "row": {
+  "subject": "literacy",
+  "mode": "apply",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 1,
+  "problems": [
+   {
+    "type": "categorization_activity",
+    "words": 24,
+    "viable": true,
+    "stem": "Read the definition box carefully. Then sort each word below into the correct category based on whether it is a noun or a verb."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 14,
+    "viable": true,
+    "stem": "In the sentence 'The happy dog barks loudly,' which word is an action verb?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 14,
+    "viable": true,
+    "stem": "Leo visits the playground. Which sentence has both a noun and an action verb?"
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "categorization_activity",
+   "id": "cat_1",
+   "difficulty": "medium",
+   "gradeLevel": "elementary",
+   "instruction": "Read the definition box carefully. Then sort each word below into the correct category based on whether it is a noun or a verb.",
+   "categories": [
+    "Nouns",
+    "Verbs"
+   ],
+   "categorizationItems": [
+    {
+     "itemText": "cat",
+     "correctCategory": "Nouns"
+    },
+    {
+     "itemText": "park",
+     "correctCategory": "Nouns"
+    },
+    {
+     "itemText": "book",
+     "correctCategory": "Nouns"
+    },
+    {
+     "itemText": "run",
+     "correctCategory": "Verbs"
+    },
+    {
+     "itemText": "jump",
+     "correctCategory": "Verbs"
+    },
+    {
+     "itemText": "read",
+     "correctCategory": "Verbs"
+    }
+   ],
+   "rationale": "Nouns are words that name a person, place, or thing, while verbs are action words that show what something is doing. By testing each word against these rules, students can accurately sort them into categories without confusing objects with actions.",
+   "teachingNote": "Watch out for words like 'read' or 'book' which can sometimes confuse students if they do not check the definition box for whether the word is naming an object or showing an action.",
+   "successCriteria": [
+    "Identify and classify nouns as persons, places, or things",
+    "Identify and classify verbs as action words"
+   ],
+   "inset": {
+    "insetType": "definition-box",
+    "term": "Part of Speech",
+    "definition": "A noun is a word that names a person, place, or thing. A verb is an action word that tells what someone or something is doing.",
+    "exampleSentence": "The cat will run in the park.",
+    "label": "Figure 1",
+    "partOfSpeech": "noun and verb"
+   },
+   "subject": "LANGUAGE_ARTS"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "medium",
+   "gradeLevel": "elementary",
+   "question": "In the sentence 'The happy dog barks loudly,' which word is an action verb?",
+   "options": [
+    {
+     "id": "A",
+     "text": "dog",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "happy",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "barks",
+     "distance": "key"
+    },
+    {
+     "id": "D",
+     "text": "loudly",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "C",
+   "rationale": "The word 'barks' is an action verb because it shows what the dog does. 'Dog' is a noun naming the animal, while 'happy' is an adjective that describes how the dog feels. Verbs tell the action in a sentence.",
+   "teachingNote": "Teach students the 'Can you do it?' test. A dog can bark (an action), but a dog cannot 'happy' or 'yard.'",
+   "successCriteria": [
+    "Identify an action verb within a simple sentence",
+    "Distinguish an action verb from nouns and adjectives"
+   ],
+   "subject": "LANGUAGE_ARTS"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Leo visits the playground. Which sentence has both a noun and an action verb?",
+   "options": [
+    {
+     "id": "A",
+     "text": "The playground is big.",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "Children climb the ladder.",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "Run and jump high!",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "Very bright and sunny.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "In the sentence 'Children climb the ladder,' 'children' and 'ladder' are nouns naming people and things, while 'climb' is an action verb showing what the children do. Other sentences lack either a clear action verb or a noun, such as 'The playground is big,' which names a place but uses a linking verb instead of an action.",
+   "teachingNote": "Second graders often confuse linking verbs like 'is' with action verbs, or mistake adjectives like 'sunny' for nouns. Encourage students to check for both a 'naming word' (who or what) and a 'doing word' (the movement or action).",
+   "successCriteria": [
+    "Identify nouns that name people, places, or things within a sentence.",
+    "Identify action verbs that express physical actions within a sentence.",
+    "Distinguish between sentences that contain both a noun and an action verb versus those that do not."
+   ],
+   "subject": "LANGUAGE_ARTS"
+  }
+ ]
+}

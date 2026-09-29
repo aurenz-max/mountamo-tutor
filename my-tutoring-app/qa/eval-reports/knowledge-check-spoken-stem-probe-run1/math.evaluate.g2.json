@@ -1,0 +1,155 @@
+{
+ "row": {
+  "subject": "math",
+  "mode": "evaluate",
+  "grade": "2",
+  "setViable": false,
+  "redraws": 1,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 14,
+    "viable": true,
+    "stem": "Which way is best to quickly add 🍎🍎🍎🍎🍎🍎🍎 (7), 🍎🍎🍎🍎🍎 (5), and 🍎🍎🍎 (3)?"
+   },
+   {
+    "type": "fill_in_blanks",
+    "words": 13,
+    "viable": false,
+    "stem": "Based on the jumps on the number line, 7 + 8 = [blank_1]."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 16,
+    "viable": true,
+    "stem": "Mia has 8 star stickers and 7 heart stickers. Which equation correctly shows her total stickers?"
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Which way is best to quickly add 🍎🍎🍎🍎🍎🍎🍎 (7), 🍎🍎🍎🍎🍎 (5), and 🍎🍎🍎 (3)?",
+   "options": [
+    {
+     "id": "A",
+     "text": "Count every single apple one by one from 1 to 15.",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "Add 7 and 3 first to make 10, then add 5 to get 15.",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "Add 5 and 3 first to make 8, because they are the smallest.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "Guess 20 because all three groups together look very large.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "Combining 7 and 3 makes a friendly ten, which makes adding the remaining 5 simple and fast (10 + 5 = 15). While counting one by one or adding 5 and 3 both eventually lead to 15, making a ten is the most efficient mathematical strategy. Using the associative and commutative properties to create tens helps students calculate mentally with ease.",
+   "teachingNote": "Encourage Grade 2 students to look for 'friends of 10' when combining three numbers within 20 before adding left to right.",
+   "successCriteria": [
+    "Evaluate and select the most efficient strategy to add three numbers within 20",
+    "Apply the 'make-a-ten' strategy when combining groups of concrete objects"
+   ],
+   "subject": "MATHEMATICS"
+  },
+  {
+   "type": "fill_in_blanks",
+   "id": "fib_1",
+   "difficulty": "easy",
+   "gradeLevel": "elementary",
+   "textWithBlanks": "Based on the jumps on the number line, 7 + 8 = [blank_1].",
+   "blanks": [
+    {
+     "id": "blank_1",
+     "correctAnswer": "15",
+     "caseSensitive": false
+    }
+   ],
+   "wordBank": [
+    "13",
+    "14",
+    "15",
+    "16"
+   ],
+   "rationale": "Evaluating the number line shows a start at 7 with a jump of 8, which lands on 15. The student must judge how the jumps combine to find the correct total within 20.",
+   "teachingNote": "Use the number line to track each hop carefully from 7 to reach the final answer.",
+   "successCriteria": [
+    "Add two single-digit numbers within 20 using a number line",
+    "Evaluate number line jumps to determine the correct sum"
+   ],
+   "inset": {
+    "insetType": "number-line",
+    "min": 0,
+    "max": 20,
+    "ticks": [
+     0,
+     5,
+     7,
+     15,
+     20
+    ],
+    "label": "Number Line",
+    "points": [
+     {
+      "value": 7,
+      "label": "Start"
+     },
+     {
+      "value": 15,
+      "label": "End"
+     }
+    ]
+   },
+   "subject": "MATHEMATICS"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Mia has 8 star stickers and 7 heart stickers. Which equation correctly shows her total stickers?",
+   "options": [
+    {
+     "id": "A",
+     "text": "8 + 7 = 15, because moving 2 from 7 makes 10 + 5.",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "8 + 7 = 16, because using the double of 8 gives 16.",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "8 + 2 = 10, because adding stops once you make a ten.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "8 - 7 = 1, because it shows the difference between the stickers.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "To find the total, Mia must add 8 and 7 together. A helpful strategy is making a ten: take 2 from 7 to turn 8 into 10, leaving 5, which gives 10 + 5 = 15. The other addition choices either misapply the doubles strategy by forgetting to subtract one or stop early after making a ten.",
+   "teachingNote": "Second graders frequently use the 'make a ten' or 'near doubles' strategy when adding numbers with sums between 10 and 20. Watch out for students who use doubles (8 + 8 = 16) but forget to adjust for adding 7 instead of 8.",
+   "successCriteria": [
+    "Evaluate addition equations to determine which accurately models a combining scenario within 20",
+    "Apply the make-a-ten strategy to justify the correct sum"
+   ],
+   "subject": "MATHEMATICS"
+  }
+ ]
+}

@@ -1,0 +1,144 @@
+{
+ "row": {
+  "subject": "literacy",
+  "mode": "recall",
+  "grade": "2",
+  "setViable": false,
+  "redraws": 1,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 12,
+    "viable": true,
+    "stem": "Based on the definition box, which of these words is a noun?"
+   },
+   {
+    "type": "categorization_activity",
+    "words": 16,
+    "viable": true,
+    "stem": "Sort the following simple words into two groups: Nouns (People, Places, Things) and Verbs (Action Words)."
+   },
+   {
+    "type": "fill_in_blanks",
+    "words": 7,
+    "viable": false,
+    "stem": "The [blank_1] will [blank_2] on the grass."
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "easy",
+   "gradeLevel": "elementary",
+   "question": "Based on the definition box, which of these words is a noun?",
+   "options": [
+    {
+     "id": "A",
+     "text": "run",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "park",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "jump",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "fast",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "A park is a place, so it matches the definition of a noun. Words like run and jump tell what someone does, which makes them action words instead of naming words. Therefore, park is the only noun in the list.",
+   "teachingNote": "Remind early learners to test each word by asking, 'Is this a person, a place, or a thing?' to distinguish nouns from action verbs.",
+   "successCriteria": [
+    "Use a definition to identify a noun",
+    "Distinguish between nouns and action verbs"
+   ],
+   "inset": {
+    "insetType": "definition-box",
+    "term": "noun",
+    "definition": "A word that names a person, place, or thing.",
+    "exampleSentence": "The boy played in the yard with a ball.",
+    "label": "Word Helper",
+    "partOfSpeech": "noun"
+   },
+   "subject": "LANGUAGE_ARTS"
+  },
+  {
+   "type": "categorization_activity",
+   "id": "cat_1",
+   "difficulty": "easy",
+   "gradeLevel": "elementary",
+   "instruction": "Sort the following simple words into two groups: Nouns (People, Places, Things) and Verbs (Action Words).",
+   "categories": [
+    "Nouns",
+    "Verbs"
+   ],
+   "categorizationItems": [
+    {
+     "itemText": "Cat",
+     "correctCategory": "Nouns"
+    },
+    {
+     "itemText": "School",
+     "correctCategory": "Nouns"
+    },
+    {
+     "itemText": "Run",
+     "correctCategory": "Verbs"
+    },
+    {
+     "itemText": "Jump",
+     "correctCategory": "Verbs"
+    }
+   ],
+   "rationale": "Nouns are naming words that tell us about people, places, or things like cats and schools. Verbs are action words that describe what someone or something is doing, such as running or jumping.",
+   "teachingNote": "Make sure students focus on whether a word names an object/place versus showing movement or action.",
+   "successCriteria": [
+    "Differentiate between nouns and verbs",
+    "Sort words into correct grammatical categories"
+   ],
+   "subject": "LANGUAGE_ARTS"
+  },
+  {
+   "type": "fill_in_blanks",
+   "id": "fib_1",
+   "difficulty": "medium",
+   "gradeLevel": "elementary",
+   "textWithBlanks": "The [blank_1] will [blank_2] on the grass.",
+   "blanks": [
+    {
+     "id": "blank_1",
+     "correctAnswer": "dog",
+     "caseSensitive": false
+    },
+    {
+     "id": "blank_2",
+     "correctAnswer": "jump",
+     "caseSensitive": false
+    }
+   ],
+   "wordBank": [
+    "dog",
+    "jump",
+    "cat",
+    "run"
+   ],
+   "rationale": "A noun is a person, place, or thing, and 'dog' names the animal doing the action. A verb is an action word, and 'jump' describes what the dog is doing.",
+   "teachingNote": "Look for words that name a living thing for the first blank, and movement words for the second blank.",
+   "successCriteria": [
+    "Identify basic nouns in a simple sentence",
+    "Identify basic verbs in a simple sentence"
+   ],
+   "subject": "LANGUAGE_ARTS"
+  }
+ ]
+}

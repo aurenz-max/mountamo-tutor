@@ -38,6 +38,8 @@ import { getInsetSchema, buildInsetPrompt } from '../insets';
 // The code-owned plan skeleton + production items (KC redesign P2/P3).
 import { planKnowledgeCheckSlots, type KcLegacySlot, type KcPlanSkeleton } from './knowledgeCheckPlan';
 import { buildProductionProblem } from './productionGenerator';
+// The judged build gate, so a problem the workspace cannot ask is redrawn here.
+import { itemsFromProblems, wordsIn } from '../../primitives/knowledgeCheckScript';
 
 // ============================================================================
 // BLOOM'S TAXONOMY TIERS (IRT §6.8)
@@ -334,6 +336,28 @@ The learner is in Grade 1, not the broad grades 1-5 elementary average.
 `;
 }
 
+/** Grades 2-5: the tutor reads the question aloud on the teaching workspace,
+ *  and a stem past `MAX_PROMPT_WORDS` cannot be asked there (the whole set then
+ *  falls back to the untutored tap flow). Grade 1 has its tighter rule above;
+ *  middle school and up keep longer stems on the tap surface. */
+function buildSpokenStemPrompt(
+  gradeLevel: string,
+  preciseGrade: string | undefined,
+  shape: 'multiple_choice' | 'true_false' | 'fill_in_blanks',
+): string {
+  if (gradeLevel !== 'elementary' || preciseGrade === '1') return '';
+  const what = shape === 'multiple_choice' ? 'The question' : shape === 'true_false' ? 'The statement' : 'The sentence with the blank';
+  return `
+## READ-ALOUD LENGTH — HARD CONSTRAINT
+${what} is read aloud to the learner. Keep it to at most ${SPOKEN_STEM_WORDS} words and at most two short sentences.
+A higher tier means a harder judgment, not a longer setup: give the scenario in one short sentence.
+Never describe a picture the learner cannot see (no "[Panel A: ...]" or "Look at the picture" without a rendered picture).
+`;
+}
+
+/** Target for the generator; the build gate (`MAX_PROMPT_WORDS`) keeps headroom above it. */
+const SPOKEN_STEM_WORDS = 20;
+
 function injectVisualFields(
   problemSchema: Schema,
   visualType?: KnowledgeCheckVisualType,
@@ -545,7 +569,8 @@ export const generateMultipleChoiceProblems = async (
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
   const insetPrompt = buildInsetPrompt(insetType);
   const visualPrompt = buildVisualPrompt(visualType);
-  const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'multiple_choice');
+  const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'multiple_choice')
+    + buildSpokenStemPrompt(gradeLevel, preciseGrade, 'multiple_choice');
 
   const prompt = `You are an expert educational assessment designer creating multiple choice questions for a knowledge check.
 
@@ -723,7 +748,8 @@ export const generateTrueFalseProblems = async (
 
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
   const insetPrompt = buildInsetPrompt(insetType);
-  const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'true_false');
+  const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'true_false')
+    + buildSpokenStemPrompt(gradeLevel, preciseGrade, 'true_false');
 
   const prompt = `You are an expert educational assessment designer creating true/false questions for a knowledge check.
 
@@ -903,7 +929,8 @@ export const generateFillInBlanksProblems = async (
 
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
   const insetPrompt = buildInsetPrompt(insetType);
-  const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'fill_in_blanks');
+  const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'fill_in_blanks')
+    + buildSpokenStemPrompt(gradeLevel, preciseGrade, 'fill_in_blanks');
 
   const prompt = `You are an expert educational assessment designer creating fill-in-the-blank questions with drag-and-drop word banks.
 
@@ -1593,6 +1620,9 @@ const GENERATOR_MAP: Record<string, GenFn> = {
   'categorization_activity': generateCategorizationProblems,
 };
 
+/** Types the judged build can carry; sequencing never builds, so a redraw cannot help it. */
+const SPOKEN_RETRY_TYPES = new Set(['multiple_choice', 'true_false', 'fill_in_blanks', 'matching_activity', 'categorization_activity']);
+
 const VALID_GRADE_KEYS = new Set(['toddler', 'preschool', 'kindergarten', 'elementary', 'middle-school', 'high-school', 'undergraduate', 'graduate', 'phd']);
 
 /**
@@ -1613,17 +1643,29 @@ async function generateFromPlan(
   }
 
   try {
-    const results = await generator(
+    const draw = async (context: string) => (await generator(
       topic,
       gradeLevel,
       1,
-      plan.brief, // orchestrator brief becomes the context
+      context,
       bloomsTier,
       plan.insetType || undefined,
       preciseGrade,
       plan.visualType || undefined,
-    );
-    return results[0] || null;
+    ))[0] || null;
+    const first = await draw(plan.brief); // orchestrator brief becomes the context
+    // One problem the teaching workspace cannot ask sends the WHOLE set to the
+    // untutored tap flow (all-or-nothing, knowledgeCheckScript). Through Grade
+    // 5, redraw such a problem once; the second draw is kept either way.
+    const spokenBand = isPreReaderGradeKey(gradeLevel) || gradeLevel === 'elementary';
+    if (!first || !spokenBand || !SPOKEN_RETRY_TYPES.has(plan.problemType)
+      || itemsFromProblems([first]).judgedViable) return first;
+    const words = 'question' in first ? wordsIn(first.question) : 'statement' in first ? wordsIn(first.statement) : 0;
+    console.warn(`[KC Dispatch] ${plan.problemType} cannot be asked aloud (${words} words); redrawing once`);
+    const second = await draw(`${plan.brief}\n\nA previous draft could not be read aloud. Keep the question under `
+      + `${SPOKEN_STEM_WORDS} words; do not put the correct answer's words in the question outside a quoted sentence; `
+      + 'give each group or match label 1-3 words, with a word no other label has.');
+    return second ?? first;
   } catch (err) {
     console.warn(`[KC Dispatch] Generator failed for ${plan.problemType}:`, err);
     return null;

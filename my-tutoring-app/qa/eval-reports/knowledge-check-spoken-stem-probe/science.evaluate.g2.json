@@ -1,0 +1,120 @@
+{
+ "row": {
+  "subject": "science",
+  "mode": "evaluate",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 11,
+    "viable": true,
+    "stem": "Which plant has the best care to stay healthy and green?"
+   },
+   {
+    "type": "true_false",
+    "words": 20,
+    "viable": true,
+    "stem": "A plant can grow big and strong in a dark closet if you give it plenty of dirt and water."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 17,
+    "viable": true,
+    "stem": "Mia's plant gets sun but no water. Leo's gets water but no light. Evaluate which plant survives."
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Which plant has the best care to stay healthy and green?",
+   "options": [
+    {
+     "id": "A",
+     "text": "Plant A, because it gets both bright sunlight and water.",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "Plant B, because getting extra sunlight without water makes it grow.",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "Plant A, because plants only ever need water to stay strong.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "Plant B, because dry soil helps green leaves stay upright.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "Plant A is healthiest because green plants need both sunlight and water together to make food and grow strong. Sunlight provides energy, but without water, a plant wilts and cannot survive. Getting only one of these two basic needs is not enough for long-term health.",
+   "teachingNote": "Second graders often believe that either sunlight alone or water alone is sufficient for plant growth. Use side-by-side plant investigations to show that depriving a plant of either resource leads to wilting.",
+   "successCriteria": [
+    "Evaluate which conditions best support healthy plant growth.",
+    "Explain why plants require both water and sunlight."
+   ],
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "true_false",
+   "id": "tf_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "statement": "A plant can grow big and strong in a dark closet if you give it plenty of dirt and water.",
+   "correct": false,
+   "rationale": "This statement is false because plants need sunlight along with water and dirt to make their own food and grow strong. Even with plenty of soil and water, a plant locked in a dark closet will eventually turn yellow and stop growing. This addresses the common misconception that dirt alone provides all the energy a plant needs to survive.",
+   "teachingNote": "Remind students that plants are like living kitchen chefs that use sunlight as energy to cook up their food.",
+   "successCriteria": [
+    "Evaluate whether a plant can survive without sunlight",
+    "Identify that plants require multiple elements like sunlight and water to grow"
+   ],
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Mia's plant gets sun but no water. Leo's gets water but no light. Evaluate which plant survives.",
+   "options": [
+    {
+     "id": "A",
+     "text": "Mia's plant, because sunlight is the only thing plants need to make food.",
+     "distance": "far"
+    },
+    {
+     "id": "B",
+     "text": "Neither plant will survive because green plants must have both light and water.",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "Leo's plant, because daily watering is always more important than sunlight.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "Mia's plant, because bright sunshine protects plants from ever drying out.",
+     "distance": "near"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "Plants must have both sunlight and water together to survive and stay healthy. Without water, Mia's plant will dry up, and without sunlight, Leo's plant cannot make food. Because each plant is missing one essential need, neither plant can survive.",
+   "teachingNote": "Second graders often believe that either water or light is 'more important' and can compensate for the absence of the other. Emphasize that plant survival requires both inputs simultaneously.",
+   "successCriteria": [
+    "Evaluate whether a plant can survive when missing either water or sunlight",
+    "Synthesize the combined necessity of water and light for plant survival"
+   ],
+   "subject": "SCIENCE"
+  }
+ ]
+}

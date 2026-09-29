@@ -1,0 +1,167 @@
+{
+ "row": {
+  "subject": "science",
+  "mode": "analyze",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 17,
+    "viable": true,
+    "stem": "Why does a plant with sun and water stay green, while a plant in the dark wilts?"
+   },
+   {
+    "type": "matching_activity",
+    "words": 0,
+    "viable": true,
+    "stem": ""
+   },
+   {
+    "type": "multiple_choice",
+    "words": 18,
+    "viable": true,
+    "stem": "What would happen if you put a plant in a dark box with no water for a week?"
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Why does a plant with sun and water stay green, while a plant in the dark wilts?",
+   "options": [
+    {
+     "id": "A",
+     "text": "It gets all of its food from the soil.",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "It gets the light and water it needs.",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "It only needs water to stay healthy.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "It stays safe from the outdoor wind.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "Plants must have both sunlight and water together to stay green and make their own food. Without sunlight, even a watered plant will turn brown and droop because it cannot feed itself. Comparing both conditions shows that sunlight and water are both essential for a plant to survive.",
+   "teachingNote": "Young learners often believe plants only need water or get all their food directly from dirt. Emphasize that sunlight provides the energy plants use to make food.",
+   "successCriteria": [
+    "Analyze why plants require both sunlight and water to stay healthy",
+    "Differentiate between essential plant needs and common misconceptions like soil alone"
+   ],
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "matching_activity",
+   "id": "match_plant_needs_1",
+   "difficulty": "easy",
+   "gradeLevel": "elementary",
+   "prompt": "Compare how plants take in what they need. Match each plant action to what happens because of it.",
+   "leftItems": [
+    {
+     "id": "L1",
+     "text": "Leaves take in bright sunlight"
+    },
+    {
+     "id": "L2",
+     "text": "Roots drink up water from the soil"
+    },
+    {
+     "id": "L3",
+     "text": "Stem carries water up through the plant"
+    }
+   ],
+   "rightItems": [
+    {
+     "id": "R1",
+     "text": "Plant makes food to stay green and grow"
+    },
+    {
+     "id": "R2",
+     "text": "Plant collects moisture to keep from drying out"
+    },
+    {
+     "id": "R3",
+     "text": "Plant stands tall and keeps leaves firm"
+    }
+   ],
+   "mappings": [
+    {
+     "leftId": "L1",
+     "rightIds": [
+      "R1"
+     ]
+    },
+    {
+     "leftId": "L2",
+     "rightIds": [
+      "R2"
+     ]
+    },
+    {
+     "leftId": "L3",
+     "rightIds": [
+      "R3"
+     ]
+    }
+   ],
+   "rationale": "Plants have special parts that take in sunlight and water so they can survive. Leaves use light to make food and keep the plant healthy and green. Roots pull water into the plant, and stems transport that water upward to keep the whole plant firm and upright.",
+   "teachingNote": "Help Grade 2 students trace the pathway: roots first drink the water, the stem moves it, and leaves capture sunlight to make food. Emphasize cause-and-effect relationships rather than simple rote memorization.",
+   "successCriteria": [
+    "Analyze the cause-and-effect relationship between plant inputs (sunlight, water) and plant health",
+    "Differentiate how roots, stems, and leaves work together to meet a plant's needs"
+   ],
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "What would happen if you put a plant in a dark box with no water for a week?",
+   "options": [
+    {
+     "id": "A",
+     "text": "It will wilt and turn brown.",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "It will grow taller to find sun.",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "It will stay green and just rest.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "It will grow big new flowers.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "Plants must have both sunlight and water to make food and stay healthy. Without water, the plant cannot stand up straight and begins to wilt. Without sunlight and water together, it cannot survive and turns brown.",
+   "teachingNote": "Second graders often think plants can survive in the dark by 'sleeping' like animals or that plants can still stretch toward light without any water. Emphasize that plants need both resources together to live and grow.",
+   "successCriteria": [
+    "Analyze what happens to a plant when both sunlight and water are missing.",
+    "Identify that plants need both light and water to stay green and healthy."
+   ],
+   "subject": "SCIENCE"
+  }
+ ]
+}

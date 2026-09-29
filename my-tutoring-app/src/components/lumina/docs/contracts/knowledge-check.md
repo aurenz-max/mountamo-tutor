@@ -302,3 +302,8 @@ problem needs a picture.
   picture menu, read-aloud), R4, R7/R8 (`::pN` bridges, test green) unchanged: the drop greys a choice in place, removes
   nothing from the payload, and changes no check or submission. `--check` **COMPATIBLE**
   (`qa/primitive-contracts/knowledge-check-check-2026-09-29.md`).
+- 2026-09-29 — handoff 28 row 1, KC-UB (`/eval-fix`): more generated sets reach the workspace. The judged build now reads the
+  generator's `[blank_N]` marker, and the class-11 stem rule skips a quoted sentence that holds every choice. Grades 2-5 get a
+  20-word read-aloud stem bound (R3's direction; Grade 1 keeps 16), and each K-5 problem the workspace cannot ask is redrawn
+  once. R1/R2/R7/R8/R10-R12 untouched; R4 identities held in the probe (analyze = why/predict, evaluate = judge).
+  `--check` **COMPATIBLE** (`qa/primitive-contracts/knowledge-check-check-2026-09-29.md`, second section). Probe 9/9 sets.

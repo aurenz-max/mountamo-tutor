@@ -1,0 +1,181 @@
+{
+ "row": {
+  "subject": "science",
+  "mode": "evaluate",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 19,
+    "viable": true,
+    "stem": "Plant A gets sun and water, but Plant B gets only sun. Which plant will grow best and why?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 14,
+    "viable": true,
+    "stem": "Evaluate Leo's plan. What will most likely happen to his plant after one week?"
+   },
+   {
+    "type": "matching_activity",
+    "words": 0,
+    "viable": true,
+    "stem": ""
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_plant_eval_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Plant A gets sun and water, but Plant B gets only sun. Which plant will grow best and why?",
+   "options": [
+    {
+     "id": "A",
+     "text": "Plant A, because plants need both sunlight and water.",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "Plant B, because sunlight is the only thing plants need.",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "Plant A, because only water matters and sun is not needed.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "Plant B, because plants grow best when kept completely dry.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "Plant A will grow best because plants need both sunlight and water together to make food and stay healthy. Without water, Plant B will wilt and dry up even if it has plenty of light. Meeting only one basic need is not enough for a plant to survive.",
+   "teachingNote": "Young learners often assume sunlight alone provides enough food for plants. Help students see that water and sunlight work as a team to keep plants green and upright.",
+   "successCriteria": [
+    "Evaluate which plant conditions lead to healthy growth.",
+    "Explain why plants require both sunlight and water together."
+   ],
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Evaluate Leo's plan. What will most likely happen to his plant after one week?",
+   "options": [
+    {
+     "id": "A",
+     "text": "It will grow big and green because it gets plenty of water.",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "It will turn yellow and weak because it needs sunlight to live.",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "It will stay healthy because closet plants do not need light.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "It will immediately grow large purple flowers and sweet fruit.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "Plants must have both sunlight and water to stay healthy and make their own food. Even though Leo gives the plant enough water, it cannot survive in the dark closet without light. Without sunlight, the green leaves will slowly turn pale or yellow and the plant will become weak.",
+   "teachingNote": "Young learners frequently believe water alone is plant 'food' or enough for survival. Use this scenario to guide students toward understanding that plants use sunlight as energy to make food.",
+   "successCriteria": [
+    "Evaluate whether a plant can survive with water but no sunlight",
+    "Predict plant growth outcomes when sunlight is missing"
+   ],
+   "inset": {
+    "insetType": "passage",
+    "text": "Leo planted a healthy green bean plant in a small pot. He wanted to keep it safe, so he put it inside a dark bedroom closet and shut the door.\n\nEvery morning, Leo opens the door just to give the plant fresh water. The plant gets plenty of water, but the closet stays dark all day and night.",
+    "format": "prose",
+    "label": "Leo's Plant Experiment"
+   },
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "matching_activity",
+   "id": "match_plant_needs_1",
+   "difficulty": "easy",
+   "gradeLevel": "elementary",
+   "prompt": "Evaluate which resource is gathered by each plant part, and what the entire plant needs to stay alive and healthy:",
+   "leftItems": [
+    {
+     "id": "L1",
+     "text": "Roots take in..."
+    },
+    {
+     "id": "L2",
+     "text": "Leaves catch..."
+    },
+    {
+     "id": "L3",
+     "text": "The whole plant needs..."
+    }
+   ],
+   "rightItems": [
+    {
+     "id": "R1",
+     "text": "...water from the soil."
+    },
+    {
+     "id": "R2",
+     "text": "...sunlight from the sky."
+    },
+    {
+     "id": "R3",
+     "text": "...both sunlight and water together."
+    }
+   ],
+   "mappings": [
+    {
+     "leftId": "L1",
+     "rightIds": [
+      "R1"
+     ]
+    },
+    {
+     "leftId": "L2",
+     "rightIds": [
+      "R2"
+     ]
+    },
+    {
+     "leftId": "L3",
+     "rightIds": [
+      "R3"
+     ]
+    }
+   ],
+   "rationale": "Different plant parts perform distinct jobs to collect the ingredients the plant needs to survive. Roots spread underground to drink water from the soil, while leaves reach upward to catch light from the sun. If either part is deprived of its needed resource, the whole plant cannot grow properly because it must have both sunlight and water.",
+   "teachingNote": "Remind students that giving a plant only water in a dark closet or only sunlight without any water will result in a wilting plant. Each part has a specific gathering role, but the organism requires both inputs together.",
+   "successCriteria": [
+    "Identify the specific resource collected by plant roots versus plant leaves.",
+    "Synthesize that a healthy plant requires both water and sunlight combined."
+   ],
+   "inset": {
+    "insetType": "definition-box",
+    "term": "Plant Nourishment",
+    "definition": "How a plant gets food and energy: roots drink water from the moist soil, while broad leaves catch sunlight from the open air. The whole plant must take in both to stay green and grow.",
+    "exampleSentence": "The young seedling received plenty of plant nourishment because its roots found water and its leaves soaked up warm sunlight.",
+    "label": "Science Word",
+    "partOfSpeech": "noun"
+   },
+   "subject": "SCIENCE"
+  }
+ ]
+}

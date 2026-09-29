@@ -1,0 +1,126 @@
+{
+ "row": {
+  "subject": "science",
+  "mode": "apply",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 19,
+    "viable": true,
+    "stem": "Plant 1 has green, upright leaves. Plant 2 is droopy and dry. Which plant got enough light and water?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 15,
+    "viable": true,
+    "stem": "Mia puts a plant in a dark closet without water for a week. What happens?"
+   },
+   {
+    "type": "true_false",
+    "words": 15,
+    "viable": true,
+    "stem": "A plant only needs water to grow big and strong; it does not need sunlight."
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "easy",
+   "gradeLevel": "elementary",
+   "question": "Plant 1 has green, upright leaves. Plant 2 is droopy and dry. Which plant got enough light and water?",
+   "options": [
+    {
+     "id": "A",
+     "text": "Only Plant 1",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "Only Plant 2",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "Both Plant 1 and Plant 2",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "Neither plant got enough",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "Healthy plants with strong stems and green leaves show that they are getting the water and sunlight they need to live and grow. When a plant wilts and turns dry like Plant 2, it is missing water, sunlight, or both. Therefore, only Plant 1 shows the signs of having its needs met.",
+   "teachingNote": "Young learners sometimes think wilted plants just need to 'rest' or are sleeping. Reiterate that visible signs like firm, green leaves directly indicate that a plant's basic needs for light and water are being satisfied.",
+   "successCriteria": [
+    "Apply knowledge of plant needs to identify which plant received adequate water and sunlight based on observable characteristics."
+   ],
+   "cue": {
+    "picture": "🪴🔍",
+    "shows": "potted plant and magnifying glass"
+   },
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "medium",
+   "gradeLevel": "elementary",
+   "question": "Mia puts a plant in a dark closet without water for a week. What happens?",
+   "options": [
+    {
+     "id": "A",
+     "text": "It grows taller and greener.",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "It turns brown and wilts.",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "It stays healthy and unchanged.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "It grows bright sweet fruit.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "Plants need both sunlight and water to make food and stay alive. Without light from the sun and moisture from water, the plant cannot stay healthy, so it wilts and turns brown.",
+   "teachingNote": "Young learners sometimes believe plants only need soil or can survive indefinitely indoors. Emphasize that sunlight and water are everyday essentials for green plants to produce their food.",
+   "successCriteria": [
+    "Predict what happens to a plant deprived of both sunlight and water"
+   ],
+   "cue": {
+    "picture": "🚪",
+    "shows": "closed door"
+   },
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "true_false",
+   "id": "tf_1",
+   "difficulty": "medium",
+   "gradeLevel": "elementary",
+   "statement": "A plant only needs water to grow big and strong; it does not need sunlight.",
+   "correct": false,
+   "rationale": "This statement is false because plants need both water and sunlight to grow. While water is very important for carrying nutrients, plants also use sunlight like food to make their own energy.",
+   "teachingNote": "Many young students believe that watering a plant is all it takes to keep it alive, often forgetting that sunlight plays an equally crucial role in plant food production.",
+   "successCriteria": [
+    "Identify that plants require multiple resources to survive and grow",
+    "Recognize the role of sunlight alongside water in plant health"
+   ],
+   "subject": "SCIENCE"
+  }
+ ]
+}

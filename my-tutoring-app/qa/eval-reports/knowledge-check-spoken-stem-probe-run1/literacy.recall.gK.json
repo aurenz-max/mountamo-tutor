@@ -1,0 +1,115 @@
+{
+ "row": {
+  "subject": "literacy",
+  "mode": "recall",
+  "grade": "K",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 9,
+    "viable": true,
+    "stem": "Which word is a noun that names a thing?"
+   },
+   {
+    "type": "true_false",
+    "words": 12,
+    "viable": true,
+    "stem": "Running is a verb because it is an action you can do."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 8,
+    "viable": true,
+    "stem": "Which of the following is an action word?"
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "easy",
+   "gradeLevel": "kindergarten",
+   "question": "Which word is a noun that names a thing?",
+   "options": [
+    {
+     "id": "A",
+     "text": "run",
+     "emoji": "🏃",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "ball",
+     "emoji": "⚽",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "sleep",
+     "emoji": "💤",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "A noun is a word that names a person, place, or thing. A ball is a physical object you can hold and play with, making it a noun. Words like 'run' and 'sleep' tell about actions you do, which are verbs.",
+   "teachingNote": "Introduce nouns as 'naming words' for people, places, and things that children can see or touch, contrasting them with 'action words' (verbs) that show movement or doing.",
+   "successCriteria": [
+    "Identify a noun as a word that names a thing."
+   ],
+   "subject": "LANGUAGE_ARTS"
+  },
+  {
+   "type": "true_false",
+   "id": "tf_1",
+   "difficulty": "medium",
+   "gradeLevel": "kindergarten",
+   "statement": "Running is a verb because it is an action you can do.",
+   "correct": true,
+   "rationale": "Running is indeed a verb because it describes an action that a person or animal can perform. Verbs are action words, so any word that tells us what someone is doing, like running, jumping, or playing, is a verb.",
+   "teachingNote": "Reinforce that verbs are action words by having students act out simple verbs like running or hopping while learning.",
+   "successCriteria": [
+    "Identify running as an action word",
+    "Understand that action words are verbs"
+   ],
+   "subject": "LANGUAGE_ARTS"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "kindergarten",
+   "question": "Which of the following is an action word?",
+   "options": [
+    {
+     "id": "A",
+     "text": "Dog",
+     "emoji": "🐶",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "Jump",
+     "emoji": "🏃",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "Chair",
+     "emoji": "🪑",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "Jump is an action word, or verb, because it describes something you can physically do with your body. Dog and chair are naming words, or nouns, because they name a living creature and a piece of furniture rather than an action.",
+   "teachingNote": "Kindergartners frequently confuse animals like dogs with action words because animals run and play. Guide students by having them physically act out the word to test if it is something they can do.",
+   "successCriteria": [
+    "Identify an action word (verb) from everyday vocabulary.",
+    "Distinguish between action words and naming words (nouns)."
+   ],
+   "subject": "LANGUAGE_ARTS"
+  }
+ ]
+}

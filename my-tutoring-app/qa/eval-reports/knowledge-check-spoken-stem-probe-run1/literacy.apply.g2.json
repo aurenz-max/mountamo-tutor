@@ -1,0 +1,156 @@
+{
+ "row": {
+  "subject": "literacy",
+  "mode": "apply",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 1,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 9,
+    "viable": true,
+    "stem": "Use the definition above. Which word is a noun?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 15,
+    "viable": true,
+    "stem": "In the sentence \"The dog runs across the yard,\" which word is an action verb?"
+   },
+   {
+    "type": "categorization_activity",
+    "words": 29,
+    "viable": true,
+    "stem": "Read each word carefully. Decide if the word is a noun (a person, place, or thing) or a verb (an action word), and put it into the correct group."
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "medium",
+   "gradeLevel": "elementary",
+   "question": "Use the definition above. Which word is a noun?",
+   "options": [
+    {
+     "id": "A",
+     "text": "jump",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "school",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "sing",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "soft",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "A noun is a word that names a person, place, or thing. \"School\" is a noun because it names a place where students learn. Words like \"jump\" and \"sing\" are action verbs, while \"soft\" describes how something feels.",
+   "teachingNote": "Remind students to ask themselves if the word is a person, a place you can go, or an object you can touch. Contrasting a place like \"school\" with physical actions helps clarify the boundary between nouns and verbs.",
+   "successCriteria": [
+    "Apply the definition of a noun to identify a place word in a list of words."
+   ],
+   "inset": {
+    "insetType": "definition-box",
+    "term": "noun",
+    "definition": "A word that names a person, place, or thing.",
+    "exampleSentence": "The cat runs to the park.",
+    "label": "Word Helper",
+    "partOfSpeech": "noun"
+   },
+   "subject": "LANGUAGE_ARTS"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "medium",
+   "gradeLevel": "elementary",
+   "question": "In the sentence \"The dog runs across the yard,\" which word is an action verb?",
+   "options": [
+    {
+     "id": "A",
+     "text": "dog",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "runs",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "yard",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "the",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "An action verb tells what someone or something does, and \"runs\" tells the action the dog is doing. Words like \"dog\" and \"yard\" name an animal and a place, which makes them nouns instead of verbs. You can act out running, which is a great way to check if a word is an action verb!",
+   "teachingNote": "Remind students that if you can physically act out the word (like jumping, running, or sleeping), it is an action verb. Nouns answer who or what, while verbs tell what is happening.",
+   "successCriteria": [
+    "Identify an action verb within a simple sentence",
+    "Distinguish between nouns and verbs in context"
+   ],
+   "subject": "LANGUAGE_ARTS"
+  },
+  {
+   "type": "categorization_activity",
+   "id": "cat_1",
+   "difficulty": "easy",
+   "gradeLevel": "elementary",
+   "instruction": "Read each word carefully. Decide if the word is a noun (a person, place, or thing) or a verb (an action word), and put it into the correct group.",
+   "categories": [
+    "Nouns",
+    "Verbs"
+   ],
+   "categorizationItems": [
+    {
+     "itemText": "apple",
+     "correctCategory": "Nouns"
+    },
+    {
+     "itemText": "jump",
+     "correctCategory": "Verbs"
+    },
+    {
+     "itemText": "book",
+     "correctCategory": "Nouns"
+    },
+    {
+     "itemText": "sleep",
+     "correctCategory": "Verbs"
+    },
+    {
+     "itemText": "dog",
+     "correctCategory": "Nouns"
+    },
+    {
+     "itemText": "run",
+     "correctCategory": "Verbs"
+    }
+   ],
+   "rationale": "Nouns name people, places, or things like 'apple' and 'dog', while verbs show action like 'jump' and 'sleep'. By testing whether you can do the word or if it is an object you can touch, you can correctly sort them into categories.",
+   "teachingNote": "Remind students that if they can act out the word with their body, it is usually a verb. If it is something they can hold or point to, it is usually a noun.",
+   "successCriteria": [
+    "Distinguish between naming words and action words",
+    "Sort familiar vocabulary into correct grammatical categories"
+   ],
+   "subject": "LANGUAGE_ARTS"
+  }
+ ]
+}

@@ -1,0 +1,203 @@
+{
+ "row": {
+  "subject": "science",
+  "mode": "analyze",
+  "grade": "7",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 20,
+    "viable": true,
+    "stem": "Which factor most influences the initial sprouting of the bean plants, and what evidence from the table supports this conclusion?"
+   },
+   {
+    "type": "categorization_activity",
+    "words": 27,
+    "viable": true,
+    "stem": "Analyze the primary physiological roles in plant survival and sort them into the correct category based on whether they are driven primarily by sunlight or by water."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 18,
+    "viable": true,
+    "stem": "Why does the bean plant begin to wither and lose mass despite receiving adequate water and soil nutrients?"
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "middle-school",
+   "question": "Which factor most influences the initial sprouting of the bean plants, and what evidence from the table supports this conclusion?",
+   "options": [
+    {
+     "id": "A",
+     "text": "Water, because seeds sprouted and grew only when water was present, even with zero hours of sunlight.",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "Sunlight, because Plant A received 8 hours of light and reached the greatest overall growth.",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "Water, but only when combined with at least 8 hours of sunlight to activate growth.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "Sunlight, because Plant C had full sunlight exposure and remained stable without rotting.",
+     "distance": "near"
+    },
+    {
+     "id": "E",
+     "text": "Soil temperature, because seeds need outdoor warmth before they absorb moisture.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "Comparing Plant B and Plant C reveals that Plant B was able to sprout and reach 4.2 cm of growth using water alone without any sunlight, whereas Plant C received full sunlight but had 0.0 cm of growth because it lacked water. This demonstrates that water is the essential factor that activates seed germination, while sunlight is required later for long-term photosynthesis and greater height. A common misconception is that seeds need light to sprout, but seeds actually rely on internal stored food reserves to initiate early growth.",
+   "teachingNote": "Guide students to isolate variables by comparing pairs: Plant B vs. Plant D shows that adding water allows sprouting even in darkness, while Plant C vs. Plant D shows that adding light without water yields zero growth.",
+   "successCriteria": [
+    "Analyze experimental data across controlled test groups to isolate the independent variable responsible for seed germination.",
+    "Differentiate between the requirements for initial seed sprouting (water) versus sustained photosynthetic growth (sunlight)."
+   ],
+   "inset": {
+    "insetType": "data-table",
+    "headers": [
+     "Plant Name",
+     "Water Received",
+     "Sunlight Hours",
+     "Final Growth in cm"
+    ],
+    "rows": [
+     [
+      "Plant A",
+      "50 mL/day",
+      "8 hours/day",
+      "14.5 cm"
+     ],
+     [
+      "Plant B",
+      "50 mL/day",
+      "0 hours/day",
+      "4.2 cm"
+     ],
+     [
+      "Plant C",
+      "0 mL/day",
+      "8 hours/day",
+      "0.0 cm"
+     ],
+     [
+      "Plant D",
+      "0 mL/day",
+      "0 hours/day",
+      "0.0 cm"
+     ]
+    ],
+    "caption": "Two-week bean plant growth under varying water and sunlight conditions",
+    "label": "Table 1"
+   },
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "categorization_activity",
+   "id": "cat_1",
+   "difficulty": "hard",
+   "gradeLevel": "middle-school",
+   "instruction": "Analyze the primary physiological roles in plant survival and sort them into the correct category based on whether they are driven primarily by sunlight or by water.",
+   "categories": [
+    "Provided primarily by Sunlight",
+    "Provided primarily by Water"
+   ],
+   "categorizationItems": [
+    {
+     "itemText": "Energy for making food",
+     "correctCategory": "Provided primarily by Sunlight"
+    },
+    {
+     "itemText": "Medium for nutrient transport",
+     "correctCategory": "Provided primarily by Water"
+    },
+    {
+     "itemText": "Warmth for enzyme activity",
+     "correctCategory": "Provided primarily by Sunlight"
+    },
+    {
+     "itemText": "Reactant for photosynthesis",
+     "correctCategory": "Provided primarily by Water"
+    },
+    {
+     "itemText": "Light energy absorption by chlorophyll",
+     "correctCategory": "Provided primarily by Sunlight"
+    },
+    {
+     "itemText": "Turgor pressure maintenance for cell structure",
+     "correctCategory": "Provided primarily by Water"
+    }
+   ],
+   "rationale": "Sunlight provides radiant energy that drives the light-dependent reactions of photosynthesis and thermal energy that maintains optimal enzyme temperatures. Water acts as a physical solvent and transport medium within the vascular system, while also directly supplying hydrogen ions and electrons as a reactant during sugar production.",
+   "teachingNote": "Watch for students who confuse water's role as a reactant in photosynthesis with sunlight's role as the energy source that powers the chemical reaction.",
+   "successCriteria": [
+    "Analyze the distinct physiological functions of sunlight and water in plant biology",
+    "Differentiate between radiant energy drivers and internal fluid transport mechanisms"
+   ],
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "middle-school",
+   "question": "Why does the bean plant begin to wither and lose mass despite receiving adequate water and soil nutrients?",
+   "options": [
+    {
+     "id": "A",
+     "text": "The plant cannot absorb green light to power photosynthesis, so it runs out of food energy.",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "The green light filter traps excess heat inside the chamber, causing the plant to dry out rapidly.",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "The roots require red and blue light beneath the soil to take up liquid water and dissolved minerals.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "The plant absorbs too much green light, creating an energy overload that damages leaf tissues.",
+     "distance": "near"
+    },
+    {
+     "id": "E",
+     "text": "The plant ceases transpiration because the chamber contains completely dry, moving air.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "Chlorophyll, the primary pigment in green plants, absorbs red and blue wavelengths of light to synthesize glucose during photosynthesis while reflecting green light. Because only green light is available in the chamber, the plant cannot capture the light energy needed to produce food, causing it to consume stored reserves and wither despite having sufficient water.",
+   "teachingNote": "A common misconception among middle school students is that 'any light' or 'water and dirt alone' provide energy for plants. Emphasize that chlorophyll appears green precisely because it reflects green light rather than absorbing it for photosynthesis.",
+   "successCriteria": [
+    "Analyze how specific wavelengths of light are necessary for plant photosynthesis and survival.",
+    "Differentiate between raw materials (water, minerals) and the energy source (absorbed light) required for plant growth."
+   ],
+   "inset": {
+    "insetType": "passage",
+    "text": "A student team sets up an experiment to study plant growth factors. They place a healthy potted bean plant inside a transparent, sealed glass chamber maintained at a constant room temperature. The plant's soil is kept consistently moist with nutrient-rich water, and the air inside the chamber provides balanced levels of carbon dioxide and oxygen.\n\nThe chamber is illuminated by a full-spectrum lamp, but a specialized optical filter wraps around the enclosure. This filter completely blocks all red and blue wavelengths while transmitting 100% of green light directly to the plant's leaves. After several days under continuous green illumination, the student team observes that the bean plant's leaves are drooping, its growth has stopped, and its overall dry mass is decreasing.",
+    "format": "prose",
+    "attribution": "Middle School Life Science Lab Investigation",
+    "label": "Experiment 4: Light Quality and Plant Growth"
+   },
+   "subject": "SCIENCE"
+  }
+ ]
+}

@@ -1,0 +1,126 @@
+{
+ "row": {
+  "subject": "science",
+  "mode": "apply",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 1,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 15,
+    "viable": true,
+    "stem": "Leo sets his potted seedling by a sunny window and waters it. What will happen?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 17,
+    "viable": true,
+    "stem": "Leo left his plant in a dark closet without water. What does the plant need to grow?"
+   },
+   {
+    "type": "true_false",
+    "words": 17,
+    "viable": true,
+    "stem": "Plants can grow big and strong with only air, and they do not need sunlight or water."
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "medium",
+   "gradeLevel": "elementary",
+   "question": "Leo sets his potted seedling by a sunny window and waters it. What will happen?",
+   "options": [
+    {
+     "id": "A",
+     "text": "It will become tall and healthy.",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "It will turn dry and brown.",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "It will droop toward the dirt.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "It will stop needing any care.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "Plants need both sunlight and water to make food and stay alive. Since Leo provides his seedling with both bright light and water, the plant has what it needs to grow tall and stay healthy. Plants only droop, dry out, or turn brown when they are missing water or sunlight.",
+   "teachingNote": "Connect this scenario to hands-on classroom observations by asking students what happens to real classroom plants over the weekend when they miss water or light.",
+   "successCriteria": [
+    "Predict how getting sunlight and water helps a plant grow healthy and strong."
+   ],
+   "cue": {
+    "picture": "🪟",
+    "shows": "sunny room window"
+   },
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "medium",
+   "gradeLevel": "elementary",
+   "question": "Leo left his plant in a dark closet without water. What does the plant need to grow?",
+   "options": [
+    {
+     "id": "A",
+     "text": "Give it water in the dark closet",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "Move it to the sun and water it",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "Put it in the sun with no water",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "Cover it with a warm blanket",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "Plants need both sunlight and water together to make food and grow healthy. Because Leo's plant has been missing both in the closet, it cannot survive with only one of them. Moving the pot to a sunny spot and watering it gives the plant everything it needs.",
+   "teachingNote": "Second-grade students often remember that plants need water, but they may forget that light is equally necessary. Emphasize that plants cannot grow with water alone in the dark.",
+   "successCriteria": [
+    "Apply the concept that plants need both sunlight and water to survive and grow."
+   ],
+   "cue": {
+    "picture": "🌱",
+    "shows": "small bean plant"
+   },
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "true_false",
+   "id": "tf_1",
+   "difficulty": "medium",
+   "gradeLevel": "elementary",
+   "statement": "Plants can grow big and strong with only air, and they do not need sunlight or water.",
+   "correct": false,
+   "rationale": "This statement is false because plants cannot grow without sunlight and water. Just like humans need food and drink to live, plants need water to carry nutrients and sunlight to make their own food.",
+   "teachingNote": "Students often forget that plants need multiple resources to survive and may not understand that sunlight acts as their food-making energy.",
+   "successCriteria": [
+    "Identify that plants require sunlight and water to grow",
+    "Recognize common misconceptions about plant survival needs"
+   ],
+   "subject": "SCIENCE"
+  }
+ ]
+}

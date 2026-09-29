@@ -1,0 +1,181 @@
+{
+ "row": {
+  "subject": "math",
+  "mode": "evaluate",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 12,
+    "viable": true,
+    "stem": "🍎🍎🍎🍎🍎🍎🍎 + 🍎🍎 + 🍎🍎🍎🍎🍎. Which strategy makes finding the total easiest?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 13,
+    "viable": true,
+    "stem": "Which strategy best explains where the jump lands to solve 6 + 8?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 16,
+    "viable": true,
+    "stem": "Evaluate whether Leo can fill a 16-sticker page if he has 9 and gets 6 more."
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "🍎🍎🍎🍎🍎🍎🍎 + 🍎🍎 + 🍎🍎🍎🍎🍎. Which strategy makes finding the total easiest?",
+   "options": [
+    {
+     "id": "A",
+     "text": "Make ten first by grouping 2 and 5 to get 7, then add 7.",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "Start at 2, count up 5 more, and then count up 7 more.",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "Make ten first by combining 7 and 2, then count on 5 more.",
+     "distance": "far"
+    },
+    {
+     "id": "D",
+     "text": "Make ten first by grouping 7 and 3 from the 5, leaving 4 left.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "Combining 2 + 5 gives 7, which allows using the known doubles fact 7 + 7 = 14 quickly. Making friendly numbers or doubles is a powerful mental strategy for adding three addends within 20.",
+   "teachingNote": "Evaluate level questions for Grade 2 ask students to compare different decomposition or grouping strategies (associative property) to determine which path provides the most efficient mental math route.",
+   "successCriteria": [
+    "Evaluate different grouping strategies to find the sum of three addends efficiently within 20.",
+    "Apply doubles facts or making-ten strategies when adding multiple numbers."
+   ],
+   "subject": "MATHEMATICS"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Which strategy best explains where the jump lands to solve 6 + 8?",
+   "options": [
+    {
+     "id": "A",
+     "text": "It lands on 14 because jumping 4 makes 10, and 4 more reaches 14.",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "It lands on 16 because adding 10 forward from 6 makes 16.",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "It lands on 12 because doubles fact 6 plus 6 makes 12.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "It lands on 8 because the jump size tells the final stop.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "To solve 6 + 8 on a number line, a student can decompose 8 into 4 + 4 to bridge through 10. Starting at 6, a jump of 4 reaches the benchmark of 10, and jumping the remaining 4 lands directly on 14. This 'make a ten' strategy shows deep conceptual understanding of addition within 20.",
+   "teachingNote": "Encourage students to decompose addends to bridge through 10 rather than relying only on counting by ones. This builds fluency for multi-digit addition.",
+   "successCriteria": [
+    "Use a number line to model and solve addition within 20",
+    "Evaluate mental math strategies such as making a ten to find sums"
+   ],
+   "inset": {
+    "insetType": "number-line",
+    "min": 0,
+    "max": 20,
+    "ticks": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     17,
+     18,
+     19,
+     20
+    ],
+    "label": "Figure 1",
+    "points": [
+     {
+      "value": 6,
+      "label": "Start at 6"
+     },
+     {
+      "value": 14,
+      "label": "Jump +8"
+     }
+    ]
+   },
+   "subject": "MATHEMATICS"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Evaluate whether Leo can fill a 16-sticker page if he has 9 and gets 6 more.",
+   "options": [
+    {
+     "id": "A",
+     "text": "No, because 9 + 6 = 15, which is 1 less than 16.",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "Yes, because 9 + 6 = 16, so the page is full.",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "No, because 9 + 6 = 14, which is 2 less than 16.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "Yes, because 15 stickers is greater than 16 stickers.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "Adding 9 and 6 gives a sum of 15 stickers. Because 15 is 1 less than the target of 16, Leo does not have enough stickers to completely fill the page. A common mistake is miscounting 9 + 6 as 16 or forgetting to compare the sum to the goal.",
+   "teachingNote": "Encourage students to use the make-a-ten strategy (9 + 1 = 10, then 10 + 5 = 15) before comparing their total to the target value.",
+   "successCriteria": [
+    "Add two numbers within 20 accurately.",
+    "Evaluate whether a sum meets a given target value."
+   ],
+   "subject": "MATHEMATICS"
+  }
+ ]
+}

@@ -1,0 +1,134 @@
+{
+ "row": {
+  "subject": "literacy",
+  "mode": "recall",
+  "grade": "K",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 6,
+    "viable": true,
+    "stem": "Which of these is an animal?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 7,
+    "viable": true,
+    "stem": "Which of these is an action word?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 10,
+    "viable": true,
+    "stem": "Which of these is an action word you can do?"
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "easy",
+   "gradeLevel": "kindergarten",
+   "question": "Which of these is an animal?",
+   "options": [
+    {
+     "id": "A",
+     "text": "Cat",
+     "emoji": "🐱",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "Ball",
+     "emoji": "⚽",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "Apple",
+     "emoji": "🍎",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "A cat is an animal, which is a living noun. A ball is a toy and an apple is a fruit to eat, so they are not animals.",
+   "teachingNote": "Reinforce that nouns name people, places, things, or animals. Asking students whether a noun is alive can help them identify animal nouns.",
+   "successCriteria": [
+    "Identify an animal from a set of common concrete nouns"
+   ],
+   "subject": "LANGUAGE_ARTS"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "easy",
+   "gradeLevel": "kindergarten",
+   "question": "Which of these is an action word?",
+   "options": [
+    {
+     "id": "A",
+     "text": "Run",
+     "emoji": "🏃",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "Dog",
+     "emoji": "🐶",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "Bed",
+     "emoji": "🛏️",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "An action word tells something you can do, and you can run with your legs! A dog is an animal and a bed is a thing, so they are naming words instead of actions.",
+   "teachingNote": "Have students act out words to test whether they are verbs: if they can do it with their body, it is an action word.",
+   "successCriteria": [
+    "Identify an action word (verb) from everyday words",
+    "Distinguish between an action and a person, animal, or thing"
+   ],
+   "subject": "LANGUAGE_ARTS"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "easy",
+   "gradeLevel": "kindergarten",
+   "question": "Which of these is an action word you can do?",
+   "options": [
+    {
+     "id": "A",
+     "text": "Sleep",
+     "emoji": "😴",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "Bed",
+     "emoji": "🛏️",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "Hat",
+     "emoji": "🧢",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "Sleeping is an action verb because it is something you can do. A bed and a hat are things you can touch, which makes them naming words or nouns. When we rest our bodies and close our eyes, we are doing the action of sleeping!",
+   "teachingNote": "Remind kindergarteners that verbs are 'doing words' or actions our bodies can do, while nouns are people, places, or things.",
+   "successCriteria": [
+    "Identify an action verb from a set of simple words"
+   ],
+   "subject": "LANGUAGE_ARTS"
+  }
+ ]
+}

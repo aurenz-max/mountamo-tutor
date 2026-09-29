@@ -48,3 +48,30 @@ The ruling on removing a choice (09-27) holds: the pull records the lever, so th
 - Starting positions from `config.difficulty`: KC has no tier harness, and its per-problem `difficulty` is the model's own label, so no lever starts pulled.
 - Live: knowledge-check is its own class. The Live pair waits until every mode is levered and handoff 21's readiness rule is met. All four modes now show levers on their measured items; the unlevered kinds are unanswered by decision.
 - Browser check: HUMAN-CHECKS #178.
+
+## Fix: KC-UB (`/eval-fix`, handoff 28 row 1), 2026-09-29
+
+Finding 1 above is kept as the original evidence (6/12 unbuildable). What the fix found and changed:
+
+- **Three causes, not two.** The stem cap and the quoted-sentence rule were confirmed on the six saved payloads. The first
+  probe run found a third: `blankSpokenSentence` recognised `____`, `[blank]` and `{{blank}}` but not `[blank_N]`, the marker
+  the generator's schema requires. So every generated `fill_in_blanks` problem built no item and sent its set to the tap flow.
+- **Changes.** `knowledgeCheckScript.ts`: the gap regex takes `[blank_N]`; the class-11 stem check ignores a quoted span when
+  that span contains every word of every option (`stemOutsideMenuQuote`), so "Which word in 'The dog barks.' is the verb?"
+  builds, while a quote holding only the key, or the key named again outside the quote, still drops.
+  `gemini-knowledge-check.ts`: at `elementary` other than Grade 1 (which keeps its 16-word rule), MCQ/TF/blank prompts carry a
+  20-word read-aloud bound and forbid describing a picture the learner cannot see; `generateFromPlan` runs the real build
+  gate (`itemsFromProblems`) on each K-5 problem and redraws once when the workspace could not ask it. Middle school and up
+  are unchanged and still use the tap flow for long stems.
+- **Probe** (`scripts/kc-spoken-stem-probe.mjs`, orchestrated sets of 3, Flash): 6 G2 cells (science analyze/evaluate/apply,
+  math evaluate, literacy recall/apply) + G1 science analyze + G7 science analyze + K literacy recall.
+  - Run 1 (stem bound + quote rule, before the blank fix): **5/9 sets** on the workspace; 4 redraws. Failures: two
+    `[blank_1]` problems, one G1 sort with a 5-word group label ("What Plants Do Not Need"), G7 46-word stem (by design).
+    `qa/eval-reports/knowledge-check-spoken-stem-probe-run1/`.
+  - Run 2 (all changes): **9/9 sets**, 27/27 problems buildable, 1 redraw. Every G2 MCQ/TF stem 10-20 words.
+    `qa/eval-reports/knowledge-check-spoken-stem-probe/`.
+  - Both saved literacy payloads now build (vitest).
+- **Still open (not KC-UB).** Two content defects seen in run 2 items, left for their owners: math evaluate G2 keyed "Make ten
+  first by grouping 2 and 5 to get 7" (not a make-ten strategy) over a better distractor; science analyze G2 asks "Why is
+  Plant A healthy…" with no picture of Plant A (R5; K-5 visuals are planned only at Grade 1). One run of 9 sets is supporting
+  evidence, not a rate; the redraw is a single retry, so a problem that fails twice still sends its set to the tap flow.

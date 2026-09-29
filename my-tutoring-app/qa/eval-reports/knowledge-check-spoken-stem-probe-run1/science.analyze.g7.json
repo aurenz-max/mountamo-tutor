@@ -1,0 +1,213 @@
+{
+ "row": {
+  "subject": "science",
+  "mode": "analyze",
+  "grade": "7",
+  "setViable": false,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 46,
+    "viable": false,
+    "stem": "A student conducted an experiment to test how environmental factors affect bean plant development. All four plants started at an initial height of 5.0 cm in identical soil. Based on the results in the table, what is the relationship between the test variables and plant growth?"
+   },
+   {
+    "type": "categorization_activity",
+    "words": 26,
+    "viable": false,
+    "stem": "Analyze the following physiological functions and sort them into the correct category based on whether the process primarily utilizes sunlight or water to support plant survival."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 21,
+    "viable": true,
+    "stem": "Why did the lower leaves turn yellow and fall off even though the plant received plenty of water through its roots?"
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "medium",
+   "gradeLevel": "middle-school",
+   "question": "A student conducted an experiment to test how environmental factors affect bean plant development. All four plants started at an initial height of 5.0 cm in identical soil. Based on the results in the table, what is the relationship between the test variables and plant growth?",
+   "options": [
+    {
+     "id": "A",
+     "text": "Both sunlight and water are strictly required together because omitting either one results in zero net growth or plant death.",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "Water is the sole strictly necessary factor because Plant C maintained some height while Plant B wilted entirely.",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "Sunlight is more important than water because Plant B received energy to stay upright longer than Plant D.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "Neither sunlight nor water is necessary for survival because Plants B, C, and D all retained measurable physical matter after two weeks.",
+     "distance": "far"
+    },
+    {
+     "id": "E",
+     "text": "Sunlight and water are interchangeable resources because providing either one alone allows a plant to survive indefinitely.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "By comparing the conditions across all four plants, only Plant A—which received both sunlight and water—showed an increase in height from 5.0 cm to 14.2 cm. Plants B, C, and D, which lacked one or both resources, showed no growth, wilted, or withered. This demonstrates that sunlight and water are both independently necessary and cannot replace each other for plant growth.",
+   "teachingNote": "Guide students to compare pairs of plants (e.g., Plant A vs. Plant B, Plant A vs. Plant C) to isolate the independent effect of each variable. This reinforces proper controlled experiment analysis and dispels the misconception that water alone or sunlight alone can sustain a plant.",
+   "successCriteria": [
+    "Analyze experimental data from a table to identify cause-and-effect relationships.",
+    "Conclude from experimental evidence that both sunlight and water are necessary for plant growth."
+   ],
+   "inset": {
+    "insetType": "data-table",
+    "headers": [
+     "Plant Name",
+     "Sunlight Provided",
+     "Water Provided",
+     "Initial Height (cm)",
+     "Final Height (cm)",
+     "Plant Condition after 2 Weeks"
+    ],
+    "rows": [
+     [
+      "Plant A",
+      "Yes",
+      "Yes",
+      "5.0",
+      "14.2",
+      "Vibrant green, sturdy stem, new leaves"
+     ],
+     [
+      "Plant B",
+      "Yes",
+      "No",
+      "5.0",
+      "4.1",
+      "Wilted, dry leaves, shriveled stem"
+     ],
+     [
+      "Plant C",
+      "No",
+      "Yes",
+      "5.0",
+      "5.1",
+      "Pale yellow, thin weak stem, drooping"
+     ],
+     [
+      "Plant D",
+      "No",
+      "No",
+      "5.0",
+      "3.8",
+      "Brown, brittle, completely collapsed"
+     ]
+    ],
+    "caption": "Two-week growth and condition of bean plants under varying light and water treatments",
+    "label": "Table 1"
+   },
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "categorization_activity",
+   "id": "cat_1",
+   "difficulty": "hard",
+   "gradeLevel": "middle-school",
+   "instruction": "Analyze the following physiological functions and sort them into the correct category based on whether the process primarily utilizes sunlight or water to support plant survival.",
+   "categories": [
+    "Primary Role of Sunlight",
+    "Primary Role of Water"
+   ],
+   "categorizationItems": [
+    {
+     "itemText": "Provides energy to power the chemical reactions of photosynthesis",
+     "correctCategory": "Primary Role of Sunlight"
+    },
+    {
+     "itemText": "Acts as a transport fluid to move dissolved minerals up from the roots",
+     "correctCategory": "Primary Role of Water"
+    },
+    {
+     "itemText": "Helps maintain rigid cell structure and turgor pressure so the plant stays upright",
+     "correctCategory": "Primary Role of Water"
+    },
+    {
+     "itemText": "Serves as a necessary reactant broken down during light-dependent reactions",
+     "correctCategory": "Primary Role of Water"
+    },
+    {
+     "itemText": "Drives the conversion of carbon dioxide and water into glucose",
+     "correctCategory": "Primary Role of Sunlight"
+    },
+    {
+     "itemText": "Provides the electromagnetic radiation absorbed by chlorophyll molecules",
+     "correctCategory": "Primary Role of Sunlight"
+    }
+   ],
+   "rationale": "Sunlight acts primarily as an energy source that drives the synthesis of food during photosynthesis, while water acts as a physical medium for transport, structural support, and chemical breakdown. Students must analyze the specific mechanism of each function rather than just associating words like 'energy' or 'food' with general plant growth.",
+   "teachingNote": "Watch out for students who might place water-based chemical reactions under sunlight just because photosynthesis is mentioned. Remind them to look at whether the item describes an energy input or a material/structural fluid.",
+   "successCriteria": [
+    "Analyze complex plant physiological functions and distinguish between energy sources and material inputs",
+    "Correctly categorize processes driven by sunlight versus processes maintained by water"
+   ],
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "middle-school",
+   "question": "Why did the lower leaves turn yellow and fall off even though the plant received plenty of water through its roots?",
+   "options": [
+    {
+     "id": "A",
+     "text": "The roots only transported water to the upper leaves because water is drawn exclusively toward direct sunlight.",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "Although water reached all parts of the plant, individual leaves must capture sunlight to produce their own food energy.",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "The shaded lower leaves took in too much water that could not evaporate without sunlight, causing them to drown.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "Water provides all necessary nutrients for plant cells, but the bin completely blocked air and starved the leaves of carbon dioxide.",
+     "distance": "near"
+    },
+    {
+     "id": "E",
+     "text": "Plants store all of their absorbed water inside the upper flowers and stem, leaving lower branches completely dry.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "Even though the roots distribute water throughout the entire plant, water alone cannot supply the energy cells need to live. Each leaf must directly absorb sunlight to perform photosynthesis and produce its own glucose; without sunlight, the lower leaves could not generate energy and were eventually shed. This demonstrates that water transport is systemic across the plant, whereas energy production requires localized sunlight at each leaf.",
+   "teachingNote": "Many middle school students believe that water serves as food or that having enough water is sufficient to keep all plant parts alive. Use this experiment to contrast systemic internal transport (water and dissolved minerals moving everywhere from the roots) with localized chemical processes (photosynthesis occurring only where chloroplasts absorb light).",
+   "successCriteria": [
+    "Analyze the separate roles of sunlight and water in sustaining plant tissues.",
+    "Differentiate between systemic water transport from roots and localized glucose production via photosynthesis in leaves."
+   ],
+   "inset": {
+    "insetType": "passage",
+    "text": "During an investigation in the school greenhouse, Marcus monitored a tall, healthy tomato plant growing in a large pot. To keep his workspace tidy, Marcus set a tall, opaque plastic storage bin right against the front of the pot. The bin completely shaded the lower third of the tomato plant, blocking all direct light from reaching those bottom leaves. However, the top two-thirds of the plant extended well above the bin and received full, unobstructed sunlight all day. Throughout the two-week experiment, Marcus watered the pot consistently so the soil stayed evenly moist and the roots had continuous access to water. By the end of the second week, the upper leaves were vibrant green and producing new growth, but the shaded lower leaves had turned yellow, withered, and fallen off.",
+    "format": "prose",
+    "attribution": "Greenhouse Investigation Log",
+    "label": "Passage"
+   },
+   "subject": "SCIENCE"
+  }
+ ]
+}

@@ -1,0 +1,245 @@
+[
+ {
+  "subject": "science",
+  "mode": "analyze",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 17,
+    "viable": true,
+    "stem": "Why does a plant with sun and water stay green, while a plant in the dark wilts?"
+   },
+   {
+    "type": "matching_activity",
+    "words": 0,
+    "viable": true,
+    "stem": ""
+   },
+   {
+    "type": "multiple_choice",
+    "words": 18,
+    "viable": true,
+    "stem": "What would happen if you put a plant in a dark box with no water for a week?"
+   }
+  ]
+ },
+ {
+  "subject": "science",
+  "mode": "evaluate",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 19,
+    "viable": true,
+    "stem": "Plant A gets sun and water, but Plant B gets only sun. Which plant will grow best and why?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 14,
+    "viable": true,
+    "stem": "Evaluate Leo's plan. What will most likely happen to his plant after one week?"
+   },
+   {
+    "type": "matching_activity",
+    "words": 0,
+    "viable": true,
+    "stem": ""
+   }
+  ]
+ },
+ {
+  "subject": "science",
+  "mode": "apply",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 1,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 15,
+    "viable": true,
+    "stem": "Leo sets his potted seedling by a sunny window and waters it. What will happen?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 17,
+    "viable": true,
+    "stem": "Leo left his plant in a dark closet without water. What does the plant need to grow?"
+   },
+   {
+    "type": "true_false",
+    "words": 17,
+    "viable": true,
+    "stem": "Plants can grow big and strong with only air, and they do not need sunlight or water."
+   }
+  ]
+ },
+ {
+  "subject": "math",
+  "mode": "evaluate",
+  "grade": "2",
+  "setViable": false,
+  "redraws": 1,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 14,
+    "viable": true,
+    "stem": "Which way is best to quickly add 🍎🍎🍎🍎🍎🍎🍎 (7), 🍎🍎🍎🍎🍎 (5), and 🍎🍎🍎 (3)?"
+   },
+   {
+    "type": "fill_in_blanks",
+    "words": 13,
+    "viable": false,
+    "stem": "Based on the jumps on the number line, 7 + 8 = [blank_1]."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 16,
+    "viable": true,
+    "stem": "Mia has 8 star stickers and 7 heart stickers. Which equation correctly shows her total stickers?"
+   }
+  ]
+ },
+ {
+  "subject": "literacy",
+  "mode": "recall",
+  "grade": "2",
+  "setViable": false,
+  "redraws": 1,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 12,
+    "viable": true,
+    "stem": "Based on the definition box, which of these words is a noun?"
+   },
+   {
+    "type": "categorization_activity",
+    "words": 16,
+    "viable": true,
+    "stem": "Sort the following simple words into two groups: Nouns (People, Places, Things) and Verbs (Action Words)."
+   },
+   {
+    "type": "fill_in_blanks",
+    "words": 7,
+    "viable": false,
+    "stem": "The [blank_1] will [blank_2] on the grass."
+   }
+  ]
+ },
+ {
+  "subject": "literacy",
+  "mode": "apply",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 1,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 9,
+    "viable": true,
+    "stem": "Use the definition above. Which word is a noun?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 15,
+    "viable": true,
+    "stem": "In the sentence \"The dog runs across the yard,\" which word is an action verb?"
+   },
+   {
+    "type": "categorization_activity",
+    "words": 29,
+    "viable": true,
+    "stem": "Read each word carefully. Decide if the word is a noun (a person, place, or thing) or a verb (an action word), and put it into the correct group."
+   }
+  ]
+ },
+ {
+  "subject": "science",
+  "mode": "analyze",
+  "grade": "1",
+  "setViable": false,
+  "redraws": 1,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 7,
+    "viable": true,
+    "stem": "Compare both plants: which one is healthy?"
+   },
+   {
+    "type": "categorization_activity",
+    "words": 5,
+    "viable": false,
+    "stem": "Sort what helps plants grow."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 3,
+    "viable": true,
+    "stem": "Without any water?"
+   }
+  ]
+ },
+ {
+  "subject": "science",
+  "mode": "analyze",
+  "grade": "7",
+  "setViable": false,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 46,
+    "viable": false,
+    "stem": "A student conducted an experiment to test how environmental factors affect bean plant development. All four plants started at an initial height of 5.0 cm in identical soil. Based on the results in the table, what is the relationship between the test variables and plant growth?"
+   },
+   {
+    "type": "categorization_activity",
+    "words": 26,
+    "viable": false,
+    "stem": "Analyze the following physiological functions and sort them into the correct category based on whether the process primarily utilizes sunlight or water to support plant survival."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 21,
+    "viable": true,
+    "stem": "Why did the lower leaves turn yellow and fall off even though the plant received plenty of water through its roots?"
+   }
+  ]
+ },
+ {
+  "subject": "literacy",
+  "mode": "recall",
+  "grade": "K",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 9,
+    "viable": true,
+    "stem": "Which word is a noun that names a thing?"
+   },
+   {
+    "type": "true_false",
+    "words": 12,
+    "viable": true,
+    "stem": "Running is a verb because it is an action you can do."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 8,
+    "viable": true,
+    "stem": "Which of the following is an action word?"
+   }
+  ]
+ }
+]

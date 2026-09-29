@@ -1,0 +1,245 @@
+[
+ {
+  "subject": "science",
+  "mode": "analyze",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 10,
+    "viable": true,
+    "stem": "Why is Plant A healthy, but Plant B is drooping?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 14,
+    "viable": true,
+    "stem": "Mia waters her plant, but keeps it in a dark closet. What will happen?"
+   },
+   {
+    "type": "true_false",
+    "words": 20,
+    "viable": true,
+    "stem": "Plants can grow healthy using only soda instead of water, as long as they are kept in a dark room."
+   }
+  ]
+ },
+ {
+  "subject": "science",
+  "mode": "evaluate",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 11,
+    "viable": true,
+    "stem": "Which plant has the best care to stay healthy and green?"
+   },
+   {
+    "type": "true_false",
+    "words": 20,
+    "viable": true,
+    "stem": "A plant can grow big and strong in a dark closet if you give it plenty of dirt and water."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 17,
+    "viable": true,
+    "stem": "Mia's plant gets sun but no water. Leo's gets water but no light. Evaluate which plant survives."
+   }
+  ]
+ },
+ {
+  "subject": "science",
+  "mode": "apply",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 19,
+    "viable": true,
+    "stem": "Plant 1 has green, upright leaves. Plant 2 is droopy and dry. Which plant got enough light and water?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 15,
+    "viable": true,
+    "stem": "Mia puts a plant in a dark closet without water for a week. What happens?"
+   },
+   {
+    "type": "true_false",
+    "words": 15,
+    "viable": true,
+    "stem": "A plant only needs water to grow big and strong; it does not need sunlight."
+   }
+  ]
+ },
+ {
+  "subject": "math",
+  "mode": "evaluate",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 12,
+    "viable": true,
+    "stem": "🍎🍎🍎🍎🍎🍎🍎 + 🍎🍎 + 🍎🍎🍎🍎🍎. Which strategy makes finding the total easiest?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 13,
+    "viable": true,
+    "stem": "Which strategy best explains where the jump lands to solve 6 + 8?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 16,
+    "viable": true,
+    "stem": "Evaluate whether Leo can fill a 16-sticker page if he has 9 and gets 6 more."
+   }
+  ]
+ },
+ {
+  "subject": "literacy",
+  "mode": "recall",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 11,
+    "viable": true,
+    "stem": "Based on the box, which of these words is a noun?"
+   },
+   {
+    "type": "categorization_activity",
+    "words": 26,
+    "viable": true,
+    "stem": "Sort each word into the correct group: Nouns or Verbs. Remember, a noun is a person, place, or thing, and a verb is an action word."
+   },
+   {
+    "type": "fill_in_blanks",
+    "words": 8,
+    "viable": true,
+    "stem": "The happy dog [blank_1] across the green grass."
+   }
+  ]
+ },
+ {
+  "subject": "literacy",
+  "mode": "apply",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 1,
+  "problems": [
+   {
+    "type": "categorization_activity",
+    "words": 24,
+    "viable": true,
+    "stem": "Read the definition box carefully. Then sort each word below into the correct category based on whether it is a noun or a verb."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 14,
+    "viable": true,
+    "stem": "In the sentence 'The happy dog barks loudly,' which word is an action verb?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 14,
+    "viable": true,
+    "stem": "Leo visits the playground. Which sentence has both a noun and an action verb?"
+   }
+  ]
+ },
+ {
+  "subject": "science",
+  "mode": "analyze",
+  "grade": "1",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 9,
+    "viable": true,
+    "stem": "Compare both plants: which plant got sunlight and water?"
+   },
+   {
+    "type": "categorization_activity",
+    "words": 8,
+    "viable": true,
+    "stem": "Sort what plants need and do not need."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 13,
+    "viable": true,
+    "stem": "Why does a plant not grow well in a dark closet with soil?"
+   }
+  ]
+ },
+ {
+  "subject": "science",
+  "mode": "analyze",
+  "grade": "7",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 20,
+    "viable": true,
+    "stem": "Which factor most influences the initial sprouting of the bean plants, and what evidence from the table supports this conclusion?"
+   },
+   {
+    "type": "categorization_activity",
+    "words": 27,
+    "viable": true,
+    "stem": "Analyze the primary physiological roles in plant survival and sort them into the correct category based on whether they are driven primarily by sunlight or by water."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 18,
+    "viable": true,
+    "stem": "Why does the bean plant begin to wither and lose mass despite receiving adequate water and soil nutrients?"
+   }
+  ]
+ },
+ {
+  "subject": "literacy",
+  "mode": "recall",
+  "grade": "K",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 6,
+    "viable": true,
+    "stem": "Which of these is an animal?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 7,
+    "viable": true,
+    "stem": "Which of these is an action word?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 10,
+    "viable": true,
+    "stem": "Which of these is an action word you can do?"
+   }
+  ]
+ }
+]

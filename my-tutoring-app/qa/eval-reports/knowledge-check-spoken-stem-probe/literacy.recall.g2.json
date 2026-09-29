@@ -1,0 +1,147 @@
+{
+ "row": {
+  "subject": "literacy",
+  "mode": "recall",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 11,
+    "viable": true,
+    "stem": "Based on the box, which of these words is a noun?"
+   },
+   {
+    "type": "categorization_activity",
+    "words": 26,
+    "viable": true,
+    "stem": "Sort each word into the correct group: Nouns or Verbs. Remember, a noun is a person, place, or thing, and a verb is an action word."
+   },
+   {
+    "type": "fill_in_blanks",
+    "words": 8,
+    "viable": true,
+    "stem": "The happy dog [blank_1] across the green grass."
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "easy",
+   "gradeLevel": "elementary",
+   "question": "Based on the box, which of these words is a noun?",
+   "options": [
+    {
+     "id": "A",
+     "text": "jump",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "park",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "sing",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "blue",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "A noun names a person, place, or thing. A park is a place you can visit, so it is a noun. Words like jump and sing are action words, while blue describes a color.",
+   "teachingNote": "Remind early learners to ask themselves if the word is something they can go to, see, or touch to determine if it is a person, place, or thing.",
+   "successCriteria": [
+    "Recall the definition of a noun as a person, place, or thing",
+    "Identify a familiar noun from a list of simple words"
+   ],
+   "inset": {
+    "insetType": "definition-box",
+    "term": "noun",
+    "definition": "A word that names a person, place, or thing.",
+    "exampleSentence": "The teacher walked into the school.",
+    "label": "Word Helper",
+    "partOfSpeech": "noun"
+   },
+   "subject": "LANGUAGE_ARTS"
+  },
+  {
+   "type": "categorization_activity",
+   "id": "cat_1",
+   "difficulty": "easy",
+   "gradeLevel": "elementary",
+   "instruction": "Sort each word into the correct group: Nouns or Verbs. Remember, a noun is a person, place, or thing, and a verb is an action word.",
+   "categories": [
+    "Nouns",
+    "Verbs"
+   ],
+   "categorizationItems": [
+    {
+     "itemText": "dog",
+     "correctCategory": "Nouns"
+    },
+    {
+     "itemText": "house",
+     "correctCategory": "Nouns"
+    },
+    {
+     "itemText": "cat",
+     "correctCategory": "Nouns"
+    },
+    {
+     "itemText": "run",
+     "correctCategory": "Verbs"
+    },
+    {
+     "itemText": "jump",
+     "correctCategory": "Verbs"
+    },
+    {
+     "itemText": "play",
+     "correctCategory": "Verbs"
+    }
+   ],
+   "rationale": "Nouns name people, places, or things like animals and buildings, while verbs describe actions that you can do. Sorting these helps students easily recognize the difference between what something is and what something is doing.",
+   "teachingNote": "Ensure students test if they can 'do' the word to check if it is a verb, or if they can point to it as a physical thing to check if it is a noun.",
+   "successCriteria": [
+    "Identify simple nouns as people, places, or things",
+    "Identify simple verbs as action words"
+   ],
+   "subject": "LANGUAGE_ARTS"
+  },
+  {
+   "type": "fill_in_blanks",
+   "id": "fib_1",
+   "difficulty": "easy",
+   "gradeLevel": "elementary",
+   "textWithBlanks": "The happy dog [blank_1] across the green grass.",
+   "blanks": [
+    {
+     "id": "blank_1",
+     "correctAnswer": "runs",
+     "caseSensitive": false
+    }
+   ],
+   "wordBank": [
+    "runs",
+    "dog",
+    "happy",
+    "grass"
+   ],
+   "rationale": "An action verb tells us what someone or something is doing. In this sentence, 'runs' is the action verb because it tells us what the dog is doing.",
+   "teachingNote": "Remind students that verbs are action words that show what the noun is doing.",
+   "successCriteria": [
+    "Identify an action verb in a simple sentence",
+    "Distinguish between nouns and verbs in context"
+   ],
+   "subject": "LANGUAGE_ARTS"
+  }
+ ]
+}

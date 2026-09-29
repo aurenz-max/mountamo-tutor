@@ -1,0 +1,120 @@
+{
+ "row": {
+  "subject": "science",
+  "mode": "analyze",
+  "grade": "2",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 10,
+    "viable": true,
+    "stem": "Why is Plant A healthy, but Plant B is drooping?"
+   },
+   {
+    "type": "multiple_choice",
+    "words": 14,
+    "viable": true,
+    "stem": "Mia waters her plant, but keeps it in a dark closet. What will happen?"
+   },
+   {
+    "type": "true_false",
+    "words": 20,
+    "viable": true,
+    "stem": "Plants can grow healthy using only soda instead of water, as long as they are kept in a dark room."
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Why is Plant A healthy, but Plant B is drooping?",
+   "options": [
+    {
+     "id": "A",
+     "text": "Plant A got sunlight and water, but Plant B did not.",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "Plant A stayed in the dark, but Plant B had light.",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "Plant B got too much sunlight, but Plant A had none.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "Plant B went to sleep, but Plant A stayed awake.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "Plants must have both sunlight and water to stay strong and make their own food. Plant A is green and upright because its needs were met, while Plant B is wilting because it was missing sunlight and water. Without these essential resources, plants cannot stay healthy.",
+   "teachingNote": "Second graders often know plants need water, but they may overlook sunlight or mix up the cause-and-effect relationship when comparing two conditions.",
+   "successCriteria": [
+    "Analyze differences between two plants to determine why one is thriving and one is wilting",
+    "Explain that plants require both sunlight and water to remain healthy"
+   ],
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Mia waters her plant, but keeps it in a dark closet. What will happen?",
+   "options": [
+    {
+     "id": "A",
+     "text": "It turns yellow and stops growing because it lacks light.",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "It grows big and green because it has plenty of water.",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "It grows faster to hide from the bright sun.",
+     "distance": "far"
+    },
+    {
+     "id": "D",
+     "text": "It stays healthy because dark rooms keep plants cool.",
+     "distance": "near"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "Plants need both sunlight and water to stay healthy and make food. Even though Mia gave the plant plenty of water, it cannot make food without light, so its leaves will turn pale or yellow and it will stop growing well.",
+   "teachingNote": "Second graders often believe that water alone is enough to keep a plant alive. Emphasize that water and sunlight must work together for the plant to produce its own food.",
+   "successCriteria": [
+    "Analyze the effect of missing sunlight on plant health",
+    "Explain that plants require both water and light to make food"
+   ],
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "true_false",
+   "id": "tf_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "statement": "Plants can grow healthy using only soda instead of water, as long as they are kept in a dark room.",
+   "correct": false,
+   "rationale": "This statement is false because plants need both plain water and bright sunlight to make their own food and grow strong. Soda contains sugar and chemicals that harm plants instead of helping them, and darkness stops them from getting the energy they need from the sun.",
+   "teachingNote": "Remind students that just like humans need healthy food and water rather than soda, plants have specific needs like clean water and light to survive.",
+   "successCriteria": [
+    "Analyze why plants require water and sunlight rather than substitutes like soda and darkness",
+    "Reject false claims about plant survival needs"
+   ],
+   "subject": "SCIENCE"
+  }
+ ]
+}

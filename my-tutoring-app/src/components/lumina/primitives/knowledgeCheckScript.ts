@@ -319,6 +319,24 @@ export const choiceSpokenReason = (p: MultipleChoiceProblemData): string | null 
 
 // ── Per-type item builders — KEEP-OR-DROP, never backfill ───────────────────
 
+/** Quoted spans in a raw (unsanitized) stem: "…", “…”, ‘…’, or '…' opened after
+ *  a space/colon/start and closed before a space/punctuation/end, so an
+ *  apostrophe inside a word does not open one. */
+const QUOTED_SPAN = /"([^"]+)"|“([^”]+)”|‘([^’]+)’|(?:^|(?<=[\s:(]))'([^']+)'(?=[\s.,;:?!)]|$)/g;
+
+/** The stem with the quoted sentence removed, when one quoted span contains
+ *  every word of every option (the options are words of that sentence).
+ *  Otherwise the whole sanitized stem. */
+export const stemOutsideMenuQuote = (rawQuestion: string, options: KnowledgeCheckOption[]): string => {
+  for (const match of Array.from(rawQuestion.matchAll(QUOTED_SPAN))) {
+    const quoted = new Set(tokensOf(match[1] ?? match[2] ?? match[3] ?? match[4] ?? ''));
+    if (options.length >= 2 && options.every((o) => tokensOf(o.text).every((w) => quoted.has(w)))) {
+      return sanitize(rawQuestion.replace(match[0], ' '));
+    }
+  }
+  return sanitize(rawQuestion);
+};
+
 const promptUsable = (prompt: string): boolean =>
   !!prompt && /[a-z]/i.test(prompt) && wordsIn(prompt) <= MAX_PROMPT_WORDS
   && !opensWithSentinel(prompt);
@@ -365,7 +383,10 @@ const itemsFromChoice = (
     const correct = options.find((o) => o.id === p.correctOptionId)!;
     const others = new Set(options.flatMap((o) => (o.id === correct.id ? [] : tokensOf(o.text))));
     const distinctive = tokensOf(correct.text).filter((w) => w.length >= 3 && !others.has(w));
-    const stemTokens = new Set(tokensOf(prompt));
+    // "Which word in 'The dog barks.' is the verb?": the quoted sentence holds
+    // EVERY choice, so it names the key no more than the menu does. Only the
+    // rest of the stem is checked.
+    const stemTokens = new Set(tokensOf(stemOutsideMenuQuote(p.question ?? '', options)));
     if (distinctive.some((w) => stemTokens.has(w))) return [];
     return [{
       id: `p${problemIndex}-mc`,
@@ -404,9 +425,10 @@ const itemsFromChoice = (
   }];
 };
 
-/** The blanked sentence exactly as the tutor speaks it: the gap is "hmm". */
+/** The blanked sentence exactly as the tutor speaks it: the gap is "hmm".
+ *  `[blank_N]` is the generator's own marker (FillInBlanksProblem splits on it). */
 export const blankSpokenSentence = (textWithBlanks: string): string =>
-  sanitize(textWithBlanks).replace(/_{2,}|\[blank\]|\{\{\s*blank\s*\}\}/gi, 'hmm');
+  sanitize(textWithBlanks).replace(/_{2,}|\[blank(?:_\d+)?\]|\{\{\s*blank\s*\}\}/gi, 'hmm');
 
 const itemsFromBlanks = (
   p: FillInBlanksProblemData,

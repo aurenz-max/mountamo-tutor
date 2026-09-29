@@ -1,0 +1,174 @@
+{
+ "row": {
+  "subject": "science",
+  "mode": "analyze",
+  "grade": "1",
+  "setViable": true,
+  "redraws": 0,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 9,
+    "viable": true,
+    "stem": "Compare both plants: which plant got sunlight and water?"
+   },
+   {
+    "type": "categorization_activity",
+    "words": 8,
+    "viable": true,
+    "stem": "Sort what plants need and do not need."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 13,
+    "viable": true,
+    "stem": "Why does a plant not grow well in a dark closet with soil?"
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Compare both plants: which plant got sunlight and water?",
+   "options": [
+    {
+     "id": "A",
+     "text": "Plant A",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "Plant B",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "Both plants",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "Neither plant",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "Plant B is standing tall and green because it received sunlight and water. Plant A is drooping because it did not get the water and light it needs to stay healthy.",
+   "teachingNote": "Guide emerging readers to look closely at the plant leaves and stems. Highlight that wilting or drooping is a clear sign a plant lacks water.",
+   "successCriteria": [
+    "Compare visual evidence of two plants to determine which received needed resources.",
+    "Identify that plants need water and sunlight to stay healthy and green."
+   ],
+   "visual": {
+    "type": "comparison-panel",
+    "data": {
+     "panels": [
+      {
+       "label": "Plant A",
+       "collection": {
+        "items": [
+         {
+          "name": "Drooping wilted plant",
+          "icon": "🥀",
+          "count": 1
+         }
+        ],
+        "layout": "row"
+       }
+      },
+      {
+       "label": "Plant B",
+       "collection": {
+        "items": [
+         {
+          "name": "Healthy green plant",
+          "icon": "🪴",
+          "count": 1
+         }
+        ],
+        "layout": "row"
+       }
+      }
+     ]
+    }
+   },
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "categorization_activity",
+   "id": "cat_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "instruction": "Sort what plants need and do not need.",
+   "categories": [
+    "Need for Plants",
+    "Not Needed"
+   ],
+   "categorizationItems": [
+    {
+     "itemText": "Sunlight",
+     "correctCategory": "Need for Plants"
+    },
+    {
+     "itemText": "Water",
+     "correctCategory": "Need for Plants"
+    },
+    {
+     "itemText": "Toy",
+     "correctCategory": "Not Needed"
+    },
+    {
+     "itemText": "Rock",
+     "correctCategory": "Not Needed"
+    }
+   ],
+   "rationale": "Plants use sunlight and water to grow strong and healthy. Non-living objects like toys and rocks are not required for plant life.",
+   "teachingNote": "Ensure students understand that physical objects used by people are not the same as the natural resources plants require.",
+   "successCriteria": [
+    "Identify what plants need to survive",
+    "Differentiate between living plant needs and non-essential items"
+   ],
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Why does a plant not grow well in a dark closet with soil?",
+   "options": [
+    {
+     "id": "A",
+     "text": "It needs more dirt.",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "It needs a warm bed.",
+     "distance": "far"
+    },
+    {
+     "id": "C",
+     "text": "It needs sunlight.",
+     "distance": "key"
+    },
+    {
+     "id": "D",
+     "text": "It needs a bigger pot.",
+     "distance": "near"
+    }
+   ],
+   "correctOptionId": "C",
+   "rationale": "Plants must have sunlight to make food and grow. Soil alone cannot keep a plant alive without light.",
+   "teachingNote": "Young learners often believe dirt is the only food a plant needs. Emphasize that light is an essential energy source.",
+   "successCriteria": [
+    "Analyze why a plant cannot survive with soil alone",
+    "Identify sunlight as an essential need for plant growth"
+   ],
+   "subject": "SCIENCE"
+  }
+ ]
+}

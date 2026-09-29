@@ -1,0 +1,173 @@
+{
+ "row": {
+  "subject": "science",
+  "mode": "analyze",
+  "grade": "1",
+  "setViable": false,
+  "redraws": 1,
+  "problems": [
+   {
+    "type": "multiple_choice",
+    "words": 7,
+    "viable": true,
+    "stem": "Compare both plants: which one is healthy?"
+   },
+   {
+    "type": "categorization_activity",
+    "words": 5,
+    "viable": false,
+    "stem": "Sort what helps plants grow."
+   },
+   {
+    "type": "multiple_choice",
+    "words": 3,
+    "viable": true,
+    "stem": "Without any water?"
+   }
+  ]
+ },
+ "problems": [
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Compare both plants: which one is healthy?",
+   "options": [
+    {
+     "id": "A",
+     "text": "Plant B is healthy",
+     "distance": "near"
+    },
+    {
+     "id": "B",
+     "text": "Plant A is healthy",
+     "distance": "key"
+    },
+    {
+     "id": "C",
+     "text": "Both plants are healthy",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "Neither plant is healthy",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "B",
+   "rationale": "Plant A is green and standing tall because it gets sunlight and water. Plant B is brown and drooping because plants cannot stay healthy without sun and water.",
+   "teachingNote": "Prompt students to observe leaf color and posture as clues to plant health before connecting them to sun and water needs.",
+   "successCriteria": [
+    "Compare two plants to identify which one is healthy.",
+    "Connect healthy plant growth to sunlight and water."
+   ],
+   "visual": {
+    "type": "comparison-panel",
+    "data": {
+     "panels": [
+      {
+       "label": "Plant A",
+       "collection": {
+        "items": [
+         {
+          "name": "Sun and water",
+          "icon": "🪴",
+          "count": 1
+         }
+        ],
+        "layout": "row"
+       }
+      },
+      {
+       "label": "Plant B",
+       "collection": {
+        "items": [
+         {
+          "name": "No sun or water",
+          "icon": "🥀",
+          "count": 1
+         }
+        ],
+        "layout": "row"
+       }
+      }
+     ]
+    }
+   },
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "categorization_activity",
+   "id": "cat_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "instruction": "Sort what helps plants grow.",
+   "categories": [
+    "What Plants Need",
+    "What Plants Do Not Need"
+   ],
+   "categorizationItems": [
+    {
+     "itemText": "Sunlight",
+     "correctCategory": "What Plants Need"
+    },
+    {
+     "itemText": "Water",
+     "correctCategory": "What Plants Need"
+    },
+    {
+     "itemText": "Rocks",
+     "correctCategory": "What Plants Do Not Need"
+    },
+    {
+     "itemText": "Toys",
+     "correctCategory": "What Plants Do Not Need"
+    }
+   ],
+   "rationale": "Plants require specific life elements like sunlight and water to grow big and strong. Non-living objects like rocks and toys do not help plants grow at all.",
+   "teachingNote": "Ensure students understand that physical objects found near plants do not automatically mean plants need them.",
+   "successCriteria": [
+    "Sort items into needs and non-needs",
+    "Identify plant survival requirements"
+   ],
+   "subject": "SCIENCE"
+  },
+  {
+   "type": "multiple_choice",
+   "id": "mc_1",
+   "difficulty": "hard",
+   "gradeLevel": "elementary",
+   "question": "Without any water?",
+   "options": [
+    {
+     "id": "A",
+     "text": "It dries up.",
+     "distance": "key"
+    },
+    {
+     "id": "B",
+     "text": "It grows tall.",
+     "distance": "near"
+    },
+    {
+     "id": "C",
+     "text": "It makes flowers.",
+     "distance": "near"
+    },
+    {
+     "id": "D",
+     "text": "It stays green.",
+     "distance": "far"
+    }
+   ],
+   "correctOptionId": "A",
+   "rationale": "Plants must have water to stand tall and stay alive. Without water, a plant wilts and dries up.",
+   "teachingNote": "Demonstrate this concept visually by comparing a freshly watered plant to a dry, drooping leaf.",
+   "successCriteria": [
+    "Analyze the effect of missing water on a plant."
+   ],
+   "subject": "SCIENCE"
+  }
+ ]
+}

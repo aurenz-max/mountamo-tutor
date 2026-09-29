@@ -10,6 +10,8 @@
  * claims are tested with.
  */
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import {
   checkPackGates,
   checkDiCatalogEntry,
@@ -295,6 +297,44 @@ describe('build gates', () => {
       mcProblem({ question: 'Which animal is the cow that says moo?' }),
     ]);
     expect(judgedViable).toBe(false);
+  });
+
+  // KC-UB (handoff 28): the two saved literacy payloads fell to the tap flow
+  // because their quoted sentence holds the key word — and every other choice.
+  it.each([
+    ['knowledge-check.apply.literacy.json', 'barks'],
+    ['knowledge-check.recall.literacy.json', 'cat'],
+  ])('a "which word in this sentence" MCQ builds (%s)', (file, key) => {
+    const saved = JSON.parse(readFileSync(resolve(__dirname, '../../../../../qa/eval-reports/knowledge-check-levers-probe', file), 'utf8'));
+    const { judgedViable, items } = itemsFromProblems(saved.data.problems);
+    expect(judgedViable).toBe(true);
+    expect(items[0].prompt.toLowerCase()).toContain(key); // the sentence is still read to the child
+  });
+
+  it.each([
+    ['single quotes', "Read the sentence: 'The cat sleeps on the rug.' Which word is a noun?"],
+    ['curly quotes', 'Read the sentence: “The cat sleeps on the rug.” Which word is a noun?'],
+  ])('the quoted-sentence exemption covers %s', (_label, question) => {
+    const p = mcProblem({ question, options: [{ id: 'A', text: 'sleeps' }, { id: 'B', text: 'cat' }, { id: 'C', text: 'on' }], correctOptionId: 'B' });
+    expect(itemsFromProblems([p]).judgedViable).toBe(true);
+  });
+
+  it('the generator marker [blank_1] builds a blank item (KC-UB probe, 2026-09-29)', () => {
+    const p = blankProblem({ textWithBlanks: 'The [blank_1] will run on the grass.', blanks: [{ id: 'blank_1', correctAnswer: 'dog' }] as never });
+    const { judgedViable, items } = itemsFromProblems([p]);
+    expect(judgedViable).toBe(true);
+    expect(items[0].prompt).toBe('The hmm will run on the grass.');
+  });
+
+  it('the exemption holds only when the quote contains every choice; a key named outside it still drops', () => {
+    // The quote holds only the key: that is a stated answer, not a sentence to search.
+    const keyOnly = mcProblem({ question: 'The book says "the cow says moo." Which animal says moo?' });
+    expect(itemsFromProblems([keyOnly]).judgedViable).toBe(false);
+    // Every choice is quoted, but the stem names the key again outside the quote.
+    const outside = mcProblem({
+      question: 'In "The cow and the duck and the frog", which is the cow?',
+    });
+    expect(itemsFromProblems([outside]).judgedViable).toBe(false);
   });
 
   it('a sort item whose own text names a group is dropped; the problem survives on its siblings', () => {
