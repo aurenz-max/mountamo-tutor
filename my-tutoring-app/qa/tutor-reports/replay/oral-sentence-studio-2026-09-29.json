@@ -1,0 +1,2272 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ],
+   "no_change_before_receipt": [
+    0,
+    15
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "oral-sentence-studio.describe_scene",
+   "primitiveId": "oral-sentence-studio",
+   "evalMode": "describe_scene",
+   "keys": [
+    "any one complete child sentence that tells a relevant actor or thing and an action or state from the pictured scene and uses both \"hungry\" and \"happy\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"the hungry bunny feels happy when eating in the sunny garden.\" \"a hungry little bunny is happy near the green leaves.\" \"feeling hungry, the bunny looks happy in the garden.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+    "the hungry bunny feels happy when eating in the sunny garden."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that tells a relevant actor or thing and an action or state from the pictured scene and uses both \"hungry\" and \"happy\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"the hungry bunny feels happy when eating in the sunny garden.\" \"a hungry little bunny is happy near the green leaves.\" \"feeling hungry, the bunny looks happy in the garden.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "the hungry bunny feels happy when eating in the sunny garden."
+      ],
+      "ask": "Look closely at the picture. Make one whole sentence about what is happening. Use both new words: hungry, meaning wanting to eat food, and happy, meaning feeling glad and smiling. Say the sentence in your own way.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the picture and make one whole sentence about what is happening! Use both words: \"hungry,\" which means wanting food, and \"happy,\" which means glad and smiling.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture and make one whole sentence about what is happening! Use both words: \"hungry,\" meaning wanting to eat food, and \"happy,\" meaning feeling glad.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture and make one whole sentence using our two words: hungry, which means wanting to eat food, and happy, which means feeling glad and smiling.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look closely at the picture of the bunny in the garden. Tell me one whole sentence using the words \"hungry,\" meaning wanting food, and \"happy,\" meaning feeling glad.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture and make one whole sentence about what is happening! Use both words: \"hungry,\" meaning wanting to eat food, and \"happy,\" meaning feeling glad.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "hungry happy fresh leaves",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that tells a relevant actor or thing and an action or state from the pictured scene and uses both \"hungry\" and \"happy\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"the hungry bunny feels happy when eating in the sunny garden.\" \"a hungry little bunny is happy near the green leaves.\" \"feeling hungry, the bunny looks happy in the garden.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "the hungry bunny feels happy when eating in the sunny garden."
+      ],
+      "ask": "Look closely at the picture. Make one whole sentence about what is happening. Use both new words: hungry, meaning wanting to eat food, and happy, meaning feeling glad and smiling. Say the sentence in your own way.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Now we see two empty boxes on the screen: one asks \"Who?\" and the other asks \"What happens?\" Try making one whole sentence that tells who is there and what happens, using both \"hungry\" and \"happy.\"",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Two boxes popped up: one asks \"Who?\", and the other asks \"What happens?\". Try making one full sentence that tells who is there and what happens, using both \"hungry\" and \"happy\"!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Two boxes popped up: one asks \"Who?\", and the other asks \"What happens?\" \n\nTry putting them together into one full sentence using \"hungry\" and \"happy\"!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_strip",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Two boxes appeared on your screen: one asks \"Who?\" and the other asks \"What happens?\" Try making one full sentence that tells who is there and what happens, using \"hungry\" and \"happy\"!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, two boxes popped up: one asks \"Who?\" and the other asks \"What happens?\" Try making one full sentence that tells who is there and what happens, using \"hungry\" and \"happy.\"",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_strip",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that tells a relevant actor or thing and an action or state from the pictured scene and uses both \"hungry\" and \"happy\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"the hungry bunny feels happy when eating in the sunny garden.\" \"a hungry little bunny is happy near the green leaves.\" \"feeling hungry, the bunny looks happy in the garden.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "the hungry bunny feels happy when eating in the sunny garden."
+      ],
+      "ask": "Look closely at the picture. Make one whole sentence about what is happening. Use both new words: hungry, meaning wanting to eat food, and happy, meaning feeling glad and smiling. Say the sentence in your own way.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Two boxes popped up: one asks \"Who?\" and one asks \"What happens?\" Tell me who is in the garden and what they are doing with \"hungry\" and \"happy.\"",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sentence_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, two empty boxes popped up on our screen: one asks \"Who?\" and one asks \"What happens?\" Who do you see in the garden, and what is it doing?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now we have two helper boxes on the screen: one asks \"Who?\" and one asks \"What happens?\" Tell me who is in the picture and what they are doing, using \"hungry\" and \"happy.\"",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sentence_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Two boxes popped up: one asks \"Who?\" and one asks \"What happens?\" Tell me about who is in the garden and what they are doing, using \"hungry\" and \"happy.\"",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Two boxes popped up: one asks \"Who?\" and one asks \"What happens?\" Tell me what the bunny is doing, using \"hungry\" and \"happy.\"",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sentence_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "The learner said they were stuck, so the host pulled sentence_strip (help). It is on screen now: Shows two empty boxes, Who? and What happens?, beside the word chips. Say what each box asks; never fill one in. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that tells a relevant actor or thing and an action or state from the pictured scene and uses both \"hungry\" and \"happy\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"the hungry bunny feels happy when eating in the sunny garden.\" \"a hungry little bunny is happy near the green leaves.\" \"feeling hungry, the bunny looks happy in the garden.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "the hungry bunny feels happy when eating in the sunny garden."
+      ],
+      "ask": "Look closely at the picture. Make one whole sentence about what is happening. Use both new words: hungry, meaning wanting to eat food, and happy, meaning feeling glad and smiling. Say the sentence in your own way.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look beside the word chips! Two empty boxes appeared: one asks \"Who?\" and the other asks \"What happens?\" Try telling your sentence using those boxes, with both \"hungry\" and \"happy.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the words, there are two boxes: one asks \"Who?\" and one asks \"What happens?\" Give it a try by saying one full sentence using \"hungry\" and \"happy\"!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the word chips: there are two boxes now, one asking \"Who?\" and one asking \"What happens?\" Give it a try by making a whole sentence with \"hungry\" and \"happy.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the words, there are two boxes: one asks \"Who?\" and the other asks \"What happens?\" Try telling who is there and what happens in one whole sentence, using \"hungry\" and \"happy.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the word chips: there are two empty boxes that say \"Who?\" and \"What happens?\" Try making one whole sentence that tells who and what happens, using both \"hungry\" and \"happy.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "The hungry bunny feels happy when eating in the sunny garden.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that tells a relevant actor or thing and an action or state from the pictured scene and uses both \"hungry\" and \"happy\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"the hungry bunny feels happy when eating in the sunny garden.\" \"a hungry little bunny is happy near the green leaves.\" \"feeling hungry, the bunny looks happy in the garden.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "the hungry bunny feels happy when eating in the sunny garden."
+      ],
+      "ask": "Look closely at the picture. Make one whole sentence about what is happening. Use both new words: hungry, meaning wanting to eat food, and happy, meaning feeling glad and smiling. Say the sentence in your own way.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it! You made a whole sentence using both \"hungry\" and \"happy\" to tell about the bunny in the garden.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You made a wonderful whole sentence using both words, \"hungry\" and \"happy\"!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You said a complete sentence using both \"hungry\" and \"happy\" to describe what the bunny is doing!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You made a whole sentence telling about the hungry bunny feeling happy in the garden!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You made a whole sentence telling about the hungry bunny feeling happy in the garden!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "oral-sentence-studio.describe_scene.levers",
+   "primitiveId": "oral-sentence-studio",
+   "evalMode": "describe_scene",
+   "keys": [
+    "any one complete child sentence that tells a relevant actor or thing and an action or state from the pictured scene and uses both \"bright\" and \"cozy\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"the happy child plays under the bright sun with a cozy shell.\" \"a bright sky shines down while the child builds a cozy sand castle.\" \"our cozy friend finds a shell on the bright beach today.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+    "the happy child plays under the bright sun with a cozy shell."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that tells a relevant actor or thing and an action or state from the pictured scene and uses both \"bright\" and \"cozy\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"the happy child plays under the bright sun with a cozy shell.\" \"a bright sky shines down while the child builds a cozy sand castle.\" \"our cozy friend finds a shell on the bright beach today.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "the happy child plays under the bright sun with a cozy shell."
+      ],
+      "ask": "Look closely at the picture. Make one whole sentence about what is happening. Use both new words: bright, meaning full of light, and cozy, meaning warm and safe. Say the sentence in your own way.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look closely at the picture and make one whole sentence about what is happening! Use both words: **bright**, which means full of light, and **cozy**, which means warm and safe.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look closely at the picture and make one whole sentence about what is happening using both words: \"bright,\" which means full of light, and \"cozy,\" which means warm and safe.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look closely at the picture and make one whole sentence about what is happening using both words: **bright**, which means full of light, and **cozy**, which means warm and safe. What sentence can you share?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look closely at the picture and make one whole sentence about what is happening using both words: \"bright,\" which means full of light, and \"cozy,\" which means warm and safe.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture and make one whole sentence about what is happening. Use both words: **bright**, meaning full of light, and **cozy**, meaning warm and safe.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "bright cozy sea shell",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that tells a relevant actor or thing and an action or state from the pictured scene and uses both \"bright\" and \"cozy\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"the happy child plays under the bright sun with a cozy shell.\" \"a bright sky shines down while the child builds a cozy sand castle.\" \"our cozy friend finds a shell on the bright beach today.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "the happy child plays under the bright sun with a cozy shell."
+      ],
+      "ask": "Look closely at the picture. Make one whole sentence about what is happening. Use both new words: bright, meaning full of light, and cozy, meaning warm and safe. Say the sentence in your own way.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Two boxes just popped up on your screen: one asks **Who?** and the other asks **What happens?** \n\nTry saying a whole sentence that tells who is there and what is happening, using **bright** and **cozy**!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Two boxes popped up: one asks **Who?** and the other asks **What happens?** \n\nTry saying a whole sentence about someone doing something in the picture, using **bright** and **cozy**!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Two boxes appeared on your screen: **Who?** and **What happens?** \n\nTry saying a whole sentence about someone in the picture and what they are doing, using **bright** and **cozy**.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_strip",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now two boxes are showing on your screen: one asks **Who?** and the other asks **What happens?** \n\nTry saying a whole sentence about someone doing something in the picture, using **bright** and **cozy**!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Two boxes popped up: one asks **Who?** and the other asks **What happens?** \n\nTry saying a whole sentence telling who is there and what is happening, using **bright** and **cozy**!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_strip",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that tells a relevant actor or thing and an action or state from the pictured scene and uses both \"bright\" and \"cozy\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"the happy child plays under the bright sun with a cozy shell.\" \"a bright sky shines down while the child builds a cozy sand castle.\" \"our cozy friend finds a shell on the bright beach today.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "the happy child plays under the bright sun with a cozy shell."
+      ],
+      "ask": "Look closely at the picture. Make one whole sentence about what is happening. Use both new words: bright, meaning full of light, and cozy, meaning warm and safe. Say the sentence in your own way.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Two empty boxes are now on the screen: one asks **Who?** and the other asks **What happens?**\n\nTry putting them together into one sentence about the picture, using **bright** and **cozy**.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, two boxes appeared on the screen: one asks **Who?** and the other asks **What happens?**\n\nTell who is in the picture and what they are doing, using the words **bright** and **cozy**.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the two new boxes on your screen: one asks **Who?** and the other asks **What happens?**\n\nTell me who is in the picture and what they are doing, using the words **bright** and **cozy**.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Two boxes are on the screen: one asks **Who?** and the other asks **What happens?**\n\nTell who is in the picture and what they are doing, using the words **bright** and **cozy**.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "You can see two helper boxes on the screen now: **Who?** and **What happens?**\n\nTell who is in the picture, what they are doing, and include **bright** and **cozy**.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sentence_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "The learner said they were stuck, so the host pulled sentence_strip (help). It is on screen now: Shows two empty boxes, Who? and What happens?, beside the word chips. Say what each box asks; never fill one in. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that tells a relevant actor or thing and an action or state from the pictured scene and uses both \"bright\" and \"cozy\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"the happy child plays under the bright sun with a cozy shell.\" \"a bright sky shines down while the child builds a cozy sand castle.\" \"our cozy friend finds a shell on the bright beach today.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "the happy child plays under the bright sun with a cozy shell."
+      ],
+      "ask": "Look closely at the picture. Make one whole sentence about what is happening. Use both new words: bright, meaning full of light, and cozy, meaning warm and safe. Say the sentence in your own way.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look beside the word chips: there are two empty boxes asking **Who?** and **What happens?**\n\nGive it a try by saying who is there and what is happening, using **bright** and **cozy**!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the word chips, you can now see two empty boxes: one asks **Who?** and the other asks **What happens?**\n\nGive it another try: say one whole sentence about the picture that tells who is there and what happens, using both **bright** and **cozy**!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Right next to our word chips, two empty boxes appeared: one asks **Who?** and the other asks **What happens?** \n\nGive it a try in your own words, using **bright** and **cozy** to tell about the scene!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right beside the word chips: there are two empty boxes that ask **Who?** and **What happens?**\n\nGive it a try and make a whole sentence about the picture using both **bright** and **cozy**!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right beside the word chips: two empty boxes appeared, asking **Who?** and **What happens?**\n\nGive it another try by making one whole sentence that tells who is there and what they are doing, using **bright** and **cozy**!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "The happy child plays under the bright sun with a cozy shell.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that tells a relevant actor or thing and an action or state from the pictured scene and uses both \"bright\" and \"cozy\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"the happy child plays under the bright sun with a cozy shell.\" \"a bright sky shines down while the child builds a cozy sand castle.\" \"our cozy friend finds a shell on the bright beach today.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "the happy child plays under the bright sun with a cozy shell."
+      ],
+      "ask": "Look closely at the picture. Make one whole sentence about what is happening. Use both new words: bright, meaning full of light, and cozy, meaning warm and safe. Say the sentence in your own way.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You made a wonderful whole sentence! You used both \"bright\" for the sunny sky and \"cozy\" for the shell.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You made a wonderful whole sentence and used both words, **bright** and **cozy**, to describe the scene!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You made a complete sentence telling who was playing and used both \"bright\" and \"cozy\" perfectly.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You made a complete sentence telling who was playing and what they did, using both **bright** and **cozy** perfectly!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You made a complete sentence telling who was playing, and you used both **bright** and **cozy** perfectly!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "oral-sentence-studio.use_story_words",
+   "primitiveId": "oral-sentence-studio",
+   "evalMode": "use_story_words",
+   "keys": [
+    "any one complete child sentence that is the learner\u2019s own new sentence (it may be about anything), not a story sentence said back or nearly copied, with both words keeping their story meanings and uses both \"bright\" and \"fresh\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"i can see a bright star in the sky and eat a fresh apple.\" \"the bright yellow flower grows next to some fresh green grass.\" \"a bright bird sings a song near the fresh water puddle.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+    "i can see a bright star in the sky and eat a fresh apple."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that is the learner\u2019s own new sentence (it may be about anything), not a story sentence said back or nearly copied, with both words keeping their story meanings and uses both \"bright\" and \"fresh\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"i can see a bright star in the sky and eat a fresh apple.\" \"the bright yellow flower grows next to some fresh green grass.\" \"a bright bird sings a song near the fresh water puddle.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "i can see a bright star in the sky and eat a fresh apple."
+      ],
+      "ask": "Listen to this little story. The bright sun shines on the garden today. A cute bunny finds a fresh orange carrot to eat. Now make a new sentence of your own with both story words: bright, meaning shining with a lot of light, and fresh, meaning new and cool. It can be about the story or about something else. Do not say a sentence from the story.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen to this story: The bright sun shines on the garden today. A cute bunny finds a fresh orange carrot to eat. \n\nNow, can you make your own new sentence using both words, \"bright\" and \"fresh\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to this little story: The bright sun shines on the garden today. A cute bunny finds a fresh orange carrot to eat. \n\nNow, make a new sentence of your own using both words: \"bright,\" which means shining with lots of light, and \"fresh,\" which means new and cool.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to this story: The bright sun shines on the garden today. A cute bunny finds a fresh orange carrot to eat. \n\nNow tell me a new sentence of your own using \"bright,\" meaning shining with lots of light, and \"fresh,\" meaning new and cool!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is a story: The bright sun shines on the garden today. A cute bunny finds a fresh orange carrot to eat. \n\nNow, make your own sentence using both words: \"bright,\" which means shining with lots of light, and \"fresh,\" which means new and cool!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to this little story: The bright sun shines on the garden today. A cute bunny finds a fresh orange carrot to eat. \n\nNow, make up your own sentence using both words: **bright**, which means shining with a lot of light, and **fresh**, which means new and cool!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "The bright sun shines on the garden today.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that is the learner\u2019s own new sentence (it may be about anything), not a story sentence said back or nearly copied, with both words keeping their story meanings and uses both \"bright\" and \"fresh\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"i can see a bright star in the sky and eat a fresh apple.\" \"the bright yellow flower grows next to some fresh green grass.\" \"a bright bird sings a song near the fresh water puddle.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "i can see a bright star in the sky and eat a fresh apple."
+      ],
+      "ask": "Listen to this little story. The bright sun shines on the garden today. A cute bunny finds a fresh orange carrot to eat. Now make a new sentence of your own with both story words: bright, meaning shining with a lot of light, and fresh, meaning new and cool. It can be about the story or about something else. Do not say a sentence from the story.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That is a great sentence from the story! Now make up a brand new sentence of your own using \"bright\" and \"fresh.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That is the sentence from the story! \n\nCan you make a brand new sentence of your own using \"bright\" and \"fresh\"?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You remembered a sentence from the story! Now make up a brand new sentence of your own using \"bright\" and \"fresh.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You remembered a sentence from the story! Now make up a brand new sentence of your own using \"bright\" and \"fresh.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That is a line from the story! Can you make up a brand new sentence of your own using \"bright\" and \"fresh\"?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that is the learner\u2019s own new sentence (it may be about anything), not a story sentence said back or nearly copied, with both words keeping their story meanings and uses both \"bright\" and \"fresh\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"i can see a bright star in the sky and eat a fresh apple.\" \"the bright yellow flower grows next to some fresh green grass.\" \"a bright bird sings a song near the fresh water puddle.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "i can see a bright star in the sky and eat a fresh apple."
+      ],
+      "ask": "Listen to this little story. The bright sun shines on the garden today. A cute bunny finds a fresh orange carrot to eat. Now make a new sentence of your own with both story words: bright, meaning shining with a lot of light, and fresh, meaning new and cool. It can be about the story or about something else. Do not say a sentence from the story.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Think of something that shines with lots of light, and something yummy or cool that is new to eat. What could happen with them?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Think of something that is bright with light, or something fresh to eat or smell. What comes to mind?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "You can talk about anything you like! What is something bright, like a light or a star, or something fresh, like cool water or fruit?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Think of something that can be bright, like a light or a flower, and something fresh, like an apple. What could happen with them?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That's okay! Think of something that is bright, like a light or a star, and something that is fresh, like fruit or water. What could they be doing together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "The learner said they were stuck, so the host pulled sentence_strip (help). It is on screen now: Shows two empty boxes, Who? and What happens?, beside the word chips. Say what each box asks; never fill one in. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that is the learner\u2019s own new sentence (it may be about anything), not a story sentence said back or nearly copied, with both words keeping their story meanings and uses both \"bright\" and \"fresh\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"i can see a bright star in the sky and eat a fresh apple.\" \"the bright yellow flower grows next to some fresh green grass.\" \"a bright bird sings a song near the fresh water puddle.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "i can see a bright star in the sky and eat a fresh apple."
+      ],
+      "ask": "Listen to this little story. The bright sun shines on the garden today. A cute bunny finds a fresh orange carrot to eat. Now make a new sentence of your own with both story words: bright, meaning shining with a lot of light, and fresh, meaning new and cool. It can be about the story or about something else. Do not say a sentence from the story.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, two boxes appeared beside our words: one asks \"Who?\" and the other asks \"What happens?\" \n\nTry telling your own sentence with \"bright\" and \"fresh\" using who is there and what happens!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, two boxes popped up next to our words: one asks \"Who?\" and the other asks \"What happens?\" \n\nGive it a try with your own sentence using \"bright\" and \"fresh.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the word cards\u2014two boxes appeared that ask \"Who?\" and \"What happens?\" \n\nGive it a try with your own sentence using \"bright\" and \"fresh!\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, two empty boxes popped up beside the words! One box asks \"Who?\" and the other asks \"What happens?\" \n\nGive it a try with \"bright\" and \"fresh.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, now there are two boxes on the screen: one asks \"Who?\" and the other asks \"What happens?\" \n\nGive it a try and make a sentence using both \"bright\" and \"fresh.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "I can see a bright star in the sky and eat a fresh apple.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that is the learner\u2019s own new sentence (it may be about anything), not a story sentence said back or nearly copied, with both words keeping their story meanings and uses both \"bright\" and \"fresh\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"i can see a bright star in the sky and eat a fresh apple.\" \"the bright yellow flower grows next to some fresh green grass.\" \"a bright bird sings a song near the fresh water puddle.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "i can see a bright star in the sky and eat a fresh apple."
+      ],
+      "ask": "Listen to this little story. The bright sun shines on the garden today. A cute bunny finds a fresh orange carrot to eat. Now make a new sentence of your own with both story words: bright, meaning shining with a lot of light, and fresh, meaning new and cool. It can be about the story or about something else. Do not say a sentence from the story.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it! You made a wonderful new sentence using \"bright\" for the star and \"fresh\" for the apple.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You made your own complete sentence using both \"bright\" and \"fresh\"! Wonderful job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You made your own wonderful sentence using the words \"bright\" and \"fresh\"!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You made a wonderful new sentence using \"bright\" for the star and \"fresh\" for the apple!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You made your own wonderful sentence using the words \"bright\" and \"fresh.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "oral-sentence-studio.use_story_words.levers",
+   "primitiveId": "oral-sentence-studio",
+   "evalMode": "use_story_words",
+   "keys": [
+    "any one complete child sentence that is the learner\u2019s own new sentence (it may be about anything), not a story sentence said back or nearly copied, with both words keeping their story meanings and uses both \"gentle\" and \"careful\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"be gentle and careful when holding the little bird.\" \"the teacher is careful and gentle with the wet paint.\" \"puppies need a gentle and careful hand to feel safe.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+    "be gentle and careful when holding the little bird."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that is the learner\u2019s own new sentence (it may be about anything), not a story sentence said back or nearly copied, with both words keeping their story meanings and uses both \"gentle\" and \"careful\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"be gentle and careful when holding the little bird.\" \"the teacher is careful and gentle with the wet paint.\" \"puppies need a gentle and careful hand to feel safe.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "be gentle and careful when holding the little bird."
+      ],
+      "ask": "Listen to this little story. The helpful boy works in the sunny garden. He is very gentle and careful with every single leaf. Now make a new sentence of your own with both story words: gentle, meaning soft and kind, and careful, meaning paying close attention. It can be about the story or about something else. Do not say a sentence from the story.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The helpful boy works in the sunny garden, and he is very gentle and careful with every single leaf. Now, make a new sentence of your own using both gentle, meaning soft and kind, and careful, meaning paying close attention.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to this story: \"The helpful boy works in the sunny garden. He is very gentle and careful with every single leaf.\" \n\nNow tell me a new sentence of your own using both **gentle**, meaning soft and kind, and **careful**, meaning paying close attention.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to this story: The helpful boy works in the sunny garden. He is very gentle and careful with every single leaf. Now make a new sentence of your own using \"gentle,\" meaning soft and kind, and \"careful,\" meaning paying close attention.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to this story: The helpful boy works in the sunny garden. He is very gentle and careful with every single leaf. Now make a new sentence of your own using \"gentle,\" meaning soft and kind, and \"careful,\" meaning paying close attention.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to this story: The helpful boy works in the sunny garden. He is very gentle and careful with every single leaf. Now make a new sentence of your own using \"gentle,\" meaning soft and kind, and \"careful,\" meaning paying close attention.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "The helpful boy works in the sunny garden.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that is the learner\u2019s own new sentence (it may be about anything), not a story sentence said back or nearly copied, with both words keeping their story meanings and uses both \"gentle\" and \"careful\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"be gentle and careful when holding the little bird.\" \"the teacher is careful and gentle with the wet paint.\" \"puppies need a gentle and careful hand to feel safe.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "be gentle and careful when holding the little bird."
+      ],
+      "ask": "Listen to this little story. The helpful boy works in the sunny garden. He is very gentle and careful with every single leaf. Now make a new sentence of your own with both story words: gentle, meaning soft and kind, and careful, meaning paying close attention. It can be about the story or about something else. Do not say a sentence from the story.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That line was from the story, so let's make up your own new sentence. Under each word, there is now a picture: gentle means soft and kind, and careful means paying close attention. Try making a brand-new sentence using both gentle and careful.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "word_pictures",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That sentence is from our story! Try making a brand-new sentence of your own using both \"gentle\" and \"careful.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That sentence is right from the story! Make up a brand new sentence of your own using both \"gentle\" and \"careful.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That was a line straight from the story! Now pictures are showing under our two words: gentle means soft and kind, and careful means paying close attention. Try making a brand-new sentence of your own using both words.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "word_pictures",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That is a sentence from the story, but we need a brand new sentence of your own using both \"gentle\" and \"careful.\" What new sentence can you make with both words?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that is the learner\u2019s own new sentence (it may be about anything), not a story sentence said back or nearly copied, with both words keeping their story meanings and uses both \"gentle\" and \"careful\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"be gentle and careful when holding the little bird.\" \"the teacher is careful and gentle with the wet paint.\" \"puppies need a gentle and careful hand to feel safe.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "be gentle and careful when holding the little bird."
+      ],
+      "ask": "Listen to this little story. The helpful boy works in the sunny garden. He is very gentle and careful with every single leaf. Now make a new sentence of your own with both story words: gentle, meaning soft and kind, and careful, meaning paying close attention. It can be about the story or about something else. Do not say a sentence from the story.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Two boxes popped up: one asks \"Who?\", and the other asks \"What happens?\". Think of who could be doing something gentle and careful, and tell me your sentence!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sentence_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I added pictures under the words to help: gentle means being soft and kind, and careful means paying close attention. What is something you or someone else could do that is both gentle and careful?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "word_pictures",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Under each word is a picture showing what it means: gentle means soft and kind, and careful means paying close attention. You can make a sentence about anything at all, like petting an animal or carrying something delicate!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "word_pictures"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I put pictures on the screen under each word: gentle means being soft and kind, and careful means paying close attention. What is something you do where you are gentle and careful?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "word_pictures"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I put pictures under the words to help: gentle means being soft and kind, and careful means paying close attention. What is something you do where you are gentle and careful?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "word_pictures"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "The learner said they were stuck, so the host pulled sentence_strip (help). It is on screen now: Shows two empty boxes, Who? and What happens?, beside the word chips. Say what each box asks; never fill one in. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that is the learner\u2019s own new sentence (it may be about anything), not a story sentence said back or nearly copied, with both words keeping their story meanings and uses both \"gentle\" and \"careful\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"be gentle and careful when holding the little bird.\" \"the teacher is careful and gentle with the wet paint.\" \"puppies need a gentle and careful hand to feel safe.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "be gentle and careful when holding the little bird."
+      ],
+      "ask": "Listen to this little story. The helpful boy works in the sunny garden. He is very gentle and careful with every single leaf. Now make a new sentence of your own with both story words: gentle, meaning soft and kind, and careful, meaning paying close attention. It can be about the story or about something else. Do not say a sentence from the story.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Right beside our word chips, two empty boxes appeared: one box asks \"Who?\", and the other box asks \"What happens?\". Pick who your sentence is about and what they are doing, and make a new sentence using gentle and careful.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Two empty boxes just appeared next to our words: one asks \"Who?\", and the other asks \"What happens?\". Think of who you want to talk about and what they are doing with gentle and careful!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right next to the word chips: two empty boxes have appeared, one asking \"Who?\" and one asking \"What happens?\". You can pick anyone you want to be in the sentence, doing something with both gentle and careful. Give it a try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the word chips: there are two empty boxes that say \"Who?\" and \"What happens?\". You can pick anyone for \"Who?\", tell what happens, and use gentle and careful in your sentence!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right next to the word chips: there are two empty boxes that ask \"Who?\" and \"What happens?\". You can choose anyone for \"Who?\" and have them do something using gentle and careful!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "oral-sentence-studio-1",
+     "trigger": "Be gentle and careful when holding the little bird.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "any one complete child sentence that is the learner\u2019s own new sentence (it may be about anything), not a story sentence said back or nearly copied, with both words keeping their story meanings and uses both \"gentle\" and \"careful\" with meanings that make sense. judge meaning and use, never wording: paraphrase, pronouns, inflections, extra detail and child grammar count. valid examples, not a key: \"be gentle and careful when holding the little bird.\" \"the teacher is careful and gentle with the wet paint.\" \"puppies need a gentle and careful hand to feel safe.\" a fragment, the two words listed, a definition, a sentence missing either word or using one with the wrong meaning is not it.",
+       "be gentle and careful when holding the little bird."
+      ],
+      "ask": "Listen to this little story. The helpful boy works in the sunny garden. He is very gentle and careful with every single leaf. Now make a new sentence of your own with both story words: gentle, meaning soft and kind, and careful, meaning paying close attention. It can be about the story or about something else. Do not say a sentence from the story.",
+      "leakTokens": [
+       "OSS_ITEM",
+       "OSS_MOVE",
+       "OSS_COMPLETE",
+       "OSS_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You made your own complete sentence using both \"gentle\" and \"careful\" perfectly!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You made a wonderful new sentence using both gentle and careful.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You made a wonderful new sentence using both gentle and careful to describe holding a little bird softly and paying close attention.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You made a wonderful sentence using both gentle and careful!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You made your own complete sentence using both gentle and careful. That is a wonderful new sentence!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -14,6 +14,7 @@ import {
 } from '../evalMode';
 import { buildRemediationPrompt } from '../generation/remediationPrompt';
 import { isSingleEmojiPicture } from '../../utils/emojiPicture';
+import { clueLeak } from '../../primitives/visual-primitives/literacy/pictureVocabularyScript';
 
 export type PictureVocabularyRemediationMove =
   | 'semantic_contrast'
@@ -94,8 +95,10 @@ const nounPoolSchema: Schema = {
         properties: {
           word: { type: Type.STRING, description: "A concrete, picturable NOUN in lowercase (dog, sun, cup, bed). One word, no spaces." },
           emoji: { type: Type.STRING, description: "Exactly one emoji that IS the noun itself (dog → 🐶, sun → ☀️). Never an example-emoji." },
+          category: { type: Type.STRING, description: "One lowercase word for what the thing ITSELF is: animal, food, dish, toy, clothes, vehicle, furniture, plant, tool, body, weather, place. A cup is a dish, not food." },
+          clue: { type: Type.STRING, description: "A short spoken clue a 5-year-old knows: what it does or where you find it (dog → 'it barks and wags its tail'). Never the word, never its sounds or letters." },
         },
-        required: ["word", "emoji"],
+        required: ["word", "emoji", "category", "clue"],
       },
       description: "10-12 concrete nouns, each with an unambiguous emoji; all emojis visually distinct.",
     },
@@ -202,7 +205,7 @@ const framePoolSchema: Schema = {
 // Raw shapes + normalized pool word
 // ---------------------------------------------------------------------------
 
-interface RawNoun { word?: string; emoji?: string; }
+interface RawNoun { word?: string; emoji?: string; category?: string; clue?: string; }
 interface RawNounPool { title?: string; description?: string; words?: RawNoun[]; }
 
 interface RawPair { word?: string; emoji?: string; oppositeWord?: string; oppositeEmoji?: string; }
@@ -224,6 +227,9 @@ interface GradableScale { concept: string; emoji: string; words: string[]; }
 interface PoolWord {
   word: string;
   emoji: string;
+  /** nouns: the kind of thing, and a spoken clue that passed `clueLeak`. Absent when invalid (never fabricated). */
+  category?: string;
+  clue?: string;
   oppositeWord?: string;
   oppositeEmoji?: string;
   /** association mode: the thing that goes with `word` (sock→shoe). */
@@ -322,7 +328,12 @@ const validateNounPool = (raw: RawNounPool): PoolWord[] => {
     if (seenWords.has(word) || seenEmojis.has(emoji)) { rejected += 1; continue; }
     seenWords.add(word);
     seenEmojis.add(emoji);
-    survivors.push({ word, emoji });
+    // Category and clue are support data: an invalid one is dropped, and the noun stays usable.
+    const category = entry.category?.trim().toLowerCase();
+    const clue = entry.clue?.trim().replace(/\.$/, '');
+    survivors.push({ word, emoji,
+      ...(category && /^[a-z]{3,14}$/.test(category) ? { category } : {}),
+      ...(clue && !clueLeak(clue, word) && !opensWithSentinel(clue) ? { clue } : {}) });
   }
 
   if (rejected > 0) {
@@ -619,21 +630,25 @@ const buildChallenge = (
     };
   }
 
+  // The target's kind and spoken clue ride on the two noun modes for their levers (handoff 22 L4).
+  const support = { ...(entry.category ? { category: entry.category } : {}), ...(entry.clue ? { clue: entry.clue } : {}) };
+
   if (type === 'naming') {
     // Spoken mode — no option cards.
-    return { id: 'pv-pending', type, word: entry.word, emoji: entry.emoji };
+    return { id: 'pv-pending', type, word: entry.word, emoji: entry.emoji, ...support };
   }
 
   // receptive_match — THE LAST TAP MODE. Emoji-only cards, emojis must be
   // distinct. It keeps its cards because picking the referent you just heard
   // named out of four pictures IS receptive identification; the tap is the
   // skill, not a costume over a spoken answer.
-  const target: PictureVocabOption = { word: entry.word, emoji: entry.emoji };
-  const options = buildOptions(target, others.map(e => ({ word: e.word, emoji: e.emoji })), {
+  // Each card carries its kind, so a wrong tap names same_category or other_category.
+  const card = (e: PoolWord): PictureVocabOption => ({ word: e.word, emoji: e.emoji, ...(e.category ? { category: e.category } : {}) });
+  const options = buildOptions(card(entry), others.map(card), {
     distinctEmojis: true,
   });
   if (!options) return null;
-  return { id: 'pv-pending', type, word: entry.word, emoji: entry.emoji, options };
+  return { id: 'pv-pending', type, word: entry.word, emoji: entry.emoji, options, ...support };
 };
 
 /** Single-mode session: 5 challenges of one type. */
@@ -828,6 +843,8 @@ STRICT RULES:
 - Every word: lowercase single token, 2-12 letters, no spaces.
 - All emojis must be visually DISTINCT from each other.
 - Theme the words to "${topic}" wherever a concrete noun fits; fill remaining slots with everyday K nouns.
+- category: one lowercase word for what the thing ITSELF is, not what goes in it or with it (animal, food, dish, toy, clothes, vehicle, furniture, plant, tool, body, weather, place). A cup, bowl or plate is a dish, not food. Things of the same kind share the same word.
+- clue: 4-10 words a 5-year-old understands, saying what it does or where you find it ("it barks and wags its tail"). NEVER the word itself, never its first sound, letters or rhymes.
 
 Also provide:
 - title: fun, kid-friendly session title including the topic.

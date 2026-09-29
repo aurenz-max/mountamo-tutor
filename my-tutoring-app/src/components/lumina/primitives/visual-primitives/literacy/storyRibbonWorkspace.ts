@@ -9,6 +9,7 @@
  * a planning aid; it is never graded.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { askFor as ask, storyRibbonHarnessAnswers, type StoryRibbonItem } from './storyRibbonScript';
 import { normalizeSupportTier, tutorRevealPolicy } from './storyRibbonSupport';
 
@@ -31,7 +32,39 @@ export function storyRibbonAssignment(item: StoryRibbonItem): TeachingAssignment
       + `grammar${TENSE[item.mode] ? `, told consistently in ${TENSE[item.mode]}` : ' (any consistent tense)'}. Picture `
       + 'labels listed without a story, one or two events, the wrong order, or a different story is not it. "First, next, '
       + 'last" is not required.';
-  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer };
+  return { id: item.id, task: ask(item), response: 'speech', expectedAnswer, misses: storyRibbonSpokenMisses(item) };
+}
+
+/** What a wrong spoken account shows (handoff 20 Part B): which part of the account is missing or off. */
+export type SpokenStoryRibbonMiss = 'labels_listed' | 'events_missing' | 'out_of_order' | 'tense_drift'
+  | 'event_only' | 'no_connection';
+
+export const STORY_RIBBON_MISSES: Record<StoryRibbonItem['mode'], readonly SpokenStoryRibbonMiss[]> = {
+  tell_connected_account: ['labels_listed', 'events_missing', 'out_of_order'],
+  tell_present_account: ['labels_listed', 'events_missing', 'out_of_order', 'tense_drift'],
+  tell_future_account: ['labels_listed', 'events_missing', 'out_of_order', 'tense_drift'],
+  tell_past_account: ['labels_listed', 'events_missing', 'out_of_order', 'tense_drift'],
+  story_to_experience: ['event_only', 'no_connection'],
+};
+
+/** An item's known wrong accounts, in precedence order, for the `spoken_miss` observer. Concrete per item. */
+export function storyRibbonSpokenMisses(item: StoryRibbonItem): KnownMiss[] {
+  const events = item.challenge.events;
+  const said = events.map(e => stop(e.modelSentence).replace(/\.$/, ''));
+  const labels = events.map(e => e.pictureLabel);
+  const pattern: Record<SpokenStoryRibbonMiss, () => KnownMiss> = {
+    labels_listed: () => ({ id: 'labels_listed', pattern: `The learner names the pictures (${labels.join(', ')}) as a list, with no story told about them.`,
+      examples: [labels.join(', ')] }),
+    events_missing: () => ({ id: 'events_missing', pattern: 'The learner tells one or two of the three events and stops, leaving an event out.',
+      examples: [`${said[0]}. ${said[1]}.`] }),
+    out_of_order: () => ({ id: 'out_of_order', pattern: 'The learner tells all three events, but not in the story\'s order.',
+      examples: [`${said[2]}. ${said[0]}. ${said[1]}.`] }),
+    tense_drift: () => ({ id: 'tense_drift', pattern: `The learner tells the three events in order, but not all in ${TENSE[item.mode] ?? 'the item\'s time'}.` }),
+    event_only: () => ({ id: 'event_only', pattern: 'The learner tells a story moment and gives no other experience.',
+      examples: [`${said[0]}.`] }),
+    no_connection: () => ({ id: 'no_connection', pattern: 'The learner gives a story moment and another experience, but never says how the two are alike.' }),
+  };
+  return STORY_RIBBON_MISSES[item.mode].map(id => pattern[id]());
 }
 
 export function storyRibbonScene(item: StoryRibbonItem): WorkspaceScene {

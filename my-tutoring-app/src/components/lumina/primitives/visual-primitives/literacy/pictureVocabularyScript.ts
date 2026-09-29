@@ -75,6 +75,22 @@ export type PictureVocabItemKind =
 export interface PictureVocabTapOption {
   word: string;
   emoji: string;
+  /** The kind of thing (animal, food, toy), so a wrong tap can be named against the target's. */
+  category?: string;
+}
+
+/**
+ * Leak rule for a spoken clue (what the thing does or where it is found): true if it says the word, a form of it,
+ * or anything about its sounds or letters. A first-sound cue gives away part of the answer (handoff 22 L4).
+ */
+export function clueLeak(clue: string, word: string): boolean {
+  const c = clue.toLowerCase(), w = word.toLowerCase().trim();
+  const stem = w.replace(/(es|s)$/, '');
+  if (new RegExp(`\\b${stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i').test(c)) return true;
+  if (/\b(starts?|begins?|ends?|sounds?|letters?|rhymes?|spell\w*|syllables?)\b/.test(c)) return true;
+  if (/\/[a-z]+\//.test(c)) return true;
+  const words = c.split(/\s+/).filter(Boolean);
+  return words.length < 3 || words.length > 12;
 }
 
 export interface PictureVocabItem extends JudgedScriptItem {
@@ -93,6 +109,9 @@ export interface PictureVocabItem extends JudgedScriptItem {
   scaleTargetIndex?: number;
   /** Tap modes only: the emoji-only cards on screen. */
   options?: PictureVocabTapOption[];
+  /** receptive_match / naming: the target's kind of thing, and a spoken clue (what it does, where it is found). */
+  category?: string;
+  clue?: string;
 }
 
 /**
@@ -147,6 +166,8 @@ export interface PictureVocabChallengeLike {
   scaleWords?: string[];
   scaleTargetIndex?: number;
   options?: PictureVocabTapOption[];
+  category?: string;
+  clue?: string;
 }
 
 /** Whole-word, case-insensitive containment — the same shape the leak oracle
@@ -239,6 +260,9 @@ export const itemFromChallenge = (ch: PictureVocabChallengeLike): PictureVocabIt
     scaleWords: ch.scaleWords,
     scaleTargetIndex: ch.scaleTargetIndex,
     options: ch.options,
+    // A clue that fails the leak rule is dropped here too: an older or hand-authored payload never reaches the tutor.
+    ...(ch.category ? { category: ch.category } : {}),
+    ...(ch.clue && !clueLeak(ch.clue, word) ? { clue: ch.clue } : {}),
   };
 };
 

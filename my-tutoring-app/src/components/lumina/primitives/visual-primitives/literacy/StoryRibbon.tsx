@@ -41,9 +41,9 @@ import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { itemsFromChallenges, mixedEventIds, type StoryRibbonItem } from './storyRibbonScript';
 import { hearDirectionsRequest, storyRibbonAssignment, storyRibbonScene } from './storyRibbonWorkspace';
+import { leversOnScreen, storyRibbonLevers, supportOnScreen } from './storyRibbonLevers';
 import {
   normalizeSupportTier,
-  resolveSupportStructure,
   storyRibbonPromptFor,
   type StoryRibbonProblemShape,
   type StoryRibbonSupportOptions,
@@ -156,6 +156,8 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
   const arrangementsRef = useRef<Record<string, string[][]>>({});
   /** The board when the account was credited: order (or the chosen moment) and whether it was in story order. */
   const arrangementAtTellRef = useRef<Record<string, { order: string[]; correct: boolean }>>({});
+  // In-item levers (`storyRibbonLevers.ts`), keyed by the item they were pulled on.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
 
   const evaluation = usePrimitiveEvaluation<StoryRibbonMetrics>({
     primitiveType: 'story-ribbon',
@@ -231,13 +233,28 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
 
   const currentItem = runner.currentItem ?? items[0] ?? null;
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
+  const pulledLevers = leverState.item === currentItem?.id ? leverState.pulled : [];
 
   // What the tutor and the observer are shown, republished every render. The card order is a
   // planning aid and is not a fact: only the spoken account is judged.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...storyRibbonScene(currentItem) };
+    const levers = storyRibbonLevers(currentItem, pulledLevers);
+    const scene = storyRibbonScene(currentItem);
+    const onScreen = leversOnScreen(currentItem, pulledLevers);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        setLeverState({ item: currentItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+    };
   });
 
   /** Asks the tutor for the directions again: a silent host request, never an event. */
@@ -343,8 +360,8 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
   const phase = PHASE_CONFIG[currentItem.mode];
   const experienceMode = isExperienceItem(currentItem);
   const supportTier = normalizeSupportTier(currentItem.challenge.supportTier);
-  const support = currentItem.challenge.support
-    ?? resolveSupportStructure(currentItem.mode, supportTier);
+  // The tier's aids plus the pulled levers; the prompt keeps the tier's wording.
+  const support = supportOnScreen(currentItem, pulledLevers);
   const prompt = supportTier === null
     ? experienceMode
       ? 'Tap one story picture. Then tell what it reminds you of and how the two experiences connect.'
@@ -420,7 +437,7 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
                       }`}
                     >
                       {support.showSequenceLabels && (
-                        <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-200/80">
+                        <span data-lever="sequence-label" className="block text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-200/80">
                           {['First', 'Next', 'Last'][index]}
                         </span>
                       )}
@@ -428,7 +445,7 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
                       <span className="block text-sm font-semibold text-slate-100">{event.pictureLabel}</span>
                     </button>
                     {support.showFlowArrows && index < 2 && (
-                      <span className="hidden text-2xl text-emerald-300/70 sm:block" aria-hidden>→</span>
+                      <span data-lever="flow-arrow" className="hidden text-2xl text-emerald-300/70 sm:block" aria-hidden>→</span>
                     )}
                   </React.Fragment>
                 ))}
@@ -454,7 +471,7 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-rose-200/80">Your world</p>
                 <p className="mt-2 text-3xl" aria-hidden>💭</p>
                 {support.showConnectionFrame && (
-                  <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-rose-100">
+                  <div data-lever="connection-frame" className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-rose-100">
                     <span className="rounded-full bg-rose-400/15 px-3 py-1.5">Story moment</span>
                     <span aria-hidden>→</span>
                     <span className="rounded-full bg-rose-400/15 px-3 py-1.5">Another experience</span>

@@ -80,6 +80,7 @@ import {
   type WordSorterTier,
 } from './wordSorterScript';
 import { hearQuestionRequest, wordSorterAssignment, wordSorterScene } from './wordSorterWorkspace';
+import { aidsOnScreen, leversOnScreen, wordSorterLevers } from './wordSorterLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { wordSorterPipPose } from '../../../pip/wordSorterPipPose';
 
@@ -227,6 +228,8 @@ function WordSorterSurface({ data, className, runtimePlanItemId }: WordSorterPro
   } | null>(null);
   /** Every credited item: the only thing that can put a word on a mat. */
   const [solvedIds, setSolvedIds] = useState<ReadonlySet<string>>(() => new Set());
+  // In-item levers (`wordSorterLevers.ts`), keyed by the item they were pulled on.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
 
   // ── Evaluation ─────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<WordSorterMetrics>({
@@ -276,12 +279,29 @@ function WordSorterSurface({ data, className, runtimePlanItemId }: WordSorterPro
   const currentItem = runner.currentItem;
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   const modeMeta = MODE_META[currentItem?.mode ?? 'binary_sort'];
+  const pulledLevers = leverState.item === currentItem?.id ? leverState.pulled : [];
+  const filedCount = currentItem
+    ? items.filter(i => i.challengeId === currentItem.challengeId && solvedIds.has(i.id)).length : 0;
 
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...wordSorterScene(currentItem) };
+    const levers = wordSorterLevers(currentItem, pulledLevers, filedCount);
+    const scene = wordSorterScene(currentItem);
+    const onScreen = leversOnScreen(currentItem, pulledLevers);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        setLeverState({ item: currentItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+    };
   });
 
   /** Asks the tutor for the question again: a silent host request, never the answer. */
@@ -358,6 +378,9 @@ function WordSorterSurface({ data, className, runtimePlanItemId }: WordSorterPro
 
   /** The mats — printed material, never an answer surface. Nothing here is
    *  clickable: the child says the group out loud. */
+  // The tier's aids plus the pulled levers.
+  const aids = currentItem ? aidsOnScreen(currentItem, pulledLevers) : null;
+
   const renderMats = (item: WordSorterItem) => (
     <div className={`grid gap-4 ${item.choices.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
       {item.choices.map((label, idx) => {
@@ -371,8 +394,8 @@ function WordSorterSurface({ data, className, runtimePlanItemId }: WordSorterPro
         return (
           <div key={label} className="w-full">
             <div className="mb-3 flex flex-col items-center gap-1">
-              {item.showChoiceEmojis && item.choiceEmojis[idx] && (
-                <span className="text-4xl leading-none">{item.choiceEmojis[idx]}</span>
+              {aids?.showChoiceEmojis && item.choiceEmojis[idx] && (
+                <span data-lever="group-picture" className="text-4xl leading-none">{item.choiceEmojis[idx]}</span>
               )}
               <h3
                 className={`font-bold text-center ${MAT_COLORS[idx] ?? MAT_COLORS[0]} ${
@@ -386,10 +409,11 @@ function WordSorterSurface({ data, className, runtimePlanItemId }: WordSorterPro
               state={zoneState}
               className="min-h-[104px] pointer-events-none content-center justify-center"
             >
-              {item.showFiledWords
+              {aids?.showFiledWords
                 ? placed.map((p) => (
                   <LuminaBadge
                     key={p.id}
+                    data-lever="filed-word"
                     className={`bg-white/10 border-white/10 text-slate-200 ${
                       isPreReader ? 'text-base' : 'text-xs'
                     }`}
@@ -448,9 +472,9 @@ function WordSorterSurface({ data, className, runtimePlanItemId }: WordSorterPro
     const paired = items.filter(
       (i) => i.challengeId === item.challengeId && solvedIds.has(i.id),
     );
-    if (!item.showFiledWords || paired.length === 0) return null;
+    if (!aids?.showFiledWords || paired.length === 0) return null;
     return (
-      <div className="flex flex-wrap justify-center gap-2">
+      <div data-lever="filed-pairs" className="flex flex-wrap justify-center gap-2">
         {paired.map((p) => (
           <LuminaBadge key={p.id} accent="emerald" className="text-xs">
             {p.word} → {p.answer}

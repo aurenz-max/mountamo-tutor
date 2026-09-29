@@ -96,6 +96,15 @@ const EXTRA_FIELDS: Record<OralSentenceStudioChallengeType, FlatField[]> = {
 const fieldsFor = (type: OralSentenceStudioChallengeType): FlatField[] =>
   [...FLAT_FIELDS, ...EXTRA_FIELDS[type]];
 
+/**
+ * Meaning pictures for the two target words (the `word_pictures` lever, handoff 22 L4). Required in the schema: as
+ * optional fields Gemini omitted them on 5 of 18 items (09-29 probe); required returned 16/18 with the same fallback
+ * rate. Validated softly: a bad or scene-repeating picture drops the pictures, never the challenge.
+ */
+const SUPPORT_FIELDS = ['meaningEmoji0', 'meaningEmoji1'] as const;
+const SUPPORT_DESCRIPTION = 'Exactly one familiar emoji that pictures the MEANING of the matching target word on its own '
+  + '(gentle → 🪶, thirsty → 💧). Never one of the scene\'s own emojis, and never a picture of the whole sentence.';
+
 const fieldDescription = (field: FlatField): string => {
   if (field === 'type') return 'The assigned challenge type.';
   if (field === 'storyText') return 'Two or three short complete story sentences about the pictured scene that use both target words with clear meanings.';
@@ -112,12 +121,15 @@ const fieldDescription = (field: FlatField): string => {
 const schemaFor = (type: OralSentenceStudioChallengeType): Schema => constrainChallengeTypeEnum(
   {
     type: Type.OBJECT,
-    properties: Object.fromEntries(fieldsFor(type).map((field) => [field, {
-      type: Type.STRING,
-      ...(field === 'type' ? { enum: [...ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES] } : {}),
-      description: fieldDescription(field),
-    }])),
-    required: fieldsFor(type),
+    properties: Object.fromEntries([
+      ...fieldsFor(type).map((field) => [field, {
+        type: Type.STRING,
+        ...(field === 'type' ? { enum: [...ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES] } : {}),
+        description: fieldDescription(field),
+      }]),
+      ...SUPPORT_FIELDS.map((field) => [field, { type: Type.STRING, description: SUPPORT_DESCRIPTION }]),
+    ]),
+    required: [...fieldsFor(type), ...SUPPORT_FIELDS],
   },
   [type],
   CHALLENGE_TYPE_DOCS,
@@ -180,7 +192,13 @@ export function validateOralSentenceStudioPayload(
   if (!targetWords.every((word) => meaningTokens.has(word))) return null;
   if (!sentencesGenuinelyDiffer(acceptedSentences)) return null;
 
+  const wordEmojis = SUPPORT_FIELDS.map((field) => text(record[field]));
+  const sceneEmojis = [values.settingEmoji, values.actorEmoji, values.actionEmoji, values.objectEmoji];
+  const picturesUsable = wordEmojis.every((emoji) => emojiPattern.test(emoji) && !sceneEmojis.includes(emoji))
+    && wordEmojis[0] !== wordEmojis[1];
+
   const challenge: OralSentenceStudioChallenge = {
+    ...(picturesUsable ? { wordEmojis: wordEmojis as [string, string] } : {}),
     id: `oral-sentence-studio-${index + 1}`,
     type: expectedType,
     sceneTitle: values.sceneTitle,

@@ -1,0 +1,255 @@
+{
+  "generatedAt": "2026-09-29T04:15:29.101Z",
+  "data": {
+    "title": "Fun Day at the Park Words!",
+    "description": "Let us look at pictures and name the fun things we see outside.",
+    "challengeType": "receptive_match",
+    "challenges": [
+      {
+        "id": "pv-1",
+        "type": "receptive_match",
+        "word": "dog",
+        "emoji": "🐕",
+        "options": [
+          {
+            "word": "swing",
+            "emoji": "🛝",
+            "category": "toy"
+          },
+          {
+            "word": "sun",
+            "emoji": "☀️",
+            "category": "weather"
+          },
+          {
+            "word": "flower",
+            "emoji": "🌸",
+            "category": "plant"
+          },
+          {
+            "word": "dog",
+            "emoji": "🐕",
+            "category": "animal"
+          }
+        ],
+        "category": "animal",
+        "clue": "it barks and wags its tail on a leash"
+      },
+      {
+        "id": "pv-2",
+        "type": "receptive_match",
+        "word": "bench",
+        "emoji": "🪑",
+        "options": [
+          {
+            "word": "bench",
+            "emoji": "🪑",
+            "category": "furniture"
+          },
+          {
+            "word": "slide",
+            "emoji": "🎢",
+            "category": "toy"
+          },
+          {
+            "word": "swing",
+            "emoji": "🛝",
+            "category": "toy"
+          },
+          {
+            "word": "ball",
+            "emoji": "⚽",
+            "category": "toy"
+          }
+        ],
+        "category": "furniture",
+        "clue": "you sit on this wooden seat to rest"
+      },
+      {
+        "id": "pv-3",
+        "type": "receptive_match",
+        "word": "ball",
+        "emoji": "⚽",
+        "options": [
+          {
+            "word": "dog",
+            "emoji": "🐕",
+            "category": "animal"
+          },
+          {
+            "word": "kite",
+            "emoji": "🪁",
+            "category": "toy"
+          },
+          {
+            "word": "ball",
+            "emoji": "⚽",
+            "category": "toy"
+          },
+          {
+            "word": "sun",
+            "emoji": "☀️",
+            "category": "weather"
+          }
+        ],
+        "category": "toy",
+        "clue": "you kick or throw this round toy outside"
+      },
+      {
+        "id": "pv-4",
+        "type": "receptive_match",
+        "word": "kite",
+        "emoji": "🪁",
+        "options": [
+          {
+            "word": "kite",
+            "emoji": "🪁",
+            "category": "toy"
+          },
+          {
+            "word": "duck",
+            "emoji": "🦆",
+            "category": "animal"
+          },
+          {
+            "word": "dog",
+            "emoji": "🐕",
+            "category": "animal"
+          },
+          {
+            "word": "bench",
+            "emoji": "🪑",
+            "category": "furniture"
+          }
+        ],
+        "category": "toy",
+        "clue": "this flies high in the air on a windy day"
+      },
+      {
+        "id": "pv-5",
+        "type": "receptive_match",
+        "word": "slide",
+        "emoji": "🎢",
+        "options": [
+          {
+            "word": "slide",
+            "emoji": "🎢",
+            "category": "toy"
+          },
+          {
+            "word": "ball",
+            "emoji": "⚽",
+            "category": "toy"
+          },
+          {
+            "word": "swing",
+            "emoji": "🛝",
+            "category": "toy"
+          },
+          {
+            "word": "kite",
+            "emoji": "🪁",
+            "category": "toy"
+          }
+        ],
+        "category": "toy",
+        "clue": "you climb up and zoom down to the bottom"
+      }
+    ],
+    "gradeLevel": "Kindergarten"
+  },
+  "rows": [
+    {
+      "word": "dog",
+      "category": "animal",
+      "clue": "it barks and wags its tail on a leash",
+      "cards": [
+        "swing:toy",
+        "sun:weather",
+        "flower:plant",
+        "dog:animal"
+      ],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    },
+    {
+      "word": "bench",
+      "category": "furniture",
+      "clue": "you sit on this wooden seat to rest",
+      "cards": [
+        "bench:furniture",
+        "slide:toy",
+        "swing:toy",
+        "ball:toy"
+      ],
+      "levers": [
+        "function_cue",
+        "two_cards_far"
+      ],
+      "practice": [
+        "flower:plant",
+        "sun:weather"
+      ]
+    },
+    {
+      "word": "ball",
+      "category": "toy",
+      "clue": "you kick or throw this round toy outside",
+      "cards": [
+        "dog:animal",
+        "kite:toy",
+        "ball:toy",
+        "sun:weather"
+      ],
+      "levers": [
+        "function_cue",
+        "two_cards_far"
+      ],
+      "practice": [
+        "flower:plant",
+        "swing:toy"
+      ]
+    },
+    {
+      "word": "kite",
+      "category": "toy",
+      "clue": "this flies high in the air on a windy day",
+      "cards": [
+        "kite:toy",
+        "duck:animal",
+        "dog:animal",
+        "bench:furniture"
+      ],
+      "levers": [
+        "function_cue",
+        "two_cards_far"
+      ],
+      "practice": [
+        "sun:weather",
+        "swing:toy"
+      ]
+    },
+    {
+      "word": "slide",
+      "category": "toy",
+      "clue": "you climb up and zoom down to the bottom",
+      "cards": [
+        "slide:toy",
+        "ball:toy",
+        "swing:toy",
+        "kite:toy"
+      ],
+      "levers": [
+        "function_cue",
+        "two_cards_far"
+      ],
+      "practice": [
+        "flower:plant",
+        "sun:weather"
+      ]
+    }
+  ],
+  "issues": []
+}

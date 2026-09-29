@@ -24,6 +24,7 @@ import { sceneStatement, taskPrompt } from './youAndMeScript';
 import type { SupportTier } from '../../../service/generation/generationContext';
 import { supportFor, type YouAndMeSupportScaffold } from './youAndMeSupport';
 import { hearSceneRequest, youAndMeAssignment, youAndMeScene } from './youAndMeWorkspace';
+import { aidsOnScreen, leversOnScreen, youAndMeLevers } from './youAndMeLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { youAndMePipPose } from '../../../pip/youAndMePipPose';
 
@@ -77,6 +78,8 @@ function YouAndMeSession({ data, className, runtimePlanItemId }: YouAndMeProps) 
   const instanceId = useRef(data.instanceId ?? `you-and-me-${crypto.randomUUID()}`).current;
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [correctedId, setCorrectedId] = useState<string | null>(null);
+  // In-item levers (`youAndMeLevers.ts`), keyed by the item they were pulled on.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const items = data.challenges;
   const evaluation = usePrimitiveEvaluation<YouAndMeMetrics>({
     primitiveType: 'you-and-me', instanceId, skillId: data.skillId,
@@ -121,12 +124,27 @@ function YouAndMeSession({ data, className, runtimePlanItemId }: YouAndMeProps) 
   });
   const item = run.currentItem;
   const showSummary = evaluation.hasSubmitted || !!run.practiceSummary;
+  const pulledLevers = leverState.item === item?.id ? leverState.pulled : [];
 
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!item) return;
-    workspace.current = { ...youAndMeScene(item) };
+    const levers = youAndMeLevers(item, pulledLevers);
+    const scene = youAndMeScene(item);
+    const onScreen = leversOnScreen(item, pulledLevers);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        setLeverState({ item: item.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+    };
   });
 
   // ── Pip shared surface ────────────────────────────────────────────────────
@@ -159,6 +177,7 @@ function YouAndMeSession({ data, className, runtimePlanItemId }: YouAndMeProps) 
   const speaker = item.participants[item.speaker];
   const actor = item.participants[item.actor];
   const support = supportFor(item);
+  const aids = aidsOnScreen(item, pulledLevers);
   const swapped = run.currentIndex > 0 && items[run.currentIndex - 1]?.sceneId === item.sceneId;
   return <LuminaCard className={className}>
     <LuminaCardHeader>
@@ -174,11 +193,11 @@ function YouAndMeSession({ data, className, runtimePlanItemId }: YouAndMeProps) 
       </LuminaBadge></div>
       <div ref={pip.ref('scene')} data-pip-object="scene" className="relative grid grid-cols-2 gap-4 rounded-3xl bg-gradient-to-br from-rose-950/20 to-teal-950/25 p-4 sm:p-8">
         {item.participants.map((person, index) => <div key={person.name}
-          className={`relative flex min-h-52 flex-col items-center justify-center gap-3 rounded-3xl border-2 p-4 transition-all duration-500 ${support.showSpeakerHighlight && index === item.speaker ? 'border-pink-300 bg-pink-300/10 shadow-lg shadow-pink-300/10' : 'border-slate-600/40 bg-slate-800/20'}`}>
+          className={`relative flex min-h-52 flex-col items-center justify-center gap-3 rounded-3xl border-2 p-4 transition-all duration-500 ${aids.speaker && index === item.speaker ?'border-pink-300 bg-pink-300/10 shadow-lg shadow-pink-300/10' : 'border-slate-600/40 bg-slate-800/20'}`}>
           <span className="text-6xl sm:text-7xl" role="img" aria-label={person.name}>{person.emoji}</span>
           <span className="text-lg font-semibold text-slate-100">{person.name}</span>
           <span className="text-sm text-slate-300">{index === item.speaker ? 'Speaking now' : 'Listening partner'}</span>
-          {support.showActorMarker && index === item.actor && <span className="flex items-center gap-2 text-sm text-slate-200">
+          {aids.actor && index === item.actor && <span data-lever="actor-marker" className="flex items-center gap-2 text-sm text-slate-200">
             <span className="text-3xl" role="img" aria-label={item.object}>{item.objectEmoji}</span> Did the action
           </span>}
         </div>)}

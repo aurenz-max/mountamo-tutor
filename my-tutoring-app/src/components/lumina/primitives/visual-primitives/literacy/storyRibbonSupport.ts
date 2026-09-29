@@ -175,8 +175,8 @@ export function tutorRevealPolicy(
 ): string {
   if (tier === 'hard') {
     return mode === 'story_to_experience'
-      ? 'Keep privacy choices available, but do not restore the hidden three-part connection frame through speech.'
-      : 'Do not restore sequence labels, flow arrows, live order feedback, or extra step-by-step directions through speech.';
+      ? 'Keep privacy choices available, but do not restore the hidden three-part connection frame through speech; it comes back only as a lever.'
+      : 'Do not restore sequence labels, flow arrows, live order feedback, or extra step-by-step directions through speech; labels and arrows come back only as levers.';
   }
   if (tier === 'medium') {
     return mode === 'story_to_experience'

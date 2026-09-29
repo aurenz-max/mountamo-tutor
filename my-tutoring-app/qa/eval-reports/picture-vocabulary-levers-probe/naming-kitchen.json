@@ -1,0 +1,104 @@
+{
+  "generatedAt": "2026-09-29T04:15:32.603Z",
+  "data": {
+    "title": "Fun Kitchen Words!",
+    "description": "Let us look at pictures and name things we find in the kitchen.",
+    "challengeType": "naming",
+    "challenges": [
+      {
+        "id": "pv-1",
+        "type": "naming",
+        "word": "bowl",
+        "emoji": "🥣",
+        "category": "dish",
+        "clue": "you eat cereal or soup out of it"
+      },
+      {
+        "id": "pv-2",
+        "type": "naming",
+        "word": "knife",
+        "emoji": "🔪",
+        "category": "tool",
+        "clue": "grownups use it to cut up food"
+      },
+      {
+        "id": "pv-3",
+        "type": "naming",
+        "word": "pan",
+        "emoji": "🍳",
+        "category": "dish",
+        "clue": "you fry eggs in it on the stove"
+      },
+      {
+        "id": "pv-4",
+        "type": "naming",
+        "word": "apple",
+        "emoji": "🍎",
+        "category": "food",
+        "clue": "a crunchy red fruit kept in the kitchen"
+      },
+      {
+        "id": "pv-5",
+        "type": "naming",
+        "word": "fork",
+        "emoji": "🍴",
+        "category": "tool",
+        "clue": "it has prongs to pick up food"
+      }
+    ],
+    "gradeLevel": "Kindergarten"
+  },
+  "rows": [
+    {
+      "word": "bowl",
+      "category": "dish",
+      "clue": "you eat cereal or soup out of it",
+      "cards": [],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    },
+    {
+      "word": "knife",
+      "category": "tool",
+      "clue": "grownups use it to cut up food",
+      "cards": [],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    },
+    {
+      "word": "pan",
+      "category": "dish",
+      "clue": "you fry eggs in it on the stove",
+      "cards": [],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    },
+    {
+      "word": "apple",
+      "category": "food",
+      "clue": "a crunchy red fruit kept in the kitchen",
+      "cards": [],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    },
+    {
+      "word": "fork",
+      "category": "tool",
+      "clue": "it has prongs to pick up food",
+      "cards": [],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    }
+  ],
+  "issues": []
+}

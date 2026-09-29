@@ -37,6 +37,7 @@ import { useWorkspaceRunner, type TeachingEvaluationResult }
 import { phaseResultsFromSummary, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import { itemsFromChallenges, type OralSentenceStudioItem } from './oralSentenceStudioScript';
 import { oralSentenceAssignment, oralSentenceScene } from './oralSentenceStudioWorkspace';
+import { PICTURES_LEVER, STRIP_LEVER, leversOnScreen, oralSentenceLevers } from './oralSentenceStudioLevers';
 
 /** Task identities (eval modes): describe a picture, rehearse the sentence
  * for the next step of a class writing piece, or reuse two story words in a
@@ -62,6 +63,8 @@ export interface OralSentenceStudioChallenge {
   targetWords: [string, string];
   /** Child-friendly meanings aligned by index with targetWords. */
   wordMeanings: [string, string];
+  /** One meaning picture per target word (the `word_pictures` lever). Never a scene emoji; absent when invalid. */
+  wordEmojis?: [string, string];
   /** Private semantic scene anchor; never rendered before or during an attempt. */
   sceneMeaning: string;
   /** Three private, distinct examples proving the answer set is open. */
@@ -115,6 +118,8 @@ const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, cl
   const workspace = useRef<TeachingWorkspace | null>(null);
   /** The credited item, whose example sentence may now be shown. */
   const [creditedItem, setCreditedItem] = useState<OralSentenceStudioItem | null>(null);
+  // In-item levers (`oralSentenceStudioLevers.ts`), keyed by the item they were pulled on.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
 
   const evaluation = usePrimitiveEvaluation<OralSentenceStudioMetrics>({
     primitiveType: 'oral-sentence-studio',
@@ -165,12 +170,29 @@ const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, cl
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
   const currentItem = runner.currentItem ?? items[0] ?? null;
+  const pulledLevers = leverState.item === currentItem?.id ? leverState.pulled : [];
+  const leverOn = (id: string) => pulledLevers.includes(id) && !runner.revealHeld;
 
   // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
-    if (!runner.currentItem) return;
-    workspace.current = { ...oralSentenceScene(runner.currentItem) };
+    const item = runner.currentItem;
+    if (!item) return;
+    const levers = oralSentenceLevers(item, pulledLevers);
+    const scene = oralSentenceScene(item);
+    const onScreen = leversOnScreen(item, pulledLevers);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        setLeverState({ item: item.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+    };
   });
 
   // Pip: the scene is the question side; the sentence is the child's own, so
@@ -298,9 +320,25 @@ const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, cl
                   <div key={word} className="rounded-xl border border-amber-300/15 bg-amber-300/10 p-4">
                     <p className="text-xl font-bold text-amber-100">{word}</p>
                     <p className="mt-1 text-sm text-slate-300">{challenge.wordMeanings[index]}</p>
+                    {/* Help: what the word means, as a picture of its own. Never a scene picture. */}
+                    {leverOn(PICTURES_LEVER) && challenge.wordEmojis && (
+                      <span data-lever="word-picture" className="mt-2 block text-4xl" role="img" aria-label={`${word} picture`}>
+                        {challenge.wordEmojis[index]}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
+              {/* Help: the shape of a whole sentence. Two empty boxes and the word chips; nothing is filled in. */}
+              {leverOn(STRIP_LEVER) && (
+                <div data-lever="sentence-strip" className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
+                  <span className="rounded-xl border-2 border-dashed border-cyan-300/40 px-4 py-2 text-cyan-100">👤 Who?</span>
+                  <span className="rounded-xl border-2 border-dashed border-cyan-300/40 px-4 py-2 text-cyan-100">⚡ What happens?</span>
+                  {challenge.targetWords.map(word => (
+                    <span key={word} className="rounded-full bg-amber-300/15 px-3 py-1 font-semibold text-amber-100">{word}</span>
+                  ))}
+                </div>
+              )}
             </LuminaPanel>
 
             {feedbackVisible && creditedItem && (

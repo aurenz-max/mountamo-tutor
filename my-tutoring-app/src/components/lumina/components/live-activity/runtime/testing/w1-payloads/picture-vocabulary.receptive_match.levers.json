@@ -1,0 +1,163 @@
+{
+  "source": "qa/eval-reports/picture-vocabulary-levers-probe/receptive_match-kitchen.json (real generation 2026-09-29, kinds and clues)",
+  "primitiveId": "picture-vocabulary",
+  "evalMode": "receptive_match",
+  "data": {
+    "title": "Fun Things in the Kitchen!",
+    "description": "Let us look at pictures and name the fun things we find together.",
+    "challengeType": "receptive_match",
+    "challenges": [
+      {
+        "id": "pv-1",
+        "type": "receptive_match",
+        "word": "pot",
+        "emoji": "🍲",
+        "options": [
+          {
+            "word": "pot",
+            "emoji": "🍲",
+            "category": "dish"
+          },
+          {
+            "word": "cup",
+            "emoji": "🥤",
+            "category": "dish"
+          },
+          {
+            "word": "plate",
+            "emoji": "🍽️",
+            "category": "dish"
+          },
+          {
+            "word": "banana",
+            "emoji": "🍌",
+            "category": "food"
+          }
+        ],
+        "category": "dish",
+        "clue": "pasta cooks inside this on the stove"
+      },
+      {
+        "id": "pv-2",
+        "type": "receptive_match",
+        "word": "pan",
+        "emoji": "🍳",
+        "options": [
+          {
+            "word": "bread",
+            "emoji": "🍞",
+            "category": "food"
+          },
+          {
+            "word": "pan",
+            "emoji": "🍳",
+            "category": "dish"
+          },
+          {
+            "word": "apple",
+            "emoji": "🍎",
+            "category": "food"
+          },
+          {
+            "word": "spoon",
+            "emoji": "🥄",
+            "category": "tool"
+          }
+        ],
+        "category": "dish",
+        "clue": "eggs fry in this for breakfast"
+      },
+      {
+        "id": "pv-3",
+        "type": "receptive_match",
+        "word": "bowl",
+        "emoji": "🥣",
+        "options": [
+          {
+            "word": "bread",
+            "emoji": "🍞",
+            "category": "food"
+          },
+          {
+            "word": "spoon",
+            "emoji": "🥄",
+            "category": "tool"
+          },
+          {
+            "word": "pan",
+            "emoji": "🍳",
+            "category": "dish"
+          },
+          {
+            "word": "bowl",
+            "emoji": "🥣",
+            "category": "dish"
+          }
+        ],
+        "category": "dish",
+        "clue": "you eat yummy cereal out of this"
+      },
+      {
+        "id": "pv-4",
+        "type": "receptive_match",
+        "word": "cup",
+        "emoji": "🥤",
+        "options": [
+          {
+            "word": "cup",
+            "emoji": "🥤",
+            "category": "dish"
+          },
+          {
+            "word": "pan",
+            "emoji": "🍳",
+            "category": "dish"
+          },
+          {
+            "word": "bread",
+            "emoji": "🍞",
+            "category": "food"
+          },
+          {
+            "word": "spoon",
+            "emoji": "🥄",
+            "category": "tool"
+          }
+        ],
+        "category": "dish",
+        "clue": "you drink milk or water from this"
+      },
+      {
+        "id": "pv-5",
+        "type": "receptive_match",
+        "word": "bread",
+        "emoji": "🍞",
+        "options": [
+          {
+            "word": "plate",
+            "emoji": "🍽️",
+            "category": "dish"
+          },
+          {
+            "word": "bread",
+            "emoji": "🍞",
+            "category": "food"
+          },
+          {
+            "word": "cup",
+            "emoji": "🥤",
+            "category": "dish"
+          },
+          {
+            "word": "fork",
+            "emoji": "🍴",
+            "category": "tool"
+          }
+        ],
+        "category": "food",
+        "clue": "you use slices of this to make sandwiches"
+      }
+    ],
+    "gradeLevel": "Kindergarten"
+  }
+}

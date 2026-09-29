@@ -1,0 +1,44 @@
+[
+  {
+    "name": "describe_scene-garden",
+    "items": 3,
+    "withPictures": 3,
+    "pictures": "careful/tiny=🛡️🐜 gentle/tiny=🪶🐜 eager/gentle=⭐🪶",
+    "issues": []
+  },
+  {
+    "name": "describe_scene-beach",
+    "items": 3,
+    "withPictures": 3,
+    "pictures": "bright/cozy=☀️🧸 bright/proud=☀️🌟 bright/cozy=☀️🧸",
+    "issues": []
+  },
+  {
+    "name": "guided_writing_rehearsal-garden",
+    "items": 3,
+    "withPictures": 3,
+    "pictures": "last/gentle=⏱️🪶 then/careful=⏰🛡️ last/thirsty=🏁💧",
+    "issues": []
+  },
+  {
+    "name": "guided_writing_rehearsal-beach",
+    "items": 3,
+    "withPictures": 3,
+    "pictures": "next/careful=➡️🛡️ last/safe=🏁🛡️ last/splash=⏰💦",
+    "issues": []
+  },
+  {
+    "name": "use_story_words-garden",
+    "items": 3,
+    "withPictures": 3,
+    "pictures": "gentle/careful=🪶🔍 careful/thirsty=🛡️💧 gentle/tiny=🪶🐜",
+    "issues": []
+  },
+  {
+    "name": "use_story_words-beach",
+    "items": 3,
+    "withPictures": 3,
+    "pictures": "bright/happy=☀️😊 brave/shiny=🦁✨ brave/gigantic=🦁🐳",
+    "issues": []
+  }
+]

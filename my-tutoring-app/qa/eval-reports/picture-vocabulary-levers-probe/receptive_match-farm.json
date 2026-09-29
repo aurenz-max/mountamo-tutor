@@ -1,0 +1,251 @@
+{
+  "generatedAt": "2026-09-29T04:15:25.439Z",
+  "data": {
+    "title": "Fun Farm Animal Words!",
+    "description": "Let us look at pictures and name the fun things we see on the farm.",
+    "challengeType": "receptive_match",
+    "challenges": [
+      {
+        "id": "pv-1",
+        "type": "receptive_match",
+        "word": "sheep",
+        "emoji": "🐑",
+        "options": [
+          {
+            "word": "goat",
+            "emoji": "🐐",
+            "category": "animal"
+          },
+          {
+            "word": "barn",
+            "emoji": "🛖",
+            "category": "place"
+          },
+          {
+            "word": "sheep",
+            "emoji": "🐑",
+            "category": "animal"
+          },
+          {
+            "word": "pig",
+            "emoji": "🐷",
+            "category": "animal"
+          }
+        ],
+        "category": "animal",
+        "clue": "it has soft wool and says baa"
+      },
+      {
+        "id": "pv-2",
+        "type": "receptive_match",
+        "word": "apple",
+        "emoji": "🍎",
+        "options": [
+          {
+            "word": "sheep",
+            "emoji": "🐑",
+            "category": "animal"
+          },
+          {
+            "word": "apple",
+            "emoji": "🍎",
+            "category": "food"
+          },
+          {
+            "word": "goat",
+            "emoji": "🐐",
+            "category": "animal"
+          },
+          {
+            "word": "chicken",
+            "emoji": "🐔",
+            "category": "animal"
+          }
+        ],
+        "category": "food",
+        "clue": "a crunchy red fruit that grows on trees"
+      },
+      {
+        "id": "pv-3",
+        "type": "receptive_match",
+        "word": "barn",
+        "emoji": "🛖",
+        "options": [
+          {
+            "word": "goat",
+            "emoji": "🐐",
+            "category": "animal"
+          },
+          {
+            "word": "horse",
+            "emoji": "🐴",
+            "category": "animal"
+          },
+          {
+            "word": "barn",
+            "emoji": "🛖",
+            "category": "place"
+          },
+          {
+            "word": "duck",
+            "emoji": "🦆",
+            "category": "animal"
+          }
+        ],
+        "category": "place",
+        "clue": "a big red building where animals sleep"
+      },
+      {
+        "id": "pv-4",
+        "type": "receptive_match",
+        "word": "pig",
+        "emoji": "🐷",
+        "options": [
+          {
+            "word": "pig",
+            "emoji": "🐷",
+            "category": "animal"
+          },
+          {
+            "word": "duck",
+            "emoji": "🦆",
+            "category": "animal"
+          },
+          {
+            "word": "goat",
+            "emoji": "🐐",
+            "category": "animal"
+          },
+          {
+            "word": "tractor",
+            "emoji": "🚜",
+            "category": "vehicle"
+          }
+        ],
+        "category": "animal",
+        "clue": "it has a curly tail and plays in mud"
+      },
+      {
+        "id": "pv-5",
+        "type": "receptive_match",
+        "word": "cow",
+        "emoji": "🐮",
+        "options": [
+          {
+            "word": "barn",
+            "emoji": "🛖",
+            "category": "place"
+          },
+          {
+            "word": "tractor",
+            "emoji": "🚜",
+            "category": "vehicle"
+          },
+          {
+            "word": "goat",
+            "emoji": "🐐",
+            "category": "animal"
+          },
+          {
+            "word": "cow",
+            "emoji": "🐮",
+            "category": "animal"
+          }
+        ],
+        "category": "animal",
+        "clue": "it says moo and gives us milk"
+      }
+    ],
+    "gradeLevel": "Kindergarten"
+  },
+  "rows": [
+    {
+      "word": "sheep",
+      "category": "animal",
+      "clue": "it has soft wool and says baa",
+      "cards": [
+        "goat:animal",
+        "barn:place",
+        "sheep:animal",
+        "pig:animal"
+      ],
+      "levers": [
+        "function_cue",
+        "two_cards_far"
+      ],
+      "practice": [
+        "chicken:animal",
+        "tractor:vehicle"
+      ]
+    },
+    {
+      "word": "apple",
+      "category": "food",
+      "clue": "a crunchy red fruit that grows on trees",
+      "cards": [
+        "sheep:animal",
+        "apple:food",
+        "goat:animal",
+        "chicken:animal"
+      ],
+      "levers": [
+        "function_cue",
+        "two_cards_far"
+      ],
+      "practice": [
+        "horse:animal",
+        "tractor:vehicle"
+      ]
+    },
+    {
+      "word": "barn",
+      "category": "place",
+      "clue": "a big red building where animals sleep",
+      "cards": [
+        "goat:animal",
+        "horse:animal",
+        "barn:place",
+        "duck:animal"
+      ],
+      "levers": [
+        "function_cue",
+        "two_cards_far"
+      ],
+      "practice": [
+        "chicken:animal",
+        "tractor:vehicle"
+      ]
+    },
+    {
+      "word": "pig",
+      "category": "animal",
+      "clue": "it has a curly tail and plays in mud",
+      "cards": [
+        "pig:animal",
+        "duck:animal",
+        "goat:animal",
+        "tractor:vehicle"
+      ],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    },
+    {
+      "word": "cow",
+      "category": "animal",
+      "clue": "it says moo and gives us milk",
+      "cards": [
+        "barn:place",
+        "tractor:vehicle",
+        "goat:animal",
+        "cow:animal"
+      ],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    }
+  ],
+  "issues": []
+}

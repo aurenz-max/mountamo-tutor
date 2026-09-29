@@ -1,0 +1,1148 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    5,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ],
+   "no_change_before_receipt": [
+    0,
+    5
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    5
+   ],
+   "no_protocol_leak": [
+    0,
+    5
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    5
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "story-bridge.match_character",
+   "primitiveId": "story-bridge",
+   "evalMode": "match_character",
+   "keys": [
+    "\ud83d\udc37pig",
+    "pig"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "story-bridge-1-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\ud83d\udc37pig",
+       "pig"
+      ],
+      "ask": "Think about Bunny in Sharing In The Garden. Find the friend in Sharing On The Farm who is like Bunny. Tap that friend.",
+      "leakTokens": [
+       "SB_ITEM",
+       "SB_MOVE",
+       "SB_COMPLETE",
+       "SB_HEAR",
+       "SB_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's listen to our stories! \n\n\"Sharing On The Farm: Morning came to the big green farm. Pig shared a yummy apple by the red barn. Cow shared a red wagon on the dirt path. Duck shared a shiny blue ball near the fence. Everyone felt happy and shared all day long.\"\n\n\"Sharing In The Garden: Morning came to the pretty flower garden. Bunny shared a yummy apple by the tall flowers. Bear shared a red wagon on the soft grass. Frog shared a shiny blue ball near the pond. Everyone felt glad and shared until bedtime.\"\n\nThink about Bunny in Sharing In The Garden. Find the friend in Sharing On The Farm who is like Bunny. Tap that friend!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "pig"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Sharing On The Farm: Morning came to the big green farm. Pig shared a yummy apple by the red barn. Cow shared a red wagon on the dirt path. Duck shared a shiny blue ball near the fence. Everyone felt happy and shared all day long.\n\nSharing In The Garden: Morning came to the pretty flower garden. Bunny shared a yummy apple by the tall flowers. Bear shared a red wagon on the soft grass. Frog shared a shiny blue ball near the pond. Everyone felt glad and shared until bedtime.\n\nThink about Bunny in Sharing In The Garden. Find the friend in Sharing On The Farm who is like Bunny. Tap that friend.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "pig"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Let's listen to our two stories! \n\n*Sharing On The Farm*: Morning came to the big green farm. Pig shared a yummy apple by the red barn. Cow shared a red wagon on the dirt path. Duck shared a shiny blue ball near the fence. Everyone felt happy and shared all day long.\n\n*Sharing In The Garden*: Morning came to the pretty flower garden. Bunny shared a yummy apple by the tall flowers. Bear shared a red wagon on the soft grass. Frog shared a shiny blue ball near the pond. Everyone felt glad and shared until bedtime.\n\nThink about Bunny in Sharing In The Garden. Find the friend in Sharing On The Farm who is like Bunny. Tap that friend.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "pig"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Let's listen to our stories! \n\nIn *Sharing On The Farm*: Morning came to the big green farm. Pig shared a yummy apple by the red barn. Cow shared a red wagon on the dirt path. Duck shared a shiny blue ball near the fence. Everyone felt happy and shared all day long.\n\nIn *Sharing In The Garden*: Morning came to the pretty flower garden. Bunny shared a yummy apple by the tall flowers. Bear shared a red wagon on the soft grass. Frog shared a shiny blue ball near the pond. Everyone felt glad and shared until bedtime.\n\nThink about Bunny in *Sharing In The Garden*. Find the friend in *Sharing On The Farm* who is like Bunny, and tap that friend.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "pig"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Sharing On The Farm: Morning came to the big green farm. Pig shared a yummy apple by the red barn. Cow shared a red wagon on the dirt path. Duck shared a shiny blue ball near the fence. Everyone felt happy and shared all day long. \n\nSharing In The Garden: Morning came to the pretty flower garden. Bunny shared a yummy apple by the tall flowers. Bear shared a red wagon on the soft grass. Frog shared a shiny blue ball near the pond. Everyone felt glad and shared until bedtime.\n\nThink about Bunny in Sharing In The Garden. Find the friend in Sharing On The Farm who is like Bunny. Tap that friend.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "pig"
+       },
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "story-bridge-1-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"story-bridge-1-1\",\"response\":\"Tapped Cow.\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"other_character\"}. Respond to the learner using the current task and workspace.",
+     "miss": "other_character",
+     "scoredWith": {
+      "keys": [
+       "\ud83d\udc37pig",
+       "pig"
+      ],
+      "ask": "Think about Bunny in Sharing In The Garden. Find the friend in Sharing On The Farm who is like Bunny. Tap that friend.",
+      "leakTokens": [
+       "SB_ITEM",
+       "SB_MOVE",
+       "SB_COMPLETE",
+       "SB_HEAR",
+       "SB_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, Bunny's card shows what Bunny did: \"Bunny shared a yummy apple by the tall flowers.\" \n\nLet's try again! Find the friend in Sharing On The Farm who is like Bunny, and tap that friend.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "anchor_action"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Bunny's card now shows what Bunny did: Bunny shared a yummy apple by the tall flowers. Find the friend in Sharing On The Farm who is like Bunny, and tap that friend!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "anchor_action",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, Bunny's card shows what Bunny did: \"Bunny shared a yummy apple by the tall flowers.\" \n\nFind the friend in Sharing On The Farm who is like Bunny, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "anchor_action",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, Bunny's card now shows what Bunny shared: Bunny shared a yummy apple by the tall flowers. Find the friend in Sharing On The Farm who is like Bunny, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "anchor_action",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at Bunny's card\u2014it shows what Bunny shared! \n\nBunny shared a yummy apple by the tall flowers. Find the friend in Sharing On The Farm who is like Bunny, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "anchor_action"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "story-bridge-1-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\ud83d\udc37pig",
+       "pig"
+      ],
+      "ask": "Think about Bunny in Sharing In The Garden. Find the friend in Sharing On The Farm who is like Bunny. Tap that friend.",
+      "leakTokens": [
+       "SB_ITEM",
+       "SB_MOVE",
+       "SB_COMPLETE",
+       "SB_HEAR",
+       "SB_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Bunny's card now shows what Bunny shared: \"Bunny shared a yummy apple by the tall flowers.\"\n\nWho on the farm shared a yummy apple too?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "anchor_action",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Bunny's card now shows what Bunny shared! \n\nBunny shared a yummy apple by the tall flowers. Who on the farm shared an apple too? Tap that friend!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "anchor_action",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Bunny's card now shows what Bunny shared: Bunny shared a yummy apple by the tall flowers!\n\nWho on the farm shared a yummy apple too? Tap that friend!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "anchor_action",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Bunny's card now shows what Bunny shared: Bunny shared a yummy apple!\n\nFind the friend on the farm who also shared a yummy apple, and tap that friend.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "anchor_action"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Bunny's card now shows what Bunny shared: \"Bunny shared a yummy apple by the tall flowers.\"\n\nWhich friend on the farm shared a yummy apple too?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "anchor_action"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "story-bridge-1-1",
+     "trigger": "The learner said they were stuck, so the host pulled anchor_action (help). It is on screen now: Shows what the first friend did, on that friend's card only. Re-read that one sentence; nothing from story two. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it t",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\ud83d\udc37pig",
+       "pig"
+      ],
+      "ask": "Think about Bunny in Sharing In The Garden. Find the friend in Sharing On The Farm who is like Bunny. Tap that friend.",
+      "leakTokens": [
+       "SB_ITEM",
+       "SB_MOVE",
+       "SB_COMPLETE",
+       "SB_HEAR",
+       "SB_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at Bunny's card\u2014it now shows what Bunny shared! \n\nBunny shared a yummy apple by the tall flowers. Find the friend in Sharing On The Farm who is like Bunny and tap that friend!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at Bunny's card\u2014it now shows what Bunny shared! \n\nBunny shared a yummy apple by the tall flowers. Find the friend in Sharing On The Farm who is like Bunny, and tap that friend.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at Bunny's card\u2014it now shows Bunny sharing a yummy apple by the tall flowers!\n\nThink about Bunny in Sharing In The Garden, and tap the friend in Sharing On The Farm who is like Bunny.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at Bunny's card\u2014it now shows what Bunny shared! \n\nBunny shared a yummy apple by the tall flowers. Find the friend in Sharing On The Farm who is like Bunny and tap that friend.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Bunny's card now shows what Bunny shared: \"Bunny shared a yummy apple by the tall flowers.\"\n\nWho on the farm shared a yummy apple too? Tap that friend!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "story-bridge-1-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"story-bridge-1-1\",\"response\":\"Tapped Pig.\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"anchor_action\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\ud83d\udc37pig",
+       "pig"
+      ],
+      "ask": "Think about Bunny in Sharing In The Garden. Find the friend in Sharing On The Farm who is like Bunny. Tap that friend.",
+      "leakTokens": [
+       "SB_ITEM",
+       "SB_MOVE",
+       "SB_COMPLETE",
+       "SB_HEAR",
+       "SB_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found Pig! Pig and Bunny are alike because both of them shared a yummy apple.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You tapped Pig! Pig and Bunny are alike because both of them shared a yummy apple.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found Pig! You matched Bunny and Pig because they both shared a yummy apple.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You tapped Pig! Pig shared a yummy apple, just like Bunny did.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You tapped Pig! Pig and Bunny both shared a yummy apple!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "story-bridge.say_alike",
+   "primitiveId": "story-bridge",
+   "evalMode": "say_alike",
+   "keys": [
+    "a comparison across both stories. reference: \"cow and ant both shared an apple with a friend.\". any short, true way the two friends are alike counts, not only the reference wording. story one says: \"cow shared a big red apple with pig.\" story two says: \"ant shared a sweet green apple with bee.\" a detail about only one story is not a comparison. titles, names and full sentences are not required.",
+    "cow and ant both shared an apple with a friend."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "story-bridge-1-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "a comparison across both stories. reference: \"cow and ant both shared an apple with a friend.\". any short, true way the two friends are alike counts, not only the reference wording. story one says: \"cow shared a big red apple with pig.\" story two says: \"ant shared a sweet green apple with bee.\" a detail about only one story is not a comparison. titles, names and full sentences are not required.",
+       "cow and ant both shared an apple with a friend."
+      ],
+      "ask": "Think about Cow in Sharing at the Farm and Ant in Sharing in the Garden. Tell one way they are alike.",
+      "leakTokens": [
+       "SB_ITEM",
+       "SB_MOVE",
+       "SB_COMPLETE",
+       "SB_HEAR",
+       "SB_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here are our two stories! \n\nIn *Sharing at the Farm*, the morning sun shined bright on the busy farm. Cow shared a big red apple with Pig. Pig shared wooden blocks to build a tall tower. Duck shared a picture book for quiet reading time. The happy animals played together until the sun went down.\n\nIn *Sharing in the Garden*, the warm wind blew softly through the green garden. Ant shared a sweet green apple with Bee. Bee shared light twigs to build a tall tower. Ladybug shared a story book for quiet reading time. The joyful bugs smiled as they shared until night time.\n\nThink about Cow in *Sharing at the Farm* and Ant in *Sharing in the Garden*. Tell one way they are alike.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I will read our two stories first!\n\nSharing at the Farm: The morning sun shined bright on the busy farm. Cow shared a big red apple with Pig. Pig shared wooden blocks to build a tall tower. Duck shared a picture book for quiet reading time. The happy animals played together until the sun went down.\n\nSharing in the Garden: The warm wind blew softly through the green garden. Ant shared a sweet green apple with Bee. Bee shared light twigs to build a tall tower. Ladybug shared a story book for quiet reading time. The joyful bugs smiled as they shared until night time.\n\nThink about Cow in Sharing at the Farm and Ant in Sharing in the Garden. Tell one way they are alike.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here are our two stories! \n\nIn *Sharing at the Farm*, the morning sun shined bright on the busy farm. Cow shared a big red apple with Pig. Pig shared wooden blocks to build a tall tower. Duck shared a picture book for quiet reading time. The happy animals played together until the sun went down.\n\nIn *Sharing in the Garden*, the warm wind blew softly through the green garden. Ant shared a sweet green apple with Bee. Bee shared light twigs to build a tall tower. Ladybug shared a story book for quiet reading time. The joyful bugs smiled as they shared until night time.\n\nThink about Cow in *Sharing at the Farm* and Ant in *Sharing in the Garden*. Tell one way they are alike.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here are our two stories! \n\nIn *Sharing at the Farm*, Cow shared a big red apple with Pig, Pig shared blocks to build a tower, and Duck shared a book. \n\nIn *Sharing in the Garden*, Ant shared a sweet green apple with Bee, Bee shared twigs to build a tower, and Ladybug shared a book.\n\nThink about Cow in *Sharing at the Farm* and Ant in *Sharing in the Garden*. Tell one way they are alike.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I will read our two stories first! \n\n*Sharing at the Farm*: The morning sun shined bright on the busy farm. Cow shared a big red apple with Pig. Pig shared wooden blocks to build a tall tower. Duck shared a picture book for quiet reading time. The happy animals played together until the sun went down.\n\n*Sharing in the Garden*: The warm wind blew softly through the green garden. Ant shared a sweet green apple with Bee. Bee shared light twigs to build a tall tower. Ladybug shared a story book for quiet reading time. The joyful bugs smiled as they shared until night time.\n\nThink about Cow in *Sharing at the Farm* and Ant in *Sharing in the Garden*. Tell one way they are alike.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "story-bridge-1-1",
+     "trigger": "Cow was in one story.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "a comparison across both stories. reference: \"cow and ant both shared an apple with a friend.\". any short, true way the two friends are alike counts, not only the reference wording. story one says: \"cow shared a big red apple with pig.\" story two says: \"ant shared a sweet green apple with bee.\" a detail about only one story is not a comparison. titles, names and full sentences are not required.",
+       "cow and ant both shared an apple with a friend."
+      ],
+      "ask": "Think about Cow in Sharing at the Farm and Ant in Sharing in the Garden. Tell one way they are alike.",
+      "leakTokens": [
+       "SB_ITEM",
+       "SB_MOVE",
+       "SB_COMPLETE",
+       "SB_HEAR",
+       "SB_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That tells about Cow, but what did both Cow and Ant do with their friends?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Cow was in the farm story! What did Cow and Ant both do with their friends?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Cow was in that story! Now think about what Cow and Ant both did\u2014what did they both share?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Cow was in one story, but how are Cow and Ant doing the same kind of thing in both stories?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Cow was in the farm story! Now think about both Cow and Ant\u2014what did both of them do?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "story-bridge-1-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "a comparison across both stories. reference: \"cow and ant both shared an apple with a friend.\". any short, true way the two friends are alike counts, not only the reference wording. story one says: \"cow shared a big red apple with pig.\" story two says: \"ant shared a sweet green apple with bee.\" a detail about only one story is not a comparison. titles, names and full sentences are not required.",
+       "cow and ant both shared an apple with a friend."
+      ],
+      "ask": "Think about Cow in Sharing at the Farm and Ant in Sharing in the Garden. Tell one way they are alike.",
+      "leakTokens": [
+       "SB_ITEM",
+       "SB_MOVE",
+       "SB_COMPLETE",
+       "SB_HEAR",
+       "SB_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Cow shared an apple with Pig, and Ant shared an apple with Bee. How does that make Cow and Ant alike?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Cow shared a red apple with Pig, and Ant shared a green apple with Bee. What fruit did they both share?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "In the stories, Cow gave an apple to Pig, and Ant gave an apple to Bee. What did both Cow and Ant do?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Cow shared a big red apple, and Ant shared a sweet green apple. What did they both do?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Cow shared an apple with Pig, and Ant shared an apple with Bee. \n\nTell one way Cow and Ant are alike.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "story-bridge-1-1",
+     "trigger": "Cow and Ant both shared an apple with a friend.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "a comparison across both stories. reference: \"cow and ant both shared an apple with a friend.\". any short, true way the two friends are alike counts, not only the reference wording. story one says: \"cow shared a big red apple with pig.\" story two says: \"ant shared a sweet green apple with bee.\" a detail about only one story is not a comparison. titles, names and full sentences are not required.",
+       "cow and ant both shared an apple with a friend."
+      ],
+      "ask": "Think about Cow in Sharing at the Farm and Ant in Sharing in the Garden. Tell one way they are alike.",
+      "leakTokens": [
+       "SB_ITEM",
+       "SB_MOVE",
+       "SB_COMPLETE",
+       "SB_HEAR",
+       "SB_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it! You told that Cow and Ant both shared an apple with a friend.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You told how Cow and Ant both shared an apple with a friend.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You told how Cow and Ant both shared an apple with a friend.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You noticed that Cow and Ant both shared an apple with a friend.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You told how Cow and Ant both shared an apple with a friend.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

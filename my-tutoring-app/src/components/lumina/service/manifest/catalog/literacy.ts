@@ -31,12 +31,15 @@ import type { SwapMiss } from '../../../primitives/visual-primitives/literacy/so
 import type { SyllableMiss } from '../../../primitives/visual-primitives/literacy/syllableClapperLevers';
 import type { FlipMiss } from '../../../primitives/visual-primitives/literacy/wordFlipLevers';
 import type { SpokenPictureVocabMiss } from '../../../primitives/visual-primitives/literacy/pictureVocabularyWorkspace';
+import type { PictureVocabMiss } from '../../../primitives/visual-primitives/literacy/pictureVocabularyLevers';
 import type { SpokenGenreMiss } from '../../../primitives/visual-primitives/literacy/genreExplorerWorkspace';
 import type { SpokenTextStructureMiss } from '../../../primitives/visual-primitives/literacy/textStructureAnalyzerWorkspace';
 import type { SpokenWordSorterMiss } from '../../../primitives/visual-primitives/literacy/wordSorterWorkspace';
 import type { SpokenSentenceMiss } from '../../../primitives/visual-primitives/literacy/sentenceAnalyzerWorkspace';
 import type { SpokenWordBuilderMiss } from '../../../primitives/visual-primitives/literacy/wordBuilderWorkspace';
 import type { SpokenYouAndMeMiss } from '../../../primitives/visual-primitives/literacy/youAndMeWorkspace';
+import type { SpokenOralSentenceMiss } from '../../../primitives/visual-primitives/literacy/oralSentenceStudioWorkspace';
+import type { SpokenStoryRibbonMiss } from '../../../primitives/visual-primitives/literacy/storyRibbonWorkspace';
 import { missLists, sameMisses } from './missLists';
 
 export const LITERACY_CATALOG: ComponentDefinition[] = [
@@ -123,8 +126,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'natural sentence or paraphrase counts; swapped I and you, a name with no pronoun, a bare pronoun, or the '
         + 'scene echoed back does not. Hear the scene again asks you to repeat the scene and the ask only. Which of '
         + 'I or you (or myself or yourself) to use is the answer: never name it or give a model sentence before a '
-        + 'real wrong attempt. You cannot change the scene or the roles.',
-      // Every turn is spoken: which word stands as the subject (`youAndMeSpokenMisses`, handoff 20 Part B).
+        + 'real wrong attempt. You cannot change the scene or the roles; beyond its levers you cannot change the screen.',
+      levers: true,
+      // Every turn is spoken: which word stands as the subject (`youAndMeSpokenMisses`, handoff 20 Part B). Each miss
+      // is answered by a lever the tier withdrew (`youAndMeLevers.ts`); an easy item shows both aids and has none.
       misses: sameMisses<SpokenYouAndMeMiss>(['describe_action', 'describe_independent_action'], ['swapped_pronoun', 'said_name', 'said_he_she']),
     },
     affordances: { representation: 'pictorial', answers: ['spoken'], role: 'apply', minutes: 5 },
@@ -150,8 +155,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'the activity checks the tap. Say alike, say different and compare big ideas are answered out loud: any '
         + 'true comparison across BOTH stories counts, not only the reference wording, but a detail about one story '
         + 'alone is not a comparison. Before an attempt never say the comparison or which choice is right. The '
-        + 'replay button asks you to read both stories and the question again. You cannot tap or mark anything.',
-      // The tap's own check (`storyBridgeMiss`). say_alike, say_different and main_idea_compare are spoken and name no
+        + 'replay button asks you to read both stories and the question again. You cannot tap or mark anything; '
+        + 'beyond its levers you cannot change the screen.',
+      levers: true,
+      // Tap modes each have one help lever (`storyBridgeLevers.ts`) answering every tap miss. The tap's own check (`storyBridgeMiss`). say_alike, say_different and main_idea_compare are spoken and name no
       // misses: each is an open comparison judged against a reference, with no bounded wrong answer (handoff 20 Part B).
       misses: missLists<StoryBridgeMiss>({
         match_character: ['same_look', 'other_character'],
@@ -302,7 +309,20 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'experience: the learner picks one moment and tells how it connects to something they did, saw, heard about '
         + 'or imagined; never ask for private detail and never judge whether a memory is true. Before an attempt never '
         + 'say an event sentence or the story order, and follow the reveal policy in the scene facts. Hear the '
-        + 'directions again asks you to repeat the directions only. You cannot move a card.',
+        + 'directions again asks you to repeat the directions only. You cannot move a card; beyond its levers you '
+        + 'cannot change the screen.',
+      levers: true,
+      // Spoken misses (`storyRibbonSpokenMisses`). `out_of_order` and `tense_drift` have no lever by decision
+      // (`storyRibbonLevers.ts`); `storyRibbonLevers.test.ts` pins both lists.
+      misses: missLists<SpokenStoryRibbonMiss>({
+        tell_connected_account: ['labels_listed', 'events_missing', 'out_of_order'],
+        tell_present_account: ['labels_listed', 'events_missing', 'out_of_order', 'tense_drift'],
+        tell_future_account: ['labels_listed', 'events_missing', 'out_of_order', 'tense_drift'],
+        tell_past_account: ['labels_listed', 'events_missing', 'out_of_order', 'tense_drift'],
+        story_to_experience: ['event_only', 'no_connection'] }),
+      unanswered: missLists<SpokenStoryRibbonMiss>({
+        tell_connected_account: ['out_of_order'], tell_present_account: ['out_of_order', 'tense_drift'],
+        tell_future_account: ['out_of_order', 'tense_drift'], tell_past_account: ['out_of_order', 'tense_drift'] }),
     },
     evalModes: [
       {
@@ -2917,7 +2937,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'story aloud, then the learner makes a new sentence of their own; a story line said back is not it. The learner '
         + 'does not read: say the ask, the words and their meanings aloud. Any wording that meets the task counts; a '
         + 'fragment or the two words listed does not. Before an attempt never say an example sentence. You cannot point '
-        + 'at the picture.',
+        + 'at the picture; beyond its levers you cannot change the screen.',
+      levers: true,
+      // Spoken misses (`oralSentenceSpokenMisses`), the judging contract's categories. `off_task` has no lever by
+      // decision (`oralSentenceStudioLevers.ts`); `oralSentenceStudioLevers.test.ts` pins both lists.
+      misses: sameMisses<SpokenOralSentenceMiss>(['describe_scene', 'guided_writing_rehearsal', 'use_story_words'],
+        ['words_listed', 'fragment', 'word_missing', 'word_misused', 'off_task']),
+      unanswered: sameMisses<SpokenOralSentenceMiss>(['describe_scene', 'guided_writing_rehearsal', 'use_story_words'], ['off_task']),
     },
     audioInput: JUDGED_AUDIO_INPUT,
   },
@@ -2948,16 +2974,20 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'On listen and find you say the word and the learner taps its picture among four cards with no words; the '
+      guidance: 'On listen and find you say the word and the learner taps its picture among four wordless cards; the '
         + 'activity checks the tap and tells you what was tapped. Every other mode is one spoken word, judged against '
         + 'the answer you are given: the picture\'s name, the opposite of the shown word, something that goes with it '
-        + '(many answers are right: judge whether it plainly goes together), the missing word of a scale, or the word '
-        + 'that finishes the sentence. The shown word said back, a made-up word, or a category word like "a thing" is '
-        + 'not the answer. Never say the answer, name the picture, or give the missing word before the learner has '
-        + 'tried. Tapping the card asks you to repeat the question only. You cannot tap a card.',
-      // The known wrong answers of a spoken naming item (`pictureVocabSpokenMisses`, handoff 20 Part B). receptive_match
-      // names none: its foils are drawn at random, with no relation to the answer recorded.
-      misses: missLists<SpokenPictureVocabMiss>({ naming: ['category_word', 'other_thing'] }),
+        + '(many answers are right: judge whether it plainly goes together), the missing scale word, or the word that '
+        + 'finishes the sentence. The shown word said back, a made-up word, or a category word like "a thing" is not '
+        + 'it. Before a try never say the answer or name the picture, and never hint at its first sound, letters or '
+        + 'rhymes; what it does or where it is found is fair. Tapping the card asks you to repeat the question only. '
+        + 'You cannot tap a card; beyond its levers you cannot change the screen.',
+      levers: true,
+      // naming: spoken misses (`pictureVocabSpokenMisses`, handoff 20 Part B). receptive_match: the tap's own check
+      // against the recorded kinds (`pictureVocabMiss`; `other_picture` when a payload records none). Levers in
+      // `pictureVocabularyLevers.ts` answer all of them.
+      misses: missLists<SpokenPictureVocabMiss | PictureVocabMiss>({ naming: ['category_word', 'other_thing'],
+        receptive_match: ['same_category', 'other_category', 'other_picture'] }),
     },
     // ── DI MODALITY (2026-08-11) — fifth literacy port, first literacy consumer
     // of useJudgedScriptRunner. The tutor owns the clock in every mode; there is
@@ -5463,10 +5493,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'does not fit, is not the answer. Name the groups or bank words aloud only when the namingChoices fact '
         + 'allows it: at the hardest level for readers the learner reads them. Never say which group or partner is '
         + 'right before the learner has tried. The hear-again button asks you to repeat the question only. Nothing is '
-        + 'tapped or dragged; you cannot place a word.',
+        + 'tapped or dragged; you cannot place a word. Beyond its levers you cannot change the screen.',
+      levers: true,
       // Every item is spoken: another group or bank word, or the word said back (`wordSorterSpokenMisses`, handoff 20 Part B).
+      // Levers (`wordSorterLevers.ts`) answer all but match_pairs' `said_word_back`, unanswered by decision.
       misses: missLists<SpokenWordSorterMiss>({ binary_sort: ['other_group', 'said_word_back'], ternary_sort: ['other_group', 'said_word_back'],
         match_pairs: ['other_bank_word', 'said_word_back'] }),
+      unanswered: { match_pairs: ['said_word_back'] },
     },
     // ── DI MODALITY (2026-08-16) — SEVENTEENTH literacy port. The tutor owns
     // the clock: it says the word, asks once, waits, judges the spoken answer

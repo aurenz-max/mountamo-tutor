@@ -62,6 +62,8 @@ import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
 import { judgedAnswerMix } from '../../../hooks/judgedScriptContract';
 import { itemsFromChallenges, type PictureVocabItem } from './pictureVocabularyScript';
 import { describeCardTap, hearQuestionRequest, pictureVocabAssignment, pictureVocabScene } from './pictureVocabularyWorkspace';
+import { CLUE_LEVER, TWO_CARDS_LEVER, leversOnScreen, pictureVocabLevers, pictureVocabMiss, practiceItemFor }
+  from './pictureVocabularyLevers';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
@@ -83,6 +85,8 @@ export type PictureVocabChallengeType =
 export interface PictureVocabOption {
   word: string;
   emoji: string;
+  /** The kind of thing (animal, food, toy): lets a wrong tap be named against the target's kind. */
+  category?: string;
 }
 
 export interface PictureVocabChallenge {
@@ -97,6 +101,11 @@ export interface PictureVocabChallenge {
    *  an answer leak. Association stopped carrying them when it went spoken
    *  (item 25); the field stays optional and simply goes unset there. */
   options?: PictureVocabOption[];
+  // -- receptive_match / naming --
+  /** The target's kind of thing (animal, food, toy). */
+  category?: string;
+  /** A spoken clue: what it does or where it is found. Never the word, its sounds or its letters (`clueLeak`). */
+  clue?: string;
   // -- opposite / association --
   baseWord?: string;
   baseEmoji?: string;
@@ -191,6 +200,13 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
   // ── Per-item stage state ───────────────────────────────────────────────────
   /** The tapped card's word (gesture modes) — cleared on retry and item open. */
   const [tapped, setTapped] = useState<string | null>(null);
+  // In-item levers (`pictureVocabularyLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // practice item a simplify lever put on screen in its place (ungraded; its success is local).
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPracticeState] = useState<PictureVocabItem | null>(null);
+  const practiceRef = useRef<PictureVocabItem | null>(null);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const setPractice = (next: PictureVocabItem | null) => { practiceRef.current = next; setPracticeState(next); setPracticeSolved(false); };
 
   // ── Evaluation ─────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<PictureVocabularyMetrics>({
@@ -248,10 +264,14 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
     },
   });
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
+  const clueShown = !practice && pulledLevers.includes(CLUE_LEVER) && !!currentItem?.clue;
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   /** Credited: the first moment the answer may appear on screen. */
-  const revealed = runner.currentSolved;
+  const revealed = runner.currentSolved || practiceSolved;
 
   // ── Pip shared surface ────────────────────────────────────────────────────
   // A projection of the workspace's committed state and the child's own picture tap; Pip
@@ -277,13 +297,37 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!currentItem) return;
-    workspace.current = { ...pictureVocabScene(currentItem) };
+    if (!currentItem || !sessionItem) return;
+    const levers = practice ? [] : pictureVocabLevers(sessionItem, pulledLevers, items);
+    const scene = pictureVocabScene(currentItem);
+    const onScreen = practice ? null : leversOnScreen(sessionItem, pulledLevers);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice item with another word and two very different pictures, ungraded. The full item comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === TWO_CARDS_LEVER) {
+          const simpler = practiceItemFor(sessionItem, items);
+          if (!simpler) return 'There is no easier item here.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice(simpler);
+          setTapped(null);
+          return { practice: pictureVocabAssignment(simpler) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => { setPractice(null); setTapped(null); },
+    };
   });
 
   // ── The tap — gesture modes only; the tap IS the commit, checked by the activity ──
   const handleOptionTap = useCallback((option: PictureVocabOption) => {
-    const item = runner.currentItem;
+    const item = practiceRef.current ?? runner.currentItem;
     if (!runner.canAttempt || showSummary) return;
     if (!item || item.answerKind !== 'gesture') return;
     // `canAttempt` closes through batched state; this stops a second tap inside the same tick.
@@ -291,8 +335,10 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
     SoundManager.tap();
     pip.look(`card-${option.word}`);
     setTapped(option.word);
-    commitGesture(runner, { response: describeCardTap(option.word),
-      correct: option.word.toLowerCase() === item.word.toLowerCase(), cue: () => describeCardTap(option.word) });
+    const correct = option.word.toLowerCase() === item.word.toLowerCase();
+    if (practiceRef.current && correct) setPracticeSolved(true);
+    commitGesture(runner, { response: describeCardTap(option.word), correct, cue: () => describeCardTap(option.word),
+      miss: pictureVocabMiss(item, option.word) });
   }, [runner, showSummary, pip]);
 
   /** Tapping the stimulus asks the tutor for the question again: a silent host request, never the answer. */
@@ -612,6 +658,12 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
             )}
 
             {renderChallenge(currentItem)}
+            {/* Help: a clue card the tutor says aloud. What the thing does or where it is found; never the word. */}
+            {clueShown && (
+              <div data-lever="clue-card" className="mx-auto flex max-w-md items-center justify-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 px-4 py-3 text-center text-sm text-slate-100">
+                <span aria-hidden>💡</span>{currentItem.clue}
+              </div>
+            )}
           </>
         )}
 

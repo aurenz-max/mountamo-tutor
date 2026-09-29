@@ -1,0 +1,170 @@
+{
+  "generatedAt": "2026-09-29T04:26:43.066Z",
+  "data": {
+    "title": "Oral Sentence Studio",
+    "description": "Use both new words in one complete sentence of your own.",
+    "gradeLevel": "elementary",
+    "challengeType": "describe_scene",
+    "challenges": [
+      {
+        "wordEmojis": [
+          "🛡️",
+          "🐜"
+        ],
+        "id": "oral-sentence-studio-1",
+        "type": "describe_scene",
+        "sceneTitle": "Helping in the garden",
+        "settingEmoji": "🏡",
+        "settingLabel": "sunny garden",
+        "actorEmoji": "👧",
+        "actorLabel": "happy child",
+        "actionEmoji": "🌱",
+        "actionLabel": "planting seeds",
+        "objectEmoji": "🪴",
+        "objectLabel": "small pot",
+        "targetWords": [
+          "careful",
+          "tiny"
+        ],
+        "wordMeanings": [
+          "paying close attention to be safe",
+          "very small in size"
+        ],
+        "sceneMeaning": "The careful child plants tiny seeds in the small pot.",
+        "acceptedSentences": [
+          "The careful child puts the tiny seeds into the dirt.",
+          "Being careful helps the happy child hold tiny seeds.",
+          "Tiny seeds grow when the child is very careful."
+        ]
+      },
+      {
+        "wordEmojis": [
+          "🪶",
+          "🐜"
+        ],
+        "id": "oral-sentence-studio-2",
+        "type": "describe_scene",
+        "sceneTitle": "Planting seeds in the garden",
+        "settingEmoji": "🏡",
+        "settingLabel": "sunny garden",
+        "actorEmoji": "👧🏽",
+        "actorLabel": "helpful girl",
+        "actionEmoji": "🌱",
+        "actionLabel": "planting seeds",
+        "objectEmoji": "🪴",
+        "objectLabel": "small pot",
+        "targetWords": [
+          "gentle",
+          "tiny"
+        ],
+        "wordMeanings": [
+          "very soft and careful",
+          "very small in size"
+        ],
+        "sceneMeaning": "The helpful girl is gentle with the tiny seeds while planting them in the garden.",
+        "acceptedSentences": [
+          "The helpful girl is gentle when planting tiny seeds in the sunny garden.",
+          "She holds the tiny seeds with gentle hands near the small pot.",
+          "With gentle care, she drops tiny seeds into the dirt outside."
+        ]
+      },
+      {
+        "wordEmojis": [
+          "⭐",
+          "🪶"
+        ],
+        "id": "oral-sentence-studio-3",
+        "type": "describe_scene",
+        "sceneTitle": "Watering the Garden Flowers",
+        "settingEmoji": "🏡",
+        "settingLabel": "sunny garden",
+        "actorEmoji": "👧",
+        "actorLabel": "happy child",
+        "actionEmoji": "🚿",
+        "actionLabel": "pouring water",
+        "objectEmoji": "🌻",
+        "objectLabel": "bright sunflower",
+        "targetWords": [
+          "eager",
+          "gentle"
+        ],
+        "wordMeanings": [
+          "excited and ready to help",
+          "soft and very careful"
+        ],
+        "sceneMeaning": "The eager child was gentle while watering the bright sunflower in the sunny garden.",
+        "acceptedSentences": [
+          "An eager child poured water with a gentle hand on the sunflower.",
+          "The eager helper used gentle drops to water the garden flowers.",
+          "With gentle care, the eager kid gave water to the tall plant."
+        ]
+      }
+    ]
+  },
+  "rows": [
+    {
+      "words": [
+        "careful",
+        "tiny"
+      ],
+      "pictures": [
+        "🛡️",
+        "🐜"
+      ],
+      "scene": [
+        "👧",
+        "🌱",
+        "🪴",
+        "🏡"
+      ],
+      "leak": false,
+      "levers": [
+        "sentence_strip",
+        "word_pictures"
+      ]
+    },
+    {
+      "words": [
+        "gentle",
+        "tiny"
+      ],
+      "pictures": [
+        "🪶",
+        "🐜"
+      ],
+      "scene": [
+        "👧🏽",
+        "🌱",
+        "🪴",
+        "🏡"
+      ],
+      "leak": false,
+      "levers": [
+        "sentence_strip",
+        "word_pictures"
+      ]
+    },
+    {
+      "words": [
+        "eager",
+        "gentle"
+      ],
+      "pictures": [
+        "⭐",
+        "🪶"
+      ],
+      "scene": [
+        "👧",
+        "🚿",
+        "🌻",
+        "🏡"
+      ],
+      "leak": false,
+      "levers": [
+        "sentence_strip",
+        "word_pictures"
+      ]
+    }
+  ],
+  "issues": []
+}

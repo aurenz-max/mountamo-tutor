@@ -1,0 +1,104 @@
+{
+  "generatedAt": "2026-09-29T04:15:30.827Z",
+  "data": {
+    "title": "Fun Farm Animal Words!",
+    "description": "Let us look at pictures and name the fun animals on the farm.",
+    "challengeType": "naming",
+    "challenges": [
+      {
+        "id": "pv-1",
+        "type": "naming",
+        "word": "sheep",
+        "emoji": "🐑",
+        "category": "animal",
+        "clue": "it has soft wool and says baa"
+      },
+      {
+        "id": "pv-2",
+        "type": "naming",
+        "word": "pig",
+        "emoji": "🐖",
+        "category": "animal",
+        "clue": "it has a curly tail and plays in mud"
+      },
+      {
+        "id": "pv-3",
+        "type": "naming",
+        "word": "horse",
+        "emoji": "🐎",
+        "category": "animal",
+        "clue": "you can ride on its back in the field"
+      },
+      {
+        "id": "pv-4",
+        "type": "naming",
+        "word": "barn",
+        "emoji": "🛖",
+        "category": "place",
+        "clue": "a big red building where animals sleep"
+      },
+      {
+        "id": "pv-5",
+        "type": "naming",
+        "word": "duck",
+        "emoji": "🦆",
+        "category": "animal",
+        "clue": "it swims in ponds and says quack"
+      }
+    ],
+    "gradeLevel": "Kindergarten"
+  },
+  "rows": [
+    {
+      "word": "sheep",
+      "category": "animal",
+      "clue": "it has soft wool and says baa",
+      "cards": [],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    },
+    {
+      "word": "pig",
+      "category": "animal",
+      "clue": "it has a curly tail and plays in mud",
+      "cards": [],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    },
+    {
+      "word": "horse",
+      "category": "animal",
+      "clue": "you can ride on its back in the field",
+      "cards": [],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    },
+    {
+      "word": "barn",
+      "category": "place",
+      "clue": "a big red building where animals sleep",
+      "cards": [],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    },
+    {
+      "word": "duck",
+      "category": "animal",
+      "clue": "it swims in ponds and says quack",
+      "cards": [],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    }
+  ],
+  "issues": []
+}

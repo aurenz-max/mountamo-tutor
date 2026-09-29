@@ -1,0 +1,1531 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_change_before_receipt": [
+    0,
+    5
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    5
+   ],
+   "no_protocol_leak": [
+    0,
+    5
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    5
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "story-ribbon.tell_connected_account",
+   "primitiveId": "story-ribbon",
+   "evalMode": "tell_connected_account",
+   "keys": [
+    "the three events, in order: 1) leo brought a bowl filled with tasty ingredients to the park table. 2) he put the spread gently on a soft slice of bread. 3) he shared a sweet cookie with his friend after lunch. credit one connected account of all three events in this order, in the learner's own words and child grammar (any consistent tense). picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+    "first, leo brought a bowl filled with tasty ingredients to the park table. next, he put the spread gently on a soft slice of bread. last, he shared a sweet cookie with his friend after lunch."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "story-ribbon-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the three events, in order: 1) leo brought a bowl filled with tasty ingredients to the park table. 2) he put the spread gently on a soft slice of bread. 3) he shared a sweet cookie with his friend after lunch. credit one connected account of all three events in this order, in the learner's own words and child grammar (any consistent tense). picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+       "first, leo brought a bowl filled with tasty ingredients to the park table. next, he put the spread gently on a soft slice of bread. last, he shared a sweet cookie with his friend after lunch."
+      ],
+      "ask": "Look at Leo's three picture cards. Move them into story order. Then tell the whole story from beginning to end in your own words.",
+      "leakTokens": [
+       "SR_ITEM",
+       "SR_MOVE",
+       "SR_COMPLETE",
+       "SR_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at Leo's three picture cards and put them in order. Then tell me the whole story from beginning to end!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at Leo's picture cards and put them in order. Then tell me the whole story from beginning to end!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at Leo's picture cards and put them in order. Then tell me the story from beginning to end!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at Leo's picture cards. Tell the whole story from beginning to end in your own words!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at Leo's picture cards. Put them in order and tell me what happens in the story!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "story-ribbon-1",
+     "trigger": "large mixing bowl",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the three events, in order: 1) leo brought a bowl filled with tasty ingredients to the park table. 2) he put the spread gently on a soft slice of bread. 3) he shared a sweet cookie with his friend after lunch. credit one connected account of all three events in this order, in the learner's own words and child grammar (any consistent tense). picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+       "first, leo brought a bowl filled with tasty ingredients to the park table. next, he put the spread gently on a soft slice of bread. last, he shared a sweet cookie with his friend after lunch."
+      ],
+      "ask": "Look at Leo's three picture cards. Move them into story order. Then tell the whole story from beginning to end in your own words.",
+      "leakTokens": [
+       "SR_ITEM",
+       "SR_MOVE",
+       "SR_COMPLETE",
+       "SR_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You spotted the mixing bowl! Can you tell the whole story with all three pictures from beginning to end?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tell me what happens in the whole story using all three pictures, from start to finish!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You noticed the mixing bowl! Can you tell the whole story with all three pictures from beginning to end?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You named the bowl! Can you tell the whole story with all three pictures from beginning to end?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That is one of the pictures! Can you tell the whole story of what happens across all three pictures?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "story-ribbon-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the three events, in order: 1) leo brought a bowl filled with tasty ingredients to the park table. 2) he put the spread gently on a soft slice of bread. 3) he shared a sweet cookie with his friend after lunch. credit one connected account of all three events in this order, in the learner's own words and child grammar (any consistent tense). picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+       "first, leo brought a bowl filled with tasty ingredients to the park table. next, he put the spread gently on a soft slice of bread. last, he shared a sweet cookie with his friend after lunch."
+      ],
+      "ask": "Look at Leo's three picture cards. Move them into story order. Then tell the whole story from beginning to end in your own words.",
+      "leakTokens": [
+       "SR_ITEM",
+       "SR_MOVE",
+       "SR_COMPLETE",
+       "SR_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That's okay, we can do it together! What happens first when Leo is getting ready for his snack?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That is okay, we can do it together! What do you think happens first when Leo is making his snack?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That is okay, we can do it together! What do you think happens first when making a snack?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That's okay, we can do it together! What do you think happens first when Leo is making his snack?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That is okay! What happens first when Leo gets his snack ready at the park?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "story-ribbon-1",
+     "trigger": "First, leo brought a bowl filled with tasty ingredients to the park table. Next, he put the spread gently on a soft slice of bread. Last, he shared a sweet cookie with his friend after lunch.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the three events, in order: 1) leo brought a bowl filled with tasty ingredients to the park table. 2) he put the spread gently on a soft slice of bread. 3) he shared a sweet cookie with his friend after lunch. credit one connected account of all three events in this order, in the learner's own words and child grammar (any consistent tense). picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+       "first, leo brought a bowl filled with tasty ingredients to the park table. next, he put the spread gently on a soft slice of bread. last, he shared a sweet cookie with his friend after lunch."
+      ],
+      "ask": "Look at Leo's three picture cards. Move them into story order. Then tell the whole story from beginning to end in your own words.",
+      "leakTokens": [
+       "SR_ITEM",
+       "SR_MOVE",
+       "SR_COMPLETE",
+       "SR_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You told the whole story in order, from bringing the bowl of ingredients, to spreading it on the bread, to sharing the sweet cookie! Wonderful storytelling!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You told the whole story from beginning to end, starting with the bowl, then the bread, and finishing with sharing the sweet cookie! Great storytelling!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You told the whole story from beginning to end, starting with the bowl, spreading on the bread, and finishing with sharing the sweet cookie! Wonderful storytelling!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You told the whole story in order, from bringing the bowl of ingredients, to spreading it on the bread, to sharing the sweet cookie! Fantastic job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You told the whole story from start to finish, from the bowl of ingredients, to spreading it on the bread, to sharing the sweet cookie! Wonderful storytelling!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "story-ribbon.tell_past_account.hard",
+   "primitiveId": "story-ribbon",
+   "evalMode": "tell_past_account",
+   "keys": [
+    "the three events, in order: 1) yesterday, leo found a little hurt bird resting under a tall tree. 2) he gently placed the bird inside a soft cozy box. 3) leo fed fresh bread crumbs to help the bird feel better. credit one connected account of all three events in this order, in the learner's own words and child grammar, told consistently in past time, as if it happened yesterday. picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+    "first, yesterday, leo found a little hurt bird resting under a tall tree. next, he gently placed the bird inside a soft cozy box. last, leo fed fresh bread crumbs to help the bird feel better."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "story-ribbon-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the three events, in order: 1) yesterday, leo found a little hurt bird resting under a tall tree. 2) he gently placed the bird inside a soft cozy box. 3) leo fed fresh bread crumbs to help the bird feel better. credit one connected account of all three events in this order, in the learner's own words and child grammar, told consistently in past time, as if it happened yesterday. picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+       "first, yesterday, leo found a little hurt bird resting under a tall tree. next, he gently placed the bird inside a soft cozy box. last, leo fed fresh bread crumbs to help the bird feel better."
+      ],
+      "ask": "Look at Leo's three picture cards. Plan with the picture ribbon. Tell the story from beginning to end. Keep every event in past time, as if it happened yesterday.",
+      "leakTokens": [
+       "SR_ITEM",
+       "SR_MOVE",
+       "SR_COMPLETE",
+       "SR_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at Leo's picture cards to see what happened yesterday in the park. Whenever you're ready, tell me the whole story from start to finish!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at Leo's picture cards to see what happened yesterday. Tell me the whole story from beginning to end!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at Leo's picture cards to see what happened yesterday. Tell me the whole story from beginning to end!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at Leo's picture cards to see what happened yesterday. Tell me the whole story from beginning to end!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at Leo's picture cards to see what happened yesterday. Tell me the whole story from beginning to end!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "story-ribbon-1",
+     "trigger": "little hurt bird",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the three events, in order: 1) yesterday, leo found a little hurt bird resting under a tall tree. 2) he gently placed the bird inside a soft cozy box. 3) leo fed fresh bread crumbs to help the bird feel better. credit one connected account of all three events in this order, in the learner's own words and child grammar, told consistently in past time, as if it happened yesterday. picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+       "first, yesterday, leo found a little hurt bird resting under a tall tree. next, he gently placed the bird inside a soft cozy box. last, leo fed fresh bread crumbs to help the bird feel better."
+      ],
+      "ask": "Look at Leo's three picture cards. Plan with the picture ribbon. Tell the story from beginning to end. Keep every event in past time, as if it happened yesterday.",
+      "leakTokens": [
+       "SR_ITEM",
+       "SR_MOVE",
+       "SR_COMPLETE",
+       "SR_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Now First, Next, and Last are shown on the ribbon to help tell the whole story. Give it another try from the beginning to the end.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sequence_labels"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now you can see First, Next, and Last spots under the ribbon. Try telling the whole story from start to finish!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sequence_labels"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I added First, Next, and Last under the ribbon spots. Try telling what Leo did at all three steps, like it happened yesterday!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sequence_labels",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I put First, Next, and Last on your ribbon to show the three spots. Can you tell the whole story with all three parts, as if it happened yesterday?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sequence_labels",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now you can see First, Next, and Last under the ribbon spots. Can you tell the whole story of what happened yesterday from start to finish?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sequence_labels"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "story-ribbon-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the three events, in order: 1) yesterday, leo found a little hurt bird resting under a tall tree. 2) he gently placed the bird inside a soft cozy box. 3) leo fed fresh bread crumbs to help the bird feel better. credit one connected account of all three events in this order, in the learner's own words and child grammar, told consistently in past time, as if it happened yesterday. picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+       "first, yesterday, leo found a little hurt bird resting under a tall tree. next, he gently placed the bird inside a soft cozy box. last, leo fed fresh bread crumbs to help the bird feel better."
+      ],
+      "ask": "Look at Leo's three picture cards. Plan with the picture ribbon. Tell the story from beginning to end. Keep every event in past time, as if it happened yesterday.",
+      "leakTokens": [
+       "SR_ITEM",
+       "SR_MOVE",
+       "SR_COMPLETE",
+       "SR_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The words First, Next, and Last are now under each spot on the ribbon. You can tell what happened in each part from start to finish!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sequence_labels"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, the words First, Next, and Last appeared under the three spaces on the ribbon! You can tap the cards to arrange them, then tell what happened from start to finish.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sequence_labels"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The words First, Next, and Last are now below the ribbon spots to help. Whenever you're ready, try telling the whole story from start to finish!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sequence_labels"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now words for First, Next, and Last are under the ribbon spots to guide you. Tell what happened across all three parts as if it happened yesterday.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sequence_labels",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The labels First, Next, and Last are now under each spot on your ribbon. What happened first when Leo was at the park yesterday?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sequence_labels"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "story-ribbon-1",
+     "trigger": "The learner said they were stuck, so the host pulled sequence_labels (help). It is on screen now: Puts First, Next and Last under the three places on the ribbon. The pictures do not move. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the three events, in order: 1) yesterday, leo found a little hurt bird resting under a tall tree. 2) he gently placed the bird inside a soft cozy box. 3) leo fed fresh bread crumbs to help the bird feel better. credit one connected account of all three events in this order, in the learner's own words and child grammar, told consistently in past time, as if it happened yesterday. picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+       "first, yesterday, leo found a little hurt bird resting under a tall tree. next, he gently placed the bird inside a soft cozy box. last, leo fed fresh bread crumbs to help the bird feel better."
+      ],
+      "ask": "Look at Leo's three picture cards. Plan with the picture ribbon. Tell the story from beginning to end. Keep every event in past time, as if it happened yesterday.",
+      "leakTokens": [
+       "SR_ITEM",
+       "SR_MOVE",
+       "SR_COMPLETE",
+       "SR_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look under the three spots on the ribbon\u2014the words First, Next, and Last are written there now. Try telling the whole story from start to finish!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the spots on the ribbon\u2014the words First, Next, and Last are written there now. Try telling the whole story from start to finish!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under each picture space on the ribbon\u2014you'll see the words First, Next, and Last to help guide you! Try telling the whole story of what happened yesterday from start to finish.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, the words First, Next, and Last are now written right under the ribbon spots. Try telling what Leo did from start to finish!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the ribbon\u2014the words First, Next, and Last are written under the spaces now! Try telling what happened yesterday in all three parts.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "story-ribbon-1",
+     "trigger": "First, yesterday, Leo found a little hurt bird resting under a tall tree. Next, he gently placed the bird inside a soft cozy box. Last, leo fed fresh bread crumbs to help the bird feel better.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the three events, in order: 1) yesterday, leo found a little hurt bird resting under a tall tree. 2) he gently placed the bird inside a soft cozy box. 3) leo fed fresh bread crumbs to help the bird feel better. credit one connected account of all three events in this order, in the learner's own words and child grammar, told consistently in past time, as if it happened yesterday. picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+       "first, yesterday, leo found a little hurt bird resting under a tall tree. next, he gently placed the bird inside a soft cozy box. last, leo fed fresh bread crumbs to help the bird feel better."
+      ],
+      "ask": "Look at Leo's three picture cards. Plan with the picture ribbon. Tell the story from beginning to end. Keep every event in past time, as if it happened yesterday.",
+      "leakTokens": [
+       "SR_ITEM",
+       "SR_MOVE",
+       "SR_COMPLETE",
+       "SR_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You told the whole story from start to finish, sharing all three parts about Leo finding the bird, putting it in the box, and feeding it bread crumbs!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You told the whole story from start to finish, sharing all three events in past time just like they happened yesterday!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You told the whole story from start to finish! You told what happened first when Leo found the hurt bird, next when he placed it in the box, and last when he fed it bread crumbs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You told the whole story from start to finish, sharing all three parts about Leo finding the bird, putting it in the box, and feeding it bread crumbs!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You told the whole story in order, from Leo finding the bird, to putting it in the cozy box, to feeding it crumbs! Wonderful job telling what happened yesterday!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "story-ribbon.tell_past_account",
+   "primitiveId": "story-ribbon",
+   "evalMode": "tell_past_account",
+   "keys": [
+    "the three events, in order: 1) yesterday, leo found a little hurt bird resting under a tall tree. 2) he gently placed the bird inside a soft cozy box. 3) leo fed fresh bread crumbs to help the bird feel better. credit one connected account of all three events in this order, in the learner's own words and child grammar, told consistently in past time, as if it happened yesterday. picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+    "first, yesterday, leo found a little hurt bird resting under a tall tree. next, he gently placed the bird inside a soft cozy box. last, leo fed fresh bread crumbs to help the bird feel better."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "story-ribbon-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the three events, in order: 1) yesterday, leo found a little hurt bird resting under a tall tree. 2) he gently placed the bird inside a soft cozy box. 3) leo fed fresh bread crumbs to help the bird feel better. credit one connected account of all three events in this order, in the learner's own words and child grammar, told consistently in past time, as if it happened yesterday. picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+       "first, yesterday, leo found a little hurt bird resting under a tall tree. next, he gently placed the bird inside a soft cozy box. last, leo fed fresh bread crumbs to help the bird feel better."
+      ],
+      "ask": "Look at Leo's three picture cards. Move them into story order. Then tell the whole story from beginning to end in your own words. Tell it in past time, like it happened yesterday.",
+      "leakTokens": [
+       "SR_ITEM",
+       "SR_MOVE",
+       "SR_COMPLETE",
+       "SR_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at Leo's three picture cards. Tell the story from beginning to end, like it happened yesterday.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the park! Look at Leo's picture cards, put them in order, and tell me the story of what happened yesterday.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the park! Look at Leo's picture cards, put them in order, and tell me the story of what happened yesterday.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the park! Look at the three pictures and tell the story of what happened yesterday from beginning to end.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at Leo's picture cards! When you're ready, tell me what happened from start to finish, like it happened yesterday.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "story-ribbon-1",
+     "trigger": "little hurt bird",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the three events, in order: 1) yesterday, leo found a little hurt bird resting under a tall tree. 2) he gently placed the bird inside a soft cozy box. 3) leo fed fresh bread crumbs to help the bird feel better. credit one connected account of all three events in this order, in the learner's own words and child grammar, told consistently in past time, as if it happened yesterday. picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+       "first, yesterday, leo found a little hurt bird resting under a tall tree. next, he gently placed the bird inside a soft cozy box. last, leo fed fresh bread crumbs to help the bird feel better."
+      ],
+      "ask": "Look at Leo's three picture cards. Move them into story order. Then tell the whole story from beginning to end in your own words. Tell it in past time, like it happened yesterday.",
+      "leakTokens": [
+       "SR_ITEM",
+       "SR_MOVE",
+       "SR_COMPLETE",
+       "SR_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found the little hurt bird! Tell what happened in the whole story, from the start to the end.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You spotted the little hurt bird! Now tell what happened from beginning to end with all three pictures, like it happened yesterday.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You noticed the bird! Tell the whole story about what happened to Leo and the bird from beginning to end, like it happened yesterday.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found one picture! Tell what happened in all three pictures, from the start to the end.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You noticed the little hurt bird! Tell the whole story with all three pictures from beginning to end, like it happened yesterday.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "story-ribbon-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the three events, in order: 1) yesterday, leo found a little hurt bird resting under a tall tree. 2) he gently placed the bird inside a soft cozy box. 3) leo fed fresh bread crumbs to help the bird feel better. credit one connected account of all three events in this order, in the learner's own words and child grammar, told consistently in past time, as if it happened yesterday. picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+       "first, yesterday, leo found a little hurt bird resting under a tall tree. next, he gently placed the bird inside a soft cozy box. last, leo fed fresh bread crumbs to help the bird feel better."
+      ],
+      "ask": "Look at Leo's three picture cards. Move them into story order. Then tell the whole story from beginning to end in your own words. Tell it in past time, like it happened yesterday.",
+      "leakTokens": [
+       "SR_ITEM",
+       "SR_MOVE",
+       "SR_COMPLETE",
+       "SR_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You can do this! Look at the cards and think about what Leo did first yesterday when he was in the park.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "You can tap the pictures to put them in order first. What happened first when Leo was at the park?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Take a look at the pictures to see what Leo did first, next, and last. What happened at the very beginning of the story?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That is okay, we can do it together! What do you think happened first yesterday when Leo was at the park?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Start with \"Yesterday,\" and tell what Leo did first, what he did next, and how it ended. Give it a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "story-ribbon-1",
+     "trigger": "First, yesterday, Leo found a little hurt bird resting under a tall tree. Next, he gently placed the bird inside a soft cozy box. Last, leo fed fresh bread crumbs to help the bird feel better.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the three events, in order: 1) yesterday, leo found a little hurt bird resting under a tall tree. 2) he gently placed the bird inside a soft cozy box. 3) leo fed fresh bread crumbs to help the bird feel better. credit one connected account of all three events in this order, in the learner's own words and child grammar, told consistently in past time, as if it happened yesterday. picture labels listed without a story, one or two events, the wrong order, or a different story is not it. \"first, next, last\" is not required.",
+       "first, yesterday, leo found a little hurt bird resting under a tall tree. next, he gently placed the bird inside a soft cozy box. last, leo fed fresh bread crumbs to help the bird feel better."
+      ],
+      "ask": "Look at Leo's three picture cards. Move them into story order. Then tell the whole story from beginning to end in your own words. Tell it in past time, like it happened yesterday.",
+      "leakTokens": [
+       "SR_ITEM",
+       "SR_MOVE",
+       "SR_COMPLETE",
+       "SR_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You told the whole story from yesterday in order, from Leo finding the hurt bird, to putting it in the cozy box, to feeding it crumbs!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You told the whole story in order from yesterday, finding the hurt bird, placing it in the cozy box, and feeding it bread crumbs!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You told the whole story in order! You said how Leo found the bird, put it in the box, and fed it bread crumbs yesterday.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You told the whole story in order! You said how Leo found the bird, put it in the box, and fed it bread crumbs yesterday.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You told the whole story in order, telling how Leo found the hurt bird, put it in a box, and fed it crumbs yesterday!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

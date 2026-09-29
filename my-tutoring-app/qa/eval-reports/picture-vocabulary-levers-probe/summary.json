@@ -1,0 +1,56 @@
+[
+  {
+    "name": "receptive_match-farm",
+    "items": 5,
+    "clues": "5/5",
+    "withClueLever": 5,
+    "withPractice": 3,
+    "kinds": "animal,place,food,vehicle",
+    "issues": []
+  },
+  {
+    "name": "receptive_match-kitchen",
+    "items": 5,
+    "clues": "5/5",
+    "withClueLever": 5,
+    "withPractice": 5,
+    "kinds": "dish,food,tool",
+    "issues": []
+  },
+  {
+    "name": "receptive_match-park",
+    "items": 5,
+    "clues": "5/5",
+    "withClueLever": 5,
+    "withPractice": 4,
+    "kinds": "toy,weather,plant,animal,furniture",
+    "issues": []
+  },
+  {
+    "name": "naming-farm",
+    "items": 5,
+    "clues": "5/5",
+    "withClueLever": 5,
+    "withPractice": 0,
+    "kinds": "animal,place",
+    "issues": []
+  },
+  {
+    "name": "naming-kitchen",
+    "items": 5,
+    "clues": "5/5",
+    "withClueLever": 5,
+    "withPractice": 0,
+    "kinds": "dish,tool,food",
+    "issues": []
+  },
+  {
+    "name": "naming-park",
+    "items": 5,
+    "clues": "5/5",
+    "withClueLever": 5,
+    "withPractice": 0,
+    "kinds": "toy,plant,animal,weather",
+    "issues": []
+  }
+]

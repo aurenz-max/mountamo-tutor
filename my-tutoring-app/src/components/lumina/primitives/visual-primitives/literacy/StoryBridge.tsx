@@ -32,6 +32,7 @@ import { evidenceFor, itemsFromChallenges, type StoryBridgeItem } from './storyB
 import {
   describeStoryBridgeTap, hearStoriesRequest, storyBridgeAssignment, storyBridgeMiss, storyBridgeScene,
 } from './storyBridgeWorkspace';
+import { ANCHOR_LEVER, SETTING_LEVER, TIMELINE_LEVER, TWO_QUESTIONS_LEVER, leversOnScreen, storyBridgeLevers } from './storyBridgeLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { storyBridgePipPose } from '../../../pip/storyBridgePipPose';
 
@@ -154,6 +155,8 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
   const [tappedChoice, setTappedChoice] = useState<string | null>(null);
   const [choiceOrder, setChoiceOrder] = useState<string[]>([]);
   const tapLogRef = useRef<Record<string, string[]>>({});
+  // In-item levers (`storyBridgeLevers.ts`), keyed by the item they were pulled on.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
 
   const evaluation = usePrimitiveEvaluation<StoryBridgeMetrics>({
     primitiveType: 'story-bridge', instanceId: resolvedInstanceId, skillId, subskillId,
@@ -218,12 +221,28 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
   const currentItem = runner.currentItem;
   const revealed = runner.currentSolved;
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
+  const pulledLevers = leverState.item === currentItem?.id ? leverState.pulled : [];
+  const pulled = (id: string) => !revealed && pulledLevers.includes(id);
 
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...storyBridgeScene(currentItem) };
+    const levers = storyBridgeLevers(currentItem, pulledLevers);
+    const scene = storyBridgeScene(currentItem);
+    const onScreen = leversOnScreen(currentItem, pulledLevers);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        setLeverState({ item: currentItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+    };
   });
 
   /** Asks the tutor to read both stories again: a silent host request, never the answer. */
@@ -290,6 +309,10 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
         className={`flex min-w-[6rem] flex-col items-center gap-1 rounded-2xl border-2 px-3 py-3 transition-all ${answerStateClass(state)} ${role === 'anchor' ? 'ring-2 ring-cyan-300/70 shadow-lg shadow-cyan-400/20 scale-105' : ''} ${tappable ? 'hover:scale-105 active:scale-95 cursor-pointer' : 'cursor-default'}`}>
         <span className="text-4xl sm:text-5xl" role="img" aria-hidden>{character.emoji}</span>
         <span className="text-sm font-semibold text-slate-100">{character.name}</span>
+        {/* Help: what the first friend did, on that friend's card only; never on a candidate. */}
+        {pulled(ANCHOR_LEVER) && character.id === currentItem?.anchor.id && (
+          <span data-lever="anchor-action" className="text-3xl" role="img" aria-label={`what ${character.name} did`}>{character.eventEmoji}</span>
+        )}
       </button>
     );
   };
@@ -307,6 +330,9 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
           <span className="text-4xl" role="img" aria-hidden>{story.sceneEmoji}</span>
           <span className="text-base font-semibold text-slate-100">{story.title}</span>
         </div>
+        {pulled(SETTING_LEVER) && (
+          <span data-lever="setting-label" className="rounded-full bg-amber-400/15 px-3 py-1 text-xs font-semibold text-amber-100">📍 {story.setting}</span>
+        )}
         {characterMode && (
           <div className="flex flex-wrap justify-center gap-2">
             {ordered.map((character) => {
@@ -410,10 +436,35 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
             {currentItem.mode === 'venn_place' && !revealed && (
               <div ref={pip.ref('detail')} data-pip-object="detail" className="mx-auto max-w-md rounded-full border-2 border-cyan-400/30 bg-cyan-500/10 px-5 py-3 text-center text-sm font-semibold text-slate-100">💬 {currentItem.vennDetail}</div>
             )}
+            {/* Help: one question per friend, two empty checks. Code never fills them. */}
+            {currentItem.mode === 'venn_place' && pulled(TWO_QUESTIONS_LEVER) && (
+              <div data-lever="two-questions" className="flex justify-center gap-3">
+                {[currentItem.anchor, currentItem.target].map(friend => (
+                  <span key={friend.id} className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-100">
+                    <span role="img" aria-hidden>{friend.emoji}</span>{friend.name}? <span aria-hidden className="inline-block h-5 w-5 rounded border-2 border-slate-400" />
+                  </span>
+                ))}
+              </div>
+            )}
             {currentItem.mode === 'sequence_two' && !revealed && (
               <div ref={pip.ref('event')} data-pip-object="event" className="mx-auto flex max-w-sm items-center justify-center gap-3 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 p-3">
                 <span className="text-xs uppercase tracking-wide text-slate-400">Story one event</span>
                 <span className="text-4xl" role="img" aria-hidden>{currentItem.anchor.emoji}{currentItem.anchor.eventEmoji}</span>
+              </div>
+            )}
+            {/* Help: story ONE's events in order, the asked one lit. Story two's order is never drawn. */}
+            {currentItem.mode === 'sequence_two' && pulled(TIMELINE_LEVER) && (
+              <div data-lever="anchor-timeline" className="mx-auto flex max-w-md items-center justify-center gap-2">
+                {currentItem.storyA.characters.slice(0, 3).map((event, index) => (
+                  <React.Fragment key={event.id}>
+                    <span data-lit={index === currentItem.eventIndex || undefined}
+                      className={`flex flex-col items-center rounded-xl border-2 px-2 py-1 ${index === currentItem.eventIndex ? 'border-cyan-300 bg-cyan-400/15' : 'border-white/10 bg-white/5'}`}>
+                      <span className="text-2xl" role="img" aria-hidden>{event.emoji}{event.eventEmoji}</span>
+                      <span className="text-[10px] uppercase tracking-wide text-slate-400">{['beginning', 'middle', 'end'][index]}</span>
+                    </span>
+                    {index < 2 && <span aria-hidden className="text-slate-500">→</span>}
+                  </React.Fragment>
+                ))}
               </div>
             )}
             {renderSimpleChoices()}

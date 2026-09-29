@@ -1,0 +1,104 @@
+{
+  "generatedAt": "2026-09-29T04:15:34.578Z",
+  "data": {
+    "title": "A Day at the Park Words!",
+    "description": "Let us look at pictures and name all the fun things we find outside.",
+    "challengeType": "naming",
+    "challenges": [
+      {
+        "id": "pv-1",
+        "type": "naming",
+        "word": "swing",
+        "emoji": "🛝",
+        "category": "toy",
+        "clue": "you sit on it and go high up and down"
+      },
+      {
+        "id": "pv-2",
+        "type": "naming",
+        "word": "tree",
+        "emoji": "🌳",
+        "category": "plant",
+        "clue": "it has green leaves and gives shade on grass"
+      },
+      {
+        "id": "pv-3",
+        "type": "naming",
+        "word": "duck",
+        "emoji": "🦆",
+        "category": "animal",
+        "clue": "it swims in the pond and says quack"
+      },
+      {
+        "id": "pv-4",
+        "type": "naming",
+        "word": "sun",
+        "emoji": "☀️",
+        "category": "weather",
+        "clue": "it shines bright and keeps you warm outside"
+      },
+      {
+        "id": "pv-5",
+        "type": "naming",
+        "word": "flower",
+        "emoji": "🌷",
+        "category": "plant",
+        "clue": "it has pretty colorful petals growing in the dirt"
+      }
+    ],
+    "gradeLevel": "Kindergarten"
+  },
+  "rows": [
+    {
+      "word": "swing",
+      "category": "toy",
+      "clue": "you sit on it and go high up and down",
+      "cards": [],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    },
+    {
+      "word": "tree",
+      "category": "plant",
+      "clue": "it has green leaves and gives shade on grass",
+      "cards": [],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    },
+    {
+      "word": "duck",
+      "category": "animal",
+      "clue": "it swims in the pond and says quack",
+      "cards": [],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    },
+    {
+      "word": "sun",
+      "category": "weather",
+      "clue": "it shines bright and keeps you warm outside",
+      "cards": [],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    },
+    {
+      "word": "flower",
+      "category": "plant",
+      "clue": "it has pretty colorful petals growing in the dirt",
+      "cards": [],
+      "levers": [
+        "function_cue"
+      ],
+      "practice": null
+    }
+  ],
+  "issues": []
+}

@@ -1,0 +1,173 @@
+{
+  "generatedAt": "2026-09-29T04:26:57.864Z",
+  "data": {
+    "title": "Oral Sentence Studio",
+    "description": "Use both new words in one complete sentence of your own.",
+    "gradeLevel": "elementary",
+    "challengeType": "use_story_words",
+    "challenges": [
+      {
+        "wordEmojis": [
+          "☀️",
+          "😊"
+        ],
+        "id": "oral-sentence-studio-1",
+        "type": "use_story_words",
+        "sceneTitle": "Sunny Beach Day",
+        "settingEmoji": "🏖️",
+        "settingLabel": "sandy beach",
+        "actorEmoji": "🦀",
+        "actorLabel": "red crab",
+        "actionEmoji": "🌊",
+        "actionLabel": "gentle wave",
+        "objectEmoji": "🐚",
+        "objectLabel": "sea shell",
+        "targetWords": [
+          "bright",
+          "happy"
+        ],
+        "wordMeanings": [
+          "full of light",
+          "feeling very glad"
+        ],
+        "sceneMeaning": "The red crab is happy on the bright sandy beach.",
+        "acceptedSentences": [
+          "That bright sun makes the crab feel happy.",
+          "A happy yellow flower grew in the bright green grass.",
+          "We saw a bright rainbow and felt so happy."
+        ],
+        "storyText": "The red crab walked on the bright sand. It felt happy by the water."
+      },
+      {
+        "wordEmojis": [
+          "🦁",
+          "✨"
+        ],
+        "id": "oral-sentence-studio-2",
+        "type": "use_story_words",
+        "sceneTitle": "Sunny Beach Day",
+        "settingEmoji": "🏖️",
+        "settingLabel": "sandy beach",
+        "actorEmoji": "👦",
+        "actorLabel": "happy boy",
+        "actionEmoji": "🏃",
+        "actionLabel": "running fast",
+        "objectEmoji": "🐚",
+        "objectLabel": "sea shell",
+        "targetWords": [
+          "brave",
+          "shiny"
+        ],
+        "wordMeanings": [
+          "feeling very strong and bold",
+          "bright and catching the light"
+        ],
+        "sceneMeaning": "The brave boy picked up a shiny shell by the ocean.",
+        "acceptedSentences": [
+          "A brave turtle walked past the shiny wave.",
+          "The brave puppy found a shiny coin in the yard.",
+          "That brave kitten looked at the shiny star."
+        ],
+        "storyText": "The brave boy walked near the water. He found a shiny shell in the sand."
+      },
+      {
+        "wordEmojis": [
+          "🦁",
+          "🐳"
+        ],
+        "id": "oral-sentence-studio-3",
+        "type": "use_story_words",
+        "sceneTitle": "Sunny Beach Day",
+        "settingEmoji": "🏖️",
+        "settingLabel": "warm sandy beach",
+        "actorEmoji": "👦",
+        "actorLabel": "happy boy",
+        "actionEmoji": "🏃",
+        "actionLabel": "running fast",
+        "objectEmoji": "🐚",
+        "objectLabel": "sea shell",
+        "targetWords": [
+          "brave",
+          "gigantic"
+        ],
+        "wordMeanings": [
+          "feeling very strong and bold",
+          "extremely large in size"
+        ],
+        "sceneMeaning": "The brave boy ran across the gigantic beach to find a shell.",
+        "acceptedSentences": [
+          "The brave puppy ran past a gigantic tree.",
+          "A gigantic wave crashed near the brave turtle.",
+          "That brave firefighter helped a gigantic dog."
+        ],
+        "storyText": "The brave boy walked near the water. He found a gigantic shell in the sand."
+      }
+    ]
+  },
+  "rows": [
+    {
+      "words": [
+        "bright",
+        "happy"
+      ],
+      "pictures": [
+        "☀️",
+        "😊"
+      ],
+      "scene": [
+        "🦀",
+        "🌊",
+        "🐚",
+        "🏖️"
+      ],
+      "leak": false,
+      "levers": [
+        "sentence_strip",
+        "word_pictures"
+      ]
+    },
+    {
+      "words": [
+        "brave",
+        "shiny"
+      ],
+      "pictures": [
+        "🦁",
+        "✨"
+      ],
+      "scene": [
+        "👦",
+        "🏃",
+        "🐚",
+        "🏖️"
+      ],
+      "leak": false,
+      "levers": [
+        "sentence_strip",
+        "word_pictures"
+      ]
+    },
+    {
+      "words": [
+        "brave",
+        "gigantic"
+      ],
+      "pictures": [
+        "🦁",
+        "🐳"
+      ],
+      "scene": [
+        "👦",
+        "🏃",
+        "🐚",
+        "🏖️"
+      ],
+      "leak": false,
+      "levers": [
+        "sentence_strip",
+        "word_pictures"
+      ]
+    }
+  ],
+  "issues": []
+}

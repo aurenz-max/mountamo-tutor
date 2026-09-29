@@ -1,0 +1,173 @@
+{
+  "generatedAt": "2026-09-29T04:26:53.613Z",
+  "data": {
+    "title": "Oral Sentence Studio",
+    "description": "Use both new words in one complete sentence of your own.",
+    "gradeLevel": "elementary",
+    "challengeType": "guided_writing_rehearsal",
+    "challenges": [
+      {
+        "wordEmojis": [
+          "➡️",
+          "🛡️"
+        ],
+        "id": "oral-sentence-studio-1",
+        "type": "guided_writing_rehearsal",
+        "sceneTitle": "Our Beach Day Story",
+        "settingEmoji": "🏖️",
+        "settingLabel": "sandy beach",
+        "actorEmoji": "👧🏽",
+        "actorLabel": "smiling girl",
+        "actionEmoji": "🏰",
+        "actionLabel": "building a castle",
+        "objectEmoji": "🐚",
+        "objectLabel": "shiny shell",
+        "targetWords": [
+          "next",
+          "careful"
+        ],
+        "wordMeanings": [
+          "coming right after this",
+          "paying close attention"
+        ],
+        "sceneMeaning": "Next, the smiling girl is careful while placing a shiny shell on the sand castle.",
+        "acceptedSentences": [
+          "Next, she is careful when putting a shiny shell on the sand castle.",
+          "The girl is careful next as she decorates her tall sand castle.",
+          "Next, working with a careful hand, she decorates the sand castle."
+        ],
+        "priorStepLabel": "Walking on the sand"
+      },
+      {
+        "wordEmojis": [
+          "🏁",
+          "🛡️"
+        ],
+        "id": "oral-sentence-studio-2",
+        "type": "guided_writing_rehearsal",
+        "sceneTitle": "Our Beach Day Story",
+        "settingEmoji": "🏖️",
+        "settingLabel": "sandy beach",
+        "actorEmoji": "👦",
+        "actorLabel": "happy boy",
+        "actionEmoji": "🌊",
+        "actionLabel": "chasing waves",
+        "objectEmoji": "🦀",
+        "objectLabel": "tiny crab",
+        "targetWords": [
+          "last",
+          "safe"
+        ],
+        "wordMeanings": [
+          "at the very end",
+          "out of harm"
+        ],
+        "sceneMeaning": "Last on the beach, the happy boy kept the tiny crab safe.",
+        "acceptedSentences": [
+          "Last of all, the happy boy made sure the tiny crab stayed safe.",
+          "The child felt safe when he watched the tiny crab last.",
+          "Last, the happy boy kept the little sea creature safe by the water."
+        ],
+        "priorStepLabel": "First we built castles"
+      },
+      {
+        "wordEmojis": [
+          "⏰",
+          "💦"
+        ],
+        "id": "oral-sentence-studio-3",
+        "type": "guided_writing_rehearsal",
+        "sceneTitle": "Our Beach Day Story",
+        "settingEmoji": "🏖️",
+        "settingLabel": "sunny beach",
+        "actorEmoji": "👧",
+        "actorLabel": "happy girl",
+        "actionEmoji": "🌊",
+        "actionLabel": "splash water",
+        "objectEmoji": "🐚",
+        "objectLabel": "seashell",
+        "targetWords": [
+          "last",
+          "splash"
+        ],
+        "wordMeanings": [
+          "at the very end",
+          "play in water"
+        ],
+        "sceneMeaning": "Last, the happy girl made a big splash in the water.",
+        "acceptedSentences": [
+          "Last, the happy girl made a fun splash in the water.",
+          "At last, the happy child gave a joyful splash by the shore.",
+          "When the day was over, last she made a happy splash."
+        ],
+        "priorStepLabel": "First we built a castle"
+      }
+    ]
+  },
+  "rows": [
+    {
+      "words": [
+        "next",
+        "careful"
+      ],
+      "pictures": [
+        "➡️",
+        "🛡️"
+      ],
+      "scene": [
+        "👧🏽",
+        "🏰",
+        "🐚",
+        "🏖️"
+      ],
+      "leak": false,
+      "levers": [
+        "sentence_strip",
+        "word_pictures"
+      ]
+    },
+    {
+      "words": [
+        "last",
+        "safe"
+      ],
+      "pictures": [
+        "🏁",
+        "🛡️"
+      ],
+      "scene": [
+        "👦",
+        "🌊",
+        "🦀",
+        "🏖️"
+      ],
+      "leak": false,
+      "levers": [
+        "sentence_strip",
+        "word_pictures"
+      ]
+    },
+    {
+      "words": [
+        "last",
+        "splash"
+      ],
+      "pictures": [
+        "⏰",
+        "💦"
+      ],
+      "scene": [
+        "👧",
+        "🌊",
+        "🐚",
+        "🏖️"
+      ],
+      "leak": false,
+      "levers": [
+        "sentence_strip",
+        "word_pictures"
+      ]
+    }
+  ],
+  "issues": []
+}

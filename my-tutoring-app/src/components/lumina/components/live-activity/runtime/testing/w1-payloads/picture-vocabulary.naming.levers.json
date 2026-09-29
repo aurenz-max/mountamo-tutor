@@ -1,0 +1,53 @@
+{
+  "source": "qa/eval-reports/picture-vocabulary-levers-probe/naming-park.json (real generation 2026-09-29, kinds and clues)",
+  "primitiveId": "picture-vocabulary",
+  "evalMode": "naming",
+  "data": {
+    "title": "A Day at the Park Words!",
+    "description": "Let us look at pictures and name all the fun things we find outside.",
+    "challengeType": "naming",
+    "challenges": [
+      {
+        "id": "pv-1",
+        "type": "naming",
+        "word": "swing",
+        "emoji": "🛝",
+        "category": "toy",
+        "clue": "you sit on it and go high up and down"
+      },
+      {
+        "id": "pv-2",
+        "type": "naming",
+        "word": "tree",
+        "emoji": "🌳",
+        "category": "plant",
+        "clue": "it has green leaves and gives shade on grass"
+      },
+      {
+        "id": "pv-3",
+        "type": "naming",
+        "word": "duck",
+        "emoji": "🦆",
+        "category": "animal",
+        "clue": "it swims in the pond and says quack"
+      },
+      {
+        "id": "pv-4",
+        "type": "naming",
+        "word": "sun",
+        "emoji": "☀️",
+        "category": "weather",
+        "clue": "it shines bright and keeps you warm outside"
+      },
+      {
+        "id": "pv-5",
+        "type": "naming",
+        "word": "flower",
+        "emoji": "🌷",
+        "category": "plant",
+        "clue": "it has pretty colorful petals growing in the dirt"
+      }
+    ],
+    "gradeLevel": "Kindergarten"
+  }
+}

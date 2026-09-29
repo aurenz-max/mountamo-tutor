@@ -1,0 +1,170 @@
+{
+  "generatedAt": "2026-09-29T04:26:46.796Z",
+  "data": {
+    "title": "Oral Sentence Studio",
+    "description": "Use both new words in one complete sentence of your own.",
+    "gradeLevel": "elementary",
+    "challengeType": "describe_scene",
+    "challenges": [
+      {
+        "wordEmojis": [
+          "☀️",
+          "🧸"
+        ],
+        "id": "oral-sentence-studio-1",
+        "type": "describe_scene",
+        "sceneTitle": "Sunny Beach Day",
+        "settingEmoji": "🏖️",
+        "settingLabel": "sandy beach",
+        "actorEmoji": "👧",
+        "actorLabel": "happy child",
+        "actionEmoji": "🏰",
+        "actionLabel": "building castles",
+        "objectEmoji": "🐚",
+        "objectLabel": "sea shell",
+        "targetWords": [
+          "bright",
+          "cozy"
+        ],
+        "wordMeanings": [
+          "full of light",
+          "warm and safe"
+        ],
+        "sceneMeaning": "The happy child sits under a bright sun while building a cozy castle with sand.",
+        "acceptedSentences": [
+          "The happy child plays under the bright sun with a cozy shell.",
+          "A bright sky shines down while the child builds a cozy sand castle.",
+          "Our cozy friend finds a shell on the bright beach today."
+        ]
+      },
+      {
+        "wordEmojis": [
+          "☀️",
+          "🌟"
+        ],
+        "id": "oral-sentence-studio-2",
+        "type": "describe_scene",
+        "sceneTitle": "Sunny Beach Day",
+        "settingEmoji": "🏖️",
+        "settingLabel": "warm sunny beach",
+        "actorEmoji": "👦",
+        "actorLabel": "happy young boy",
+        "actionEmoji": "🏗️",
+        "actionLabel": "building a tower",
+        "objectEmoji": "🏰",
+        "objectLabel": "tall sand castle",
+        "targetWords": [
+          "bright",
+          "proud"
+        ],
+        "wordMeanings": [
+          "full of light and sun",
+          "feeling very happy and pleased"
+        ],
+        "sceneMeaning": "The happy young boy feels proud while building a tall sand castle under the bright sun.",
+        "acceptedSentences": [
+          "The bright sun shines while the happy young boy builds a proud sand castle.",
+          "That bright morning makes the boy feel very proud of his castle.",
+          "A bright smile shows how proud he is of his big castle."
+        ]
+      },
+      {
+        "wordEmojis": [
+          "☀️",
+          "🧸"
+        ],
+        "id": "oral-sentence-studio-3",
+        "type": "describe_scene",
+        "sceneTitle": "Sunny Beach Fun",
+        "settingEmoji": "🏖️",
+        "settingLabel": "sandy beach",
+        "actorEmoji": "👧",
+        "actorLabel": "cheerful girl",
+        "actionEmoji": "🌊",
+        "actionLabel": "splashing water",
+        "objectEmoji": "🐚",
+        "objectLabel": "sea shell",
+        "targetWords": [
+          "bright",
+          "cozy"
+        ],
+        "wordMeanings": [
+          "full of light and sun",
+          "warm and comfortable"
+        ],
+        "sceneMeaning": "The cheerful girl plays under the bright sun while listening to the cozy sound of waves near her sea shell.",
+        "acceptedSentences": [
+          "The cheerful girl found a bright shell on the cozy beach.",
+          "While splashing in the bright water, the girl felt cozy.",
+          "A cozy girl held a bright sea shell by the ocean."
+        ]
+      }
+    ]
+  },
+  "rows": [
+    {
+      "words": [
+        "bright",
+        "cozy"
+      ],
+      "pictures": [
+        "☀️",
+        "🧸"
+      ],
+      "scene": [
+        "👧",
+        "🏰",
+        "🐚",
+        "🏖️"
+      ],
+      "leak": false,
+      "levers": [
+        "sentence_strip",
+        "word_pictures"
+      ]
+    },
+    {
+      "words": [
+        "bright",
+        "proud"
+      ],
+      "pictures": [
+        "☀️",
+        "🌟"
+      ],
+      "scene": [
+        "👦",
+        "🏗️",
+        "🏰",
+        "🏖️"
+      ],
+      "leak": false,
+      "levers": [
+        "sentence_strip",
+        "word_pictures"
+      ]
+    },
+    {
+      "words": [
+        "bright",
+        "cozy"
+      ],
+      "pictures": [
+        "☀️",
+        "🧸"
+      ],
+      "scene": [
+        "👧",
+        "🌊",
+        "🐚",
+        "🏖️"
+      ],
+      "leak": false,
+      "levers": [
+        "sentence_strip",
+        "word_pictures"
+      ]
+    }
+  ],
+  "issues": []
+}

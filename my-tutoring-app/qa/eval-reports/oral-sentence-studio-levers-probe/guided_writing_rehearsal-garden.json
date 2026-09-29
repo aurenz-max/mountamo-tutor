@@ -1,0 +1,173 @@
+{
+  "generatedAt": "2026-09-29T04:26:50.886Z",
+  "data": {
+    "title": "Oral Sentence Studio",
+    "description": "Use both new words in one complete sentence of your own.",
+    "gradeLevel": "elementary",
+    "challengeType": "guided_writing_rehearsal",
+    "challenges": [
+      {
+        "wordEmojis": [
+          "⏱️",
+          "🪶"
+        ],
+        "id": "oral-sentence-studio-1",
+        "type": "guided_writing_rehearsal",
+        "sceneTitle": "Our Garden Helper Story",
+        "settingEmoji": "🌻",
+        "settingLabel": "sunny garden",
+        "actorEmoji": "👦",
+        "actorLabel": "helpful boy",
+        "actionEmoji": "🌱",
+        "actionLabel": "gentle planting",
+        "objectEmoji": "🪴",
+        "objectLabel": "small flower pot",
+        "targetWords": [
+          "last",
+          "gentle"
+        ],
+        "wordMeanings": [
+          "at the very end",
+          "soft and careful"
+        ],
+        "sceneMeaning": "Last, the helpful boy used a gentle touch for planting.",
+        "acceptedSentences": [
+          "Last, the helpful boy used a gentle touch for planting.",
+          "The helpful boy did gentle planting last.",
+          "Last of all, the boy did gentle planting."
+        ],
+        "priorStepLabel": "digging the dirt hole"
+      },
+      {
+        "wordEmojis": [
+          "⏰",
+          "🛡️"
+        ],
+        "id": "oral-sentence-studio-2",
+        "type": "guided_writing_rehearsal",
+        "sceneTitle": "Our Garden Planting Story",
+        "settingEmoji": "🏡",
+        "settingLabel": "sunny garden",
+        "actorEmoji": "👧",
+        "actorLabel": "happy girl",
+        "actionEmoji": "🌱",
+        "actionLabel": "gently planting",
+        "objectEmoji": "🪴",
+        "objectLabel": "small green sprout",
+        "targetWords": [
+          "then",
+          "careful"
+        ],
+        "wordMeanings": [
+          "at that next time",
+          "doing things with great care"
+        ],
+        "sceneMeaning": "Then the happy girl is careful when putting the small green sprout into the soil.",
+        "acceptedSentences": [
+          "Then the happy girl is careful while planting the small green sprout.",
+          "Then she is careful to place the small green sprout in the sunny garden.",
+          "Then our happy girl makes a careful hole for the sprout."
+        ],
+        "priorStepLabel": "Digging the soft dirt"
+      },
+      {
+        "wordEmojis": [
+          "🏁",
+          "💧"
+        ],
+        "id": "oral-sentence-studio-3",
+        "type": "guided_writing_rehearsal",
+        "sceneTitle": "Our Garden Helper Guide",
+        "settingEmoji": "🏡",
+        "settingLabel": "sunny garden",
+        "actorEmoji": "👧",
+        "actorLabel": "smiling girl",
+        "actionEmoji": "🚿",
+        "actionLabel": "water plants",
+        "objectEmoji": "🌱",
+        "objectLabel": "tiny sprout",
+        "targetWords": [
+          "last",
+          "thirsty"
+        ],
+        "wordMeanings": [
+          "at the very end",
+          "needing a drink"
+        ],
+        "sceneMeaning": "Last the smiling girl gave water to the thirsty tiny sprout.",
+        "acceptedSentences": [
+          "Last the smiling girl poured water for the thirsty tiny sprout.",
+          "Then the gardener watered the thirsty tiny sprout last.",
+          "Last of all the smiling girl helped the thirsty tiny sprout grow."
+        ],
+        "priorStepLabel": "first we dug holes"
+      }
+    ]
+  },
+  "rows": [
+    {
+      "words": [
+        "last",
+        "gentle"
+      ],
+      "pictures": [
+        "⏱️",
+        "🪶"
+      ],
+      "scene": [
+        "👦",
+        "🌱",
+        "🪴",
+        "🌻"
+      ],
+      "leak": false,
+      "levers": [
+        "sentence_strip",
+        "word_pictures"
+      ]
+    },
+    {
+      "words": [
+        "then",
+        "careful"
+      ],
+      "pictures": [
+        "⏰",
+        "🛡️"
+      ],
+      "scene": [
+        "👧",
+        "🌱",
+        "🪴",
+        "🏡"
+      ],
+      "leak": false,
+      "levers": [
+        "sentence_strip",
+        "word_pictures"
+      ]
+    },
+    {
+      "words": [
+        "last",
+        "thirsty"
+      ],
+      "pictures": [
+        "🏁",
+        "💧"
+      ],
+      "scene": [
+        "👧",
+        "🚿",
+        "🌱",
+        "🏡"
+      ],
+      "leak": false,
+      "levers": [
+        "sentence_strip",
+        "word_pictures"
+      ]
+    }
+  ],
+  "issues": []
+}

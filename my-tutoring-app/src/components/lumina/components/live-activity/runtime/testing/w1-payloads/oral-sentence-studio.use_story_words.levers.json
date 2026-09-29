@@ -1,0 +1,109 @@
+{
+  "source": "qa/eval-reports/oral-sentence-studio-levers-probe/use_story_words-garden.json (real generation 2026-09-29, meaning pictures)",
+  "primitiveId": "oral-sentence-studio",
+  "evalMode": "use_story_words",
+  "data": {
+    "title": "Oral Sentence Studio",
+    "description": "Use both new words in one complete sentence of your own.",
+    "gradeLevel": "elementary",
+    "challengeType": "use_story_words",
+    "challenges": [
+      {
+        "wordEmojis": [
+          "🪶",
+          "🔍"
+        ],
+        "id": "oral-sentence-studio-1",
+        "type": "use_story_words",
+        "sceneTitle": "Helping in the garden",
+        "settingEmoji": "🏡",
+        "settingLabel": "sunny garden",
+        "actorEmoji": "👦🏽",
+        "actorLabel": "helpful boy",
+        "actionEmoji": "🌱",
+        "actionLabel": "planting seeds",
+        "objectEmoji": "🪴",
+        "objectLabel": "small pot",
+        "targetWords": [
+          "gentle",
+          "careful"
+        ],
+        "wordMeanings": [
+          "soft and kind",
+          "paying close attention"
+        ],
+        "sceneMeaning": "The helpful boy is gentle and careful with the green plants in the sunny garden.",
+        "acceptedSentences": [
+          "Be gentle and careful when holding the little bird.",
+          "The teacher is careful and gentle with the wet paint.",
+          "Puppies need a gentle and careful hand to feel safe."
+        ],
+        "storyText": "The helpful boy works in the sunny garden. He is very gentle and careful with every single leaf."
+      },
+      {
+        "wordEmojis": [
+          "🛡️",
+          "💧"
+        ],
+        "id": "oral-sentence-studio-2",
+        "type": "use_story_words",
+        "sceneTitle": "watering the green plants",
+        "settingEmoji": "🏡",
+        "settingLabel": "sunny garden",
+        "actorEmoji": "👧",
+        "actorLabel": "kind girl",
+        "actionEmoji": "🚿",
+        "actionLabel": "watering plants",
+        "objectEmoji": "🌱",
+        "objectLabel": "tiny sprout",
+        "targetWords": [
+          "careful",
+          "thirsty"
+        ],
+        "wordMeanings": [
+          "moving safely and with attention",
+          "needing a drink of water"
+        ],
+        "sceneMeaning": "The kind girl is careful when giving water to the thirsty sprout in the sunny garden.",
+        "acceptedSentences": [
+          "Be careful so the thirsty plant does not spill.",
+          "That thirsty puppy wants a careful bath.",
+          "A careful turtle walks by the thirsty grass."
+        ],
+        "storyText": "The kind girl is careful with the watering can. She gives cool water to the thirsty sprout."
+      },
+      {
+        "wordEmojis": [
+          "🪶",
+          "🐜"
+        ],
+        "id": "oral-sentence-studio-3",
+        "type": "use_story_words",
+        "sceneTitle": "Helping in the garden",
+        "settingEmoji": "🏡",
+        "settingLabel": "sunny garden",
+        "actorEmoji": "👧",
+        "actorLabel": "smiling child",
+        "actionEmoji": "🌱",
+        "actionLabel": "planting seeds",
+        "objectEmoji": "🪴",
+        "objectLabel": "small pot",
+        "targetWords": [
+          "gentle",
+          "tiny"
+        ],
+        "wordMeanings": [
+          "soft and careful",
+          "very small in size"
+        ],
+        "sceneMeaning": "The smiling child is gentle with the tiny seeds in the garden.",
+        "acceptedSentences": [
+          "Be gentle when you hold a tiny bug.",
+          "The tiny bird sits on a gentle breeze.",
+          "That tiny kitten needs a gentle touch."
+        ],
+        "storyText": "The smiling child is very gentle with the tiny seeds. They place each seed in the small pot."
+      }
+    ]
+  }
+}
